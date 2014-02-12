@@ -50,7 +50,7 @@ class PlatformCommand extends Command
         if (!$this->oauth2Plugin) {
             $this->loadConfig();
             if (empty($this->config['refresh_token'])) {
-                throw new Exception('Refresh token not found in PlatformCommand::getOauth2Plugin.');
+                throw new \Exception('Refresh token not found in PlatformCommand::getOauth2Plugin.');
             }
 
             $oauth2Client = new Client('https://marketplace.commerceguys.com/oauth2/token');
