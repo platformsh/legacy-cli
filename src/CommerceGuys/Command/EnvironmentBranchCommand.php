@@ -40,7 +40,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
 
         $dialog = $this->getHelperSet()->get('dialog');
         $branchText = 'Branch @environment as (i.e "Feature 2"): ';
-        $branchText = str_replace('@environment', $this->environment['title'], $message);
+        $branchText = str_replace('@environment', $this->environment['title'], $branchText);
         $validator = function ($data) {
             if (empty($data)) {
                 throw new \RunTimeException('Please provide a value.');
