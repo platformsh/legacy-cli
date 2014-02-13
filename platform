@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+
+require 'vendor/autoload.php';
+
+use CommerceGuys\Command\InitCommand;
+use CommerceGuys\Command\SshKeyAddCommand;
+use CommerceGuys\Command\SshKeyDeleteCommand;
+use CommerceGuys\Command\SshKeyListCommand;
+use Symfony\Component\Console\Application;
+
+$application = new Application();
+$application->add(new InitCommand);
+$application->add(new SshKeyAddCommand);
+$application->add(new SshKeyDeleteCommand);
+$application->add(new SshKeyListCommand);
+$application->run();
+

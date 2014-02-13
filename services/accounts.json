@@ -1,0 +1,68 @@
+{
+    "name": "Accounts API",
+    "baseUrl": "https://marketplace.commerceguys.com/api/platform",
+    "operations": {
+        "getSshKeys": {
+            "httpMethod": "GET",
+            "uri": "me",
+            "summary": "Gets a list of ssh_keys",
+            "responseClass": "SshKeys"
+        },
+        "createSshKey": {
+            "httpMethod": "POST",
+            "uri": "ssh_keys",
+            "summary": "Creates a new ssh key",
+            "parameters": {
+                "title": {
+                    "location": "json",
+                    "type": "string"
+                },
+                "value": {
+                    "location": "json",
+                    "type": "string"
+                }
+            }
+        },
+        "deleteSshKey": {
+            "httpMethod": "DELETE",
+            "uri": "ssh_keys/{id}",
+            "summary": "Deletes an ssh key",
+            "parameters": {
+                "id": {
+                    "location": "uri",
+                    "description": "SSH Key ID",
+                    "required": true
+                }
+            }
+        }
+    },
+    "models": {
+        "SshKeys": {
+            "type": "array",
+            "additionalProperties": false,
+            "properties": {
+                "keys": {
+                    "location": "json",
+                    "sentAs": "ssh_keys",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "sentAs": "key_id"
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "fingerprint": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
