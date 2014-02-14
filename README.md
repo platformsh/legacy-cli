@@ -20,12 +20,21 @@ cd platform-cli
 composer install
 ```
 
+Add the `platform` command to your path by adding this line to you bashrc file (use your own path)
+```
+export PATH=/projects/platform/platform-cli
+```
+
+Now you can run `platform` and see all the available commands !
+
 ## Installation
 ```
 composer global require 'commerceguys/platform-cli:*'
 ```
 Make sure you have ~/.composer/vendor/bin/ in your path.
 
+
+## Getting started
 You can then go into a directory
 ```
 cd myprojects
