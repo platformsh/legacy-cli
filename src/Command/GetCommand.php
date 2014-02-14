@@ -55,14 +55,20 @@ class GetCommand extends PlatformCommand
             $chooseEnvironmentText .= "[$index] : " . $environment['title'] . "\n";
         }
         $dialog = $this->getHelperSet()->get('dialog');
+
         $environmentId = $dialog->ask($output, $chooseEnvironmentText, 0);
-        $environment = $environmentList[$environmentId]['id'];
+	
+	if (!isset($environmentList[$environmentId]['id'])) {
+	    $output->writeln("<error>This input isn't valid.</error>");
+            return;
+	}
+	$environment = $environmentList[$environmentId]['id'];
 
         $uriParts = explode('/', str_replace('http://', '', $project['uri']));
         $cluster = $uriParts[0];
         $machineName = end($uriParts);
         $gitUrl = "{$machineName}@git.{$cluster}:{$machineName}.git";
-        $command = "git clone --branch " . $environment . ' ' . $gitUrl;
+	$command = "git clone --branch " . $environment . ' ' . $gitUrl;
         passthru($command);
     }
 }
