@@ -68,7 +68,7 @@ class GetCommand extends PlatformCommand
         $cluster = $uriParts[0];
         $machineName = end($uriParts);
         $gitUrl = "{$machineName}@git.{$cluster}:{$machineName}.git";
-	$command = "git clone --branch " . $environment . ' ' . $gitUrl;
+        $command = "git clone --branch " . $environment . ' ' . $gitUrl;
         passthru($command);
     }
 }
