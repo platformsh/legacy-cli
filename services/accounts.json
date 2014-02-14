@@ -34,6 +34,12 @@
                     "required": true
                 }
             }
+        },
+        "getProjects": {
+            "httpMethod": "GET",
+            "uri": "me",
+            "summary": "Gets a list of projects",
+            "responseClass": "Projects"
         }
     },
     "models": {
@@ -57,6 +63,29 @@
                                 "type": "string"
                             },
                             "fingerprint": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "Projects": {
+            "type": "array",
+            "additionalProperties": false,
+            "properties": {
+                "projects": {
+                    "location": "json",
+                    "sentAs": "projects",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "uri": {
                                 "type": "string"
                             }
                         }
