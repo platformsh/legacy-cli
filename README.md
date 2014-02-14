@@ -6,6 +6,19 @@ This is the official CLI for Commerce Platform.
 
 * Drush 5.1 or higher - https://github.com/drush-ops/drush
 * PHP 5.3.3 or higher with cURL
+* Composer - https://getcomposer.org/doc/00-intro.md
+
+## Installation (TMP)
+Clone the Git repository locally
+```
+git clone git@github.com:commerceguys/platform-cli.git
+```
+
+Launch composer
+```
+cd platform-cli
+composer install
+```
 
 ## Installation
 ```
