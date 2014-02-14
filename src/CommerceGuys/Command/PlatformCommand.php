@@ -15,13 +15,17 @@ use Symfony\Component\Yaml\Dumper;
 
 class PlatformCommand extends Command
 {
-    protected $oauth2Plugin;
-    protected $client;
     protected $config;
+    protected $oauth2Plugin;
+    protected $accountClient;
+    protected $platformClient;
 
-    protected function getClient($type = 'platform')
+    protected function getOauth2Plugin()
     {
-        if (!$this->client) {
+        if (!$this->oauth2Plugin) {
+            // InitCommand populates $this->config instead of writing
+            // the config file (since it will be written by __destruct()
+            // anyway).
             if (!$this->config) {
                 $homeDir = trim(shell_exec('cd ~ && pwd'));
                 $yaml = new Parser();
@@ -36,24 +40,42 @@ class PlatformCommand extends Command
             );
             $grantType = new PasswordCredentials($oauth2Client, $config);
             $refreshTokenGrantType = new RefreshToken($oauth2Client, $config);
-            $oauth2Plugin = new Oauth2Plugin($grantType, $refreshTokenGrantType);
+            $this->oauth2Plugin = new Oauth2Plugin($grantType, $refreshTokenGrantType);
             if (!empty($this->config['access_token'])) {
-                $oauth2Plugin->setAccessToken($this->config['access_token']);
+                $this->oauth2Plugin->setAccessToken($this->config['access_token']);
             }
             if (!empty($this->config['refresh_token'])) {
-                $oauth2Plugin->setRefreshToken($this->config['refresh_token']);
+                $this->oauth2Plugin->setRefreshToken($this->config['refresh_token']);
             }
-            // Store the oauth2 plugin so that the destructor can fetch the
-            // tokens from it, and then persist them.
-            $this->oauth2Plugin = $oauth2Plugin;
-            $description = ServiceDescription::factory('services/' . $type . '.json');
-
-            $this->client = new Client();
-            $this->client->addSubscriber($oauth2Plugin);
-            $this->client->setDescription($description);
         }
 
-        return $this->client;
+        return $this->oauth2Plugin;
+    }
+
+    protected function getAccountClient()
+    {
+        if (!$this->accountClient) {
+            $description = ServiceDescription::factory(CLI_ROOT . '/services/accounts.json');
+            $oauth2Plugin = $this->getOauth2Plugin();
+            $this->accountClient = new Client();
+            $this->accountClient->setDescription($description);
+            $this->accountClient->addSubscriber($oauth2Plugin);
+        }
+
+        return $this->accountClient;
+    }
+
+    protected function getPlatformClient($baseUrl)
+    {
+        if (!$this->platformClient) {
+            $description = ServiceDescription::factory(CLI_ROOT . '/services/platform.json');
+            $oauth2Plugin = $this->getOauth2Plugin();
+            $this->platformClient = new Client(array('base_url' => $baseUrl));
+            $this->platformClient->setDescription($description);
+            $this->platformClient->addSubscriber($oauth2Plugin);
+        }
+
+        return $this->platformClient;
     }
 
     public function __destruct()

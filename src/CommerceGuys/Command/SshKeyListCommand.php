@@ -25,7 +25,7 @@ class SshKeyListCommand extends PlatformCommand
             return;
         }
 
-        $client = $this->getClient('accounts');
+        $client = $this->getAccountClient();
         $data = $client->getSshKeys();
         $key_rows = array();
         foreach ($data['keys'] as $key) {

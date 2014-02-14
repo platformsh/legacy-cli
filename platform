@@ -1,6 +1,10 @@
 #!/usr/bin/env php
 <?php
 
+// __DIR__ called in a class will point to the class directory. Saved now it
+// ensure there's always a path to the cli root.
+define('CLI_ROOT', __DIR__);
+
 require 'vendor/autoload.php';
 
 use CommerceGuys\Command\InitCommand;

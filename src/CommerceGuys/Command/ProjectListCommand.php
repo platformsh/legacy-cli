@@ -25,7 +25,7 @@ class ProjectListCommand extends PlatformCommand
             return;
         }
 
-        $client = $this->getClient('accounts');
+        $client = $this->getAccountClient();
         $data = $client->getProjects();
         $project_rows = array();
         foreach ($data['projects'] as $project) {

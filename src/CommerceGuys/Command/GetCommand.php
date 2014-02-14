@@ -36,7 +36,7 @@ class GetCommand extends PlatformCommand
             return;
         }
 
-        $client = $this->getClient('accounts');
+        $client = $this->getAccountClient();
         $data = $client->getProjects();
         $projects = array();
         foreach ($data['projects'] as $project) {

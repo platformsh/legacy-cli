@@ -35,7 +35,7 @@ class SshKeyDeleteCommand extends PlatformCommand
             $output->writeln("<error>You must the ID of the key to delete.</error>");
             return;
         }
-        $client = $this->getClient('accounts');
+        $client = $this->getAccountClient();
         $client->deleteSshKey(array('id' => $id));
 
         $message = '<info>';

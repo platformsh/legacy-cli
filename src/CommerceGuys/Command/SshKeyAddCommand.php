@@ -44,7 +44,7 @@ class SshKeyAddCommand extends PlatformCommand
         $dialog = $this->getHelperSet()->get('dialog');
         $title = $dialog->ask($output, 'Enter a name for the key: ');
 
-        $client = $this->getClient('accounts');
+        $client = $this->getAccountClient();
         $client->createSshKey(array('title' => $title, 'value' => $key));
 
         $message = '<info>';
