@@ -42,6 +42,8 @@ class WelcomeCommand extends PlatformCommand
 
         $output->writeln("You can also manage your SSH keys by running <info>platform ssh-keys</info>.");
         $output->writeln("List all commands and their options by running <info>platform help</info>.\n");
+
+        $output->writeln("Type <info>platform list</info> to see all available commands.\n");
     }
 
 }
