@@ -87,6 +87,9 @@
                             },
                             "uri": {
                                 "type": "string"
+                            },
+                            "endpoint": {
+                                "type": "string"
                             }
                         }
                     }

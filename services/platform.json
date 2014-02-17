@@ -1,0 +1,76 @@
+{
+    "name": "Platform API",
+    "operations": {
+        "deleteProject": {
+            "httpMethod": "DELETE",
+            "uri": "",
+            "summary": "Deletes a project"
+        },
+        "getEnvironments": {
+            "httpMethod": "GET",
+            "uri": "environments",
+            "summary": "Gets a list of environments",
+            "responseClass": "Environments"
+        },
+        "deleteEnvironment": {
+            "httpMethod": "DELETE",
+            "uri": "",
+            "summary": "Deletes an environment"
+        },
+        "branchEnvironment": {
+            "httpMethod": "POST",
+            "uri": "branch",
+            "summary": "Creates a new environment branched from the existing one"
+        },
+        "mergeEnvironment": {
+            "httpMethod": "POST",
+            "uri": "merge",
+            "summary": "Merges an environment into its parent"
+        },
+        "synchronizeEnvironment": {
+            "httpMethod": "POST",
+            "uri": "synchronize",
+            "summary": "Synchronizes an environment with its parent"
+        },
+        "backupEnvironment": {
+            "httpMethod": "POST",
+            "uri": "backup",
+            "summary": "Creates a new environment branched from the existing one"
+        }
+    },
+    "models": {
+        "Environment": {
+            "location": "json",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "location": "json",
+                    "type": "string"
+                },
+                "title": {
+                    "location": "json",
+                    "type": "string"
+                },
+                "_links": {
+                    "location": "json",
+                    "type": "object",
+                    "properties": {
+                        "self": {
+                            "type": "string"
+                        },
+                        "public-url": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "Environments": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "Environment"
+            }
+        }
+    }
+}

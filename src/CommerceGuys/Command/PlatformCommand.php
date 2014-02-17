@@ -99,10 +99,16 @@ class PlatformCommand extends Command
         if (!$this->platformClient) {
             $description = ServiceDescription::factory(CLI_ROOT . '/services/platform.json');
             $oauth2Plugin = $this->getOauth2Plugin();
-            $this->platformClient = new Client(array('base_url' => $baseUrl));
+            $this->platformClient = new Client();
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
+            // Platform doesn't have a valid SSL cert yet.
+            // @todo Remove this
+            $this->platformClient->setDefaultOption('verify', false);
         }
+        // The base url can change between two requests in the same command,
+        // so it needs to be explicitly set every time.
+        $this->platformClient->setBaseUrl($baseUrl);
 
         return $this->platformClient;
     }
@@ -111,8 +117,8 @@ class PlatformCommand extends Command
      * Return the user's projects.
      *
      * The projects are persisted in config, relaoded in PlatformListCommand.
-     * Most platform commands (such as the environment ones) have a project
-     * base url, so this persistence allows them to avoid loading the platform
+     * Most platform commands (such as the environment ones) operate on a
+     * project, so this persistence allows them to avoid loading the platform
      * list each time.
      *
      * @param boolean $refresh Whether to refetch the list of projects.
