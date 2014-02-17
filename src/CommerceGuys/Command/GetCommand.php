@@ -19,7 +19,7 @@ class GetCommand extends PlatformCommand
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
-                'The platform id'
+                'The project id'
             );
     }
 
@@ -29,18 +29,18 @@ class GetCommand extends PlatformCommand
             $output->writeln("<error>Platform settings not initialized. Please run 'platform init'.</error>");
             return;
         }
-        $platformId = $input->getArgument('id');
-        if (empty($platformId)) {
-            $output->writeln("<error>You must provide a platform id.</error>");
+        $projectId = $input->getArgument('id');
+        if (empty($projectId)) {
+            $output->writeln("<error>You must specify a project.</error>");
             return;
         }
         $projects = $this->getProjects();
-        if (!isset($projects[$platformId])) {
-            $output->writeln("<error>Platform id not found.</error>");
+        if (!isset($projects[$projectId])) {
+            $output->writeln("<error>Project not found.</error>");
             return;
         }
 
-        $project = $projects[$platformId];
+        $project = $projects[$projectId];
         $uriParts = explode('/', str_replace('http://', '', $project['uri']));
         $cluster = $uriParts[0];
         $machineName = end($uriParts);

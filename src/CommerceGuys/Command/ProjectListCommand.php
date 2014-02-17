@@ -26,19 +26,19 @@ class ProjectListCommand extends PlatformCommand
         }
 
         $projects = $this->getProjects(true);
-        $project_rows = array();
+        $rows = array();
         foreach ($projects as $project) {
-            $project_row = array();
-            $project_row[] = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($project['name']));
-            $project_row[] = $project['name'];
-            $project_row[] = $project['uri'];
-            $project_rows[] = $project_row;
+            $row = array();
+            $row[] = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($project['name']));
+            $row[] = $project['name'];
+            $row[] = $project['uri'];
+            $rows[] = $row;
         }
 
         $table = $this->getHelperSet()->get('table');
         $table
             ->setHeaders(array('ID', 'Name', "URL"))
-            ->setRows($project_rows);
+            ->setRows($rows);
         $table->render($output);
         $output->writeln("\nYou can delete any project by running <info>platform project:delete [id]</info>.\n");
     }
