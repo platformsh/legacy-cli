@@ -29,20 +29,12 @@ class GetCommand extends PlatformCommand
             $output->writeln("<error>Platform settings not initialized. Please run 'platform init'.</error>");
             return;
         }
-
         $platformId = $input->getArgument('id');
         if (empty($platformId)) {
             $output->writeln("<error>You must provide a platform id.</error>");
             return;
         }
-
-        $client = $this->getAccountClient();
-        $data = $client->getProjects();
-        $projects = array();
-        foreach ($data['projects'] as $project) {
-            $id = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($project['name']));
-            $projects[$id] = $project;
-        }
+        $projects = $this->getProjects();
         if (!isset($projects[$platformId])) {
             $output->writeln("<error>Platform id not found.</error>");
             return;
