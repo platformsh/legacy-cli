@@ -99,13 +99,7 @@ class InitCommand extends PlatformCommand
         }
 
         $password = $dialog->askHiddenResponse($output, "\nYour password: ");
-
-        // Set the configuration array, it will be persisted by the parent's
-        // destructor.
-        $this->config = array(
-            'email' => $email,
-            'password' => $password,
-        );
+        $this->authenticateUser($email, $password);
     }
 
     protected function hasConfiguration()

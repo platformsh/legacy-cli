@@ -49,24 +49,50 @@ class PlatformCommand extends Command
     {
         if (!$this->oauth2Plugin) {
             $this->loadConfig();
+            if (empty($this->config['refresh_token'])) {
+                throw new Exception('Refresh token not found in PlatformCommand::getOauth2Plugin.');
+            }
+
             $oauth2Client = new Client('https://marketplace.commerceguys.com/oauth2/token');
             $config = array(
-                'username' => $this->config['email'],
-                'password' => $this->config['password'],
                 'client_id' => 'platform-cli',
             );
-            $grantType = new PasswordCredentials($oauth2Client, $config);
             $refreshTokenGrantType = new RefreshToken($oauth2Client, $config);
-            $this->oauth2Plugin = new Oauth2Plugin($grantType, $refreshTokenGrantType);
+            $this->oauth2Plugin = new Oauth2Plugin(null, $refreshTokenGrantType);
+            $this->oauth2Plugin->setRefreshToken($this->config['refresh_token']);
             if (!empty($this->config['access_token'])) {
                 $this->oauth2Plugin->setAccessToken($this->config['access_token']);
-            }
-            if (!empty($this->config['refresh_token'])) {
-                $this->oauth2Plugin->setRefreshToken($this->config['refresh_token']);
             }
         }
 
         return $this->oauth2Plugin;
+    }
+
+    /**
+     * Authenticate the user using the given credentials.
+     *
+     * The credentials are used to acquire a set of tokens (access token
+     * and refresh token) that are then stored and used for all future requests.
+     * The actual credentials are never stored, there is no need to reuse them
+     * since the refresh token never expires.
+     *
+     * @param string $email The user's email.
+     * @param string $password The user's password.
+     */
+    protected function authenticateUser($email, $password)
+    {
+        $oauth2Client = new Client('https://marketplace.commerceguys.com/oauth2/token');
+        $config = array(
+            'username' => $email,
+            'password' => $password,
+            'client_id' => 'platform-cli',
+        );
+        $grantType = new PasswordCredentials($oauth2Client, $config);
+        $oauth2Plugin = new Oauth2Plugin($grantType);
+        $this->config = array(
+            'access_token' => $oauth2Plugin->getAccessToken(),
+            'refresh_token' => $oauth2Plugin->getRefreshToken(),
+        );
     }
 
     /**
@@ -149,10 +175,9 @@ class PlatformCommand extends Command
     public function __destruct()
     {
         if (is_array($this->config)) {
-            if ($this->client) {
-                // Save the refresh and access tokens for next time.
+            if ($this->oauth2Plugin) {
+                // Save the access token for future requests.
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
-                $this->config['refresh_token'] = $this->oauth2Plugin->getRefreshToken();
             }
 
             $dumper = new Dumper();
