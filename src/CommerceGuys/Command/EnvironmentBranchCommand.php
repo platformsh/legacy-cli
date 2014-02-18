@@ -39,15 +39,15 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         }
 
         $dialog = $this->getHelperSet()->get('dialog');
-        $message = 'Branch @environment as (i.e "Feature 2"): ';
-        $message = str_replace('@environment', $this->environment['title'], $message);
+        $branchText = 'Branch @environment as (i.e "Feature 2"): ';
+        $branchText = str_replace('@environment', $this->environment['title'], $message);
         $validator = function ($data) {
             if (empty($data)) {
                 throw new \RunTimeException('Please provide a value.');
             }
             return $data;
         };
-        $newBranch = $dialog->askAndValidate($output, $message, $validator);
+        $newBranch = $dialog->askAndValidate($output, $branchText, $validator);
         $machineName = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($newBranch));
 
         $client = $this->getPlatformClient($this->environment['endpoint']);

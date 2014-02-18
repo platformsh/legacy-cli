@@ -40,7 +40,17 @@
         "synchronizeEnvironment": {
             "httpMethod": "POST",
             "uri": "synchronize",
-            "summary": "Synchronizes an environment with its parent"
+            "summary": "Synchronizes an environment with its parent",
+            "parameters": {
+                "synchronize_code": {
+                    "location": "json",
+                    "type": "boolean"
+                },
+                "synchronize_data": {
+                    "location": "json",
+                    "type": "boolean"
+                }
+            }
         },
         "backupEnvironment": {
             "httpMethod": "POST",
