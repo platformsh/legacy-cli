@@ -38,8 +38,22 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             return;
         }
 
+        $dialog = $this->getHelperSet()->get('dialog');
+        $syncCodeText = "Synchronize code? [Y/N] ";
+        $syncDataText = "Synchronize data? [Y/N] ";
+        $syncCode = $dialog->askConfirmation($output, $syncCodeText, false);
+        $syncData = $dialog->askConfirmation($output, $syncDataText, false);
+        if (!$syncCode && !$syncData) {
+            $output->writeln("<error>You must synchronize at least code or data.</error>");
+            return;
+        }
+
+        $params = array(
+            'synchronize_code' => $syncCode,
+            'synchronize_data' => $syncData,
+        );
         $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->synchronizeEnvironment();
+        $client->synchronizeEnvironment($params);
 
         $environmentId = $input->getArgument('environment-id');
         $message = '<info>';
