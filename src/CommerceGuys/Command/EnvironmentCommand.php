@@ -61,10 +61,14 @@ class EnvironmentCommand extends PlatformCommand
     protected function getEnvironments()
     {
         if (!$this->environments) {
+            $urlParts = parse_url($this->project['endpoint']);
+            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
             $client = $this->getPlatformClient($this->project['endpoint']);
             $this->environments = array();
             foreach ($client->getEnvironments() as $environment) {
-                $environment['endpoint'] = $environment['_links']['self']['href'];
+                // The environments endpoint is temporarily not serving
+                // absolute urls, so we need to construct one.
+                $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
                 $this->environments[$environment['id']] = $environment;
             }
         }
