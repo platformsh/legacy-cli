@@ -20,7 +20,17 @@
         "branchEnvironment": {
             "httpMethod": "POST",
             "uri": "branch",
-            "summary": "Creates a new environment branched from the existing one"
+            "summary": "Creates a new environment branched from the existing one",
+            "parameters": {
+                "name": {
+                    "location": "json",
+                    "type": "string"
+                },
+                "title": {
+                    "location": "json",
+                    "type": "string"
+                }
+            }
         },
         "mergeEnvironment": {
             "httpMethod": "POST",
