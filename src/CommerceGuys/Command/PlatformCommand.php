@@ -103,7 +103,7 @@ class PlatformCommand extends Command
     protected function getAccountClient()
     {
         if (!$this->accountClient) {
-            $description = ServiceDescription::factory(CLI_ROOT . '/services/accounts.json');
+            $description = ServiceDescription::factory(CLI_ROOT . '/services/accounts.php');
             $oauth2Plugin = $this->getOauth2Plugin();
             $this->accountClient = new Client();
             $this->accountClient->setDescription($description);
@@ -123,7 +123,7 @@ class PlatformCommand extends Command
     protected function getPlatformClient($baseUrl)
     {
         if (!$this->platformClient) {
-            $description = ServiceDescription::factory(CLI_ROOT . '/services/platform.json');
+            $description = ServiceDescription::factory(CLI_ROOT . '/services/platform.php');
             $oauth2Plugin = $this->getOauth2Plugin();
             $this->platformClient = new Client();
             $this->platformClient->setDescription($description);
