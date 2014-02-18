@@ -38,12 +38,23 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return;
         }
 
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->branchEnvironment();
+        $dialog = $this->getHelperSet()->get('dialog');
+        $message = 'Branch @environment as (i.e "Feature 2"): ';
+        $message = str_replace('@environment', $this->environment['title'], $message);
+        $validator = function ($data) {
+            if (empty($data)) {
+                throw new \RunTimeException('Please provide a value.');
+            }
+            return $data;
+        };
+        $newBranch = $dialog->askAndValidate($output, $message, $validator);
+        $machineName = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($newBranch));
 
-        $environmentId = $input->getArgument('environment-id');
+        $client = $this->getPlatformClient($this->environment['endpoint']);
+        $client->branchEnvironment(array('name' => $machineName, 'title' => $newBranch));
+
         $message = '<info>';
-        $message = "\nThe environment $environmentId has been branched. \n";
+        $message = "\nThe environment $newBranch has been branched. \n";
         $message .= "</info>";
         $output->writeln($message);
     }
