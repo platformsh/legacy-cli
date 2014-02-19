@@ -142,7 +142,7 @@ class PlatformCommand extends Command
     /**
      * Return the user's projects.
      *
-     * The projects are persisted in config, relaoded in PlatformListCommand.
+     * The projects are persisted in config, refreshed in PlatformListCommand.
      * Most platform commands (such as the environment ones) operate on a
      * project, so this persistence allows them to avoid loading the platform
      * list each time.
@@ -167,6 +167,40 @@ class PlatformCommand extends Command
         }
 
         return $this->config['projects'];
+    }
+
+    /**
+     * Return the user's environments.
+     *
+     * The environments are persisted in config, refreshed in
+     * EnvironmentListCommand. This persistence allows environment commands to
+     * avoid loading the environment list each time.
+     * Since the previous list is available on refresh, it can be compared,
+     * allowing drush aliases to be refreshed accordingly.
+     *
+     * @param array $project  The project.
+     * @param boolean $refresh Whether to refetch the list of projects.
+     *
+     * @return array The user's environments.
+     */
+    protected function getEnvironments($project, $refresh = false)
+    {
+        $this->loadConfig();
+        if (empty($this->config['environments']) || $refresh) {
+            $urlParts = parse_url($project['endpoint']);
+            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
+            $client = $this->getPlatformClient($project['endpoint']);
+            $environments = array();
+            foreach ($client->getEnvironments() as $environment) {
+                // The environments endpoint is temporarily not serving
+                // absolute urls, so we need to construct one.
+                $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
+                $environments[$environment['id']] = $environment;
+            }
+            $this->config['environments'] = $environments;
+        }
+
+        return $this->config['environments'];
     }
 
     /**

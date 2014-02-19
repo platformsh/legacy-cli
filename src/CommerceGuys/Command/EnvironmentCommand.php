@@ -41,7 +41,7 @@ class EnvironmentCommand extends PlatformCommand
                 $output->writeln("<error>You must specify an environment.</error>");
                 return;
             }
-            $environments = $this->getEnvironments();
+            $environments = $this->getEnvironments($this->project);
             if (!isset($environments[$environmentId])) {
                 $output->writeln("<error>Environment not found.</error>");
                 return;
@@ -51,28 +51,5 @@ class EnvironmentCommand extends PlatformCommand
         }
 
         return TRUE;
-    }
-
-    /**
-     * Return the user's environments for the given project.
-     *
-     * @return array The user's environments.
-     */
-    protected function getEnvironments()
-    {
-        if (!$this->environments) {
-            $urlParts = parse_url($this->project['endpoint']);
-            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
-            $client = $this->getPlatformClient($this->project['endpoint']);
-            $this->environments = array();
-            foreach ($client->getEnvironments() as $environment) {
-                // The environments endpoint is temporarily not serving
-                // absolute urls, so we need to construct one.
-                $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
-                $this->environments[$environment['id']] = $environment;
-            }
-        }
-
-        return $this->environments;
     }
 }

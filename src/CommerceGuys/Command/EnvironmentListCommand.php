@@ -35,7 +35,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         }
 
         $rows = array();
-        foreach ($this->getEnvironments() as $environment) {
+        foreach ($this->getEnvironments($this->project, TRUE) as $environment) {
             $row = array();
             $row[] = $environment['id'];
             $row[] = $environment['title'];
