@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Command;
+namespace CommerceGuys\Platform\Cli\Command;
 
 use Guzzle\Http\ClientInterface;
 use Symfony\Component\Console\Input\InputArgument;
@@ -8,20 +8,24 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 
-class EnvironmentListCommand extends EnvironmentCommand
+class EnvironmentBackupCommand extends EnvironmentCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:list')
-            ->setDescription('Get a list of all environments.')
+            ->setName('environment:backup')
+            ->setDescription('Backup an environment.')
             ->addArgument(
                 'project-id',
                 InputArgument::OPTIONAL,
                 'The project id'
+            )
+            ->addArgument(
+                'environment-id',
+                InputArgument::OPTIONAL,
+                'The environment id'
             );
-        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -34,19 +38,13 @@ class EnvironmentListCommand extends EnvironmentCommand
             return;
         }
 
-        $rows = array();
-        foreach ($this->getEnvironments($this->project, TRUE) as $environment) {
-            $row = array();
-            $row[] = $environment['id'];
-            $row[] = $environment['title'];
-            $row[] = $environment['_links']['public-url']['href'];
-            $rows[] = $row;
-        }
+        $client = $this->getPlatformClient($this->environment['endpoint']);
+        $client->backupEnvironment();
 
-        $table = $this->getHelperSet()->get('table');
-        $table
-            ->setHeaders(array('ID', 'Name', "URL"))
-            ->setRows($rows);
-        $table->render($output);
+        $environmentId = $input->getArgument('environment-id');
+        $message = '<info>';
+        $message = "\nA backup of environment $environmentId has been created. \n";
+        $message .= "</info>";
+        $output->writeln($message);
     }
 }

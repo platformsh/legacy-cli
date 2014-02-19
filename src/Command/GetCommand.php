@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Command;
+namespace CommerceGuys\Platform\Cli\Command;
 
 use Guzzle\Http\ClientInterface;
 use Symfony\Component\Console\Input\InputArgument;
@@ -8,18 +8,18 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 
-class ProjectDeleteCommand extends PlatformCommand
+class GetCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('project:delete')
-            ->setDescription('Delete a project.')
+            ->setName('get')
+            ->setDescription('Does a git clone of the referenced project.')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
-                'The id of the key to delete'
+                'The project id'
             );
     }
 
@@ -41,12 +41,12 @@ class ProjectDeleteCommand extends PlatformCommand
         }
 
         $project = $projects[$projectId];
-        $client = $this->getPlatformClient($project['uri']);
-        $client->deleteProject();
+        $uriParts = explode('/', str_replace('http://', '', $project['uri']));
+        $cluster = $uriParts[0];
+        $machineName = end($uriParts);
 
-        $message = '<info>';
-        $message = "\nThe project #$projectId has been deleted. \n";
-        $message .= "</info>";
-        $output->writeln($message);
+        $gitUrl = "{$machineName}@git.{$cluster}:{$machineName}.git";
+        $command = "git clone " . $gitUrl;
+        passthru($command);
     }
 }

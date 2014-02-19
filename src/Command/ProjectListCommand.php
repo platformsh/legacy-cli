@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Command;
+namespace CommerceGuys\Platform\Cli\Command;
 
 use Guzzle\Http\ClientInterface;
 use Symfony\Component\Console\Input\InputInterface;

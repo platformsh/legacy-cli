@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Command;
+namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
