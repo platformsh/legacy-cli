@@ -48,7 +48,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return $data;
         };
         $newBranch = $dialog->askAndValidate($output, $branchText, $validator);
-        $machineName = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($newBranch));
+        $machineName = preg_replace('/[^a-z0-9-]+/i', '', strtolower($newBranch));
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->branchEnvironment(array('name' => $machineName, 'title' => $newBranch));
