@@ -161,6 +161,7 @@ class PlatformCommand extends Command
             $projects = array();
             foreach ($data['projects'] as $project) {
                 $machineName = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($project['name']));
+                $project['machine_name'] = $machineName;
                 $projects[$machineName] = $project;
             }
             $this->config['projects'] = $projects;
@@ -186,7 +187,10 @@ class PlatformCommand extends Command
     protected function getEnvironments($project, $refresh = false)
     {
         $this->loadConfig();
+        $this->config += array('environments' => array());
+
         if (empty($this->config['environments']) || $refresh) {
+            // Fetch and assemble a list of environments.
             $urlParts = parse_url($project['endpoint']);
             $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
             $client = $this->getPlatformClient($project['endpoint']);
@@ -197,10 +201,47 @@ class PlatformCommand extends Command
                 $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
                 $environments[$environment['id']] = $environment;
             }
+            // Recreate the aliases if the list of environments has changed.
+            if (array_diff_key($environments, $this->config['environments'])) {
+                $this->createDrushAliases($project, $environments);
+            }
+
             $this->config['environments'] = $environments;
         }
 
         return $this->config['environments'];
+    }
+
+    /**
+     * Create drush aliases for the provided project and environments.
+     *
+     * @param array $project The project
+     * @param array $environments The environments
+     */
+    protected function createDrushAliases($project, $environments)
+    {
+        if (!$environments) {
+            return;
+        }
+
+        $aliases = array();
+        $export = "<?php\n\n";
+        foreach ($environments as $environment) {
+            $sshUrl = parse_url($environment['_links']['ssh']['href']);
+            $alias = array(
+              'parent' => '@parent',
+              'site' => $project['machine_name'],
+              'env' => $environment['id'],
+              'remote-host' => $sshUrl['host'],
+              'remote-user' => $sshUrl['user'],
+            );
+            $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($alias, TRUE);
+            $export .= ";\n";
+        }
+
+        $homeDir = trim(shell_exec('cd ~ && pwd'));
+        $filename = $homeDir . '/.drush/' . $project['machine_name'] . '.aliases.drushrc.php';
+        file_put_contents($filename, $export);
     }
 
     /**
