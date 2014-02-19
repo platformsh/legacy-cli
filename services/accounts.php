@@ -27,7 +27,7 @@ return array(
         ),
         'deleteSshKey' => array(
             'httpMethod' => 'DELETE',
-            'uri' => 'ssh_keys/array(id),',
+            'uri' => 'ssh_keys/{id}',
             'summary' => 'Deletes an ssh key',
             'parameters' => array(
                 'id' => array(
