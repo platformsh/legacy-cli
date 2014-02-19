@@ -40,6 +40,8 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->deleteEnvironment();
+        // Refresh the stored environments, to trigger a drush alias rebuild.
+        $this->getEnvironments($this->project, TRUE);
 
         $environmentId = $input->getArgument('environment-id');
         $message = '<info>';
