@@ -8,8 +8,8 @@
         "symfony/yaml": "~2.4"
     },
     "autoload": {
-        "psr-0": {
-            "CommerceGuys\\": "src"
+        "psr-4": {
+            "CommerceGuys\\Platform\\Cli\\": "src"
         }
     },
     "authors": [
