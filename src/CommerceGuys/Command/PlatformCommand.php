@@ -162,7 +162,7 @@ class PlatformCommand extends Command
             foreach ($data['projects'] as $project) {
                 $machineName = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($project['name']));
                 $project['machine_name'] = $machineName;
-                $projects[$machineName] = $project;
+                $projects[] = $project;
             }
             $this->config['projects'] = $projects;
         }
