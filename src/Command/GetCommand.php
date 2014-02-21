@@ -41,12 +41,28 @@ class GetCommand extends PlatformCommand
         }
 
         $project = $projects[$projectId];
+        $environments = $this->getEnvironments($project);
+        // Create a numerically indexed list, starting with "master".
+        $environmentList = array($environments['master']);
+        foreach ($environments as $environment) {
+            if ($environment['id'] != 'master') {
+                $environmentList[] = $environment;
+            }
+        }
+
+        $chooseEnvironmentText = "Enter a number to choose which environment to checkout: \n";
+        foreach ($environmentList as $index => $environment) {
+            $chooseEnvironmentText .= "[$index] : " . $environment['title'] . "\n";
+        }
+        $dialog = $this->getHelperSet()->get('dialog');
+        $environmentId = $dialog->ask($output, $chooseEnvironmentText, 0);
+        $environment = $environmentList[$environmentId]['id'];
+
         $uriParts = explode('/', str_replace('http://', '', $project['uri']));
         $cluster = $uriParts[0];
         $machineName = end($uriParts);
-
         $gitUrl = "{$machineName}@git.{$cluster}:{$machineName}.git";
-        $command = "git clone " . $gitUrl;
+        $command = "git clone --branch " . $environment . ' ' . $gitUrl;
         passthru($command);
     }
 }
