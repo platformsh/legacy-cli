@@ -203,7 +203,7 @@ class PlatformCommand extends Command
                 $environments[$environment['id']] = $environment;
             }
             // Recreate the aliases if the list of environments has changed.
-            if (array_diff_key($this->config['environments'], $environments)) {
+            if (array_diff_key($environments, $this->config['environments'])) {
                 $this->createDrushAliases($project, $environments);
             }
 
