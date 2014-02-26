@@ -38,5 +38,5 @@ Make sure you have ~/.composer/vendor/bin/ in your path.
 You can then go into a directory
 ```
 cd myprojects
-platform login
+platform
 ```

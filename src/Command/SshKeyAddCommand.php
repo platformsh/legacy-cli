@@ -25,11 +25,6 @@ class SshKeyAddCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->hasConfiguration()) {
-            $output->writeln("<error>Platform settings not initialized. Please run 'platform login'.</error>");
-            return;
-        }
-
         $key_filename = $input->getArgument('key');
         if (empty($key_filename)) {
             $output->writeln("<error>You must provide a path to the key.</error>");

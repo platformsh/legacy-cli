@@ -20,11 +20,6 @@ class SshKeyListCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->hasConfiguration()) {
-            $output->writeln("<error>Platform settings not initialized. Please run 'platform login'.</error>");
-            return;
-        }
-
         $client = $this->getAccountClient();
         $data = $client->getSshKeys();
         $key_rows = array();

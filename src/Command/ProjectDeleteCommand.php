@@ -25,10 +25,6 @@ class ProjectDeleteCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->hasConfiguration()) {
-            $output->writeln("<error>Platform settings not initialized. Please run 'platform login'.</error>");
-            return;
-        }
         $projectId = $input->getArgument('id');
         if (empty($projectId)) {
             $output->writeln("<error>You must specify a project.</error>");

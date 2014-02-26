@@ -25,11 +25,6 @@ class SshKeyDeleteCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->hasConfiguration()) {
-            $output->writeln("<error>Platform settings not initialized. Please run 'platform login'.</error>");
-            return;
-        }
-
         $id = $input->getArgument('id');
         if (empty($id)) {
             $output->writeln("<error>You must the ID of the key to delete.</error>");

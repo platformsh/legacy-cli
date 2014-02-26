@@ -17,6 +17,7 @@ use CommerceGuys\Platform\Cli\Command\SshKeyDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyListCommand;
 
 use Symfony\Component\Console\Application as BaseApplication;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -34,7 +35,6 @@ class Application extends BaseApplication {
 
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
-        $this->add(new LoginCommand);
         $this->add(new GetCommand);
         $this->add(new EnvironmentBackupCommand);
         $this->add(new EnvironmentBranchCommand);
@@ -60,8 +60,55 @@ class Application extends BaseApplication {
 
             return 0;
         }
+        if (true === $input->hasParameterOption(array('--version', '-V'))) {
+            $output->writeln($this->getLongVersion());
 
-        return parent::doRun($input, $output);
+            return 0;
+        }
+        $name = $this->getCommandName($input);
+        if (true === $input->hasParameterOption(array('--help', '-h'))) {
+            if (!$name) {
+                $name = 'help';
+                $input = new ArrayInput(array('command' => 'help'));
+            } else {
+                $this->wantHelps = true;
+            }
+        }
+        if (!$name) {
+            $name = 'list';
+            $input = new ArrayInput(array('command' => 'list'));
+        }
+
+        $commandChain = array();
+        // The CLI hasn't been configured, login must run first.
+        if (!$this->hasConfiguration()) {
+            $this->add(new LoginCommand);
+            $commandChain[] = array(
+                'command' => $this->find('login'),
+                'input' => new ArrayInput(array('command' => 'login')),
+            );
+        }
+        $commandChain[] = array(
+            'command' => $this->find($name),
+            'input' => $input,
+        );
+
+        foreach ($commandChain as $chainData) {
+            $this->runningCommand = $chainData['command'];
+            $exitCode = $this->doRunCommand($chainData['command'], $chainData['input'], $output);
+            $this->runningCommand = null;
+        }
+
+        return $exitCode;
+    }
+
+    /**
+     * @return boolean Whether the user has configured the CLI.
+     */
+    protected function hasConfiguration()
+    {
+        $homeDir = trim(shell_exec('cd ~ && pwd'));
+        return file_exists($homeDir . '/.platform');
     }
 
 }

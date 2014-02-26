@@ -261,13 +261,4 @@ class PlatformCommand extends Command
             file_put_contents($homeDir . '/.platform', $dumper->dump($this->config));
         }
     }
-
-    /**
-     * @return boolean Whether the user has configured the CLI.
-     */
-    protected function hasConfiguration()
-    {
-        $homeDir = trim(shell_exec('cd ~ && pwd'));
-        return file_exists($homeDir . '/.platform');
-    }
 }
