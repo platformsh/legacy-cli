@@ -19,7 +19,7 @@ class LoginCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->checkRequirements($output) || $this->hasConfiguration()) {
+        if (!$this->checkRequirements($output)) {
             return;
         }
 
@@ -27,15 +27,13 @@ class LoginCommand extends PlatformCommand
         $this->configureAccount($output);
 
         $message = '<info>';
-        $message = "\nThank you, you are all set. Here is what you can do now: \n";
-        $message .= "- You can clone any of the projects you have access to: \n\n";
-        $message .= "\t platform get commerceguys # drupalcommerce.org \n";
-        $message .= "\t platform get drupalcommerce # commerceguys.com \n\n";
-        $message .= "- You can also create a new project: \n \n";
-        $message .= "\t platform create drupal myproject1 \n";
-        $message .= "\t platform create drupal:kickstart myproject2\n";
+        $message = "\nThank you, you are all set. \n";
         $message .= "</info>";
         $output->writeln($message);
+
+        // Run the destructor right away to ensure configuration gets persisted.
+        // That way any commands that are executed next in the chain will work.
+        $this->__destruct();
     }
 
     protected function checkRequirements($output)

@@ -20,11 +20,6 @@ class ProjectListCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->hasConfiguration()) {
-            $output->writeln("<error>Platform settings not initialized. Please run 'platform login'.</error>");
-            return;
-        }
-
         $projects = $this->getProjects(true);
         $rows = array();
         foreach ($projects as $projectId => $project) {
