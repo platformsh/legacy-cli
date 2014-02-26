@@ -55,8 +55,15 @@ class GetCommand extends PlatformCommand
             $chooseEnvironmentText .= "[$index] : " . $environment['title'] . "\n";
         }
         $dialog = $this->getHelperSet()->get('dialog');
-        $environmentId = $dialog->ask($output, $chooseEnvironmentText, 0);
-        $environment = $environmentList[$environmentId]['id'];
+        $validator = function ($enteredIndex) use ($environmentList) {
+            if (!isset($environmentList[$enteredIndex])) {
+                $max = count($environmentList) - 1;
+                throw new \RunTimeException("Please enter a number between 0 and $max.");
+            }
+            return $enteredIndex;
+        };
+        $environmentIndex = $dialog->askAndValidate($output, $chooseEnvironmentText, $validator, false, 0);
+        $environment = $environmentList[$environmentIndex]['id'];
 
         $uriParts = explode('/', str_replace('http://', '', $project['uri']));
         $cluster = $uriParts[0];
