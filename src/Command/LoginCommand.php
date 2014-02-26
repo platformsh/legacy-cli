@@ -7,14 +7,14 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 
-class InitCommand extends PlatformCommand
+class LoginCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('init')
-            ->setDescription('Initialize platform');
+            ->setName('login')
+            ->setDescription('Login to platform');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

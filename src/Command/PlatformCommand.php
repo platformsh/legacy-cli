@@ -24,7 +24,7 @@ class PlatformCommand extends Command
      * Load configuration from the user's .platform file.
      *
      * Configuration is loaded only if $this->config hasn't been populated
-     * already. This allows InitCommand to avoid writing the config file
+     * already. This allows LoginCommand to avoid writing the config file
      * before using the client for the first time.
      *
      * @return array The populated configuration array.
