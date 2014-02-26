@@ -157,12 +157,13 @@ class PlatformCommand extends Command
         if (empty($this->config['projects']) || $refresh) {
             $accountClient = $this->getAccountClient();
             $data = $accountClient->getProjects();
-            // Generate a machine name for each project and rekey the array.
+            // Extract the project id and rekey the array.
             $projects = array();
             foreach ($data['projects'] as $project) {
-                $machineName = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($project['name']));
-                $project['machine_name'] = $machineName;
-                $projects[$machineName] = $project;
+                $urlParts = explode('/', $project['uri']);
+                $id = end($urlParts);
+                $project['id'] = $id;
+                $projects[$id] = $project;
             }
             $this->config['projects'] = $projects;
         }
@@ -230,7 +231,7 @@ class PlatformCommand extends Command
             $sshUrl = parse_url($environment['_links']['ssh']['href']);
             $alias = array(
               'parent' => '@parent',
-              'site' => $project['machine_name'],
+              'site' => $project['id'],
               'env' => $environment['id'],
               'remote-host' => $sshUrl['host'],
               'remote-user' => $sshUrl['user'],
@@ -240,7 +241,7 @@ class PlatformCommand extends Command
         }
 
         $homeDir = trim(shell_exec('cd ~ && pwd'));
-        $filename = $homeDir . '/.drush/' . $project['machine_name'] . '.aliases.drushrc.php';
+        $filename = $homeDir . '/.drush/' . $project['id'] . '.aliases.drushrc.php';
         file_put_contents($filename, $export);
     }
 
