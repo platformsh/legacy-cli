@@ -27,9 +27,9 @@ class ProjectListCommand extends PlatformCommand
 
         $projects = $this->getProjects(true);
         $rows = array();
-        foreach ($projects as $project) {
+        foreach ($projects as $projectId => $project) {
             $row = array();
-            $row[] = preg_replace('/[^a-z0-9-]+/i', '-', strtolower($project['name']));
+            $row[] = $projectId;
             $row[] = $project['name'];
             $row[] = $project['uri'];
             $rows[] = $row;
