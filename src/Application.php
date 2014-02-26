@@ -2,7 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli;
 
-use CommerceGuys\Platform\Cli\Command\InitCommand;
+use CommerceGuys\Platform\Cli\Command\LoginCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentBackupCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentBranchCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentDeleteCommand;
@@ -34,7 +34,7 @@ class Application extends BaseApplication {
 
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
-        $this->add(new InitCommand);
+        $this->add(new LoginCommand);
         $this->add(new GetCommand);
         $this->add(new EnvironmentBackupCommand);
         $this->add(new EnvironmentBranchCommand);

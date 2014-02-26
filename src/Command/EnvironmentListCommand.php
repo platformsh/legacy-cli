@@ -27,7 +27,7 @@ class EnvironmentListCommand extends EnvironmentCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->hasConfiguration()) {
-            $output->writeln("<error>Platform settings not initialized. Please run 'platform init'.</error>");
+            $output->writeln("<error>Platform settings not initialized. Please run 'platform login'.</error>");
             return;
         }
         if (!$this->validateArguments($input, $output)) {
