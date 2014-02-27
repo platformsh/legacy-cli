@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Guzzle\Http\ClientInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 
@@ -17,20 +18,21 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             ->setName('environment:delete')
             ->setDescription('Delete an environment.')
             ->addArgument(
-                'project-id',
-                InputArgument::OPTIONAL,
-                'The project id'
-            )
-            ->addArgument(
                 'environment-id',
                 InputArgument::OPTIONAL,
                 'The environment id'
+            )
+            ->addOption(
+                'project',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'The project id'
             );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateArguments($input, $output)) {
+        if (!$this->validateInput($input, $output)) {
             return;
         }
 

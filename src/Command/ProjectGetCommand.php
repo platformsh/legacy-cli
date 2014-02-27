@@ -78,6 +78,13 @@ class ProjectGetCommand extends PlatformCommand
             shell_exec("mkdir $folder");
         }
 
+        // Create the .platform-project file.
+        $projectConfig = array(
+            'id' => $id,
+        );
+        $dumper = new Dumper();
+        file_put_contents($id . '/.platform-project', $dumper->dump($projectConfig));
+
         // Clone the repository.
         $cluster = $projectUriParts[0];
         $gitUrl = "{$id}@git.{$cluster}:{$machineName}.git";

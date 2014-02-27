@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Guzzle\Http\ClientInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 
@@ -16,9 +17,10 @@ class EnvironmentListCommand extends EnvironmentCommand
         $this
             ->setName('environments')
             ->setDescription('Get a list of all environments.')
-            ->addArgument(
-                'project-id',
-                InputArgument::OPTIONAL,
+            ->addOption(
+                'project',
+                null,
+                InputOption::VALUE_OPTIONAL,
                 'The project id'
             );
         ;
@@ -26,7 +28,7 @@ class EnvironmentListCommand extends EnvironmentCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateArguments($input, $output)) {
+        if (!$this->validateInput($input, $output)) {
             return;
         }
 
