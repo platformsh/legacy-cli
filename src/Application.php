@@ -9,8 +9,8 @@ use CommerceGuys\Platform\Cli\Command\EnvironmentDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentListCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentMergeCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentSynchronizeCommand;
-use CommerceGuys\Platform\Cli\Command\GetCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectDeleteCommand;
+use CommerceGuys\Platform\Cli\Command\ProjectGetCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectListCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyAddCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyDeleteCommand;
@@ -35,7 +35,6 @@ class Application extends BaseApplication {
 
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
-        $this->add(new GetCommand);
         $this->add(new EnvironmentBackupCommand);
         $this->add(new EnvironmentBranchCommand);
         $this->add(new EnvironmentDeleteCommand);
@@ -43,6 +42,7 @@ class Application extends BaseApplication {
         $this->add(new EnvironmentMergeCommand);
         $this->add(new EnvironmentSynchronizeCommand);
         $this->add(new ProjectDeleteCommand);
+        $this->add(new ProjectGetCommand);
         $this->add(new ProjectListCommand);
         $this->add(new SshKeyAddCommand);
         $this->add(new SshKeyDeleteCommand);
