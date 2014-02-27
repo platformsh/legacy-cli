@@ -13,7 +13,7 @@ class ProjectListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('project:list')
+            ->setName('projects')
             ->setDescription('Get a list of all active projects.');
         ;
     }
