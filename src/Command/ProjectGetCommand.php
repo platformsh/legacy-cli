@@ -8,13 +8,14 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 
-class GetCommand extends PlatformCommand
+class ProjectGetCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('get')
+            ->setName('project:get')
+            ->setAliases(array('get'))
             ->setDescription('Does a git clone of the referenced project.')
             ->addArgument(
                 'id',
