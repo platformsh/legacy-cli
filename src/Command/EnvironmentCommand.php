@@ -10,6 +10,7 @@ use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Parser;
 
 class EnvironmentCommand extends PlatformCommand
 {
@@ -18,23 +19,49 @@ class EnvironmentCommand extends PlatformCommand
     protected $environment;
     protected $environments;
 
-    protected function validateArguments(InputInterface $input, OutputInterface $output)
+    protected function validateInput(InputInterface $input, OutputInterface $output)
     {
-        $arguments = $this->getDefinition()->getArguments();
-        if (isset($arguments['project-id'])) {
-            $projectId = $input->getArgument('project-id');
-            if (empty($projectId)) {
-                $output->writeln("<error>You must specify a project.</error>");
-                return;
-            }
-            $projects = $this->getProjects();
+        $projects = $this->getProjects();
+        // Allow the project to be specified explicitly via --project.
+        $projectId = $input->getOption('project');
+        if (!empty($projectId)) {
             if (!isset($projects[$projectId])) {
-                $output->writeln("<error>Project not found.</error>");
+                $output->writeln("<error>Specified project not found.</error>");
                 return;
             }
-            // Store the current project for easier access in other methods.
             $this->project = $projects[$projectId];
         }
+        else {
+            // Try to autodetect the project by finding .platform-project
+            // in the current directory or one of its parents.
+            $currentDir = getcwd();
+            $homeDir = trim(shell_exec('cd ~ && pwd'));
+            while (!$this->project) {
+                if (file_exists($currentDir . '/.platform-project')) {
+                    $yaml = new Parser();
+                    $projectConfig = $yaml->parse(file_get_contents($currentDir . '/.platform-project'));
+                    $this->project = $projects[$projectConfig['id']];
+                    break;
+                }
+
+                // The file was not found, go one directory up.
+                $dirParts = explode('/', $currentDir);
+                array_pop($dirParts);
+                $currentDir = implode('/', $dirParts);
+                if ($currentDir == $homeDir) {
+                    // We've reached the home directory, stop here.
+                    break;
+                }
+            }
+
+            if (!$this->project) {
+                $output->writeln("<error>Could not determine the current project.</error>");
+                $output->writeln("<error>Specify it manually using --project or go to a project directory.</error>");
+                return;
+            }
+        }
+
+        $arguments = $this->getDefinition()->getArguments();
         if (isset($arguments['environment-id'])) {
             $environmentId = $input->getArgument('environment-id');
             if (empty($environmentId)) {
