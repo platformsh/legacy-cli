@@ -36,8 +36,14 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln("<error>Project not found.</error>");
             return;
         }
-
         $project = $projects[$projectId];
+        $projectUriParts = explode('/', str_replace('http://', '', $project['uri']));
+        $id = end($projectUriParts);
+        if (is_dir($id)) {
+            $output->writeln("<error>The project directory '$id' already exists.</error>");
+            return;
+        }
+
         $environments = $this->getEnvironments($project);
         // Create a numerically indexed list, starting with "master".
         $environmentList = array($environments['master']);
@@ -62,11 +68,21 @@ class ProjectGetCommand extends PlatformCommand
         $environmentIndex = $dialog->askAndValidate($output, $chooseEnvironmentText, $validator, false, 0);
         $environment = $environmentList[$environmentIndex]['id'];
 
-        $uriParts = explode('/', str_replace('http://', '', $project['uri']));
-        $cluster = $uriParts[0];
-        $machineName = end($uriParts);
-        $gitUrl = "{$machineName}@git.{$cluster}:{$machineName}.git";
-        $command = "git clone --branch " . $environment . ' ' . $gitUrl;
+        // Create the directory structure
+        $folders = array();
+        $folders[] = $id;
+        $folders[] = $id . '/builds';
+        $folders[] = $id . '/repository';
+        $folders[] = $id . '/shared';
+        foreach ($folders as $folder) {
+            shell_exec("mkdir $folder");
+        }
+
+        // Clone the repository.
+        $cluster = $projectUriParts[0];
+        $gitUrl = "{$id}@git.{$cluster}:{$machineName}.git";
+        $repositoryDir = $id . '/repository';
+        $command = "git clone --branch $environment $gitUrl $repositoryDir";
         passthru($command);
     }
 }
