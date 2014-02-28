@@ -27,7 +27,7 @@ class SshKeyAddCommand extends PlatformCommand
     {
         $path = $input->getArgument('path');
         if (empty($path)) {
-            $output->writeln("<error>You must provide a path to the key.</error>");
+            $output->writeln("<error>You must specify the path to the key.</error>");
             return;
         }
         if (!file_exists($path)) {
