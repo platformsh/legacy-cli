@@ -23,13 +23,9 @@ class LoginCommand extends PlatformCommand
             return;
         }
 
-        $output->writeln("Welcome to Commerce Platform! \n");
+        $output->writeln("\nPlease login using your Commerce Platform account to proceed.");
         $this->configureAccount($output);
-
-        $message = '<info>';
-        $message = "\nThank you, you are all set. \n";
-        $message .= "</info>";
-        $output->writeln($message);
+        $output->writeln("\n<info>Thank you, you are all set.</info>");
 
         // Run the destructor right away to ensure configuration gets persisted.
         // That way any commands that are executed next in the chain will work.
