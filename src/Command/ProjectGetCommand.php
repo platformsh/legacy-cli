@@ -37,7 +37,7 @@ class ProjectGetCommand extends PlatformCommand
             return;
         }
         $project = $projects[$projectId];
-        $projectUriParts = explode('/', str_replace('http://', '', $project['uri']));
+        $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));
         $id = end($projectUriParts);
         if (is_dir($id)) {
             $output->writeln("<error>The project directory '$id' already exists.</error>");
@@ -87,7 +87,7 @@ class ProjectGetCommand extends PlatformCommand
 
         // Clone the repository.
         $cluster = $projectUriParts[0];
-        $gitUrl = "{$id}@git.{$cluster}:{$machineName}.git";
+        $gitUrl = "{$id}@git.{$cluster}:{$id}.git";
         $repositoryDir = $id . '/repository';
         $command = "git clone --branch $environment $gitUrl $repositoryDir";
         passthru($command);
