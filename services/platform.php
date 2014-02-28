@@ -74,6 +74,10 @@ return array(
                     'location' => 'json',
                     'type' => 'string',
                 ),
+                'parent' => array(
+                    'location' => 'json',
+                    'type' => 'string',
+                ),
                 '_links' => array(
                     'location' => 'json',
                     'type' => 'object',
