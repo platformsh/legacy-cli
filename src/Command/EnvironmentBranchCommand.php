@@ -18,6 +18,11 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             ->setName('environment:branch')
             ->setAliases(array('branch'))
             ->setDescription('Branch an environment.')
+            ->addArgument(
+                'branch-name',
+                InputArgument::OPTIONAL,
+                'The name of the new branch. For example: "Sprint 2"'
+            )
             ->addOption(
                 'project',
                 null,
@@ -37,21 +42,15 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
-
-        $dialog = $this->getHelperSet()->get('dialog');
-        $branchText = 'Branch @environment as (i.e "Feature 2"): ';
-        $branchText = str_replace('@environment', $this->environment['title'], $branchText);
-        $validator = function ($data) {
-            if (empty($data)) {
-                throw new \RunTimeException('Please provide a value.');
-            }
-            return $data;
-        };
-        $newBranch = $dialog->askAndValidate($output, $branchText, $validator);
-        $machineName = preg_replace('/[^a-z0-9-]+/i', '', strtolower($newBranch));
+        $branchName = $input->getArgument('branch-name');
+        if (empty($branchName)) {
+            $output->writeln("<error>You must specify the name of the new branch.</error>");
+            return;
+        }
+        $machineName = preg_replace('/[^a-z0-9-]+/i', '', strtolower($branchName));
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->branchEnvironment(array('name' => $machineName, 'title' => $newBranch));
+        $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
         // Refresh the stored environments, to trigger a drush alias rebuild.
         $this->getEnvironments($this->project, TRUE);
 
@@ -61,7 +60,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         shell_exec("cd $repositoryDir && git fetch origin && git checkout $machineName");
 
         $message = '<info>';
-        $message = "\nThe environment $newBranch has been branched. \n";
+        $message = "\nThe environment $branchName has been branched. \n";
         $message .= "</info>";
         $output->writeln($message);
     }
