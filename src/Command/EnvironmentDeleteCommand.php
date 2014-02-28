@@ -17,16 +17,17 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
         $this
             ->setName('environment:delete')
             ->setDescription('Delete an environment.')
-            ->addArgument(
-                'environment',
-                InputArgument::OPTIONAL,
-                'The environment id'
-            )
             ->addOption(
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
+            )
+            ->addOption(
+                'environment',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'The environment id'
             );
     }
 
@@ -35,13 +36,17 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
+        if ($this->environment['id'] == 'master') {
+            $output->writeln("<error>Can't delete master.</error>");
+            return;
+        }
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->deleteEnvironment();
         // Refresh the stored environments, to trigger a drush alias rebuild.
         $this->getEnvironments($this->project, TRUE);
 
-        $environmentId = $input->getArgument('environment-id');
+        $environmentId = $this->environment['id'];
         $message = '<info>';
         $message = "\nThe environment $environmentId has been deleted. \n";
         $message .= "</info>";
