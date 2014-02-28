@@ -17,7 +17,7 @@ class SshKeyAddCommand extends PlatformCommand
             ->setName('ssh-key:add')
             ->setDescription('Add a new SSH key.')
             ->addArgument(
-                'key',
+                'path',
                 InputArgument::OPTIONAL,
                 'The path to the ssh key'
             );
@@ -25,17 +25,17 @@ class SshKeyAddCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $key_filename = $input->getArgument('key');
-        if (empty($key_filename)) {
+        $path = $input->getArgument('path');
+        if (empty($path)) {
             $output->writeln("<error>You must provide a path to the key.</error>");
             return;
         }
-        if (!file_exists($key_filename)) {
+        if (!file_exists($path)) {
             $output->writeln("<error>Key not found.<error>");
             return;
         }
 
-        $key = file_get_contents($key_filename);
+        $key = file_get_contents($path);
         $dialog = $this->getHelperSet()->get('dialog');
         $title = $dialog->ask($output, 'Enter a name for the key: ');
 

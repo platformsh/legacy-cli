@@ -35,6 +35,8 @@ class SshKeyListCommand extends PlatformCommand
             ->setHeaders(array('ID', 'Key'))
             ->setRows($key_rows);
         $table->render($output);
-        $output->writeln("\nYou can delete any key by running <info>platform ssh-key:delete [id]</info>.\n");
+
+        $output->writeln("\nAdd a new SSH key by running <info>platform ssh-key:add [path]</info>.");
+        $output->writeln("Delete an SSH key by running <info>platform ssh-key:delete [id]</info>.\n");
     }
 }
