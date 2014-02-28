@@ -27,7 +27,7 @@ class WelcomeCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln("\nWelcome to Commerce Platform! \n");
+        $output->writeln("\nWelcome to Commerce Platform!");
         $this->projectListCommand->execute($input, $output);
 
         $output->writeln("You can also manage your SSH keys by running <info>platform ssh-keys</info>.\n");

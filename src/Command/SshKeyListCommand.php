@@ -30,7 +30,7 @@ class SshKeyListCommand extends PlatformCommand
             $key_rows[] = $key_row;
         }
 
-        $output->writeln("Your SSH keys are: ");
+        $output->writeln("\nYour SSH keys are: ");
         $table = $this->getHelperSet()->get('table');
         $table
             ->setHeaders(array('ID', 'Key'))
