@@ -15,6 +15,7 @@ use CommerceGuys\Platform\Cli\Command\ProjectListCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyAddCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyListCommand;
+use CommerceGuys\Platform\Cli\Command\WelcomeCommand;
 
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -35,6 +36,10 @@ class Application extends BaseApplication {
 
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
+        $projectListCommand = new ProjectListCommand;
+        $this->add(new WelcomeCommand($projectListCommand));
+        $this->add($projectListCommand);
+
         $this->add(new EnvironmentBackupCommand);
         $this->add(new EnvironmentBranchCommand);
         $this->add(new EnvironmentDeleteCommand);
@@ -43,7 +48,6 @@ class Application extends BaseApplication {
         $this->add(new EnvironmentSynchronizeCommand);
         $this->add(new ProjectDeleteCommand);
         $this->add(new ProjectGetCommand);
-        $this->add(new ProjectListCommand);
         $this->add(new SshKeyAddCommand);
         $this->add(new SshKeyDeleteCommand);
         $this->add(new SshKeyListCommand);
@@ -75,8 +79,8 @@ class Application extends BaseApplication {
             }
         }
         if (!$name) {
-            $name = 'list';
-            $input = new ArrayInput(array('command' => 'list'));
+            $name = 'welcome';
+            $input = new ArrayInput(array('command' => 'welcome'));
         }
 
         $commandChain = array();
