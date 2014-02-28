@@ -38,9 +38,7 @@ class Application extends BaseApplication {
 
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
-        $projectListCommand = new ProjectListCommand;
-        $this->add(new WelcomeCommand($projectListCommand));
-        $this->add($projectListCommand);
+        $this->add(new ProjectListCommand);
 
         $this->add(new EnvironmentBackupCommand);
         $this->add(new EnvironmentBranchCommand);
@@ -89,17 +87,21 @@ class Application extends BaseApplication {
             return 0;
         }
         $name = $this->getCommandName($input);
+        if ($name) {
+            $command = $this->find($name);
+        } else {
+            $command = new WelcomeCommand($this->find('projects'));
+            $command->setApplication($this);
+            $input = new ArrayInput(array('command' => 'welcome'));
+        }
+
         if (true === $input->hasParameterOption(array('--help', '-h'))) {
             if (!$name) {
-                $name = 'help';
+                $command = $this->find('help');
                 $input = new ArrayInput(array('command' => 'help'));
             } else {
                 $this->wantHelps = true;
             }
-        }
-        if (!$name) {
-            $name = 'welcome';
-            $input = new ArrayInput(array('command' => 'welcome'));
         }
 
         $commandChain = array();
@@ -112,7 +114,7 @@ class Application extends BaseApplication {
             );
         }
         $commandChain[] = array(
-            'command' => $this->find($name),
+            'command' => $command,
             'input' => $input,
         );
 
