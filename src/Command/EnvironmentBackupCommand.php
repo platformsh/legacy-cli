@@ -17,16 +17,17 @@ class EnvironmentBackupCommand extends EnvironmentCommand
         $this
             ->setName('environment:backup')
             ->setDescription('Backup an environment.')
-            ->addArgument(
-                'environment-id',
-                InputArgument::OPTIONAL,
-                'The environment id'
-            )
             ->addOption(
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
+            )
+            ->addOption(
+                'environment',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'The environment id'
             );
     }
 

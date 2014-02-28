@@ -17,16 +17,17 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $this
             ->setName('environment:branch')
             ->setDescription('Branch an environment.')
-            ->addArgument(
-                'environment-id',
-                InputArgument::OPTIONAL,
-                'The environment id'
-            )
             ->addOption(
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
+            )
+            ->addOption(
+                'environment',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'The environment id'
             );
     }
 

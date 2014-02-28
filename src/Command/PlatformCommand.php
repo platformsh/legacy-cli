@@ -140,6 +140,60 @@ class PlatformCommand extends Command
     }
 
     /**
+     * Get the current project if the user is in a project directory.
+     *
+     * @return array|null The current project
+     */
+    protected function getCurrentProject()
+    {
+        $project = null;
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            $yaml = new Parser();
+            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/.platform-project'));
+            $projects = $this->getProjects();
+            $project = $projects[$projectConfig['id']];
+        }
+
+        return $project;
+    }
+
+    /**
+     * Find the root of the current project.
+     *
+     * The project root contains a .platform-project yaml file.
+     * The current directory tree is traversed until the file is found, or
+     * the home directory is reached.
+     */
+    protected function getProjectRoot()
+    {
+        $currentDir = getcwd();
+        $homeDir = trim(shell_exec('cd ~ && pwd'));
+        $projectRoot = null;
+        while (!$projectRoot) {
+            if (file_exists($currentDir . '/.platform-project')) {
+                $projectRoot = $currentDir;
+                break;
+            }
+
+            // The file was not found, go one directory up.
+            $dirParts = explode('/', $currentDir);
+            array_pop($dirParts);
+            if (count($dirParts) == 0) {
+                // We've reached the end, stop.
+                break;
+            }
+            $currentDir = implode('/', $dirParts);
+            if ($currentDir == $homeDir) {
+                // We've reached the home directory, stop.
+                break;
+            }
+        }
+
+        return $projectRoot;
+    }
+
+    /**
      * Return the user's projects.
      *
      * The projects are persisted in config, refreshed in PlatformListCommand.

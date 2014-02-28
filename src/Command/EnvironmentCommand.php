@@ -21,10 +21,10 @@ class EnvironmentCommand extends PlatformCommand
 
     protected function validateInput(InputInterface $input, OutputInterface $output)
     {
-        $projects = $this->getProjects();
         // Allow the project to be specified explicitly via --project.
         $projectId = $input->getOption('project');
         if (!empty($projectId)) {
+            $projects = $this->getProjects();
             if (!isset($projects[$projectId])) {
                 $output->writeln("<error>Specified project not found.</error>");
                 return;
@@ -32,28 +32,8 @@ class EnvironmentCommand extends PlatformCommand
             $this->project = $projects[$projectId];
         }
         else {
-            // Try to autodetect the project by finding .platform-project
-            // in the current directory or one of its parents.
-            $currentDir = getcwd();
-            $homeDir = trim(shell_exec('cd ~ && pwd'));
-            while (!$this->project) {
-                if (file_exists($currentDir . '/.platform-project')) {
-                    $yaml = new Parser();
-                    $projectConfig = $yaml->parse(file_get_contents($currentDir . '/.platform-project'));
-                    $this->project = $projects[$projectConfig['id']];
-                    break;
-                }
-
-                // The file was not found, go one directory up.
-                $dirParts = explode('/', $currentDir);
-                array_pop($dirParts);
-                $currentDir = implode('/', $dirParts);
-                if ($currentDir == $homeDir) {
-                    // We've reached the home directory, stop here.
-                    break;
-                }
-            }
-
+            // Autodetect the project if the user is in a project directory.
+            $this->project = $this->getCurrentProject();
             if (!$this->project) {
                 $output->writeln("<error>Could not determine the current project.</error>");
                 $output->writeln("<error>Specify it manually using --project or go to a project directory.</error>");
@@ -61,22 +41,56 @@ class EnvironmentCommand extends PlatformCommand
             }
         }
 
-        $arguments = $this->getDefinition()->getArguments();
-        if (isset($arguments['environment-id'])) {
-            $environmentId = $input->getArgument('environment-id');
-            if (empty($environmentId)) {
-                $output->writeln("<error>You must specify an environment.</error>");
-                return;
+        $options = $this->getDefinition()->getOptions();
+        if (isset($options['environment'])) {
+            // Allow the environment to be specified explicitly via --environment.
+            $environmentId = $input->getOption('environment');
+            if (!empty($environmentId)) {
+                $environments = $this->getEnvironments($this->project);
+                if (!isset($environments[$environmentId])) {
+                    $output->writeln("<error>Specified environment not found.</error>");
+                    return;
+                }
+                $this->environment = $environments[$environmentId];
             }
-            $environments = $this->getEnvironments($this->project);
-            if (!isset($environments[$environmentId])) {
-                $output->writeln("<error>Environment not found.</error>");
-                return;
+            else {
+                // Autodetect the environment if the user is in a project directory.
+                $this->environment = $this->getCurrentEnvironment($this->project);
+                if (!$this->environment) {
+                    $output->writeln("<error>Could not determine the current environment.</error>");
+                    $output->writeln("<error>Specify it manually using --environment or go to a project directory.</error>");
+                    return;
+                }
             }
-            // Store the current environment for easier access in other methods.
-            $this->environment = $environments[$environmentId];
         }
 
         return TRUE;
+    }
+
+    /**
+     * Get the current environment if the user is in a project directory.
+     *
+     * @param array $project The current project.
+     *
+     * @return array|null The current environment
+     */
+    protected function getCurrentEnvironment($project)
+    {
+        $environment = null;
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            $repositoryDir = $projectRoot . '/repository';
+            $remote = shell_exec("cd $repositoryDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}");
+            if (strpos($remote, '/') !== FALSE) {
+                $remoteParts = explode('/', trim($remote));
+                $potentialEnvironmentId = $remoteParts[1];
+                $environments = $this->getEnvironments($project);
+                if (isset($environments[$potentialEnvironmentId])) {
+                    $environment = $environments[$potentialEnvironmentId];
+                }
+            }
+        }
+
+        return $environment;
     }
 }

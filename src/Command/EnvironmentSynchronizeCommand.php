@@ -17,16 +17,17 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         $this
             ->setName('environment:synchronize')
             ->setDescription('Synchronize an environment.')
-            ->addArgument(
-                'environment-id',
-                InputArgument::OPTIONAL,
-                'The environment id'
-            )
             ->addOption(
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
+            )
+            ->addOption(
+                'environment',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'The environment id'
             );
     }
 
