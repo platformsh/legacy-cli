@@ -21,7 +21,7 @@ class LoginCommand extends PlatformCommand
     {
         $this->checkRequirements($output);
 
-        $output->writeln("\nPlease login using your Commerce Platform account to proceed.");
+        $output->writeln("\nPlease login using your Commerce Platform account to proceed.\n");
         $this->configureAccount($output);
         $output->writeln("\n<info>Thank you, you are all set.</info>");
 
@@ -84,7 +84,7 @@ class LoginCommand extends PlatformCommand
             return;
         }
 
-        $password = $dialog->askHiddenResponse($output, "\nYour password: ");
+        $password = $dialog->askHiddenResponse($output, 'Your password: ');
         $this->authenticateUser($email, $password);
     }
 
