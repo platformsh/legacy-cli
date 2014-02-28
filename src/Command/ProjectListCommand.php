@@ -30,7 +30,7 @@ class ProjectListCommand extends PlatformCommand
             $rows[] = $row;
         }
 
-        $output->writeln("Your projects are: ");
+        $output->writeln("\nYour projects are: ");
         $table = $this->getHelperSet()->get('table');
         $table
             ->setHeaders(array('ID', 'Name', "URL"))
