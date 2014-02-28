@@ -41,7 +41,7 @@ class EnvironmentListCommand extends EnvironmentCommand
             $rows[] = $row;
         }
 
-        $output->writeln("Your environments are: ");
+        $output->writeln("\nYour environments are: ");
         $table = $this->getHelperSet()->get('table');
         $table
             ->setHeaders(array('ID', 'Name', "URL"))
