@@ -17,16 +17,17 @@ class EnvironmentMergeCommand extends EnvironmentCommand
         $this
             ->setName('environment:merge')
             ->setDescription('Merge an environment.')
-            ->addArgument(
-                'environment-id',
-                InputArgument::OPTIONAL,
-                'The environment id'
-            )
             ->addOption(
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
+            )
+            ->addOption(
+                'environment',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'The environment id'
             );
     }
 

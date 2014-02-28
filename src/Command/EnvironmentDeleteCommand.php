@@ -18,7 +18,7 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             ->setName('environment:delete')
             ->setDescription('Delete an environment.')
             ->addArgument(
-                'environment-id',
+                'environment',
                 InputArgument::OPTIONAL,
                 'The environment id'
             )
