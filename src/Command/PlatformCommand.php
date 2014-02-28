@@ -189,8 +189,10 @@ class PlatformCommand extends Command
     {
         $this->loadConfig();
         $this->config += array('environments' => array());
+        $projectId = $project['id'];
 
-        if (empty($this->config['environments']) || $refresh) {
+        if (empty($this->config['environments'][$projectId]) || $refresh) {
+            $this->config['environments'][$projectId] = array();
             // Fetch and assemble a list of environments.
             $urlParts = parse_url($project['endpoint']);
             $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
@@ -203,14 +205,14 @@ class PlatformCommand extends Command
                 $environments[$environment['id']] = $environment;
             }
             // Recreate the aliases if the list of environments has changed.
-            if (array_diff_key($environments, $this->config['environments'])) {
+            if (array_diff_key($environments, $this->config['environments'][$projectId])) {
                 $this->createDrushAliases($project, $environments);
             }
 
-            $this->config['environments'] = $environments;
+            $this->config['environments'][$projectId] = $environments;
         }
 
-        return $this->config['environments'];
+        return $this->config['environments'][$projectId];
     }
 
     /**
