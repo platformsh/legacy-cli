@@ -19,9 +19,7 @@ class LoginCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->checkRequirements($output)) {
-            return;
-        }
+        $this->checkRequirements($output);
 
         $output->writeln("\nPlease login using your Commerce Platform account to proceed.");
         $this->configureAccount($output);
@@ -34,21 +32,15 @@ class LoginCommand extends PlatformCommand
 
     protected function checkRequirements($output)
     {
-        $status = true;
         if (ini_get('safe_mode')) {
-            $output->writeln('<error>PHP safe_mode must be disabled.</error>');
-            $status = false;
+            throw new \Exception('PHP safe_mode must be disabled.');
         }
         if (!shell_exec('which git')) {
-            $output->writeln('<error>Git must be installed.</error>');
-            $status = false;
+            throw new \Exception('Git must be installed.');
         }
         if (!shell_exec('which drush')) {
-            $output->writeln('<error>Drush must be installed.</error>');
-            $status = false;
+            throw new \Exception('Drush must be installed.');
         }
-
-        return $status;
     }
 
     protected function configureAccount($output)
