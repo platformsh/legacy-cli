@@ -16,6 +16,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:branch')
+            ->setAliases(array('branch'))
             ->setDescription('Branch an environment.')
             ->addOption(
                 'project',
@@ -53,6 +54,11 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $client->branchEnvironment(array('name' => $machineName, 'title' => $newBranch));
         // Refresh the stored environments, to trigger a drush alias rebuild.
         $this->getEnvironments($this->project, TRUE);
+
+        // Checkout the new branch locally.
+        $projectRoot = $this->getProjectRoot();
+        $repositoryDir = $projectRoot . '/repository';
+        shell_exec("cd $repositoryDir && git fetch origin && git checkout $machineName");
 
         $message = '<info>';
         $message = "\nThe environment $newBranch has been branched. \n";
