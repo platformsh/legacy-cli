@@ -92,7 +92,7 @@ class Application extends BaseApplication {
         if ($name) {
             $command = $this->find($name);
         } else {
-            $command = new WelcomeCommand($this->find('projects'));
+            $command = new WelcomeCommand($this->find('projects'), $this->find('environments'));
             $command->setApplication($this);
             $input = new ArrayInput(array('command' => 'welcome'));
         }
