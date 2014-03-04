@@ -26,7 +26,7 @@ export PATH=/projects/platform/platform-cli
 ```
 or create a symlink:
 ```
-ln -s /projects/platform/platform-cli /usr/local/bin/platform
+ln -s /projects/platform/platform-cli/platform /usr/local/bin/platform
 ```
 
 Now you can run `platform` and see all the available commands !
