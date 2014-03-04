@@ -19,8 +19,5 @@
     ],
     "bin": [
         "platform"
-    ],
-    "config": {
-        "bin-dir": "bin"
-    }
+    ]
 }

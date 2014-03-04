@@ -24,6 +24,10 @@ Add the `platform` command to your path by adding this line to you bashrc file (
 ```
 export PATH=/projects/platform/platform-cli
 ```
+or create a symlink:
+```
+ln -s /projects/platform/platform-cli/platform /usr/local/bin/platform
+```
 
 Now you can run `platform` and see all the available commands !
 

@@ -5,10 +5,9 @@
 // ensure there's always a path to the cli root.
 define('CLI_ROOT', __DIR__);
 
-require 'vendor/autoload.php';
+require CLI_ROOT . '/vendor/autoload.php';
 
 use CommerceGuys\Platform\Cli\Application;
-
 
 $application = new Application();
 $application->run();
