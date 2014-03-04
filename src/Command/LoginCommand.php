@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use Guzzle\Http\ClientInterface;
+use Guzzle\Http\Exception\ClientErrorResponseException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
@@ -85,7 +86,13 @@ class LoginCommand extends PlatformCommand
         }
 
         $password = $dialog->askHiddenResponse($output, 'Your password: ');
-        $this->authenticateUser($email, $password);
+        try {
+            $this->authenticateUser($email, $password);
+        }
+        catch (ClientErrorResponseException $e) {
+            $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
+            $this->configureAccount($output);
+        }
     }
 
     protected function hasConfiguration()
