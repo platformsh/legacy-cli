@@ -296,8 +296,12 @@ class PlatformCommand extends Command
             $export .= ";\n";
         }
 
-        $homeDir = trim(shell_exec('cd ~ && pwd'));
-        $filename = $homeDir . '/.drush/' . $project['id'] . '.aliases.drushrc.php';
+        // Ensure the existence of the .drush directory.
+        $drushDir = trim(shell_exec('cd ~ && pwd')) . '/.drush';
+        if (!is_dir($drushDir)) {
+            mkdir($drushDir);
+        }
+        $filename = $drushDir . '/' . $project['id'] . '.aliases.drushrc.php';
         file_put_contents($filename, $export);
     }
 
