@@ -81,7 +81,7 @@ class EnvironmentCommand extends PlatformCommand
         if ($projectRoot) {
             $repositoryDir = $projectRoot . '/repository';
             $remote = shell_exec("cd $repositoryDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}");
-            if (strpos($remote, '/') !== FALSE) {
+            if (strpos($remote, '/') !== false) {
                 $remoteParts = explode('/', trim($remote));
                 $potentialEnvironmentId = $remoteParts[1];
                 $environments = $this->getEnvironments($project);

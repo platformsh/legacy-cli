@@ -36,10 +36,12 @@ class LoginCommand extends PlatformCommand
         if (ini_get('safe_mode')) {
             throw new \Exception('PHP safe_mode must be disabled.');
         }
-        if (!shell_exec('which git')) {
+        $gitVersion = shell_exec('git version');
+        if (strpos($gitVersion, 'git version') === false) {
             throw new \Exception('Git must be installed.');
         }
-        if (!shell_exec('which drush')) {
+        $drushVersion = shell_exec('drush version');
+        if (strpos($drushVersion, 'Drush Version') === false) {
             throw new \Exception('Drush must be installed.');
         }
     }
