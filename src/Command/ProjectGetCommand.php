@@ -75,7 +75,7 @@ class ProjectGetCommand extends PlatformCommand
         $folders[] = $id . '/repository';
         $folders[] = $id . '/shared';
         foreach ($folders as $folder) {
-            shell_exec("mkdir $folder");
+            mkdir($folder);
         }
 
         // Create the .platform-project file.
