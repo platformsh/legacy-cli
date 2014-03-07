@@ -97,11 +97,12 @@ class EnvironmentListCommand extends EnvironmentCommand
         $table = $this->buildEnvironmentTable($tree);
         $table->render($output);
 
-        $output->writeln("\nDelete the current environment by running <info>platform environment:delete</info>.");
+        $output->writeln("\nCheckout a different environment by running <info>platform checkout [id]</info>.");
+        $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.\n");
+        $output->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
         $output->writeln("Backup the current environment by running <info>platform environment:backup</info>.");
         $output->writeln("Merge the current environment by running <info>platform environment:merge</info>.");
         $output->writeln("Sync the current environment by running <info>platform environment:synchronize</info>.");
-        $output->writeln("Branch a new environment by running <info>platform environment:branch</info>.");
         $output->writeln("Note: You can specify a different environment using the --environment option.\n");
     }
 }
