@@ -95,10 +95,4 @@ class LoginCommand extends PlatformCommand
         }
     }
 
-    protected function hasConfiguration()
-    {
-        $homeDir = shell_exec('cd ~ && pwd');
-        return file_exists($homeDir . '/.platform');
-    }
-
 }
