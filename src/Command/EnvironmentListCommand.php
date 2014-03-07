@@ -25,7 +25,6 @@ class EnvironmentListCommand extends EnvironmentCommand
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
             );
-        ;
     }
 
     /**
@@ -63,8 +62,12 @@ class EnvironmentListCommand extends EnvironmentCommand
     {
         $rows = array();
         foreach ($tree as $environment) {
+            $id = str_repeat(' ', $indent) . $environment['id'];
+            if ($environment['id'] == $this->currentEnvironment['id']) {
+                $id .= "<info>*</info>";
+            }
             $rows[] = array(
-                str_repeat(' ', $indent) . $environment['id'],
+                $id,
                 $environment['title'],
                 $environment['_links']['public-url']['href'],
             );
@@ -83,6 +86,7 @@ class EnvironmentListCommand extends EnvironmentCommand
             return;
         }
 
+        $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
         $environments = $this->getEnvironments($this->project, TRUE);
         $tree = $this->buildEnvironmentTree($environments);
 
@@ -97,7 +101,8 @@ class EnvironmentListCommand extends EnvironmentCommand
         $table = $this->buildEnvironmentTable($tree);
         $table->render($output);
 
-        $output->writeln("\nCheckout a different environment by running <info>platform checkout [id]</info>.");
+        $output->writeln("\n<info>*</info> - Indicates the current environment.");
+        $output->writeln("Checkout a different environment by running <info>platform checkout [id]</info>.");
         $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.\n");
         $output->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
         $output->writeln("Backup the current environment by running <info>platform environment:backup</info>.");
