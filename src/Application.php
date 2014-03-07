@@ -130,12 +130,27 @@ class Application extends BaseApplication {
     }
 
     /**
+     * @return string The absolute path to the user's home directory.
+     */
+    public function getHomeDirectory()
+    {
+        $home = getenv('HOME');
+        if (empty($home)) {
+            // Windows compatibility.
+            if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+                $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+            }
+        }
+
+        return $home;
+    }
+
+    /**
      * @return boolean Whether the user has configured the CLI.
      */
     protected function hasConfiguration()
     {
-        $homeDir = trim(shell_exec('cd ~ && pwd'));
-        return file_exists($homeDir . '/.platform');
+        return file_exists($this->getHomeDirectory() . '/.platform');
     }
 
 }

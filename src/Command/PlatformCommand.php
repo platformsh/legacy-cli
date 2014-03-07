@@ -32,9 +32,10 @@ class PlatformCommand extends Command
     protected function loadConfig()
     {
         if (!$this->config) {
-            $homeDir = trim(shell_exec('cd ~ && pwd'));
+            $application = $this->getApplication();
+            $configPath = $application->getHomeDirectory() . '/.platform';
             $yaml = new Parser();
-            $this->config = $yaml->parse(file_get_contents($homeDir . '/.platform'));
+            $this->config = $yaml->parse(file_get_contents($configPath));
         }
 
         return $this->config;
@@ -167,8 +168,9 @@ class PlatformCommand extends Command
      */
     protected function getProjectRoot()
     {
+        $application = $this->getApplication();
+        $homeDir = $application->getHomeDirectory();
         $currentDir = getcwd();
-        $homeDir = trim(shell_exec('cd ~ && pwd'));
         $projectRoot = null;
         while (!$projectRoot) {
             if (file_exists($currentDir . '/.platform-project')) {
@@ -297,7 +299,8 @@ class PlatformCommand extends Command
         }
 
         // Ensure the existence of the .drush directory.
-        $drushDir = trim(shell_exec('cd ~ && pwd')) . '/.drush';
+        $application = $this->getApplication();
+        $drushDir = $application->getHomeDirectory() . '/.drush';
         if (!is_dir($drushDir)) {
             mkdir($drushDir);
         }
@@ -316,9 +319,10 @@ class PlatformCommand extends Command
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
             }
 
+            $application = $this->getApplication();
+            $configPath = $application->getHomeDirectory() . '/.platform';
             $dumper = new Dumper();
-            $homeDir = trim(shell_exec('cd ~ && pwd'));
-            file_put_contents($homeDir . '/.platform', $dumper->dump($this->config));
+            file_put_contents($configPath, $dumper->dump($this->config));
         }
     }
 }
