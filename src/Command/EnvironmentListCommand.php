@@ -62,6 +62,12 @@ class EnvironmentListCommand extends EnvironmentCommand
     {
         $rows = array();
         foreach ($tree as $environment) {
+            // Inactive environments have no public url.
+            $link = '';
+            if (!empty($environment['_links']['public-url'])) {
+                $link = $environment['_links']['public-url']['href'];
+            }
+
             $id = str_repeat(' ', $indent) . $environment['id'];
             if ($environment['id'] == $this->currentEnvironment['id']) {
                 $id .= "<info>*</info>";
@@ -69,7 +75,7 @@ class EnvironmentListCommand extends EnvironmentCommand
             $rows[] = array(
                 $id,
                 $environment['title'],
-                $environment['_links']['public-url']['href'],
+                $link,
             );
 
             $rows = array_merge($rows, $this->buildEnvironmentRows($environment['children'], $indent + 1));
