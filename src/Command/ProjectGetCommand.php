@@ -11,6 +11,14 @@ use Symfony\Component\Yaml\Dumper;
 class ProjectGetCommand extends PlatformCommand
 {
 
+    protected $buildCommand;
+
+    public function __construct($buildCommand)
+    {
+        $this->buildCommand = $buildCommand;
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this
@@ -91,5 +99,15 @@ class ProjectGetCommand extends PlatformCommand
         $repositoryDir = $id . '/repository';
         $command = "git clone --branch $environment $gitUrl $repositoryDir";
         passthru($command);
+
+        // Launch the first build.
+        $projectRoot = realpath($id);
+        try {
+            $this->buildCommand->build($projectRoot);
+        }
+        catch (\Exception $e) {
+            $environmentName = $environmentList[$environmentIndex]['title'];
+            $output->writeln("<comment>The '$environmentName' environment could not be built: \n" . $e->getMessage() . "</comment>");
+        }
     }
 }

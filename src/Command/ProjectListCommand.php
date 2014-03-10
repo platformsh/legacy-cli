@@ -21,7 +21,6 @@ class ProjectListCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projects = $this->getProjects(true);
-        var_dump($projects);
         $rows = array();
         foreach ($projects as $projectId => $project) {
             $row = array();

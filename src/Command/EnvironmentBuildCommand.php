@@ -30,13 +30,23 @@ class EnvironmentBuildCommand extends EnvironmentCommand
     {
         $projectRoot = $this->getProjectRoot();
         if (empty($projectRoot)) {
-            $output->writeln("<error>You must specify run this command from a project folder.</error>");
+            $output->writeln("<error>You must run this command from a project folder.</error>");
             return;
         }
         if (!$this->validateInput($input, $output)) {
             return;
         }
 
+        try {
+            $this->build($projectRoot);
+        }
+        catch (\Exception $e) {
+            $output->writeln("<error>" . $e->getMessage() . '</error>');
+        }
+    }
+
+    public function build($projectRoot)
+    {
         chdir($projectRoot);
         $buildDir = 'builds/' . date('Y-m-d--H-i-s') . '--' . $this->environment['id'];
         // @todo Implement logic for detecting a Drupal project VS others.
@@ -51,12 +61,11 @@ class EnvironmentBuildCommand extends EnvironmentCommand
         }
     }
 
-    protected function buildDrupal($buildDir, $output)
+    protected function buildDrupal($buildDir)
     {
         $profiles = glob('repository/*.profile');
         if (count($profiles) > 1) {
-            $output->writeln("<error>Not supported: Found multiple files ending in '*.profile' in the repository.</error>");
-            return;
+            throw new \Exception("Found multiple files ending in '*.profile' in the repository.");
         }
         elseif (count($profiles) == 1) {
             // Find the contrib make file.
@@ -67,8 +76,7 @@ class EnvironmentBuildCommand extends EnvironmentCommand
                 $projectMake = 'repository/drupal-org.make';
             }
             else {
-                $output->writeln("<error>Couldn't find a project.make or drupal-org.make in the repository.</error>");
-                return;
+                throw new \Exception("Couldn't find a project.make or drupal-org.make in the repository.");
             }
             // Find the core make file.
             if (file_exists('repository/project-core.make')) {
@@ -78,8 +86,7 @@ class EnvironmentBuildCommand extends EnvironmentCommand
                 $projectCoreMake = 'repository/drupal-org-core.make';
             }
             else {
-                $output->writeln("<error>Couldn't find a project-core.make or drupal-org-core.make in the repository.</error>");
-                return;
+                throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
             }
 
             shell_exec("drush make -y $projectCoreMake $buildDir");

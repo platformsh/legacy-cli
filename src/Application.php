@@ -42,16 +42,17 @@ class Application extends BaseApplication {
 
         $this->add(new ProjectListCommand);
 
+        $buildCommand = new EnvironmentBuildCommand;
+        $this->add($buildCommand);
         $this->add(new EnvironmentBackupCommand);
-        $this->add(new EnvironmentBuildCommand);
-        $this->add(new EnvironmentBranchCommand);
+        $this->add(new EnvironmentBranchCommand($buildCommand));
         $this->add(new EnvironmentCheckoutCommand);
         $this->add(new EnvironmentDeleteCommand);
         $this->add(new EnvironmentListCommand);
         $this->add(new EnvironmentMergeCommand);
         $this->add(new EnvironmentSynchronizeCommand);
         $this->add(new ProjectDeleteCommand);
-        $this->add(new ProjectGetCommand);
+        $this->add(new ProjectGetCommand($buildCommand));
         $this->add(new SshKeyAddCommand);
         $this->add(new SshKeyDeleteCommand);
         $this->add(new SshKeyListCommand);
