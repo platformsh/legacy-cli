@@ -36,8 +36,8 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
-        if ($this->environment['id'] == 'master') {
-            $output->writeln("<error>Can't delete master.</error>");
+        if (!$this->operationAllowed('delete')) {
+            $output->writeln("<error>Operation not permitted: The current environment can't be deleted.</error>");
             return;
         }
 

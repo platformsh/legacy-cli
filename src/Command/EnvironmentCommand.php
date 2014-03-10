@@ -68,6 +68,14 @@ class EnvironmentCommand extends PlatformCommand
     }
 
     /**
+     * @return bool Whether the operation is allowed on the current environment.
+     */
+    protected function operationAllowed($operation)
+    {
+        return $this->environment && isset($this->environment['_links']['#' . $operation]);
+    }
+
+    /**
      * Get the current environment if the user is in a project directory.
      *
      * @param array $project The current project.

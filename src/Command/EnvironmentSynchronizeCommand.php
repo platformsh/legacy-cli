@@ -36,6 +36,10 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
+        if (!$this->operationAllowed('synchronize')) {
+            $output->writeln("<error>Operation not permitted: The current environment can't be synchronized.</error>");
+            return;
+        }
 
         $dialog = $this->getHelperSet()->get('dialog');
         $syncCodeText = "Synchronize code? [Y/N] ";

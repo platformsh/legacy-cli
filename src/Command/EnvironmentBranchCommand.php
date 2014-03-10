@@ -42,6 +42,10 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
+        if (!$this->operationAllowed('branch')) {
+            $output->writeln("<error>Operation not permitted: The current environment can't be branched.</error>");
+            return;
+        }
         $branchName = $input->getArgument('branch-name');
         if (empty($branchName)) {
             $output->writeln("<error>You must specify the name of the new branch.</error>");
