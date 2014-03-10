@@ -4,6 +4,7 @@ namespace CommerceGuys\Platform\Cli;
 
 use CommerceGuys\Platform\Cli\Command\LoginCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentBackupCommand;
+use CommerceGuys\Platform\Cli\Command\EnvironmentBuildCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentBranchCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentCheckoutCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentDeleteCommand;
@@ -42,6 +43,7 @@ class Application extends BaseApplication {
         $this->add(new ProjectListCommand);
 
         $this->add(new EnvironmentBackupCommand);
+        $this->add(new EnvironmentBuildCommand);
         $this->add(new EnvironmentBranchCommand);
         $this->add(new EnvironmentCheckoutCommand);
         $this->add(new EnvironmentDeleteCommand);
