@@ -216,10 +216,12 @@ class PlatformCommand extends Command
             // Extract the project id and rekey the array.
             $projects = array();
             foreach ($data['projects'] as $project) {
-                $urlParts = explode('/', $project['uri']);
-                $id = end($urlParts);
-                $project['id'] = $id;
-                $projects[$id] = $project;
+                if (!empty($project['uri'])) {
+                    $urlParts = explode('/', $project['uri']);
+                    $id = end($urlParts);
+                    $project['id'] = $id;
+                    $projects[$id] = $project;
+                }
             }
             $this->config['projects'] = $projects;
         }
