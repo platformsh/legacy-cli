@@ -40,7 +40,7 @@ class EnvironmentBackupCommand extends EnvironmentCommand
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->backupEnvironment();
 
-        $environmentId = $input->getArgument('environment-id');
+        $environmentId = $this->environment['id'];
         $message = '<info>';
         $message = "\nA backup of environment $environmentId has been created. \n";
         $message .= "</info>";

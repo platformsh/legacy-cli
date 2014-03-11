@@ -42,7 +42,7 @@ class EnvironmentMergeCommand extends EnvironmentCommand
         // Refresh the stored environments, to trigger a drush alias rebuild.
         $this->getEnvironments($this->project, TRUE);
 
-        $environmentId = $input->getArgument('environment-id');
+        $environmentId = $this->environment['id'];
         $message = '<info>';
         $message = "\nThe environment $environmentId has been merged. \n";
         $message .= "</info>";

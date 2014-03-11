@@ -58,7 +58,7 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->synchronizeEnvironment($params);
 
-        $environmentId = $input->getArgument('environment-id');
+        $environmentId = $this->environment['id'];
         $message = '<info>';
         $message = "\nThe environment $environmentId has been synchronized. \n";
         $message .= "</info>";
