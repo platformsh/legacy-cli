@@ -16,7 +16,7 @@ class EnvironmentCommand extends PlatformCommand
     {
         $options = $this->getDefinition()->getOptions();
         // Allow the project to be specified explicitly via --project.
-        $projectId = isset($options['projects']) ? $input->getOption('project') : null;
+        $projectId = isset($options['project']) ? $input->getOption('project') : null;
         if (!empty($projectId)) {
             $projects = $this->getProjects();
             if (!isset($projects[$projectId])) {
