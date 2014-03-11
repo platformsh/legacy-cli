@@ -64,7 +64,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
         // Refresh the stored environments, to trigger a drush alias rebuild.
-        $this->getEnvironments($this->project, TRUE);
+        $this->getEnvironments($this->project, true);
 
         // Checkout the new branch locally.
         $projectRoot = $this->getProjectRoot();
@@ -75,8 +75,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $projectRoot = $this->getProjectRoot();
         try {
             $this->buildCommand->build($projectRoot);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $output->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
         }
 

@@ -39,8 +39,7 @@ class EnvironmentBuildCommand extends EnvironmentCommand
 
         try {
             $this->build($projectRoot);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $output->writeln("<error>" . $e->getMessage() . '</error>');
         }
     }
@@ -61,31 +60,29 @@ class EnvironmentBuildCommand extends EnvironmentCommand
         }
     }
 
+    /**
+     * Build a Drupal project in the provided directory.
+     */
     protected function buildDrupal($buildDir)
     {
         $profiles = glob('repository/*.profile');
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the repository.");
-        }
-        elseif (count($profiles) == 1) {
+        } elseif (count($profiles) == 1) {
             // Find the contrib make file.
             if (file_exists('repository/project.make')) {
                 $projectMake = 'repository/project.make';
-            }
-            elseif (file_exists("repository/drupal-org.make")) {
+            } elseif (file_exists("repository/drupal-org.make")) {
                 $projectMake = 'repository/drupal-org.make';
-            }
-            else {
+            } else {
                 throw new \Exception("Couldn't find a project.make or drupal-org.make in the repository.");
             }
             // Find the core make file.
             if (file_exists('repository/project-core.make')) {
                 $projectCoreMake = 'repository/project-core.make';
-            }
-            elseif (file_exists("repository/drupal-org-core.make")) {
+            } elseif (file_exists("repository/drupal-org-core.make")) {
                 $projectCoreMake = 'repository/drupal-org-core.make';
-            }
-            else {
+            } else {
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
             }
 
@@ -98,8 +95,7 @@ class EnvironmentBuildCommand extends EnvironmentCommand
                 shell_exec("drush make -y --no-core --contrib-destination=. $projectMake $profileDir");
                 $this->copy('repository', $profileDir);
             }
-        }
-        elseif (file_exists('repository/project.make')) {
+        } elseif (file_exists('repository/project.make')) {
             shell_exec("drush make -y repository/project.make $buildDir");
             $this->copy('repository', $buildDir . '/sites/default');
         }
@@ -111,7 +107,7 @@ class EnvironmentBuildCommand extends EnvironmentCommand
     }
 
     /**
-     * Copies all files and folders from $source into $destination.
+     * Copy all files and folders from $source into $destination.
      */
     protected function copy($source, $destination)
     {
@@ -125,8 +121,7 @@ class EnvironmentBuildCommand extends EnvironmentCommand
             if (!in_array($file, $skip)) {
                 if (is_dir($source . '/' . $file)) {
                     $this->copy($source . '/' . $file, $destination . '/' . $file);
-                }
-                else {
+                } else {
                     copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }
@@ -135,7 +130,7 @@ class EnvironmentBuildCommand extends EnvironmentCommand
     }
 
     /**
-     * Symlinks all files and folders from $source into $destination.
+     * Symlink all files and folders from $source into $destination.
      */
     protected function symlink($source, $destination)
     {

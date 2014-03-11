@@ -296,7 +296,7 @@ class PlatformCommand extends Command
               'remote-host' => $sshUrl['host'],
               'remote-user' => $sshUrl['user'],
             );
-            $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($alias, TRUE);
+            $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($alias, true);
             $export .= ";\n";
         }
 
@@ -311,7 +311,7 @@ class PlatformCommand extends Command
     }
 
     /**
-     * Destructor: Writes the configuration to disk.
+     * Destructor: Write the configuration to disk.
      */
     public function __destruct()
     {

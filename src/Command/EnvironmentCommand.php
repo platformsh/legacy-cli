@@ -31,8 +31,7 @@ class EnvironmentCommand extends PlatformCommand
                 return;
             }
             $this->project = $projects[$projectId];
-        }
-        else {
+        } else {
             // Autodetect the project if the user is in a project directory.
             $this->project = $this->getCurrentProject();
             if (!$this->project) {
@@ -52,8 +51,7 @@ class EnvironmentCommand extends PlatformCommand
                     return;
                 }
                 $this->environment = $environments[$environmentId];
-            }
-            else {
+            } else {
                 // Autodetect the environment if the user is in a project directory.
                 $this->environment = $this->getCurrentEnvironment($this->project);
                 if (!$this->environment) {
@@ -64,7 +62,7 @@ class EnvironmentCommand extends PlatformCommand
             }
         }
 
-        return TRUE;
+        return true;
     }
 
     /**

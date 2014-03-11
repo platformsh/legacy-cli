@@ -30,7 +30,7 @@ class EnvironmentListCommand extends EnvironmentCommand
     /**
      * Build a tree out of a list of environments.
      */
-    protected function buildEnvironmentTree($environments, $parent = NULL)
+    protected function buildEnvironmentTree($environments, $parent = null)
     {
         $children = array();
         foreach ($environments as $environment) {
@@ -93,7 +93,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         }
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
-        $environments = $this->getEnvironments($this->project, TRUE);
+        $environments = $this->getEnvironments($this->project, true);
         $tree = $this->buildEnvironmentTree($environments);
 
         // To make the display nicer, we move all the children of master

@@ -104,8 +104,7 @@ class ProjectGetCommand extends PlatformCommand
         $projectRoot = realpath($id);
         try {
             $this->buildCommand->build($projectRoot);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $environmentName = $environmentList[$environmentIndex]['title'];
             $output->writeln("<comment>The '$environmentName' environment could not be built: \n" . $e->getMessage() . "</comment>");
         }

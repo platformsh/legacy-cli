@@ -37,8 +37,7 @@ class WelcomeCommand extends PlatformCommand
             $output->write("\nYour project is <info>$projectName</info>.");
             $this->environmentListCommand->execute($input, $output);
             $output->writeln("You can list other projects by running <info>platform projects</info>.");
-        }
-        else {
+        } else {
             // The project is not known. Show all projects.
             $this->projectListCommand->execute($input, $output);
         }

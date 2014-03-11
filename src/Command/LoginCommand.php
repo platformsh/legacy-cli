@@ -66,8 +66,7 @@ class LoginCommand extends PlatformCommand
             $createAccount = $dialog->askConfirmation($output, $createAccountText, false);
             if ($createAccount) {
                 // @todo
-            }
-            else {
+            } else {
                 // Start from the beginning.
                 return $this->configureAccount($output);
             }
@@ -90,8 +89,7 @@ class LoginCommand extends PlatformCommand
         $password = $dialog->askHiddenResponse($output, 'Your password: ');
         try {
             $this->authenticateUser($email, $password);
-        }
-        catch (ClientErrorResponseException $e) {
+        } catch (ClientErrorResponseException $e) {
             $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
             $this->configureAccount($output);
         }
