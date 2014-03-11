@@ -2,15 +2,8 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
-use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
-use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
-use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
-use Guzzle\Service\Client;
-use Guzzle\Service\Description\ServiceDescription;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Parser;
 
 class EnvironmentCommand extends PlatformCommand
 {

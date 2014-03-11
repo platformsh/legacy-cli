@@ -2,11 +2,9 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
-use Guzzle\Http\ClientInterface;
 use Guzzle\Http\Exception\ClientErrorResponseException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Dumper;
 
 class LoginCommand extends PlatformCommand
 {
