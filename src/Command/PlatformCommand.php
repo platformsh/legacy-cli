@@ -160,6 +160,33 @@ class PlatformCommand extends Command
     }
 
     /**
+     * Get the current environment if the user is in a project directory.
+     *
+     * @param array $project The current project.
+     *
+     * @return array|null The current environment
+     */
+    protected function getCurrentEnvironment($project)
+    {
+        $environment = null;
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            $repositoryDir = $projectRoot . '/repository';
+            $remote = shell_exec("cd $repositoryDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}");
+            if (strpos($remote, '/') !== false) {
+                $remoteParts = explode('/', trim($remote));
+                $potentialEnvironmentId = $remoteParts[1];
+                $environments = $this->getEnvironments($project);
+                if (isset($environments[$potentialEnvironmentId])) {
+                    $environment = $environments[$potentialEnvironmentId];
+                }
+            }
+        }
+
+        return $environment;
+    }
+
+    /**
      * Find the root of the current project.
      *
      * The project root contains a .platform-project yaml file.

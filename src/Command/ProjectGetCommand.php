@@ -11,14 +11,6 @@ use Symfony\Component\Yaml\Dumper;
 class ProjectGetCommand extends PlatformCommand
 {
 
-    protected $buildCommand;
-
-    public function __construct($buildCommand)
-    {
-        $this->buildCommand = $buildCommand;
-        parent::__construct();
-    }
-
     protected function configure()
     {
         $this
@@ -101,9 +93,11 @@ class ProjectGetCommand extends PlatformCommand
         passthru($command);
 
         // Launch the first build.
+        $application = $this->getApplication();
         $projectRoot = realpath($id);
         try {
-            $this->buildCommand->build($projectRoot);
+            $buildCommand = $application->find('build');
+            $buildCommand->build($projectRoot, $environment);
         } catch (\Exception $e) {
             $environmentName = $environmentList[$environmentIndex]['title'];
             $output->writeln("<comment>The '$environmentName' environment could not be built: \n" . $e->getMessage() . "</comment>");

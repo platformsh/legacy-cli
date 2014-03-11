@@ -12,14 +12,6 @@ use Symfony\Component\Yaml\Dumper;
 class EnvironmentBranchCommand extends EnvironmentCommand
 {
 
-    protected $buildCommand;
-
-    public function __construct($buildCommand)
-    {
-        $this->buildCommand = $buildCommand;
-        parent::__construct();
-    }
-
     protected function configure()
     {
         $this
@@ -72,9 +64,11 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         shell_exec("cd $repositoryDir && git fetch origin && git checkout $machineName");
 
         // Build the new branch.
+        $application = $this->getApplication();
         $projectRoot = $this->getProjectRoot();
         try {
-            $this->buildCommand->build($projectRoot);
+            $buildCommand = $application->find('build');
+            $buildCommand->build($projectRoot, $machineName);
         } catch (\Exception $e) {
             $output->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
         }

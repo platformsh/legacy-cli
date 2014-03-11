@@ -2,28 +2,20 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
-use Guzzle\Http\ClientInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Dumper;
 
-class EnvironmentBuildCommand extends EnvironmentCommand
+class ProjectBuildCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:build')
+            ->setName('project:build')
             ->setAliases(array('build'))
-            ->setDescription('Builds an environment.')
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The environment id'
-            );
+            ->setDescription('Builds the current project.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -33,21 +25,30 @@ class EnvironmentBuildCommand extends EnvironmentCommand
             $output->writeln("<error>You must run this command from a project folder.</error>");
             return;
         }
-        if (!$this->validateInput($input, $output)) {
+        $project = $this->getCurrentProject();
+        $environment = $this->getCurrentEnvironment($project);
+        if (!$environment) {
+            $output->writeln("<error>Could not determine the current environment.</error>");
             return;
         }
 
         try {
-            $this->build($projectRoot);
+            $this->build($projectRoot, $environment['id']);
         } catch (\Exception $e) {
             $output->writeln("<error>" . $e->getMessage() . '</error>');
         }
     }
 
-    public function build($projectRoot)
+    /**
+     * Build the project.
+     *
+     * @param string $projectRoot The path to the project to be built.
+     * @param string $environmentId The environment id, used as a build suffix.
+     */
+    public function build($projectRoot, $environmentId)
     {
         chdir($projectRoot);
-        $buildDir = 'builds/' . date('Y-m-d--H-i-s') . '--' . $this->environment['id'];
+        $buildDir = 'builds/' . date('Y-m-d--H-i-s') . '--' . $environmentId;
         // @todo Implement logic for detecting a Drupal project VS others.
         $status = $this->buildDrupal($buildDir);
         if ($status) {

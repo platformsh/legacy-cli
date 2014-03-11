@@ -4,13 +4,13 @@ namespace CommerceGuys\Platform\Cli;
 
 use CommerceGuys\Platform\Cli\Command\LoginCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentBackupCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentBuildCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentBranchCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentCheckoutCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentListCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentMergeCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentSynchronizeCommand;
+use CommerceGuys\Platform\Cli\Command\ProjectBuildCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectGetCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectListCommand;
@@ -42,18 +42,16 @@ class Application extends BaseApplication {
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
         $this->add(new ProjectListCommand);
-
-        $buildCommand = new EnvironmentBuildCommand;
-        $this->add($buildCommand);
         $this->add(new EnvironmentBackupCommand);
-        $this->add(new EnvironmentBranchCommand($buildCommand));
+        $this->add(new EnvironmentBranchCommand);
         $this->add(new EnvironmentCheckoutCommand);
         $this->add(new EnvironmentDeleteCommand);
         $this->add(new EnvironmentListCommand);
         $this->add(new EnvironmentMergeCommand);
         $this->add(new EnvironmentSynchronizeCommand);
+        $this->add(new ProjectBuildCommand);
         $this->add(new ProjectDeleteCommand);
-        $this->add(new ProjectGetCommand($buildCommand));
+        $this->add(new ProjectGetCommand);
         $this->add(new SshKeyAddCommand);
         $this->add(new SshKeyDeleteCommand);
         $this->add(new SshKeyListCommand);
