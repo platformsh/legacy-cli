@@ -50,7 +50,7 @@ class EnvironmentBuildCommand extends EnvironmentCommand
         chdir($projectRoot);
         $buildDir = 'builds/' . date('Y-m-d--H-i-s') . '--' . $this->environment['id'];
         // @todo Implement logic for detecting a Drupal project VS others.
-        $status = $this->buildDrupal($buildDir, $output);
+        $status = $this->buildDrupal($buildDir);
         if ($status) {
             // Point www to the latest build.
             if (file_exists('www')) {
