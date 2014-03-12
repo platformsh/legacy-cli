@@ -259,43 +259,38 @@ class PlatformCommand extends Command
     /**
      * Return the user's environments.
      *
-     * The environments are persisted in config, refreshed in
-     * EnvironmentListCommand. This persistence allows environment commands to
-     * avoid loading the environment list each time.
-     * Since the previous list is available on refresh, it can be compared,
-     * allowing drush aliases to be refreshed accordingly.
+     * The environments are persisted in config, so that they can be compared
+     * on next load. This allows the drush aliases to be refreshed only
+     * if the environment list has changed.
      *
-     * @param array $project  The project.
-     * @param boolean $refresh Whether to refetch the list of projects.
+     * @param array $project The project.
      *
      * @return array The user's environments.
      */
-    protected function getEnvironments($project, $refresh = false)
+    protected function getEnvironments($project)
     {
         $this->loadConfig();
-        $this->config += array('environments' => array());
         $projectId = $project['id'];
-
-        if (empty($this->config['environments'][$projectId]) || $refresh) {
+        if (!isset($this->config['environments'][$projectId])) {
             $this->config['environments'][$projectId] = array();
-            // Fetch and assemble a list of environments.
-            $urlParts = parse_url($project['endpoint']);
-            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
-            $client = $this->getPlatformClient($project['endpoint']);
-            $environments = array();
-            foreach ($client->getEnvironments() as $environment) {
-                // The environments endpoint is temporarily not serving
-                // absolute urls, so we need to construct one.
-                $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
-                $environments[$environment['id']] = $environment;
-            }
-            // Recreate the aliases if the list of environments has changed.
-            if (array_diff_key($environments, $this->config['environments'][$projectId])) {
-                $this->createDrushAliases($project, $environments);
-            }
-
-            $this->config['environments'][$projectId] = $environments;
         }
+
+        // Fetch and assemble a list of environments.
+        $urlParts = parse_url($project['endpoint']);
+        $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
+        $client = $this->getPlatformClient($project['endpoint']);
+        $environments = array();
+        foreach ($client->getEnvironments() as $environment) {
+            // The environments endpoint is temporarily not serving
+            // absolute urls, so we need to construct one.
+            $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
+            $environments[$environment['id']] = $environment;
+        }
+        // Recreate the aliases if the list of environments has changed.
+        if (array_diff_key($environments, $this->config['environments'][$projectId])) {
+            $this->createDrushAliases($project, $environments);
+        }
+        $this->config['environments'][$projectId] = $environments;
 
         return $this->config['environments'][$projectId];
     }

@@ -90,7 +90,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         }
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
-        $environments = $this->getEnvironments($this->project, true);
+        $environments = $this->getEnvironments($this->project);
         $tree = $this->buildEnvironmentTree($environments);
 
         // To make the display nicer, we move all the children of master
