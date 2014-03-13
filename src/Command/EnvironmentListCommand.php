@@ -106,11 +106,22 @@ class EnvironmentListCommand extends EnvironmentCommand
 
         $output->writeln("\n<info>*</info> - Indicates the current environment.");
         $output->writeln("Checkout a different environment by running <info>platform checkout [id]</info>.");
-        $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.\n");
-        $output->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
-        $output->writeln("Backup the current environment by running <info>platform environment:backup</info>.");
-        $output->writeln("Merge the current environment by running <info>platform environment:merge</info>.");
-        $output->writeln("Sync the current environment by running <info>platform environment:synchronize</info>.");
-        $output->writeln("Note: You can specify a different environment using the --environment option.\n");
+        if ($this->operationAllowed('branch')) {
+            $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.\n");
+        }
+        if ($this->operationAllowed('delete')) {
+            $output->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
+        }
+        if ($this->operationAllowed('backup')) {
+            $output->writeln("Backup the current environment by running <info>platform environment:backup</info>.");
+        }
+        if ($this->operationAllowed('merge')) {
+            $output->writeln("Merge the current environment by running <info>platform environment:merge</info>.");
+        }
+        if ($this->operationAllowed('synchronize')) {
+            $output->writeln("Sync the current environment by running <info>platform environment:synchronize</info>.");
+        }
+        // Output a newline after the current block of commands.
+        $output->writeln("");
     }
 }

@@ -40,7 +40,8 @@ class WelcomeCommand extends PlatformCommand
             $this->projectListCommand->execute($input, $output);
         }
 
-        $output->writeln("You can also manage your SSH keys by running <info>platform ssh-keys</info>.\n");
+        $output->writeln("You can also manage your SSH keys by running <info>platform ssh-keys</info>.");
+        $output->writeln("List all commands and their options by running <info>platform help</info>.\n");
     }
 
 }

@@ -33,6 +33,10 @@ class EnvironmentBackupCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
+        if (!$this->operationAllowed('backup')) {
+            $output->writeln("<error>Operation not permitted: Can't make a backup of the current environment.</error>");
+            return;
+        }
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->backupEnvironment();

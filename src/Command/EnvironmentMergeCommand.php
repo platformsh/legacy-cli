@@ -33,6 +33,10 @@ class EnvironmentMergeCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
+        if (!$this->operationAllowed('merge')) {
+            $output->writeln("<error>Operation not permitted: The current environment can't be merged.</error>");
+            return;
+        }
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->mergeEnvironment();
