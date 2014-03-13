@@ -14,9 +14,8 @@ class EnvironmentCommand extends PlatformCommand
 
     protected function validateInput(InputInterface $input, OutputInterface $output)
     {
-        $options = $this->getDefinition()->getOptions();
         // Allow the project to be specified explicitly via --project.
-        $projectId = isset($options['project']) ? $input->getOption('project') : null;
+        $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         if (!empty($projectId)) {
             $projects = $this->getProjects();
             if (!isset($projects[$projectId])) {
@@ -34,7 +33,7 @@ class EnvironmentCommand extends PlatformCommand
             }
         }
 
-        if (isset($options['environment'])) {
+        if ($input->hasOption('environment')) {
             // Allow the environment to be specified explicitly via --environment.
             $environmentId = $input->getOption('environment');
             if (!empty($environmentId)) {
