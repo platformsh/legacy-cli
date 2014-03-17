@@ -36,7 +36,7 @@ class Application extends BaseApplication {
      */
     public function __construct()
     {
-        parent::__construct('Platform Cli', '0.1');
+        parent::__construct('Platform CLI', '0.1');
 
         $this->setDefaultTimezone();
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
