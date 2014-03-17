@@ -11,12 +11,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/commerceguys/guzzle-oauth2-plugin.git",
-                "reference": "1911cc699b4fa00df378f10879e19158cac258bf"
+                "reference": "54b4a819ae5887f4822815d80e9f1e0aa1e60542"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/commerceguys/guzzle-oauth2-plugin/zipball/1911cc699b4fa00df378f10879e19158cac258bf",
-                "reference": "1911cc699b4fa00df378f10879e19158cac258bf",
+                "url": "https://api.github.com/repos/commerceguys/guzzle-oauth2-plugin/zipball/54b4a819ae5887f4822815d80e9f1e0aa1e60542",
+                "reference": "54b4a819ae5887f4822815d80e9f1e0aa1e60542",
                 "shasum": ""
             },
             "require": {
@@ -41,7 +41,7 @@
                 }
             ],
             "description": "An OAuth2 plugin for guzzle",
-            "time": "2014-02-12 18:19:24"
+            "time": "2014-03-05 14:15:13"
         },
         {
             "name": "guzzle/guzzle",
