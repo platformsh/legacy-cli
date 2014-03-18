@@ -60,8 +60,9 @@ class EnvironmentCommand extends PlatformCommand
     /**
      * @return bool Whether the operation is allowed on the current environment.
      */
-    protected function operationAllowed($operation)
+    protected function operationAllowed($operation, $environment = null)
     {
-        return $this->environment && isset($this->environment['_links']['#' . $operation]);
+        $environment = $environment ?: $this->environment;
+        return $environment && isset($environment['_links']['#' . $operation]);
     }
 }

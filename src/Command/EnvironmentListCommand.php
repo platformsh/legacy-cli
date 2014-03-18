@@ -106,19 +106,19 @@ class EnvironmentListCommand extends EnvironmentCommand
 
         $output->writeln("\n<info>*</info> - Indicates the current environment.");
         $output->writeln("Checkout a different environment by running <info>platform checkout [id]</info>.");
-        if ($this->operationAllowed('branch')) {
+        if ($this->operationAllowed('branch', $this->currentEnvironment)) {
             $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.\n");
         }
-        if ($this->operationAllowed('delete')) {
+        if ($this->operationAllowed('delete', $this->currentEnvironment)) {
             $output->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
         }
-        if ($this->operationAllowed('backup')) {
+        if ($this->operationAllowed('backup', $this->currentEnvironment)) {
             $output->writeln("Backup the current environment by running <info>platform environment:backup</info>.");
         }
-        if ($this->operationAllowed('merge')) {
+        if ($this->operationAllowed('merge', $this->currentEnvironment)) {
             $output->writeln("Merge the current environment by running <info>platform environment:merge</info>.");
         }
-        if ($this->operationAllowed('synchronize')) {
+        if ($this->operationAllowed('synchronize', $this->currentEnvironment)) {
             $output->writeln("Sync the current environment by running <info>platform environment:synchronize</info>.");
         }
         // Output a newline after the current block of commands.
