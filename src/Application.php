@@ -151,13 +151,13 @@ class Application extends BaseApplication {
             // Ubuntu / Debian.
             $data = file_get_contents('/etc/timezone');
             if ($data) {
-                $timezone = $data;
+                $timezone = trim($data);
             }
         } elseif (file_exists('/etc/sysconfig/clock')) {
             // RHEL/CentOS
             $data = parse_ini_file('/etc/sysconfig/clock');
             if (!empty($data['ZONE'])) {
-                $timezone = $data['ZONE'];
+                $timezone = trim($data['ZONE']);
             }
         }
 
