@@ -39,7 +39,7 @@ class LoginCommand extends PlatformCommand
             throw new \Exception('Git must be installed.');
         }
         $drushVersion = shell_exec('drush version');
-        if (strpos($drushVersion, 'Drush Version') === false) {
+        if (strpos(strtolower($drushVersion), 'drush version') === false) {
             throw new \Exception('Drush must be installed.');
         }
     }
