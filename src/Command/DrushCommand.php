@@ -23,8 +23,7 @@ class DrushCommand extends PlatformCommand
         // drush by themselves and specify the site alias manualy.
         $this->project = $this->getCurrentProject();
         if (!$this->project) {
-            $output->writeln("<error>Could not determine the current project.</error>");
-            $output->writeln("<error>Please go to a project directory.</error>");
+            $output->writeln("<error>You must run this command from a project folder.</error>");
             return;
         }
         $this->environment = $this->getCurrentEnvironment($this->project);
