@@ -8,6 +8,8 @@ define('CLI_ROOT', __DIR__);
 require CLI_ROOT . '/vendor/autoload.php';
 
 use CommerceGuys\Platform\Cli\Application;
+use CommerceGuys\Platform\Cli\Input\ArgvInput;
 
+$input = new ArgvInput();
 $application = new Application();
-$application->run();
+$application->run($input);
