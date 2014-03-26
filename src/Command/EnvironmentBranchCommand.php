@@ -32,6 +32,12 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'The environment id'
+            )
+            ->addOption(
+                'no-build',
+                null,
+                InputOption::VALUE_NONE,
+                "Do not build the new branch"
             );
     }
 
@@ -61,14 +67,17 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $repositoryDir = $projectRoot . '/repository';
         shell_exec("cd $repositoryDir && git fetch origin && git checkout $machineName");
 
-        // Build the new branch.
-        $application = $this->getApplication();
-        $projectRoot = $this->getProjectRoot();
-        try {
-            $buildCommand = $application->find('build');
-            $buildCommand->build($projectRoot, $machineName);
-        } catch (\Exception $e) {
-            $output->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
+        $noBuild = $input->getOption('no-build');
+        if (!$noBuild) {
+            // Build the new branch.
+            $application = $this->getApplication();
+            $projectRoot = $this->getProjectRoot();
+            try {
+                $buildCommand = $application->find('build');
+                $buildCommand->build($projectRoot, $machineName);
+            } catch (\Exception $e) {
+                $output->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
+            }
         }
 
         $message = '<info>';

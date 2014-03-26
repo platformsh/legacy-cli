@@ -4,6 +4,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Dumper;
 
@@ -20,6 +21,12 @@ class ProjectGetCommand extends PlatformCommand
                 'id',
                 InputArgument::OPTIONAL,
                 'The project id'
+            )
+            ->addOption(
+                'no-build',
+                null,
+                InputOption::VALUE_NONE,
+                "Do not build the retrieved project"
             );
     }
 
@@ -91,15 +98,18 @@ class ProjectGetCommand extends PlatformCommand
         $command = "git clone --branch $environment $gitUrl $repositoryDir";
         passthru($command);
 
-        // Launch the first build.
-        $application = $this->getApplication();
-        $projectRoot = realpath($id);
-        try {
-            $buildCommand = $application->find('build');
-            $buildCommand->build($projectRoot, $environment);
-        } catch (\Exception $e) {
-            $environmentName = $environmentList[$environmentIndex]['title'];
-            $output->writeln("<comment>The '$environmentName' environment could not be built: \n" . $e->getMessage() . "</comment>");
+        $noBuild = $input->getOption('no-build');
+        if (!$noBuild) {
+            // Launch the first build.
+            $application = $this->getApplication();
+            $projectRoot = realpath($id);
+            try {
+                $buildCommand = $application->find('build');
+                $buildCommand->build($projectRoot, $environment);
+            } catch (\Exception $e) {
+                $environmentName = $environmentList[$environmentIndex]['title'];
+                $output->writeln("<comment>The '$environmentName' environment could not be built: \n" . $e->getMessage() . "</comment>");
+            }
         }
     }
 }
