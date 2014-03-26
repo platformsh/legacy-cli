@@ -99,6 +99,10 @@ class ProjectBuildCommand extends PlatformCommand
             $this->copy('repository', $buildDir . '/sites/default');
         }
 
+        // Create the settings.php file.
+        copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
+        unlink($buildDir . '/sites/default/default.settings.php');
+
         // Symlink all files and folders from shared.
         $this->symlink('shared', $buildDir . '/sites/default');
 
