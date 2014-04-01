@@ -106,8 +106,11 @@ class ProjectGetCommand extends PlatformCommand
             return;
         }
 
+        // Allow the build to be skipped, and always skip it if the cloned
+        // repository is empty ('.' and '..' being the only found files).
         $noBuild = $input->getOption('no-build');
-        if (!$noBuild) {
+        $files = scandir($id . '/repository');
+        if (!$noBuild && count($files) > 2) {
             // Launch the first build.
             $application = $this->getApplication();
             $projectRoot = realpath($id);
