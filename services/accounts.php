@@ -2,7 +2,6 @@
 
 return array(
     'name' => 'Accounts API',
-    'baseUrl' => 'https://marketplace.commerceguys.com/api/platform',
     'operations' => array(
         'getSshKeys' => array(
             'httpMethod' => 'GET',

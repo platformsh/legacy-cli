@@ -54,7 +54,7 @@ class PlatformCommand extends Command
                 throw new \Exception('Refresh token not found in PlatformCommand::getOauth2Plugin.');
             }
 
-            $oauth2Client = new Client('https://marketplace.commerceguys.com/oauth2/token');
+            $oauth2Client = new Client(CLI_ACCOUNTS_SITE . '/oauth2/token');
             $config = array(
                 'client_id' => 'platform-cli',
             );
@@ -82,7 +82,7 @@ class PlatformCommand extends Command
      */
     protected function authenticateUser($email, $password)
     {
-        $oauth2Client = new Client('https://marketplace.commerceguys.com/oauth2/token');
+        $oauth2Client = new Client(CLI_ACCOUNTS_SITE . '/oauth2/token');
         $config = array(
             'username' => $email,
             'password' => $password,
@@ -109,6 +109,7 @@ class PlatformCommand extends Command
             $this->accountClient = new Client();
             $this->accountClient->setDescription($description);
             $this->accountClient->addSubscriber($oauth2Plugin);
+            $this->accountClient->setBaseUrl(CLI_ACCOUNTS_SITE . '/api/platform');
         }
 
         return $this->accountClient;

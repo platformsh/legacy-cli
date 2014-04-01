@@ -1,6 +1,7 @@
 #!/usr/bin/env php
 <?php
 
+define('CLI_ACCOUNTS_SITE', 'https://marketplace.commerceguys.com');
 // __DIR__ called in a class will point to the class directory. Saved now it
 // ensure there's always a path to the cli root.
 define('CLI_ROOT', __DIR__);
