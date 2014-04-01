@@ -55,6 +55,7 @@ class PlatformCommand extends Command
             }
 
             $oauth2Client = new Client(CLI_ACCOUNTS_SITE . '/oauth2/token');
+            $oauth2Client->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
             $config = array(
                 'client_id' => 'platform-cli',
             );
@@ -83,6 +84,7 @@ class PlatformCommand extends Command
     protected function authenticateUser($email, $password)
     {
         $oauth2Client = new Client(CLI_ACCOUNTS_SITE . '/oauth2/token');
+        $oauth2Client->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
         $config = array(
             'username' => $email,
             'password' => $password,
@@ -110,6 +112,7 @@ class PlatformCommand extends Command
             $this->accountClient->setDescription($description);
             $this->accountClient->addSubscriber($oauth2Plugin);
             $this->accountClient->setBaseUrl(CLI_ACCOUNTS_SITE . '/api/platform');
+            $this->accountClient->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
         }
 
         return $this->accountClient;
