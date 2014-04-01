@@ -101,6 +101,10 @@ class ProjectGetCommand extends PlatformCommand
         $repositoryDir = $id . '/repository';
         $command = "git clone --branch $environment $gitUrl $repositoryDir";
         passthru($command);
+        if (!is_dir($id . '/repository')) {
+            // The clone wasn't successful, stop here.
+            return;
+        }
 
         $noBuild = $input->getOption('no-build');
         if (!$noBuild) {
