@@ -28,13 +28,12 @@ class ProjectDeleteCommand extends PlatformCommand
             $output->writeln("<error>You must specify a project.</error>");
             return;
         }
-        $projects = $this->getProjects();
-        if (!isset($projects[$projectId])) {
+        $project = $this->getProject($projectId);
+        if (!$project) {
             $output->writeln("<error>Project not found.</error>");
             return;
         }
 
-        $project = $projects[$projectId];
         $client = $this->getPlatformClient($project['uri']);
         $client->deleteProject();
 

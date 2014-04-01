@@ -17,12 +17,12 @@ class EnvironmentCommand extends PlatformCommand
         // Allow the project to be specified explicitly via --project.
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         if (!empty($projectId)) {
-            $projects = $this->getProjects();
-            if (!isset($projects[$projectId])) {
+            $project = $this->getProject($projectId);
+            if (!$project) {
                 $output->writeln("<error>Specified project not found.</error>");
                 return;
             }
-            $this->project = $projects[$projectId];
+            $this->project = $project;
         } else {
             // Autodetect the project if the user is in a project directory.
             $this->project = $this->getCurrentProject();

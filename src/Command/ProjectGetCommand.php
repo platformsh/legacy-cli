@@ -37,12 +37,11 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln("<error>You must specify a project.</error>");
             return;
         }
-        $projects = $this->getProjects();
-        if (!isset($projects[$projectId])) {
+        $project = $this->getProject($projectId);
+        if (!$project) {
             $output->writeln("<error>Project not found.</error>");
             return;
         }
-        $project = $projects[$projectId];
         $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));
         $id = end($projectUriParts);
         if (is_dir($id)) {

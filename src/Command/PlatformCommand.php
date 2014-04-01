@@ -261,6 +261,23 @@ class PlatformCommand extends Command
     }
 
     /**
+     * Return the user's project with the given id.
+     *
+     * @return array|null
+     */
+    protected function getProject($id)
+    {
+        $projects = $this->getProjects();
+        if (!isset($projects[$id])) {
+            // The list of projects is cached and might be older than the
+            // requested project, so refetch it as a precaution.
+            $projects = $this->getProjects(true);
+        }
+
+        return isset($projects[$id]) ? $projects[$id] : null;
+    }
+
+    /**
      * Return the user's environments.
      *
      * The environments are persisted in config, so that they can be compared
