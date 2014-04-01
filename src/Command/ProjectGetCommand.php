@@ -22,6 +22,11 @@ class ProjectGetCommand extends PlatformCommand
                 InputArgument::OPTIONAL,
                 'The project id'
             )
+            ->addArgument(
+                'directory-name',
+                InputArgument::OPTIONAL,
+                'The directory name. Defaults to the project id if not provided'
+            )
             ->addOption(
                 'no-build',
                 null,
@@ -42,10 +47,12 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln("<error>Project not found.</error>");
             return;
         }
-        $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));
-        $id = end($projectUriParts);
-        if (is_dir($id)) {
-            $output->writeln("<error>The project directory '$id' already exists.</error>");
+        $directoryName = $input->getArgument('directory-name');
+        if (empty($directoryName)) {
+            $directoryName = $projectId;
+        }
+        if (is_dir($directoryName)) {
+            $output->writeln("<error>The project directory '$directoryName' already exists.</error>");
             return;
         }
 
@@ -75,32 +82,33 @@ class ProjectGetCommand extends PlatformCommand
 
         // Create the directory structure
         $folders = array();
-        $folders[] = $id;
-        $folders[] = $id . '/builds';
-        $folders[] = $id . '/repository';
-        $folders[] = $id . '/shared';
+        $folders[] = $directoryName;
+        $folders[] = $directoryName . '/builds';
+        $folders[] = $directoryName . '/repository';
+        $folders[] = $directoryName . '/shared';
         foreach ($folders as $folder) {
             mkdir($folder);
         }
 
         // Create the settings.local.php file.
         // @todo Find a better place for this, since it's Drupal specific.
-        copy(CLI_ROOT . '/resources/drupal/settings.local.php', $id . '/shared/settings.local.php');
+        copy(CLI_ROOT . '/resources/drupal/settings.local.php', $directoryName . '/shared/settings.local.php');
 
         // Create the .platform-project file.
         $projectConfig = array(
-            'id' => $id,
+            'id' => $projectId,
         );
         $dumper = new Dumper();
-        file_put_contents($id . '/.platform-project', $dumper->dump($projectConfig));
+        file_put_contents($directoryName . '/.platform-project', $dumper->dump($projectConfig));
 
         // Clone the repository.
+        $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));
         $cluster = $projectUriParts[0];
-        $gitUrl = "{$id}@git.{$cluster}:{$id}.git";
-        $repositoryDir = $id . '/repository';
+        $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
+        $repositoryDir = $directoryName . '/repository';
         $command = "git clone --branch $environment $gitUrl $repositoryDir";
         passthru($command);
-        if (!is_dir($id . '/repository')) {
+        if (!is_dir($directoryName . '/repository')) {
             // The clone wasn't successful, stop here.
             return;
         }
@@ -108,11 +116,11 @@ class ProjectGetCommand extends PlatformCommand
         // Allow the build to be skipped, and always skip it if the cloned
         // repository is empty ('.' and '..' being the only found files).
         $noBuild = $input->getOption('no-build');
-        $files = scandir($id . '/repository');
+        $files = scandir($directoryName . '/repository');
         if (!$noBuild && count($files) > 2) {
             // Launch the first build.
             $application = $this->getApplication();
-            $projectRoot = realpath($id);
+            $projectRoot = realpath($directoryName);
             try {
                 $buildCommand = $application->find('build');
                 $buildCommand->build($projectRoot, $environment);
