@@ -156,8 +156,7 @@ class PlatformCommand extends Command
         if ($projectRoot) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/.platform-project'));
-            $projects = $this->getProjects();
-            $project = $projects[$projectConfig['id']];
+            $project = $this->getProject($projectConfig['id']);
         }
 
         return $project;
