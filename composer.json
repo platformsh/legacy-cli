@@ -3,7 +3,7 @@
     "description": "Platform CLI",
     "license": "MIT",
     "require": {
-        "commerceguys/guzzle-oauth2-plugin": "@dev",
+        "commerceguys/guzzle-oauth2-plugin": "dev-master",
         "symfony/console": "~2.4",
         "symfony/yaml": "~2.4"
     },
