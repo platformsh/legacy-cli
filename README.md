@@ -22,7 +22,7 @@ composer install
 
 Add the `platform` command to your path by adding this line to you bashrc file (use your own path)
 ```
-export PATH=/projects/platform/platform-cli
+export PATH=$PATH:/projects/platform/platform-cli
 ```
 or create a symlink:
 ```
