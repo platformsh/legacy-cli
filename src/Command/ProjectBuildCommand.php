@@ -45,42 +45,55 @@ class ProjectBuildCommand extends PlatformCommand
      */
     public function build($projectRoot, $environmentId)
     {
-        chdir($projectRoot);
-        $buildDir = 'builds/' . date('Y-m-d--H-i-s') . '--' . $environmentId;
+        $buildDir = $projectRoot . '/builds/' . date('Y-m-d--H-i-s') . '--' . $environmentId;
         // @todo Implement logic for detecting a Drupal project VS others.
-        $status = $this->buildDrupal($buildDir);
+        $status = $this->buildDrupal($buildDir, $projectRoot);
         if ($status) {
             // Point www to the latest build.
-            if (file_exists('www')) {
+            $wwwLink = $projectRoot . '/www';
+            if (file_exists($wwwLink)) {
                 // @todo Windows might need rmdir instead of unlink.
-                unlink('www');
+                unlink($wwwLink);
             }
-            symlink($buildDir, 'www');
+            symlink($buildDir, $wwwLink);
         }
     }
 
     /**
      * Build a Drupal project in the provided directory.
+     *
+     * For a build to happen the repository must have at least one drush make
+     * file. There are two possible modes:
+     * - installation profile: Contains an installation profile and the matching
+     *   drush make files (project.make and project-core.make or drupal-org.make
+     *   and drupal-org-core.make). The repository is symlinked into the
+     *   profile directory (profiles/$profileName).
+     * - site: Contains just a project.make file. The repository is symlinked
+     *   into the sites/default directory.
+     *
+     * @param string $buildDir The path to the build directory.
+     * @param string $projectRoot The path to the project to be built.
      */
-    protected function buildDrupal($buildDir)
+    protected function buildDrupal($buildDir, $projectRoot)
     {
-        $profiles = glob('repository/*.profile');
+        $repositoryDir = $projectRoot . '/repository';
+        $profiles = glob($repositoryDir . '/*.profile');
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the repository.");
         } elseif (count($profiles) == 1) {
             // Find the contrib make file.
-            if (file_exists('repository/project.make')) {
-                $projectMake = 'repository/project.make';
-            } elseif (file_exists("repository/drupal-org.make")) {
-                $projectMake = 'repository/drupal-org.make';
+            if (file_exists($repositoryDir . '/project.make')) {
+                $projectMake = $repositoryDir . '/project.make';
+            } elseif (file_exists($repositoryDir . '/drupal-org.make')) {
+                $projectMake = $repositoryDir . '/drupal-org.make';
             } else {
                 throw new \Exception("Couldn't find a project.make or drupal-org.make in the repository.");
             }
             // Find the core make file.
-            if (file_exists('repository/project-core.make')) {
-                $projectCoreMake = 'repository/project-core.make';
-            } elseif (file_exists("repository/drupal-org-core.make")) {
-                $projectCoreMake = 'repository/drupal-org-core.make';
+            if (file_exists($repositoryDir . '/project-core.make')) {
+                $projectCoreMake = $repositoryDir . '/project-core.make';
+            } elseif (file_exists($repositoryDir . '/drupal-org-core.make')) {
+                $projectCoreMake = $repositoryDir . '/drupal-org-core.make';
             } else {
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
             }
@@ -88,23 +101,35 @@ class ProjectBuildCommand extends PlatformCommand
             shell_exec("drush make -y $projectCoreMake $buildDir");
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
-                $profile = str_replace('repository/', '', $profiles[0]);
+                $profile = str_replace($repositoryDir, '', $profiles[0]);
                 $profile = strtok($profile, '.');
                 $profileDir = $buildDir . '/profiles/' . $profile;
-                shell_exec("drush make -y --no-core --contrib-destination=. $projectMake $profileDir");
-                $this->copy('repository', $profileDir);
+                symlink($repositoryDir, $profileDir);
+                // Drush Make requires $profileDir to not exist if it's passed
+                // as the target. chdir($profileDir) works around that.
+                chdir($profileDir);
+                shell_exec("drush make -y --no-core --contrib-destination=. $projectMake");
             }
         } elseif (file_exists('repository/project.make')) {
-            shell_exec("drush make -y repository/project.make $buildDir");
-            $this->copy('repository', $buildDir . '/sites/default');
+            $projectMake = $repositoryDir . '/project.make';
+            shell_exec("drush make -y $projectMake $buildDir");
+            // Remove sites/default to make room for the symlink.
+            $this->rmdir($buildDir . '/sites/default');
+            symlink($repositoryDir, $buildDir . '/sites/default');
+        }
+        else {
+            // Nothing to build.
+            return;
         }
 
-        // Create the settings.php file.
-        copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
-        unlink($buildDir . '/sites/default/default.settings.php');
-
-        // Symlink all files and folders from shared.
-        $this->symlink('shared', $buildDir . '/sites/default');
+        // The build has been done, create a settings.php and settings.local.php
+        // if they are missing.
+        if (!file_exists($buildDir . '/sites/default/settings.php')) {
+            // Create the settings.php file.
+            copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
+            // Symlink all files and folders from shared.
+            $this->symlink($projectRoot . '/shared', $buildDir . '/sites/default');
+        }
 
         return true;
     }
@@ -130,6 +155,28 @@ class ProjectBuildCommand extends PlatformCommand
             }
         }
         closedir($sourceDirectory);
+    }
+
+    /**
+     * Delete a directory and all of its files.
+     */
+    protected function rmdir($directoryName)
+    {
+        // Recursively empty the directory.
+        $directory = opendir($directoryName);
+        while ($file = readdir($directory)) {
+            if (!in_array($file, array('.', '..'))) {
+                if (is_dir($directoryName . '/' . $file)) {
+                    $this->rmdir($directoryName . '/' . $file);
+                } else {
+                    unlink($directoryName . '/' . $file);
+                }
+            }
+        }
+        closedir($directory);
+
+        // Delete the directory itself.
+        rmdir($directoryName);
     }
 
     /**
