@@ -93,6 +93,8 @@ class ProjectGetCommand extends PlatformCommand
         // Create the settings.local.php file.
         // @todo Find a better place for this, since it's Drupal specific.
         copy(CLI_ROOT . '/resources/drupal/settings.local.php', $directoryName . '/shared/settings.local.php');
+        // @todo Make the Platform itself responsible for this?
+        copy(CLI_ROOT . '/resources/drupal/gitignore', $directoryName . '/repository/.gitignore');
 
         // Create the .platform-project file.
         $projectConfig = array(
