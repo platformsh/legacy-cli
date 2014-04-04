@@ -49,6 +49,6 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         // Checkout the new branch locally.
         $projectRoot = $this->getProjectRoot();
         $repositoryDir = $projectRoot . '/repository';
-        passthru("cd $repositoryDir && git checkout $branch");
+        passthru("cd $repositoryDir && git fetch origin && git checkout $branch");
     }
 }
