@@ -84,7 +84,6 @@ class ProjectGetCommand extends PlatformCommand
         $folders = array();
         $folders[] = $directoryName;
         $folders[] = $directoryName . '/builds';
-        $folders[] = $directoryName . '/repository';
         $folders[] = $directoryName . '/shared';
         foreach ($folders as $folder) {
             mkdir($folder);
@@ -93,8 +92,6 @@ class ProjectGetCommand extends PlatformCommand
         // Create the settings.local.php file.
         // @todo Find a better place for this, since it's Drupal specific.
         copy(CLI_ROOT . '/resources/drupal/settings.local.php', $directoryName . '/shared/settings.local.php');
-        // @todo Make the Platform itself responsible for this?
-        copy(CLI_ROOT . '/resources/drupal/gitignore', $directoryName . '/repository/.gitignore');
 
         // Create the .platform-project file.
         $projectConfig = array(
@@ -114,6 +111,10 @@ class ProjectGetCommand extends PlatformCommand
             // The clone wasn't successful, stop here.
             return;
         }
+
+        // Create the .gitignore file.
+        // @todo Make the Platform itself responsible for this?
+        copy(CLI_ROOT . '/resources/drupal/gitignore', $directoryName . '/repository/.gitignore');
 
         // Allow the build to be skipped, and always skip it if the cloned
         // repository is empty ('.', '..', '.git' being the only found items).
