@@ -76,6 +76,8 @@ class ProjectBuildCommand extends PlatformCommand
      */
     protected function buildDrupal($buildDir, $projectRoot)
     {
+        $this->ensureDrushInstalled();
+
         $repositoryDir = $projectRoot . '/repository';
         $profiles = glob($repositoryDir . '/*.profile');
         if (count($profiles) > 1) {
