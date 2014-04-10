@@ -33,7 +33,7 @@ Now you can run `platform` and see all the available commands !
 
 ## Installation
 ```
-composer global require 'commerceguys/platform-cli:*'
+composer global require commerceguys/guzzle-oauth2-plugin:dev-master commerceguys/platform-cli:dev-master
 ```
 Make sure you have ~/.composer/vendor/bin/ in your path.
 
