@@ -8,7 +8,12 @@ define('CLI_VERIFY_SSL_CERT', true);
 // ensure there's always a path to the cli root.
 define('CLI_ROOT', __DIR__);
 
-require CLI_ROOT . '/vendor/autoload.php';
+if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
+    require CLI_ROOT . '/vendor/autoload.php';
+} else {
+    // we are globally installed via Composer
+    require CLI_ROOT . '/../../autoload.php';
+}
 
 use CommerceGuys\Platform\Cli\Application;
 use CommerceGuys\Platform\Cli\Input\ArgvInput;
