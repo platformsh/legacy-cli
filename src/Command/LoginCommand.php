@@ -38,15 +38,6 @@ class LoginCommand extends PlatformCommand
         if (strpos($gitVersion, 'git version') === false) {
             throw new \Exception('Git must be installed.');
         }
-        $drushVersion = shell_exec('drush version');
-        if (strpos(strtolower($drushVersion), 'drush version') === false) {
-            throw new \Exception('Drush must be installed.');
-        }
-        $versionParts = explode(':', $drushVersion);
-        $versionNumber = trim($versionParts[1]);
-        if (version_compare($versionNumber, '6.0.0') === -1) {
-            throw new \Exception('Drush version must be 6.0.0 or newer.');
-        }
     }
 
     protected function configureAccount($output)

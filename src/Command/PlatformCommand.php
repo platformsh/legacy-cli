@@ -352,6 +352,19 @@ class PlatformCommand extends Command
         file_put_contents($filename, $export);
     }
 
+    protected function ensureDrushInstalled()
+    {
+        $drushVersion = shell_exec('drush version');
+        if (strpos(strtolower($drushVersion), 'drush version') === false) {
+            throw new \Exception('Drush must be installed.');
+        }
+        $versionParts = explode(':', $drushVersion);
+        $versionNumber = trim($versionParts[1]);
+        if (version_compare($versionNumber, '6.0.0') === -1) {
+            throw new \Exception('Drush version must be 6.0.0 or newer.');
+        }
+    }
+
     /**
      * Destructor: Write the configuration to disk.
      */

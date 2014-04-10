@@ -4,9 +4,9 @@ This is the official CLI for Commerce Platform.
 
 ## Requirements
 
-* Drush 6.0 or higher - https://github.com/drush-ops/drush
 * PHP 5.3.3 or higher with cURL
 * Composer - https://getcomposer.org/doc/00-intro.md
+* Drush 6.0 or higher - https://github.com/drush-ops/drush (only for Drupal projects)
 
 ## Installation (TMP)
 Clone the Git repository locally
