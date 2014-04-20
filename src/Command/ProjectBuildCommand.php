@@ -164,21 +164,23 @@ class ProjectBuildCommand extends PlatformCommand
      */
     protected function rmdir($directoryName)
     {
-        // Recursively empty the directory.
-        $directory = opendir($directoryName);
-        while ($file = readdir($directory)) {
-            if (!in_array($file, array('.', '..'))) {
-                if (is_dir($directoryName . '/' . $file)) {
-                    $this->rmdir($directoryName . '/' . $file);
-                } else {
-                    unlink($directoryName . '/' . $file);
-                }
-            }
-        }
-        closedir($directory);
+        if (is_dir($destination)) {
+          // Recursively empty the directory.
+          $directory = opendir($directoryName);
+          while ($file = readdir($directory)) {
+              if (!in_array($file, array('.', '..'))) {
+                  if (is_dir($directoryName . '/' . $file)) {
+                      $this->rmdir($directoryName . '/' . $file);
+                  } else {
+                      unlink($directoryName . '/' . $file);
+                  }
+              }
+          }
+          closedir($directory);
 
-        // Delete the directory itself.
-        rmdir($directoryName);
+          // Delete the directory itself.
+          rmdir($directoryName);
+        }
     }
 
     /**
