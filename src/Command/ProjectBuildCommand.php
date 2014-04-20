@@ -115,9 +115,12 @@ class ProjectBuildCommand extends PlatformCommand
         } elseif (file_exists('repository/project.make')) {
             $projectMake = $repositoryDir . '/project.make';
             shell_exec("drush make -y $projectMake $buildDir");
-            // Remove sites/default to make room for the symlink.
-            $this->rmdir($buildDir . '/sites/default');
-            symlink($repositoryDir, $buildDir . '/sites/default');
+            // Drush will only create the $buildDir if the build succeeds.
+            if (is_dir($buildDir)) {
+              // Remove sites/default to make room for the symlink.
+              $this->rmdir($buildDir . '/sites/default');
+              symlink($repositoryDir, $buildDir . '/sites/default');
+            }
         }
         else {
             // Nothing to build.
