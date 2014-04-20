@@ -167,7 +167,7 @@ class ProjectBuildCommand extends PlatformCommand
      */
     protected function rmdir($directoryName)
     {
-        if (is_dir($destination)) {
+        if (is_dir($directoryName)) {
           // Recursively empty the directory.
           $directory = opendir($directoryName);
           while ($file = readdir($directory)) {
