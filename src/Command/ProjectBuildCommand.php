@@ -129,7 +129,7 @@ class ProjectBuildCommand extends PlatformCommand
 
         // The build has been done, create a settings.php and settings.local.php
         // if they are missing.
-        if (!file_exists($buildDir . '/sites/default/settings.php')) {
+        if (is_dir($buildDir) && !file_exists($buildDir . '/sites/default/settings.php')) {
             // Create the settings.php file.
             copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
             // Symlink all files and folders from shared.
