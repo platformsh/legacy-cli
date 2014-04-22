@@ -115,9 +115,12 @@ class ProjectBuildCommand extends PlatformCommand
         } elseif (file_exists('repository/project.make')) {
             $projectMake = $repositoryDir . '/project.make';
             shell_exec("drush make -y $projectMake $buildDir");
-            // Remove sites/default to make room for the symlink.
-            $this->rmdir($buildDir . '/sites/default');
-            symlink($repositoryDir, $buildDir . '/sites/default');
+            // Drush will only create the $buildDir if the build succeeds.
+            if (is_dir($buildDir)) {
+              // Remove sites/default to make room for the symlink.
+              $this->rmdir($buildDir . '/sites/default');
+              $this->symlink($repositoryDir, $buildDir . '/sites/default');
+            }
         }
         else {
             // Nothing to build.
@@ -126,7 +129,7 @@ class ProjectBuildCommand extends PlatformCommand
 
         // The build has been done, create a settings.php and settings.local.php
         // if they are missing.
-        if (!file_exists($buildDir . '/sites/default/settings.php')) {
+        if (is_dir($buildDir) && !file_exists($buildDir . '/sites/default/settings.php')) {
             // Create the settings.php file.
             copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
             // Symlink all files and folders from shared.
@@ -164,21 +167,23 @@ class ProjectBuildCommand extends PlatformCommand
      */
     protected function rmdir($directoryName)
     {
-        // Recursively empty the directory.
-        $directory = opendir($directoryName);
-        while ($file = readdir($directory)) {
-            if (!in_array($file, array('.', '..'))) {
-                if (is_dir($directoryName . '/' . $file)) {
-                    $this->rmdir($directoryName . '/' . $file);
-                } else {
-                    unlink($directoryName . '/' . $file);
-                }
-            }
-        }
-        closedir($directory);
+        if (is_dir($directoryName)) {
+          // Recursively empty the directory.
+          $directory = opendir($directoryName);
+          while ($file = readdir($directory)) {
+              if (!in_array($file, array('.', '..'))) {
+                  if (is_dir($directoryName . '/' . $file)) {
+                      $this->rmdir($directoryName . '/' . $file);
+                  } else {
+                      unlink($directoryName . '/' . $file);
+                  }
+              }
+          }
+          closedir($directory);
 
-        // Delete the directory itself.
-        rmdir($directoryName);
+          // Delete the directory itself.
+          rmdir($directoryName);
+        }
     }
 
     /**
