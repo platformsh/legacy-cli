@@ -119,7 +119,7 @@ class ProjectBuildCommand extends PlatformCommand
             if (is_dir($buildDir)) {
               // Remove sites/default to make room for the symlink.
               $this->rmdir($buildDir . '/sites/default');
-              symlink($repositoryDir, $buildDir . '/sites/default');
+              $this->symlink($repositoryDir, $buildDir . '/sites/default');
             }
         }
         else {
