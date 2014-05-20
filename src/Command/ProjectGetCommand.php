@@ -65,19 +65,22 @@ class ProjectGetCommand extends PlatformCommand
             }
         }
 
-        $chooseEnvironmentText = "Enter a number to choose which environment to checkout: \n";
-        foreach ($environmentList as $index => $environment) {
-            $chooseEnvironmentText .= "[$index] : " . $environment['title'] . "\n";
-        }
-        $dialog = $this->getHelperSet()->get('dialog');
-        $validator = function ($enteredIndex) use ($environmentList) {
-            if (!isset($environmentList[$enteredIndex])) {
-                $max = count($environmentList) - 1;
-                throw new \RunTimeException("Please enter a number between 0 and $max.");
+        $environmentIndex = 0;
+        if (count($environmentList) > 1) {
+            $chooseEnvironmentText = "Enter a number to choose which environment to checkout: \n";
+            foreach ($environmentList as $index => $environment) {
+                $chooseEnvironmentText .= "[$index] : " . $environment['title'] . "\n";
             }
-            return $enteredIndex;
-        };
-        $environmentIndex = $dialog->askAndValidate($output, $chooseEnvironmentText, $validator, false, 0);
+            $dialog = $this->getHelperSet()->get('dialog');
+            $validator = function ($enteredIndex) use ($environmentList) {
+                if (!isset($environmentList[$enteredIndex])) {
+                    $max = count($environmentList) - 1;
+                    throw new \RunTimeException("Please enter a number between 0 and $max.");
+                }
+                return $enteredIndex;
+            };
+            $environmentIndex = $dialog->askAndValidate($output, $chooseEnvironmentText, $validator, false, 0);
+        }
         $environment = $environmentList[$environmentIndex]['id'];
 
         // Create the directory structure
