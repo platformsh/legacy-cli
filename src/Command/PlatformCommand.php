@@ -360,8 +360,8 @@ class PlatformCommand extends Command
         }
         $versionParts = explode(':', $drushVersion);
         $versionNumber = trim($versionParts[1]);
-        if (version_compare($versionNumber, '6.0.0') === -1) {
-            throw new \Exception('Drush version must be 6.0.0 or newer.');
+        if (version_compare($versionNumber, '6.0') === -1) {
+            throw new \Exception('Drush version must be 6.0 or newer.');
         }
     }
 
