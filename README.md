@@ -3,7 +3,7 @@ DESCRIPTION
 
 **Platform CLI** is the official command line shell and Unix scripting interface for [Platform](https://platform.sh). It ships with all the useful commands to interact with your [Platform](https://platform.sh) projects.
 
-[![Total Downloads](https://poser.pugx.org/commerceguys/platform-cli/downloads.png)](https://packagist.org/packages/commerceguys/platform-cli) 
+[![Total Downloads](https://poser.pugx.org/commerceguys/platform-cli/downloads.png)](https://packagist.org/packages/commerceguys/platform-cli)
 
 REQUIREMENTS
 ------------
@@ -22,7 +22,7 @@ INSTALL/UPDATE - COMPOSER
 
 * To install the stable version:
 
-        composer global require commerceguys/guzzle-oauth2-plugin:dev-master commerceguys/platform-cli:dev-master
+        composer global require ommerceguys/platform-cli:dev-master
 
 * To update to a newer version:
 
