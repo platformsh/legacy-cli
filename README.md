@@ -22,7 +22,7 @@ INSTALL/UPDATE - COMPOSER
 
 * To install the stable version:
 
-        composer global require ommerceguys/platform-cli:dev-master
+        composer global require "commerceguys/platform-cli=1.0.*"
 
 * To update to a newer version:
 
