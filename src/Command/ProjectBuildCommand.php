@@ -112,7 +112,7 @@ class ProjectBuildCommand extends PlatformCommand
                 chdir($profileDir);
                 shell_exec("drush make -y --no-core --contrib-destination=. $projectMake");
             }
-        } elseif (file_exists('repository/project.make')) {
+        } elseif (file_exists($repositoryDir . '/project.make')) {
             $projectMake = $repositoryDir . '/project.make';
             shell_exec("drush make -y $projectMake $buildDir");
             // Drush will only create the $buildDir if the build succeeds.
