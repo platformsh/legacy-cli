@@ -109,6 +109,12 @@ class EnvironmentListCommand extends EnvironmentCommand
         if ($this->operationAllowed('branch', $this->currentEnvironment)) {
             $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.");
         }
+        if ($this->operationAllowed('activate', $this->currentEnvironment)) {
+            $output->writeln("Activate the current environment by running <info>platform environment:activate</info>.");
+        }
+        if ($this->operationAllowed('deactivate', $this->currentEnvironment)) {
+            $output->writeln("Deactivate the current environment by running <info>platform environment:deactivate</info>.");
+        }
         if ($this->operationAllowed('delete', $this->currentEnvironment)) {
             $output->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
         }

@@ -19,6 +19,16 @@ return array(
             'uri' => '',
             'summary' => 'Deletes an environment',
         ),
+        'activateEnvironment' => array(
+            'httpMethod' => 'POST',
+            'uri' => 'activate',
+            'summary' => 'Activates an environment',
+        ),
+        'deactivateEnvironment' => array(
+            'httpMethod' => 'POST',
+            'uri' => 'deactivate',
+            'summary' => 'Deactivates an environment',
+        ),
         'branchEnvironment' => array(
             'httpMethod' => 'POST',
             'uri' => 'branch',
