@@ -33,7 +33,7 @@ POST-INSTALL
 
 * Add the `platform` command to your path (use your own path):
 
-        export PATH=$PATH:$HOME/.composer/vendor/commerceguys/platform-cli/platform
+        export PATH=$PATH:$HOME/.composer/vendor/bin
 
 USAGE
 -----
