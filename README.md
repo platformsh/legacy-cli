@@ -33,11 +33,7 @@ POST-INSTALL
 
 * Add the `platform` command to your path (use your own path):
 
-        export PATH=$PATH:/usr/projects/platform-cli
-
-* Or create a symlink:
-
-        ln -s /usr/projects/platform-cli/platform /usr/local/bin/platform
+        export PATH=$PATH:$HOME/.composer/vendor/commerceguys/platform-cli/platform
 
 USAGE
 -----
