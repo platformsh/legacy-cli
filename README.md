@@ -28,10 +28,7 @@ INSTALL/UPDATE - COMPOSER
 
         composer global update
 
-POST-INSTALL
-------------
-
-* Add the `platform` command to your path (use your own path):
+* Add the `platform` command to your PATH (use your own path):
 
         export PATH=$PATH:$HOME/.composer/vendor/bin
 
