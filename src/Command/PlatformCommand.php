@@ -337,6 +337,7 @@ class PlatformCommand extends Command
               'env' => $environment['id'],
               'remote-host' => $sshUrl['host'],
               'remote-user' => $sshUrl['user'],
+              'root' => '/app/public',
             );
             $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($alias, true);
             $export .= ";\n";
