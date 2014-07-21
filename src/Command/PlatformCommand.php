@@ -330,17 +330,19 @@ class PlatformCommand extends Command
         $aliases = array();
         $export = "<?php\n\n";
         foreach ($environments as $environment) {
-            $sshUrl = parse_url($environment['_links']['ssh']['href']);
-            $alias = array(
-              'parent' => '@parent',
-              'site' => $project['id'],
-              'env' => $environment['id'],
-              'remote-host' => $sshUrl['host'],
-              'remote-user' => $sshUrl['user'],
-              'root' => '/app/public',
-            );
-            $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($alias, true);
-            $export .= ";\n";
+            if (array_key_exists('#activate', $environment)) {
+                $sshUrl = parse_url($environment['_links']['ssh']['href']);
+                $alias = array(
+                  'parent' => '@parent',
+                  'site' => $project['id'],
+                  'env' => $environment['id'],
+                  'remote-host' => $sshUrl['host'],
+                  'remote-user' => $sshUrl['user'],
+                  'root' => '/app/public',
+                );
+                $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($alias, true);
+                $export .= ";\n";
+            }
         }
 
         // Ensure the existence of the .drush directory.
