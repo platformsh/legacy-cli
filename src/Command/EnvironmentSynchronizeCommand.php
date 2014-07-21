@@ -14,6 +14,12 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         $this
             ->setName('environment:synchronize')
             ->setDescription('Synchronize an environment.')
+            ->addArgument(
+              'synchronize',
+              InputOption::VALUE_OPTIONAL,
+              'What to synchronize: code, data or both',
+              null
+            )
             ->addOption(
                 'project',
                 null,
@@ -38,11 +44,17 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             return;
         }
 
-        $dialog = $this->getHelperSet()->get('dialog');
-        $syncCodeText = "Synchronize code? [Y/N] ";
-        $syncDataText = "Synchronize data? [Y/N] ";
-        $syncCode = $dialog->askConfirmation($output, $syncCodeText, false);
-        $syncData = $dialog->askConfirmation($output, $syncDataText, false);
+        if ($synchronize = $input->getArgument('synchronize')) {
+          $syncCode = 'code' == $synchronize || 'both' == $synchronize;
+          $syncData = 'data' == $synchronize || 'both' == $synchronize;
+        }
+        else {
+          $dialog = $this->getHelperSet()->get('dialog');
+          $syncCodeText = "Synchronize code? [Y/N] ";
+          $syncDataText = "Synchronize data? [Y/N] ";
+          $syncCode = $dialog->askConfirmation($output, $syncCodeText, false);
+          $syncData = $dialog->askConfirmation($output, $syncDataText, false);
+        }
         if (!$syncCode && !$syncData) {
             $output->writeln("<error>You must synchronize at least code or data.</error>");
             return;
