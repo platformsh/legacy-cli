@@ -307,9 +307,7 @@ class PlatformCommand extends Command
             $environments[$environment['id']] = $environment;
         }
         // Recreate the aliases if the list of environments has changed.
-        if (array_diff_key($environments, $this->config['environments'][$projectId])) {
-            $this->createDrushAliases($project, $environments);
-        }
+        $this->createDrushAliases($project, $environments);
         $this->config['environments'][$projectId] = $environments;
 
         return $this->config['environments'][$projectId];
@@ -323,14 +321,19 @@ class PlatformCommand extends Command
      */
     protected function createDrushAliases($project, $environments)
     {
-        if (!$environments) {
-            return;
+        // Ensure the existence of the .drush directory.
+        $application = $this->getApplication();
+        $drushDir = $application->getHomeDirectory() . '/.drush';
+        if (!is_dir($drushDir)) {
+            mkdir($drushDir);
         }
+        $filename = $drushDir . '/' . $project['id'] . '.aliases.drushrc.php';
 
         $aliases = array();
         $export = "<?php\n\n";
+        $has_valid_environment = false;
         foreach ($environments as $environment) {
-            if (array_key_exists('#activate', $environment)) {
+            if (isset($environment['_links']['ssh'])) {
                 $sshUrl = parse_url($environment['_links']['ssh']['href']);
                 $alias = array(
                   'parent' => '@parent',
@@ -342,17 +345,20 @@ class PlatformCommand extends Command
                 );
                 $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($alias, true);
                 $export .= ";\n";
+                $has_valid_environment = true;
             }
         }
 
-        // Ensure the existence of the .drush directory.
-        $application = $this->getApplication();
-        $drushDir = $application->getHomeDirectory() . '/.drush';
-        if (!is_dir($drushDir)) {
-            mkdir($drushDir);
+        if ($has_valid_environment) {
+            file_put_contents($filename, $export);
         }
-        $filename = $drushDir . '/' . $project['id'] . '.aliases.drushrc.php';
-        file_put_contents($filename, $export);
+        else {
+            // Ensure the file doesn't exist.
+            if (file_exists($filename)) {
+                unlink($filename);
+            }
+        }
+
     }
 
     protected function ensureDrushInstalled()
