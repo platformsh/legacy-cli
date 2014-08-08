@@ -22,7 +22,7 @@ INSTALL/UPDATE - COMPOSER
         
 * Remove the old CLI version, if you have it:
 
-       composer global remove 'commerceguys/platform-cli'
+        composer global remove 'commerceguys/platform-cli'
 
 * To install the stable version:
 
