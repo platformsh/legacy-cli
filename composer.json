@@ -1,6 +1,6 @@
 {
-    "name": "commerceguys/platform-cli",
-    "description": "Platform CLI",
+    "name": "platformsh/cli",
+    "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
         "commerceguys/guzzle-oauth2-plugin": "~1.0",
