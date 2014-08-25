@@ -13,6 +13,7 @@ use CommerceGuys\Platform\Cli\Command\EnvironmentDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentListCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentMergeCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentSynchronizeCommand;
+use CommerceGuys\Platform\Cli\Command\EnvironmentTunnelCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectBuildCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectGetCommand;
@@ -55,6 +56,7 @@ class Application extends BaseApplication {
         $this->add(new EnvironmentListCommand);
         $this->add(new EnvironmentMergeCommand);
         $this->add(new EnvironmentSynchronizeCommand);
+        $this->add(new EnvironmentTunnelCommand);
         $this->add(new ProjectBuildCommand);
         $this->add(new ProjectDeleteCommand);
         $this->add(new ProjectGetCommand);

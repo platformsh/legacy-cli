@@ -127,6 +127,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         if ($this->operationAllowed('synchronize', $this->currentEnvironment)) {
             $output->writeln("Sync the current environment by running <info>platform environment:synchronize</info>.");
         }
+        $output->writeln("Create a tunnel to the current environment by running <info>platform environment:tunnel</info>.");
         $output->writeln("Execute drush commands against the current environment by running <info>platform drush</info>.");
         // Output a newline after the current block of commands.
         $output->writeln("");
