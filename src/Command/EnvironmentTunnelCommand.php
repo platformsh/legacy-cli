@@ -35,13 +35,13 @@ class EnvironmentTunnelCommand extends EnvironmentCommand
         }        
         $environmentId = $this->environment['id'];
         $sshUrl= $this->environment["_links"]["ssh"]["href"];
-        $projectRoot = $this->getProjectRoot();
+        $projectWWWRoot = $this->getProjectRoot()."/www";
         $mysql_local_port= 3306;
         $http_local_port=  8000;
         $tmp_dir="/tmp";
         
         $tunnelCommand = "ssh -L$mysql_local_port:database.internal:3306 $sshUrl\n";
-        $serveCommand = "php -t $projectRoot/www -S localhost:$http_local_port -r'if (preg_match(\"/\.(engine|inc|info|install|make|module|profile|test|po|sh|.*sql|theme|tpl(\.php)?|xtmpl)/\",\$_SERVER[\"REQUEST_URI\"])) { print \"Error\\n\"; } else if (preg_match(\"/(^|\/)\./\",\$_SERVER[\"REQUEST_URI\"])) { return false; } else if (file_exists(\$_SERVER[\"DOCUMENT_ROOT\"].\$_SERVER[\"SCRIPT_NAME\"])) { return false; } else {\$_GET[\"q\"]=\$_SERVER[\"REQUEST_URI\"]; include(\"index.php\"); }'";
+        $serveCommand = "php -t $projectWWWRoot -S localhost:$http_local_port -r'if (preg_match(\"/\.(engine|inc|info|install|make|module|profile|test|po|sh|.*sql|theme|tpl(\.php)?|xtmpl)/\",\$_SERVER[\"REQUEST_URI\"])) { print \"Error\\n\"; } else if (preg_match(\"/(^|\/)\./\",\$_SERVER[\"REQUEST_URI\"])) { return false; } else if (file_exists(\$_SERVER[\"DOCUMENT_ROOT\"].\$_SERVER[\"SCRIPT_NAME\"])) { return false; } else {\$_GET[\"q\"]=\$_SERVER[\"REQUEST_URI\"]; include(\"$projectWWWRoot/index.php\"); }'";
 
         $webOutputFile ="$tmp_dir/platform-local-web-server-$environmentId.log";
         $webPidFile ="$tmp_dir/platform-local-web-server-$environmentId.pid";
