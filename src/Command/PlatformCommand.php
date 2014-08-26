@@ -314,6 +314,20 @@ class PlatformCommand extends Command
     }
 
     /**
+     * Return the user's domains.
+     *
+     * @param array $project The project.
+     *
+     * @return array The user's domains.
+     */
+    protected function getDomains($project)
+    {
+        // @Todo: Construct the list of domains to let the user choose from it.
+        $domains = "TMP";
+        return $domains;
+    }
+
+    /**
      * Create drush aliases for the provided project and environments.
      *
      * @param array $project The project
