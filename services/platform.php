@@ -75,6 +75,21 @@ return array(
             'summary' => 'Gets a list of domains',
             'responseClass' => 'Domains',
         ),
+        'addDomain' => array(
+            'httpMethod' => 'POST',
+            'uri' => 'domains',
+            'summary' => 'Attach a new domain to the project',
+            'parameters' => array(
+                'name' => array(
+                    'location' => 'json',
+                    'type' => 'string',
+                ),
+                'wildcard' => array(
+                    'location' => 'json',
+                    'type' => 'boolean',
+                ),
+            ),
+        ),
     ),
     'models' => array(
         'Environment' => array(
