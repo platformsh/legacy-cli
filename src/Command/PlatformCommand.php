@@ -322,9 +322,24 @@ class PlatformCommand extends Command
      */
     protected function getDomains($project)
     {
-        // @Todo: Construct the list of domains to let the user choose from it.
-        $domains = "TMP";
-        return $domains;
+        $this->loadConfig();
+        $projectId = $project['id'];
+        if (!isset($this->config['domains'][$projectId])) {
+            $this->config['domains'][$projectId] = array();
+        }
+
+        // Fetch and assemble a list of domains.
+        $client = $this->getPlatformClient($project['endpoint']);
+        $domains = array();
+        foreach ($client->getDomains() as $domain) {
+            $domains[$domain['id']] = $domain;
+        }
+        
+        // Recreate the aliases if the list of environments has changed.
+        $this->createDrushAliases($project, $domains);
+        $this->config['domains'][$projectId] = $domains;
+
+        return $this->config['domains'][$projectId];
     }
 
     /**

@@ -15,7 +15,7 @@ class DomainListCommand extends EnvironmentCommand
     {
         $this
             ->setName('domain')
-            ->setDescription('Get a list of all environments.')
+            ->setDescription('Get a list of all domains.')
             ->addOption(
                 'project',
                 null,
@@ -27,13 +27,13 @@ class DomainListCommand extends EnvironmentCommand
     /**
      * Build a tree out of a list of domains.
      */
-    protected function buildDomainTree($environments, $parent = null)
+    protected function buildDomainTree($domains, $parent = null)
     {
         $children = array();
-        foreach ($environments as $environment) {
-            if ($environment['parent'] === $parent) {
-                $environment['children'] = $this->buildDomainTree($environments, $environment['id']);
-                $children[$environment['id']] = $environment;
+        foreach ($domains as $domain) {
+            if ($domain['parent'] === $parent) {
+                $domain['children'] = $this->buildDomainTree($domains, $domain['id']);
+                $children[$domain['id']] = $domain;
             }
         }
         return $children;
@@ -46,7 +46,7 @@ class DomainListCommand extends EnvironmentCommand
     {
         $table = $this->getHelperSet()->get('table');
         $table
-            ->setHeaders(array('ID', 'Name', 'SSL', 'Wildcard'))
+            ->setHeaders(array('Name', 'SSL enabled', 'Creation date'))
             ->setRows($this->buildDomainRows($tree));
 
         return $table;
@@ -58,24 +58,24 @@ class DomainListCommand extends EnvironmentCommand
     protected function buildDomainRows($tree, $indent = 0)
     {
         $rows = array();
-        foreach ($tree as $environment) {
-            // Inactive environments have no public url.
-            $link = '';
-            if (!empty($environment['_links']['public-url'])) {
-                $link = $environment['_links']['public-url']['href'];
+        foreach ($tree as $domain) {
+            
+            // Indicate that the domain is a wildcard.
+            $id = str_repeat(' ', $indent) . $domain['id'];
+            if ($domain['wildcard'] == FALSE) {
+                $id = "<info>*</info>." . $id;
             }
 
-            $id = str_repeat(' ', $indent) . $environment['id'];
-            if ($environment['id'] == $this->currentEnvironment['id']) {
-                $id .= "<info>*</info>";
-            }
+            // Indicate that the domain had a SSL certificate.
+            $domain['ssl']['has_certificate'] = ($domain['ssl']['has_certificate'] == TRUE) ? "Yes" : "No";
+
             $rows[] = array(
                 $id,
-                $environment['title'],
-                $link,
+                $domain['ssl']['has_certificate'],
+                $domain['created_at']
             );
 
-            $rows = array_merge($rows, $this->buildDomainRows($environment['children'], $indent + 1));
+            $rows = array_merge($rows, $this->buildDomainRows($domain['children'], $indent + 1));
         }
         return $rows;
     }
@@ -90,21 +90,16 @@ class DomainListCommand extends EnvironmentCommand
         }
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
-        $environments = $this->getEnvironments($this->project);
-        $tree = $this->buildDomainTree($environments);
+        $domains = $this->getDomains($this->project);
 
-        // To make the display nicer, we move all the children of master
-        // to the top level.
-        if (isset($tree['master'])) {
-            $tree += $tree['master']['children'];
-            $tree['master']['children'] = array();
-        }
+        // @todo: Remove this since there is no hierarchy in domains.
+        $tree = $this->buildDomainTree($domains);
 
         $output->writeln("\nYour domains are: ");
         $table = $this->buildDomainTable($tree);
         $table->render($output);
 
-        $output->writeln("\n<info>*</info> - Indicates the default domain.");
+        $output->writeln("\n<info>*</info> - Indicates that the domain is a wildcard.");
         $output->writeln("Add a SSL certificate to a domain by running <info>platform domain:ssl-add</info>");
         // Output a newline after the current block of commands.
         $output->writeln("");
