@@ -62,7 +62,7 @@ class DomainListCommand extends EnvironmentCommand
             
             // Indicate that the domain is a wildcard.
             $id = str_repeat(' ', $indent) . $domain['id'];
-            if ($domain['wildcard'] == FALSE) {
+            if ($domain['wildcard'] == TRUE) {
                 $id = "<info>*</info>." . $id;
             }
 
