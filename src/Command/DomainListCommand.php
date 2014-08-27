@@ -100,7 +100,11 @@ class DomainListCommand extends EnvironmentCommand
         $table = $this->buildDomainTable($tree);
         $table->render($output);
 
-        $output->writeln("\n<info>*</info> - Indicates that the domain is a wildcard.");
+        $output->writeln("\n<info>*</info> - Indicates that the domain is a wildcard.\n");
+
+        $output->writeln("Add a domain to your project by running <info>platform domain:add [domain-name]</info>");
+        $output->writeln("Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n");
+
         $output->writeln("Add a SSL certificate to a domain by running <info>platform domain:ssl-add</info>");
         // Output a newline after the current block of commands.
         $output->writeln("");

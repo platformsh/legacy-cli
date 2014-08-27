@@ -78,7 +78,7 @@ return array(
         'addDomain' => array(
             'httpMethod' => 'POST',
             'uri' => 'domains',
-            'summary' => 'Attach a new domain to the project',
+            'summary' => 'Add a domain',
             'parameters' => array(
                 'name' => array(
                     'location' => 'json',
@@ -87,6 +87,17 @@ return array(
                 'wildcard' => array(
                     'location' => 'json',
                     'type' => 'boolean',
+                ),
+            ),
+        ),
+        'deleteDomain' => array(
+            'httpMethod' => 'DELETE',
+            'uri' => 'domains',
+            'summary' => 'Delete a domain',
+            'parameters' => array(
+                'name' => array(
+                    'location' => 'json',
+                    'type' => 'string',
                 ),
             ),
         ),
