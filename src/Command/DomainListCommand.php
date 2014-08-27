@@ -89,10 +89,11 @@ class DomainListCommand extends EnvironmentCommand
             return;
         }
 
+        // @todo: This line is not needed.
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
         $domains = $this->getDomains($this->project);
 
-        // @todo: Remove this since there is no hierarchy in domains.
+        // @todo: Don't need this since there is no hierarchy in domains.
         $tree = $this->buildDomainTree($domains);
 
         $output->writeln("\nYour domains are: ");
