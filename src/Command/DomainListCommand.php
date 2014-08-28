@@ -25,21 +25,6 @@ class DomainListCommand extends EnvironmentCommand
     }
 
     /**
-     * Build a tree out of a list of domains.
-     */
-    protected function buildDomainTree($domains, $parent = null)
-    {
-        $children = array();
-        foreach ($domains as $domain) {
-            if ($domain['parent'] === $parent) {
-                $domain['children'] = $this->buildDomainTree($domains, $domain['id']);
-                $children[$domain['id']] = $domain;
-            }
-        }
-        return $children;
-    }
-
-    /**
      * Build a table of domains.
      */
     protected function buildDomainTable($tree)
@@ -58,6 +43,7 @@ class DomainListCommand extends EnvironmentCommand
     protected function buildDomainRows($tree, $indent = 0)
     {
         $rows = array();
+
         foreach ($tree as $domain) {
             
             // Indicate that the domain is a wildcard.
@@ -72,8 +58,6 @@ class DomainListCommand extends EnvironmentCommand
                 $domain['ssl']['has_certificate'],
                 $domain['created_at'],
             );
-
-            $rows = array_merge($rows, $this->buildDomainRows($domain['children'], $indent + 1));
         }
         return $rows;
     }
@@ -87,15 +71,13 @@ class DomainListCommand extends EnvironmentCommand
             return;
         }
 
-        // @todo: This line is not needed.
-        $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
         $domains = $this->getDomains($this->project);
 
         // @todo: Don't need this since there is no hierarchy in domains.
-        $tree = $this->buildDomainTree($domains);
+        //$tree = $this->buildDomainTree($domains);
 
         $output->writeln("\nYour domains are: ");
-        $table = $this->buildDomainTable($tree);
+        $table = $this->buildDomainTable($domains);
         $table->render($output);
 
         $output->writeln("Add a domain to your project by running <info>platform domain:add [domain-name]</info>");
