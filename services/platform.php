@@ -167,7 +167,7 @@ return array(
                 ),
                 'wildcard' => array(
                     'location' => 'json',
-                    'type' => 'string',
+                    'type' => 'boolean',
                 ),
                 '_links' => array(
                     'location' => 'json',
@@ -183,7 +183,7 @@ return array(
                     'type' => 'object',
                     'properties' => array(
                         'has_certificate' => array(
-                            'type' => 'string',
+                            'type' => 'boolean',
                         ),
                     ),
                 ),
