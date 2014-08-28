@@ -46,7 +46,7 @@ class DomainListCommand extends EnvironmentCommand
     {
         $table = $this->getHelperSet()->get('table');
         $table
-            ->setHeaders(array('Name', 'SSL enabled', 'Creation date'))
+            ->setHeaders(array('Name', 'Wildcard', 'SSL enabled', 'Creation date'))
             ->setRows($this->buildDomainRows($tree));
 
         return $table;
@@ -61,18 +61,16 @@ class DomainListCommand extends EnvironmentCommand
         foreach ($tree as $domain) {
             
             // Indicate that the domain is a wildcard.
-            $id = str_repeat(' ', $indent) . $domain['id'];
-            if ($domain['wildcard'] == TRUE) {
-                $id = "<info>*</info>." . $id;
-            }
+            $domain['wildcard'] = ($domain['wildcard'] == TRUE) ? "Yes" : "No";
 
             // Indicate that the domain had a SSL certificate.
             $domain['ssl']['has_certificate'] = ($domain['ssl']['has_certificate'] == TRUE) ? "Yes" : "No";
 
             $rows[] = array(
-                $id,
+                $domain['id'],
+                $domain['wildcard'],
                 $domain['ssl']['has_certificate'],
-                $domain['created_at']
+                $domain['created_at'],
             );
 
             $rows = array_merge($rows, $this->buildDomainRows($domain['children'], $indent + 1));
@@ -99,8 +97,6 @@ class DomainListCommand extends EnvironmentCommand
         $output->writeln("\nYour domains are: ");
         $table = $this->buildDomainTable($tree);
         $table->render($output);
-
-        $output->writeln("\n<info>*</info> - Indicates that the domain is a wildcard.\n");
 
         $output->writeln("Add a domain to your project by running <info>platform domain:add [domain-name]</info>");
         $output->writeln("Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n");
