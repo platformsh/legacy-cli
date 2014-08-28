@@ -105,7 +105,6 @@ class DomainListCommand extends EnvironmentCommand
         $output->writeln("Add a domain to your project by running <info>platform domain:add [domain-name]</info>");
         $output->writeln("Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n");
 
-        $output->writeln("Add a SSL certificate to a domain by running <info>platform domain:ssl-add</info>");
         // Output a newline after the current block of commands.
         $output->writeln("");
     }

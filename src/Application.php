@@ -7,7 +7,6 @@ use CommerceGuys\Platform\Cli\Command\DrushCommand;
 use CommerceGuys\Platform\Cli\Command\DomainAddCommand;
 use CommerceGuys\Platform\Cli\Command\DomainDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\DomainListCommand;
-use CommerceGuys\Platform\Cli\Command\DomainSslAddCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentActivateCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentBackupCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentBranchCommand;
@@ -53,7 +52,6 @@ class Application extends BaseApplication {
         $this->add(new DomainAddCommand);
         $this->add(new DomainDeleteCommand);
         $this->add(new DomainListCommand);
-        $this->add(new DomainSslAddCommand);
         $this->add(new EnvironmentActivateCommand);
         $this->add(new EnvironmentBackupCommand);
         $this->add(new EnvironmentBranchCommand);
