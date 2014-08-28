@@ -10,7 +10,7 @@ REQUIREMENTS
 
 * PHP 5.3.3 or higher with cURL
 * Composer ([Install Composer globally](http://getcomposer.org/doc/00-intro.md#system-requirements))
-* Drush 6.0 or higher - https://github.com/drush-ops/drush (only for Drupal projects)
+* Drush 6.x - https://github.com/drush-ops/drush (only for Drupal projects) *Don't use master!*
 
 INSTALL/UPDATE - COMPOSER
 -------------------------
@@ -35,7 +35,7 @@ INSTALL/UPDATE - COMPOSER
 * Add the `platform` command to your PATH (use your own path):
 
         export PATH=$PATH:$HOME/.composer/vendor/bin
-
+        
 USAGE
 -----
 
@@ -50,10 +50,19 @@ Use the 'help' command to get a list of available options and commands:
 FAQ
 ------
 
+#### What does "CLI" stand for?
+Command Line Interface.
+
+#### I get a message about removing symfony/yaml v2.2.1 when doing a global composer install?
+You need to make sure that you're using the 6.x branch and not dev-master. Do this: 
+
 ```
-  Q: What does "CLI" stand for?
-  A: Command Line Interface.
+composer global require drush/drush:6.*
+composer global update
 ```
+
+This will remove the dev-version of drush as well as the dependencies. You should now be able to install as described. **Note: Drush 6 is not compatible with Drupal 8.**
+
 
 CREDITS
 -----------
