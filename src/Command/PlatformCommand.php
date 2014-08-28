@@ -133,9 +133,6 @@ class PlatformCommand extends Command
             $this->platformClient = new Client();
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
-            // Platform doesn't have a valid SSL cert yet.
-            // @todo Remove this
-            $this->platformClient->setDefaultOption('verify', false);
         }
         // The base url can change between two requests in the same command,
         // so it needs to be explicitly set every time.
