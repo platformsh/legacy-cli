@@ -314,6 +314,35 @@ class PlatformCommand extends Command
     }
 
     /**
+     * Return the user's domains.
+     *
+     * @param array $project The project.
+     *
+     * @return array The user's domains.
+     */
+    protected function getDomains($project)
+    {
+        $this->loadConfig();
+        $projectId = $project['id'];
+        if (!isset($this->config['domains'][$projectId])) {
+            $this->config['domains'][$projectId] = array();
+        }
+
+        // Fetch and assemble a list of domains.
+        $client = $this->getPlatformClient($project['endpoint']);
+        $domains = array();
+        foreach ($client->getDomains() as $domain) {
+            $domains[$domain['id']] = $domain;
+        }
+        
+        // Recreate the aliases if the list of environments has changed.
+        $this->createDrushAliases($project, $domains);
+        $this->config['domains'][$projectId] = $domains;
+
+        return $this->config['domains'][$projectId];
+    }
+
+    /**
      * Create drush aliases for the provided project and environments.
      *
      * @param array $project The project
