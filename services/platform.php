@@ -92,7 +92,7 @@ return array(
         ),
         'deleteDomain' => array(
             'httpMethod' => 'DELETE',
-            'uri' => 'domains',
+            'uri' => '',
             'summary' => 'Delete a domain',
             'parameters' => array(
                 'name' => array(

@@ -51,9 +51,8 @@ class DomainDeleteCommand extends EnvironmentCommand
             $output->writeln("<error>You must specify the name of the domain.</error>");
             return;
         }
-
         
-        $client = $this->getPlatformClient($this->project['endpoint']);
+        $client = $this->getPlatformClient($this->project['endpoint'] . "/domains/" . $name);
         $client->deleteDomain();
         
         $message = '<info>';
