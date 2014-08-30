@@ -14,7 +14,7 @@ class DomainListCommand extends EnvironmentCommand
     protected function configure()
     {
         $this
-            ->setName('domain')
+            ->setName('domains')
             ->setDescription('Get a list of all domains.')
             ->addOption(
                 'project',
