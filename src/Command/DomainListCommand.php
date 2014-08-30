@@ -75,14 +75,14 @@ class DomainListCommand extends DomainCommand
         $project_name = !empty($this->project['name']) ? $this->project['name'] : $this->project['id'];
 
         if (empty($domains)) {
-            $output->writeln("\nNo domains found for " . $project_name . ".\n");
+            $output->writeln("\nNo domains found for " . $project_name);
         } else {
             $output->writeln("\nYour domains are: ");
             $table = $this->buildDomainTable($domains);
             $table->render($output);
         }
 
-        $output->writeln("Add a domain to your project by running <info>platform domain:add [domain-name]</info>");
+        $output->writeln("\nAdd a domain to your project by running <info>platform domain:add [domain-name]</info>");
         if (!empty($domains)) {
             $output->writeln("Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n");
         }
