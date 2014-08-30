@@ -43,6 +43,9 @@ class DomainAddCommand extends DomainCommand
         if (empty($name)) {
             $output->writeln("<error>You must specify the name of the domain.</error>");
             return;
+        } else if (!$this->validDomain($name, $output)) {
+            $output->writeln("<error>You must specify valid domain name.</error>");
+            return;
         }
 
         // @Todo: Improve this with a better dialog box.
