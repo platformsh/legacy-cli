@@ -163,30 +163,6 @@ class ProjectBuildCommand extends PlatformCommand
     }
 
     /**
-     * Delete a directory and all of its files.
-     */
-    protected function rmdir($directoryName)
-    {
-        if (is_dir($directoryName)) {
-          // Recursively empty the directory.
-          $directory = opendir($directoryName);
-          while ($file = readdir($directory)) {
-              if (!in_array($file, array('.', '..'))) {
-                  if (is_dir($directoryName . '/' . $file)) {
-                      $this->rmdir($directoryName . '/' . $file);
-                  } else {
-                      unlink($directoryName . '/' . $file);
-                  }
-              }
-          }
-          closedir($directory);
-
-          // Delete the directory itself.
-          rmdir($directoryName);
-        }
-    }
-
-    /**
      * Symlink all files and folders from $source into $destination.
      */
     protected function symlink($source, $destination)
