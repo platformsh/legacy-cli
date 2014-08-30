@@ -45,7 +45,7 @@ class DomainListCommand extends DomainCommand
         $rows = array();
 
         foreach ($tree as $domain) {
-            
+
             // Indicate that the domain is a wildcard.
             $domain['wildcard'] = ($domain['wildcard'] == TRUE) ? "Yes" : "No";
 
@@ -72,16 +72,20 @@ class DomainListCommand extends DomainCommand
         }
 
         $domains = $this->getDomains($this->project);
+        $project_name = !empty($this->project['name']) ? $this->project['name'] : $this->project['id'];
 
-        // @todo: Don't need this since there is no hierarchy in domains.
-        //$tree = $this->buildDomainTree($domains);
-
-        $output->writeln("\nYour domains are: ");
-        $table = $this->buildDomainTable($domains);
-        $table->render($output);
+        if (empty($domains)) {
+            $output->writeln("\nNo domains found for " . $project_name . ".\n");
+        } else {
+            $output->writeln("\nYour domains are: ");
+            $table = $this->buildDomainTable($domains);
+            $table->render($output);
+        }
 
         $output->writeln("Add a domain to your project by running <info>platform domain:add [domain-name]</info>");
-        $output->writeln("Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n");
+        if (!empty($domains)) {
+            $output->writeln("Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n");
+        }
 
         // Output a newline after the current block of commands.
         $output->writeln("");
