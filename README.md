@@ -19,7 +19,7 @@ INSTALL/UPDATE - COMPOSER
 
         $ sed -i '1i export PATH="$HOME/.composer/vendor/bin:$PATH"' $HOME/.bashrc
         $ source $HOME/.bashrc
-        
+
 * Remove the old CLI version, if you have it:
 
         composer global remove 'commerceguys/platform-cli'
@@ -35,7 +35,7 @@ INSTALL/UPDATE - COMPOSER
 * Add the `platform` command to your PATH (use your own path):
 
         export PATH=$PATH:$HOME/.composer/vendor/bin
-        
+
 USAGE
 -----
 
@@ -43,9 +43,9 @@ Platform CLI can be run in your shell by typing `platform`.
 
     $ platform
 
-Use the 'help' command to get a list of available options and commands:
+Use the 'list' command to get a list of available options and commands:
 
-    $ platform help
+    $ platform list
 
 FAQ
 ------
@@ -54,7 +54,7 @@ FAQ
 Command Line Interface.
 
 #### I get a message about removing symfony/yaml v2.2.1 when doing a global composer install?
-You need to make sure that you're using the 6.x branch and not dev-master. Do this: 
+You need to make sure that you're using the 6.x branch and not dev-master. Do this:
 
 ```
 composer global require drush/drush:6.*
