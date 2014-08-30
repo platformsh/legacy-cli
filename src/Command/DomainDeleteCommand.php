@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
-class DomainDeleteCommand extends EnvironmentCommand
+class DomainDeleteCommand extends DomainCommand
 {
     /**
      * {@inheritdoc}
@@ -51,10 +51,10 @@ class DomainDeleteCommand extends EnvironmentCommand
             $output->writeln("<error>You must specify the name of the domain.</error>");
             return;
         }
-        
+
         $client = $this->getPlatformClient($this->project['endpoint'] . "/domains/" . $name);
         $client->deleteDomain();
-        
+
         $message = '<info>';
         $message = "\nThe given domain has been successfuly deleted from the project. \n";
         $message .= "</info>";

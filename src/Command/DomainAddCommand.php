@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
-class DomainAddCommand extends EnvironmentCommand
+class DomainAddCommand extends DomainCommand
 {
     /**
      * {@inheritdoc}
@@ -51,8 +51,8 @@ class DomainAddCommand extends EnvironmentCommand
         $wildcard = ($answer == "yes") ? true : false;
 
         $client = $this->getPlatformClient($this->project['endpoint']);
-        $client->addDomain(array('name' => $name, 'wildcard' => $wildcard));        
-        
+        $client->addDomain(array('name' => $name, 'wildcard' => $wildcard));
+
         $message = '<info>';
         $message = "\nThe given domain has been successfuly added to the project. \n";
         $message .= "</info>";
