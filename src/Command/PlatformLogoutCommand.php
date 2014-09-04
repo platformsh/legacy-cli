@@ -35,7 +35,7 @@ class PlatformLogoutCommand extends PlatformCommand
                 $output->writeln("<comment>Your Platform configuration file has been removed and you have been logged out of the Platform CLI.</comment>");
             }
             catch (\Exception $e) {
-
+                // @todo: Real exception handling here.
             }
             return;
         }
