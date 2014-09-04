@@ -17,6 +17,7 @@ use CommerceGuys\Platform\Cli\Command\EnvironmentListCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentMergeCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentSynchronizeCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectBuildCommand;
+use CommerceGuys\Platform\Cli\Command\ProjectCleanCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectGetCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectListCommand;
@@ -62,6 +63,7 @@ class Application extends BaseApplication {
         $this->add(new EnvironmentMergeCommand);
         $this->add(new EnvironmentSynchronizeCommand);
         $this->add(new ProjectBuildCommand);
+        $this->add(new ProjectCleanCommand);
         $this->add(new ProjectDeleteCommand);
         $this->add(new ProjectGetCommand);
         $this->add(new SshKeyAddCommand);
