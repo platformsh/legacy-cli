@@ -8,6 +8,7 @@ DESCRIPTION
 REQUIREMENTS
 ------------
 
+* OS: Linux, OS X, Windows Vista, 7 (any), or 8 Pro. (Win8 Standard does not work due to an issue with symlink permissions.)
 * PHP 5.3.3 or higher with cURL
 * Composer ([Install Composer globally](http://getcomposer.org/doc/00-intro.md#system-requirements))
 * Drush 6.x - https://github.com/drush-ops/drush (only for Drupal projects) *Don't use master!*
