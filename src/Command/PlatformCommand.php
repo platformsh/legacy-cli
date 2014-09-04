@@ -387,6 +387,11 @@ class PlatformCommand extends Command
 
     }
 
+    public static function skipLogin()
+    {
+        return FALSE;
+    }
+
     protected function ensureDrushInstalled()
     {
         $drushVersion = shell_exec('drush version');
