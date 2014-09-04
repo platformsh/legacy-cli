@@ -21,6 +21,7 @@ use CommerceGuys\Platform\Cli\Command\ProjectCleanCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectGetCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectListCommand;
+use CommerceGuys\Platform\Cli\Command\ProjectFixAliasesCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyAddCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyListCommand;
@@ -66,6 +67,7 @@ class Application extends BaseApplication {
         $this->add(new ProjectCleanCommand);
         $this->add(new ProjectDeleteCommand);
         $this->add(new ProjectGetCommand);
+        $this->add(new ProjectFixAliasesCommand);
         $this->add(new SshKeyAddCommand);
         $this->add(new SshKeyDeleteCommand);
         $this->add(new SshKeyListCommand);
