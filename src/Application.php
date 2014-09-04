@@ -62,6 +62,7 @@ class Application extends BaseApplication {
         $this->add(new EnvironmentMergeCommand);
         $this->add(new EnvironmentSynchronizeCommand);
         $this->add(new Command\EnvironmentSshCommand);
+        $this->add(new Command\EnvironmentRelationshipsCommand);
         $this->add(new ProjectBuildCommand);
         $this->add(new ProjectDeleteCommand);
         $this->add(new ProjectGetCommand);

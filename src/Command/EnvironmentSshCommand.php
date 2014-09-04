@@ -22,22 +22,16 @@ class EnvironmentSshCommand extends EnvironmentCommand
             ->setDescription('SSH to the current environment.');
         // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
     }
-    
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
             return;
-        }    
-        if (!$this->environment) {
-          $output->writeln("<comment>There is no project or environment selected.</comment>");
-          return;
         }
-        
-        $sshUrl = parse_url($this->environment['_links']['ssh']['href']);
-        $host = $sshUrl['host'];
-        $user = $sshUrl['user'];
-        
-        $command = 'ssh ' . $user . '@' . $host;
+
+        $sshUrlString = $this->getSshUrl();
+
+        $command = 'ssh ' . $sshUrlString;
         $execute = !$input->getOption('echo');
         if ($execute) {
             passthru($command);
@@ -49,7 +43,19 @@ class EnvironmentSshCommand extends EnvironmentCommand
         }
     }
 
+    protected function getSshUrl()
+    {
+        if (!$this->environment) {
+          $output->writeln("<comment>There is no project or environment selected.</comment>");
+          return;
+        }
 
+        $sshUrl = parse_url($this->environment['_links']['ssh']['href']);
+        $host = $sshUrl['host'];
+        $user = $sshUrl['user'];
+
+        return $user . '@' . $host;
+    }
 
 
 
