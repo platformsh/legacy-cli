@@ -31,7 +31,7 @@ class EnvironmentRelationshipsCommand extends EnvironmentSshCommand
         $command = 'ssh ' . $sshUrlString . ' "php -r \'echo getenv(\"PLATFORM_RELATIONSHIPS\");\'"';
         $relationships = shell_exec($command);
         $results = json_decode(base64_decode($relationships));
-        
+
         foreach ($results as $key => $relationship) {
             foreach ($relationship as $delta => $object) {
                 $output->writeln("<comment>$key:$delta:</comment>");
@@ -44,5 +44,5 @@ class EnvironmentRelationshipsCommand extends EnvironmentSshCommand
             }
         }
     }
-   
+
 }

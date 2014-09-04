@@ -57,8 +57,4 @@ class EnvironmentSshCommand extends EnvironmentCommand
         return $user . '@' . $host;
     }
 
-
-
-
-
 }
