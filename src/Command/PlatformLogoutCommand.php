@@ -21,17 +21,28 @@ class PlatformLogoutCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // We manually check for the configuration file here. If it does not
+        // exist then this command should not run.
+        $application = $this->getApplication();
+        $configPath = $application->getHomeDirectory() . '/.platform';
+        $configFileExists = file_exists($configPath);
+
+        if (!$configFileExists) {
+            // There is no configuration!
+            $output->writeln("<comment>You are not currently logged in to the Platform CLI and, consequently, are unable to log out.</comment>");
+            return;
+        }
+        // Ask for a confirmation.
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('<question>This command will remove your current Platform configuration. You will have to re-enter your Platform credentials to use the CLI tool. Are you sure you wish to continue? </question>', false);
+        $question = new ConfirmationQuestion("<comment>This command will remove your current Platform configuration.\n\nYou will have to re-enter your Platform credentials to use the CLI tool.</comment> <question>Are you sure you wish to continue? (y/n):</question> ", false);
 
         if (!$helper->ask($input, $output, $question)) {
+            $output->writeln("<info>Okay! You remain logged in to the Platform CLI with your current credentials.</info>");
             return;
         }
         else {
             try {
                 $this->removeConfigFile = TRUE;
-                $application = $this->getApplication();
-                $configPath = $application->getHomeDirectory() . '/.platform';
                 unlink($configPath);
                 $output->writeln("<comment>Your Platform configuration file has been removed and you have been logged out of the Platform CLI.</comment>");
             }
