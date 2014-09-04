@@ -331,7 +331,7 @@ class PlatformCommand extends Command
         foreach ($client->getDomains() as $domain) {
             $domains[$domain['id']] = $domain;
         }
-        
+
         // Recreate the aliases if the list of environments has changed.
         $this->createDrushAliases($project, $domains);
         $this->config['domains'][$projectId] = $domains;
@@ -385,6 +385,11 @@ class PlatformCommand extends Command
             }
         }
 
+    }
+
+    public static function skipLogin()
+    {
+        return FALSE;
     }
 
     protected function ensureDrushInstalled()

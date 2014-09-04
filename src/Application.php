@@ -67,6 +67,7 @@ class Application extends BaseApplication {
         $this->add(new SshKeyAddCommand);
         $this->add(new SshKeyDeleteCommand);
         $this->add(new SshKeyListCommand);
+        $this->add(new Command\PlatformLogoutCommand);
     }
 
     /**
@@ -122,7 +123,7 @@ class Application extends BaseApplication {
 
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
-        if (!$this->hasConfiguration()) {
+        if (!$this->hasConfiguration() && !$command::skipLogin()) {
             $this->add(new LoginCommand);
             $commandChain[] = array(
                 'command' => $this->find('login'),

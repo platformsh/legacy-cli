@@ -23,15 +23,25 @@ class ProjectBuildCommand extends PlatformCommand
             $output->writeln("<error>You must run this command from a project folder.</error>");
             return;
         }
-        $project = $this->getCurrentProject();
-        $environment = $this->getCurrentEnvironment($project);
-        if (!$environment) {
-            $output->writeln("<error>Could not determine the current environment.</error>");
-            return;
+        if ($this->config) {
+            $project = $this->getCurrentProject();
+            $environment = $this->getCurrentEnvironment($project);
+                if (!$environment) {
+                    $output->writeln("<error>Could not determine the current environment.</error>");
+                    return;
+                }
+            $envId = $environment['id'];
+        }
+        else {
+            // Login was skipped so we figure out the environment ID from git.
+            $head = file($projectRoot . '/repository/.git/HEAD');
+            $branchRef = $head[0];
+            $branch = trim(substr($branchRef,16));
+            $envId = $branch;
         }
 
         try {
-            $this->build($projectRoot, $environment['id']);
+            $this->build($projectRoot, $envId);
         } catch (\Exception $e) {
             $output->writeln("<error>" . $e->getMessage() . '</error>');
         }
@@ -205,5 +215,10 @@ class ProjectBuildCommand extends PlatformCommand
             }
         }
         closedir($sourceDirectory);
+    }
+
+    public static function skipLogin()
+    {
+        return TRUE;
     }
 }
