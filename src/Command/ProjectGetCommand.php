@@ -32,6 +32,12 @@ class ProjectGetCommand extends PlatformCommand
                 null,
                 InputOption::VALUE_NONE,
                 "Do not build the retrieved project"
+            )
+            ->addOption(
+                'include-inactive',
+                null,
+                InputOption::VALUE_NONE,
+                "List inactive environments too"
             );
     }
 
@@ -60,7 +66,7 @@ class ProjectGetCommand extends PlatformCommand
         // Create a numerically indexed list, starting with "master".
         $environmentList = array($environments['master']);
         foreach ($environments as $environment) {
-            if ($environment['id'] != 'master') {
+            if ($environment['id'] != 'master' && (!array_key_exists('#activate', $environment['_links']) || $input->getOption('include-inactive'))) {
                 $environmentList[] = $environment;
             }
         }
