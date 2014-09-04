@@ -21,10 +21,10 @@ use CommerceGuys\Platform\Cli\Command\ProjectCleanCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectGetCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectListCommand;
+use CommerceGuys\Platform\Cli\Command\ProjectFixAliasesCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyAddCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyListCommand;
-use CommerceGuys\Platform\Cli\Command\RebuildAliasesCommand;
 use CommerceGuys\Platform\Cli\Command\WelcomeCommand;
 
 use Symfony\Component\Console\Application as BaseApplication;
@@ -67,10 +67,10 @@ class Application extends BaseApplication {
         $this->add(new ProjectCleanCommand);
         $this->add(new ProjectDeleteCommand);
         $this->add(new ProjectGetCommand);
+        $this->add(new ProjectFixAliasesCommand);
         $this->add(new SshKeyAddCommand);
         $this->add(new SshKeyDeleteCommand);
         $this->add(new SshKeyListCommand);
-        $this->add(new RebuildAliasesCommand);
     }
 
     /**
