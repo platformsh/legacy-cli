@@ -14,14 +14,15 @@ class PlatformLogoutCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('logout')
+            ->setName('platform:logout')
+            ->setAliases(array('logout'))
             ->setDescription('Log out of Platform');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('This command will remove your current Platform configuration. You will have to re-enter your Platform credentials to use the CLI tool. Are you sure you wish to continue? ', false);
+        $question = new ConfirmationQuestion('<question>This command will remove your current Platform configuration. You will have to re-enter your Platform credentials to use the CLI tool. Are you sure you wish to continue? </question>', false);
 
         if (!$helper->ask($input, $output, $question)) {
             return;
