@@ -4,16 +4,24 @@ namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\InputOption;
 
 class ProjectBuildCommand extends PlatformCommand
 {
+    private $absoluteLinks;
 
     protected function configure()
     {
         $this
             ->setName('project:build')
             ->setAliases(array('build'))
-            ->setDescription('Builds the current project.');
+            ->setDescription('Builds the current project.')
+            ->addOption(
+                'abslinks',
+                'a',
+                InputOption::VALUE_NONE,
+                'Use absolute links.'
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -23,15 +31,26 @@ class ProjectBuildCommand extends PlatformCommand
             $output->writeln("<error>You must run this command from a project folder.</error>");
             return;
         }
-        $project = $this->getCurrentProject();
-        $environment = $this->getCurrentEnvironment($project);
-        if (!$environment) {
-            $output->writeln("<error>Could not determine the current environment.</error>");
-            return;
+        if ($this->config) {
+            $project = $this->getCurrentProject();
+            $environment = $this->getCurrentEnvironment($project);
+                if (!$environment) {
+                    $output->writeln("<error>Could not determine the current environment.</error>");
+                    return;
+                }
+            $envId = $environment['id'];
         }
+        else {
+            // Login was skipped so we figure out the environment ID from git.
+            $head = file($projectRoot . '/repository/.git/HEAD');
+            $branchRef = $head[0];
+            $branch = trim(substr($branchRef,16));
+            $envId = $branch;
+        }
+        $this->absoluteLinks = $input->getOption('abslinks');
 
         try {
-            $this->build($projectRoot, $environment['id']);
+            $this->build($projectRoot, $envId);
         } catch (\Exception $e) {
             $output->writeln("<error>" . $e->getMessage() . '</error>');
         }
@@ -45,9 +64,11 @@ class ProjectBuildCommand extends PlatformCommand
      */
     public function build($projectRoot, $environmentId)
     {
-        $buildDir = $projectRoot . '/builds/' . date('Y-m-d--H-i-s') . '--' . $environmentId;
+        $buildName = date('Y-m-d--H-i-s') . '--' . $environmentId;
+        $relBuildDir = 'builds/' . $buildName;
+        $absBuildDir = $projectRoot . '/' . $relBuildDir;
         // @todo Implement logic for detecting a Drupal project VS others.
-        $status = $this->buildDrupal($buildDir, $projectRoot);
+        $status = $this->buildDrupal($absBuildDir, $projectRoot);
         if ($status) {
             // Point www to the latest build.
             $wwwLink = $projectRoot . '/www';
@@ -55,7 +76,7 @@ class ProjectBuildCommand extends PlatformCommand
                 // @todo Windows might need rmdir instead of unlink.
                 unlink($wwwLink);
             }
-            symlink($buildDir, $wwwLink);
+            symlink($this->absoluteLinks ? $absBuildDir : $relBuildDir, $wwwLink);
         }
     }
 
@@ -163,30 +184,6 @@ class ProjectBuildCommand extends PlatformCommand
     }
 
     /**
-     * Delete a directory and all of its files.
-     */
-    protected function rmdir($directoryName)
-    {
-        if (is_dir($directoryName)) {
-          // Recursively empty the directory.
-          $directory = opendir($directoryName);
-          while ($file = readdir($directory)) {
-              if (!in_array($file, array('.', '..'))) {
-                  if (is_dir($directoryName . '/' . $file)) {
-                      $this->rmdir($directoryName . '/' . $file);
-                  } else {
-                      unlink($directoryName . '/' . $file);
-                  }
-              }
-          }
-          closedir($directory);
-
-          // Delete the directory itself.
-          rmdir($directoryName);
-        }
-    }
-
-    /**
      * Symlink all files and folders from $source into $destination.
      */
     protected function symlink($source, $destination)
@@ -201,9 +198,49 @@ class ProjectBuildCommand extends PlatformCommand
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
             if (!in_array($file, $skip)) {
-                symlink($source . '/' . $file, $destination . '/' . $file);
+                $sourceFile = $source . '/' . $file;
+                $linkFile = $destination . '/' . $file;
+
+                if (!$this->absoluteLinks) {
+                    $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
+                }
+
+                symlink($sourceFile, $linkFile);
             }
         }
         closedir($sourceDirectory);
+    }
+
+    public static function skipLogin()
+    {
+        return TRUE;
+    }
+
+    /**
+     * Make relative path between two files.
+     *
+     * @param string $source Path of the file we are linking to.
+     * @param string $destination Path to the symlink.
+     * @return string Relative path to the source, or file linking to.
+     */
+    private function makePathRelative($source, $dest)
+    {
+        $i = 0;
+        while (true) {
+            if(substr($source, $i, 1) != substr($dest, $i, 1)) {
+                break;
+            }
+            $i++;
+        }
+        $distance = substr_count(substr($dest, $i - 1, strlen($dest)), '/') - 1;
+
+        $path = '';
+        while ($distance) {
+            $path .= '../';
+            $distance--;
+        }
+        $path .= substr($source, $i, strlen($source));
+
+        return $path;
     }
 }

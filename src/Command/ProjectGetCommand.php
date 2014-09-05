@@ -32,6 +32,12 @@ class ProjectGetCommand extends PlatformCommand
                 null,
                 InputOption::VALUE_NONE,
                 "Do not build the retrieved project"
+            )
+            ->addOption(
+                'include-inactive',
+                null,
+                InputOption::VALUE_NONE,
+                "List inactive environments too"
             );
     }
 
@@ -60,7 +66,7 @@ class ProjectGetCommand extends PlatformCommand
         // Create a numerically indexed list, starting with "master".
         $environmentList = array($environments['master']);
         foreach ($environments as $environment) {
-            if ($environment['id'] != 'master') {
+            if ($environment['id'] != 'master' && (!array_key_exists('#activate', $environment['_links']) || $input->getOption('include-inactive'))) {
                 $environmentList[] = $environment;
             }
         }
@@ -111,7 +117,19 @@ class ProjectGetCommand extends PlatformCommand
         $command = "git clone --branch $environment $gitUrl $repositoryDir";
         passthru($command);
         if (!is_dir($directoryName . '/repository')) {
-            // The clone wasn't successful, stop here.
+            // The clone wasn't successful. Clean up the folders we created
+            // and then bow out with a message.
+            foreach (array_reverse($folders) as $folder) {
+              $this->rmdir($folder);
+            }
+            $formatter = $this->getHelper('formatter');
+            $errorArray = array(
+              "[Error]",
+              "We're sorry, your Platform project could not be cloned.",
+              "Please check your SSH credentials or contact Platform Support."
+            );
+            $errorBlock = $formatter->formatBlock($errorArray, 'error', TRUE);
+            $output->writeln($errorBlock);
             return;
         }
 

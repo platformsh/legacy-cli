@@ -18,9 +18,11 @@ use CommerceGuys\Platform\Cli\Command\EnvironmentMergeCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentSynchronizeCommand;
 use CommerceGuys\Platform\Cli\Command\EnvironmentTunnelCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectBuildCommand;
+use CommerceGuys\Platform\Cli\Command\ProjectCleanCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectGetCommand;
 use CommerceGuys\Platform\Cli\Command\ProjectListCommand;
+use CommerceGuys\Platform\Cli\Command\ProjectFixAliasesCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyAddCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyDeleteCommand;
 use CommerceGuys\Platform\Cli\Command\SshKeyListCommand;
@@ -63,12 +65,17 @@ class Application extends BaseApplication {
         $this->add(new EnvironmentMergeCommand);
         $this->add(new EnvironmentSynchronizeCommand);
         $this->add(new EnvironmentTunnelCommand);
+        $this->add(new Command\EnvironmentSshCommand);
+        $this->add(new Command\EnvironmentRelationshipsCommand);
         $this->add(new ProjectBuildCommand);
+        $this->add(new ProjectCleanCommand);
         $this->add(new ProjectDeleteCommand);
         $this->add(new ProjectGetCommand);
+        $this->add(new ProjectFixAliasesCommand);
         $this->add(new SshKeyAddCommand);
         $this->add(new SshKeyDeleteCommand);
         $this->add(new SshKeyListCommand);
+        $this->add(new Command\PlatformLogoutCommand);
     }
 
     /**
@@ -124,7 +131,7 @@ class Application extends BaseApplication {
 
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
-        if (!$this->hasConfiguration()) {
+        if (!$this->hasConfiguration() && !$command::skipLogin()) {
             $this->add(new LoginCommand);
             $commandChain[] = array(
                 'command' => $this->find('login'),
