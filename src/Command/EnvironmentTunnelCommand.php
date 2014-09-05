@@ -129,6 +129,12 @@ class EnvironmentTunnelCommand extends EnvironmentCommand
     }
     protected function web_params($buildpack, $projectWWWRoot, $localhost, $http_local_port, $projectWWWRoot){
       switch ($buildpack){
+        case "symfony":
+        /*FIXME 
+        we should get this from composer.json
+        extra:symfony-web-dir
+        */
+        return "php -t $projectWWWRoot/web/app.php/ -S $localhost:$http_local_port }'";
         case "drupal":
         default:
         return "php -t $projectWWWRoot -S $localhost:$http_local_port -r'if (preg_match(\"/\.(engine|inc|info|install|make|module|profile|test|po|sh|.*sql|theme|tpl(\.php)?|xtmpl)/\",\$_SERVER[\"REQUEST_URI\"])) { print \"Error\\n\"; } else if (preg_match(\"/(^|\/)\./\",\$_SERVER[\"REQUEST_URI\"])) { return false; } else if (file_exists(\$_SERVER[\"DOCUMENT_ROOT\"].\$_SERVER[\"SCRIPT_NAME\"])) { return false; } else {\$_GET[\"q\"]=\$_SERVER[\"REQUEST_URI\"]; include(\"$projectWWWRoot/index.php\"); }'";
