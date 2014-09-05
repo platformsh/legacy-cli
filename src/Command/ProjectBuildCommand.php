@@ -5,11 +5,11 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Input\InputOption;
 
 class ProjectBuildCommand extends PlatformCommand
 {
     private $absoluteLinks;
+    protected $wcOption = FALSE;
 
     protected function configure()
     {
@@ -22,7 +22,7 @@ class ProjectBuildCommand extends PlatformCommand
                 'a',
                 InputOption::VALUE_NONE,
                 'Use absolute links.'
-            );
+            )
             ->addOption('working-copy', 'wc', InputOption::VALUE_NONE, 'Use git to clone a repository of each Drupal module rather than simply downloading a version.');
         $this->ignoreValidationErrors();
     }
