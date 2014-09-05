@@ -77,7 +77,7 @@ class ProjectBuildCommand extends PlatformCommand
         if ($status) {
             // Point www to the latest build.
             $wwwLink = $projectRoot . '/www';
-            if (file_exists($wwwLink)) {
+            if (file_exists($wwwLink) || is_link($wwwLink)) {
                 // @todo Windows might need rmdir instead of unlink.
                 unlink($wwwLink);
             }
@@ -211,7 +211,6 @@ class ProjectBuildCommand extends PlatformCommand
                 if (!$this->absoluteLinks) {
                     $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
                 }
-
                 symlink($sourceFile, $linkFile);
             }
         }

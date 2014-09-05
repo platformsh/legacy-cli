@@ -53,11 +53,11 @@ class ProjectCleanCommand extends PlatformCommand
         }
 
         // Remove old builds.
-        rsort($builds);
+        sort($builds);
         $deleted = 0;
         $keep = (int) $input->getOption('number');
         foreach ($builds as $build) {
-            if (!$keep--) {
+            if ((count($builds) - $deleted) > $keep) {
                 $this->rmdir($projectRoot . '/builds/' . $build);
                 $deleted++;
             }
