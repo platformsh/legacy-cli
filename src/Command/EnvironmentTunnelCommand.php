@@ -145,7 +145,7 @@ class EnvironmentTunnelCommand extends EnvironmentCommand
             $http_local_port=  8000; //FIXME hardcoded
             $tmp_dir="/tmp";
             $tunnelCommand = "ssh -N ". $this->tunnels_params() ." $sshUrl";
-            $serveCommand = $this->web_params();
+            $serveCommand = $this->web_params($buildpack, $projectWWWRoot, $localhost, $http_local_port, $projectWWWRoot);
             $webOutputFile ="$tmp_dir/platform-local-web-server-$environmentId.log";
             $webPidFile ="$tmp_dir/platform-local-web-server-$environmentId.pid";
             $tunnelOutputFile ="$tmp_dir/platform-local-ssh-tunnel-$environmentId.log";
@@ -166,7 +166,7 @@ class EnvironmentTunnelCommand extends EnvironmentCommand
               $message .= "Connect to $tunnel through $localhost:".$config["local_port"];
             }
             $message .= "\nSet your settings to connect $localhost:$mysql_local_port for mysql (do not use localhost !)\n";
-            $message .= "\nYou can see the site on http://$localhost:$http_local_port";
+            $message .= "\nYou can see the site on http://$localhost:$http_local_port\n$serveCommand\n";
             $message .= "</info>";
             return $message;
     }
