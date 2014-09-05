@@ -3,12 +3,13 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectBuildCommand extends PlatformCommand
 {
     private $absoluteLinks;
+    protected $wcOption = FALSE;
 
     protected function configure()
     {
@@ -21,11 +22,15 @@ class ProjectBuildCommand extends PlatformCommand
                 'a',
                 InputOption::VALUE_NONE,
                 'Use absolute links.'
-            );
+            )
+            ->addOption('working-copy', 'wc', InputOption::VALUE_NONE, 'Use git to clone a repository of each Drupal module rather than simply downloading a version.');
+        $this->ignoreValidationErrors();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->wcOption = $input->getOption('working-copy');
+
         $projectRoot = $this->getProjectRoot();
         if (empty($projectRoot)) {
             $output->writeln("<error>You must run this command from a project folder.</error>");
@@ -72,7 +77,7 @@ class ProjectBuildCommand extends PlatformCommand
         if ($status) {
             // Point www to the latest build.
             $wwwLink = $projectRoot . '/www';
-            if (file_exists($wwwLink)) {
+            if (file_exists($wwwLink) || is_link($wwwLink)) {
                 // @todo Windows might need rmdir instead of unlink.
                 unlink($wwwLink);
             }
@@ -99,6 +104,8 @@ class ProjectBuildCommand extends PlatformCommand
     {
         $this->ensureDrushInstalled();
 
+        $wcOption = ($this->wcOption ? "--working-copy" : "");
+
         $repositoryDir = $projectRoot . '/repository';
         $profiles = glob($repositoryDir . '/*.profile');
         if (count($profiles) > 1) {
@@ -121,7 +128,7 @@ class ProjectBuildCommand extends PlatformCommand
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
             }
 
-            shell_exec("drush make -y $projectCoreMake $buildDir");
+            shell_exec("drush make -y $wcOption $projectCoreMake $buildDir");
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
                 $profile = str_replace($repositoryDir, '', $profiles[0]);
@@ -131,11 +138,11 @@ class ProjectBuildCommand extends PlatformCommand
                 // Drush Make requires $profileDir to not exist if it's passed
                 // as the target. chdir($profileDir) works around that.
                 chdir($profileDir);
-                shell_exec("drush make -y --no-core --contrib-destination=. $projectMake");
+                shell_exec("drush make -y $wcOption --no-core --contrib-destination=. $projectMake");
             }
         } elseif (file_exists($repositoryDir . '/project.make')) {
             $projectMake = $repositoryDir . '/project.make';
-            shell_exec("drush make -y $projectMake $buildDir");
+            shell_exec("drush make -y $wcOption $projectMake $buildDir");
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
               // Remove sites/default to make room for the symlink.
@@ -204,7 +211,6 @@ class ProjectBuildCommand extends PlatformCommand
                 if (!$this->absoluteLinks) {
                     $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
                 }
-
                 symlink($sourceFile, $linkFile);
             }
         }
