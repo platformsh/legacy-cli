@@ -47,7 +47,16 @@ class ProjectBuildCommand extends PlatformCommand
     {
         $buildDir = $projectRoot . '/builds/' . date('Y-m-d--H-i-s') . '--' . $environmentId;
         // @todo Implement logic for detecting a Drupal project VS others.
-        $status = $this->buildDrupal($buildDir, $projectRoot);
+        $stack= $this->detectStack($projectRoot . '/repository');
+        switch ($stack) {
+          case "symfony":
+              $status = $this->buildSymfony($buildDir, $projectRoot);
+              break;
+            case "drupal":
+            default:
+              $status = $this->buildDrupal($buildDir, $projectRoot);
+              break;
+        }
         if ($status) {
             // Point www to the latest build.
             $wwwLink = $projectRoot . '/www';
@@ -56,9 +65,65 @@ class ProjectBuildCommand extends PlatformCommand
                 unlink($wwwLink);
             }
             symlink($buildDir, $wwwLink);
+        }else{
+          throw new \Exception("Building $stack project failed");
         }
     }
+    protected function detectStack($dir)
+      {
+        if (file_exists($dir. '/composer.json'))
+        {
+          $json=file_get_contents($dir. '/composer.json');
+          $composer_json = json_decode($json);
+          if (property_exists($composer_json->require,"symfony/symfony")) {
+            return ("symfony");
+          } else {
+//            throw new \Exception("Couldn't find symfony in  composer.json in the repository.");
+          };
+      };
+      if (recursive_file_exists("project.make", $dir)) {
+        return ("drupal");
+      }//|| (recursive_file_exists("drupal-org.make", $dir) ||(recursive_file_exists("drupal-org-core.make", $dir)
 
+    }
+    
+    /**
+     * Build a Symfony project in the provided directory.
+     *
+     * For a build to happen the repository must have at least one composer.json 
+     *   into the /web directory.
+     *
+     * @param string $buildDir The path to the build directory.
+     * @param string $projectRoot The path to the project to be built.
+     */
+    protected function buildSymfony($buildDir, $projectRoot)
+    {
+        $repositoryDir = $projectRoot . '/repository';
+        if (file_exists($repositoryDir . '/composer.json')) {
+            $projectComposer = $repositoryDir . '/composer.json';} else{
+            throw new \Exception("Couldn't find a composer.json in the repository.");
+        }
+        mkdir($buildDir);
+        $this->copy($repositoryDir, $buildDir);
+        if (is_dir($buildDir)) {
+            chdir($buildDir);
+            shell_exec("composer install --no-progress --no-interaction  --working-dir $buildDir");
+        }
+        else {
+          throw new \Exception("Couldn't create build directory");
+        }
+        // The build has been done, create a config_dev.yml if it is missing.
+        if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/config_dev.yml')) {
+            // Create the config_dev.yml file.
+            copy(CLI_ROOT . '/resources/symfony/config_dev.yml', $buildDir . '/app/config/config_dev.yml');
+        }
+        if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/routing_dev.yml')) {
+            // Create the routing_dev.yml file.
+            copy(CLI_ROOT . '/resources/symfony/routing_dev.yml', $buildDir . '/app/config/routing_dev.yml');
+        }        
+        return true;
+    }
+    
     /**
      * Build a Drupal project in the provided directory.
      *
@@ -205,5 +270,40 @@ class ProjectBuildCommand extends PlatformCommand
             }
         }
         closedir($sourceDirectory);
+    }
+    
+    /*
+     * @Search recursively for a file in a given directory
+     *
+     * @param string $filename The file to find
+     *
+     * @param string $directory The directory to search
+     *
+     * @return bool
+     *
+     */
+    private function recursive_file_exists($filename, $directory)
+    {
+        try
+        {
+            /*** loop through the files in directory ***/
+            foreach(new recursiveIteratorIterator( new recursiveDirectoryIterator($directory)) as $file)
+            {
+                /*** if the file is found ***/
+                if( $directory.'/'.$filename == $file )
+                {
+                    return true;
+                }
+            }
+            /*** if the file is not found ***/
+            return false;
+        }
+        catch(Exception $e)
+        {
+            /*** if the directory does not exist or the directory
+                or a sub directory does not have sufficent
+                permissions return false ***/
+            return false;
+        }
     }
 }
