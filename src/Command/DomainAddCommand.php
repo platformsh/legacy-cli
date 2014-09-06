@@ -9,6 +9,20 @@ use Symfony\Component\Console\Input\InputOption;
 
 class DomainAddCommand extends DomainCommand
 {
+
+    // SSL file paths.
+    protected $sslCertPath;
+    protected $sslKeyPath;
+    protected $sslChainPaths;
+    // SSL file contents, unmodified.
+    protected $sslCertFile;
+    protected $sslKeyFile;
+    protected $sslChainFiles;
+    // Were we provided with SSL certificate input either in options or interactively?
+    protected $sslMode = FALSE;
+    // The final array of SSL options for the client parameters.
+    protected $sslOptions;
+
     /**
      * {@inheritdoc}
      */
@@ -27,7 +41,38 @@ class DomainAddCommand extends DomainCommand
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
-            );
+            )
+            // @todo: Implement interactive SSL file entry
+            // ->addOption('ssl', null, InputOption::VALUE_NONE, 'Specify an SSL certificate chain in interactive mode.')
+            ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file for this domain.')
+            ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the private key file for the provided certificate.')
+            ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file or files for the provided certificate.');
+    }
+
+    protected function validateInput(InputInterface $input, OutputInterface $output)
+    {
+        if (!parent::validateInput($input, $output)) {
+            return;
+        }
+        $this->domainName = $input->getArgument('name');
+        if (empty($this->domainName)) {
+            $output->writeln("<error>You must specify the name of the domain.</error>");
+            return;
+        } else if (!$this->validDomain($this->domainName, $output)) {
+            $output->writeln("<error>You must specify a valid domain name.</error>");
+            return;
+        }
+
+        $this->certPath = $input->getOption('cert');
+        $this->keyPath = $input->getOption('key');
+        $this->chainPaths = $input->getOption('chain');
+        if ($this->certPath || $this->keyPath || $this->chainPaths) {
+            $this->sslMode = TRUE;
+            return $this->validateSslOptions($input, $output);
+        }
+        else {
+            return TRUE;
+        }
     }
 
     /**
@@ -39,26 +84,95 @@ class DomainAddCommand extends DomainCommand
             return;
         }
 
-        $name = $input->getArgument('name');
-        if (empty($name)) {
-            $output->writeln("<error>You must specify the name of the domain.</error>");
-            return;
-        } else if (!$this->validDomain($name, $output)) {
-            $output->writeln("<error>You must specify valid domain name.</error>");
-            return;
+        // @todo: Improve this with a better dialog box.
+        $dialog = $this->getHelperSet()->get('dialog');
+        $answer = $dialog->ask($output, "<question>Is your domain a wildcard? (yes/no) </question>\n");
+        $wildcard = ($answer == "yes") ? true : false;
+        // @todo: Ask about SSL uploads if option --ssl is specified instead of inline filenames
+
+        // Assemble our query parameters.
+        $domainOpts = array();
+        $domainOpts['name'] = $this->domainName;
+        $domainOpts['wildcard'] = $wildcard;
+        if ($this->sslOptions) {
+          $domainOpts['ssl'] = $this->sslOptions;
         }
 
-        // @Todo: Improve this with a better dialog box.
-        $dialog = $this->getHelperSet()->get('dialog');
-        $answer = $dialog->ask($output, "Is your domain a wildcard (yes / no)? \n");
-        $wildcard = ($answer == "yes") ? true : false;
-
+        // Beam the package up to the mothership.
         $client = $this->getPlatformClient($this->project['endpoint']);
-        $client->addDomain(array('name' => $name, 'wildcard' => $wildcard));
+        $client->addDomain($domainOpts);
 
+        // @todo: Add proper exception/error handling here...seriously.
         $message = '<info>';
         $message = "\nThe given domain has been successfuly added to the project. \n";
         $message .= "</info>";
         $output->writeln($message);
     }
+
+    protected function validateSslOptions(InputInterface $input, OutputInterface $output)
+    {
+        // Get the contents.
+        $this->certFile = (file_exists($this->certPath) ? trim(file_get_contents($this->certPath)) : '');
+        $this->keyFile = (file_exists($this->keyPath) ? trim(file_get_contents($this->keyPath)) : '');
+        $this->chainFiles = $this->assembleChainFiles($this->chainPaths);
+        // Do a bit of validation.
+        // @todo: Cert first.
+        $certResource = openssl_x509_read($this->certFile);
+        if (!$certResource) {
+            $output->writeln("<error>The provided certificate is either not a valid X509 certificate or could not be read.</error>");
+            return;
+        }
+        // Then the key. Does it match?
+        $keyResource = openssl_pkey_get_private($this->keyFile);
+        if (!$keyResource) {
+            $output->writeln("<error>The provided private key is either not a valid RSA private key or could not be read.</error>");
+            return;
+        }
+        $keyMatch = openssl_x509_check_private_key($certResource, $keyResource);
+        if (!$keyMatch) {
+            $output->writeln("<error>The provided certificate does not match the provided private key.</error>");
+            return;
+        }
+        // Each chain needs to be a valid cert.
+        foreach ($this->chainFiles as $chainFile) {
+            $chainResource = openssl_x509_read($chainFile);
+            if (!$chainResource) {
+                $output->writeln("<error>One of the provided certificates in the chain is not a valid X509 certificate.</error>");
+                return;
+            }
+            else {
+                openssl_x509_free($chainResource);
+            }
+        }
+        // Yay we win.
+        $this->sslOptions = array(
+            'certificate' => $this->certFile,
+            'key' => $this->keyFile,
+            'chain' => $this->chainFiles,
+        );
+
+        return TRUE;
+    }
+
+    protected function assembleChainFiles($chainPaths)
+    {
+        if (!is_array($chainPaths)) {
+            // Fail out if we somehow ended up with crap here.
+            return array();
+        }
+        $chainFiles = array();
+        foreach ($chainPaths as $chainPath) {
+            // Each chain file might contain multiple certificates.
+            // We split them up and add each to the eventual $chainFiles
+            // output array.
+            $rawChainFile = (file_exists($chainPath) ? trim(file_get_contents($chainPath)) : '');
+            if (!empty($rawChainFile)) {
+                $splitChainFile = explode("-----\n-----", $rawChainFile);
+                $chainFiles = array_merge($chainFiles, $splitChainFile);
+            }
+        }
+        // Yay we're done.
+        return $chainFiles;
+    }
+
 }

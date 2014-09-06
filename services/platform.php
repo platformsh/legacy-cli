@@ -89,6 +89,9 @@ return array(
                     'type' => 'boolean',
                 ),
             ),
+            'additionalParameters' => array(
+                'location' => 'json',
+            ),
         ),
         'deleteDomain' => array(
             'httpMethod' => 'DELETE',
