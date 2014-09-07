@@ -27,7 +27,7 @@ class WelcomeCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln("\nWelcome to Commerce Platform!");
+        $output->writeln("\nWelcome to Platform.sh!");
 
         if ($currentProject = $this->getCurrentProject()) {
             // The project is known. Show the environments.
