@@ -98,10 +98,6 @@ class ProjectGetCommand extends PlatformCommand
             mkdir($folder);
         }
 
-        // Create the settings.local.php file.
-        // @todo Find a better place for this, since it's Drupal specific.
-        copy(CLI_ROOT . '/resources/drupal/settings.local.php', $directoryName . '/shared/settings.local.php');
-
         // Create the .platform-project file.
         $projectConfig = array(
             'id' => $projectId,
