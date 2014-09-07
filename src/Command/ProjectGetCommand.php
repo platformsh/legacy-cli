@@ -94,6 +94,7 @@ class ProjectGetCommand extends PlatformCommand
         $folders[] = $directoryName;
         $folders[] = $directoryName . '/builds';
         $folders[] = $directoryName . '/shared';
+        $folders[] = $directoryName . '/shared/files';
         foreach ($folders as $folder) {
             mkdir($folder);
         }
