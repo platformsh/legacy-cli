@@ -157,19 +157,14 @@ class DomainAddCommand extends DomainCommand
     protected function assembleChainFiles($chainPaths)
     {
         if (!is_array($chainPaths)) {
-            // Fail out if we somehow ended up with crap here.
+            // Skip out if we somehow ended up with crap here.
             return array();
         }
         $chainFiles = array();
+        // @todo: We want to split up each cert in the chain, if a file has multiple individual certs.
+        // Unfortunately doing this is inconvenient so we'll skip it for now.
         foreach ($chainPaths as $chainPath) {
-            // Each chain file might contain multiple certificates.
-            // We split them up and add each to the eventual $chainFiles
-            // output array.
-            $rawChainFile = (file_exists($chainPath) ? trim(file_get_contents($chainPath)) : '');
-            if (!empty($rawChainFile)) {
-                $splitChainFile = explode("-----\n-----", $rawChainFile);
-                $chainFiles = array_merge($chainFiles, $splitChainFile);
-            }
+            $chainFiles[] = (file_exists($chainPath) ? trim(file_get_contents($chainPath)) : '');
         }
         // Yay we're done.
         return $chainFiles;
