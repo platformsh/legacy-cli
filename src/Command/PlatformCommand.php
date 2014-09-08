@@ -31,14 +31,24 @@ class PlatformCommand extends Command
      */
     protected function loadConfig()
     {
-        if (!$this->config) {
+        if (!$this->config && $this->getApplication()->hasConfiguration()) {
             $application = $this->getApplication();
             $configPath = $application->getHomeDirectory() . '/.platform';
             $yaml = new Parser();
             $this->config = $yaml->parse(file_get_contents($configPath));
         }
-
         return $this->config;
+    }
+
+    protected function listConfigs(){
+      $application = $this->getApplication();
+      $configs=[];
+      $yaml = new Parser();
+      foreach (glob($application->getHomeDirectory() . "/.platform_*") as $filename) {
+          $config = $yaml->parse(file_get_contents($filename));
+          $configs[]=array("label"=>$config["username"]." -> " .$config["marketplace"], "path"=>$filename);
+      }
+      return $configs;
     }
 
     /**
@@ -95,7 +105,10 @@ class PlatformCommand extends Command
         $this->config = array(
             'access_token' => $oauth2Plugin->getAccessToken(),
             'refresh_token' => $oauth2Plugin->getRefreshToken(),
+            'username' => $email,
+            'marketplace' => CLI_ACCOUNTS_SITE,
         );
+        $this->saveConfig();
     }
 
     /**
@@ -440,12 +453,27 @@ class PlatformCommand extends Command
             if ($this->oauth2Plugin) {
                 // Save the access token for future requests.
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
+                $this->saveConfig();
             }
-
-            $application = $this->getApplication();
-            $configPath = $application->getHomeDirectory() . '/.platform';
-            $dumper = new Dumper();
-            file_put_contents($configPath, $dumper->dump($this->config));
         }
+    }
+
+    protected function activateConfig($filename){
+        $application = $this->getApplication();
+        $baseConfigPath = $application->getHomeDirectory() . '/.platform';
+        unlink($baseConfigPath);
+        symlink($filename, $baseConfigPath);
+    }
+        
+    protected function saveConfig(){
+      if (isset($this->config["username"])) {
+        $configPath =  $this->getApplication()->getHomeDirectory() . '/.platform' . $this->normalize(CLI_ACCOUNTS_SITE).$this->normalize($this->config['username']);
+        $dumper = new Dumper();
+        file_put_contents($configPath, $dumper->dump($this->config));
+        $this->activateConfig($configPath);
+      }
+    }
+    private function normalize($string){
+      return("_".preg_replace('/[^a-zA-Z0-9_.]/', '_', $string));
     }
 }

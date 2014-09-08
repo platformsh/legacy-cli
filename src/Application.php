@@ -46,9 +46,11 @@ class Application extends Console\Application {
         $this->add(new Command\ProjectDeleteCommand);
         $this->add(new Command\ProjectFixAliasesCommand);        
         $this->add(new Command\ProjectGetCommand);
+        $this->add(new Command\ProjectInitCommand);
         $this->add(new Command\SshKeyAddCommand);
         $this->add(new Command\SshKeyDeleteCommand);
         $this->add(new Command\SshKeyListCommand);
+        $this->add(new Command\SwitchAccountCommand);
     }
 
     /**
@@ -177,9 +179,9 @@ class Application extends Console\Application {
     /**
      * @return boolean Whether the user has configured the CLI.
      */
-    protected function hasConfiguration()
+    public function hasConfiguration()
     {
-        return file_exists($this->getHomeDirectory() . '/.platform');
+        return (file_exists($this->getHomeDirectory() . '/.platform') && is_string(readlink($this->getHomeDirectory() . '/.platform')));
     }
 
 }
