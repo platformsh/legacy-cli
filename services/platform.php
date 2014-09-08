@@ -68,7 +68,39 @@ return array(
             'httpMethod' => 'POST',
             'uri' => 'backup',
             'summary' => 'Creates a new environment branched from the existing one',
-        )
+        ),
+        'getDomains' => array(
+            'httpMethod' => 'GET',
+            'uri' => 'domains',
+            'summary' => 'Gets a list of domains',
+            'responseClass' => 'Domains',
+        ),
+        'addDomain' => array(
+            'httpMethod' => 'POST',
+            'uri' => 'domains',
+            'summary' => 'Add a domain',
+            'parameters' => array(
+                'name' => array(
+                    'location' => 'json',
+                    'type' => 'string',
+                ),
+                'wildcard' => array(
+                    'location' => 'json',
+                    'type' => 'boolean',
+                ),
+            ),
+        ),
+        'deleteDomain' => array(
+            'httpMethod' => 'DELETE',
+            'uri' => '',
+            'summary' => 'Delete a domain',
+            'parameters' => array(
+                'name' => array(
+                    'location' => 'json',
+                    'type' => 'string',
+                ),
+            ),
+        ),
     ),
     'models' => array(
         'Environment' => array(
@@ -110,6 +142,58 @@ return array(
             // This is the only way to make Guzzle support responses with arrays.
             'additionalProperties' => array(
                 '$ref' => 'Environment',
+            ),
+        ),
+        'Domain' => array(
+            'location' => 'json',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'properties' => array(
+                'id' => array(
+                    'location' => 'json',
+                    'type' => 'string',
+                ),
+                'name' => array(
+                    'location' => 'json',
+                    'type' => 'string',
+                ),
+                'created_at' => array(
+                    'location' => 'json',
+                    'type' => 'string',
+                ),
+                'updated_at' => array(
+                    'location' => 'json',
+                    'type' => 'string',
+                ),
+                'wildcard' => array(
+                    'location' => 'json',
+                    'type' => 'boolean',
+                ),
+                '_links' => array(
+                    'location' => 'json',
+                    'type' => 'object',
+                    'properties' => array(
+                        'self' => array(
+                            'type' => 'string',
+                        ),
+                    ),
+                ),
+                'ssl' => array(
+                    'location' => 'json',
+                    'type' => 'object',
+                    'properties' => array(
+                        'has_certificate' => array(
+                            'type' => 'boolean',
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        'Domains' => array(
+            'type' => 'object',
+            // This is the only way to make Guzzle support responses with arrays.
+            'additionalProperties' => array(
+                '$ref' => 'Domain',
             ),
         ),
     ),

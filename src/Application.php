@@ -2,27 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli;
 
-use CommerceGuys\Platform\Cli\Command\LoginCommand;
-use CommerceGuys\Platform\Cli\Command\DrushCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentActivateCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentBackupCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentBranchCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentCheckoutCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentDeactivateCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentDeleteCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentListCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentMergeCommand;
-use CommerceGuys\Platform\Cli\Command\EnvironmentSynchronizeCommand;
-use CommerceGuys\Platform\Cli\Command\ProjectBuildCommand;
-use CommerceGuys\Platform\Cli\Command\ProjectDeleteCommand;
-use CommerceGuys\Platform\Cli\Command\ProjectGetCommand;
-use CommerceGuys\Platform\Cli\Command\ProjectListCommand;
-use CommerceGuys\Platform\Cli\Command\SshKeyAddCommand;
-use CommerceGuys\Platform\Cli\Command\SshKeyDeleteCommand;
-use CommerceGuys\Platform\Cli\Command\SshKeyListCommand;
-use CommerceGuys\Platform\Cli\Command\WelcomeCommand;
-
-use Symfony\Component\Console\Application as BaseApplication;
+use Symfony\Component\Console;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -32,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Shell;
 
 
-class Application extends BaseApplication {
+class Application extends Console\Application {
 
     /**
      * {@inheritdoc}
@@ -44,23 +24,31 @@ class Application extends BaseApplication {
         $this->setDefaultTimezone();
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
-        $this->add(new DrushCommand);
-        $this->add(new ProjectListCommand);
-        $this->add(new EnvironmentActivateCommand);
-        $this->add(new EnvironmentBackupCommand);
-        $this->add(new EnvironmentBranchCommand);
-        $this->add(new EnvironmentCheckoutCommand);
-        $this->add(new EnvironmentDeactivateCommand);
-        $this->add(new EnvironmentDeleteCommand);
-        $this->add(new EnvironmentListCommand);
-        $this->add(new EnvironmentMergeCommand);
-        $this->add(new EnvironmentSynchronizeCommand);
-        $this->add(new ProjectBuildCommand);
-        $this->add(new ProjectDeleteCommand);
-        $this->add(new ProjectGetCommand);
-        $this->add(new SshKeyAddCommand);
-        $this->add(new SshKeyDeleteCommand);
-        $this->add(new SshKeyListCommand);
+        $this->add(new Command\PlatformLogoutCommand);
+        $this->add(new Command\DrushCommand);
+        $this->add(new Command\ProjectListCommand);
+        $this->add(new Command\DomainAddCommand);
+        $this->add(new Command\DomainDeleteCommand);
+        $this->add(new Command\DomainListCommand);        
+        $this->add(new Command\EnvironmentActivateCommand);
+        $this->add(new Command\EnvironmentBackupCommand);
+        $this->add(new Command\EnvironmentBranchCommand);
+        $this->add(new Command\EnvironmentCheckoutCommand);
+        $this->add(new Command\EnvironmentDeactivateCommand);
+        $this->add(new Command\EnvironmentDeleteCommand);
+        $this->add(new Command\EnvironmentListCommand);
+        $this->add(new Command\EnvironmentMergeCommand);
+        $this->add(new Command\EnvironmentRelationshipsCommand);        
+        $this->add(new Command\EnvironmentSshCommand);
+        $this->add(new Command\EnvironmentSynchronizeCommand);        
+        $this->add(new Command\ProjectBuildCommand);
+        $this->add(new Command\ProjectCleanCommand);
+        $this->add(new Command\ProjectDeleteCommand);
+        $this->add(new Command\ProjectFixAliasesCommand);        
+        $this->add(new Command\ProjectGetCommand);
+        $this->add(new Command\SshKeyAddCommand);
+        $this->add(new Command\SshKeyDeleteCommand);
+        $this->add(new Command\SshKeyListCommand);
     }
 
     /**
@@ -100,7 +88,7 @@ class Application extends BaseApplication {
         if ($name) {
             $command = $this->find($name);
         } else {
-            $command = new WelcomeCommand($this->find('projects'), $this->find('environments'));
+            $command = new Command\WelcomeCommand($this->find('projects'), $this->find('environments'));
             $command->setApplication($this);
             $input = new ArrayInput(array('command' => 'welcome'));
         }
@@ -116,8 +104,8 @@ class Application extends BaseApplication {
 
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
-        if (!$this->hasConfiguration()) {
-            $this->add(new LoginCommand);
+        if (!$this->hasConfiguration() && !$command::skipLogin()) {
+            $this->add(new Command\LoginCommand);
             $commandChain[] = array(
                 'command' => $this->find('login'),
                 'input' => new ArrayInput(array('command' => 'login')),

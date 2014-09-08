@@ -27,7 +27,7 @@ class WelcomeCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln("\nWelcome to Commerce Platform!");
+        $output->writeln("\nWelcome to Platform.sh!");
 
         if ($currentProject = $this->getCurrentProject()) {
             // The project is known. Show the environments.
@@ -40,7 +40,9 @@ class WelcomeCommand extends PlatformCommand
             $this->projectListCommand->execute($input, $output);
         }
 
-        $output->writeln("You can also manage your SSH keys by running <info>platform ssh-keys</info>.");
+        $output->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>.");
+        $output->writeln("Manage your domains by running <info>platform domain</info>.\n");
+        
         $output->writeln("List all commands and their options by running <info>platform help</info>.\n");
 
         $output->writeln("Type <info>platform list</info> to see all available commands.\n");

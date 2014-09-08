@@ -133,9 +133,6 @@ class PlatformCommand extends Command
             $this->platformClient = new Client();
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
-            // Platform doesn't have a valid SSL cert yet.
-            // @todo Remove this
-            $this->platformClient->setDefaultOption('verify', false);
         }
         // The base url can change between two requests in the same command,
         // so it needs to be explicitly set every time.
@@ -314,6 +311,35 @@ class PlatformCommand extends Command
     }
 
     /**
+     * Return the user's domains.
+     *
+     * @param array $project The project.
+     *
+     * @return array The user's domains.
+     */
+    protected function getDomains($project)
+    {
+        $this->loadConfig();
+        $projectId = $project['id'];
+        if (!isset($this->config['domains'][$projectId])) {
+            $this->config['domains'][$projectId] = array();
+        }
+
+        // Fetch and assemble a list of domains.
+        $client = $this->getPlatformClient($project['endpoint']);
+        $domains = array();
+        foreach ($client->getDomains() as $domain) {
+            $domains[$domain['id']] = $domain;
+        }
+
+        // Recreate the aliases if the list of environments has changed.
+        $this->createDrushAliases($project, $domains);
+        $this->config['domains'][$projectId] = $domains;
+
+        return $this->config['domains'][$projectId];
+    }
+
+    /**
      * Create drush aliases for the provided project and environments.
      *
      * @param array $project The project
@@ -361,6 +387,11 @@ class PlatformCommand extends Command
 
     }
 
+    public static function skipLogin()
+    {
+        return FALSE;
+    }
+
     protected function ensureDrushInstalled()
     {
         $drushVersion = shell_exec('drush version');
@@ -371,6 +402,32 @@ class PlatformCommand extends Command
         $versionNumber = trim($versionParts[1]);
         if (version_compare($versionNumber, '6.0') === -1) {
             throw new \Exception('Drush version must be 6.0 or newer.');
+        }
+    }
+
+    /**
+     * Delete a directory and all of its files.
+     */
+    protected function rmdir($directoryName)
+    {
+        if (is_dir($directoryName)) {
+            // Recursively empty the directory.
+            $directory = opendir($directoryName);
+            while ($file = readdir($directory)) {
+                if (!in_array($file, array('.', '..'))) {
+                    if (is_link($directoryName . '/' . $file)) {
+                        unlink($directoryName . '/' . $file);
+                    } else if (is_dir($directoryName . '/' . $file)) {
+                        $this->rmdir($directoryName . '/' . $file);
+                    } else {
+                        unlink($directoryName . '/' . $file);
+                    }
+                }
+            }
+            closedir($directory);
+
+            // Delete the directory itself.
+            rmdir($directoryName);
         }
     }
 
