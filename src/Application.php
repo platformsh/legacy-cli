@@ -15,8 +15,8 @@ use Symfony\Component\Console\Shell;
 class Application extends Console\Application {
 
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function __construct()
     {
         parent::__construct('Platform CLI', '0.1');
@@ -54,8 +54,8 @@ class Application extends Console\Application {
     }
 
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     protected function getDefaultInputDefinition()
     {
         // We remove the confusing `--ansi` and `--no-ansi` options.
@@ -71,8 +71,8 @@ class Application extends Console\Application {
     }
 
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function doRun(InputInterface $input, OutputInterface $output)
     {
         if (true === $input->hasParameterOption(array('--shell', '-s'))) {
@@ -128,12 +128,12 @@ class Application extends Console\Application {
     }
 
     /**
-     * Set the default timezone.
-     *
-     * PHP 5.4 has removed the autodetection of the system timezone,
-     * so it needs to be done manually.
-     * UTC is the fallback in case autodetection fails.
-     */
+    * Set the default timezone.
+    *
+    * PHP 5.4 has removed the autodetection of the system timezone,
+    * so it needs to be done manually.
+    * UTC is the fallback in case autodetection fails.
+    */
     protected function setDefaultTimezone() {
         $timezone = 'UTC';
         if (is_link('/etc/localtime')) {
@@ -158,11 +158,11 @@ class Application extends Console\Application {
         }
 
         date_default_timezone_set($timezone);
-     }
+    }
 
     /**
-     * @return string The absolute path to the user's home directory.
-     */
+    * @return string The absolute path to the user's home directory.
+    */
     public function getHomeDirectory()
     {
         $home = getenv('HOME');
@@ -172,16 +172,25 @@ class Application extends Console\Application {
                 $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
             }
         }
-
         return $home;
     }
 
     /**
-     * @return boolean Whether the user has configured the CLI.
-     */
+    * @return boolean Whether the user has configured the CLI.
+    */
     public function hasConfiguration()
     {
-        return (file_exists($this->getHomeDirectory() . '/.platform') && is_string(readlink($this->getHomeDirectory() . '/.platform')));
+        $config_file= $this->getHomeDirectory() . '/.platform';
+        if (file_exists($config_file)) {
+            if (is_link($config_file)){
+                $link=readlink($config_file);
+                if (is_string(readlink($config_file))) {
+                    return true;
+                }
+            } else {
+                return true;
+            }
+            return false;
+        }
     }
-
 }
