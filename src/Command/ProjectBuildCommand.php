@@ -76,11 +76,11 @@ class ProjectBuildCommand extends PlatformCommand
         $stack= $this->detectStack($projectRoot . '/repository');
         switch ($stack) {
           case "symfony":
-              $status = $this->buildSymfony($buildDir, $projectRoot);
+              $status = $this->buildSymfony($absBuildDir, $projectRoot);
               break;
             case "drupal":
             default:
-              $status = $this->buildDrupal($buildDir, $projectRoot);
+              $status = $this->buildDrupal($absBuildDir, $projectRoot);
               break;
         }
         if ($status) {
