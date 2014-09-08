@@ -375,6 +375,20 @@ class PlatformCommand extends Command
             }
         }
 
+        // Add a local alias as well.
+        $wwwRoot = $this->getProjectRoot() . '/www';
+        if (is_dir($wwwRoot)) {
+            $local = array(
+              'parent' => '@parent',
+              'site' => $project['id'],
+              'env' => '_local',
+              'root' => $wwwRoot,
+            );
+            $export .= "\$aliases['_local'] = " . var_export($local, TRUE);
+            $export .= ";\n";
+            $has_valid_environment = true;
+        }
+
         if ($has_valid_environment) {
             file_put_contents($filename, $export);
         }
