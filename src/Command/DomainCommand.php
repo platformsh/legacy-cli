@@ -8,6 +8,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainCommand extends PlatformCommand
 {
     protected $project;
+    protected $domainName;
 
     protected function validateInput(InputInterface $input, OutputInterface $output)
     {
