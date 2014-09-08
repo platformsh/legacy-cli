@@ -312,6 +312,8 @@ class ProjectBuildCommand extends PlatformCommand
                 permissions return false ***/
             return false;
         }
+      }
+
     public static function skipLogin()
     {
         return TRUE;
