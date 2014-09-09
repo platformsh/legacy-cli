@@ -28,7 +28,7 @@ class SwitchAccountCommand extends PlatformCommand
           } else {
         $config = $dialog->select(
             $output,
-            'Select account to activate',
+            "Select account to activate \nYou can use 'platform login' to add an account to the list ",
             array_map(create_function('$config', 'return $config["label"];'), $configs ),
             0
         );

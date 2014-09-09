@@ -28,7 +28,8 @@ class WelcomeCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $output->writeln("\nWelcome to Platform.sh!");
-
+        $username=$this->loadConfig()["username"];
+        if (isset($username)){$output->writeln("\nYou are logged-in as $username");}
         if ($currentProject = $this->getCurrentProject()) {
             // The project is known. Show the environments.
             $projectName = $currentProject['name'];

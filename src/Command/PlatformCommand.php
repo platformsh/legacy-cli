@@ -24,7 +24,7 @@ class PlatformCommand extends Command
      * Load configuration from the user's .platform file.
      *
      * Configuration is loaded only if $this->config hasn't been populated
-     * already. This allows LoginCommand to avoid writing the config file
+     * already. This allows PlatformLoginCommand to avoid writing the config file
      * before using the client for the first time.
      *
      * @return array The populated configuration array.
@@ -461,7 +461,7 @@ class PlatformCommand extends Command
     protected function activateConfig($filename){
         $application = $this->getApplication();
         $baseConfigPath = $application->getHomeDirectory() . '/.platform';
-        unlink($baseConfigPath);
+        if (file_exists($baseConfigPath)) {unlink($baseConfigPath);}
         symlink($filename, $baseConfigPath);
     }
         
@@ -472,6 +472,12 @@ class PlatformCommand extends Command
         file_put_contents($configPath, $dumper->dump($this->config));
         $this->activateConfig($configPath);
       }
+    }
+    protected function deleteConfigs(){
+      foreach ($this->listConfigs() as $config){
+        unlink($config["path"]);
+      }
+      unlink($this->getHomeDirectory() . '/.platform');
     }
     private function normalize($string){
       return("_".preg_replace('/[^a-zA-Z0-9_.]/', '_', $string));

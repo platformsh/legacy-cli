@@ -25,6 +25,7 @@ class Application extends Console\Application {
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
         $this->add(new Command\PlatformLogoutCommand);
+        $this->add(new Command\PlatformLoginCommand);
         $this->add(new Command\DrushCommand);
         $this->add(new Command\ProjectListCommand);
         $this->add(new Command\DomainAddCommand);
@@ -107,10 +108,10 @@ class Application extends Console\Application {
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
         if (!$this->hasConfiguration() && !$command::skipLogin()) {
-            $this->add(new Command\LoginCommand);
+            $this->add(new Command\PlatformLoginCommand);
             $commandChain[] = array(
-                'command' => $this->find('login'),
-                'input' => new ArrayInput(array('command' => 'login')),
+                'command' => $this->find('platform:login'),
+                'input' => new ArrayInput(array('command' => 'platform:login')),
             );
         }
         $commandChain[] = array(
@@ -183,13 +184,13 @@ class Application extends Console\Application {
         $config_file= $this->getHomeDirectory() . '/.platform';
         if (file_exists($config_file)) {
             if (is_link($config_file)){
-                $link=readlink($config_file);
                 if (is_string(readlink($config_file))) {
                     return true;
                 }
             } else {
                 return true;
             }
+        } else {
             return false;
         }
     }

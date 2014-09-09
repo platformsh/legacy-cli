@@ -5,25 +5,33 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Guzzle\Http\Exception\ClientErrorResponseException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\InputArgument;
 
-class LoginCommand extends PlatformCommand
+class PlatformLoginCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('login')
-            ->setDescription('Login to platform');
+            ->setName('platform:login')
+            ->setAliases(array('login'))
+            ->addArgument(
+                'email',
+                InputArgument::OPTIONAL,
+                'your email is your user name'
+            )
+            ->setDescription('Login to platform, you can login to multiple accounts and switch between them');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->checkRequirements($output);
-
-        $output->writeln("\nPlease login using your Commerce Platform account to proceed.\n");
-        $this->configureAccount($output);
-        $output->writeln("\n<info>Thank you, you are all set.</info>");
-
+        $email = $input->getArgument('email');
+        if (empty($email)) {
+            $output->writeln("\nPlease login using your Commerce Platform account to proceed.\n");
+            $this->configureAccount($output);
+            $output->writeln("\n<info>Thank you, you are all set.</info>");
+        }
         // Run the destructor right away to ensure configuration gets persisted.
         // That way any commands that are executed next in the chain will work.
         $this->__destruct();
@@ -52,7 +60,8 @@ class LoginCommand extends PlatformCommand
             return $data;
         };
         $email = $dialog->askAndValidate($output, 'Your email address: ', $emailValidator);
-
+        $this->config["username"] = $email;
+        $this->config["marketplace"] = CLI_ACCOUNTS_SITE;
         $userExists = true;
         if (!$userExists) {
             $createAccountText = "\nThis email address is not associated to a Platform account. \n";
