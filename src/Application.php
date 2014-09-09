@@ -30,7 +30,7 @@ class Application extends Console\Application {
         $this->add(new Command\ProjectListCommand);
         $this->add(new Command\DomainAddCommand);
         $this->add(new Command\DomainDeleteCommand);
-        $this->add(new Command\DomainListCommand);        
+        $this->add(new Command\DomainListCommand);
         $this->add(new Command\EnvironmentActivateCommand);
         $this->add(new Command\EnvironmentBackupCommand);
         $this->add(new Command\EnvironmentBranchCommand);
@@ -39,13 +39,13 @@ class Application extends Console\Application {
         $this->add(new Command\EnvironmentDeleteCommand);
         $this->add(new Command\EnvironmentListCommand);
         $this->add(new Command\EnvironmentMergeCommand);
-        $this->add(new Command\EnvironmentRelationshipsCommand);        
+        $this->add(new Command\EnvironmentRelationshipsCommand);
         $this->add(new Command\EnvironmentSshCommand);
-        $this->add(new Command\EnvironmentSynchronizeCommand);        
+        $this->add(new Command\EnvironmentSynchronizeCommand);
         $this->add(new Command\ProjectBuildCommand);
         $this->add(new Command\ProjectCleanCommand);
         $this->add(new Command\ProjectDeleteCommand);
-        $this->add(new Command\ProjectFixAliasesCommand);        
+        $this->add(new Command\ProjectFixAliasesCommand);
         $this->add(new Command\ProjectGetCommand);
         $this->add(new Command\ProjectInitCommand);
         $this->add(new Command\SshKeyAddCommand);
@@ -107,12 +107,20 @@ class Application extends Console\Application {
 
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
-        if (!$this->hasConfiguration() && !$command::skipLogin()) {
-            $this->add(new Command\PlatformLoginCommand);
-            $commandChain[] = array(
-                'command' => $this->find('platform:login'),
-                'input' => new ArrayInput(array('command' => 'platform:login')),
-            );
+        $unprivilegedCommands=[
+            "Symfony\Component\Console\Command\ListCommand",
+            "Symfony\Component\Console\Command\HelpCommand",
+            "CommerceGuys\Platform\Cli\Command\PlatformLoginCommand",
+            "CommerceGuys\Platform\Cli\Command\PlatformLogoutCommand"];
+        if (!in_array(get_class($command), $unprivilegedCommands))
+        {
+            if ((!$this->hasConfiguration()) && !$command::skipLogin()) {
+                $this->add(new Command\PlatformLoginCommand);
+                $commandChain[] = array(
+                    'command' => $this->find('platform:login'),
+                    'input' => new ArrayInput(array('command' => 'platform:login')),
+                );
+            }
         }
         $commandChain[] = array(
             'command' => $command,
