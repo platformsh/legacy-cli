@@ -34,14 +34,14 @@ class WelcomeCommand extends PlatformCommand
             $projectName = $currentProject['name'];
             $output->write("\nYour project is <info>$projectName</info>.");
             $this->environmentListCommand->execute($input, $output);
-            $output->writeln("You can list other projects by running <info>platform projects</info>.");
+            $output->writeln("You can list other projects by running <info>platform projects</info>.\n");
+            $output->writeln("Manage your domains by running <info>platform domain</info>.");
         } else {
             // The project is not known. Show all projects.
             $this->projectListCommand->execute($input, $output);
         }
 
         $output->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>.");
-        $output->writeln("Manage your domains by running <info>platform domain</info>.\n");
         
         $output->writeln("List all commands and their options by running <info>platform help</info>.\n");
 
