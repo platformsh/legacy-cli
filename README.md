@@ -70,7 +70,7 @@ COMMAND LIST
 The current output of `platform list` is as follows:
 
 ```
-Platform CLI version 0.1
+Platform CLI version 1.1.0
 
 Usage:
   [options] command [arguments]

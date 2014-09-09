@@ -19,7 +19,7 @@ class Application extends Console\Application {
     */
     public function __construct()
     {
-        parent::__construct('Platform CLI', '0.1');
+        parent::__construct('Platform CLI', '1.1.0');
 
         $this->setDefaultTimezone();
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));

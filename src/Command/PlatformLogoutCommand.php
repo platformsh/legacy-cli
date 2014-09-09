@@ -14,9 +14,9 @@ class PlatformLogoutCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('platform:logout')
+            ->setName('logout')
             ->setAliases(array('logout'))
-            ->setDescription('Log out of Platform');
+            ->setDescription('Log out of the Platform CLI');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
