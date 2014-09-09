@@ -25,14 +25,11 @@ class PlatformLoginCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->checkRequirements($output);
-        $email = $input->getArgument('email');
-        if (empty($email)) {
+            $this->checkRequirements($output);
             $output->writeln("\nPlease login using your Commerce Platform account to proceed.\n");
-            $this->configureAccount($output);
+            $this->configureAccount($input, $output);
             $output->writeln("\n<info>Thank you, you are all set.</info>");
-        }
-        // Run the destructor right away to ensure configuration gets persisted.
+            // Run the destructor right away to ensure configuration gets persisted.
         // That way any commands that are executed next in the chain will work.
         $this->__destruct();
     }
@@ -48,8 +45,9 @@ class PlatformLoginCommand extends PlatformCommand
         }
     }
 
-    protected function configureAccount($output)
+    protected function configureAccount($input, $output)
     {
+        $email = $input->getArgument('email');
         $dialog = $this->getHelperSet()->get('dialog');
         $emailValidator = function ($data) {
             if (empty($data) || !filter_var($data, FILTER_VALIDATE_EMAIL)) {
@@ -59,7 +57,9 @@ class PlatformLoginCommand extends PlatformCommand
             }
             return $data;
         };
-        $email = $dialog->askAndValidate($output, 'Your email address: ', $emailValidator);
+        if (empty($email)){
+            $email = $dialog->askAndValidate($output, 'Your email address: ', $emailValidator);
+        }
         $this->config["username"] = $email;
         $this->config["marketplace"] = CLI_ACCOUNTS_SITE;
         $userExists = true;
