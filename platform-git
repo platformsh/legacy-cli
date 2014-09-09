@@ -1,0 +1,7 @@
+#!/bin/sh
+if [ -z "$PLATFORM_IDENTITY_FILE" ]; then
+# if PLATFORM_IDENTITY_FILE is not specified, run ssh using default keyfile
+ssh "$@"
+else
+ssh -i "$PLATFORM_IDENTITY_FILE" "$@"
+fi
