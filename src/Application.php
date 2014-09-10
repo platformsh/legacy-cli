@@ -48,9 +48,9 @@ class Application extends Console\Application {
         $this->add(new Command\ProjectFixAliasesCommand);
         $this->add(new Command\ProjectGetCommand);
         $this->add(new Command\ProjectInitCommand);
-        $this->add(new Command\SshKeyAddCommand);
-        $this->add(new Command\SshKeyDeleteCommand);
-        $this->add(new Command\SshKeyListCommand);
+        $this->add(new Command\SshKeysAddCommand);
+        $this->add(new Command\SshKeysDeleteCommand);
+        $this->add(new Command\SshKeysListCommand);
         $this->add(new Command\SwitchAccountCommand);
     }
 
@@ -107,6 +107,7 @@ class Application extends Console\Application {
 
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
+        // Except for the following commands
         $unprivilegedCommands=[
             "Symfony\Component\Console\Command\ListCommand",
             "Symfony\Component\Console\Command\HelpCommand",
