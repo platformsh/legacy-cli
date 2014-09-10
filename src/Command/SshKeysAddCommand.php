@@ -24,6 +24,7 @@ class SshKeysAddCommand extends PlatformCommand
                 InputArgument::OPTIONAL,
                 'a name for the key'
             );;
+            parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

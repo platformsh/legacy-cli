@@ -23,6 +23,7 @@ class WelcomeCommand extends PlatformCommand
         $this
             ->setName('welcome')
             ->setDescription('Welcome to platform');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -13,6 +13,7 @@ class ProjectListCommand extends PlatformCommand
         $this
             ->setName('projects')
             ->setDescription('Get a list of all active projects.');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

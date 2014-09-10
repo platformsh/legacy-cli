@@ -28,6 +28,7 @@ class DomainDeleteCommand extends DomainCommand
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
             );
+            parent::configure();
     }
 
     /**

@@ -21,6 +21,7 @@ class PlatformLoginCommand extends PlatformCommand
                 'your email is your user name'
             )
             ->setDescription('Login to platform, you can login to multiple accounts and switch between them');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -19,6 +19,7 @@ class ProjectDeleteCommand extends PlatformCommand
                 InputArgument::OPTIONAL,
                 'The id of the key to delete'
             );
+            parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

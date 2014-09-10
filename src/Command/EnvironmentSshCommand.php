@@ -20,7 +20,7 @@ class EnvironmentSshCommand extends EnvironmentCommand
             ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment id')
             ->addOption('echo', NULL, InputOption::VALUE_NONE, "Print the connection string to the console.")
             ->setDescription('SSH to the current environment.');
-        // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

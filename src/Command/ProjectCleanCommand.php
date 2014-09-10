@@ -22,6 +22,7 @@ class ProjectCleanCommand extends PlatformCommand
                 'Number of builds to keep.',
                 5
             );
+            parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

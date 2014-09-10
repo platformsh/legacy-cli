@@ -18,7 +18,7 @@ class EnvironmentRelationshipsCommand extends EnvironmentSshCommand
             ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project id')
             ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment id')
             ->setDescription('SSH to the current environment.');
-        // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

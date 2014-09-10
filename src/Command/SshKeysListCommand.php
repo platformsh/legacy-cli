@@ -14,6 +14,7 @@ class SshKeysListCommand extends PlatformCommand
             ->setName('ssh-keys:list')
                 ->setDescription('Get a list of all added SSH keys.');
         ;
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -19,6 +19,7 @@ class PlatformCommand extends Command
     protected $oauth2Plugin;
     protected $accountClient;
     protected $platformClient;
+    protected $remoteCommand = false;
 
     /**
      * Load configuration from the user's .platform file.
@@ -418,7 +419,7 @@ class PlatformCommand extends Command
     {
         return FALSE;
     }
-
+    
     protected function ensureDrushInstalled()
     {
         $drushVersion = shell_exec('drush version');
@@ -487,13 +488,34 @@ class PlatformCommand extends Command
         $this->activateConfig($configPath);
       }
     }
+    
     protected function deleteConfigs(){
       foreach ($this->listConfigs() as $config){
         unlink($config["path"]);
       }
       unlink($this->getHomeDirectory() . '/.platform');
     }
+    
     private function normalize($string){
       return("_".preg_replace('/[^a-zA-Z0-9_.]/', '_', $string));
+    }
+    protected function configure(){
+        $localCommands=[
+            "Symfony\Component\Console\Command\ListCommand",
+            "Symfony\Component\Console\Command\HelpCommand",
+            "CommerceGuys\Platform\Cli\Command\PlatformLoginCommand",
+            "CommerceGuys\Platform\Cli\Command\PlatformLogoutCommand",
+            "CommerceGuys\Platform\Cli\Command\ProjectFixAliasesCommand",
+            "CommerceGuys\Platform\Cli\Command\ProjectBuildCommand",
+            "CommerceGuys\Platform\Cli\Command\SwitchAccountCommand",            
+            "CommerceGuys\Platform\Cli\Command\WelcomeCommand",            
+        ];
+        
+        if (!in_array(get_class($this), $localCommands)){
+                $this->setDescription("<fg=red>".$this->getDescription()." </fg=red>");
+            } else {
+                $this->setDescription("<fg=cyan>".$this->getDescription()." </fg=cyan>");
+        }
+        parent::configure();
     }
 }

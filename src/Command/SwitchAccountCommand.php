@@ -15,6 +15,7 @@ class SwitchAccountCommand extends PlatformCommand
           ->setName('platform:switch_account')
           ->setAliases(array('switch'))
           ->setDescription('Switch account you use to login to platform');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

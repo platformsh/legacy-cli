@@ -47,6 +47,7 @@ class DomainAddCommand extends DomainCommand
             ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file for this domain.')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the private key file for the provided certificate.')
             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file or files for the provided certificate.');
+            parent::configure();
     }
 
     protected function validateInput(InputInterface $input, OutputInterface $output)

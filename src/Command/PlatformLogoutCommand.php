@@ -17,6 +17,7 @@ class PlatformLogoutCommand extends PlatformCommand
             ->setName('logout')
             ->setAliases(array('logout'))
             ->setDescription('Log out of the Platform CLI');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

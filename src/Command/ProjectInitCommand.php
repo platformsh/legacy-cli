@@ -31,6 +31,7 @@ class ProjectInitCommand extends PlatformCommand
             )
             ->addOption('working-copy', 'wc', InputOption::VALUE_NONE, 'Use git to clone a repository of each Drupal module rather than simply downloading a version.');
         $this->ignoreValidationErrors();
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
