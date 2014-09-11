@@ -1,5 +1,9 @@
 <?php
-
+/***
+ * NOT YET IMPLEMENTED this is just copy paste with minimal adaptation from
+ * ProjectBuildCommand
+ *
+ */
 namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;

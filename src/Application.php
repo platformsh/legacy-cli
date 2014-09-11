@@ -47,7 +47,7 @@ class Application extends Console\Application {
         $this->add(new Command\ProjectDeleteCommand);
         $this->add(new Command\ProjectFixAliasesCommand);
         $this->add(new Command\ProjectGetCommand);
-        $this->add(new Command\ProjectInitCommand);
+//        $this->add(new Command\ProjectInitCommand); // NOT YET IMPLEMENTED
         $this->add(new Command\SshKeysAddCommand);
         $this->add(new Command\SshKeysDeleteCommand);
         $this->add(new Command\SshKeysListCommand);
