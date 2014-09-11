@@ -344,16 +344,19 @@ class PlatformCommand extends Command
      *
      * @param array $project The project
      * @param array $environments The environments
+     * @param string $group The alias group name (defaults to the project ID)
      */
-    protected function createDrushAliases($project, $environments)
+    protected function createDrushAliases($project, $environments, $group = NULL)
     {
+        $group = $group ?: $project['id'];
+
         // Ensure the existence of the .drush directory.
         $application = $this->getApplication();
         $drushDir = $application->getHomeDirectory() . '/.drush';
         if (!is_dir($drushDir)) {
             mkdir($drushDir);
         }
-        $filename = $drushDir . '/' . $project['id'] . '.aliases.drushrc.php';
+        $filename = $drushDir . '/' . $group . '.aliases.drushrc.php';
 
         $aliases = array();
         $export = "<?php\n\n";
