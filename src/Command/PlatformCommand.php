@@ -149,14 +149,47 @@ class PlatformCommand extends Command
     protected function getCurrentProject()
     {
         $project = null;
+        $config = $this->getCurrentProjectConfig();
+        if ($config) {
+          $project = $this->getProject($config['id']) + $config;
+        }
+        return $project;
+    }
+
+    /**
+     * Get the configuration for the current project.
+     *
+     * @return array|null
+     *   The current project's configuration.
+     */
+    protected function getCurrentProjectConfig() {
+        $projectConfig = null;
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/.platform-project'));
-            $project = $this->getProject($projectConfig['id']);
         }
+        return $projectConfig;
+    }
 
-        return $project;
+    /**
+     * Add a configuration value to a project.
+     *
+     * @return array|null
+     *   The updated project configuration.
+     */
+    protected function writeCurrentProjectConfig($key, $value) {
+        $projectConfig = $this->getCurrentProjectConfig();
+        if ($projectConfig === null || $key === 'id') {
+            return;
+        }
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            $dumper = new Dumper();
+            $projectConfig[$key] = $value;
+            file_put_contents($projectRoot . '/.platform-project', $dumper->dump($projectConfig));
+        }
+        return $projectConfig;
     }
 
     /**
@@ -344,11 +377,13 @@ class PlatformCommand extends Command
      *
      * @param array $project The project
      * @param array $environments The environments
-     * @param string $group The alias group name (defaults to the project ID)
      */
-    protected function createDrushAliases($project, $environments, $group = NULL)
+    protected function createDrushAliases($project, $environments)
     {
-        $group = $group ?: $project['id'];
+        $group = $project['id'];
+        if (!empty($project['alias-group'])) {
+          $group = $project['alias-group'];
+        }
 
         // Ensure the existence of the .drush directory.
         $application = $this->getApplication();
