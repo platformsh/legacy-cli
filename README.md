@@ -27,7 +27,7 @@ INSTALL/UPDATE - COMPOSER
 
 * To install the stable version:
 
-        composer global require "platformsh/cli=1.0.*"
+        composer global require "platformsh/cli=1.1.*"
 
 * To update to a newer version:
 
