@@ -81,6 +81,16 @@ class Application extends BaseApplication {
     }
 
     /**
+   * {@inheritdoc}
+   */
+   protected function getDefaultCommands()
+   {
+   $commands =parent::getDefaultCommands();
+   $commands[] = new \Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand();
+   return $commands;
+   }
+
+    /**
      * {@inheritdoc}
      */
     public function doRun(InputInterface $input, OutputInterface $output)
