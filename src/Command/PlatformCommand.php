@@ -413,6 +413,7 @@ class PlatformCommand extends Command
                 $sshUrl = parse_url($environment['_links']['ssh']['href']);
                 $alias = array(
                   'parent' => '@parent',
+                  'uri' => $environment['_links']['public-url']['href'],
                   'site' => $project['id'],
                   'env' => $environment['id'],
                   'remote-host' => $sshUrl['host'],
