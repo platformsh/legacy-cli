@@ -147,6 +147,7 @@ class PlatformCommand extends Command
             $this->platformClient = new Client();
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
+
         }
         // The base url can change between two requests in the same command,
         // so it needs to be explicitly set every time.
@@ -493,7 +494,8 @@ class PlatformCommand extends Command
       foreach ($this->listConfigs() as $config){
         unlink($config["path"]);
       }
-      unlink($this->getHomeDirectory() . '/.platform');
+      $home = getenv('HOME');
+      unlink($home . '/.platform');
     }
     
     private function normalize($string){

@@ -8,7 +8,7 @@ if (isset($_ENV["PLATFORM_ACCOUNTS_SITE"])) {
 }
 
 // Important: CLI_VERIFY_SSL_CERT must always be true in production.
-define('CLI_VERIFY_SSL_CERT', true);
+define('CLI_VERIFY_SSL_CERT', (bool) getenv("PLATFORM_CLI_VERIFY_SSL_CERT"));
 // __DIR__ called in a class will point to the class directory. Saved now it
 // ensure there's always a path to the cli root.
 define('CLI_ROOT', __DIR__);
