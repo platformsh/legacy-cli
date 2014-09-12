@@ -44,8 +44,7 @@ class Application extends Console\Application {
         $this->add(new Command\ProjectBuildCommand);
         $this->add(new Command\ProjectCleanCommand);
         $this->add(new Command\ProjectDeleteCommand);
-        $this->add(new Command\ProjectAliasGroupCommand);
-        $this->add(new Command\ProjectFixAliasesCommand);
+        $this->add(new Command\ProjectDrushAliasesCommand);
         $this->add(new Command\ProjectGetCommand);
         $this->add(new Command\SshKeyAddCommand);
         $this->add(new Command\SshKeyDeleteCommand);

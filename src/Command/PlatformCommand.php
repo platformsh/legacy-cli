@@ -175,6 +175,9 @@ class PlatformCommand extends Command
     /**
      * Add a configuration value to a project.
      *
+     * @param string $key The configuration key
+     * @param mixed $value The configuration value
+     *
      * @return array|null
      *   The updated project configuration.
      */
@@ -374,6 +377,8 @@ class PlatformCommand extends Command
 
     /**
      * Create drush aliases for the provided project and environments.
+     *
+     * This needs to be run from inside the project root.
      *
      * @param array $project The project
      * @param array $environments The environments
