@@ -55,7 +55,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             $output->writeln("<error>You must specify the name of the new branch.</error>");
             return;
         }
-        $machineName = preg_replace('/[^a-z0-9-]+/i', '', strtolower($branchName));
+        $machineName = preg_replace('/[^a-z0-9-\/]+/i', '', strtolower($branchName));
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
