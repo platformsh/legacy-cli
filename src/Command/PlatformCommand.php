@@ -178,20 +178,27 @@ class PlatformCommand extends Command
      * @param string $key The configuration key
      * @param mixed $value The configuration value
      *
-     * @return array|null
+     * @throws \Exception On failure
+     *
+     * @return array
      *   The updated project configuration.
      */
     protected function writeCurrentProjectConfig($key, $value) {
         $projectConfig = $this->getCurrentProjectConfig();
-        if ($projectConfig === null || $key === 'id') {
-            return;
+        if (!$projectConfig) {
+            throw new \Exception('Current project configuration not found');
         }
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot) {
-            $dumper = new Dumper();
-            $projectConfig[$key] = $value;
-            file_put_contents($projectRoot . '/.platform-project', $dumper->dump($projectConfig));
+        if (!$projectRoot) {
+            throw new \Exception('Project root not found');
         }
+        $file = $projectRoot . '/.platform-project';
+        if (!is_writable($file)) {
+            throw new \Exception('Project config file not writable');
+        }
+        $dumper = new Dumper();
+        $projectConfig[$key] = $value;
+        file_put_contents($file, $dumper->dump($projectConfig));
         return $projectConfig;
     }
 
