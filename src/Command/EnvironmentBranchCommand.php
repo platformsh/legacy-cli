@@ -39,6 +39,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 InputOption::VALUE_NONE,
                 "Do not build the new branch"
             );
+            parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

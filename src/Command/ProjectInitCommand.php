@@ -1,12 +1,17 @@
 <?php
-
+/***
+ * NOT YET IMPLEMENTED this is just copy paste with minimal adaptation from
+ * ProjectBuildCommand
+ *
+ */
 namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\InputArgument;
 
-class ProjectBuildCommand extends PlatformCommand
+class ProjectInitCommand extends PlatformCommand
 {
     private $absoluteLinks;
     protected $wcOption = FALSE;
@@ -14,9 +19,14 @@ class ProjectBuildCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('project:build')
-            ->setAliases(array('build'))
-            ->setDescription('Builds the current project.')
+            ->setName('project:init')
+            ->setAliases(array('init'))
+            ->setDescription('Inits platform for an existing git repo or creates a new one.')
+              ->addArgument(
+                  'stack',
+                  InputArgument::OPTIONAL,
+                  'The name of the stack'
+              )
             ->addOption(
                 'abslinks',
                 'a',
@@ -56,44 +66,44 @@ class ProjectBuildCommand extends PlatformCommand
         $this->absoluteLinks = $input->getOption('abslinks');
 
         try {
-            $this->build($projectRoot, $envId);
+            $this->init($projectRoot, $envId);
         } catch (\Exception $e) {
             $output->writeln("<error>" . $e->getMessage() . '</error>');
         }
     }
 
     /**
-     * Build the project.
+     * Init the project.
      *
      * @param string $projectRoot The path to the project to be built.
-     * @param string $environmentId The environment id, used as a build suffix.
+     * @param string $environmentId The environment id, used as a init suffix.
      */
-    public function build($projectRoot, $environmentId)
+    public function init($projectRoot, $environmentId)
     {
-        $buildName = date('Y-m-d--H-i-s') . '--' . $environmentId;
-        $relBuildDir = 'builds/' . $buildName;
-        $absBuildDir = $projectRoot . '/' . $relBuildDir;
+        $initName = date('Y-m-d--H-i-s') . '--' . $environmentId;
+        $relInitDir = 'inits/' . $initName;
+        $absInitDir = $projectRoot . '/' . $relInitDir;
         // Implement logic for detecting a Drupal project VS others.
         $stack= $this->detectStack($projectRoot . '/repository');
         switch ($stack) {
           case "symfony":
-              $status = $this->buildSymfony($absBuildDir, $projectRoot);
+              $status = $this->initSymfony($absInitDir, $projectRoot);
               break;
             case "drupal":
             default:
-              $status = $this->buildDrupal($absBuildDir, $projectRoot);
+              $status = $this->initDrupal($absInitDir, $projectRoot);
               break;
         }
         if ($status) {
-            // Point www to the latest build.
+            // Point www to the latest init.
             $wwwLink = $projectRoot . '/www';
             if (file_exists($wwwLink) || is_link($wwwLink)) {
                 // @todo Windows might need rmdir instead of unlink.
                 unlink($wwwLink);
             }
-            symlink($this->absoluteLinks ? $absBuildDir : $relBuildDir, $wwwLink);
+            symlink($this->absoluteLinks ? $absInitDir : $relInitDir, $wwwLink);
         }else{
-          throw new \Exception("Building $stack project failed");
+          throw new \Exception("Initing $stack project failed");
 
         }
     }
@@ -116,46 +126,46 @@ class ProjectBuildCommand extends PlatformCommand
     }
     
     /**
-     * Build a Symfony project in the provided directory.
+     * Init a Symfony project in the provided directory.
      *
-     * For a build to happen the repository must have at least one composer.json 
+     * For a init to happen the repository must have at least one composer.json 
      *   into the /web directory.
      *
-     * @param string $buildDir The path to the build directory.
+     * @param string $initDir The path to the init directory.
      * @param string $projectRoot The path to the project to be built.
      */
-    protected function buildSymfony($buildDir, $projectRoot)
+    protected function initSymfony($initDir, $projectRoot)
     {
         $repositoryDir = $projectRoot . '/repository';
         if (file_exists($repositoryDir . '/composer.json')) {
             $projectComposer = $repositoryDir . '/composer.json';} else{
             throw new \Exception("Couldn't find a composer.json in the repository.");
         }
-        mkdir($buildDir);
-        $this->copy($repositoryDir, $buildDir);
-        if (is_dir($buildDir)) {
-            chdir($buildDir);
-            shell_exec("composer install --no-progress --no-interaction  --working-dir $buildDir");
+        mkdir($initDir);
+        $this->copy($repositoryDir, $initDir);
+        if (is_dir($initDir)) {
+            chdir($initDir);
+            shell_exec("composer install --no-progress --no-interaction  --working-dir $initDir");
         }
         else {
-          throw new \Exception("Couldn't create build directory");
+          throw new \Exception("Couldn't create init directory");
         }
-        // The build has been done, create a config_dev.yml if it is missing.
-        if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/config_dev.yml')) {
+        // The init has been done, create a config_dev.yml if it is missing.
+        if (is_dir($initDir) && !file_exists($initDir . '/app/config/config_dev.yml')) {
             // Create the config_dev.yml file.
-            copy(CLI_ROOT . '/resources/symfony/config_dev.yml', $buildDir . '/app/config/config_dev.yml');
+            copy(CLI_ROOT . '/resources/symfony/config_dev.yml', $initDir . '/app/config/config_dev.yml');
         }
-        if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/routing_dev.yml')) {
+        if (is_dir($initDir) && !file_exists($initDir . '/app/config/routing_dev.yml')) {
             // Create the routing_dev.yml file.
-            copy(CLI_ROOT . '/resources/symfony/routing_dev.yml', $buildDir . '/app/config/routing_dev.yml');
+            copy(CLI_ROOT . '/resources/symfony/routing_dev.yml', $initDir . '/app/config/routing_dev.yml');
         }        
         return true;
     }
     
     /**
-     * Build a Drupal project in the provided directory.
+     * Init a Drupal project in the provided directory.
      *
-     * For a build to happen the repository must have at least one drush make
+     * For a init to happen the repository must have at least one drush make
      * file. There are two possible modes:
      * - installation profile: Contains an installation profile and the matching
      *   drush make files (project.make and project-core.make or drupal-org.make
@@ -164,10 +174,10 @@ class ProjectBuildCommand extends PlatformCommand
      * - site: Contains just a project.make file. The repository is symlinked
      *   into the sites/default directory.
      *
-     * @param string $buildDir The path to the build directory.
+     * @param string $initDir The path to the init directory.
      * @param string $projectRoot The path to the project to be built.
      */
-    protected function buildDrupal($buildDir, $projectRoot)
+    protected function initDrupal($initDir, $projectRoot)
     {
         $this->ensureDrushInstalled();
 
@@ -195,12 +205,12 @@ class ProjectBuildCommand extends PlatformCommand
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
             }
 
-            shell_exec("drush make -y $wcOption $projectCoreMake $buildDir");
-            // Drush will only create the $buildDir if the build succeeds.
-            if (is_dir($buildDir)) {
+            shell_exec("drush make -y $wcOption $projectCoreMake $initDir");
+            // Drush will only create the $initDir if the init succeeds.
+            if (is_dir($initDir)) {
                 $profile = str_replace($repositoryDir, '', $profiles[0]);
                 $profile = strtok($profile, '.');
-                $profileDir = $buildDir . '/profiles/' . $profile;
+                $profileDir = $initDir . '/profiles/' . $profile;
                 symlink($repositoryDir, $profileDir);
                 // Drush Make requires $profileDir to not exist if it's passed
                 // as the target. chdir($profileDir) works around that.
@@ -209,27 +219,27 @@ class ProjectBuildCommand extends PlatformCommand
             }
         } elseif (file_exists($repositoryDir . '/project.make')) {
             $projectMake = $repositoryDir . '/project.make';
-            shell_exec("drush make -y $wcOption $projectMake $buildDir");
-            // Drush will only create the $buildDir if the build succeeds.
-            if (is_dir($buildDir)) {
+            shell_exec("drush make -y $wcOption $projectMake $initDir");
+            // Drush will only create the $initDir if the init succeeds.
+            if (is_dir($initDir)) {
               // Remove sites/default to make room for the symlink.
-              $this->rmdir($buildDir . '/sites/default');
-              $this->symlink($repositoryDir, $buildDir . '/sites/default');
+              $this->rmdir($initDir . '/sites/default');
+              $this->symlink($repositoryDir, $initDir . '/sites/default');
             }
         }
         else {
-            // Nothing to build.
+            // Nothing to init.
             return;
         }
 
-        // The build has been done, create a settings.php if it is missing.
-        if (is_dir($buildDir) && !file_exists($buildDir . '/sites/default/settings.php')) {
+        // The init has been done, create a settings.php if it is missing.
+        if (is_dir($initDir) && !file_exists($initDir . '/sites/default/settings.php')) {
             // Create the settings.php file.
-            copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
+            copy(CLI_ROOT . '/resources/drupal/settings.php', $initDir . '/sites/default/settings.php');
         }
 
         // Symlink all files and folders from shared.
-        $this->symlink($projectRoot . '/shared', $buildDir . '/sites/default');
+        $this->symlink($projectRoot . '/shared', $initDir . '/sites/default');
 
         return true;
     }

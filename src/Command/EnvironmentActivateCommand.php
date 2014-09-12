@@ -26,6 +26,7 @@ class EnvironmentActivateCommand extends EnvironmentCommand
                 InputOption::VALUE_OPTIONAL,
                 'The environment id'
             );
+            parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

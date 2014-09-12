@@ -39,6 +39,7 @@ class ProjectGetCommand extends PlatformCommand
                 InputOption::VALUE_NONE,
                 "List inactive environments too"
             );
+            parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

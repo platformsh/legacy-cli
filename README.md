@@ -112,8 +112,8 @@ project
   project:delete            Delete a project.
   project:get               Does a git clone of the referenced project.
 ssh-key
-  ssh-key:add               Add a new SSH key.
-  ssh-key:delete            Delete an SSH key.
+  ssh-keys:add               Add a new SSH key.
+  ssh-keys:delete            Delete an SSH key.
 ```
 
 CREDITS

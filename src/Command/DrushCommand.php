@@ -14,6 +14,7 @@ class DrushCommand extends PlatformCommand
             ->setName('drush')
             ->setDescription('Invoke a drush command using the site alias for the current environment.');
         $this->ignoreValidationErrors();
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

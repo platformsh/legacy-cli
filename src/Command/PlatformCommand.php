@@ -19,26 +19,37 @@ class PlatformCommand extends Command
     protected $oauth2Plugin;
     protected $accountClient;
     protected $platformClient;
+    protected $remoteCommand = false;
 
     /**
      * Load configuration from the user's .platform file.
      *
      * Configuration is loaded only if $this->config hasn't been populated
-     * already. This allows LoginCommand to avoid writing the config file
+     * already. This allows PlatformLoginCommand to avoid writing the config file
      * before using the client for the first time.
      *
      * @return array The populated configuration array.
      */
     protected function loadConfig()
     {
-        if (!$this->config) {
+        if (!$this->config && $this->getApplication()->hasConfiguration()) {
             $application = $this->getApplication();
             $configPath = $application->getHomeDirectory() . '/.platform';
             $yaml = new Parser();
             $this->config = $yaml->parse(file_get_contents($configPath));
         }
-
         return $this->config;
+    }
+
+    protected function listConfigs(){
+      $application = $this->getApplication();
+      $configs=[];
+      $yaml = new Parser();
+      foreach (glob($application->getHomeDirectory() . "/.platform_*") as $filename) {
+          $config = $yaml->parse(file_get_contents($filename));
+          $configs[]=array("label"=>$config["username"]." -> " .$config["marketplace"], "path"=>$filename);
+      }
+      return $configs;
     }
 
     /**
@@ -95,7 +106,10 @@ class PlatformCommand extends Command
         $this->config = array(
             'access_token' => $oauth2Plugin->getAccessToken(),
             'refresh_token' => $oauth2Plugin->getRefreshToken(),
+            'username' => $email,
+            'marketplace' => CLI_ACCOUNTS_SITE,
         );
+        $this->saveConfig();
     }
 
     /**
@@ -133,6 +147,7 @@ class PlatformCommand extends Command
             $this->platformClient = new Client();
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
+
         }
         // The base url can change between two requests in the same command,
         // so it needs to be explicitly set every time.
@@ -405,7 +420,7 @@ class PlatformCommand extends Command
     {
         return FALSE;
     }
-
+    
     protected function ensureDrushInstalled()
     {
         $drushVersion = shell_exec('drush version');
@@ -454,12 +469,55 @@ class PlatformCommand extends Command
             if ($this->oauth2Plugin) {
                 // Save the access token for future requests.
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
+                $this->saveConfig();
             }
-
-            $application = $this->getApplication();
-            $configPath = $application->getHomeDirectory() . '/.platform';
-            $dumper = new Dumper();
-            file_put_contents($configPath, $dumper->dump($this->config));
         }
+    }
+
+    protected function activateConfig($filename){
+        $application = $this->getApplication();
+        $baseConfigPath = $application->getHomeDirectory() . '/.platform';
+        if (file_exists($baseConfigPath)) {unlink($baseConfigPath);}
+        symlink($filename, $baseConfigPath);
+    }
+        
+    protected function saveConfig(){
+      if (isset($this->config["username"])) {
+        $configPath =  $this->getApplication()->getHomeDirectory() . '/.platform' . $this->normalize(CLI_ACCOUNTS_SITE).$this->normalize($this->config['username']);
+        $dumper = new Dumper();
+        file_put_contents($configPath, $dumper->dump($this->config));
+        $this->activateConfig($configPath);
+      }
+    }
+    
+    protected function deleteConfigs(){
+      foreach ($this->listConfigs() as $config){
+        unlink($config["path"]);
+      }
+      $home = getenv('HOME');
+      unlink($home . '/.platform');
+    }
+    
+    private function normalize($string){
+      return("_".preg_replace('/[^a-zA-Z0-9_.]/', '_', $string));
+    }
+    protected function configure(){
+        $localCommands=[
+            "Symfony\Component\Console\Command\ListCommand",
+            "Symfony\Component\Console\Command\HelpCommand",
+            "CommerceGuys\Platform\Cli\Command\PlatformLoginCommand",
+            "CommerceGuys\Platform\Cli\Command\PlatformLogoutCommand",
+            "CommerceGuys\Platform\Cli\Command\ProjectFixAliasesCommand",
+            "CommerceGuys\Platform\Cli\Command\ProjectBuildCommand",
+            "CommerceGuys\Platform\Cli\Command\SwitchAccountCommand",            
+            "CommerceGuys\Platform\Cli\Command\WelcomeCommand",            
+        ];
+        
+        if (!in_array(get_class($this), $localCommands)){
+                $this->setDescription("<fg=red>".$this->getDescription()." </fg=red>");
+            } else {
+                $this->setDescription("<fg=cyan>".$this->getDescription()." </fg=cyan>");
+        }
+        parent::configure();
     }
 }

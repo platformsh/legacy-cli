@@ -15,8 +15,8 @@ use Symfony\Component\Console\Shell;
 class Application extends Console\Application {
 
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function __construct()
     {
         parent::__construct('Platform CLI', '1.1.0');
@@ -25,11 +25,12 @@ class Application extends Console\Application {
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
         $this->add(new Command\PlatformLogoutCommand);
+        $this->add(new Command\PlatformLoginCommand);
         $this->add(new Command\DrushCommand);
         $this->add(new Command\ProjectListCommand);
         $this->add(new Command\DomainAddCommand);
         $this->add(new Command\DomainDeleteCommand);
-        $this->add(new Command\DomainListCommand);        
+        $this->add(new Command\DomainListCommand);
         $this->add(new Command\EnvironmentActivateCommand);
         $this->add(new Command\EnvironmentBackupCommand);
         $this->add(new Command\EnvironmentBranchCommand);
@@ -38,22 +39,35 @@ class Application extends Console\Application {
         $this->add(new Command\EnvironmentDeleteCommand);
         $this->add(new Command\EnvironmentListCommand);
         $this->add(new Command\EnvironmentMergeCommand);
-        $this->add(new Command\EnvironmentRelationshipsCommand);        
+        $this->add(new Command\EnvironmentRelationshipsCommand);
         $this->add(new Command\EnvironmentSshCommand);
-        $this->add(new Command\EnvironmentSynchronizeCommand);        
+        $this->add(new Command\EnvironmentSynchronizeCommand);
         $this->add(new Command\ProjectBuildCommand);
         $this->add(new Command\ProjectCleanCommand);
         $this->add(new Command\ProjectDeleteCommand);
-        $this->add(new Command\ProjectFixAliasesCommand);        
+        $this->add(new Command\ProjectFixAliasesCommand);
         $this->add(new Command\ProjectGetCommand);
-        $this->add(new Command\SshKeyAddCommand);
-        $this->add(new Command\SshKeyDeleteCommand);
-        $this->add(new Command\SshKeyListCommand);
+//        $this->add(new Command\ProjectInitCommand); // NOT YET IMPLEMENTED
+        $this->add(new Command\SshKeysAddCommand);
+        $this->add(new Command\SshKeysDeleteCommand);
+        $this->add(new Command\SshKeysListCommand);
+        $this->add(new Command\SwitchAccountCommand);
     }
 
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
+    protected function getDefaultCommands()
+    {
+        
+        $commands =parent::getDefaultCommands();
+        $commands[] = new \Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand();
+        return $commands;
+    }
+    
+    /**
+    * {@inheritdoc}
+    */
     protected function getDefaultInputDefinition()
     {
         // We remove the confusing `--ansi` and `--no-ansi` options.
@@ -69,8 +83,8 @@ class Application extends Console\Application {
     }
 
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function doRun(InputInterface $input, OutputInterface $output)
     {
         if (true === $input->hasParameterOption(array('--shell', '-s'))) {
@@ -104,12 +118,21 @@ class Application extends Console\Application {
 
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
-        if (!$this->hasConfiguration() && !$command::skipLogin()) {
-            $this->add(new Command\LoginCommand);
-            $commandChain[] = array(
-                'command' => $this->find('login'),
-                'input' => new ArrayInput(array('command' => 'login')),
-            );
+        // Except for the following commands
+        $unprivilegedCommands=[
+            "Symfony\Component\Console\Command\ListCommand",
+            "Symfony\Component\Console\Command\HelpCommand",
+            "CommerceGuys\Platform\Cli\Command\PlatformLoginCommand",
+            "CommerceGuys\Platform\Cli\Command\PlatformLogoutCommand"];
+        if (!in_array(get_class($command), $unprivilegedCommands))
+        {
+            if ((!$this->hasConfiguration()) && !$command::skipLogin()) {
+                $this->add(new Command\PlatformLoginCommand);
+                $commandChain[] = array(
+                    'command' => $this->find('platform:login'),
+                    'input' => new ArrayInput(array('command' => 'platform:login')),
+                );
+            }
         }
         $commandChain[] = array(
             'command' => $command,
@@ -126,12 +149,12 @@ class Application extends Console\Application {
     }
 
     /**
-     * Set the default timezone.
-     *
-     * PHP 5.4 has removed the autodetection of the system timezone,
-     * so it needs to be done manually.
-     * UTC is the fallback in case autodetection fails.
-     */
+    * Set the default timezone.
+    *
+    * PHP 5.4 has removed the autodetection of the system timezone,
+    * so it needs to be done manually.
+    * UTC is the fallback in case autodetection fails.
+    */
     protected function setDefaultTimezone() {
         $timezone = 'UTC';
         if (is_link('/etc/localtime')) {
@@ -156,11 +179,11 @@ class Application extends Console\Application {
         }
 
         date_default_timezone_set($timezone);
-     }
+    }
 
     /**
-     * @return string The absolute path to the user's home directory.
-     */
+    * @return string The absolute path to the user's home directory.
+    */
     public function getHomeDirectory()
     {
         $home = getenv('HOME');
@@ -170,16 +193,25 @@ class Application extends Console\Application {
                 $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
             }
         }
-
         return $home;
     }
 
     /**
-     * @return boolean Whether the user has configured the CLI.
-     */
-    protected function hasConfiguration()
+    * @return boolean Whether the user has configured the CLI.
+    */
+    public function hasConfiguration()
     {
-        return file_exists($this->getHomeDirectory() . '/.platform');
+        $config_file= $this->getHomeDirectory() . '/.platform';
+        if (file_exists($config_file)) {
+            if (is_link($config_file)){
+                if (is_string(readlink($config_file))) {
+                    return true;
+                }
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
     }
-
 }

@@ -22,6 +22,7 @@ class EnvironmentListCommand extends EnvironmentCommand
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
             );
+            parent::configure();
     }
 
     /**

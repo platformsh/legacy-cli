@@ -14,6 +14,7 @@ class ProjectFixAliasesCommand extends PlatformCommand
             ->setName('project:fix-aliases')
             ->setAliases(array('fix-aliases'))
             ->setDescription('Forces the CLI to recreate the project\'s site (Drush) aliases, if any.');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

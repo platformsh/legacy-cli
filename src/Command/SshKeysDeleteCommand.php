@@ -6,19 +6,20 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshKeyDeleteCommand extends PlatformCommand
+class SshKeysDeleteCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('ssh-key:delete')
+            ->setName('ssh-keys:delete')
             ->setDescription('Delete an SSH key.')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
                 'The id of the key to delete'
             );
+            parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -31,8 +32,8 @@ class SshKeyDeleteCommand extends PlatformCommand
         $client = $this->getAccountClient();
         $client->deleteSshKey(array('id' => $id));
 
-        $message = '<info>';
-        $message = "\nThe SSH key #$id has been deleted. \n";
+        $message .= '<info>';
+        $message .= "\nThe SSH key #$id has been deleted. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

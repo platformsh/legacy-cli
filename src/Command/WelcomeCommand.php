@@ -23,12 +23,14 @@ class WelcomeCommand extends PlatformCommand
         $this
             ->setName('welcome')
             ->setDescription('Welcome to platform');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $output->writeln("\nWelcome to Platform.sh!");
-
+        $username=$this->loadConfig()["username"];
+        if (isset($username)){$output->writeln("\nYou are logged-in as $username");}
         if ($currentProject = $this->getCurrentProject()) {
             // The project is known. Show the environments.
             $projectName = $currentProject['name'];
@@ -40,8 +42,7 @@ class WelcomeCommand extends PlatformCommand
             // The project is not known. Show all projects.
             $this->projectListCommand->execute($input, $output);
         }
-
-        $output->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>.");
+        $output->writeln("Manage your SSH keys by running <info>platform ssh-keys:list</info>.");
         
         $output->writeln("List all commands and their options by running <info>platform help</info>.\n");
 

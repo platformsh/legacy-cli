@@ -1,0 +1,12 @@
+# This file defines the services that power your project.
+
+mysql:
+    type: mysql
+    disk: 2048
+
+redis:
+    type: redis
+
+solr:
+    type: solr
+    disk: 1024

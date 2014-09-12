@@ -17,6 +17,7 @@ class PlatformLogoutCommand extends PlatformCommand
             ->setName('logout')
             ->setAliases(array('logout'))
             ->setDescription('Log out of the Platform CLI');
+        parent::configure();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -34,7 +35,7 @@ class PlatformLogoutCommand extends PlatformCommand
         }
         // Ask for a confirmation.
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion("<comment>This command will remove your current Platform configuration.\n\nYou will have to re-enter your Platform credentials to use the CLI tool.</comment> <question>Are you sure you wish to continue? (y/n):</question> ", false);
+        $question = new ConfirmationQuestion("<comment>This command will remove your current Platform configuration.\n\nYou will have to re-enter your Platform credentials to use the CLI tool. You can login to another account using the login command, or switch to another account using the switch command</comment> <question>Are you sure you wish to continue? (y/n):</question> ", false);
 
         if (!$helper->ask($input, $output, $question)) {
             $output->writeln("<info>Okay! You remain logged in to the Platform CLI with your current credentials.</info>");
@@ -43,8 +44,8 @@ class PlatformLogoutCommand extends PlatformCommand
         else {
             try {
                 $this->removeConfigFile = TRUE;
-                unlink($configPath);
-                $output->writeln("<comment>Your Platform configuration file has been removed and you have been logged out of the Platform CLI.</comment>");
+                $this->deleteConfigs();
+                $output->writeln("<comment>Your Platform configuration files has been removed and you have been logged out of the Platform CLI.</comment>");
             }
             catch (\Exception $e) {
                 // @todo: Real exception handling here.

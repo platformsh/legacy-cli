@@ -1,9 +1,14 @@
 #!/usr/bin/env php
 <?php
+// READ from environenment the marketplace url to connect to
+if (isset($_ENV["PLATFORM_ACCOUNTS_SITE"])) {
+    define('CLI_ACCOUNTS_SITE', $_ENV["PLATFORM_ACCOUNTS_SITE"]);
+} else {
+    define('CLI_ACCOUNTS_SITE', 'https://marketplace.commerceguys.com');
+}
 
-define('CLI_ACCOUNTS_SITE', 'https://marketplace.commerceguys.com');
 // Important: CLI_VERIFY_SSL_CERT must always be true in production.
-define('CLI_VERIFY_SSL_CERT', true);
+define('CLI_VERIFY_SSL_CERT', (bool) getenv("PLATFORM_CLI_VERIFY_SSL_CERT"));
 // __DIR__ called in a class will point to the class directory. Saved now it
 // ensure there's always a path to the cli root.
 define('CLI_ROOT', __DIR__);
