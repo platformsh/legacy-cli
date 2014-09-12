@@ -40,6 +40,8 @@ class ProjectDrushAliasesCommand extends PlatformCommand
 
         $new_group = ltrim($input->getOption('group'), '@');
 
+        // Get the cached list of environments.
+        // @todo At the moment we can't refresh the list of environments here, because $this->getEnvironments() would itself call $this->createDrushAliases().
         $this->loadConfig();
         $environments = $this->config['environments'][$project['id']];
 

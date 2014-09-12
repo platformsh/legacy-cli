@@ -385,7 +385,7 @@ class PlatformCommand extends Command
     /**
      * Create drush aliases for the provided project and environments.
      *
-     * This needs to be run from inside the project root.
+     * @todo prevent this running for non-Drupal projects
      *
      * @param array $project The project
      * @param array $environments The environments
