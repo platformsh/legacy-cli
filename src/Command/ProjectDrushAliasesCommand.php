@@ -48,7 +48,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
         if ($new_group && $new_group != $current_group) {
             $questionHelper = $this->getHelper('question');
             $consoleOutput = new ConsoleOutput();
-            $existing = shell_exec("drush site-alias --pipe --format=list @" . escapeshellarg($new_group) . " 2>/dev/null");
+            $existing = $this->shellExec("drush site-alias --pipe --format=list @" . escapeshellarg($new_group));
             if ($existing) {
                 $question = new ConfirmationQuestion("The alias group @$new_group already exists. Overwrite? [y/N] ", false);
                 if (!$questionHelper->ask($input, $consoleOutput, $question)) {
@@ -81,10 +81,41 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             return;
         }
 
-        $output->writeln("Aliases for <info>{$project['name']}</info> ({$project['id']}):");
-        $aliases = shell_exec("drush site-alias --pipe --format=list @" . escapeshellarg($current_group) . " 2>/dev/null");
-        foreach (explode("\n", $aliases) as $alias) {
-            $output->writeln('    @' . $alias);
+        $aliases = $this->shellExec("drush site-alias --pipe --format=list @" . escapeshellarg($current_group));
+        if ($aliases) {
+            $output->writeln("Aliases for <info>{$project['name']}</info> ({$project['id']}):");
+            foreach (explode("\n", $aliases) as $alias) {
+                $output->writeln('    @' . $alias);
+            }
         }
+    }
+
+    /**
+     * Run a shell command in the current directory, suppressing errors.
+     *
+     * @param string $cmd The command, suitably escaped.
+     * @param string &$error Optionally use this to capture errors.
+     *
+     * @throws \Exception
+     *
+     * @return string The command output.
+     */
+    protected function shellExec($cmd, &$error = '')
+    {
+      $descriptorSpec = array(
+        0 => array('pipe', 'r'), // stdin
+        1 => array('pipe', 'w'), // stdout
+        2 => array('pipe', 'w'), // stderr
+      );
+      $process = proc_open($cmd, $descriptorSpec, $pipes);
+      if (!$process) {
+          throw new \Exception('Failed to execute command');
+      }
+      $result = stream_get_contents($pipes[1]);
+      $error = stream_get_contents($pipes[2]);
+      fclose($pipes[1]);
+      fclose($pipes[2]);
+      proc_close($process);
+      return $result;
     }
 }
