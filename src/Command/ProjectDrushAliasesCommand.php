@@ -69,10 +69,14 @@ class ProjectDrushAliasesCommand extends PlatformCommand
                 }
             }
 
+            // Clear the Drush cache now that the aliases have been updated.
+            $this->shellExec('drush cache-clear drush');
+
             $current_group = $new_group;
         }
         elseif ($input->getOption('recreate')) {
             $this->createDrushAliases($project, $environments);
+            $this->shellExec('drush cache-clear drush');
             $output->writeln("Project aliases recreated");
         }
 
