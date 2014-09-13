@@ -38,7 +38,7 @@ class ProjectDeleteCommand extends PlatformCommand
         $client->deleteProject();
 
         $message = '<info>';
-        $message = "\nThe project #$projectId has been deleted. \n";
+        $message .= "\nThe project #$projectId has been deleted. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

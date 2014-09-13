@@ -69,7 +69,7 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         $message = '<info>';
-        $message = "\nThe environment $environmentId has been synchronized. \n";
+        $message .= "\nThe environment $environmentId has been synchronized. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

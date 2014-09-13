@@ -45,7 +45,7 @@ class EnvironmentMergeCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         $message = '<info>';
-        $message = "\nThe environment $environmentId has been merged. \n";
+        $message .= "\nThe environment $environmentId has been merged. \n";
         $message .= "</info>";
         $output->writeln($message);
     }
