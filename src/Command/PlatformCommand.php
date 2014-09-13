@@ -369,31 +369,35 @@ class PlatformCommand extends Command
      * if the environment list has changed.
      *
      * @param array $project The project.
+     * @param bool $refresh Whether to refresh the list.
      *
      * @return array The user's environments.
      */
-    protected function getEnvironments($project)
+    protected function getEnvironments($project, $refresh = false)
     {
-        $this->loadConfig();
         $projectId = $project['id'];
-        if (!isset($this->config['environments'][$projectId])) {
+        $this->loadConfig();
+        if (!isset($this->config['environments'][$projectId]) || $refresh) {
             $this->config['environments'][$projectId] = array();
-        }
 
-        // Fetch and assemble a list of environments.
-        $urlParts = parse_url($project['endpoint']);
-        $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
-        $client = $this->getPlatformClient($project['endpoint']);
-        $environments = array();
-        foreach ($client->getEnvironments() as $environment) {
-            // The environments endpoint is temporarily not serving
-            // absolute urls, so we need to construct one.
-            $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
-            $environments[$environment['id']] = $environment;
+            // Fetch and assemble a list of environments.
+            $urlParts = parse_url($project['endpoint']);
+            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
+            $client = $this->getPlatformClient($project['endpoint']);
+            $environments = array();
+            foreach ($client->getEnvironments() as $environment) {
+                // The environments endpoint is temporarily not serving
+                // absolute urls, so we need to construct one.
+                $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
+                $environments[$environment['id']] = $environment;
+            }
+
+            // Recreate the aliases if the list of environments has changed.
+            if ($this->config['environments'][$projectId] != $environments) {
+                $this->config['environments'][$projectId] = $environments;
+                $this->createDrushAliases($project, $environments);
+            }
         }
-        // Recreate the aliases if the list of environments has changed.
-        $this->createDrushAliases($project, $environments);
-        $this->config['environments'][$projectId] = $environments;
 
         return $this->config['environments'][$projectId];
     }

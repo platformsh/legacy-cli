@@ -38,6 +38,10 @@ class EnvironmentCommand extends PlatformCommand
             $environmentId = $input->getOption('environment');
             if (!empty($environmentId)) {
                 $environments = $this->getEnvironments($this->project);
+                // Try refreshing the list of environments.
+                if (!isset($environments[$environmentId])) {
+                    $environments = $this->getEnvironments($this->project, true);
+                }
                 if (!isset($environments[$environmentId])) {
                     $output->writeln("<error>Specified environment not found.</error>");
                     return;

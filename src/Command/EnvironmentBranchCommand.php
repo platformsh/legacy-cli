@@ -125,7 +125,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
         // Reload the stored environments, to trigger a drush alias rebuild.
-        $this->getEnvironments($this->project);
+        $this->getEnvironments($this->project, true);
 
         $output->writeln("The environment <info>$branchName</info> has been branched.");
 

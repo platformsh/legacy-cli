@@ -27,6 +27,12 @@ class EnvironmentListCommand extends EnvironmentCommand
                 null,
                 InputOption::VALUE_NONE,
                 'Output a simple list of environment machine names.'
+            )
+            ->addOption(
+                'refresh',
+                null,
+                InputOption::VALUE_NONE,
+                'Refresh the list.'
             );
     }
 
@@ -95,6 +101,9 @@ class EnvironmentListCommand extends EnvironmentCommand
             return;
         }
 
+        $refresh = $input->getFirstArgument() == 'welcome' || ($input->hasOption('refresh') && $input->getOption('refresh'));
+
+        $environments = $this->getEnvironments($this->project, $refresh);
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
         $environments = $this->getEnvironments($this->project);
 
