@@ -32,7 +32,7 @@ class SshKeyDeleteCommand extends PlatformCommand
         $client->deleteSshKey(array('id' => $id));
 
         $message = '<info>';
-        $message = "\nThe SSH key #$id has been deleted. \n";
+        $message .= "\nThe SSH key #$id has been deleted. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

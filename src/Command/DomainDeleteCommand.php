@@ -56,7 +56,7 @@ class DomainDeleteCommand extends DomainCommand
         $client->deleteDomain();
 
         $message = '<info>';
-        $message = "\nThe given domain has been successfuly deleted from the project. \n";
+        $message .= "\nThe given domain has been successfully deleted from the project. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

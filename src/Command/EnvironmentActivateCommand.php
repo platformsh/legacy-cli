@@ -43,7 +43,7 @@ class EnvironmentActivateCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         $message = '<info>';
-        $message = "\nThe environment $environmentId has been activated. \n";
+        $message .= "\nThe environment $environmentId has been activated. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

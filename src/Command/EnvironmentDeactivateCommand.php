@@ -43,7 +43,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         $message = '<info>';
-        $message = "\nThe environment $environmentId has been deactivated. \n";
+        $message .= "\nThe environment $environmentId has been deactivated. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

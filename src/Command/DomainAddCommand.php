@@ -104,7 +104,7 @@ class DomainAddCommand extends DomainCommand
 
         // @todo: Add proper exception/error handling here...seriously.
         $message = '<info>';
-        $message = "\nThe given domain has been successfuly added to the project. \n";
+        $message .= "\nThe given domain has been successfully added to the project. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

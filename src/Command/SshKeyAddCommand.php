@@ -41,7 +41,7 @@ class SshKeyAddCommand extends PlatformCommand
         $client->createSshKey(array('title' => $title, 'value' => $key));
 
         $message = '<info>';
-        $message = "\nThe given key has been successfuly added. \n";
+        $message .= "\nThe given key has been successfully added. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

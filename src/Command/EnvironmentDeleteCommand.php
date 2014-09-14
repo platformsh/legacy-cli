@@ -45,7 +45,7 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         $message = '<info>';
-        $message = "\nThe environment $environmentId has been deleted. \n";
+        $message .= "\nThe environment $environmentId has been deleted. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

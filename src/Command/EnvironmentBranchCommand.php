@@ -81,7 +81,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         }
 
         $message = '<info>';
-        $message = "\nThe environment $branchName has been branched. \n";
+        $message .= "\nThe environment $branchName has been branched. \n";
         $message .= "</info>";
         $output->writeln($message);
     }

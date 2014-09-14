@@ -23,7 +23,7 @@ class DrushCommand extends PlatformCommand
         // Try to autodetect the project and environment.
         // There is no point in allowing the user to override them
         // using --project and --environment, in that case they can run
-        // drush by themselves and specify the site alias manualy.
+        // drush by themselves and specify the site alias manually.
         $this->project = $this->getCurrentProject();
         if (!$this->project) {
             $output->writeln("<error>You must run this command from a project folder.</error>");

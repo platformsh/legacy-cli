@@ -43,7 +43,7 @@ class EnvironmentBackupCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         $message = '<info>';
-        $message = "\nA backup of environment $environmentId has been created. \n";
+        $message .= "\nA backup of environment $environmentId has been created. \n";
         $message .= "</info>";
         $output->writeln($message);
     }
