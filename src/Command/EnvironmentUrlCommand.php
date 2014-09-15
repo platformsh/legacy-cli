@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -15,6 +16,11 @@ class EnvironmentUrlCommand extends EnvironmentCommand
             ->setName('environment:url')
             ->setAliases(array('url'))
             ->setDescription('Get the public URL to an environment, and open it in a browser.')
+            ->addArgument(
+                'path',
+                InputArgument::OPTIONAL,
+                'A path to append to the URL.'
+            )
             ->addOption(
                 'browser',
                 null,
@@ -52,6 +58,12 @@ class EnvironmentUrlCommand extends EnvironmentCommand
         }
 
         $url = $this->environment['_links']['public-url']['href'];
+
+        $path = $input->getArgument('path');
+        if ($path) {
+            $url .= trim($path);
+        }
+
         if ($input->getOption('pipe')) {
             $output->write($url);
             return;
