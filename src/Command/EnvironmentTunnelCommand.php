@@ -128,13 +128,14 @@ class EnvironmentTunnelCommand extends EnvironmentCommand
       return join(" ",$params);
     }
     protected function web_params($buildpack, $projectWWWRoot, $localhost, $http_local_port, $projectWWWRoot){
+        /*FIXME All of this should go to the buildpack/plugin model*/
       switch ($buildpack){
         case "symfony":
         /*FIXME 
         we should get this from composer.json
         extra:symfony-web-dir
         */
-        return "php -t $projectWWWRoot/web/app.php/ -S $localhost:$http_local_port }'";
+        return "php -t $projectWWWRoot/web/app.php/ -S $localhost:$http_local_port";
         case "drupal":
         default:
         return "php -t $projectWWWRoot -S $localhost:$http_local_port -r'if (preg_match(\"/\.(engine|inc|info|install|make|module|profile|test|po|sh|.*sql|theme|tpl(\.php)?|xtmpl)/\",\$_SERVER[\"REQUEST_URI\"])) { print \"Error\\n\"; } else if (preg_match(\"/(^|\/)\./\",\$_SERVER[\"REQUEST_URI\"])) { return false; } else if (file_exists(\$_SERVER[\"DOCUMENT_ROOT\"].\$_SERVER[\"SCRIPT_NAME\"])) { return false; } else {\$_GET[\"q\"]=\$_SERVER[\"REQUEST_URI\"]; include(\"$projectWWWRoot/index.php\"); }'";
@@ -151,6 +152,8 @@ class EnvironmentTunnelCommand extends EnvironmentCommand
             $http_local_port=  8000; //FIXME hardcoded
             $tmp_dir="/tmp";
             $tunnelCommand = "ssh -N ". $this->tunnels_params() ." $sshUrl";
+            /*FIXME THIS IS Unfinished.. we need to get this from the detect we have on build*/
+            $buildpack ="symfony";
             $serveCommand = $this->web_params($buildpack, $projectWWWRoot, $localhost, $http_local_port, $projectWWWRoot);
             $webOutputFile ="$tmp_dir/platform-local-web-server-$environmentId.log";
             $webPidFile ="$tmp_dir/platform-local-web-server-$environmentId.pid";
