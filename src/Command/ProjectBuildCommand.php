@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Finder\Finder;
 
 class ProjectBuildCommand extends PlatformCommand
 {
@@ -103,15 +104,32 @@ class ProjectBuildCommand extends PlatformCommand
           $json=file_get_contents($dir. '/composer.json');
           $composer_json = json_decode($json);
           if (property_exists($composer_json->require,"symfony/symfony")) {
-            return ("symfony");
+            return ("symfony"); // Ok it is incorrect to test for a symfony project like this. Thelia for example does not depend on symfony/symfony.
           } else {
 //            throw new \Exception("Couldn't find symfony in  composer.json in the repository.");
           };
       };
-      if (recursive_file_exists("project.make", $dir)) {
-        return ("drupal");
-      }//|| (recursive_file_exists("drupal-org.make", $dir) ||(recursive_file_exists("drupal-org-core.make", $dir)
-
+      $make_file_found=false;
+      $finder = new Finder();
+      // Search for Drupal Make files
+      $finder->files()->name('project.make')
+                      ->name('drupal-org.make')
+                      ->name('drupal-org-core.make')
+                          ->in(__DIR__);
+      foreach ($finder as $file) {
+           $drupal_file_found=true; // we might want to read it
+      }
+      // Search for Drupal Copyright files
+      $finder->files()->name('COPYRIGHT.txt')->in(__DIR__);
+      foreach ($finder as $file) {
+          $f = fopen($file, 'r');
+          $line = fgets($f);
+          fclose($f);
+          if (preg_match('#^All Drupal code#', $line) === 1) {
+              $drupal_file_found=true;
+          }
+      }
+      return ("symfony"); //FIXME just for the moment we are defaulting to symfony
     }
     
     /**
@@ -140,6 +158,8 @@ class ProjectBuildCommand extends PlatformCommand
           throw new \Exception("Couldn't create build directory");
         }
         // The build has been done, create a config_dev.yml if it is missing.
+        //FIXME in symfony world there might not be a ./config dir
+        // For Thelia it is local/config/
         if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/config_dev.yml')) {
             // Create the config_dev.yml file.
             copy(CLI_ROOT . '/resources/symfony/config_dev.yml', $buildDir . '/app/config/config_dev.yml');
@@ -282,38 +302,6 @@ class ProjectBuildCommand extends PlatformCommand
         }
         closedir($sourceDirectory);
     }
-    
-    /*
-     * @Search recursively for a file in a given directory
-     * @param string $filename The file to find
-     * @param string $directory The directory to search
-     * @return bool
-     */
-    private function recursive_file_exists($filename, $directory)
-    {
-        try
-        {
-            /*** loop through the files in directory ***/
-            foreach(new recursiveIteratorIterator( new recursiveDirectoryIterator($directory)) as $file)
-            {
-                /*** if the file is found ***/
-                if( $directory.'/'.$filename == $file )
-                {
-                    return true;
-                }
-            }
-            /*** if the file is not found ***/
-            return false;
-        }
-        catch(Exception $e)
-        {
-            /*** if the directory does not exist or the directory
-                or a sub directory does not have sufficent
-                permissions return false ***/
-            return false;
-        }
-      }
-
     public static function skipLogin()
     {
         return TRUE;
