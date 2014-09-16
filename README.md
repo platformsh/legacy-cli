@@ -25,9 +25,9 @@ INSTALL/UPDATE - COMPOSER
 
         composer global remove 'commerceguys/platform-cli'
 
-* To install the stable version:
+* To install the latest stable version:
 
-        composer global require "platformsh/cli=1.0.*"
+        composer global require "platformsh/cli=1.*"
 
 * To update to a newer version:
 
