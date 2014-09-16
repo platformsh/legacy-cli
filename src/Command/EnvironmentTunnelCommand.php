@@ -142,6 +142,9 @@ class EnvironmentTunnelCommand extends EnvironmentCommand
     }
     }
     
+    /** FIXME: Opening tunnel first time will fail as ssh interactively asks to verify
+     *  server fingerprint
+     **/
     protected function open_tunnel(){
             $this->tunnels_config();
             $environmentId = $this->environment['id'];
