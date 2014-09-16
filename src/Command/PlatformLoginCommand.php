@@ -95,7 +95,7 @@ class PlatformLoginCommand extends PlatformCommand
             $this->authenticateUser($email, $password);
         } catch (ClientErrorResponseException $e) {
             $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
-            $this->configureAccount($output);
+            $this->configureAccount($input, $output);
         }
     }
 
