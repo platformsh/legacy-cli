@@ -17,7 +17,7 @@ class EnvironmentRelationshipsCommand extends EnvironmentSshCommand
             ->setName('environment:relationships')
             ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project id')
             ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment id')
-            ->setDescription('SSH to the current environment.');
+            ->setDescription("List the environment's relationships.");
         // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
     }
 
