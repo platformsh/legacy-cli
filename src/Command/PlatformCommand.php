@@ -149,14 +149,57 @@ class PlatformCommand extends Command
     protected function getCurrentProject()
     {
         $project = null;
+        $config = $this->getCurrentProjectConfig();
+        if ($config) {
+          $project = $this->getProject($config['id']) + $config;
+        }
+        return $project;
+    }
+
+    /**
+     * Get the configuration for the current project.
+     *
+     * @return array|null
+     *   The current project's configuration.
+     */
+    protected function getCurrentProjectConfig() {
+        $projectConfig = null;
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/.platform-project'));
-            $project = $this->getProject($projectConfig['id']);
         }
+        return $projectConfig;
+    }
 
-        return $project;
+    /**
+     * Add a configuration value to a project.
+     *
+     * @param string $key The configuration key
+     * @param mixed $value The configuration value
+     *
+     * @throws \Exception On failure
+     *
+     * @return array
+     *   The updated project configuration.
+     */
+    protected function writeCurrentProjectConfig($key, $value) {
+        $projectConfig = $this->getCurrentProjectConfig();
+        if (!$projectConfig) {
+            throw new \Exception('Current project configuration not found');
+        }
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot) {
+            throw new \Exception('Project root not found');
+        }
+        $file = $projectRoot . '/.platform-project';
+        if (!is_writable($file)) {
+            throw new \Exception('Project config file not writable');
+        }
+        $dumper = new Dumper();
+        $projectConfig[$key] = $value;
+        file_put_contents($file, $dumper->dump($projectConfig));
+        return $projectConfig;
     }
 
     /**
@@ -342,18 +385,25 @@ class PlatformCommand extends Command
     /**
      * Create drush aliases for the provided project and environments.
      *
+     * @todo prevent this running for non-Drupal projects
+     *
      * @param array $project The project
      * @param array $environments The environments
      */
     protected function createDrushAliases($project, $environments)
     {
+        $group = $project['id'];
+        if (!empty($project['alias-group'])) {
+          $group = $project['alias-group'];
+        }
+
         // Ensure the existence of the .drush directory.
         $application = $this->getApplication();
         $drushDir = $application->getHomeDirectory() . '/.drush';
         if (!is_dir($drushDir)) {
             mkdir($drushDir);
         }
-        $filename = $drushDir . '/' . $project['id'] . '.aliases.drushrc.php';
+        $filename = $drushDir . '/' . $group . '.aliases.drushrc.php';
 
         $aliases = array();
         $export = "<?php\n\n";
@@ -363,6 +413,7 @@ class PlatformCommand extends Command
                 $sshUrl = parse_url($environment['_links']['ssh']['href']);
                 $alias = array(
                   'parent' => '@parent',
+                  'uri' => $environment['_links']['public-url']['href'],
                   'site' => $project['id'],
                   'env' => $environment['id'],
                   'remote-host' => $sshUrl['host'],
