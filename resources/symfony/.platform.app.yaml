@@ -1,0 +1,46 @@
+# This file describes an application. You can have multiple applications
+# in the same project.
+
+# The name of this app. Must be unique within a project.
+name: php
+
+# The toolstack used to build the application.
+toolstack: "php:symfony"
+
+# The relationships of the application with services or other applications.
+# The left-hand side is the name of the relationship as it will be exposed
+# to the application in the PLATFORM_RELATIONSHIPS variable. The right-hand
+# side is in the form `<service name>:<endpoint name>`.
+relationships:
+    database: "mysql:mysql"
+    solr: "solr:solr"
+    redis: "redis:redis"
+
+# The configuration of app when it is exposed to the web.
+web:
+    # The public directory of the app, relative to its root.
+    document_root: "/web"
+    # The front-controller script to send non-static requests to.
+    passthru: "/app.php"
+#    passthru: "/app_dev.php"
+
+
+# The size of the persistent disk of the application (in MB).
+disk: 2048
+
+# The mounts that will be performed when the package is deployed.
+mounts:
+    "/app/cache": "shared:files/cache"
+    "/app/logs": "shared:files/logs"
+
+# The hooks that will be performed when the package is deployed.
+#hooks:
+#    build: "SYMFONY_ENV=prod ./app/console cache:warmup"
+#    build: "SYMFONY_ENV=prod ./app/console assetic:dump --env=prod --no-debug"
+
+# The configuration of scheduled execution.
+# see http://symfony.com/doc/current/components/console/introduction.html
+#crons:
+#    symfony:
+#        spec: "*/20 * * * *"
+#        cmd: "php cron.php example:test"
