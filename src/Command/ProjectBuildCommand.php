@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Finder\Finder;
 
 class ProjectBuildCommand extends PlatformCommand
 {
@@ -72,8 +73,17 @@ class ProjectBuildCommand extends PlatformCommand
         $buildName = date('Y-m-d--H-i-s') . '--' . $environmentId;
         $relBuildDir = 'builds/' . $buildName;
         $absBuildDir = $projectRoot . '/' . $relBuildDir;
-        // @todo Implement logic for detecting a Drupal project VS others.
-        $status = $this->buildDrupal($absBuildDir, $projectRoot);
+        // Implement logic for detecting a Drupal project VS others.
+        $stack= $this->detectStack($projectRoot . '/repository');
+        switch ($stack) {
+          case "symfony":
+              $status = $this->buildSymfony($absBuildDir, $projectRoot);
+              break;
+            case "drupal":
+            default:
+              $status = $this->buildDrupal($absBuildDir, $projectRoot);
+              break;
+        }
         if ($status) {
             // Point www to the latest build.
             $wwwLink = $projectRoot . '/www';
@@ -82,9 +92,85 @@ class ProjectBuildCommand extends PlatformCommand
                 unlink($wwwLink);
             }
             symlink($this->absoluteLinks ? $absBuildDir : $relBuildDir, $wwwLink);
+        }else{
+          throw new \Exception("Building $stack project failed");
+
         }
     }
-
+    protected function detectStack($dir)
+      {
+        if (file_exists($dir. '/composer.json'))
+        {
+          $json=file_get_contents($dir. '/composer.json');
+          $composer_json = json_decode($json);
+          if (property_exists($composer_json->require,"symfony/symfony")) {
+            return ("symfony"); // Ok it is incorrect to test for a symfony project like this. Thelia for example does not depend on symfony/symfony.
+          } else {
+//            throw new \Exception("Couldn't find symfony in  composer.json in the repository.");
+          };
+      };
+      $make_file_found=false;
+      $finder = new Finder();
+      // Search for Drupal Make files
+      $finder->files()->name('project.make')
+                      ->name('drupal-org.make')
+                      ->name('drupal-org-core.make')
+                          ->in(__DIR__);
+      foreach ($finder as $file) {
+           $drupal_file_found=true; // we might want to read it
+      }
+      // Search for Drupal Copyright files
+      $finder->files()->name('COPYRIGHT.txt')->in(__DIR__);
+      foreach ($finder as $file) {
+          $f = fopen($file, 'r');
+          $line = fgets($f);
+          fclose($f);
+          if (preg_match('#^All Drupal code#', $line) === 1) {
+              $drupal_file_found=true;
+          }
+      }
+      return ("symfony"); //FIXME just for the moment we are defaulting to symfony
+    }
+    
+    /**
+     * Build a Symfony project in the provided directory.
+     *
+     * For a build to happen the repository must have at least one composer.json 
+     *   into the /web directory.
+     *
+     * @param string $buildDir The path to the build directory.
+     * @param string $projectRoot The path to the project to be built.
+     */
+    protected function buildSymfony($buildDir, $projectRoot)
+    {
+        $repositoryDir = $projectRoot . '/repository';
+        if (file_exists($repositoryDir . '/composer.json')) {
+            $projectComposer = $repositoryDir . '/composer.json';} else{
+            throw new \Exception("Couldn't find a composer.json in the repository.");
+        }
+        mkdir($buildDir);
+        $this->copy($repositoryDir, $buildDir);
+        if (is_dir($buildDir)) {
+            chdir($buildDir);
+            shell_exec("composer install --no-progress --no-interaction  --working-dir $buildDir");
+        }
+        else {
+          throw new \Exception("Couldn't create build directory");
+        }
+        // The build has been done, create a config_dev.yml if it is missing.
+        //FIXME in symfony world there might not be a ./config dir
+        // For Thelia it is local/config/
+        if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/config_dev.yml')) {
+            // Create the config_dev.yml file.
+            copy(CLI_ROOT . '/resources/symfony/config_dev.yml', $buildDir . '/app/config/config_dev.yml');
+        }
+        if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/routing_dev.yml')) {
+            // Create the routing_dev.yml file.
+            copy(CLI_ROOT . '/resources/symfony/routing_dev.yml', $buildDir . '/app/config/routing_dev.yml');
+        }        
+        return true;
+    }
+    
     /**
      * Build a Drupal project in the provided directory.
      *
@@ -216,7 +302,6 @@ class ProjectBuildCommand extends PlatformCommand
         }
         closedir($sourceDirectory);
     }
-
     public static function skipLogin()
     {
         return TRUE;
