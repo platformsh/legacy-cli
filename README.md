@@ -1,7 +1,7 @@
 DESCRIPTION
 -----------
 
-**Platform CLI** is the official command line shell and Unix scripting interface for [Platform](https://platform.sh). It ships with all the useful commands to interact with your [Platform.sh](https://platform.sh) projects.
+**Platform CLI** is the official command line shell and Unix scripting interface for [Platform.sh](https://platform.sh). It ships with all the useful commands to interact with your [Platform.sh](https://platform.sh) projects.
 
 [![Total Downloads](https://poser.pugx.org/platformsh/cli/downloads.png)](https://packagist.org/packages/platformsh/cli)
 
