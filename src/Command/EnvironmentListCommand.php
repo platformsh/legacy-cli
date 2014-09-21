@@ -21,6 +21,12 @@ class EnvironmentListCommand extends EnvironmentCommand
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'The project id'
+            )
+            ->addOption(
+                'pipe',
+                null,
+                InputOption::VALUE_NONE,
+                'Output a simple list of environment machine names.'
             );
     }
 
@@ -91,6 +97,14 @@ class EnvironmentListCommand extends EnvironmentCommand
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
         $environments = $this->getEnvironments($this->project);
+
+        if ($input->getOption('pipe')) {
+          foreach (array_keys($environments) as $id) {
+            $output->writeln($id);
+          }
+          return;
+        }
+
         $tree = $this->buildEnvironmentTree($environments);
 
         // To make the display nicer, we move all the children of master
