@@ -69,7 +69,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
           shell_exec("cd $repositoryDir && git fetch origin && git checkout $machineName");
         }
         else {
-          $output->writeln('<comment>The new branch could not be checked out locally (project root not found).</comment>');
+          $output->writeln('<comment>Because this command was run from outside your local project root, the new Platform branch could not be checked out in your local Git repository. Make sure to run platform checkout or git checkout in your repository directory to switch to the branch you are expecting.</comment>');
         }
 
         $noBuild = $input->getOption('no-build');
