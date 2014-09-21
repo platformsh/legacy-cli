@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -15,10 +16,10 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             ->setName('environment:synchronize')
             ->setDescription('Synchronize an environment.')
             ->addArgument(
-              'synchronize',
-              InputOption::VALUE_OPTIONAL,
-              'What to synchronize: code, data or both',
-              null
+                'synchronize',
+                InputArgument::IS_ARRAY,
+                'What to synchronize: code, data or both',
+                null
             )
             ->addOption(
                 'project',
@@ -45,8 +46,8 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         }
 
         if ($synchronize = $input->getArgument('synchronize')) {
-          $syncCode = 'code' == $synchronize || 'both' == $synchronize;
-          $syncData = 'data' == $synchronize || 'both' == $synchronize;
+          $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
+          $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
         }
         else {
           $dialog = $this->getHelperSet()->get('dialog');
