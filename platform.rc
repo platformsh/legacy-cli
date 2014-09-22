@@ -1,0 +1,4 @@
+#if [[ -n ${ZSH_VERSION-} ]]; 
+#then autoload -U +X bashcompinit && bashcompinit ;
+#fi;
+eval $(platform _completion --generate-hook)
