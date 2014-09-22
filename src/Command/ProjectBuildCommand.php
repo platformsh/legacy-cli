@@ -27,6 +27,11 @@ class ProjectBuildCommand extends PlatformCommand
         $this->ignoreValidationErrors();
     }
 
+    public function isLocal()
+    {
+      return TRUE;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->wcOption = $input->getOption('working-copy');

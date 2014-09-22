@@ -19,6 +19,11 @@ class PlatformLogoutCommand extends PlatformCommand
             ->setDescription('Log out of the Platform CLI');
     }
 
+    public function isLocal()
+    {
+      return TRUE;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // We manually check for the configuration file here. If it does not
