@@ -105,7 +105,7 @@ class Application extends Console\Application {
 
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
-        if (!$this->hasConfiguration() && !$command::skipLogin()) {
+        if (!$this->hasConfiguration() && (!($command instanceof Command\PlatformCommand) || !$command::skipLogin())) {
             $this->add(new Command\LoginCommand);
             $commandChain[] = array(
                 'command' => $this->find('login'),
