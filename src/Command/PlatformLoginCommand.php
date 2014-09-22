@@ -6,7 +6,7 @@ use Guzzle\Http\Exception\ClientErrorResponseException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LoginCommand extends PlatformCommand
+class PlatformLoginCommand extends PlatformCommand
 {
 
     protected function configure()

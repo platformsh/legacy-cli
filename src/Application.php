@@ -25,6 +25,7 @@ class Application extends Console\Application {
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
         $this->add(new Command\PlatformLogoutCommand);
+        $this->add(new Command\PlatformLoginCommand);
         $this->add(new Command\DrushCommand);
         $this->add(new Command\ProjectListCommand);
         $this->add(new Command\DomainAddCommand);
@@ -106,7 +107,7 @@ class Application extends Console\Application {
         $commandChain = array();
         // The CLI hasn't been configured, login must run first.
         if (!$this->hasConfiguration() && (!($command instanceof Command\PlatformCommand) || !$command::skipLogin())) {
-            $this->add(new Command\LoginCommand);
+            $this->add(new Command\PlatformLoginCommand);
             $commandChain[] = array(
                 'command' => $this->find('login'),
                 'input' => new ArrayInput(array('command' => 'login')),
