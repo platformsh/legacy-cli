@@ -11,7 +11,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Shell;
 
-
 class Application extends Console\Application {
 
     /**
@@ -24,13 +23,20 @@ class Application extends Console\Application {
         $this->setDefaultTimezone();
         $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
+        $this->toolstacks = array(
+            'Php',
+            'Drupal',
+            'Symfony',
+            // 'Wordpress',
+        );
+
         $this->add(new Command\PlatformLogoutCommand);
         $this->add(new Command\PlatformLoginCommand);
         $this->add(new Command\DrushCommand);
         $this->add(new Command\ProjectListCommand);
         $this->add(new Command\DomainAddCommand);
         $this->add(new Command\DomainDeleteCommand);
-        $this->add(new Command\DomainListCommand);        
+        $this->add(new Command\DomainListCommand);
         $this->add(new Command\EnvironmentActivateCommand);
         $this->add(new Command\EnvironmentBackupCommand);
         $this->add(new Command\EnvironmentBranchCommand);
@@ -39,7 +45,7 @@ class Application extends Console\Application {
         $this->add(new Command\EnvironmentDeleteCommand);
         $this->add(new Command\EnvironmentListCommand);
         $this->add(new Command\EnvironmentMergeCommand);
-        $this->add(new Command\EnvironmentRelationshipsCommand);        
+        $this->add(new Command\EnvironmentRelationshipsCommand);
         $this->add(new Command\EnvironmentSshCommand);
         $this->add(new Command\EnvironmentSynchronizeCommand);
         $this->add(new Command\EnvironmentUrlCommand);
@@ -182,6 +188,14 @@ class Application extends Console\Application {
     protected function hasConfiguration()
     {
         return file_exists($this->getHomeDirectory() . '/.platform');
+    }
+
+    /**
+     * Returns the list of registered Platform toolstacks.
+     */
+    public function getToolstacks()
+    {
+        return $this->toolstacks;
     }
 
 }

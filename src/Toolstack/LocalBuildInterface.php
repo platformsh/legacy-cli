@@ -19,7 +19,7 @@ interface LocalBuildInterface
      *
      * @return  bool    Whether this application layer is a valid choice or not
      */
-    public static detect($appRoot, $settings);
+    public static function detect($appRoot, $settings);
     
     /**
      * Prepare this application to be built. This function should be isometric
@@ -27,7 +27,7 @@ interface LocalBuildInterface
      * 
      * @return  void
      */
-    public prepareBuild();
+    public function prepareBuild();
     
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and
@@ -36,6 +36,6 @@ interface LocalBuildInterface
      *
      * @return  void
      */
-    public build();
+    public function build();
     
 }

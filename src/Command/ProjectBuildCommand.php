@@ -5,11 +5,12 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use CommerceGuys\Platform\Cli\Toolstack;
 
 class ProjectBuildCommand extends PlatformCommand
 {
-    private $absoluteLinks;
-    protected $wcOption = FALSE;
+    public $absoluteLinks;
+    public $wcOption = FALSE;
 
     protected function configure()
     {
@@ -34,6 +35,9 @@ class ProjectBuildCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->output = $output;
+        $this->input = $input;
+
         $this->wcOption = $input->getOption('working-copy');
 
         $projectRoot = $this->getProjectRoot();
@@ -74,102 +78,35 @@ class ProjectBuildCommand extends PlatformCommand
      */
     public function build($projectRoot, $environmentId)
     {
-        $buildName = date('Y-m-d--H-i-s') . '--' . $environmentId;
-        $relBuildDir = 'builds/' . $buildName;
-        $absBuildDir = $projectRoot . '/' . $relBuildDir;
-        // @todo Implement logic for detecting a Drupal project VS others.
-        $status = $this->buildDrupal($absBuildDir, $projectRoot);
-        if ($status) {
-            // Point www to the latest build.
-            $wwwLink = $projectRoot . '/www';
-            if (file_exists($wwwLink) || is_link($wwwLink)) {
-                // @todo Windows might need rmdir instead of unlink.
-                unlink($wwwLink);
+        // New build scaffolding. 
+        // @todo: Determine multiple project roots and build each one.
+        
+        
+        // @todo: Parse .platform.app.yaml file into $settings array for detection.
+        
+        
+        // @temp: Current project root and empty settings:
+        $applications[] = array('appRoot' => $projectRoot . "/repository", 'settings' => array('environmentId' => $environmentId, 'projectRoot' => $this->getProjectRoot()));
+        foreach ($applications as $app) {
+            // Detect the toolstack.
+            foreach ($this->getApplication()->getToolstacks() as $toolstack) {
+                $classname = "\\CommerceGuys\\Platform\\Cli\\Toolstack\\{$toolstack}App";
+                if ($classname::detect($app['appRoot'], $app['settings'])) {
+                    $this->toolstackClassName = $classname;
+                }
             }
-            symlink($this->absoluteLinks ? $absBuildDir : $relBuildDir, $wwwLink);
+            if (isset($this->toolstackClassName)) {
+                $toolstack = new $this->toolstackClassName($this, $app['settings']);
+                $this->toolstack = $toolstack;
+            }
+            else {
+                // Failed to find a toolstack. @todo dump an error here.
+                break;
+            }
+            
+            $this->toolstack->prepareBuild();
+            $this->toolstack->build();
         }
-    }
-
-    /**
-     * Build a Drupal project in the provided directory.
-     *
-     * For a build to happen the repository must have at least one drush make
-     * file. There are two possible modes:
-     * - installation profile: Contains an installation profile and the matching
-     *   drush make files (project.make and project-core.make or drupal-org.make
-     *   and drupal-org-core.make). The repository is symlinked into the
-     *   profile directory (profiles/$profileName).
-     * - site: Contains just a project.make file. The repository is symlinked
-     *   into the sites/default directory.
-     *
-     * @param string $buildDir The path to the build directory.
-     * @param string $projectRoot The path to the project to be built.
-     */
-    protected function buildDrupal($buildDir, $projectRoot)
-    {
-        $this->ensureDrushInstalled();
-
-        $wcOption = ($this->wcOption ? "--working-copy" : "");
-
-        $repositoryDir = $projectRoot . '/repository';
-        $profiles = glob($repositoryDir . '/*.profile');
-        if (count($profiles) > 1) {
-            throw new \Exception("Found multiple files ending in '*.profile' in the repository.");
-        } elseif (count($profiles) == 1) {
-            // Find the contrib make file.
-            if (file_exists($repositoryDir . '/project.make')) {
-                $projectMake = $repositoryDir . '/project.make';
-            } elseif (file_exists($repositoryDir . '/drupal-org.make')) {
-                $projectMake = $repositoryDir . '/drupal-org.make';
-            } else {
-                throw new \Exception("Couldn't find a project.make or drupal-org.make in the repository.");
-            }
-            // Find the core make file.
-            if (file_exists($repositoryDir . '/project-core.make')) {
-                $projectCoreMake = $repositoryDir . '/project-core.make';
-            } elseif (file_exists($repositoryDir . '/drupal-org-core.make')) {
-                $projectCoreMake = $repositoryDir . '/drupal-org-core.make';
-            } else {
-                throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
-            }
-
-            shell_exec("drush make -y $wcOption $projectCoreMake $buildDir");
-            // Drush will only create the $buildDir if the build succeeds.
-            if (is_dir($buildDir)) {
-                $profile = str_replace($repositoryDir, '', $profiles[0]);
-                $profile = strtok($profile, '.');
-                $profileDir = $buildDir . '/profiles/' . $profile;
-                symlink($repositoryDir, $profileDir);
-                // Drush Make requires $profileDir to not exist if it's passed
-                // as the target. chdir($profileDir) works around that.
-                chdir($profileDir);
-                shell_exec("drush make -y $wcOption --no-core --contrib-destination=. $projectMake");
-            }
-        } elseif (file_exists($repositoryDir . '/project.make')) {
-            $projectMake = $repositoryDir . '/project.make';
-            shell_exec("drush make -y $wcOption $projectMake $buildDir");
-            // Drush will only create the $buildDir if the build succeeds.
-            if (is_dir($buildDir)) {
-              // Remove sites/default to make room for the symlink.
-              $this->rmdir($buildDir . '/sites/default');
-              $this->symlink($repositoryDir, $buildDir . '/sites/default');
-            }
-        }
-        else {
-            // Nothing to build.
-            return;
-        }
-
-        // The build has been done, create a settings.php if it is missing.
-        if (is_dir($buildDir) && !file_exists($buildDir . '/sites/default/settings.php')) {
-            // Create the settings.php file.
-            copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
-        }
-
-        // Symlink all files and folders from shared.
-        $this->symlink($projectRoot . '/shared', $buildDir . '/sites/default');
-
-        return true;
     }
 
     /**

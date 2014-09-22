@@ -7,5 +7,8 @@ use Symfony\Component\Console;
 
 class PhpApp extends BaseApp implements LocalBuildInterface
 {
+    public static function detect($appRoot, $settings) {}
 
+    public function build() {}
+    
 }

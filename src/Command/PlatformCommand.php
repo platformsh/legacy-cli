@@ -478,7 +478,7 @@ class PlatformCommand extends Command
         return FALSE;
     }
 
-    protected function ensureDrushInstalled()
+    public function ensureDrushInstalled()
     {
         $drushVersion = shell_exec('drush version');
         if (strpos(strtolower($drushVersion), 'drush version') === false) {
