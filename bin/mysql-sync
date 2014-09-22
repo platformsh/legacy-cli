@@ -1,0 +1,415 @@
+#!/usr/bin/php
+
+<?php
+
+/**
+ * Usage:
+ * Example:
+ * mysql-sync root:password@localhost:3308/voeb root:password@localhost:3306/v json|verbose
+ */
+
+mb_internal_encoding("UTF-8");
+
+// print_r($argv);
+
+if(!isset($argv[0]) || !isset($argv[1]) || !isset($argv[2]))
+{
+    echo "Usage: mysql-sync root:password@localhost:port/source_db root:password@localhost:port/dest_db verbose";
+    exit;
+}
+
+$source = parseDSN('dsn://' . $argv[1]);
+$dest = parseDSN('dsn://' . $argv[2]);
+
+$output = 'n';
+
+if(isset($argv[3]) && $argv[3] == 'json') $output = 'j';
+if (isset($argv[3]) && $argv[3] == 'verbose') $output = 'v';
+
+if($source['database'] === $dest['database'])
+{
+    echo "There is currently a bug in percona and it does sync databases when they have the same name. Please use different database names";
+    exit(1);
+}
+
+// validate
+checkConnection($source);
+checkConnection($dest);
+checkNBTables($source, $dest);
+checkSchema($source, $dest);
+
+
+// sync
+sync($source, $dest, $output);
+
+exit;
+
+function sync($source, $dest, $output)
+{
+    $tables = getTablesOutOfSync($source, $dest);
+
+// sync
+    $table_out = array();
+    foreach ($tables as $table)
+    {
+
+	$dir = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'percona' . DIRECTORY_SEPARATOR;
+        $cmd = $dir . 'pt-table-sync --print --verbose --function MD5 --execute h=' . $source['hostspec'] . ',u=' . $source['username'] . ',p=' . $source['password'] . ',D=' . $source['database'] . ',t=' . $table . ',P=' . $source['port'] . ' h=' . $dest['hostspec'] . ',u=' . $dest['username'] . ',p=' . $dest['password'] . ',D=' . $dest['database'] . ',t=' . $table . ',P=' . $dest['port'];
+	
+	$out = run_cmd($cmd);
+
+	preg_match_all('#(INSERT INTO|UPDATE|DELETE FROM|REPLACE)(.*?)\ \/\*#', $out, $rows);
+
+        $table_out['data'][$table] = $rows[0];
+        $table_out['synced'][$table] = $table." (".count($rows[0]).")";
+	if ($output == 'v') {
+		echo "Sync of:".$table." - ";
+		print_r ($table_out['data'][$table]);
+	}
+    
+    }
+    if(isset($table_out['synced']) && ($output == 'v' || $output == 'n')) { 
+	echo "Synced tables - \n";
+	print_r ($table_out['synced']);
+    }
+    $table_out['un-synced'] = getTablesOutOfSync($source, $dest);
+    if ($output == 'v' || $output == 'n') {
+	if($table_out['un-synced']){
+		echo "Tables still out of sync\n";
+		print_r($table_out['un-synced']);
+	}else{
+		echo "All Tables synced\n\n";
+	}
+    }
+    if ($output == 'j') {
+        ob_start();
+	echo json_encode($table_out);
+	ob_flush();
+    }
+}
+
+/**
+ * returns list of tables in the destination that are out of sync with the source
+ * @param type $source
+ * @param type $dest
+ * @return type
+ */
+function getTablesOutOfSync($source, $dest)
+{
+    $sSum = getTablesChecksum($source);
+    $dSum = getTablesChecksum($dest);
+
+    $ret = array();
+    foreach (getTables($source) as $name)
+    {
+        if ($sSum[$name] !== $dSum[$name])
+        {
+            $ret[] = $name;
+        }
+    }
+
+    return $ret;
+}
+
+/**
+ * return map with table_name => checksum
+ * @param type $info
+ * @return type
+ */
+function getTablesChecksum($info)
+{
+    $args = convertToMySQLArgs($info);
+    $tables = getTables($info);
+
+    $ret = array();
+    foreach ($tables as $table)
+    {
+        $out = run_cmd("mysql $args -e 'checksum table `$table`;'");
+        $matches = array();
+        preg_match('/\d+/', $out, $matches);
+        $ret[$table] = array_pop($matches);
+    }
+
+    return $ret;
+}
+
+/**
+ * checks number of tables is the same in both databases
+ * @param type $source
+ * @param type $dest
+ */
+function checkNBTables($source, $dest)
+{
+    if (count(getTables($source)) !== count(getTables($dest)))
+    {
+        echo "Not the same number of tables in both databases";
+        exit(1);
+    }
+}
+
+/**
+ * check schema description is the same in both databases
+ * @param type $source
+ * @param type $dest
+ */
+function checkSchema($source, $dest)
+{
+    if (getDBSchemaChecksum($source) !== getDBSchemaChecksum($dest))
+    {
+        echo "Table descriptions are not similar";
+
+        // provide helpful error message
+        $sourceDescriptions = getTableDescriptions($source);
+        $destDescriptions = getTableDescriptions($dest);
+
+        foreach (getTables($source) as $name)
+        {
+            if (sha1($sourceDescriptions[$name]) !== sha1($destDescriptions[$name]))
+            {
+                echo "\n\nInvalid table: $name";
+            }
+        }
+        exit(1);
+    }
+}
+
+/**
+ * return map of table_name => description
+ * @param type $info
+ * @return type
+ */
+function getTableDescriptions($info)
+{
+    $args = convertToMySQLArgs($info);
+    $tables = getTables($info);
+
+    $ret = array();
+    foreach ($tables as $table)
+    {
+        $ret[$table] = run_cmd("mysql $args -e 'describe `$table`;'");
+    }
+
+    return $ret;
+}
+
+/**
+ * returns checksum based on all descriptions
+ * @param type $info
+ * @return type
+ */
+function getDBSchemaChecksum($info)
+{
+    $tables = getTableDescriptions($info);
+    return sha1(implode(' ', $tables));
+}
+
+/**
+ * list of tables
+ * @param type $info
+ * @return type
+ */
+function getTables($info)
+{
+    $sargs = convertToMySQLArgs($info);
+    $cmd = "mysql $sargs -e 'use information_schema;select TABLE_NAME from TABLES where TABLE_SCHEMA = \"" . $info['database'] . "\"'";
+    $tables = split_newlines(run_cmd($cmd));
+
+    array_pop($tables);
+    array_shift($tables);
+
+    return $tables;
+}
+
+function convertToMySQLArgs($info)
+{
+    $ret = '--user=' . $info['username'] . ' --password=' . $info['password'] . ' --protocol=TCP --host=' . $info['hostspec'] . ' --port=' . $info['port'] . ' --database=' . $info['database'];
+    $ret = ' --port=' . $info['port'] . ' --database=' . $info['database'];
+
+    return $ret;
+}
+
+function checkConnection($info)
+{
+    $mysqlArgs = convertToMySQLArgs($info);
+    ob_start();
+    $cmd = "mysql $mysqlArgs -e 'show tables;'";
+    $ret = 0;
+    system($cmd, $ret);
+    ob_end_clean();
+
+    if ($ret === 1)
+    {
+        echo "cannot establish connection using: \n $cmd";
+        exit(1);
+    }
+}
+
+function parseDSN($dsn)
+{
+    $parsed = array(
+        'phptype' => false,
+        'dbsyntax' => false,
+        'username' => false,
+        'password' => false,
+        'protocol' => false,
+        'hostspec' => false,
+        'port' => false,
+        'socket' => false,
+        'database' => false,
+    );
+
+    if (is_array($dsn))
+    {
+        $dsn = array_merge($parsed, $dsn);
+        if (!$dsn['dbsyntax'])
+        {
+            $dsn['dbsyntax'] = $dsn['phptype'];
+        }
+        return $dsn;
+    }
+
+    // Find phptype and dbsyntax
+    if (($pos = strpos($dsn, '://')) !== false)
+    {
+        $str = substr($dsn, 0, $pos);
+        $dsn = substr($dsn, $pos + 3);
+    }
+    else
+    {
+        $str = $dsn;
+        $dsn = null;
+    }
+
+    // Get phptype and dbsyntax
+    // $str => phptype(dbsyntax)
+    if (preg_match('|^(.+?)\((.*?)\)$|', $str, $arr))
+    {
+        $parsed['phptype'] = $arr[1];
+        $parsed['dbsyntax'] = !$arr[2] ? $arr[1] : $arr[2];
+    }
+    else
+    {
+        $parsed['phptype'] = $str;
+        $parsed['dbsyntax'] = $str;
+    }
+
+    if (!count($dsn))
+    {
+        return $parsed;
+    }
+
+    // Get (if found): username and password
+    // $dsn => username:password@protocol+hostspec/database
+    if (($at = strrpos($dsn, '@')) !== false)
+    {
+        $str = substr($dsn, 0, $at);
+        $dsn = substr($dsn, $at + 1);
+        if (($pos = strpos($str, ':')) !== false)
+        {
+            $parsed['username'] = rawurldecode(substr($str, 0, $pos));
+            $parsed['password'] = rawurldecode(substr($str, $pos + 1));
+        }
+        else
+        {
+            $parsed['username'] = rawurldecode($str);
+        }
+    }
+
+    // Find protocol and hostspec
+
+    if (preg_match('|^([^(]+)\((.*?)\)/?(.*?)$|', $dsn, $match))
+    {
+        // $dsn => proto(proto_opts)/database
+        $proto = $match[1];
+        $proto_opts = $match[2] ? $match[2] : false;
+        $dsn = $match[3];
+    }
+    else
+    {
+        // $dsn => protocol+hostspec/database (old format)
+        if (strpos($dsn, '+') !== false)
+        {
+            list($proto, $dsn) = explode('+', $dsn, 2);
+        }
+        if (strpos($dsn, '/') !== false)
+        {
+            list($proto_opts, $dsn) = explode('/', $dsn, 2);
+        }
+        else
+        {
+            $proto_opts = $dsn;
+            $dsn = null;
+        }
+    }
+
+    // process the different protocol options
+    $parsed['protocol'] = (!empty($proto)) ? $proto : 'tcp';
+    $proto_opts = rawurldecode($proto_opts);
+    if ($parsed['protocol'] == 'tcp')
+    {
+        if (strpos($proto_opts, ':') !== false)
+        {
+            list($parsed['hostspec'],
+                    $parsed['port']) = explode(':', $proto_opts);
+        }
+        else
+        {
+            $parsed['hostspec'] = $proto_opts;
+        }
+    }
+    elseif ($parsed['protocol'] == 'unix')
+    {
+        $parsed['socket'] = $proto_opts;
+    }
+
+    // Get dabase if any
+    // $dsn => database
+    if ($dsn)
+    {
+        if (($pos = strpos($dsn, '?')) === false)
+        {
+            // /database
+            $parsed['database'] = rawurldecode($dsn);
+        }
+        else
+        {
+            // /database?param1=value1&param2=value2
+            $parsed['database'] = rawurldecode(substr($dsn, 0, $pos));
+            $dsn = substr($dsn, $pos + 1);
+            if (strpos($dsn, '&') !== false)
+            {
+                $opts = explode('&', $dsn);
+            }
+            else
+            { // database?param1=value1
+                $opts = array($dsn);
+            }
+            foreach ($opts as $opt)
+            {
+                list($key, $value) = explode('=', $opt);
+                if (!isset($parsed[$key]))
+                {
+                    // don't allow params overwrite
+                    $parsed[$key] = rawurldecode($value);
+                }
+            }
+        }
+    }
+
+    return $parsed;
+}
+
+function split_newlines($string)
+{
+    return preg_split('/\r\n|\n|\r/', $string);
+}
+
+function run_cmd($cmd)
+{
+    ob_start();
+    $ret = shell_exec($cmd);
+    ob_clean();
+    ob_end_clean();
+
+    return $ret;
+}
