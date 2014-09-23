@@ -4,10 +4,23 @@ namespace CommerceGuys\Platform\Cli\Toolstack;
 
 use CommerceGuys\Platform\Cli;
 use Symfony\Component\Console;
+use Symfony\Component\Finder\Finder;
 
 class SymfonyApp extends PhpApp implements LocalBuildInterface
 {
 
+    public static function detect($appRoot, $settings)
+    {
+        if (file_exists($appRoot . '/composer.json')) {
+            $json = file_get_contents($appRoot . '/composer.json');
+            $composer_json = json_decode($json);
+            if (property_exists($composer_json->require, "symfony/symfony")) {
+              return TRUE; // @todo: Find a better way to test for Symfony. Some projects do not have this dep.
+            }
+        }
+        
+        return FALSE;
+    }
 
     public function build()
     {

@@ -4,13 +4,33 @@ namespace CommerceGuys\Platform\Cli\Toolstack;
 
 use CommerceGuys\Platform\Cli;
 use Symfony\Component\Console;
+use Symfony\Component\Finder\Finder;
 
 class DrupalApp extends PhpApp implements LocalBuildInterface
 {
     public static function detect($appRoot, $settings)
     {
-        return TRUE;
-    
+        $finder = new Finder();
+        // Search for Drupal Make files
+        $finder->files()->name('project.make')
+                        ->name('drupal-org.make')
+                        ->name('drupal-org-core.make')
+                        ->in($appRoot);
+        foreach ($finder as $file) {
+            return TRUE;
+        }
+        // Search for Drupal Copyright files
+        $finder->files()->name('COPYRIGHT.txt')->in($appRoot);
+        foreach ($finder as $file) {
+            $f = fopen($file, 'r');
+            $line = fgets($f);
+            fclose($f);
+            if (preg_match('#^All Drupal code#', $line) === 1) {
+                return TRUE;
+            }
+        }
+        
+        return FALSE;
     }
     
     public function build()
