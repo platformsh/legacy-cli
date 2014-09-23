@@ -21,32 +21,34 @@ abstract class BaseApp
 
         $this->appRoot = $this->determineAppRoot($this->settings);
         if (!$this->appRoot) {
-            $projectRoot = $this->settings['projectRoot'];
-            if (!$projectRoot) {
+            $this->projectRoot = $this->settings['projectRoot'];
+            if (!$this->projectRoot) {
                 $this->command->output->writeln("<error>You cannot build a project locally from outside of the project's folder structure.</error>");
             }
             else {
                 // With no declaration in the settings, we assume the approot
                 // to match the repository.
-                $this->appRoot = $projectRoot . "/repository";
+                $this->appRoot = $this->projectRoot . "/repository";
             }
         }
     }
-    
+
     function determineAppRoot($settings)
     {
         // @todo: Not yet implemented.
         return NULL;
     }
-    
+
     function prepareBuild()
     {
         $this->buildName = date('Y-m-d--H-i-s') . '--' . $this->settings['environmentId'];
         $this->relBuildDir = 'builds/' . $this->buildName;
-        $this->absBuildDir = $this->appRoot . '/' . $this->relBuildDir;    
+        $this->absBuildDir = $this->projectRoot . '/' . $this->relBuildDir;
         $this->absoluteLinks = $this->command->absoluteLinks;
     }
-    
+
+    // @todo: Move this filesystem stuff into a reusable trait somewhere... :(
+
     /**
      * Copy all files and folders from $source into $destination.
      */
@@ -128,8 +130,8 @@ abstract class BaseApp
         $path .= substr($source, $i, strlen($source));
 
         return $path;
-    }    
-    
+    }
+
     /**
      * Delete a directory and all of its files.
      */
@@ -183,6 +185,6 @@ abstract class BaseApp
       fclose($pipes[2]);
       proc_close($process);
       return $result;
-    }    
+    }
 
 }
