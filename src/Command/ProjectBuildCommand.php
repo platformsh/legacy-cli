@@ -147,7 +147,11 @@ class ProjectBuildCommand extends PlatformCommand
             if (is_dir($buildDir)) {
               // Remove sites/default to make room for the symlink.
               $this->rmdir($buildDir . '/sites/default');
-              $this->symlink($repositoryDir, $buildDir . '/sites/default');
+              $this->symlink($repositoryDir, $buildDir . '/sites/default', array(
+                  '.git',
+                  '.platform',
+                  '.platform.app.yaml',
+              ));
             }
         }
         else {
@@ -193,7 +197,7 @@ class ProjectBuildCommand extends PlatformCommand
     /**
      * Symlink all files and folders from $source into $destination.
      */
-    protected function symlink($source, $destination)
+    protected function symlink($source, $destination, array $skip = array())
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -201,7 +205,7 @@ class ProjectBuildCommand extends PlatformCommand
 
         // The symlink won't work if $source is a relative path.
         $source = realpath($source);
-        $skip = array('.', '..');
+        $skip = array_merge($skip, array('.', '..'));
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
             if (!in_array($file, $skip)) {
