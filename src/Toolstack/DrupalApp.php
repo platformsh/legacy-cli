@@ -29,10 +29,10 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
                 return TRUE;
             }
         }
-        
+
         return FALSE;
     }
-    
+
     public function build()
     {
         $this->command->ensureDrushInstalled();
@@ -40,7 +40,7 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
         $wcOption = ($this->command->wcOption ? "--working-copy" : "");
         $repositoryDir = $this->appRoot;
         $projectRoot = $this->settings['projectRoot'];
-        
+
         $profiles = glob($repositoryDir . '/*.profile');
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the repository.");
@@ -97,6 +97,7 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
 
         // Symlink all files and folders from shared.
         // @todo: Figure out a way to split up local shared resources by application.
+
         $this->symlink($projectRoot . '/shared', $buildDir . '/sites/default');
 
         // Point www to the latest build.

@@ -18,10 +18,10 @@ abstract class BaseApp
     {
         $this->command = $command;
         $this->settings = $settings;
+        $this->projectRoot = $this->settings['projectRoot'];
 
         $this->appRoot = $this->determineAppRoot($this->settings);
         if (!$this->appRoot) {
-            $this->projectRoot = $this->settings['projectRoot'];
             if (!$this->projectRoot) {
                 $this->command->output->writeln("<error>You cannot build a project locally from outside of the project's folder structure.</error>");
             }
