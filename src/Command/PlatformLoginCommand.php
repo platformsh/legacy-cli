@@ -56,7 +56,7 @@ class PlatformLoginCommand extends PlatformCommand
             }
             return $data;
         };
-        $email = $dialog->askAndValidate($output, 'Your email address: ', $emailValidator);
+        $email = $dialog->askAndValidate($output, 'Your email address: ', $emailValidator, 5);
 
         $userExists = true;
         if (!$userExists) {

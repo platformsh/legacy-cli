@@ -64,8 +64,13 @@ class EnvironmentBranchCommand extends EnvironmentCommand
 
         // Checkout the new branch locally.
         $projectRoot = $this->getProjectRoot();
-        $repositoryDir = $projectRoot . '/repository';
-        shell_exec("cd $repositoryDir && git fetch origin && git checkout $machineName");
+        if ($projectRoot) {
+          $repositoryDir = $projectRoot . '/repository';
+          shell_exec("cd $repositoryDir && git fetch origin && git checkout $machineName");
+        }
+        else {
+          $output->writeln('<comment>Because this command was run from outside your local project root, the new Platform branch could not be checked out in your local Git repository. Make sure to run platform checkout or git checkout in your repository directory to switch to the branch you are expecting.</comment>');
+        }
 
         $noBuild = $input->getOption('no-build');
         if (!$noBuild) {
