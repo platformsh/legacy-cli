@@ -25,6 +25,11 @@ class WelcomeCommand extends PlatformCommand
             ->setDescription('Welcome to platform');
     }
 
+    public function isLocal()
+    {
+      return TRUE;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $output->writeln("\nWelcome to Platform.sh!");
@@ -33,16 +38,16 @@ class WelcomeCommand extends PlatformCommand
             // The project is known. Show the environments.
             $projectName = $currentProject['name'];
             $output->write("\nYour project is <info>$projectName</info>.");
-            $this->environmentListCommand->execute($input, $output);
+            $this->environmentListCommand->run($input, $output);
             $output->writeln("You can list other projects by running <info>platform projects</info>.\n");
             $output->writeln("Manage your domains by running <info>platform domains</info>.");
         } else {
             // The project is not known. Show all projects.
-            $this->projectListCommand->execute($input, $output);
+            $this->projectListCommand->run($input, $output);
         }
 
         $output->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>.");
-        
+
         $output->writeln("List all commands and their options by running <info>platform help</info>.\n");
 
         $output->writeln("Type <info>platform list</info> to see all available commands.\n");

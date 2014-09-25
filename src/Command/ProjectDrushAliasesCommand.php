@@ -22,6 +22,11 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             ->setDescription('Determine and/or recreate the project\'s Drush aliases (if any).');
     }
 
+    public function isLocal()
+    {
+      return TRUE;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $project = $this->getCurrentProject();
