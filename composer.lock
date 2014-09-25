@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "55c04cf355f2f11ff3224b5d815c3566",
+    "hash": "80c5d88df8cca88a70598580f6efa4eb",
     "packages": [
         {
             "name": "commerceguys/guzzle-oauth2-plugin",
@@ -250,17 +250,17 @@
         },
         {
             "name": "symfony/finder",
-            "version": "dev-master",
+            "version": "v2.5.4",
             "target-dir": "Symfony/Component/Finder",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Finder.git",
-                "reference": "a83f67473da5cd3abc453607dd032454189f24c9"
+                "reference": "f40854d1a19c339c7f969f8f6d6d6e9153311c4c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Finder/zipball/a83f67473da5cd3abc453607dd032454189f24c9",
-                "reference": "a83f67473da5cd3abc453607dd032454189f24c9",
+                "url": "https://api.github.com/repos/symfony/Finder/zipball/f40854d1a19c339c7f969f8f6d6d6e9153311c4c",
+                "reference": "f40854d1a19c339c7f969f8f6d6d6e9153311c4c",
                 "shasum": ""
             },
             "require": {
@@ -269,7 +269,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "2.6-dev"
+                    "dev-master": "2.5-dev"
                 }
             },
             "autoload": {
@@ -293,7 +293,7 @@
             ],
             "description": "Symfony Finder Component",
             "homepage": "http://symfony.com",
-            "time": "2014-09-23 05:25:18"
+            "time": "2014-09-03 09:00:14"
         },
         {
             "name": "symfony/yaml",
@@ -343,21 +343,11 @@
             "time": "2014-08-31 03:22:04"
         }
     ],
-    "packages-dev": [
-
-    ],
-    "aliases": [
-
-    ],
+    "packages-dev": [],
+    "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "symfony/finder": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
-    "platform": [
-
-    ],
-    "platform-dev": [
-
-    ]
+    "platform": [],
+    "platform-dev": []
 }
