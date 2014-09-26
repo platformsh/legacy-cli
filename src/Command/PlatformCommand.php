@@ -236,13 +236,11 @@ class PlatformCommand extends Command
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
             $repositoryDir = $projectRoot . '/repository';
-            $remote = shell_exec("cd $repositoryDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}");
-            if (strpos($remote, '/') !== false) {
-                $remoteParts = explode('/', trim($remote));
-                $potentialEnvironmentId = $remoteParts[1];
+            $currentBranch = trim($this->shellExec("cd $repositoryDir && git symbolic-ref --short HEAD"));
+            if ($currentBranch) {
                 $environments = $this->getEnvironments($project);
-                if (isset($environments[$potentialEnvironmentId])) {
-                    $environment = $environments[$potentialEnvironmentId];
+                if (isset($environments[$currentBranch])) {
+                    $environment = $environments[$currentBranch];
                 }
             }
         }
