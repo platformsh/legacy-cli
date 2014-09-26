@@ -10,7 +10,6 @@ use CommerceGuys\Platform\Cli\Toolstack;
 class ProjectBuildCommand extends PlatformCommand
 {
     public $absoluteLinks;
-    public $wcOption = FALSE;
 
     protected function configure()
     {
@@ -37,8 +36,6 @@ class ProjectBuildCommand extends PlatformCommand
     {
         $this->output = $output;
         $this->input = $input;
-
-        $this->wcOption = $input->getOption('working-copy');
 
         $projectRoot = $this->getProjectRoot();
         if (empty($projectRoot)) {
