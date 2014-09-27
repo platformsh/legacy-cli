@@ -43,9 +43,6 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
         // Options to pass to the drush command.
         $drushFlags = array();
         $drushFlags[] = '--yes';
-        if ($this->command->input->getOption('working-copy')) {
-            $drushFlags[] = '--working-copy';
-        }
         if ($this->command->output->isQuiet()) {
             $drushFlags[] = '--quiet';
         }
@@ -54,6 +51,15 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
         }
         elseif ($this->command->output->isVerbose()) {
             $drushFlags[] = '--verbose';
+        }
+        foreach (array('working-copy', 'concurrency') as $option) {
+            $value = $this->command->input->getOption($option);
+            if ($value === true) {
+              $drushFlags[] = "--$option";
+            }
+            elseif ($value !== false) {
+              $drushFlags[] = "--$option=" . ltrim($value, '=');
+            }
         }
         // Flatten the options.
         $drushFlags = implode(' ', $drushFlags);
