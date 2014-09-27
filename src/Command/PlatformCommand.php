@@ -396,8 +396,6 @@ class PlatformCommand extends Command
             $domains[$domain['id']] = $domain;
         }
 
-        // Recreate the aliases if the list of environments has changed.
-        $this->createDrushAliases($project, $domains);
         $this->config['domains'][$projectId] = $domains;
 
         return $this->config['domains'][$projectId];
