@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Toolstack\DrupalApp;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,15 +17,19 @@ class ProjectDrushAliasesCommand extends PlatformCommand
         $this
             ->setName('project:drush-aliases')
             ->setAliases(array('drush-aliases'))
-            ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
-            ->addOption('group', 'g', InputOption::VALUE_OPTIONAL, 'Recreate the aliases with a new group name.')
+            ->addOption('group', 'g', InputOption::VALUE_OPTIONAL, 'Change the alias group name.')
             ->addOption('pipe', 'p', InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
-            ->setDescription('Determine and/or recreate the project\'s Drush aliases (if any).');
+            ->setDescription('Determine the project\'s Drush aliases (if any).');
     }
 
     public function isLocal()
     {
       return TRUE;
+    }
+
+    public function isEnabled() {
+        $projectRoot = $this->getProjectRoot();
+        return $projectRoot && DrupalApp::detect($projectRoot . '/repository', array('projectRoot' => $projectRoot));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -45,10 +50,8 @@ class ProjectDrushAliasesCommand extends PlatformCommand
 
         $new_group = ltrim($input->getOption('group'), '@');
 
-        // Get the cached list of environments.
-        // @todo At the moment we can't refresh the list of environments here, because $this->getEnvironments() would itself call $this->createDrushAliases().
-        $this->loadConfig();
-        $environments = $this->config['environments'][$project['id']];
+        // Get the list of environments.
+        $environments = $this->getEnvironments($project, true);
 
         if ($new_group && $new_group != $current_group) {
             $questionHelper = $this->getHelper('question');
@@ -74,19 +77,11 @@ class ProjectDrushAliasesCommand extends PlatformCommand
                 }
             }
 
-            // Clear the Drush cache now that the aliases have been updated.
-            $this->shellExec('drush cache-clear drush');
-
             $current_group = $new_group;
-        }
-        elseif ($input->getOption('recreate')) {
-            $this->createDrushAliases($project, $environments);
-            $this->shellExec('drush cache-clear drush');
-            $output->writeln("Project aliases recreated");
         }
 
         // Don't run expensive drush calls if they are not needed.
-        if ($input->getOption('quiet')) {
+        if ($output->isQuiet()) {
             return;
         }
 

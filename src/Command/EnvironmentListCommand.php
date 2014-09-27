@@ -23,6 +23,12 @@ class EnvironmentListCommand extends EnvironmentCommand
                 'The project id'
             )
             ->addOption(
+                'refresh',
+                null,
+                InputOption::VALUE_NONE,
+                'Refresh the list of environments'
+            )
+            ->addOption(
                 'pipe',
                 null,
                 InputOption::VALUE_NONE,
@@ -96,7 +102,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         }
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
-        $environments = $this->getEnvironments($this->project, true);
+        $environments = $this->getEnvironments($this->project, $input->getOption('refresh'));
 
         if ($input->getOption('pipe')) {
           foreach (array_keys($environments) as $id) {
