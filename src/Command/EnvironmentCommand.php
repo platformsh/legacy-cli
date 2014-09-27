@@ -37,12 +37,12 @@ class EnvironmentCommand extends PlatformCommand
             // Allow the environment to be specified explicitly via --environment.
             $environmentId = $input->getOption('environment');
             if (!empty($environmentId)) {
-                $environments = $this->getEnvironments($this->project);
-                if (!isset($environments[$environmentId])) {
+                $this->environment = $this->getEnvironment($environmentId, $this->project);
+                if (!$this->environment) {
                     $output->writeln("<error>Specified environment not found.</error>");
                     return;
                 }
-                $this->environment = $environments[$environmentId];
+                $this->environment = $environment;
             } else {
                 // Autodetect the environment if the user is in a project directory.
                 $this->environment = $this->getCurrentEnvironment($this->project);

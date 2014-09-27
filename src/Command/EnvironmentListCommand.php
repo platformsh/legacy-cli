@@ -96,7 +96,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         }
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
-        $environments = $this->getEnvironments($this->project);
+        $environments = $this->getEnvironments($this->project, true);
 
         if ($input->getOption('pipe')) {
           foreach (array_keys($environments) as $id) {
