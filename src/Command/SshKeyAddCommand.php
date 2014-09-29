@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\Question;
 
 class SshKeyAddCommand extends PlatformCommand
 {
@@ -34,8 +35,8 @@ class SshKeyAddCommand extends PlatformCommand
         }
 
         $key = file_get_contents($path);
-        $dialog = $this->getHelperSet()->get('dialog');
-        $title = $dialog->ask($output, 'Enter a name for the key: ');
+        $helper = $this->getHelper('question');
+        $title = $helper->ask($input, $output, new Question('Enter a name for the key: '));
 
         $client = $this->getAccountClient();
         $client->createSshKey(array('title' => $title, 'value' => $key));
