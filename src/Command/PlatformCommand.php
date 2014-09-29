@@ -172,7 +172,12 @@ class PlatformCommand extends Command
         $project = null;
         $config = $this->getCurrentProjectConfig();
         if ($config) {
-          $project = $this->getProject($config['id']) + $config;
+          $project = $this->getProject($config['id']);
+          // There is a chance that the project isn't available.
+          if (!$project) {
+              throw new \Exception("Configured project ID not found: " . $config['id']);
+          }
+          $project += $config;
         }
         return $project;
     }
