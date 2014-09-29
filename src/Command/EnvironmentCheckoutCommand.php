@@ -48,7 +48,10 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
 
         // Checkout the new branch locally.
         $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot) {
+            throw new \Exception('This can only be run from inside a project directory');
+        }
         $repositoryDir = $projectRoot . '/repository';
-        passthru("cd $repositoryDir && git fetch origin && git checkout $branch");
+        passthru("cd " . escapeshellarg($repositoryDir) . " && git fetch origin && git checkout $branch");
     }
 }

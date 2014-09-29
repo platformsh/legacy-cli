@@ -38,7 +38,7 @@ class SymfonyApp extends PhpApp implements LocalBuildInterface
         $this->copy($repositoryDir, $buildDir);
         if (is_dir($buildDir)) {
             chdir($buildDir);
-            shell_exec("composer install --no-progress --no-interaction  --working-dir $buildDir");
+            shell_exec("composer install --no-progress --no-interaction  --working-dir " . escapeshellcmd($buildDir));
         }
         else {
           throw new \Exception("Couldn't create build directory");
