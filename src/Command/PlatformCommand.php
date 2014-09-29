@@ -232,20 +232,40 @@ class PlatformCommand extends Command
      */
     protected function getCurrentEnvironment($project)
     {
-        $environment = null;
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot) {
-            $repositoryDir = $projectRoot . '/repository';
-            $currentBranch = trim($this->shellExec("cd $repositoryDir && git symbolic-ref --short HEAD"));
-            if ($currentBranch) {
-                $environments = $this->getEnvironments($project);
-                if (isset($environments[$currentBranch])) {
-                    $environment = $environments[$currentBranch];
+        if (!$projectRoot) {
+            return null;
+        }
+        $repositoryDir = $projectRoot . '/repository';
+        $escapedRepoDir = escapeshellarg($repositoryDir);
+
+        $environments = $this->getEnvironments($project);
+
+        // Check whether the user has a Git upstream set to a Platform
+        // environment ID.
+        $remote = trim($this->shellExec("cd $escapedRepoDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}"));
+        if ($remote && strpos($remote, '/') !== false) {
+            list($remoteName, $potentialEnvironment) = explode('/', $remote, 2);
+            if (isset($environments[$potentialEnvironment])) {
+                // Check that the remote is Platform's.
+                $remoteUrl = trim($this->shellExec("cd $escapedRepoDir && git config --get remote.$remoteName.url"));
+                if (strpos($remoteUrl, 'platform.sh')) {
+                    return $environments[$potentialEnvironment];
                 }
             }
         }
 
-        return $environment;
+        // There is no Git remote set, or it's set to a non-Platform URL.
+        // Fall back to trying the current branch name.
+        $currentBranch = trim($this->shellExec("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
+        if ($currentBranch) {
+            $environments = $this->getEnvironments($project);
+            if (isset($environments[$currentBranch])) {
+                return $environments[$currentBranch];
+            }
+        }
+
+        return null;
     }
 
     /**
