@@ -13,7 +13,6 @@ toolstack: "php:symfony"
 # side is in the form `<service name>:<endpoint name>`.
 relationships:
     database: "mysql:mysql"
-    solr: "solr:solr"
     redis: "redis:redis"
 
 # The configuration of app when it is exposed to the web.
@@ -34,9 +33,8 @@ mounts:
     "/app/logs": "shared:files/logs"
 
 # The hooks that will be performed when the package is deployed.
-#hooks:
-#    build: "SYMFONY_ENV=prod ./app/console cache:warmup"
-#    build: "SYMFONY_ENV=prod ./app/console assetic:dump --env=prod --no-debug"
+hooks:
+    build: "./app/console cache:clear --env=prod --no-debug ; ./app/console assetic:dump --env=prod --no-debug"
 
 # The configuration of scheduled execution.
 # see http://symfony.com/doc/current/components/console/introduction.html

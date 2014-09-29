@@ -6,7 +6,3 @@ mysql:
 
 redis:
     type: redis
-
-solr:
-    type: solr
-    disk: 1024
