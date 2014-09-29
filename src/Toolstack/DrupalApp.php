@@ -62,7 +62,7 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
             }
 
-            shell_exec("drush make -y $wcOption $projectCoreMake $buildDir");
+            shell_exec("drush make -y $wcOption " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir));
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
                 $profile = str_replace($repositoryDir, '', $profiles[0]);
@@ -72,11 +72,11 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
                 // Drush Make requires $profileDir to not exist if it's passed
                 // as the target. chdir($profileDir) works around that.
                 chdir($profileDir);
-                shell_exec("drush make -y $wcOption --no-core --contrib-destination=. $projectMake");
+                shell_exec("drush make -y $wcOption --no-core --contrib-destination=. " . escapeshellarg($projectMake));
             }
         } elseif (file_exists($repositoryDir . '/project.make')) {
             $projectMake = $repositoryDir . '/project.make';
-            shell_exec("drush make -y $wcOption $projectMake $buildDir");
+            shell_exec("drush make -y $wcOption " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir));
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
               // Remove sites/default to make room for the symlink.

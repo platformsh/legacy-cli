@@ -120,7 +120,7 @@ class ProjectGetCommand extends PlatformCommand
         $checkOutput = shell_exec($checkCommand);
         if (!empty($checkOutput)) {
             // We have a repo! Yay. Clone it.
-            $command = "git clone --branch $environment $gitUrl $repositoryDir";
+            $command = "git clone --branch $environment $gitUrl " . escapeshellarg($repositoryDir);
             passthru($command);
             if (!is_dir($repositoryDir)) {
                 // The clone wasn't successful. Clean up the folders we created
