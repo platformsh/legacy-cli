@@ -42,7 +42,6 @@ class EnvironmentCommand extends PlatformCommand
                     $output->writeln("<error>Specified environment not found.</error>");
                     return;
                 }
-                $this->environment = $environment;
             } else {
                 // Autodetect the environment if the user is in a project directory.
                 $this->environment = $this->getCurrentEnvironment($this->project);
