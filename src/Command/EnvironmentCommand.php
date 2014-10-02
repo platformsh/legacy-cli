@@ -65,4 +65,22 @@ class EnvironmentCommand extends PlatformCommand
         $environment = $environment ?: $this->environment;
         return $environment && isset($environment['_links']['#' . $operation]);
     }
+
+    /**
+     * Get the SSH URL for an environment.
+     *
+     * @return string
+     */
+    protected function getSshUrl()
+    {
+        if (!$this->environment) {
+            throw new \Exception("No environment selected");
+        }
+
+        $sshUrl = parse_url($this->environment['_links']['ssh']['href']);
+        $host = $sshUrl['host'];
+        $user = $sshUrl['user'];
+
+        return $user . '@' . $host;
+    }
 }
