@@ -18,7 +18,11 @@ class PlatformLoginCommand extends PlatformCommand
 
     public function isLocal()
     {
-      return TRUE;
+        return true;
+    }
+
+    public static function skipLogin() {
+        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
