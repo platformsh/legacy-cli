@@ -2,7 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Toolstack;
 
-use CommerceGuys\Platform\Cli;
+use CommerceGuys\Platform\Cli\Command\ProjectBuildCommand;
 use Symfony\Component\Console;
 
 abstract class BaseApp
@@ -14,7 +14,7 @@ abstract class BaseApp
     protected $language;
     protected $toolstack;
 
-    function __construct(Cli\Command\PlatformCommand $command, $settings = array())
+    function __construct(ProjectBuildCommand $command, $settings = array())
     {
         $this->command = $command;
         $this->settings = $settings;

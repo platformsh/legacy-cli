@@ -53,6 +53,9 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
             $drushFlags[] = '--verbose';
         }
         foreach (array('working-copy', 'concurrency') as $option) {
+            if (!$this->command->input->hasOption($option)) {
+                continue;
+            }
             $value = $this->command->input->getOption($option);
             if ($value === true) {
               $drushFlags[] = "--$option";

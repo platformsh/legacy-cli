@@ -94,7 +94,7 @@ class ProjectBuildCommand extends PlatformCommand
         
         
         // @temp: Current project root and empty settings:
-        $applications[] = array('appRoot' => $projectRoot . "/repository", 'settings' => array('environmentId' => $environmentId, 'projectRoot' => $this->getProjectRoot()));
+        $applications[] = array('appRoot' => $projectRoot . "/repository", 'settings' => array('environmentId' => $environmentId, 'projectRoot' => $projectRoot));
         foreach ($applications as $app) {
             // Detect the toolstack.
             foreach ($this->getApplication()->getToolstacks() as $toolstack) {

@@ -151,6 +151,8 @@ class ProjectGetCommand extends PlatformCommand
                 $projectRoot = realpath($directoryName);
                 try {
                     $buildCommand = $application->find('build');
+                    $buildCommand->input = $input;
+                    $buildCommand->output = $output;
                     $buildCommand->build($projectRoot, $environment);
                 } catch (\Exception $e) {
                     $environmentName = $environmentList[$environmentIndex]['title'];
