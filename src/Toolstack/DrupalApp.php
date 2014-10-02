@@ -37,9 +37,32 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
     {
         $this->command->ensureDrushInstalled();
         $buildDir = $this->absBuildDir;
-        $wcOption = ($this->command->wcOption ? "--working-copy" : "");
         $repositoryDir = $this->appRoot;
         $projectRoot = $this->settings['projectRoot'];
+
+        // Options to pass to the drush command.
+        $drushFlags = array();
+        $drushFlags[] = '--yes';
+        if ($this->command->output->isQuiet()) {
+            $drushFlags[] = '--quiet';
+        }
+        elseif ($this->command->output->isDebug()) {
+            $drushFlags[] = '--debug';
+        }
+        elseif ($this->command->output->isVerbose()) {
+            $drushFlags[] = '--verbose';
+        }
+        foreach (array('working-copy', 'concurrency') as $option) {
+            $value = $this->command->input->getOption($option);
+            if ($value === true) {
+              $drushFlags[] = "--$option";
+            }
+            elseif ($value !== false) {
+              $drushFlags[] = "--$option=" . ltrim($value, '=');
+            }
+        }
+        // Flatten the options.
+        $drushFlags = implode(' ', $drushFlags);
 
         $profiles = glob($repositoryDir . '/*.profile');
         if (count($profiles) > 1) {
@@ -62,7 +85,7 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
             }
 
-            shell_exec("drush make -y $wcOption " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir));
+            shell_exec("drush make $drushFlags " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir));
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
                 $profile = str_replace($repositoryDir, '', $profiles[0]);
@@ -72,11 +95,11 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
                 // Drush Make requires $profileDir to not exist if it's passed
                 // as the target. chdir($profileDir) works around that.
                 chdir($profileDir);
-                shell_exec("drush make -y $wcOption --no-core --contrib-destination=. " . escapeshellarg($projectMake));
+                shell_exec("drush make $drushFlags --no-core --contrib-destination=. " . escapeshellarg($projectMake));
             }
         } elseif (file_exists($repositoryDir . '/project.make')) {
             $projectMake = $repositoryDir . '/project.make';
-            shell_exec("drush make -y $wcOption " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir));
+            shell_exec("drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir));
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
               // Remove sites/default to make room for the symlink.

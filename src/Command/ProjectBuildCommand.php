@@ -10,7 +10,6 @@ use CommerceGuys\Platform\Cli\Toolstack;
 class ProjectBuildCommand extends PlatformCommand
 {
     public $absoluteLinks;
-    public $wcOption = FALSE;
 
     protected function configure()
     {
@@ -24,8 +23,19 @@ class ProjectBuildCommand extends PlatformCommand
                 InputOption::VALUE_NONE,
                 'Use absolute links.'
             )
-            ->addOption('working-copy', 'wc', InputOption::VALUE_NONE, 'Use git to clone a repository of each Drupal module rather than simply downloading a version.');
-        $this->ignoreValidationErrors();
+            ->addOption(
+                'working-copy',
+                'wc',
+                InputOption::VALUE_NONE,
+                'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
+            )
+            ->addOption(
+                'concurrency',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Drush: set the number of concurrent projects that will be processed at the same time. The default is 3.',
+                3
+            );
     }
 
     public function isLocal()
@@ -37,8 +47,6 @@ class ProjectBuildCommand extends PlatformCommand
     {
         $this->output = $output;
         $this->input = $input;
-
-        $this->wcOption = $input->getOption('working-copy');
 
         $projectRoot = $this->getProjectRoot();
         if (empty($projectRoot)) {
