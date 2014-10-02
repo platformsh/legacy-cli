@@ -22,7 +22,7 @@ class WelcomeCommand extends PlatformCommand
     {
         $this
             ->setName('welcome')
-            ->setDescription('Welcome to platform');
+            ->setDescription('Welcome to Platform.sh');
     }
 
     public function isLocal()

@@ -13,7 +13,7 @@ class PlatformLoginCommand extends PlatformCommand
     {
         $this
             ->setName('login')
-            ->setDescription('Login to platform');
+            ->setDescription('Log in to Platform.sh');
     }
 
     public function isLocal()
@@ -29,7 +29,7 @@ class PlatformLoginCommand extends PlatformCommand
     {
         $this->checkRequirements($output);
 
-        $output->writeln("\nPlease login using your Commerce Platform account to proceed.\n");
+        $output->writeln("\nPlease log in using your Platform.sh account\n");
         $this->configureAccount($output);
         $output->writeln("\n<info>Thank you, you are all set.</info>");
 
@@ -64,7 +64,7 @@ class PlatformLoginCommand extends PlatformCommand
 
         $userExists = true;
         if (!$userExists) {
-            $createAccountText = "\nThis email address is not associated to a Platform account. \n";
+            $createAccountText = "\nThis email address is not associated with a Platform.sh account. \n";
             $createAccountText .= 'Would you like to create a new account? [Y/N] ';
             $createAccount = $dialog->askConfirmation($output, $createAccountText, false);
             if ($createAccount) {
@@ -77,7 +77,7 @@ class PlatformLoginCommand extends PlatformCommand
 
         $pendingInvitation = false;
         if ($pendingInvitation) {
-            $resendInviteText = "\nThis email address is associated with a Platform account, \n";
+            $resendInviteText = "\nThis email address is associated with a Platform.sh account, \n";
             $resendInviteText .= "but you haven't verified your email address yet. \n";
             $resendInviteText .= "Please click on the link in the email we sent you. \n";
             $resendInviteText .= "Do you want us to send you the email again? [Y/N] ";
