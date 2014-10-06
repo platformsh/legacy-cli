@@ -24,6 +24,10 @@ class ProjectCleanCommand extends PlatformCommand
             );
     }
 
+    public function isLocal() {
+        return true;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectRoot = $this->getProjectRoot();
@@ -31,12 +35,7 @@ class ProjectCleanCommand extends PlatformCommand
             $output->writeln("<error>You must run this command from a project folder.</error>");
             return;
         }
-        $project = $this->getCurrentProject();
-        $environment = $this->getCurrentEnvironment($project);
-        if (!$environment) {
-            $output->writeln("<error>Could not determine the current environment.</error>");
-            return;
-        }
+
         $buildsDir = $projectRoot . '/builds';
         if ($this->dir_empty($buildsDir)) {
             $output->writeln("<error>There are no builds to clean.</error>");
