@@ -60,7 +60,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return 1;
         }
 
-        $machineName = preg_replace('/[^a-z0-9-]+/i', '', strtolower($branchName));
+        $machineName = $this->sanitizeEnvironmentId($branchName);
 
         if ($machineName == $this->environment['id']) {
             $output->writeln("<comment>Already on $machineName</comment>");
