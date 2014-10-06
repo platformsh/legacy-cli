@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
+use CommerceGuys\Platform\Cli\Toolstack\DrupalApp;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
@@ -244,18 +245,16 @@ class PlatformCommand extends Command
         $repositoryDir = $projectRoot . '/repository';
         $escapedRepoDir = escapeshellarg($repositoryDir);
 
-        $environments = $this->getEnvironments($project);
-
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
         $remote = trim($this->shellExec("cd $escapedRepoDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}"));
         if ($remote && strpos($remote, '/') !== false) {
             list($remoteName, $potentialEnvironment) = explode('/', $remote, 2);
-            if (isset($environments[$potentialEnvironment])) {
+            if ($environment = $this->getEnvironment($potentialEnvironment, $project)) {
                 // Check that the remote is Platform's.
                 $remoteUrl = trim($this->shellExec("cd $escapedRepoDir && git config --get remote.$remoteName.url"));
                 if (strpos($remoteUrl, 'platform.sh')) {
-                    return $environments[$potentialEnvironment];
+                    return $environment;
                 }
             }
         }
@@ -263,11 +262,8 @@ class PlatformCommand extends Command
         // There is no Git remote set, or it's set to a non-Platform URL.
         // Fall back to trying the current branch name.
         $currentBranch = trim($this->shellExec("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
-        if ($currentBranch) {
-            $environments = $this->getEnvironments($project);
-            if (isset($environments[$currentBranch])) {
-                return $environments[$currentBranch];
-            }
+        if ($currentBranch && ($environment = $this->getEnvironment($currentBranch, $project))) {
+            return $environment;
         }
 
         return null;
@@ -353,11 +349,31 @@ class PlatformCommand extends Command
         $projects = $this->getProjects();
         if (!isset($projects[$id])) {
             // The list of projects is cached and might be older than the
-            // requested project, so refetch it as a precaution.
+            // requested project, so refresh it as a precaution.
             $projects = $this->getProjects(true);
         }
 
         return isset($projects[$id]) ? $projects[$id] : null;
+    }
+
+    /**
+     * Get a single environment.
+     *
+     * @param string $id The environment ID to load.
+     * @param array $project The project.
+     *
+     * @return array|null The environment, or null if not found.
+     */
+    protected function getEnvironment($id, $project = null)
+    {
+        $project = $project ?: $this->getCurrentProject();
+        $environments = $this->getEnvironments($project, false);
+        if (!isset($environments[$id])) {
+            // The list of environments is cached and might be older than the
+            // requested environment, so refresh it as a precaution.
+            $environments = $this->getEnvironments($project, true);
+        }
+        return isset($environments[$id]) ? $environments[$id] : null;
     }
 
     /**
@@ -368,15 +384,26 @@ class PlatformCommand extends Command
      * if the environment list has changed.
      *
      * @param array $project The project.
+     * @param bool|null $refresh Whether to refresh the list of environments.
      *
      * @return array The user's environments.
      */
-    protected function getEnvironments($project)
+    protected function getEnvironments($project, $refresh = null)
     {
         $this->loadConfig();
         $projectId = $project['id'];
-        if (!isset($this->config['environments'][$projectId])) {
-            $this->config['environments'][$projectId] = array();
+
+        if (!$refresh) {
+            if (empty($this->config['environments'][$projectId])) {
+                if ($refresh === false) {
+                    return array();
+                }
+                // Here $refresh is null, and there are no cached environments,
+                // so we will refresh the list automatically.
+            }
+            else {
+                return $this->config['environments'][$projectId];
+            }
         }
 
         // Fetch and assemble a list of environments.
@@ -390,10 +417,13 @@ class PlatformCommand extends Command
             $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
             $environments[$environment['id']] = $environment;
         }
-        // Recreate the aliases if the list of environments has changed.
-        $this->createDrushAliases($project, $environments);
-        $this->config['environments'][$projectId] = $environments;
 
+        // Recreate Drush aliases if the list of environments has changed.
+        if (empty($this->config['environments'][$projectId]) || $this->config['environments'][$projectId] != $environments) {
+            $this->createDrushAliases($project, $environments);
+        }
+
+        $this->config['environments'][$projectId] = $environments;
         return $this->config['environments'][$projectId];
     }
 
@@ -420,20 +450,24 @@ class PlatformCommand extends Command
         }
 
         $this->config['domains'][$projectId] = $domains;
-
         return $this->config['domains'][$projectId];
     }
 
     /**
      * Create drush aliases for the provided project and environments.
      *
-     * @todo prevent this running for non-Drupal projects
-     *
      * @param array $project The project
      * @param array $environments The environments
+     *
+     * @return bool Whether anything was created.
      */
     protected function createDrushAliases($project, $environments)
     {
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot || !DrupalApp::detect($projectRoot . '/repository', array('projectRoot' => $projectRoot))) {
+            return false;
+        }
+
         $group = $project['id'];
         if (!empty($project['alias-group'])) {
           $group = $project['alias-group'];
@@ -484,14 +518,19 @@ class PlatformCommand extends Command
 
         if ($has_valid_environment) {
             file_put_contents($filename, $export);
-        }
-        else {
-            // Ensure the file doesn't exist.
-            if (file_exists($filename)) {
-                unlink($filename);
-            }
+
+            // Clear the Drush cache now that the aliases have been updated.
+            $this->ensureDrushInstalled();
+            $this->shellExec('drush cache-clear drush');
+
+            return true;
         }
 
+        // Ensure the file doesn't exist.
+        if (file_exists($filename)) {
+            unlink($filename);
+        }
+        return false;
     }
 
     public static function skipLogin()

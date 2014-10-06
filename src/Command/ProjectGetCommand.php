@@ -62,7 +62,7 @@ class ProjectGetCommand extends PlatformCommand
             return;
         }
 
-        $environments = $this->getEnvironments($project);
+        $environments = $this->getEnvironments($project, true);
         // Create a numerically indexed list, starting with "master".
         $environmentList = array($environments['master']);
         foreach ($environments as $environment) {
