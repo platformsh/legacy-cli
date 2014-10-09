@@ -77,6 +77,11 @@ class EnvironmentCommand extends PlatformCommand
             throw new \Exception("No environment selected");
         }
 
+        if (!isset($this->environment['_links']['ssh']['href'])) {
+            $id = $this->environment['id'];
+            throw new \Exception("The environment $id does not have an SSH URL. There may be an operation in progress.");
+        }
+
         $sshUrl = parse_url($this->environment['_links']['ssh']['href']);
         $host = $sshUrl['host'];
         $user = $sshUrl['user'];

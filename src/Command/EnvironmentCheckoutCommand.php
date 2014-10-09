@@ -17,9 +17,9 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
             ->setAliases(array('checkout'))
             ->setDescription('Checkout an environment.')
             ->addArgument(
-                'branch-id',
+                'branch-name',
                 InputArgument::OPTIONAL,
-                'The id of the branch to checkout. For example: "sprint2"'
+                'The name of the branch to checkout. For example: "sprint2"'
             )
             ->addOption(
                 'project',
@@ -40,9 +40,9 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
-        $branch = $input->getArgument('branch-id');
+        $branch = $input->getArgument('branch-name');
         if (empty($branch)) {
-            $output->writeln("<error>You must specify the id of the branch to checkout.</error>");
+            $output->writeln("<error>You must specify the name of the branch to checkout.</error>");
             return;
         }
 

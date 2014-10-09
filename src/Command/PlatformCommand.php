@@ -264,9 +264,10 @@ class PlatformCommand extends Command
         // Fall back to trying the current branch name.
         $currentBranch = trim($this->shellExec("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
         if ($currentBranch) {
+            $currentBranchSanitized = $this->sanitizeEnvironmentId($currentBranch);
             $environments = $this->getEnvironments($project);
-            if (isset($environments[$currentBranch])) {
-                return $environments[$currentBranch];
+            if (isset($environments[$currentBranchSanitized])) {
+                return $environments[$currentBranchSanitized];
             }
         }
 
@@ -565,6 +566,17 @@ class PlatformCommand extends Command
       fclose($pipes[2]);
       proc_close($process);
       return $result;
+    }
+
+    /**
+     * Sanitize a proposed environment ID.
+     *
+     * @param string $proposed
+     *
+     * @return string
+     */
+    protected function sanitizeEnvironmentId($proposed) {
+        return substr(preg_replace('/[^a-z0-9-]+/i', '', strtolower($proposed)), 0, 32);
     }
 
     /**
