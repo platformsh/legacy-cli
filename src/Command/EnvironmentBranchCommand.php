@@ -99,7 +99,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 // Create a new branch, using the current or specified
                 // environment as the parent.
                 $parent = $this->environment['id'];
-                $command = "git checkout --quiet $parent; git branch --quiet $machineName";
+                $command = "git checkout --quiet -b $machineName $parent";
                 $error = "Failed to create branch locally: $machineName";
             }
             $returnVar = '';
