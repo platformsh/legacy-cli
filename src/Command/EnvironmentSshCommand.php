@@ -38,7 +38,7 @@ class EnvironmentSshCommand extends EnvironmentCommand
             return;
         }
         else {
-            $output->writeln("<info>The SSH url for the current environment is: " . $command . "</info>");
+            $output->writeln("The SSH url for the current environment is: <info>" . $command . "</info>");
             return;
         }
     }

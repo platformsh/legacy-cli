@@ -17,7 +17,8 @@ class EnvironmentIpCommand extends EnvironmentCommand
             ->setName('environment:ip')
             ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project id')
             ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment id')
-            ->setDescription('Get the external IP address of the current environment.');
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the raw IP address, suitable for piping to another command.')
+            ->setDescription('Get the public IP address of an environment.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -27,7 +28,13 @@ class EnvironmentIpCommand extends EnvironmentCommand
         }
 
         $sshUrlString = $this->getSshUrl();
-        passthru('ssh ' . $sshUrlString . ' "curl --silent https://icanhazip.com/"');
+
+        $ip = trim(shell_exec('ssh ' . $sshUrlString . ' "curl --silent https://icanhazip.com/"'));
+        if ($input->getOption('pipe')) {
+            $output->write($ip);
+            return;
+        }
+        $output->writeln("Public IP address: <info>$ip</info>");
     }
 
 }
