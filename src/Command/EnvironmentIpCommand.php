@@ -24,17 +24,25 @@ class EnvironmentIpCommand extends EnvironmentCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
-            return;
+            return 1;
         }
 
         $sshUrlString = $this->getSshUrl();
 
-        $ip = trim(shell_exec('ssh ' . $sshUrlString . ' "curl --silent https://icanhazip.com/"'));
+        $ip = trim(shell_exec('ssh ' . $sshUrlString . ' "curl --silent --max-time 30 https://icanhazip.com/"'));
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $output->writeln('<error>The IP address could not be found.</error>');
+            return 1;
+        }
+
         if ($input->getOption('pipe')) {
             $output->write($ip);
-            return;
         }
-        $output->writeln("Public IP address: <info>$ip</info>");
+        else {
+            $output->writeln("Public IP address: <info>$ip</info>");
+        }
+
+        return 0;
     }
 
 }
