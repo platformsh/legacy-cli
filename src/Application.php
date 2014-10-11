@@ -43,6 +43,7 @@ class Application extends Console\Application {
         $this->add(new Command\EnvironmentCheckoutCommand);
         $this->add(new Command\EnvironmentDeactivateCommand);
         $this->add(new Command\EnvironmentDeleteCommand);
+        $this->add(new Command\EnvironmentIpCommand);
         $this->add(new Command\EnvironmentListCommand);
         $this->add(new Command\EnvironmentMergeCommand);
         $this->add(new Command\EnvironmentRelationshipsCommand);
