@@ -21,10 +21,6 @@ class PlatformLoginCommand extends PlatformCommand
         return true;
     }
 
-    public static function skipLogin() {
-        return true;
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->checkRequirements($output);

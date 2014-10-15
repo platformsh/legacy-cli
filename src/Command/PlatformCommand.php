@@ -8,8 +8,7 @@ use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
 
@@ -34,11 +33,27 @@ class PlatformCommand extends Command
         if (!$this->config) {
             $application = $this->getApplication();
             $configPath = $application->getHomeDirectory() . '/.platform';
+            if (!file_exists($configPath)) {
+                $this->login();
+            }
             $yaml = new Parser();
             $this->config = $yaml->parse(file_get_contents($configPath));
         }
 
         return $this->config;
+    }
+
+    /**
+     * Log in the user.
+     */
+    protected function login() {
+        $application = $this->getApplication();
+        $command = $application->find('login');
+        $input = new ArrayInput(array('command' => 'login'));
+        $exitCode = $command->run($input, $application->getOutput());
+        if ($exitCode) {
+            throw new \Exception('Login failed');
+        }
     }
 
     /**
@@ -493,11 +508,6 @@ class PlatformCommand extends Command
             }
         }
 
-    }
-
-    public static function skipLogin()
-    {
-        return FALSE;
     }
 
     public function ensureDrushInstalled()
