@@ -45,11 +45,6 @@ class ProjectDrushAliasesCommand extends PlatformCommand
 
         $new_group = ltrim($input->getOption('group'), '@');
 
-        // Get the cached list of environments.
-        // @todo At the moment we can't refresh the list of environments here, because $this->getEnvironments() would itself call $this->createDrushAliases().
-        $this->loadConfig();
-        $environments = $this->config['environments'][$project['id']];
-
         if ($new_group && $new_group != $current_group) {
             $questionHelper = $this->getHelper('question');
             $consoleOutput = new ConsoleOutput();
@@ -62,6 +57,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             }
             $project['alias-group'] = $new_group;
             $this->writeCurrentProjectConfig('alias-group', $new_group);
+            $environments = $this->getEnvironments($project);
             $this->createDrushAliases($project, $environments);
             $output->writeln('Project aliases created, group: @' . $new_group);
 
@@ -80,6 +76,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $current_group = $new_group;
         }
         elseif ($input->getOption('recreate')) {
+            $environments = $this->getEnvironments($project);
             $this->createDrushAliases($project, $environments);
             $this->shellExec('drush cache-clear drush');
             $output->writeln("Project aliases recreated");
