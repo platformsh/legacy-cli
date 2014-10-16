@@ -167,11 +167,6 @@ class ProjectBuildCommand extends PlatformCommand
         closedir($sourceDirectory);
     }
 
-    public static function skipLogin()
-    {
-        return TRUE;
-    }
-
     /**
      * Make relative path between two files.
      *

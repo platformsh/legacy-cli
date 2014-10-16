@@ -8,21 +8,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WelcomeCommand extends PlatformCommand
 {
 
-    protected $projectListCommand;
-    protected $environmentListCommand;
-
-    public function __construct($projectListCommand, $environmentListCommand)
-    {
-        $this->projectListCommand = $projectListCommand;
-        $this->environmentListCommand = $environmentListCommand;
-        parent::__construct();
-    }
-
     protected function configure()
     {
         $this
             ->setName('welcome')
             ->setDescription('Welcome to Platform.sh');
+    }
+
+    public function isEnabled() {
+        // Hide the command in the list.
+        global $argv;
+        return !isset($argv[1]) || $argv[1] != 'list';
     }
 
     public function isLocal()
@@ -34,16 +30,18 @@ class WelcomeCommand extends PlatformCommand
     {
         $output->writeln("\nWelcome to Platform.sh!");
 
+        $application = $this->getApplication();
+
         if ($currentProject = $this->getCurrentProject()) {
             // The project is known. Show the environments.
             $projectName = $currentProject['name'];
             $output->write("\nYour project is <info>$projectName</info>.");
-            $this->environmentListCommand->run($input, $output);
+            $application->find('environments')->run($input, $output);
             $output->writeln("You can list other projects by running <info>platform projects</info>.\n");
             $output->writeln("Manage your domains by running <info>platform domains</info>.");
         } else {
             // The project is not known. Show all projects.
-            $this->projectListCommand->run($input, $output);
+            $application->find('projects')->run($input, $output);
         }
 
         $output->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>.");

@@ -58,11 +58,6 @@ class PlatformLogoutCommand extends PlatformCommand
         }
     }
 
-    public static function skipLogin()
-    {
-        return TRUE;
-    }
-
     /**
      * Destructor: Override the destructor to nuke the config.
      */
