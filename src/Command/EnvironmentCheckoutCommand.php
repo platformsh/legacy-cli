@@ -17,9 +17,9 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
             ->setAliases(array('checkout'))
             ->setDescription('Check out an environment.')
             ->addArgument(
-                'branch-name',
+                'id',
                 InputArgument::OPTIONAL,
-                'The name of the branch to check out. For example: "sprint2"'
+                'The ID of the environment to check out. For example: "sprint2"'
             );
     }
 
@@ -30,14 +30,22 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
             throw new \Exception('This can only be run from inside a project directory');
         }
 
-        $branch = $input->getArgument('branch-name');
+        $branch = $input->getArgument('id');
         if (empty($branch) && $input->isInteractive()) {
+            $currentEnvironment = $this->getCurrentEnvironment($project);
             $environments = $this->getEnvironments($project);
             $environmentList = array();
             foreach ($environments as $environment) {
+                if ($currentEnvironment && $environment['id'] == $currentEnvironment['id']) {
+                    continue;
+                }
                 $environmentList[] = $environment['id'];
             }
-            $chooseEnvironmentText = "Enter a number to choose which environment to check out:";
+            $chooseEnvironmentText = '';
+            if ($currentEnvironment) {
+                $chooseEnvironmentText = "The current environment is <info>{$currentEnvironment['id']}</info>.\n\n";
+            }
+            $chooseEnvironmentText .= "Enter a number to check out another environment:";
             $helper = $this->getHelper('question');
             $question = new ChoiceQuestion($chooseEnvironmentText, $environmentList);
             $question->setMaxAttempts(5);
