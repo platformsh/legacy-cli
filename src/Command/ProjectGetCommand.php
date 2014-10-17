@@ -21,7 +21,7 @@ class ProjectGetCommand extends PlatformCommand
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
-                'The project id'
+                'The project ID'
             )
             ->addArgument(
                 'directory-name',

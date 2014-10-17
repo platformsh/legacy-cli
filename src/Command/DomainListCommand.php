@@ -20,7 +20,7 @@ class DomainListCommand extends DomainCommand
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The project id'
+                'The project ID'
             );
     }
 

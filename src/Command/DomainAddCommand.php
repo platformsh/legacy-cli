@@ -40,7 +40,7 @@ class DomainAddCommand extends DomainCommand
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The project id'
+                'The project ID'
             )
             // @todo: Implement interactive SSL file entry
             // ->addOption('ssl', null, InputOption::VALUE_NONE, 'Specify an SSL certificate chain in interactive mode.')

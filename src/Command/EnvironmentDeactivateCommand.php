@@ -18,13 +18,13 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The project id'
+                'The project ID'
             )
             ->addOption(
                 'environment',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The environment id'
+                'The environment ID'
             );
     }
 

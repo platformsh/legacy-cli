@@ -19,33 +19,33 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             ->setAliases(array('branch'))
             ->setDescription('Branch an environment.')
             ->addArgument(
-                'branch-name',
+                'name',
                 InputArgument::OPTIONAL,
-                'The name of the new branch. For example: "Sprint 2"'
+                'The name of the new environment. For example: "Sprint 2"'
             )
             ->addOption(
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The project id'
+                'The project ID'
             )
             ->addOption(
                 'environment',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The environment id'
+                'The parent environment ID'
             )
             ->addOption(
                 'force',
                 null,
                 InputOption::VALUE_NONE,
-                "Force creating the branch even if it cannot be checked out locally"
+                "Create the new environment even if the branch cannot be checked out locally"
             )
             ->addOption(
                 'build',
                 null,
                 InputOption::VALUE_NONE,
-                "Build the new branch locally"
+                "Build the new environment locally"
             );
     }
 
@@ -55,7 +55,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return 1;
         }
 
-        $branchName = $input->getArgument('branch-name');
+        $branchName = $input->getArgument('name');
         if (empty($branchName)) {
             if ($input->isInteractive()) {
                 // List environments.
