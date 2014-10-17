@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -56,6 +57,16 @@ class EnvironmentBranchCommand extends EnvironmentCommand
 
         $branchName = $input->getArgument('branch-name');
         if (empty($branchName)) {
+            if ($input->isInteractive()) {
+                // List environments.
+                $params = array(
+                    'command' => 'environments',
+                    '--project' => $this->project['id'],
+                );
+                return $this->getApplication()
+                    ->find('environments')
+                    ->run(new ArrayInput($params), $output);
+            }
             $output->writeln("<error>You must specify the name of the new branch.</error>");
             return 1;
         }
