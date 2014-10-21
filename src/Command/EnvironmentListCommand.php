@@ -8,6 +8,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentListCommand extends EnvironmentCommand
 {
+
+    protected $showNames = true;
+    protected $showUrls = false;
+    protected $showStatus = false;
+    protected $currentEnvironment;
+
     /**
      * {@inheritdoc}
      */
@@ -26,7 +32,14 @@ class EnvironmentListCommand extends EnvironmentCommand
                 'pipe',
                 null,
                 InputOption::VALUE_NONE,
-                'Output a simple list of environment machine names.'
+                'Output a simple list of environment IDs.'
+            )
+            ->addOption(
+                'show',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
+                'name'
             );
     }
 
@@ -50,9 +63,19 @@ class EnvironmentListCommand extends EnvironmentCommand
      */
     protected function buildEnvironmentTable($tree)
     {
-        $table = $this->getHelperSet()->get('table');
+        $headers = array('ID');
+        if ($this->showNames) {
+            $headers[] = 'Name';
+        }
+        if ($this->showStatus) {
+            $headers[] = 'Status';
+        }
+        if ($this->showUrls) {
+            $headers[] = 'URL';
+        }
+        $table = $this->getHelper('table');
         $table
-            ->setHeaders(array('ID', 'Name', 'URL'))
+            ->setHeaders($headers)
             ->setRows($this->buildEnvironmentRows($tree));
 
         return $table;
@@ -65,22 +88,33 @@ class EnvironmentListCommand extends EnvironmentCommand
     {
         $rows = array();
         foreach ($tree as $environment) {
-            // Inactive environments have no public url.
-            $link = '';
-            if (!empty($environment['_links']['public-url'])) {
-                $link = $environment['_links']['public-url']['href'];
-            }
+            $row = array();
 
-            $id = str_repeat(' ', $indent) . $environment['id'];
+            $id = str_repeat('   ', $indent) . $environment['id'];
             if ($environment['id'] == $this->currentEnvironment['id']) {
                 $id .= "<info>*</info>";
             }
-            $rows[] = array(
-                $id,
-                $environment['title'],
-                $link,
-            );
+            $row[] = $id;
 
+            if ($this->showNames) {
+                $row[] = $environment['title'];
+            }
+
+            // Inactive environments have no public url.
+            $url = '';
+            if (!empty($environment['_links']['public-url'])) {
+                $url = $environment['_links']['public-url']['href'];
+            }
+
+            if ($this->showStatus) {
+                $row[] = $url ? 'Active' : 'Inactive';
+            }
+
+            if ($this->showUrls) {
+                $row[] = $url;
+            }
+
+            $rows[] = $row;
             $rows = array_merge($rows, $this->buildEnvironmentRows($environment['children'], $indent + 1));
         }
         return $rows;
@@ -93,6 +127,19 @@ class EnvironmentListCommand extends EnvironmentCommand
     {
         if (!$this->validateInput($input, $output)) {
             return;
+        }
+
+        $show = explode(',', $input->getOption('show'));
+
+        if (in_array('all', $show)) {
+            $this->showUrls = true;
+            $this->showNames = true;
+            $this->showStatus = true;
+        }
+        elseif ($show) {
+            $this->showUrls = in_array('url', $show);
+            $this->showNames = in_array('name', $show);
+            $this->showStatus = in_array('status', $show);
         }
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
