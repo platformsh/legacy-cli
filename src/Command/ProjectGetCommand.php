@@ -163,7 +163,7 @@ class ProjectGetCommand extends PlatformCommand
                     $buildCommand->output = $output;
                     $buildCommand->build($projectRoot, $environment);
                 } catch (\Exception $e) {
-                    $environmentName = $environmentList[$environmentIndex]['title'];
+                    $environmentName = $environments[$environment]['title'];
                     $output->writeln("<comment>The '$environmentName' environment could not be built: \n" . $e->getMessage() . "</comment>");
                 }
             }
