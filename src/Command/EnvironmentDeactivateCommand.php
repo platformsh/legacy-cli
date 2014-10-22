@@ -31,20 +31,32 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
-            return;
+            return 1;
         }
+
+        $environmentId = $this->environment['id'];
+        if ($environmentId == 'master') {
+            $output->writeln("<error>The master environment cannot be deactivated or deleted.</error>");
+            return 1;
+        }
+
         if (!$this->operationAllowed('deactivate')) {
-            $output->writeln("<error>Operation not permitted: The current environment can't be deactivated.</error>");
-            return;
+            if (empty($this->environment['_links']['public-url'])) {
+                $output->writeln("The environment <info>$environmentId</info> is already inactive.");
+                return 0;
+            }
+            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be deactivated.</error>");
+            return 1;
+        }
+
+        if (!$this->confirm("Are you sure you want to deactivate the environment <info>$environmentId</info>? [Y/n] ", $input, $output)) {
+            return 0;
         }
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->deactivateEnvironment();
 
-        $environmentId = $this->environment['id'];
-        $message = '<info>';
-        $message .= "\nThe environment $environmentId has been deactivated. \n";
-        $message .= "</info>";
-        $output->writeln($message);
+        $output->writeln("The environment <info>$environmentId</info> has been deactivated.");
+        return 0;
     }
 }

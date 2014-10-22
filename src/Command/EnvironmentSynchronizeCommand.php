@@ -38,27 +38,32 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
-            return;
-        }
-        if (!$this->operationAllowed('synchronize')) {
-            $output->writeln("<error>Operation not permitted: The current environment can't be synchronized.</error>");
-            return;
+            return 1;
         }
 
+        $environmentId = $this->environment['id'];
+
+        if (!$this->operationAllowed('synchronize')) {
+            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be synchronized.</error>");
+            return 1;
+        }
+
+        $parentId = $this->environment['parent'];
+
         if ($synchronize = $input->getArgument('synchronize')) {
-          $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
-          $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
+            $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
+            $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
+            if (!$this->confirm("Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>? [y/N] ", $input, $output, false)) {
+                return 0;
+            }
         }
         else {
-          $dialog = $this->getHelperSet()->get('dialog');
-          $syncCodeText = "Synchronize code? [Y/N] ";
-          $syncDataText = "Synchronize data? [Y/N] ";
-          $syncCode = $dialog->askConfirmation($output, $syncCodeText, false);
-          $syncData = $dialog->askConfirmation($output, $syncDataText, false);
+            $syncCode = $this->confirm("Synchronize code from <info>$parentId</info> to <info>$environmentId</info>? [y/N] ", $input, $output, false);
+            $syncData = $this->confirm("Synchronize data from <info>$parentId</info> to <info>$environmentId</info>? [y/N] ", $input, $output, false);
         }
         if (!$syncCode && !$syncData) {
             $output->writeln("<error>You must synchronize at least code or data.</error>");
-            return;
+            return 1;
         }
 
         $params = array(
@@ -68,10 +73,6 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->synchronizeEnvironment($params);
 
-        $environmentId = $this->environment['id'];
-        $message = '<info>';
-        $message .= "\nThe environment $environmentId has been synchronized. \n";
-        $message .= "</info>";
-        $output->writeln($message);
+        $output->writeln("The environment <info>$environmentId</info> has been synchronized.");
     }
 }

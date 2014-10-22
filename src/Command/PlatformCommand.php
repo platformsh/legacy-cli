@@ -9,6 +9,9 @@ use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
 
@@ -463,7 +466,6 @@ class PlatformCommand extends Command
         }
         $filename = $drushDir . '/' . $group . '.aliases.drushrc.php';
 
-        $aliases = array();
         $export = "<?php\n\n";
         $has_valid_environment = false;
         foreach ($environments as $environment) {
@@ -521,6 +523,22 @@ class PlatformCommand extends Command
         if (version_compare($versionNumber, '6.0') === -1) {
             throw new \Exception('Drush version must be 6.0 or newer.');
         }
+    }
+
+    /**
+     * Ask the user to confirm an action.
+     *
+     * @param string $questionText
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @param bool $default
+     *
+     * @return bool
+     */
+    protected function confirm($questionText, InputInterface $input, OutputInterface $output, $default = true) {
+        $helper = $this->getHelper('question');
+        $question = new ConfirmationQuestion($questionText, $default);
+        return $helper->ask($input, $output, $question);
     }
 
     /**

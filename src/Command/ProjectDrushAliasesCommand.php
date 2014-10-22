@@ -6,7 +6,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class ProjectDrushAliasesCommand extends PlatformCommand
 {
@@ -51,12 +50,9 @@ class ProjectDrushAliasesCommand extends PlatformCommand
         $environments = $this->config['environments'][$project['id']];
 
         if ($new_group && $new_group != $current_group) {
-            $questionHelper = $this->getHelper('question');
-            $consoleOutput = new ConsoleOutput();
             $existing = $this->shellExec("drush site-alias --pipe --format=list @" . escapeshellarg($new_group));
             if ($existing) {
-                $question = new ConfirmationQuestion("The alias group @$new_group already exists. Overwrite? [y/N] ", false);
-                if (!$questionHelper->ask($input, $consoleOutput, $question)) {
+                if (!$this->confirm("The alias group @$new_group already exists. Overwrite? [y/N] ", $input, $output, false)) {
                     return;
                 }
             }
@@ -68,8 +64,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $drushDir = $this->getApplication()->getHomeDirectory() . '/.drush';
             $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
             if (file_exists($oldFile)) {
-                $question = new ConfirmationQuestion("Delete old alias group @$current_group? [Y/n] ");
-                if ($questionHelper->ask($input, $consoleOutput, $question)) {
+                if (!$this->confirm("Delete old alias group @$current_group? [Y/n] ", $input, $output)) {
                     unlink($oldFile);
                 }
             }

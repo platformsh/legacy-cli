@@ -6,7 +6,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class EnvironmentBranchCommand extends EnvironmentCommand
 {
@@ -61,17 +60,16 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         }
 
         $machineName = $this->sanitizeEnvironmentId($branchName);
+        $environmentId = $this->environment['id'];
 
-        if ($machineName == $this->environment['id']) {
+        if ($machineName == $environmentId) {
             $output->writeln("<comment>Already on $machineName</comment>");
             return 1;
         }
 
         $environments = $this->getEnvironments($this->project);
         if (isset($environments[$machineName])) {
-            $helper = $this->getHelper('question');
-            $question = new ConfirmationQuestion("<comment>The environment $machineName already exists.</comment> Checkout? [Y/n] ");
-            $checkout = $helper->ask($input, $output, $question);
+            $checkout = $this->confirm("<comment>The environment $machineName already exists.</comment> Checkout? [Y/n] ", $input, $output);
             if ($checkout) {
                 $checkoutCommand = $this->getApplication()->find('environment:checkout');
                 return $checkoutCommand->execute($input, $output);
@@ -80,7 +78,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         }
 
         if (!$this->operationAllowed('branch')) {
-            $output->writeln("<error>Operation not permitted: The current environment can't be branched.</error>");
+            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be branched.</error>");
             return 1;
         }
 
