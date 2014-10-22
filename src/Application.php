@@ -94,7 +94,7 @@ class Application extends Console\Application {
         if (isset($this->output)) {
             return $this->output;
         }
-        $stream = file_open('php://stdout', 'w');
+        $stream = fopen('php://stdout', 'w');
         return new StreamOutput($stream);
     }
 
