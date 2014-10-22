@@ -16,7 +16,9 @@ INSTALL/UPDATE - COMPOSER
 
 * Make sure Composer's global bin directory is on the system PATH (recommended):
 
-        $ sed -i '1i export PATH="$HOME/.composer/vendor/bin:$PATH"' $HOME/.bashrc
+        $ sed -i bak '1 i\ 
+        export PATH="$HOME/.composer/vendor/bin:$PATH"
+        ' $HOME/.bashrc
         $ source $HOME/.bashrc
 
 * Remove the old CLI version, if you have it:
