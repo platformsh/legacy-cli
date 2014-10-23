@@ -24,6 +24,10 @@ class DomainAddCommand extends DomainCommand
     // The final array of SSL options for the client parameters.
     protected $sslOptions;
 
+    protected $certPath;
+    protected $keyPath;
+    protected $chainPaths;
+
     /**
      * {@inheritdoc}
      */

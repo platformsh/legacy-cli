@@ -30,13 +30,6 @@ class Application extends Console\Application {
 
         $this->setDefaultTimezone();
 
-        $this->toolstacks = array(
-            'Php',
-            'Drupal',
-            'Symfony',
-            // 'Wordpress',
-        );
-
         $this->add(new Command\PlatformLogoutCommand);
         $this->add(new Command\PlatformLoginCommand);
         $this->add(new Command\DrushCommand);
@@ -167,22 +160,6 @@ class Application extends Console\Application {
         }
 
         return $home;
-    }
-
-    /**
-     * @return boolean Whether the user has configured the CLI.
-     */
-    protected function hasConfiguration()
-    {
-        return file_exists($this->getHomeDirectory() . '/.platform');
-    }
-
-    /**
-     * Returns the list of registered Platform toolstacks.
-     */
-    public function getToolstacks()
-    {
-        return $this->toolstacks;
     }
 
 }

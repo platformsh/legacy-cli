@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -14,6 +15,15 @@ class DrushCommand extends PlatformCommand
             ->setName('drush')
             ->setDescription('Invoke a drush command using the site alias for the current environment.');
         $this->ignoreValidationErrors();
+    }
+
+    public function isEnabled()
+    {
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            return Drupal::isDrupal($projectRoot . '/repository');
+        }
+        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -5,7 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\ConsoleOutput;
+use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 
 class ProjectDrushAliasesCommand extends PlatformCommand
 {
@@ -24,6 +24,15 @@ class ProjectDrushAliasesCommand extends PlatformCommand
     public function isLocal()
     {
       return TRUE;
+    }
+
+    public function isEnabled()
+    {
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            return Drupal::isDrupal($projectRoot . '/repository');
+        }
+        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -1,15 +1,19 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Toolstack;
+namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
-use CommerceGuys\Platform\Cli;
-use Symfony\Component\Console;
-use Symfony\Component\Finder\Finder;
-
-class SymfonyApp extends PhpApp implements LocalBuildInterface
+class Symfony extends ToolstackBase
 {
+    public function getName()
+    {
+        return 'PHP/Symfony';
+    }
 
-    public static function detect($appRoot, $settings)
+    public function getKey() {
+        return 'php:symfony';
+    }
+
+    public function detect($appRoot)
     {
         if (file_exists($appRoot . '/composer.json')) {
             $json = file_get_contents($appRoot . '/composer.json');
@@ -25,17 +29,13 @@ class SymfonyApp extends PhpApp implements LocalBuildInterface
     public function build()
     {
         $buildDir = $this->absBuildDir;
-        $repositoryDir = $this->appRoot;
-        $projectRoot = $this->settings['projectRoot'];
 
-        if (file_exists($repositoryDir . '/composer.json')) {
-            $projectComposer = $repositoryDir . '/composer.json';
+        if (!file_exists($this->appRoot . '/composer.json')) {
+            throw new \Exception("Couldn't find a composer.json in the directory.");
         }
-        else {
-            throw new \Exception("Couldn't find a composer.json in the repository.");
-        }
+
         mkdir($buildDir);
-        $this->copy($repositoryDir, $buildDir);
+        $this->copy($this->appRoot, $buildDir);
         if (is_dir($buildDir)) {
             chdir($buildDir);
             shell_exec("composer install --no-progress --no-interaction  --working-dir " . escapeshellcmd($buildDir));
@@ -43,6 +43,13 @@ class SymfonyApp extends PhpApp implements LocalBuildInterface
         else {
           throw new \Exception("Couldn't create build directory");
         }
+
+        return true;
+    }
+
+    public function install() {
+        $buildDir = $this->absBuildDir;
+
         // The build has been done, create a config_dev.yml if it is missing.
         if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/config_dev.yml')) {
             // Create the config_dev.yml file.
@@ -54,12 +61,11 @@ class SymfonyApp extends PhpApp implements LocalBuildInterface
         }
 
         // Point www to the latest build.
-        $wwwLink = $projectRoot . '/www';
+        $wwwLink = $this->projectRoot . '/www';
         if (file_exists($wwwLink) || is_link($wwwLink)) {
             // @todo Windows might need rmdir instead of unlink.
             unlink($wwwLink);
         }
         symlink($this->absoluteLinks ? $this->absBuildDir : $this->relBuildDir, $wwwLink);
-
     }
 }

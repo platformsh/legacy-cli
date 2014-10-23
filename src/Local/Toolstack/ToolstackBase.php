@@ -1,56 +1,37 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Toolstack;
+namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
-use CommerceGuys\Platform\Cli\Command\ProjectBuildCommand;
-use Symfony\Component\Console;
-
-abstract class BaseApp
+abstract class ToolstackBase implements ToolstackInterface
 {
 
     protected $settings = array();
-    protected $command;
     protected $appRoot;
-    protected $language;
-    protected $toolstack;
+    protected $projectRoot;
+    protected $buildName;
+    protected $relBuildDir;
+    protected $absBuildDir;
+    protected $absoluteLinks = false;
 
-    function __construct(ProjectBuildCommand $command, $settings = array())
+    public function prepareBuild($appRoot, $projectRoot, array $settings)
     {
-        $this->command = $command;
+        $this->appRoot = $appRoot;
+        $this->projectRoot = $projectRoot;
         $this->settings = $settings;
-        $this->projectRoot = $this->settings['projectRoot'];
-
-        $this->appRoot = $this->determineAppRoot($this->settings);
-        if (!$this->appRoot) {
-            if (!$this->projectRoot) {
-                $this->command->output->writeln("<error>You cannot build a project locally from outside of the project's folder structure.</error>");
-            }
-            else {
-                // With no declaration in the settings, we assume the approot
-                // to match the repository.
-                $this->appRoot = $this->projectRoot . "/repository";
-            }
-        }
-    }
-
-    function determineAppRoot($settings)
-    {
-        // @todo: Not yet implemented.
-        return NULL;
-    }
-
-    function prepareBuild()
-    {
-        $this->buildName = date('Y-m-d--H-i-s') . '--' . $this->settings['environmentId'];
+        $this->buildName = date('Y-m-d--H-i-s') . '--' . $settings['environmentId'];
         $this->relBuildDir = 'builds/' . $this->buildName;
-        $this->absBuildDir = $this->projectRoot . '/' . $this->relBuildDir;
-        $this->absoluteLinks = $this->command->absoluteLinks;
+        $this->absBuildDir = $projectRoot . '/' . $this->relBuildDir;
+        $this->absoluteLinks = !empty($settings['absoluteLinks']);
+        return $this;
     }
 
     // @todo: Move this filesystem stuff into a reusable trait somewhere... :(
 
     /**
-     * Copy all files and folders from $source into $destination.
+     * Copy all files and folders between directories.
+     *
+     * @param string $source
+     * @param string $destination
      */
     protected function copy($source, $destination)
     {
@@ -73,9 +54,13 @@ abstract class BaseApp
     }
 
     /**
-     * Symlink all files and folders from $source into $destination.
+     * Symlink all files and folders between two directories.
+     *
+     * @param string $source
+     * @param string $destination
+     * @param bool $skipExisting
      */
-    protected function symlink($source, $destination)
+    protected function symlink($source, $destination, $skipExisting = true)
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -93,15 +78,23 @@ abstract class BaseApp
                 if (!$this->absoluteLinks) {
                     $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
                 }
+
+                if (file_exists($linkFile)) {
+                    if (is_link($linkFile)) {
+                        unlink($linkFile);
+                    }
+                    elseif ($skipExisting) {
+                        continue;
+                    }
+                    else {
+                        throw new \Exception('File exists: ' . $linkFile);
+                    }
+                }
+
                 symlink($sourceFile, $linkFile);
             }
         }
         closedir($sourceDirectory);
-    }
-
-    public static function skipLogin()
-    {
-        return TRUE;
     }
 
     /**
@@ -111,16 +104,16 @@ abstract class BaseApp
      * @param string $destination Path to the symlink.
      * @return string Relative path to the source, or file linking to.
      */
-    private function makePathRelative($source, $dest)
+    private function makePathRelative($source, $destination)
     {
         $i = 0;
         while (true) {
-            if(substr($source, $i, 1) != substr($dest, $i, 1)) {
+            if(substr($source, $i, 1) != substr($destination, $i, 1)) {
                 break;
             }
             $i++;
         }
-        $distance = substr_count(substr($dest, $i - 1, strlen($dest)), '/') - 1;
+        $distance = substr_count(substr($destination, $i - 1, strlen($destination)), '/') - 1;
 
         $path = '';
         while ($distance) {
@@ -134,27 +127,29 @@ abstract class BaseApp
 
     /**
      * Delete a directory and all of its files.
+     *
+     * @param string $directory
      */
-    protected function rmdir($directoryName)
+    protected function rmdir($directory)
     {
-        if (is_dir($directoryName)) {
+        if (is_dir($directory)) {
             // Recursively empty the directory.
-            $directory = opendir($directoryName);
-            while ($file = readdir($directory)) {
+            $directoryResource = opendir($directory);
+            while ($file = readdir($directoryResource)) {
                 if (!in_array($file, array('.', '..'))) {
-                    if (is_link($directoryName . '/' . $file)) {
-                        unlink($directoryName . '/' . $file);
-                    } else if (is_dir($directoryName . '/' . $file)) {
-                        $this->rmdir($directoryName . '/' . $file);
+                    if (is_link($directory . '/' . $file)) {
+                        unlink($directory . '/' . $file);
+                    } else if (is_dir($directory . '/' . $file)) {
+                        $this->rmdir($directory . '/' . $file);
                     } else {
-                        unlink($directoryName . '/' . $file);
+                        unlink($directory . '/' . $file);
                     }
                 }
             }
-            closedir($directory);
+            closedir($directoryResource);
 
             // Delete the directory itself.
-            rmdir($directoryName);
+            rmdir($directory);
         }
     }
 

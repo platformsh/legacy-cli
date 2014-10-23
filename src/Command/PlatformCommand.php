@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
+use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
@@ -21,6 +22,9 @@ class PlatformCommand extends Command
     protected $oauth2Plugin;
     protected $accountClient;
     protected $platformClient;
+
+    protected $project;
+    protected $environment;
 
     /**
      * Load configuration from the user's .platform file.
@@ -462,6 +466,11 @@ class PlatformCommand extends Command
           $group = $project['alias-group'];
         }
 
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot && !Drupal::isDrupal($projectRoot . '/repository')) {
+            return;
+        }
+
         // Ensure the existence of the .drush directory.
         $application = $this->getApplication();
         $drushDir = $application->getHomeDirectory() . '/.drush';
@@ -491,17 +500,19 @@ class PlatformCommand extends Command
         }
 
         // Add a local alias as well.
-        $wwwRoot = $this->getProjectRoot() . '/www';
-        if (is_dir($wwwRoot)) {
-            $local = array(
-              'parent' => '@parent',
-              'site' => $project['id'],
-              'env' => '_local',
-              'root' => $wwwRoot,
-            );
-            $export .= "\$aliases['_local'] = " . var_export($local, TRUE);
-            $export .= ";\n";
-            $has_valid_environment = true;
+        if ($projectRoot) {
+            $wwwRoot = $projectRoot . '/www';
+            if (is_dir($wwwRoot)) {
+                $local = array(
+                  'parent' => '@parent',
+                  'site' => $project['id'],
+                  'env' => '_local',
+                  'root' => $wwwRoot,
+                );
+                $export .= "\$aliases['_local'] = " . var_export($local, true);
+                $export .= ";\n";
+                $has_valid_environment = true;
+            }
         }
 
         if ($has_valid_environment) {
@@ -547,27 +558,29 @@ class PlatformCommand extends Command
 
     /**
      * Delete a directory and all of its files.
+     *
+     * @param string $directory
      */
-    protected function rmdir($directoryName)
+    protected function rmdir($directory)
     {
-        if (is_dir($directoryName)) {
+        if (is_dir($directory)) {
             // Recursively empty the directory.
-            $directory = opendir($directoryName);
-            while ($file = readdir($directory)) {
+            $directoryResource = opendir($directory);
+            while ($file = readdir($directoryResource)) {
                 if (!in_array($file, array('.', '..'))) {
-                    if (is_link($directoryName . '/' . $file)) {
-                        unlink($directoryName . '/' . $file);
-                    } else if (is_dir($directoryName . '/' . $file)) {
-                        $this->rmdir($directoryName . '/' . $file);
+                    if (is_link($directory . '/' . $file)) {
+                        unlink($directory . '/' . $file);
+                    } else if (is_dir($directory . '/' . $file)) {
+                        $this->rmdir($directory . '/' . $file);
                     } else {
-                        unlink($directoryName . '/' . $file);
+                        unlink($directory . '/' . $file);
                     }
                 }
             }
-            closedir($directory);
+            closedir($directoryResource);
 
             // Delete the directory itself.
-            rmdir($directoryName);
+            rmdir($directory);
         }
     }
 
