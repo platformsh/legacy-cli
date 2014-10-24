@@ -15,37 +15,37 @@ class ProjectGetCommand extends PlatformCommand
     protected function configure()
     {
         $this
-          ->setName('project:get')
-          ->setAliases(array('get'))
-          ->setDescription('Does a git clone of the referenced project.')
-          ->addArgument(
-            'id',
-            InputArgument::OPTIONAL,
-            'The project ID'
-          )
-          ->addArgument(
-            'directory-name',
-            InputArgument::OPTIONAL,
-            'The directory name. Defaults to the project ID if not provided'
-          )
-          ->addOption(
-            'environment',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            "The environment ID to clone"
-          )
-          ->addOption(
-            'no-build',
-            null,
-            InputOption::VALUE_NONE,
-            "Do not build the retrieved project"
-          )
-          ->addOption(
-            'include-inactive',
-            null,
-            InputOption::VALUE_NONE,
-            "List inactive environments too"
-          );
+            ->setName('project:get')
+            ->setAliases(array('get'))
+            ->setDescription('Does a git clone of the referenced project.')
+            ->addArgument(
+                'id',
+                InputArgument::OPTIONAL,
+                'The project ID'
+            )
+            ->addArgument(
+                'directory-name',
+                InputArgument::OPTIONAL,
+                'The directory name. Defaults to the project ID if not provided'
+            )
+            ->addOption(
+                'environment',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                "The environment ID to clone"
+            )
+            ->addOption(
+                'no-build',
+                null,
+                InputOption::VALUE_NONE,
+                "Do not build the retrieved project"
+            )
+            ->addOption(
+                'include-inactive',
+                null,
+                InputOption::VALUE_NONE,
+                "List inactive environments too"
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -101,7 +101,7 @@ class ProjectGetCommand extends PlatformCommand
         mkdir($directoryName);
         $projectRoot = realpath($directoryName);
         if (!$projectRoot) {
-            throw new \Exception('Failed to create project directory: ' . $directoryName);
+           throw new \Exception('Failed to create project directory: ' . $directoryName);
         }
 
         mkdir($projectRoot . '/builds');
@@ -109,7 +109,7 @@ class ProjectGetCommand extends PlatformCommand
 
         // Create the .platform-project file.
         $projectConfig = array(
-          'id' => $projectId,
+            'id' => $projectId,
         );
         $dumper = new Dumper();
         file_put_contents($directoryName . '/.platform-project', $dumper->dump($projectConfig));
@@ -150,7 +150,7 @@ class ProjectGetCommand extends PlatformCommand
                 // Launch the first build.
                 $application = $this->getApplication();
                 $buildCommand = $application->find('build');
-                chdir($projectRoot);
+                chdir($directoryName);
                 return $buildCommand->execute($input, $output);
             }
         }

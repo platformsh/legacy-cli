@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Local\LocalBuild;
+use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,20 +27,22 @@ class ProjectBuildCommand extends PlatformCommand
                 'a',
                 InputOption::VALUE_NONE,
                 'Use absolute links.'
-            )
-            ->addOption(
+            );
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot && Drupal::isDrupal($projectRoot . '/repository')) {
+            $this->addOption(
                 'working-copy',
                 'wc',
                 InputOption::VALUE_NONE,
                 'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
-            )
-            ->addOption(
+            )->addOption(
                 'concurrency',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'Drush: set the number of concurrent projects that will be processed at the same time. The default is 3.',
                 3
             );
+        }
     }
 
     public function isLocal()
@@ -120,7 +123,7 @@ class ProjectBuildCommand extends PlatformCommand
                 throw new \Exception("Could not detect toolstack for directory: " . $appRoot);
             }
 
-            $this->output->writeln("Building application <info>$appName</info> using the toolstack <info>" . $toolstack->getName() . "</info>");
+            $this->output->writeln("Building application <info>$appName</info> using the toolstack <info>" . $toolstack->getKey() . "</info>");
 
             $toolstack->prepareBuild($appRoot, $projectRoot, $settings);
 

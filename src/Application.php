@@ -146,20 +146,4 @@ class Application extends Console\Application {
         date_default_timezone_set($timezone);
      }
 
-    /**
-     * @return string The absolute path to the user's home directory.
-     */
-    public function getHomeDirectory()
-    {
-        $home = getenv('HOME');
-        if (empty($home)) {
-            // Windows compatibility.
-            if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
-                $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
-            }
-        }
-
-        return $home;
-    }
-
 }

@@ -4,10 +4,6 @@ namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
 class Symfony extends ToolstackBase
 {
-    public function getName()
-    {
-        return 'PHP/Symfony';
-    }
 
     public function getKey() {
         return 'php:symfony';

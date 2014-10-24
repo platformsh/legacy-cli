@@ -38,8 +38,7 @@ class PlatformCommand extends Command
     protected function loadConfig()
     {
         if (!$this->config) {
-            $application = $this->getApplication();
-            $configPath = $application->getHomeDirectory() . '/.platform';
+            $configPath = $this->getHomeDirectory() . '/.platform';
             if (!file_exists($configPath)) {
                 $this->login();
             }
@@ -305,8 +304,7 @@ class PlatformCommand extends Command
      */
     protected function getProjectRoot()
     {
-        $application = $this->getApplication();
-        $homeDir = $application->getHomeDirectory();
+        $homeDir = $this->getHomeDirectory();
         $currentDir = getcwd();
         $projectRoot = null;
         while (!$projectRoot) {
@@ -454,26 +452,25 @@ class PlatformCommand extends Command
     /**
      * Create drush aliases for the provided project and environments.
      *
-     * @todo prevent this running for non-Drupal projects
-     *
      * @param array $project The project
      * @param array $environments The environments
      */
     protected function createDrushAliases($project, $environments)
     {
+        // Fail if there is no project root, or if it doesn't contain a Drupal
+        // application.
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot || !Drupal::isDrupal($projectRoot . '/repository')) {
+            return false;
+        }
+
         $group = $project['id'];
         if (!empty($project['alias-group'])) {
           $group = $project['alias-group'];
         }
 
-        $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && !Drupal::isDrupal($projectRoot . '/repository')) {
-            return;
-        }
-
         // Ensure the existence of the .drush directory.
-        $application = $this->getApplication();
-        $drushDir = $application->getHomeDirectory() . '/.drush';
+        $drushDir = $this->getHomeDirectory() . '/.drush';
         if (!is_dir($drushDir)) {
             mkdir($drushDir);
         }
@@ -635,10 +632,25 @@ class PlatformCommand extends Command
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
             }
 
-            $application = $this->getApplication();
-            $configPath = $application->getHomeDirectory() . '/.platform';
+            $configPath = $this->getHomeDirectory() . '/.platform';
             $dumper = new Dumper();
             file_put_contents($configPath, $dumper->dump($this->config));
         }
+    }
+
+    /**
+     * @return string The absolute path to the user's home directory.
+     */
+    public function getHomeDirectory()
+    {
+        $home = getenv('HOME');
+        if (empty($home)) {
+            // Windows compatibility.
+            if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+                $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+            }
+        }
+
+        return $home;
     }
 }

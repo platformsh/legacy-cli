@@ -10,11 +10,6 @@ class Drupal extends ToolstackBase
 
     protected $isVanilla = false;
 
-    public function getName()
-    {
-        return 'PHP/Drupal';
-    }
-
     public function getKey() {
         return 'php:drupal';
     }
@@ -23,7 +18,7 @@ class Drupal extends ToolstackBase
      * Detect if there are any Drupal applications in a folder.
      *
      * @param string $directory
-     * @param string $depth
+     * @param mixed $depth
      *
      * @return bool
      */
@@ -89,7 +84,9 @@ class Drupal extends ToolstackBase
         $profiles = glob($this->appRoot . '/*.profile');
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
-        } elseif (count($profiles) == 1) {
+        }
+
+        if (count($profiles) == 1) {
             // Find the contrib make file.
             if (file_exists($this->appRoot . '/project.make')) {
                 $projectMake = $this->appRoot . '/project.make';
@@ -107,27 +104,35 @@ class Drupal extends ToolstackBase
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the directory.");
             }
 
-            shell_exec("drush make $drushFlags " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir));
+            exec("drush make $drushFlags " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir), $output, $return_var);
+            if ($return_var > 0  || !is_dir($buildDir)) {
+                throw new \Exception('Drush make failed: ' . $projectCoreMake);
+            }
             // Drush will only create the $buildDir if the build succeeds.
-            if (is_dir($buildDir)) {
-                $profile = str_replace($this->appRoot, '', $profiles[0]);
-                $profile = strtok($profile, '.');
-                $profileDir = $buildDir . '/profiles/' . $profile;
-                symlink($this->appRoot, $profileDir);
-                // Drush Make requires $profileDir to not exist if it's passed
-                // as the target. chdir($profileDir) works around that.
-                chdir($profileDir);
-                shell_exec("drush make $drushFlags --no-core --contrib-destination=. " . escapeshellarg($projectMake));
+            $profile = str_replace($this->appRoot, '', $profiles[0]);
+            $profile = strtok($profile, '.');
+            $profileDir = $buildDir . '/profiles/' . $profile;
+            symlink($this->appRoot, $profileDir);
+            // Drush Make requires $profileDir to not exist if it's passed
+            // as the target. chdir($profileDir) works around that.
+            chdir($profileDir);
+            exec("drush make $drushFlags --no-core --contrib-destination=. " . escapeshellarg($projectMake), $output, $return_var);
+            if ($return_var > 0) {
+                throw new \Exception('Drush make failed: ' . $projectMake);
             }
         } elseif (file_exists($this->appRoot . '/project.make')) {
             $projectMake = $this->appRoot . '/project.make';
-            shell_exec("drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir));
-            // Drush will only create the $buildDir if the build succeeds.
-            if (is_dir($buildDir)) {
-              // Remove sites/default to make room for the symlink.
-              $this->rmdir($buildDir . '/sites/default');
-              $this->symlink($this->appRoot, $buildDir . '/sites/default');
+            exec(
+              "drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir),
+              $output,
+              $return_var
+            );
+            if ($return_var > 0 || !is_dir($buildDir)) {
+                throw new \Exception('Drush make failed');
             }
+            // Remove sites/default to make room for the symlink.
+            $this->rmdir($buildDir . '/sites/default');
+            $this->symlink($this->appRoot, $buildDir . '/sites/default');
         }
         else {
             $this->isVanilla = true;
@@ -144,9 +149,20 @@ class Drupal extends ToolstackBase
         $relBuildDir = $this->isVanilla ? $this->appRoot : $this->relBuildDir;
 
         // The build has been done, create a settings.php if it is missing.
-        if (is_dir($buildDir) && !file_exists($buildDir . '/sites/default/settings.php')) {
-            // Create the settings.php file.
+        if (!file_exists($buildDir . '/sites/default/settings.php')) {
             copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
+        }
+
+        // Create the settings.local.php if it doesn't exist in either shared/
+        // or in the app.
+        if (!file_exists($this->projectRoot . '/shared/settings.local.php') && !file_exists($buildDir . '/sites/default/settings.local.php')) {
+            copy(CLI_ROOT . '/resources/drupal/settings.local.php', $this->projectRoot . '/shared/settings.local.php');
+        }
+
+        // Create a .gitignore file if it's missing, and if this app is the
+        // whole repository.
+        if ($this->appRoot == $this->projectRoot . '/repository' && !file_exists($this->projectRoot . '/repository/.gitignore')) {
+            copy(CLI_ROOT . '/resources/drupal/gitignore', $this->projectRoot . '/repository/.gitignore');
         }
 
         // Symlink all files and folders from shared.

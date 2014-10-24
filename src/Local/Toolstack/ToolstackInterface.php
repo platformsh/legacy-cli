@@ -6,13 +6,6 @@ interface ToolstackInterface
 {
 
     /**
-     * Get the human-readable name of the toolstack.
-     *
-     * @return string
-     */
-    public function getName();
-
-    /**
      * Get the configuration key for the toolstack.
      *
      * @return string

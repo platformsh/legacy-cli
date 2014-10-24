@@ -66,7 +66,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $this->createDrushAliases($project, $environments);
             $output->writeln('Project aliases created, group: @' . $new_group);
 
-            $drushDir = $this->getApplication()->getHomeDirectory() . '/.drush';
+            $drushDir = $this->getHomeDirectory() . '/.drush';
             $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
             if (file_exists($oldFile)) {
                 if (!$this->confirm("Delete old alias group @$current_group? [Y/n] ", $input, $output)) {
