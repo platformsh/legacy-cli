@@ -86,6 +86,15 @@ class Drupal extends ToolstackBase
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
         }
 
+        $symlinkBlacklist = array(
+          '.*',
+          '*.make',
+          'settings*.php',
+          'sites.php',
+          'robots.txt',
+          'config',
+        );
+
         if (count($profiles) == 1) {
             // Find the contrib make file.
             if (file_exists($this->appRoot . '/project.make')) {
@@ -104,35 +113,36 @@ class Drupal extends ToolstackBase
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the directory.");
             }
 
-            exec("drush make $drushFlags " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir), $output, $return_var);
+            $drushCommand = "drush make $drushFlags " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir);
+            exec($drushCommand, $output, $return_var);
             if ($return_var > 0  || !is_dir($buildDir)) {
-                throw new \Exception('Drush make failed: ' . $projectCoreMake);
+                throw new \Exception('Drush command failed: ' . $drushCommand);
             }
             // Drush will only create the $buildDir if the build succeeds.
             $profile = str_replace($this->appRoot, '', $profiles[0]);
             $profile = strtok($profile, '.');
             $profileDir = $buildDir . '/profiles/' . $profile;
-            symlink($this->appRoot, $profileDir);
             // Drush Make requires $profileDir to not exist if it's passed
-            // as the target. chdir($profileDir) works around that.
-            chdir($profileDir);
-            exec("drush make $drushFlags --no-core --contrib-destination=. " . escapeshellarg($projectMake), $output, $return_var);
+            // as the target. This chdir($this->appRoot) works around that.
+            $cwd = getcwd();
+            chdir($this->appRoot);
+            $drushCommand = "drush make $drushFlags --no-core --contrib-destination=. " . escapeshellarg($projectMake);
+            exec($drushCommand, $output, $return_var);
+            chdir($cwd);
             if ($return_var > 0) {
-                throw new \Exception('Drush make failed: ' . $projectMake);
+                throw new \Exception('Drush command failed: ' . $drushCommand);
             }
+            $this->symlink($this->appRoot, $profileDir, true, $symlinkBlacklist);
         } elseif (file_exists($this->appRoot . '/project.make')) {
             $projectMake = $this->appRoot . '/project.make';
-            exec(
-              "drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir),
-              $output,
-              $return_var
-            );
+            $drushCommand = "drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir);
+            exec($drushCommand, $output, $return_var);
             if ($return_var > 0 || !is_dir($buildDir)) {
-                throw new \Exception('Drush make failed');
+                throw new \Exception('Drush command failed: ' . $drushCommand);
             }
             // Remove sites/default to make room for the symlink.
             $this->rmdir($buildDir . '/sites/default');
-            $this->symlink($this->appRoot, $buildDir . '/sites/default');
+            $this->symlink($this->appRoot, $buildDir . '/sites/default', true, $symlinkBlacklist);
         }
         else {
             $this->isVanilla = true;

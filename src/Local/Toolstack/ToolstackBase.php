@@ -59,8 +59,9 @@ abstract class ToolstackBase implements ToolstackInterface
      * @param string $source
      * @param string $destination
      * @param bool $skipExisting
+     * @param array $blacklist
      */
-    protected function symlink($source, $destination, $skipExisting = true)
+    protected function symlink($source, $destination, $skipExisting = true, $blacklist = array())
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -69,6 +70,18 @@ abstract class ToolstackBase implements ToolstackInterface
         // The symlink won't work if $source is a relative path.
         $source = realpath($source);
         $skip = array('.', '..');
+
+        // Go through the blacklist, adding files to $skip.
+        foreach ($blacklist as $pattern) {
+            $matched = glob($source . '/' . $pattern, GLOB_NOSORT);
+            if ($matched) {
+                foreach ($matched as $filename) {
+                    $relative = str_replace($source . '/', '', $filename);
+                    $skip[$relative] = $relative;
+                }
+            }
+        }
+
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
             if (!in_array($file, $skip)) {
