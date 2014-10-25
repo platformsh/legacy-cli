@@ -155,8 +155,6 @@ class Drupal extends ToolstackBase
             if ($return_var > 0 || !is_dir($buildDir)) {
                 throw new \Exception('Drush command failed: ' . $drushCommand);
             }
-            // Remove sites/default to make room for the symlink.
-            $this->rmdir($buildDir . '/sites/default');
             $this->symlink($this->appRoot, $buildDir . '/sites/default', true, $symlinkBlacklist);
         }
         else {
