@@ -524,19 +524,6 @@ class PlatformCommand extends Command
 
     }
 
-    public function ensureDrushInstalled()
-    {
-        $drushVersion = shell_exec('drush version');
-        if (strpos(strtolower($drushVersion), 'drush version') === false) {
-            throw new \Exception('Drush must be installed.');
-        }
-        $versionParts = explode(':', $drushVersion);
-        $versionNumber = trim($versionParts[1]);
-        if (version_compare($versionNumber, '6.0') === -1) {
-            throw new \Exception('Drush version must be 6.0 or newer.');
-        }
-    }
-
     /**
      * Ask the user to confirm an action.
      *

@@ -28,7 +28,7 @@ class DrushCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->ensureDrushInstalled();
+        Drupal::ensureDrushInstalled();
 
         // Try to autodetect the project and environment.
         // There is no point in allowing the user to override them

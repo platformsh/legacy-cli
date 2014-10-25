@@ -46,6 +46,19 @@ class Drupal extends ToolstackBase
         return false;
     }
 
+    public static function ensureDrushInstalled()
+    {
+        $drushVersion = shell_exec('drush version');
+        if (strpos(strtolower($drushVersion), 'drush version') === false) {
+            throw new \Exception('Drush must be installed.');
+        }
+        $versionParts = explode(':', $drushVersion);
+        $versionNumber = trim($versionParts[1]);
+        if (version_compare($versionNumber, '6.0') === -1) {
+            throw new \Exception('Drush version must be 6.0 or newer.');
+        }
+    }
+
     public function detect($appRoot)
     {
         return self::isDrupal($appRoot, 0);
@@ -96,6 +109,7 @@ class Drupal extends ToolstackBase
         );
 
         if (count($profiles) == 1) {
+            Drupal::ensureDrushInstalled();
             // Find the contrib make file.
             if (file_exists($this->appRoot . '/project.make')) {
                 $projectMake = $this->appRoot . '/project.make';
@@ -134,6 +148,7 @@ class Drupal extends ToolstackBase
             }
             $this->symlink($this->appRoot, $profileDir, true, $symlinkBlacklist);
         } elseif (file_exists($this->appRoot . '/project.make')) {
+            Drupal::ensureDrushInstalled();
             $projectMake = $this->appRoot . '/project.make';
             $drushCommand = "drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir);
             exec($drushCommand, $output, $return_var);

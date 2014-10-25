@@ -42,7 +42,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             throw new \Exception('This can only be run from inside a project directory');
         }
 
-        $this->ensureDrushInstalled();
+        Drupal::ensureDrushInstalled();
 
         $current_group = isset($project['alias-group']) ? $project['alias-group'] : $project['id'];
 
