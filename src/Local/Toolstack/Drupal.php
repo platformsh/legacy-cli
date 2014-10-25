@@ -8,7 +8,7 @@ use Symfony\Component\Finder\Finder;
 class Drupal extends ToolstackBase
 {
 
-    protected $isVanilla = false;
+    public $buildMode;
 
     public function getKey() {
         return 'php:drupal';
@@ -109,6 +109,7 @@ class Drupal extends ToolstackBase
         );
 
         if (count($profiles) == 1) {
+            $this->buildMode = 'profile';
             Drupal::ensureDrushInstalled();
             // Find the contrib make file.
             if (file_exists($this->appRoot . '/project.make')) {
@@ -148,6 +149,7 @@ class Drupal extends ToolstackBase
             }
             $this->symlink($this->appRoot, $profileDir, true, $symlinkBlacklist);
         } elseif (file_exists($this->appRoot . '/project.make')) {
+            $this->buildMode = 'makefile';
             Drupal::ensureDrushInstalled();
             $projectMake = $this->appRoot . '/project.make';
             $drushCommand = "drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir);
@@ -158,7 +160,7 @@ class Drupal extends ToolstackBase
             $this->symlink($this->appRoot, $buildDir . '/sites/default', true, $symlinkBlacklist);
         }
         else {
-            $this->isVanilla = true;
+            $this->buildMode = 'vanilla';
         }
 
         return true;
@@ -166,10 +168,10 @@ class Drupal extends ToolstackBase
 
     public function install()
     {
-        $buildDir = $this->isVanilla ? $this->appRoot : $this->absBuildDir;
+        $buildDir = $this->buildMode == 'vanilla' ? $this->appRoot : $this->absBuildDir;
 
         // @todo relative link for vanilla projects
-        $relBuildDir = $this->isVanilla ? $this->appRoot : $this->relBuildDir;
+        $relBuildDir = $this->buildMode == 'vanilla' ? $this->appRoot : $this->relBuildDir;
 
         // The build has been done, create a settings.php if it is missing.
         if (!file_exists($buildDir . '/sites/default/settings.php')) {
@@ -185,7 +187,8 @@ class Drupal extends ToolstackBase
         // Create a .gitignore file if it's missing, and if this app is the
         // whole repository.
         if ($this->appRoot == $this->projectRoot . '/repository' && !file_exists($this->projectRoot . '/repository/.gitignore')) {
-            copy(CLI_ROOT . '/resources/drupal/gitignore', $this->projectRoot . '/repository/.gitignore');
+            // There is a different default gitignore file for each build mode.
+            copy(CLI_ROOT . '/resources/drupal/gitignore-' . $this->buildMode, $this->projectRoot . '/repository/.gitignore');
         }
 
         // Symlink all files and folders from shared.

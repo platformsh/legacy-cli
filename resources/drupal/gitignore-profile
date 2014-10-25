@@ -1,0 +1,12 @@
+# Ignore hidden files.
+.*
+!.gitignore
+!.gitmodules
+
+# Don't ignore Platform.sh configuration files.
+!.platform*
+
+# Ignore contributed projects built by Drush make.
+modules/contrib
+themes/contrib
+libraries/contrib
