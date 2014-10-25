@@ -84,8 +84,8 @@ class ProjectBuildCommand extends PlatformCommand
 
         $settings['absoluteLinks'] = $this->input->getOption('abslinks');
         $settings['verbosity'] = $this->output->getVerbosity();
-        $settings['drushConcurrency'] = $this->input->getOption('concurrency');
-        $settings['drushWorkingCopy'] = $this->input->getOption('working-copy');
+        $settings['drushConcurrency'] = $this->input->hasOption('concurrency') && $this->input->getOption('concurrency');
+        $settings['drushConcurrency'] = $this->input->hasOption('working-copy') && $this->input->getOption('working-copy');
 
         try {
             $this->build($projectRoot, $settings);
