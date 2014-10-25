@@ -108,14 +108,12 @@ class ProjectBuildCommand extends PlatformCommand
 
         foreach (LocalBuild::getApplications($repositoryRoot) as $appRoot) {
             $appConfig = LocalBuild::getAppConfig($appRoot);
+            $appName = false;
             if ($appConfig && isset($appConfig['name'])) {
                 $appName = $appConfig['name'];
             }
-            elseif ($appRoot == $repositoryRoot) {
-                $appName = 'default';
-            }
-            else {
-                $appName = str_replace($projectRoot . '/repository', '', $appRoot);
+            elseif ($appRoot != $repositoryRoot) {
+                $appName = str_replace($repositoryRoot, '', $appRoot);
             }
 
             $toolstack = LocalBuild::getToolstack($appRoot, $appConfig);
@@ -123,14 +121,23 @@ class ProjectBuildCommand extends PlatformCommand
                 throw new \Exception("Could not detect toolstack for directory: " . $appRoot);
             }
 
-            $this->output->writeln("Building application <info>$appName</info> using the toolstack <info>" . $toolstack->getKey() . "</info>");
+            $message = "Building application";
+            if ($appName) {
+                $message .= " <info>$appName</info>";
+            }
+            $message .= " using the toolstack <info>" . $toolstack->getKey() . "</info>";
+            $this->output->writeln($message);
 
             $toolstack->prepareBuild($appRoot, $projectRoot, $settings);
 
             $toolstack->build();
             $toolstack->install();
 
-            $this->output->writeln("Build complete for <info>$appName</info>");
+            $message = "Build complete";
+            if ($appName) {
+                $message .= " for <info>$appName</info>";
+            }
+            $this->output->writeln($message);
         }
 
     }
