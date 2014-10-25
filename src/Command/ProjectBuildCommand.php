@@ -29,7 +29,7 @@ class ProjectBuildCommand extends PlatformCommand
                 'Use absolute links.'
             );
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && Drupal::isDrupal($projectRoot . '/repository')) {
+        if (!$projectRoot || Drupal::isDrupal($projectRoot . '/repository')) {
             $this->addOption(
                 'working-copy',
                 'wc',
@@ -39,7 +39,7 @@ class ProjectBuildCommand extends PlatformCommand
                 'concurrency',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'Drush: set the number of concurrent projects that will be processed at the same time. The default is 3.',
+                'Drush: set the number of concurrent projects that will be processed at the same time.',
                 3
             );
         }
