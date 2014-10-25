@@ -11,16 +11,6 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 class DomainAddCommand extends DomainCommand
 {
 
-    // SSL file paths.
-    protected $sslCertPath;
-    protected $sslKeyPath;
-    protected $sslChainPaths;
-    // SSL file contents, unmodified.
-    protected $sslCertFile;
-    protected $sslKeyFile;
-    protected $sslChainFiles;
-    // Were we provided with SSL certificate input either in options or interactively?
-    protected $sslMode = FALSE;
     // The final array of SSL options for the client parameters.
     protected $sslOptions;
 
@@ -72,8 +62,7 @@ class DomainAddCommand extends DomainCommand
         $this->keyPath = $input->getOption('key');
         $this->chainPaths = $input->getOption('chain');
         if ($this->certPath || $this->keyPath || $this->chainPaths) {
-            $this->sslMode = TRUE;
-            return $this->validateSslOptions($input, $output);
+            return $this->validateSslOptions();
         }
         else {
             return TRUE;
@@ -114,36 +103,32 @@ class DomainAddCommand extends DomainCommand
         $output->writeln($message);
     }
 
-    protected function validateSslOptions(InputInterface $input, OutputInterface $output)
+    protected function validateSslOptions()
     {
         // Get the contents.
-        $this->certFile = (file_exists($this->certPath) ? trim(file_get_contents($this->certPath)) : '');
-        $this->keyFile = (file_exists($this->keyPath) ? trim(file_get_contents($this->keyPath)) : '');
-        $this->chainFiles = $this->assembleChainFiles($this->chainPaths);
+        $sslCertFile = (file_exists($this->certPath) ? trim(file_get_contents($this->certPath)) : '');
+        $sslKeyFile = (file_exists($this->keyPath) ? trim(file_get_contents($this->keyPath)) : '');
+        $sslChainFiles = $this->assembleChainFiles($this->chainPaths);
         // Do a bit of validation.
         // @todo: Cert first.
-        $certResource = openssl_x509_read($this->certFile);
+        $certResource = openssl_x509_read($sslCertFile);
         if (!$certResource) {
-            $output->writeln("<error>The provided certificate is either not a valid X509 certificate or could not be read.</error>");
-            return;
+            throw new \Exception("The provided certificate is either not a valid X509 certificate or could not be read.");
         }
         // Then the key. Does it match?
-        $keyResource = openssl_pkey_get_private($this->keyFile);
+        $keyResource = openssl_pkey_get_private($sslKeyFile);
         if (!$keyResource) {
-            $output->writeln("<error>The provided private key is either not a valid RSA private key or could not be read.</error>");
-            return;
+            throw new \Exception("The provided private key is either not a valid RSA private key or could not be read.");
         }
         $keyMatch = openssl_x509_check_private_key($certResource, $keyResource);
         if (!$keyMatch) {
-            $output->writeln("<error>The provided certificate does not match the provided private key.</error>");
-            return;
+            throw new \Exception("The provided certificate does not match the provided private key.");
         }
         // Each chain needs to be a valid cert.
-        foreach ($this->chainFiles as $chainFile) {
+        foreach ($sslChainFiles as $chainFile) {
             $chainResource = openssl_x509_read($chainFile);
             if (!$chainResource) {
-                $output->writeln("<error>One of the provided certificates in the chain is not a valid X509 certificate.</error>");
-                return;
+                throw new \Exception("One of the provided certificates in the chain is not a valid X509 certificate.");
             }
             else {
                 openssl_x509_free($chainResource);
@@ -151,9 +136,9 @@ class DomainAddCommand extends DomainCommand
         }
         // Yay we win.
         $this->sslOptions = array(
-            'certificate' => $this->certFile,
-            'key' => $this->keyFile,
-            'chain' => $this->chainFiles,
+            'certificate' => $sslCertFile,
+            'key' => $sslKeyFile,
+            'chain' => $sslChainFiles,
         );
 
         return TRUE;
