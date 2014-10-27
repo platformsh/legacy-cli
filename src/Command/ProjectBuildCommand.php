@@ -82,8 +82,11 @@ class ProjectBuildCommand extends PlatformCommand
         // The environment ID is used in making the build directory name.
         $settings['environmentId'] = $envId;
 
-        $settings['absoluteLinks'] = $this->input->getOption('abslinks');
         $settings['verbosity'] = $this->output->getVerbosity();
+
+        // Explicitly check for the existence of each option, so that this
+        // command can be invoked from ProjectGetCommand.
+        $settings['absoluteLinks'] =$this->input->hasOption('abslinks') && $this->input->getOption('abslinks');
         $settings['drushConcurrency'] = $this->input->hasOption('concurrency') && $this->input->getOption('concurrency');
         $settings['drushConcurrency'] = $this->input->hasOption('working-copy') && $this->input->getOption('working-copy');
 

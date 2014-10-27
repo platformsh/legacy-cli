@@ -150,7 +150,7 @@ class ProjectGetCommand extends PlatformCommand
                 // Launch the first build.
                 $application = $this->getApplication();
                 $buildCommand = $application->find('build');
-                chdir($directoryName);
+                chdir($projectRoot);
                 return $buildCommand->execute($input, $output);
             }
         }

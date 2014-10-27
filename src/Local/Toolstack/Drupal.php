@@ -184,6 +184,13 @@ class Drupal extends ToolstackBase
             copy(CLI_ROOT . '/resources/drupal/settings.local.php', $this->projectRoot . '/shared/settings.local.php');
         }
 
+        // Create a shared/files directory.
+        if (!file_exists($this->projectRoot . '/shared/files')) {
+            mkdir($this->projectRoot . '/shared/files');
+            // Group write access is potentially useful and probably harmless.
+            chmod($this->projectRoot . '/shared/files', 0775);
+        }
+
         // Create a .gitignore file if it's missing, and if this app is the
         // whole repository.
         if ($this->appRoot == $this->projectRoot . '/repository' && !file_exists($this->projectRoot . '/repository/.gitignore')) {
