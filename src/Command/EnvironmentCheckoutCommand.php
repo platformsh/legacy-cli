@@ -68,10 +68,7 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         // If the branch doesn't already exist locally, check whether it is a
         // Platform.sh environment.
         if (!$existsLocal) {
-            if (!isset($environments)) {
-                $environments = $this->getEnvironments($project);
-            }
-            if (!isset($environments[$machineName])) {
+            if (!$this->getEnvironment($machineName, $project)) {
                 $output->writeln("<error>Environment not found: $machineName</error>");
                 return 1;
             }

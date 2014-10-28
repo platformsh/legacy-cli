@@ -62,7 +62,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             }
             $project['alias-group'] = $new_group;
             $this->writeCurrentProjectConfig('alias-group', $new_group);
-            $environments = $this->getEnvironments($project);
+            $environments = $this->getEnvironments($project, true, false);
             $this->createDrushAliases($project, $environments);
             $output->writeln('Project aliases created, group: @' . $new_group);
 
@@ -80,7 +80,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $current_group = $new_group;
         }
         elseif ($input->getOption('recreate')) {
-            $environments = $this->getEnvironments($project);
+            $environments = $this->getEnvironments($project, true, false);
             $this->createDrushAliases($project, $environments);
             $this->shellExec('drush cache-clear drush');
             $output->writeln("Project aliases recreated");

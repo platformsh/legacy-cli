@@ -265,18 +265,17 @@ class PlatformCommand extends Command
         $repositoryDir = $projectRoot . '/repository';
         $escapedRepoDir = escapeshellarg($repositoryDir);
 
-        $environments = $this->getEnvironments($project);
-
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
         $remote = trim($this->shellExec("cd $escapedRepoDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}"));
         if ($remote && strpos($remote, '/') !== false) {
             list($remoteName, $potentialEnvironment) = explode('/', $remote, 2);
-            if (isset($environments[$potentialEnvironment])) {
+            $environment = $this->getEnvironment($potentialEnvironment, $project);
+            if ($environment) {
                 // Check that the remote is Platform's.
                 $remoteUrl = trim($this->shellExec("cd $escapedRepoDir && git config --get remote.$remoteName.url"));
                 if (strpos($remoteUrl, 'platform.sh')) {
-                    return $environments[$potentialEnvironment];
+                    return $environment;
                 }
             }
         }
@@ -286,9 +285,9 @@ class PlatformCommand extends Command
         $currentBranch = trim($this->shellExec("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
         if ($currentBranch) {
             $currentBranchSanitized = $this->sanitizeEnvironmentId($currentBranch);
-            $environments = $this->getEnvironments($project);
-            if (isset($environments[$currentBranchSanitized])) {
-                return $environments[$currentBranchSanitized];
+            $environment = $this->getEnvironment($currentBranchSanitized, $project);
+            if ($environment) {
+                return $environment;
             }
         }
 
@@ -390,10 +389,11 @@ class PlatformCommand extends Command
      *
      * @param array $project The project.
      * @param bool $refresh Whether to refresh the list.
+     * @param bool $updateAliases Whether to update Drush aliases if the list changes.
      *
      * @return array The user's environments.
      */
-    protected function getEnvironments($project, $refresh = false)
+    protected function getEnvironments($project, $refresh = false, $updateAliases = true)
     {
         $projectId = $project['id'];
         $this->loadConfig();
@@ -413,13 +413,33 @@ class PlatformCommand extends Command
             }
 
             // Recreate the aliases if the list of environments has changed.
-            if ($this->config['environments'][$projectId] != $environments) {
+            if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
                 $this->config['environments'][$projectId] = $environments;
                 $this->createDrushAliases($project, $environments);
             }
         }
 
         return $this->config['environments'][$projectId];
+    }
+
+    /**
+     * Get a single environment.
+     *
+     * @param string $id The environment ID to load.
+     * @param array $project The project.
+     *
+     * @return array|null The environment, or null if not found.
+     */
+    protected function getEnvironment($id, $project = null)
+    {
+        $project = $project ?: $this->getCurrentProject();
+        $environments = $this->getEnvironments($project, false);
+        if (!isset($environments[$id])) {
+            // The list of environments is cached and might be older than the
+            // requested environment, so refresh it as a precaution.
+            $environments = $this->getEnvironments($project, true);
+        }
+        return isset($environments[$id]) ? $environments[$id] : null;
     }
 
     /**

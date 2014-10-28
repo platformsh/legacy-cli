@@ -78,8 +78,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environments = $this->getEnvironments($this->project);
-        if (isset($environments[$machineName])) {
+        if ($this->getEnvironment($machineName, $this->project)) {
             $checkout = $this->confirm("<comment>The environment $machineName already exists.</comment> Checkout? [Y/n] ", $input, $output);
             if ($checkout) {
                 $checkoutCommand = $this->getApplication()->find('environment:checkout');
@@ -133,7 +132,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
-        // Reload the stored environments, to trigger a drush alias rebuild.
+        // Reload the stored environments.
         $this->getEnvironments($this->project, true);
 
         $output->writeln("The environment <info>$branchName</info> has been branched.");
