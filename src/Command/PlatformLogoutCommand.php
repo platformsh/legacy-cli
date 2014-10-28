@@ -4,7 +4,6 @@ namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class PlatformLogoutCommand extends PlatformCommand
 {
@@ -38,10 +37,9 @@ class PlatformLogoutCommand extends PlatformCommand
             return;
         }
         // Ask for a confirmation.
-        $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion("<comment>This command will remove your current configuration.\n\nYou will have to re-enter your Platform.sh credentials to use the CLI tool.</comment>\n\n<question>Are you sure you wish to continue? [y/n] </question> ", false);
+        $confirm = $this->confirm("<comment>This command will remove your current Platform.sh configuration.\n\nYou will have to re-enter your Platform.sh credentials to use the CLI.</comment> <question>Are you sure you wish to continue? (y/n):</question> ", $input, $output, false);
 
-        if (!$helper->ask($input, $output, $question)) {
+        if (!$confirm) {
             $output->writeln("<info>Okay! You remain logged in to the Platform.sh CLI with your current credentials.</info>");
             return;
         }

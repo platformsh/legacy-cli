@@ -31,20 +31,18 @@ class EnvironmentBackupCommand extends EnvironmentCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
-            return;
+            return 1;
         }
+
+        $environmentId = $this->environment['id'];
         if (!$this->operationAllowed('backup')) {
-            $output->writeln("<error>Operation not permitted: Can't make a backup of the current environment.</error>");
-            return;
+            $output->writeln("<error>Operation not permitted: Can't make a backup of the environment '$environmentId''.</error>");
+            return 1;
         }
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->backupEnvironment();
 
-        $environmentId = $this->environment['id'];
-        $message = '<info>';
-        $message .= "\nA backup of environment $environmentId has been created. \n";
-        $message .= "</info>";
-        $output->writeln($message);
+        $output->writeln("A backup of environment <info>$environmentId</info> has been created.");
     }
 }

@@ -49,15 +49,17 @@ class DomainDeleteCommand extends DomainCommand
         $name = $input->getArgument('name');
         if (empty($name)) {
             $output->writeln("<error>You must specify the name of the domain.</error>");
-            return;
+            return 1;
+        }
+
+        if (!$this->confirm("Are you sure you want to delete the domain <info>$name</info>? [Y/n] ", $input, $output)) {
+            return 0;
         }
 
         $client = $this->getPlatformClient($this->project['endpoint'] . "/domains/" . $name);
         $client->deleteDomain();
 
-        $message = '<info>';
-        $message .= "\nThe given domain has been successfully deleted from the project. \n";
-        $message .= "</info>";
-        $output->writeln($message);
+        $output->writeln("The domain <info>$name</info> has been deleted.");
+        return 0;
     }
 }

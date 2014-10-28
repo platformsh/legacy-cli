@@ -31,11 +31,25 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
-            return;
+            return 1;
         }
+
+        $environmentId = $this->environment['id'];
+        if ($environmentId == 'master') {
+            $output->writeln("<error>The master environment cannot be deactivated or deleted.</error>");
+            return 1;
+        }
+
         if (!$this->operationAllowed('delete')) {
-            $output->writeln("<error>Operation not permitted: The current environment can't be deleted.</error>");
-            return;
+            if (!empty($this->environment['_links']['public-url'])) {
+                $output->writeln("Active environments cannot be deleted.");
+            }
+            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be deleted.</error>");
+            return 1;
+        }
+
+        if (!$this->confirm("Are you sure you want to delete the environment <info>$environmentId</info>? [Y/n] ", $input, $output)) {
+            return 0;
         }
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
