@@ -37,7 +37,7 @@ class EnvironmentListCommand extends EnvironmentCommand
             ->addOption(
                 'show',
                 null,
-                InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
+                InputOption::VALUE_OPTIONAL,
                 "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
                 'name'
             );
@@ -129,9 +129,7 @@ class EnvironmentListCommand extends EnvironmentCommand
             return;
         }
 
-        // We support multiple option specifications (Symfony-style) or a
-        // comma-delimited list (normal-person style...)
-        $show = array_merge(array_map(function ($opt) { return explode(',', $opt); }, $input->getOption('show')));
+        $show = explode(',', $input->getOption('show'));
 
         if (in_array('all', $show)) {
             $this->showUrls = true;
