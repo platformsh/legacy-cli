@@ -8,8 +8,7 @@ use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
 
@@ -34,11 +33,27 @@ class PlatformCommand extends Command
         if (!$this->config) {
             $application = $this->getApplication();
             $configPath = $application->getHomeDirectory() . '/.platform';
+            if (!file_exists($configPath)) {
+                $this->login();
+            }
             $yaml = new Parser();
             $this->config = $yaml->parse(file_get_contents($configPath));
         }
 
         return $this->config;
+    }
+
+    /**
+     * Log in the user.
+     */
+    protected function login() {
+        $application = $this->getApplication();
+        $command = $application->find('login');
+        $input = new ArrayInput(array('command' => 'login'));
+        $exitCode = $command->run($input, $application->getOutput());
+        if ($exitCode) {
+            throw new \Exception('Login failed');
+        }
     }
 
     /**
@@ -172,7 +187,12 @@ class PlatformCommand extends Command
         $project = null;
         $config = $this->getCurrentProjectConfig();
         if ($config) {
-          $project = $this->getProject($config['id']) + $config;
+          $project = $this->getProject($config['id']);
+          // There is a chance that the project isn't available.
+          if (!$project) {
+              throw new \Exception("Configured project ID not found: " . $config['id']);
+          }
+          $project += $config;
         }
         return $project;
     }
@@ -232,22 +252,41 @@ class PlatformCommand extends Command
      */
     protected function getCurrentEnvironment($project)
     {
-        $environment = null;
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot) {
-            $repositoryDir = $projectRoot . '/repository';
-            $remote = shell_exec("cd $repositoryDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}");
-            if (strpos($remote, '/') !== false) {
-                $remoteParts = explode('/', trim($remote));
-                $potentialEnvironmentId = $remoteParts[1];
-                $environments = $this->getEnvironments($project);
-                if (isset($environments[$potentialEnvironmentId])) {
-                    $environment = $environments[$potentialEnvironmentId];
+        if (!$projectRoot) {
+            return null;
+        }
+        $repositoryDir = $projectRoot . '/repository';
+        $escapedRepoDir = escapeshellarg($repositoryDir);
+
+        $environments = $this->getEnvironments($project);
+
+        // Check whether the user has a Git upstream set to a Platform
+        // environment ID.
+        $remote = trim($this->shellExec("cd $escapedRepoDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}"));
+        if ($remote && strpos($remote, '/') !== false) {
+            list($remoteName, $potentialEnvironment) = explode('/', $remote, 2);
+            if (isset($environments[$potentialEnvironment])) {
+                // Check that the remote is Platform's.
+                $remoteUrl = trim($this->shellExec("cd $escapedRepoDir && git config --get remote.$remoteName.url"));
+                if (strpos($remoteUrl, 'platform.sh')) {
+                    return $environments[$potentialEnvironment];
                 }
             }
         }
 
-        return $environment;
+        // There is no Git remote set, or it's set to a non-Platform URL.
+        // Fall back to trying the current branch name.
+        $currentBranch = trim($this->shellExec("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
+        if ($currentBranch) {
+            $currentBranchSanitized = $this->sanitizeEnvironmentId($currentBranch);
+            $environments = $this->getEnvironments($project);
+            if (isset($environments[$currentBranchSanitized])) {
+                return $environments[$currentBranchSanitized];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -396,8 +435,6 @@ class PlatformCommand extends Command
             $domains[$domain['id']] = $domain;
         }
 
-        // Recreate the aliases if the list of environments has changed.
-        $this->createDrushAliases($project, $domains);
         $this->config['domains'][$projectId] = $domains;
 
         return $this->config['domains'][$projectId];
@@ -473,11 +510,6 @@ class PlatformCommand extends Command
 
     }
 
-    public static function skipLogin()
-    {
-        return FALSE;
-    }
-
     public function ensureDrushInstalled()
     {
         $drushVersion = shell_exec('drush version');
@@ -544,6 +576,17 @@ class PlatformCommand extends Command
       fclose($pipes[2]);
       proc_close($process);
       return $result;
+    }
+
+    /**
+     * Sanitize a proposed environment ID.
+     *
+     * @param string $proposed
+     *
+     * @return string
+     */
+    protected function sanitizeEnvironmentId($proposed) {
+        return substr(preg_replace('/[^a-z0-9-]+/i', '', strtolower($proposed)), 0, 32);
     }
 
     /**

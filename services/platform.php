@@ -3,11 +3,6 @@
 return array(
     'name' => 'Platform API',
     'operations' => array(
-        'deleteProject' => array(
-            'httpMethod' => 'DELETE',
-            'uri' => '',
-            'summary' => 'Deletes a project',
-        ),
         'getEnvironments' => array(
             'httpMethod' => 'GET',
             'uri' => 'environments',

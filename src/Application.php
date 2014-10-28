@@ -3,15 +3,16 @@
 namespace CommerceGuys\Platform\Cli;
 
 use Symfony\Component\Console;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Shell;
+use Symfony\Component\Console\Output\StreamOutput;
 
 class Application extends Console\Application {
+
+    protected $output;
 
     /**
      * {@inheritdoc}
@@ -21,7 +22,6 @@ class Application extends Console\Application {
         parent::__construct('Platform CLI', '1.1.0');
 
         $this->setDefaultTimezone();
-        $this->getDefinition()->addOption(new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'));
 
         $this->toolstacks = array(
             'Php',
@@ -51,12 +51,14 @@ class Application extends Console\Application {
         $this->add(new Command\EnvironmentUrlCommand);
         $this->add(new Command\ProjectBuildCommand);
         $this->add(new Command\ProjectCleanCommand);
-        $this->add(new Command\ProjectDeleteCommand);
         $this->add(new Command\ProjectDrushAliasesCommand);
         $this->add(new Command\ProjectGetCommand);
         $this->add(new Command\SshKeyAddCommand);
         $this->add(new Command\SshKeyDeleteCommand);
         $this->add(new Command\SshKeyListCommand);
+        $this->add(new Command\WelcomeCommand);
+
+        $this->setDefaultCommand('welcome');
     }
 
     /**
@@ -67,12 +69,12 @@ class Application extends Console\Application {
         // We remove the confusing `--ansi` and `--no-ansi` options.
         return new InputDefinition(array(
             new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
-
             new InputOption('--help',           '-h', InputOption::VALUE_NONE, 'Display this help message.'),
             new InputOption('--quiet',          '-q', InputOption::VALUE_NONE, 'Do not output any message.'),
             new InputOption('--verbose',        '-v|vv|vvv', InputOption::VALUE_NONE, 'Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug'),
             new InputOption('--version',        '-V', InputOption::VALUE_NONE, 'Display this application version.'),
             new InputOption('--no-interaction', '-n', InputOption::VALUE_NONE, 'Do not ask any interactive question.'),
+            new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'),
         ));
     }
 
@@ -81,56 +83,19 @@ class Application extends Console\Application {
      */
     public function doRun(InputInterface $input, OutputInterface $output)
     {
-        if (true === $input->hasParameterOption(array('--shell', '-s'))) {
-            $shell = new Shell($this);
-            $shell->run();
+        $this->output = $output;
+        return parent::doRun($input, $output);
+    }
 
-            return 0;
+    /**
+     * @return OutputInterface
+     */
+    public function getOutput() {
+        if (isset($this->output)) {
+            return $this->output;
         }
-        if (true === $input->hasParameterOption(array('--version', '-V'))) {
-            $output->writeln($this->getLongVersion());
-
-            return 0;
-        }
-        $name = $this->getCommandName($input);
-        if ($name) {
-            $command = $this->find($name);
-        } else {
-            $command = new Command\WelcomeCommand($this->find('projects'), $this->find('environments'));
-            $command->setApplication($this);
-            $input = new ArrayInput(array('command' => 'welcome'));
-        }
-
-        if (true === $input->hasParameterOption(array('--help', '-h'))) {
-            if (!$name) {
-                $command = $this->find('help');
-                $input = new ArrayInput(array('command' => 'help'));
-            } else {
-                $this->wantHelps = true;
-            }
-        }
-
-        $commandChain = array();
-        // The CLI hasn't been configured, login must run first.
-        if (!$this->hasConfiguration() && (!($command instanceof Command\PlatformCommand) || !$command::skipLogin())) {
-            $this->add(new Command\PlatformLoginCommand);
-            $commandChain[] = array(
-                'command' => $this->find('login'),
-                'input' => new ArrayInput(array('command' => 'login')),
-            );
-        }
-        $commandChain[] = array(
-            'command' => $command,
-            'input' => $input,
-        );
-
-        foreach ($commandChain as $chainData) {
-            $this->runningCommand = $chainData['command'];
-            $exitCode = $this->doRunCommand($chainData['command'], $chainData['input'], $output);
-            $this->runningCommand = null;
-        }
-
-        return $exitCode;
+        $stream = fopen('php://stdout', 'w');
+        return new StreamOutput($stream);
     }
 
     /**

@@ -39,8 +39,36 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
         $buildDir = $this->absBuildDir;
         $escapedBuildDir = escapeshellarg($buildDir);
         $wcOption = ($this->command->wcOption ? "--working-copy" : "");
+
         $repositoryDir = $this->appRoot;
         $projectRoot = $this->settings['projectRoot'];
+
+        // Options to pass to the drush command.
+        $drushFlags = array();
+        $drushFlags[] = '--yes';
+        if ($this->command->output->isQuiet()) {
+            $drushFlags[] = '--quiet';
+        }
+        elseif ($this->command->output->isDebug()) {
+            $drushFlags[] = '--debug';
+        }
+        elseif ($this->command->output->isVerbose()) {
+            $drushFlags[] = '--verbose';
+        }
+        foreach (array('working-copy', 'concurrency') as $option) {
+            if (!$this->command->input->hasOption($option)) {
+                continue;
+            }
+            $value = $this->command->input->getOption($option);
+            if ($value === true) {
+              $drushFlags[] = "--$option";
+            }
+            elseif ($value !== false) {
+              $drushFlags[] = "--$option=" . ltrim($value, '=');
+            }
+        }
+        // Flatten the options.
+        $drushFlags = implode(' ', $drushFlags);
 
         $profiles = glob($repositoryDir . '/*.profile');
         if (count($profiles) > 1) {
@@ -63,7 +91,11 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the repository.");
             }
 
+<<<<<<< HEAD
             shell_exec("drush make -y $wcOption $projectCoreMake $escapedBuildDir");
+=======
+            shell_exec("drush make $drushFlags " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir));
+>>>>>>> ac5446d6a75655dabac74e55bfefe1a1b4b77237
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
                 $profile = str_replace($repositoryDir, '', $profiles[0]);
@@ -73,11 +105,16 @@ class DrupalApp extends PhpApp implements LocalBuildInterface
                 // Drush Make requires $profileDir to not exist if it's passed
                 // as the target. chdir($profileDir) works around that.
                 chdir($profileDir);
-                shell_exec("drush make -y $wcOption --no-core --contrib-destination=. $projectMake");
+                shell_exec("drush make $drushFlags --no-core --contrib-destination=. " . escapeshellarg($projectMake));
             }
         } elseif (file_exists($repositoryDir . '/project.make')) {
+<<<<<<< HEAD
             $projectMake = escapeshellarg($repositoryDir . '/project.make');
             shell_exec("drush make -y $wcOption $projectMake $escapedBuildDir");
+=======
+            $projectMake = $repositoryDir . '/project.make';
+            shell_exec("drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir));
+>>>>>>> ac5446d6a75655dabac74e55bfefe1a1b4b77237
             // Drush will only create the $buildDir if the build succeeds.
             if (is_dir($buildDir)) {
               // Remove sites/default to make room for the symlink.

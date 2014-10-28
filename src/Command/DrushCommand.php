@@ -35,7 +35,9 @@ class DrushCommand extends PlatformCommand
             return;
         }
 
-        $alias = $this->project['id'] . '.' . $this->environment['id'];
+        $aliasGroup = isset($this->project['alias-group']) ? $this->project['alias-group'] : $this->project['id'];
+
+        $alias = $aliasGroup . '.' . $this->environment['id'];
         $command = 'drush @' . $alias . ' ';
         // Take the entire input string (all arguments and options) after the
         // name of the drush command.

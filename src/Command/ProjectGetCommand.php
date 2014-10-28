@@ -120,7 +120,7 @@ class ProjectGetCommand extends PlatformCommand
         $checkOutput = shell_exec($checkCommand);
         if (!empty($checkOutput)) {
             // We have a repo! Yay. Clone it.
-            $command = "git clone --branch $environment $gitUrl $repositoryDir";
+            $command = "git clone --branch $environment $gitUrl " . escapeshellarg($repositoryDir);
             passthru($command);
             if (!is_dir($repositoryDir)) {
                 // The clone wasn't successful. Clean up the folders we created
@@ -129,8 +129,8 @@ class ProjectGetCommand extends PlatformCommand
                 $formatter = $this->getHelper('formatter');
                 $errorArray = array(
                   "[Error]",
-                  "We're sorry, your Platform project could not be cloned.",
-                  "Please check your SSH credentials or contact Platform Support."
+                  "We're sorry, your Platform.sh project could not be cloned.",
+                  "Please check your SSH credentials or contact Platform.sh Support."
                 );
                 $errorBlock = $formatter->formatBlock($errorArray, 'error', TRUE);
                 $output->writeln($errorBlock);
@@ -151,6 +151,8 @@ class ProjectGetCommand extends PlatformCommand
                 $projectRoot = realpath($directoryName);
                 try {
                     $buildCommand = $application->find('build');
+                    $buildCommand->input = $input;
+                    $buildCommand->output = $output;
                     $buildCommand->build($projectRoot, $environment);
                 } catch (\Exception $e) {
                     $environmentName = $environmentList[$environmentIndex]['title'];
@@ -168,10 +170,10 @@ class ProjectGetCommand extends PlatformCommand
                 // Initialize the repo and attach our remotes.
                 $output->writeln("<info>Initializing empty project repository...</info>");
                 passthru("git init");
-                $output->writeln("<info>Adding Platform remote endpoint to Git...</info>");
+                $output->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
                 passthru("git remote add -m master origin $gitUrl");
-                $output->writeln("<info>Your repository has been initialized and connected to Platform!</info>");
-                $output->writeln("<info>Commit and push to the $environment branch and Platform will build your project automatically.</info>");
+                $output->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
+                $output->writeln("<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>");
                 chdir($currentDirectory);
                 return;
             }
@@ -182,7 +184,7 @@ class ProjectGetCommand extends PlatformCommand
                 $formatter = $this->getHelper('formatter');
                 $errorArray = array(
                   "[Error]",
-                  "We're sorry, your Platform repository could not be created.",
+                  "We're sorry, your Platform.sh repository could not be created.",
                   "Please check your file system permissions and ensure that ",
                   "you can create folders in this location."
                 );

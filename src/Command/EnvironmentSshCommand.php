@@ -43,18 +43,4 @@ class EnvironmentSshCommand extends EnvironmentCommand
         }
     }
 
-    protected function getSshUrl()
-    {
-        if (!$this->environment) {
-          $output->writeln("<comment>There is no project or environment selected.</comment>");
-          return;
-        }
-
-        $sshUrl = parse_url($this->environment['_links']['ssh']['href']);
-        $host = $sshUrl['host'];
-        $user = $sshUrl['user'];
-
-        return $user . '@' . $host;
-    }
-
 }

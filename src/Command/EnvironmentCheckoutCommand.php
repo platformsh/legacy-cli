@@ -17,9 +17,9 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
             ->setAliases(array('checkout'))
             ->setDescription('Checkout an environment.')
             ->addArgument(
-                'branch-id',
+                'branch-name',
                 InputArgument::OPTIONAL,
-                'The id of the branch to checkout. For example: "sprint2"'
+                'The name of the branch to checkout. For example: "sprint2"'
             )
             ->addOption(
                 'project',
@@ -40,15 +40,18 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         if (!$this->validateInput($input, $output)) {
             return;
         }
-        $branch = $input->getArgument('branch-id');
+        $branch = $input->getArgument('branch-name');
         if (empty($branch)) {
-            $output->writeln("<error>You must specify the id of the branch to checkout.</error>");
+            $output->writeln("<error>You must specify the name of the branch to checkout.</error>");
             return;
         }
 
         // Checkout the new branch locally.
         $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot) {
+            throw new \Exception('This can only be run from inside a project directory');
+        }
         $repositoryDir = $projectRoot . '/repository';
-        passthru("cd $repositoryDir && git fetch origin && git checkout $branch");
+        passthru("cd " . escapeshellarg($repositoryDir) . " && git fetch origin && git checkout $branch");
     }
 }
