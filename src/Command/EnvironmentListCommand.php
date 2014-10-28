@@ -40,6 +40,12 @@ class EnvironmentListCommand extends EnvironmentCommand
                 InputOption::VALUE_OPTIONAL,
                 "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
                 'name'
+            )
+            ->addOption(
+                'refresh',
+                null,
+                InputOption::VALUE_NONE,
+                'Refresh the list.'
             );
     }
 
@@ -142,8 +148,10 @@ class EnvironmentListCommand extends EnvironmentCommand
             $this->showStatus = in_array('status', $show);
         }
 
+        $refresh = $input->getFirstArgument() == 'welcome' || ($input->hasOption('refresh') && $input->getOption('refresh'));
+
+        $environments = $this->getEnvironments($this->project, $refresh);
         $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
-        $environments = $this->getEnvironments($this->project);
 
         if ($input->getOption('pipe')) {
           $output->writeln(array_keys($environments));

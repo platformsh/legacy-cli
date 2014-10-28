@@ -69,7 +69,14 @@ class ProjectGetCommand extends PlatformCommand
             return;
         }
 
-        $environments = $this->getEnvironments($project);
+        $environments = $this->getEnvironments($project, true);
+        // Create a numerically indexed list, starting with "master".
+        $environmentList = array($environments['master']);
+        foreach ($environments as $environment) {
+            if ($environment['id'] != 'master' && (!array_key_exists('#activate', $environment['_links']) || $input->getOption('include-inactive'))) {
+                $environmentList[] = $environment;
+            }
+        }
 
         $environmentOption = $input->getOption('environment');
         if ($environmentOption) {
