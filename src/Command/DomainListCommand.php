@@ -40,7 +40,7 @@ class DomainListCommand extends DomainCommand
     /**
      * Recursively build rows of the domain table.
      */
-    protected function buildDomainRows($tree, $indent = 0)
+    protected function buildDomainRows($tree)
     {
         $rows = array();
 

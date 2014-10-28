@@ -30,13 +30,6 @@ class Application extends Console\Application {
 
         $this->setDefaultTimezone();
 
-        $this->toolstacks = array(
-            'Php',
-            'Drupal',
-            'Symfony',
-            // 'Wordpress',
-        );
-
         $this->add(new Command\PlatformLogoutCommand);
         $this->add(new Command\PlatformLoginCommand);
         $this->add(new Command\DrushCommand);
@@ -152,37 +145,5 @@ class Application extends Console\Application {
 
         date_default_timezone_set($timezone);
      }
-
-    /**
-     * @return string The absolute path to the user's home directory.
-     */
-    public function getHomeDirectory()
-    {
-        $home = getenv('HOME');
-        if (empty($home)) {
-            // Windows compatibility.
-            if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
-                $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
-            }
-        }
-
-        return $home;
-    }
-
-    /**
-     * @return boolean Whether the user has configured the CLI.
-     */
-    protected function hasConfiguration()
-    {
-        return file_exists($this->getHomeDirectory() . '/.platform');
-    }
-
-    /**
-     * Returns the list of registered Platform toolstacks.
-     */
-    public function getToolstacks()
-    {
-        return $this->toolstacks;
-    }
 
 }

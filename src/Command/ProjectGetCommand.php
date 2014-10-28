@@ -70,13 +70,6 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         $environments = $this->getEnvironments($project, true);
-        // Create a numerically indexed list, starting with "master".
-        $environmentList = array($environments['master']);
-        foreach ($environments as $environment) {
-            if ($environment['id'] != 'master' && (!array_key_exists('#activate', $environment['_links']) || $input->getOption('include-inactive'))) {
-                $environmentList[] = $environment;
-            }
-        }
 
         $environmentOption = $input->getOption('environment');
         if ($environmentOption) {
@@ -105,18 +98,14 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         // Create the directory structure
-        $folders = array();
-        $folders[] = $directoryName;
-        $folders[] = $directoryName . '/builds';
-        $folders[] = $directoryName . '/shared';
-        $folders[] = $directoryName . '/shared/files';
-        foreach ($folders as $folder) {
-            mkdir($folder);
+        mkdir($directoryName);
+        $projectRoot = realpath($directoryName);
+        if (!$projectRoot) {
+           throw new \Exception('Failed to create project directory: ' . $directoryName);
         }
 
-        // Create the settings.local.php file.
-        // @todo Find a better place for this, since it's Drupal specific.
-        copy(CLI_ROOT . '/resources/drupal/settings.local.php', $directoryName . '/shared/settings.local.php');
+        mkdir($projectRoot . '/builds');
+        mkdir($projectRoot . '/shared');
 
         // Create the .platform-project file.
         $projectConfig = array(
@@ -132,29 +121,26 @@ class ProjectGetCommand extends PlatformCommand
         $repositoryDir = $directoryName . '/repository';
         // First check if the repo actually exists.
         $checkCommand = "git ls-remote $gitUrl HEAD";
-        $checkOutput = shell_exec($checkCommand);
-        if (!empty($checkOutput)) {
+        exec($checkCommand, $checkOutput, $checkReturnVar);
+        if ($checkReturnVar) {
+            // The ls-remote command failed.
+            $this->rmdir($projectRoot);
+            $output->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
+            $output->writeln('Please check your SSH credentials or contact Platform.sh support');
+            return 1;
+        }
+        elseif (!empty($checkOutput)) {
             // We have a repo! Yay. Clone it.
             $command = "git clone --branch $environment $gitUrl " . escapeshellarg($repositoryDir);
             passthru($command);
             if (!is_dir($repositoryDir)) {
                 // The clone wasn't successful. Clean up the folders we created
                 // and then bow out with a message.
-                $this->cleanupFolders($folders);
-                $formatter = $this->getHelper('formatter');
-                $errorArray = array(
-                  "[Error]",
-                  "We're sorry, your Platform.sh project could not be cloned.",
-                  "Please check your SSH credentials or contact Platform.sh Support."
-                );
-                $errorBlock = $formatter->formatBlock($errorArray, 'error', TRUE);
-                $output->writeln($errorBlock);
-                return;
+                $this->rmdir($projectRoot);
+                $output->writeln('<error>Failed to clone Git repository</error>');
+                $output->writeln('Please check your SSH credentials or contact Platform.sh support');
+                return 1;
             }
-
-            // Create the .gitignore file.
-            // @todo Make the Platform itself responsible for this?
-            copy(CLI_ROOT . '/resources/drupal/gitignore', $directoryName . '/repository/.gitignore');
 
             // Allow the build to be skipped, and always skip it if the cloned
             // repository is empty ('.', '..', '.git' being the only found items).
@@ -163,58 +149,26 @@ class ProjectGetCommand extends PlatformCommand
             if (!$noBuild && count($files) > 3) {
                 // Launch the first build.
                 $application = $this->getApplication();
-                $projectRoot = realpath($directoryName);
-                try {
-                    $buildCommand = $application->find('build');
-                    $buildCommand->input = $input;
-                    $buildCommand->output = $output;
-                    $buildCommand->build($projectRoot, $environment);
-                } catch (\Exception $e) {
-                    $environmentName = $environments[$environment]['title'];
-                    $output->writeln("<comment>The '$environmentName' environment could not be built: \n" . $e->getMessage() . "</comment>");
-                }
+                $buildCommand = $application->find('build');
+                chdir($projectRoot);
+                return $buildCommand->execute($input, $output);
             }
         }
         else {
             // The repository doesn't have a HEAD, which means it is empty.
             // We need to create the folder, run git init, and attach the remote.
-            $folders[] = $repositoryDir;
             mkdir($repositoryDir);
             $currentDirectory = getcwd();
-            if (chdir($repositoryDir)) {
-                // Initialize the repo and attach our remotes.
-                $output->writeln("<info>Initializing empty project repository...</info>");
-                passthru("git init");
-                $output->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
-                passthru("git remote add -m master origin $gitUrl");
-                $output->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
-                $output->writeln("<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>");
-                chdir($currentDirectory);
-                return;
-            }
-            else {
-                // We failed to chdir for some reason. Unwind and bow out with a message.
-                chdir($currentDirectory);
-                $this->cleanupFolders($folders);
-                $formatter = $this->getHelper('formatter');
-                $errorArray = array(
-                  "[Error]",
-                  "We're sorry, your Platform.sh repository could not be created.",
-                  "Please check your file system permissions and ensure that ",
-                  "you can create folders in this location."
-                );
-                $errorBlock = $formatter->formatBlock($errorArray, 'error', TRUE);
-                $output->writeln($errorBlock);
-                return;
-            }
+            chdir($repositoryDir);
+            // Initialize the repo and attach our remotes.
+            $output->writeln("<info>Initializing empty project repository...</info>");
+            passthru("git init");
+            $output->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
+            passthru("git remote add -m master origin $gitUrl");
+            $output->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
+            $output->writeln("<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>");
+            chdir($currentDirectory);
         }
     }
 
-    protected function cleanupFolders($folders)
-    {
-        // Go in reverse order because rmdir doesn't recurse.
-        foreach (array_reverse($folders) as $folder) {
-          $this->rmdir($folder);
-        }
-    }
 }

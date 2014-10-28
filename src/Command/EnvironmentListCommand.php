@@ -12,6 +12,7 @@ class EnvironmentListCommand extends EnvironmentCommand
     protected $showNames = true;
     protected $showUrls = false;
     protected $showStatus = false;
+
     protected $currentEnvironment;
 
     /**
@@ -151,12 +152,13 @@ class EnvironmentListCommand extends EnvironmentCommand
         $refresh = $input->getFirstArgument() == 'welcome' || ($input->hasOption('refresh') && $input->getOption('refresh'));
 
         $environments = $this->getEnvironments($this->project, $refresh);
-        $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
 
         if ($input->getOption('pipe')) {
           $output->writeln(array_keys($environments));
           return;
         }
+
+        $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
 
         $tree = $this->buildEnvironmentTree($environments);
 
@@ -174,7 +176,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         $output->writeln("\n<info>*</info> - Indicates the current environment.");
         $output->writeln("Checkout a different environment by running <info>platform checkout [id]</info>.");
         if ($this->operationAllowed('branch', $this->currentEnvironment)) {
-            $output->writeln("Branch a new environment by running <info>platform environment:branch [name]</info>.");
+            $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.");
         }
         if ($this->operationAllowed('activate', $this->currentEnvironment)) {
             $output->writeln("Activate the current environment by running <info>platform environment:activate</info>.");
@@ -199,4 +201,3 @@ class EnvironmentListCommand extends EnvironmentCommand
         $output->writeln("");
     }
 }
-

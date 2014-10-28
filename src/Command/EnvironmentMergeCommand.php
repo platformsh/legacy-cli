@@ -49,7 +49,7 @@ class EnvironmentMergeCommand extends EnvironmentCommand
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->mergeEnvironment();
-        // Reload the stored environments, to trigger a drush alias rebuild.
+        // Reload the stored environments.
         $this->getEnvironments($this->project, true);
 
         $output->writeln("The environment <info>$environmentId</info> has been merged with <info>$parentId</info>.");

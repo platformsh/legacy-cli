@@ -2,14 +2,19 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Local\LocalBuild;
+use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use CommerceGuys\Platform\Cli\Toolstack;
 
 class ProjectBuildCommand extends PlatformCommand
 {
-    public $absoluteLinks;
+    /** @var OutputInterface */
+    public $output;
+
+    /** @var InputInterface */
+    public $input;
 
     protected function configure()
     {
@@ -22,25 +27,27 @@ class ProjectBuildCommand extends PlatformCommand
                 'a',
                 InputOption::VALUE_NONE,
                 'Use absolute links.'
-            )
-            ->addOption(
+            );
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot || Drupal::isDrupal($projectRoot . '/repository')) {
+            $this->addOption(
                 'working-copy',
                 'wc',
                 InputOption::VALUE_NONE,
                 'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
-            )
-            ->addOption(
+            )->addOption(
                 'concurrency',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'Drush: set the number of concurrent projects that will be processed at the same time. The default is 3.',
+                'Drush: set the number of concurrent projects that will be processed at the same time.',
                 3
             );
+        }
     }
 
     public function isLocal()
     {
-      return TRUE;
+        return TRUE;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -69,10 +76,22 @@ class ProjectBuildCommand extends PlatformCommand
             $branch = trim(substr($branchRef,16));
             $envId = $branch;
         }
-        $this->absoluteLinks = $input->getOption('abslinks');
+
+        $settings = array();
+
+        // The environment ID is used in making the build directory name.
+        $settings['environmentId'] = $envId;
+
+        $settings['verbosity'] = $this->output->getVerbosity();
+
+        // Explicitly check for the existence of each option, so that this
+        // command can be invoked from ProjectGetCommand.
+        $settings['absoluteLinks'] =$this->input->hasOption('abslinks') && $this->input->getOption('abslinks');
+        $settings['drushConcurrency'] = $this->input->hasOption('concurrency') && $this->input->getOption('concurrency');
+        $settings['drushConcurrency'] = $this->input->hasOption('working-copy') && $this->input->getOption('working-copy');
 
         try {
-            $this->build($projectRoot, $envId);
+            $this->build($projectRoot, $settings);
         } catch (\Exception $e) {
             $output->writeln("<error>" . $e->getMessage() . '</error>');
         }
@@ -82,116 +101,47 @@ class ProjectBuildCommand extends PlatformCommand
      * Build the project.
      *
      * @param string $projectRoot The path to the project to be built.
-     * @param string $environmentId The environment id, used as a build suffix.
-     */
-    public function build($projectRoot, $environmentId)
-    {
-        // New build scaffolding. 
-        // @todo: Determine multiple project roots and build each one.
-        
-        
-        // @todo: Parse .platform.app.yaml file into $settings array for detection.
-        
-        
-        // @temp: Current project root and empty settings:
-        $applications[] = array('appRoot' => $projectRoot . "/repository", 'settings' => array('environmentId' => $environmentId, 'projectRoot' => $projectRoot));
-        foreach ($applications as $app) {
-            // Detect the toolstack.
-            foreach ($this->getApplication()->getToolstacks() as $toolstack) {
-                $classname = "\\CommerceGuys\\Platform\\Cli\\Toolstack\\{$toolstack}App";
-                if ($classname::detect($app['appRoot'], $app['settings'])) {
-                    $this->toolstackClassName = $classname;
-                }
-            }
-            if (isset($this->toolstackClassName)) {
-                $toolstack = new $this->toolstackClassName($this, $app['settings']);
-                $this->toolstack = $toolstack;
-            }
-            else {
-                // Failed to find a toolstack. @todo dump an error here.
-                break;
-            }
-            
-            $this->toolstack->prepareBuild();
-            $this->toolstack->build();
-        }
-    }
-
-    /**
-     * Copy all files and folders from $source into $destination.
-     */
-    protected function copy($source, $destination)
-    {
-        if (!is_dir($destination)) {
-            mkdir($destination);
-        }
-
-        $skip = array('.', '..', '.git');
-        $sourceDirectory = opendir($source);
-        while ($file = readdir($sourceDirectory)) {
-            if (!in_array($file, $skip)) {
-                if (is_dir($source . '/' . $file)) {
-                    $this->copy($source . '/' . $file, $destination . '/' . $file);
-                } else {
-                    copy($source . '/' . $file, $destination . '/' . $file);
-                }
-            }
-        }
-        closedir($sourceDirectory);
-    }
-
-    /**
-     * Symlink all files and folders from $source into $destination.
-     */
-    protected function symlink($source, $destination)
-    {
-        if (!is_dir($destination)) {
-            mkdir($destination);
-        }
-
-        // The symlink won't work if $source is a relative path.
-        $source = realpath($source);
-        $skip = array('.', '..');
-        $sourceDirectory = opendir($source);
-        while ($file = readdir($sourceDirectory)) {
-            if (!in_array($file, $skip)) {
-                $sourceFile = $source . '/' . $file;
-                $linkFile = $destination . '/' . $file;
-
-                if (!$this->absoluteLinks) {
-                    $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
-                }
-                symlink($sourceFile, $linkFile);
-            }
-        }
-        closedir($sourceDirectory);
-    }
-
-    /**
-     * Make relative path between two files.
+     * @param array $settings
      *
-     * @param string $source Path of the file we are linking to.
-     * @param string $destination Path to the symlink.
-     * @return string Relative path to the source, or file linking to.
+     * @throws \Exception
      */
-    private function makePathRelative($source, $dest)
+    public function build($projectRoot, array $settings)
     {
-        $i = 0;
-        while (true) {
-            if(substr($source, $i, 1) != substr($dest, $i, 1)) {
-                break;
+        $repositoryRoot = $projectRoot . '/repository';
+
+        foreach (LocalBuild::getApplications($repositoryRoot) as $appRoot) {
+            $appConfig = LocalBuild::getAppConfig($appRoot);
+            $appName = false;
+            if ($appConfig && isset($appConfig['name'])) {
+                $appName = $appConfig['name'];
             }
-            $i++;
-        }
-        $distance = substr_count(substr($dest, $i - 1, strlen($dest)), '/') - 1;
+            elseif ($appRoot != $repositoryRoot) {
+                $appName = str_replace($repositoryRoot, '', $appRoot);
+            }
 
-        $path = '';
-        while ($distance) {
-            $path .= '../';
-            $distance--;
-        }
-        $path .= substr($source, $i, strlen($source));
+            $toolstack = LocalBuild::getToolstack($appRoot, $appConfig);
+            if (!$toolstack) {
+                throw new \Exception("Could not detect toolstack for directory: " . $appRoot);
+            }
 
-        return $path;
+            $message = "Building application";
+            if ($appName) {
+                $message .= " <info>$appName</info>";
+            }
+            $message .= " using the toolstack <info>" . $toolstack->getKey() . "</info>";
+            $this->output->writeln($message);
+
+            $toolstack->prepareBuild($appRoot, $projectRoot, $settings);
+
+            $toolstack->build();
+            $toolstack->install();
+
+            $message = "Build complete";
+            if ($appName) {
+                $message .= " for <info>$appName</info>";
+            }
+            $this->output->writeln($message);
+        }
+
     }
 }

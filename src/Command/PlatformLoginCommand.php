@@ -25,7 +25,7 @@ class PlatformLoginCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->checkRequirements($output);
+        $this->checkRequirements();
 
         $output->writeln("\nPlease log in using your Platform.sh account\n");
         $this->configureAccount($input, $output);
@@ -36,7 +36,7 @@ class PlatformLoginCommand extends PlatformCommand
         $this->__destruct();
     }
 
-    protected function checkRequirements($output)
+    protected function checkRequirements()
     {
         if (ini_get('safe_mode')) {
             throw new \Exception('PHP safe_mode must be disabled.');
@@ -72,7 +72,8 @@ class PlatformLoginCommand extends PlatformCommand
                 // @todo
             } else {
                 // Start from the beginning.
-                return $this->configureAccount($output);
+                $this->configureAccount($input, $output);
+                return;
             }
         }
 

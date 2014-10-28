@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
+use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
@@ -22,6 +23,9 @@ class PlatformCommand extends Command
     protected $accountClient;
     protected $platformClient;
 
+    protected $project;
+    protected $environment;
+
     /**
      * Load configuration from the user's .platform file.
      *
@@ -34,8 +38,7 @@ class PlatformCommand extends Command
     protected function loadConfig()
     {
         if (!$this->config) {
-            $application = $this->getApplication();
-            $configPath = $application->getHomeDirectory() . '/.platform';
+            $configPath = $this->getHomeDirectory() . '/.platform';
             if (!file_exists($configPath)) {
                 $this->login();
             }
@@ -262,18 +265,17 @@ class PlatformCommand extends Command
         $repositoryDir = $projectRoot . '/repository';
         $escapedRepoDir = escapeshellarg($repositoryDir);
 
-        $environments = $this->getEnvironments($project);
-
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
         $remote = trim($this->shellExec("cd $escapedRepoDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}"));
         if ($remote && strpos($remote, '/') !== false) {
             list($remoteName, $potentialEnvironment) = explode('/', $remote, 2);
-            if (isset($environments[$potentialEnvironment])) {
+            $environment = $this->getEnvironment($potentialEnvironment, $project);
+            if ($environment) {
                 // Check that the remote is Platform's.
                 $remoteUrl = trim($this->shellExec("cd $escapedRepoDir && git config --get remote.$remoteName.url"));
                 if (strpos($remoteUrl, 'platform.sh')) {
-                    return $environments[$potentialEnvironment];
+                    return $environment;
                 }
             }
         }
@@ -283,9 +285,9 @@ class PlatformCommand extends Command
         $currentBranch = trim($this->shellExec("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
         if ($currentBranch) {
             $currentBranchSanitized = $this->sanitizeEnvironmentId($currentBranch);
-            $environments = $this->getEnvironments($project);
-            if (isset($environments[$currentBranchSanitized])) {
-                return $environments[$currentBranchSanitized];
+            $environment = $this->getEnvironment($currentBranchSanitized, $project);
+            if ($environment) {
+                return $environment;
             }
         }
 
@@ -301,8 +303,7 @@ class PlatformCommand extends Command
      */
     protected function getProjectRoot()
     {
-        $application = $this->getApplication();
-        $homeDir = $application->getHomeDirectory();
+        $homeDir = $this->getHomeDirectory();
         $currentDir = getcwd();
         $projectRoot = null;
         while (!$projectRoot) {
@@ -388,10 +389,11 @@ class PlatformCommand extends Command
      *
      * @param array $project The project.
      * @param bool $refresh Whether to refresh the list.
+     * @param bool $updateAliases Whether to update Drush aliases if the list changes.
      *
      * @return array The user's environments.
      */
-    protected function getEnvironments($project, $refresh = false)
+    protected function getEnvironments($project, $refresh = false, $updateAliases = true)
     {
         $projectId = $project['id'];
         $this->loadConfig();
@@ -411,13 +413,33 @@ class PlatformCommand extends Command
             }
 
             // Recreate the aliases if the list of environments has changed.
-            if ($this->config['environments'][$projectId] != $environments) {
+            if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
                 $this->config['environments'][$projectId] = $environments;
                 $this->createDrushAliases($project, $environments);
             }
         }
 
         return $this->config['environments'][$projectId];
+    }
+
+    /**
+     * Get a single environment.
+     *
+     * @param string $id The environment ID to load.
+     * @param array $project The project.
+     *
+     * @return array|null The environment, or null if not found.
+     */
+    protected function getEnvironment($id, $project = null)
+    {
+        $project = $project ?: $this->getCurrentProject();
+        $environments = $this->getEnvironments($project, false);
+        if (!isset($environments[$id])) {
+            // The list of environments is cached and might be older than the
+            // requested environment, so refresh it as a precaution.
+            $environments = $this->getEnvironments($project, true);
+        }
+        return isset($environments[$id]) ? $environments[$id] : null;
     }
 
     /**
@@ -450,21 +472,25 @@ class PlatformCommand extends Command
     /**
      * Create drush aliases for the provided project and environments.
      *
-     * @todo prevent this running for non-Drupal projects
-     *
      * @param array $project The project
      * @param array $environments The environments
      */
     protected function createDrushAliases($project, $environments)
     {
+        // Fail if there is no project root, or if it doesn't contain a Drupal
+        // application.
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot || !Drupal::isDrupal($projectRoot . '/repository')) {
+            return false;
+        }
+
         $group = $project['id'];
         if (!empty($project['alias-group'])) {
           $group = $project['alias-group'];
         }
 
         // Ensure the existence of the .drush directory.
-        $application = $this->getApplication();
-        $drushDir = $application->getHomeDirectory() . '/.drush';
+        $drushDir = $this->getHomeDirectory() . '/.drush';
         if (!is_dir($drushDir)) {
             mkdir($drushDir);
         }
@@ -491,17 +517,19 @@ class PlatformCommand extends Command
         }
 
         // Add a local alias as well.
-        $wwwRoot = $this->getProjectRoot() . '/www';
-        if (is_dir($wwwRoot)) {
-            $local = array(
-              'parent' => '@parent',
-              'site' => $project['id'],
-              'env' => '_local',
-              'root' => $wwwRoot,
-            );
-            $export .= "\$aliases['_local'] = " . var_export($local, TRUE);
-            $export .= ";\n";
-            $has_valid_environment = true;
+        if ($projectRoot) {
+            $wwwRoot = $projectRoot . '/www';
+            if (is_dir($wwwRoot)) {
+                $local = array(
+                  'parent' => '@parent',
+                  'site' => $project['id'],
+                  'env' => '_local',
+                  'root' => $wwwRoot,
+                );
+                $export .= "\$aliases['_local'] = " . var_export($local, true);
+                $export .= ";\n";
+                $has_valid_environment = true;
+            }
         }
 
         if ($has_valid_environment) {
@@ -514,19 +542,6 @@ class PlatformCommand extends Command
             }
         }
 
-    }
-
-    public function ensureDrushInstalled()
-    {
-        $drushVersion = shell_exec('drush version');
-        if (strpos(strtolower($drushVersion), 'drush version') === false) {
-            throw new \Exception('Drush must be installed.');
-        }
-        $versionParts = explode(':', $drushVersion);
-        $versionNumber = trim($versionParts[1]);
-        if (version_compare($versionNumber, '6.0') === -1) {
-            throw new \Exception('Drush version must be 6.0 or newer.');
-        }
     }
 
     /**
@@ -547,27 +562,29 @@ class PlatformCommand extends Command
 
     /**
      * Delete a directory and all of its files.
+     *
+     * @param string $directory
      */
-    protected function rmdir($directoryName)
+    protected function rmdir($directory)
     {
-        if (is_dir($directoryName)) {
+        if (is_dir($directory)) {
             // Recursively empty the directory.
-            $directory = opendir($directoryName);
-            while ($file = readdir($directory)) {
+            $directoryResource = opendir($directory);
+            while ($file = readdir($directoryResource)) {
                 if (!in_array($file, array('.', '..'))) {
-                    if (is_link($directoryName . '/' . $file)) {
-                        unlink($directoryName . '/' . $file);
-                    } else if (is_dir($directoryName . '/' . $file)) {
-                        $this->rmdir($directoryName . '/' . $file);
+                    if (is_link($directory . '/' . $file)) {
+                        unlink($directory . '/' . $file);
+                    } else if (is_dir($directory . '/' . $file)) {
+                        $this->rmdir($directory . '/' . $file);
                     } else {
-                        unlink($directoryName . '/' . $file);
+                        unlink($directory . '/' . $file);
                     }
                 }
             }
-            closedir($directory);
+            closedir($directoryResource);
 
             // Delete the directory itself.
-            rmdir($directoryName);
+            rmdir($directory);
         }
     }
 
@@ -622,10 +639,25 @@ class PlatformCommand extends Command
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
             }
 
-            $application = $this->getApplication();
-            $configPath = $application->getHomeDirectory() . '/.platform';
+            $configPath = $this->getHomeDirectory() . '/.platform';
             $dumper = new Dumper();
             file_put_contents($configPath, $dumper->dump($this->config));
         }
+    }
+
+    /**
+     * @return string The absolute path to the user's home directory.
+     */
+    public function getHomeDirectory()
+    {
+        $home = getenv('HOME');
+        if (empty($home)) {
+            // Windows compatibility.
+            if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+                $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+            }
+        }
+
+        return $home;
     }
 }

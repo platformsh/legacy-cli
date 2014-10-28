@@ -5,7 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\ConsoleOutput;
+use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 
 class ProjectDrushAliasesCommand extends PlatformCommand
 {
@@ -26,6 +26,15 @@ class ProjectDrushAliasesCommand extends PlatformCommand
       return TRUE;
     }
 
+    public function isEnabled()
+    {
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            return Drupal::isDrupal($projectRoot . '/repository');
+        }
+        return true;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $project = $this->getCurrentProject();
@@ -33,7 +42,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             throw new \Exception('This can only be run from inside a project directory');
         }
 
-        $this->ensureDrushInstalled();
+        Drupal::ensureDrushInstalled();
 
         $current_group = isset($project['alias-group']) ? $project['alias-group'] : $project['id'];
 
@@ -53,11 +62,11 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             }
             $project['alias-group'] = $new_group;
             $this->writeCurrentProjectConfig('alias-group', $new_group);
-            $environments = $this->getEnvironments($project);
+            $environments = $this->getEnvironments($project, true, false);
             $this->createDrushAliases($project, $environments);
             $output->writeln('Project aliases created, group: @' . $new_group);
 
-            $drushDir = $this->getApplication()->getHomeDirectory() . '/.drush';
+            $drushDir = $this->getHomeDirectory() . '/.drush';
             $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
             if (file_exists($oldFile)) {
                 if (!$this->confirm("Delete old alias group @$current_group? [Y/n] ", $input, $output)) {
@@ -71,7 +80,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $current_group = $new_group;
         }
         elseif ($input->getOption('recreate')) {
-            $environments = $this->getEnvironments($project);
+            $environments = $this->getEnvironments($project, true, false);
             $this->createDrushAliases($project, $environments);
             $this->shellExec('drush cache-clear drush');
             $output->writeln("Project aliases recreated");
