@@ -102,7 +102,6 @@ class Drupal extends ToolstackBase
         $symlinkBlacklist = array(
           '.*',
           '*.make',
-          'settings*.php',
           'sites.php',
           'robots.txt',
           'config',
@@ -147,6 +146,7 @@ class Drupal extends ToolstackBase
             if ($return_var > 0) {
                 throw new \Exception('Drush command failed: ' . $drushCommand);
             }
+            $symlinkBlacklist[] = 'settings*.php';
             $this->symlink($this->appRoot, $profileDir, true, $symlinkBlacklist);
         } elseif (file_exists($this->appRoot . '/project.make')) {
             $this->buildMode = 'makefile';
