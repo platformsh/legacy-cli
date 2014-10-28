@@ -86,9 +86,9 @@ class ProjectBuildCommand extends PlatformCommand
 
         // Explicitly check for the existence of each option, so that this
         // command can be invoked from ProjectGetCommand.
-        $settings['absoluteLinks'] =$this->input->hasOption('abslinks') && $this->input->getOption('abslinks');
-        $settings['drushConcurrency'] = $this->input->hasOption('concurrency') && $this->input->getOption('concurrency');
-        $settings['drushConcurrency'] = $this->input->hasOption('working-copy') && $this->input->getOption('working-copy');
+        $settings['absoluteLinks'] = $input->hasOption('abslinks') && $input->getOption('abslinks');
+        $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : 3;
+        $settings['drushWorkingCopy'] = $input->hasOption('working-copy') && $input->getOption('working-copy');
 
         try {
             $this->build($projectRoot, $settings);
