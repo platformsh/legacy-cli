@@ -3,12 +3,10 @@
 namespace CommerceGuys\Platform\Cli;
 
 use CommerceGuys\Platform\Cli\Console\PlatformQuestionHelper;
-use Symfony\Component\Console;
 
-use Symfony\Component\Console\Helper\DialogHelper;
+use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
-use Symfony\Component\Console\Helper\ProgressHelper;
 use Symfony\Component\Console\Helper\TableHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -16,8 +14,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
+use Symfony\Component\Console\Shell;
 
-class Application extends Console\Application {
+class Application extends ConsoleApplication {
 
     protected $output;
 
@@ -26,7 +25,7 @@ class Application extends Console\Application {
      */
     public function __construct()
     {
-        parent::__construct('Platform CLI', '1.1.0');
+        parent::__construct('Platform CLI', '1.2.1');
 
         $this->setDefaultTimezone();
 
@@ -86,8 +85,6 @@ class Application extends Console\Application {
     {
         return new HelperSet(array(
           new FormatterHelper(),
-          new DialogHelper(),
-          new ProgressHelper(),
           new TableHelper(),
           new PlatformQuestionHelper(),
         ));
@@ -98,6 +95,17 @@ class Application extends Console\Application {
      */
     public function doRun(InputInterface $input, OutputInterface $output)
     {
+        // Set the input to non-interactive if the yes or no options are used.
+        if ($input->hasParameterOption(array('--yes', '-y')) || $input->hasParameterOption(array('--no', '-n'))) {
+            $input->setInteractive(false);
+        }
+        // Enable the shell.
+        elseif ($input->hasParameterOption(array('--shell', '-s'))) {
+            $shell = new Shell($this);
+            $shell->run();
+            return 0;
+        }
+
         $this->output = $output;
         return parent::doRun($input, $output);
     }
