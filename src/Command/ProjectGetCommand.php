@@ -6,7 +6,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Yaml\Dumper;
 
 class ProjectGetCommand extends PlatformCommand
@@ -21,12 +21,18 @@ class ProjectGetCommand extends PlatformCommand
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
-                'The project id'
+                'The project ID'
             )
             ->addArgument(
                 'directory-name',
                 InputArgument::OPTIONAL,
-                'The directory name. Defaults to the project id if not provided'
+                'The directory name. Defaults to the project ID if not provided'
+            )
+            ->addOption(
+                'environment',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                "The environment ID to clone"
             )
             ->addOption(
                 'no-build',
@@ -64,34 +70,32 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         $environments = $this->getEnvironments($project);
-        // Create a numerically indexed list, starting with "master".
-        $environmentList = array($environments['master']);
-        foreach ($environments as $environment) {
-            if ($environment['id'] != 'master' && (!array_key_exists('#activate', $environment['_links']) || $input->getOption('include-inactive'))) {
-                $environmentList[] = $environment;
-            }
-        }
 
-        $environmentIndex = 0;
-        if (count($environmentList) > 1) {
-            $chooseEnvironmentText = "Enter a number to choose which environment to checkout: \n";
-            foreach ($environmentList as $index => $environment) {
-                $chooseEnvironmentText .= "[$index] : " . $environment['title'] . "\n";
+        $environmentOption = $input->getOption('environment');
+        if ($environmentOption) {
+            if (!isset($environments[$environmentOption])) {
+                $output->writeln("<error>Environment not found: $environmentOption</error>");
+                return;
             }
-            $validator = function ($enteredIndex) use ($environmentList) {
-                if (!isset($environmentList[$enteredIndex])) {
-                    $max = count($environmentList) - 1;
-                    throw new \RunTimeException("Please enter a number between 0 and $max.");
-                }
-                return $enteredIndex;
-            };
-            $helper = $this->getHelper('question');
-            $question = new Question($chooseEnvironmentText);
-            $question->setMaxAttempts(5);
-            $question->setValidator($validator);
-            $environmentIndex = $helper->ask($input, $output, $question);
+            $environment = $environmentOption;
         }
-        $environment = $environmentList[$environmentIndex]['id'];
+        elseif (count($environments) > 1 && $input->isInteractive()) {
+            // Create a numerically indexed list, starting with "master".
+            $environmentList = array($environments['master']['id']);
+            foreach ($environments as $environment) {
+                if ($environment['id'] != 'master' && (!array_key_exists('#activate', $environment['_links']) || $input->getOption('include-inactive'))) {
+                    $environmentList[] = $environment['id'];
+                }
+            }
+            $chooseEnvironmentText = "Enter a number to choose which environment to check out:";
+            $helper = $this->getHelper('question');
+            $question = new ChoiceQuestion($chooseEnvironmentText, $environmentList);
+            $question->setMaxAttempts(5);
+            $environment = $helper->ask($input, $output, $question);
+        }
+        else {
+            $environment = 'master';
+        }
 
         // Create the directory structure
         $folders = array();
@@ -159,7 +163,7 @@ class ProjectGetCommand extends PlatformCommand
                     $buildCommand->output = $output;
                     $buildCommand->build($projectRoot, $environment);
                 } catch (\Exception $e) {
-                    $environmentName = $environmentList[$environmentIndex]['title'];
+                    $environmentName = $environments[$environment]['title'];
                     $output->writeln("<comment>The '$environmentName' environment could not be built: \n" . $e->getMessage() . "</comment>");
                 }
             }

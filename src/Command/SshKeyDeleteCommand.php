@@ -17,7 +17,7 @@ class SshKeyDeleteCommand extends PlatformCommand
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
-                'The id of the key to delete'
+                'The ID of the SSH key to delete'
             );
     }
 

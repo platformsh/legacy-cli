@@ -16,8 +16,8 @@ class EnvironmentSshCommand extends EnvironmentCommand
         $this
             ->setName('environment:ssh')
             ->setAliases(array('ssh'))
-            ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project id')
-            ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment id')
+            ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
+            ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
             ->addOption('echo', NULL, InputOption::VALUE_NONE, "Print the connection string to the console.")
             ->setDescription('SSH to the current environment.');
         // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?

@@ -26,7 +26,7 @@ class EnvironmentListCommand extends EnvironmentCommand
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The project id'
+                'The project ID'
             )
             ->addOption(
                 'pipe',
@@ -168,7 +168,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         $output->writeln("\n<info>*</info> - Indicates the current environment.");
         $output->writeln("Checkout a different environment by running <info>platform checkout [id]</info>.");
         if ($this->operationAllowed('branch', $this->currentEnvironment)) {
-            $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.");
+            $output->writeln("Branch a new environment by running <info>platform environment:branch [name]</info>.");
         }
         if ($this->operationAllowed('activate', $this->currentEnvironment)) {
             $output->writeln("Activate the current environment by running <info>platform environment:activate</info>.");
@@ -193,3 +193,4 @@ class EnvironmentListCommand extends EnvironmentCommand
         $output->writeln("");
     }
 }
+

@@ -13,18 +13,18 @@ class EnvironmentBackupCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:backup')
-            ->setDescription('Backup an environment.')
+            ->setDescription('Make a backup of an environment.')
             ->addOption(
                 'project',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The project id'
+                'The project ID'
             )
             ->addOption(
                 'environment',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'The environment id'
+                'The environment ID'
             );
     }
 
