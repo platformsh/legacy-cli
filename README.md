@@ -1,18 +1,13 @@
-DESCRIPTION
------------
+The **Platform.sh CLI** is the official command line shell and Unix scripting interface for [Platform.sh](https://platform.sh). Use this tool to interact with your [Platform.sh](https://platform.sh) projects or to build and manage a local development environment for a project.
 
-**Platform.sh CLI** is the official command line shell and Unix scripting interface for [Platform.sh](https://platform.sh). It ships with all the useful commands to interact with your [Platform.sh](https://platform.sh) projects.
-
-REQUIREMENTS
-------------
+### Requirements
 
 * OS: Linux, OS X, Windows Vista, 7 (any), or 8 Pro. (Win8 Standard does not work due to an issue with symlink permissions.)
 * PHP 5.3.3 or higher with cURL
 * Composer ([install Composer globally](https://getcomposer.org/doc/00-intro.md#globally))
 * Drush 6.x - https://github.com/drush-ops/drush (only needed for Drupal projects) *Don't use master!*
 
-INSTALL/UPDATE - COMPOSER
--------------------------
+### Install/Update - Composer
 
 * Make sure Composer's global bin directory is on the system PATH (recommended):
 
@@ -33,8 +28,7 @@ INSTALL/UPDATE - COMPOSER
 
         composer global update
 
-USAGE
------
+### Usage
 
 Platform CLI can be run in your shell by typing `platform`.
 
@@ -44,8 +38,7 @@ Use the 'list' command to get a list of available options and commands:
 
         platform list
 
-FAQ
-------
+### FAQ
 
 #### What does "CLI" stand for?
 Command Line Interface.
@@ -60,8 +53,7 @@ composer global update
 
 You should now be able to install as described. **Note: Drush 6 is not compatible with Drupal 8.**
 
-COMMAND LIST
-------------
+### Command List
 
 The current output of `platform list` is as follows:
 
@@ -122,8 +114,6 @@ ssh-key
   ssh-key:delete              Delete an SSH key.
 ```
 
-CREDITS
------------
+### Credits
 
-* Developed and maintained by [Bojan Zivanovic](https://github.com/bojanz).
-* Sponsored by [Commerce Guys](https://commerceguys.com).
+* Maintained by [Commerce Guys](https://commerceguys.com).
