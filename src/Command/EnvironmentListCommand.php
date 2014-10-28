@@ -99,9 +99,7 @@ class EnvironmentListCommand extends EnvironmentCommand
         $environments = $this->getEnvironments($this->project);
 
         if ($input->getOption('pipe')) {
-          foreach (array_keys($environments) as $id) {
-            $output->writeln($id);
-          }
+          $output->writeln(array_keys($environments));
           return;
         }
 

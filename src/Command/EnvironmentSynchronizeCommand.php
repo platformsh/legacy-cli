@@ -6,6 +6,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class EnvironmentSynchronizeCommand extends EnvironmentCommand
 {
@@ -46,15 +47,15 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         }
 
         if ($synchronize = $input->getArgument('synchronize')) {
-          $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
-          $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
+            $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
+            $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
         }
         else {
-          $dialog = $this->getHelperSet()->get('dialog');
-          $syncCodeText = "Synchronize code? [Y/N] ";
-          $syncDataText = "Synchronize data? [Y/N] ";
-          $syncCode = $dialog->askConfirmation($output, $syncCodeText, false);
-          $syncData = $dialog->askConfirmation($output, $syncDataText, false);
+            $helper = $this->getHelper('question');
+            $syncCodeText = "Synchronize code? [y/N] ";
+            $syncDataText = "Synchronize data? [y/N] ";
+            $syncCode = $helper->ask($input, $output, new ConfirmationQuestion($syncCodeText, false));
+            $syncData = $helper->ask($input, $output, new ConfirmationQuestion($syncDataText, false));
         }
         if (!$syncCode && !$syncData) {
             $output->writeln("<error>You must synchronize at least code or data.</error>");

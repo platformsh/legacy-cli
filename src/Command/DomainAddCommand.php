@@ -6,6 +6,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class DomainAddCommand extends DomainCommand
 {
@@ -84,10 +85,10 @@ class DomainAddCommand extends DomainCommand
             return;
         }
 
-        // @todo: Improve this with a better dialog box.
-        $dialog = $this->getHelperSet()->get('dialog');
-        $answer = $dialog->ask($output, "<question>Is your domain a wildcard? (yes/no) </question>\n");
-        $wildcard = ($answer == "yes") ? true : false;
+        $helper = $this->getHelper('question');
+        $question = new ConfirmationQuestion('Is your domain a wildcard? [y/n] ');
+        $wildcard = $helper->ask($input, $output, $question);
+
         // @todo: Ask about SSL uploads if option --ssl is specified instead of inline filenames
 
         // Assemble our query parameters.

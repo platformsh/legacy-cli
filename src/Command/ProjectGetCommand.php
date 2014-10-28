@@ -6,6 +6,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Yaml\Dumper;
 
 class ProjectGetCommand extends PlatformCommand
@@ -77,7 +78,6 @@ class ProjectGetCommand extends PlatformCommand
             foreach ($environmentList as $index => $environment) {
                 $chooseEnvironmentText .= "[$index] : " . $environment['title'] . "\n";
             }
-            $dialog = $this->getHelperSet()->get('dialog');
             $validator = function ($enteredIndex) use ($environmentList) {
                 if (!isset($environmentList[$enteredIndex])) {
                     $max = count($environmentList) - 1;
@@ -85,7 +85,11 @@ class ProjectGetCommand extends PlatformCommand
                 }
                 return $enteredIndex;
             };
-            $environmentIndex = $dialog->askAndValidate($output, $chooseEnvironmentText, $validator, false, 0);
+            $helper = $this->getHelper('question');
+            $question = new Question($chooseEnvironmentText);
+            $question->setMaxAttempts(5);
+            $question->setValidator($validator);
+            $environmentIndex = $helper->ask($input, $output, $question);
         }
         $environment = $environmentList[$environmentIndex]['id'];
 

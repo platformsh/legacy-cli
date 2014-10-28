@@ -39,7 +39,7 @@ class PlatformLogoutCommand extends PlatformCommand
         }
         // Ask for a confirmation.
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion("<comment>This command will remove your current Platform.sh configuration.\n\nYou will have to re-enter your Platform.sh credentials to use the CLI tool.</comment> <question>Are you sure you wish to continue? (y/n):</question> ", false);
+        $question = new ConfirmationQuestion("<comment>This command will remove your current configuration.\n\nYou will have to re-enter your Platform.sh credentials to use the CLI tool.</comment>\n\n<question>Are you sure you wish to continue? [y/n] </question> ", false);
 
         if (!$helper->ask($input, $output, $question)) {
             $output->writeln("<info>Okay! You remain logged in to the Platform.sh CLI with your current credentials.</info>");
