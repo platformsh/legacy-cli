@@ -32,7 +32,7 @@ class ProjectBuildCommand extends PlatformCommand
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/repository')) {
             $this->addOption(
                 'working-copy',
-                'wc',
+                null,
                 InputOption::VALUE_NONE,
                 'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
             )->addOption(
