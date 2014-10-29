@@ -10,11 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectBuildCommand extends PlatformCommand
 {
-    /** @var OutputInterface */
-    public $output;
-
-    /** @var InputInterface */
-    public $input;
 
     protected function configure()
     {
@@ -52,9 +47,6 @@ class ProjectBuildCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->output = $output;
-        $this->input = $input;
-
         $projectRoot = $this->getProjectRoot();
         if (empty($projectRoot)) {
             $output->writeln("<error>You must run this command from a project folder.</error>");
@@ -82,7 +74,7 @@ class ProjectBuildCommand extends PlatformCommand
         // The environment ID is used in making the build directory name.
         $settings['environmentId'] = $envId;
 
-        $settings['verbosity'] = $this->output->getVerbosity();
+        $settings['verbosity'] = $output->getVerbosity();
 
         // Explicitly check for the existence of each option, so that this
         // command can be invoked from ProjectGetCommand.
@@ -91,7 +83,7 @@ class ProjectBuildCommand extends PlatformCommand
         $settings['drushWorkingCopy'] = $input->hasOption('working-copy') && $input->getOption('working-copy');
 
         try {
-            $this->build($projectRoot, $settings);
+            $this->build($projectRoot, $settings, $output);
         } catch (\Exception $e) {
             $output->writeln("<error>" . $e->getMessage() . '</error>');
         }
@@ -102,10 +94,11 @@ class ProjectBuildCommand extends PlatformCommand
      *
      * @param string $projectRoot The path to the project to be built.
      * @param array $settings
+     * @param OutputInterface $output
      *
      * @throws \Exception
      */
-    public function build($projectRoot, array $settings)
+    public function build($projectRoot, array $settings, OutputInterface $output)
     {
         $repositoryRoot = $projectRoot . '/repository';
 
@@ -129,7 +122,7 @@ class ProjectBuildCommand extends PlatformCommand
                 $message .= " <info>$appName</info>";
             }
             $message .= " using the toolstack <info>" . $toolstack->getKey() . "</info>";
-            $this->output->writeln($message);
+            $output->writeln($message);
 
             $toolstack->prepareBuild($appRoot, $projectRoot, $settings);
 
@@ -140,7 +133,7 @@ class ProjectBuildCommand extends PlatformCommand
             if ($appName) {
                 $message .= " for <info>$appName</info>";
             }
-            $this->output->writeln($message);
+            $output->writeln($message);
         }
 
     }

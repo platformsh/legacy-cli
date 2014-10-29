@@ -143,7 +143,11 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             $application = $this->getApplication();
             try {
                 $buildCommand = $application->find('build');
-                $buildCommand->build($projectRoot, $machineName);
+                $buildSettings = array(
+                    'environmentId' => $machineName,
+                    'verbosity' => $output->getVerbosity(),
+                );
+                $buildCommand->build($projectRoot, $buildSettings, $output);
             } catch (\Exception $e) {
                 $output->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
                 return 1;
