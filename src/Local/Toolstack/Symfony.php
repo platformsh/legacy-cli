@@ -24,7 +24,7 @@ class Symfony extends ToolstackBase
 
     public function build()
     {
-        $buildDir = $this->absBuildDir;
+        $buildDir = $this->buildDir;
 
         if (!file_exists($this->appRoot . '/composer.json')) {
             throw new \Exception("Couldn't find a composer.json in the directory.");
@@ -44,24 +44,28 @@ class Symfony extends ToolstackBase
     }
 
     public function install() {
-        $buildDir = $this->absBuildDir;
+        $buildDir = $this->buildDir;
 
         // The build has been done, create a config_dev.yml if it is missing.
-        if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/config_dev.yml')) {
-            // Create the config_dev.yml file.
-            copy(CLI_ROOT . '/resources/symfony/config_dev.yml', $buildDir . '/app/config/config_dev.yml');
-        }
-        if (is_dir($buildDir) && !file_exists($buildDir . '/app/config/routing_dev.yml')) {
-            // Create the routing_dev.yml file.
-            copy(CLI_ROOT . '/resources/symfony/routing_dev.yml', $buildDir . '/app/config/routing_dev.yml');
+        if (is_dir($buildDir) && file_exists($buildDir . '/app/config')) {
+            if (!file_exists($buildDir . '/app/config/config_dev.yml')) {
+                // Create the config_dev.yml file.
+                copy(CLI_ROOT . '/resources/symfony/config_dev.yml', $buildDir . '/app/config/');
+            }
+            if (!file_exists($buildDir . '/app/config/routing_dev.yml')) {
+                // Create the routing_dev.yml file.
+                copy(CLI_ROOT . '/resources/symfony/routing_dev.yml', $buildDir . '/app/config/');
+            }
         }
 
         // Point www to the latest build.
         $wwwLink = $this->projectRoot . '/www';
+        $relBuildDir = $this->makePathRelative($buildDir, $wwwLink);
+
         if (file_exists($wwwLink) || is_link($wwwLink)) {
             // @todo Windows might need rmdir instead of unlink.
             unlink($wwwLink);
         }
-        symlink($this->absoluteLinks ? $this->absBuildDir : $this->relBuildDir, $wwwLink);
+        symlink($this->absoluteLinks ? $buildDir : $relBuildDir, $wwwLink);
     }
 }

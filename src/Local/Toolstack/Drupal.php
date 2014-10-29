@@ -66,7 +66,7 @@ class Drupal extends ToolstackBase
 
     public function build()
     {
-        $buildDir = $this->absBuildDir;
+        $buildDir = $this->buildDir;
 
         // Options to pass to the drush command.
         $drushFlags = array();
@@ -135,7 +135,7 @@ class Drupal extends ToolstackBase
             // Drush will only create the $buildDir if the build succeeds.
             $profile = str_replace($this->appRoot, '', $profiles[0]);
             $profile = strtok($profile, '.');
-            $profileDir = $buildDir . '/profiles/' . $profile;
+            $profileDir = $buildDir . '/profiles/' . ltrim($profile, '/');
             // Drush Make requires $profileDir to not exist if it's passed
             // as the target. This chdir($this->appRoot) works around that.
             $cwd = getcwd();
@@ -161,6 +161,7 @@ class Drupal extends ToolstackBase
         }
         else {
             $this->buildMode = 'vanilla';
+            $this->buildDir = $this->appRoot;
         }
 
         return true;
@@ -168,10 +169,7 @@ class Drupal extends ToolstackBase
 
     public function install()
     {
-        $buildDir = $this->buildMode == 'vanilla' ? $this->appRoot : $this->absBuildDir;
-
-        // @todo relative link for vanilla projects
-        $relBuildDir = $this->buildMode == 'vanilla' ? $this->appRoot : $this->relBuildDir;
+        $buildDir = $this->buildDir;
 
         // The build has been done, create a settings.php if it is missing.
         if (!file_exists($buildDir . '/sites/default/settings.php')) {
@@ -205,6 +203,8 @@ class Drupal extends ToolstackBase
 
         // Point www to the latest build.
         $wwwLink = $this->projectRoot . '/www';
+        $relBuildDir = $this->makePathRelative($buildDir, $wwwLink);
+
         if (file_exists($wwwLink) || is_link($wwwLink)) {
             // @todo Windows might need rmdir instead of unlink.
             unlink($wwwLink);

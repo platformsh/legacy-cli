@@ -8,9 +8,7 @@ abstract class ToolstackBase implements ToolstackInterface
     protected $settings = array();
     protected $appRoot;
     protected $projectRoot;
-    protected $buildName;
-    protected $relBuildDir;
-    protected $absBuildDir;
+    protected $buildDir;
     protected $absoluteLinks = false;
 
     public function prepareBuild($appRoot, $projectRoot, array $settings)
@@ -18,9 +16,10 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->appRoot = $appRoot;
         $this->projectRoot = $projectRoot;
         $this->settings = $settings;
-        $this->buildName = date('Y-m-d--H-i-s') . '--' . $settings['environmentId'];
-        $this->relBuildDir = 'builds/' . $this->buildName;
-        $this->absBuildDir = $projectRoot . '/' . $this->relBuildDir;
+
+        $buildName = date('Y-m-d--H-i-s') . '--' . $settings['environmentId'];
+        $this->buildDir = $projectRoot . '/builds/' . $buildName;
+
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
         return $this;
     }
@@ -117,7 +116,7 @@ abstract class ToolstackBase implements ToolstackInterface
      * @param string $destination Path to the symlink.
      * @return string Relative path to the source, or file linking to.
      */
-    private function makePathRelative($source, $destination)
+    protected function makePathRelative($source, $destination)
     {
         $i = 0;
         while (true) {
