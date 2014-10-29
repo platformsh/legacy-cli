@@ -475,8 +475,9 @@ class PlatformCommand extends Command
      *
      * @param array $project The project
      * @param array $environments The environments
+     * @param bool $merge Whether to merge existing alias settings.
      */
-    protected function createDrushAliases($project, $environments)
+    protected function createDrushAliases($project, $environments, $merge = true)
     {
         // Fail if there is no project root, or if it doesn't contain a Drupal
         // application.
@@ -497,12 +498,17 @@ class PlatformCommand extends Command
         }
         $filename = $drushDir . '/' . $group . '.aliases.drushrc.php';
 
+        $aliases = array();
+        if (file_exists($filename) && $merge) {
+            include $filename;
+        }
+
         $export = "<?php\n\n";
         $has_valid_environment = false;
         foreach ($environments as $environment) {
             if (isset($environment['_links']['ssh'])) {
                 $sshUrl = parse_url($environment['_links']['ssh']['href']);
-                $alias = array(
+                $newAlias = array(
                   'parent' => '@parent',
                   'uri' => $environment['_links']['public-url']['href'],
                   'site' => $project['id'],
@@ -511,8 +517,16 @@ class PlatformCommand extends Command
                   'remote-user' => $sshUrl['user'],
                   'root' => '/app/public',
                 );
-                $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($alias, true);
-                $export .= ";\n";
+
+                // If the alias already exists, recursively replace existing
+                // settings with new ones.
+                if (isset($aliases[$environment['id']])) {
+                    $newAlias = array_replace_recursive($aliases[$environment['id']], $newAlias);
+                    unset($aliases[$environment['id']]);
+                }
+
+                $export .= "\n// Automatically generated alias for the environment: " . $environment['title'] . "\n";
+                $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($newAlias, true) . ";\n";
                 $has_valid_environment = true;
             }
         }
@@ -527,22 +541,29 @@ class PlatformCommand extends Command
                   'env' => '_local',
                   'root' => $wwwRoot,
                 );
-                $export .= "\$aliases['_local'] = " . var_export($local, true);
-                $export .= ";\n";
+
+                if (isset($aliases['_local'])) {
+                    $local = array_replace_recursive($aliases['_local'], $local);
+                    unset($aliases['_local']);
+                }
+
+                $export .= "\n// Automatically generated alias for the local environment.\n";
+                $export .= "\$aliases['_local'] = " . var_export($local, true) . ";\n";
                 $has_valid_environment = true;
+            }
+        }
+
+        // Re-add any additional aliases that the user might have defined.
+        if (!empty($aliases)) {
+            $export .= "\n// User-defined aliases.\n";
+            foreach ($aliases as $name => $alias) {
+                $export .= "\$aliases['$name'] = " . var_export($alias, true) . ";\n";
             }
         }
 
         if ($has_valid_environment) {
             file_put_contents($filename, $export);
         }
-        else {
-            // Ensure the file doesn't exist.
-            if (file_exists($filename)) {
-                unlink($filename);
-            }
-        }
-
     }
 
     /**
