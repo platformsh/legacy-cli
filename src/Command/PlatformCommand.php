@@ -414,9 +414,10 @@ class PlatformCommand extends Command
 
             // Recreate the aliases if the list of environments has changed.
             if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
-                $this->config['environments'][$projectId] = $environments;
                 $this->createDrushAliases($project, $environments);
             }
+
+            $this->config['environments'][$projectId] = $environments;
         }
 
         return $this->config['environments'][$projectId];
