@@ -58,7 +58,7 @@ You should now be able to install as described. **Note: Drush 6 is not compatibl
 The current output of `platform list` is as follows:
 
 ```
-Platform CLI version 1.1.0
+Platform CLI version 1.2.1
 
 Usage:
   [options] command [arguments]
