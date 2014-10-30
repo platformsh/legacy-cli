@@ -45,6 +45,8 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
                 $output->writeln("Active environments cannot be deleted.");
             }
             $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be deleted.</error>");
+            // @todo make this less annoying
+            $output->writeln("There may be another operation in progress - please wait and try again.");
             return 1;
         }
 
