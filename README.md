@@ -37,7 +37,7 @@ Use the 'list' command to get a list of available options and commands:
 The current output of `platform list` is as follows:
 
 ```
-Platform.sh CLI version 1.2.2
+Platform.sh CLI version 1.2.3
 
 Usage:
   [options] command [arguments]
