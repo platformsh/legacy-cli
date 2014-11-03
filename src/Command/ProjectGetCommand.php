@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -151,7 +152,10 @@ class ProjectGetCommand extends PlatformCommand
                 $application = $this->getApplication();
                 $buildCommand = $application->find('build');
                 chdir($projectRoot);
-                return $buildCommand->execute($input, $output);
+                $buildInput = new ArrayInput(array(
+                      'command' => 'project:build',
+                  ));
+                return $buildCommand->run($buildInput, $output);
             }
         }
         else {
