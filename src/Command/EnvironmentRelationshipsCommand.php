@@ -28,7 +28,7 @@ class EnvironmentRelationshipsCommand extends EnvironmentCommand
         }
 
         $sshUrlString = $this->getSshUrl();
-        $command = 'ssh ' . $sshUrlString . ' "php -r \'echo getenv(\"PLATFORM_RELATIONSHIPS\");\'"';
+        $command = 'ssh ' . $sshUrlString . " 'echo \$PLATFORM_RELATIONSHIPS'";
         $relationships = shell_exec($command);
         $results = json_decode(base64_decode($relationships));
 
