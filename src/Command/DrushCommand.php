@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -51,7 +52,11 @@ class DrushCommand extends PlatformCommand
         $command = 'drush @' . $alias . ' ';
         // Take the entire input string (all arguments and options) after the
         // name of the drush command.
+        if (!$input instanceof ArgvInput) {
+            throw new \InvalidArgumentException('Invalid input type');
+        }
         $command .= substr($input->__toString(), 6);
+
         passthru($command);
     }
 }

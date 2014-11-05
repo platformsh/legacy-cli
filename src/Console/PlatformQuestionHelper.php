@@ -16,6 +16,8 @@ class PlatformQuestionHelper extends QuestionHelper
 {
     /**
      * {@inheritdoc}
+     *
+     * @return string|bool  The user's answer.
      */
     public function ask(InputInterface $input, OutputInterface $output, Question $question)
     {
