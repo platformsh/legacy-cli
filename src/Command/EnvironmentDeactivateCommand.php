@@ -46,6 +46,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
                 return 0;
             }
             $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be deactivated.</error>");
+            $output->writeln("There may be another operation in progress - please wait and try again.");
             return 1;
         }
 
