@@ -36,13 +36,14 @@ class PlatformClient extends Client
         catch (ClientErrorResponseException $e) {
             $response = $e->getResponse();
             if ($response && ($json = $response->json())) {
+                $url = $e->getRequest()->getUrl();
                 $reason = $response->getReasonPhrase();
                 $code = $json['code'];
                 $message = $json['message'];
                 if (!empty($json['detail'])) {
                     $message .= "\n  " . $json['detail'];
                 }
-                throw new \RuntimeException("The Platform.sh API call failed.\nError: $code $reason\nMessage:\n  $message");
+                throw new \RuntimeException("The Platform.sh API call failed.\nURL: $url\nError: $code $reason\nMessage:\n  $message");
             }
             throw $e;
         }
