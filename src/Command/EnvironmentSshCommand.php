@@ -18,9 +18,8 @@ class EnvironmentSshCommand extends EnvironmentCommand
             ->setAliases(array('ssh'))
             ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
             ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
-            ->addOption('echo', NULL, InputOption::VALUE_NONE, "Print the connection string to the console.")
+            ->addOption('pipe', NULL, InputOption::VALUE_NONE, "Output the SSH URL only.")
             ->setDescription('SSH to the current environment.');
-        // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -31,16 +30,12 @@ class EnvironmentSshCommand extends EnvironmentCommand
 
         $sshUrlString = $this->getSshUrl();
 
-        $command = 'ssh ' . $sshUrlString;
-        $execute = !$input->getOption('echo');
-        if ($execute) {
-            passthru($command);
+        if ($input->getOption('pipe')) {
+            $output->write($sshUrlString);
             return;
         }
-        else {
-            $output->writeln("<info>The SSH url for the current environment is: " . $command . "</info>");
-            return;
-        }
+
+        passthru("ssh $sshUrlString");
     }
 
 }
