@@ -55,6 +55,8 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->deactivateEnvironment();
+        // Reload the stored environments.
+        $this->getEnvironments($this->project, true);
 
         $output->writeln("The environment <info>$environmentId</info> has been deactivated.");
         return 0;

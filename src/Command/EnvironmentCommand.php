@@ -12,6 +12,12 @@ class EnvironmentCommand extends PlatformCommand
     protected $environment;
     protected $environments;
 
+    /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return bool
+     */
     protected function validateInput(InputInterface $input, OutputInterface $output)
     {
         // Allow the project to be specified explicitly via --project.
@@ -20,7 +26,7 @@ class EnvironmentCommand extends PlatformCommand
             $project = $this->getProject($projectId);
             if (!$project) {
                 $output->writeln("<error>Specified project not found.</error>");
-                return;
+                return false;
             }
             $this->project = $project;
         } else {
@@ -29,7 +35,7 @@ class EnvironmentCommand extends PlatformCommand
             if (!$this->project) {
                 $output->writeln("<error>Could not determine the current project.</error>");
                 $output->writeln("<error>Specify it manually using --project or go to a project directory.</error>");
-                return;
+                return false;
             }
         }
 
@@ -40,7 +46,7 @@ class EnvironmentCommand extends PlatformCommand
                 $this->environment = $this->getEnvironment($environmentId, $this->project);
                 if (!$this->environment) {
                     $output->writeln("<error>Specified environment not found.</error>");
-                    return;
+                    return false;
                 }
             } else {
                 // Autodetect the environment if the user is in a project directory.
@@ -48,7 +54,7 @@ class EnvironmentCommand extends PlatformCommand
                 if (!$this->environment) {
                     $output->writeln("<error>Could not determine the current environment.</error>");
                     $output->writeln("<error>Specify it manually using --environment or go to a project directory.</error>");
-                    return;
+                    return false;
                 }
             }
         }
