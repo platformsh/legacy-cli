@@ -58,9 +58,7 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
         $this->getEnvironments($this->project, true);
 
         $environmentId = $this->environment['id'];
-        $message = '<info>';
-        $message .= "\nThe environment $environmentId has been deleted. \n";
-        $message .= "</info>";
-        $output->writeln($message);
+
+        $output->writeln("The environment <info>$environmentId</info> has been deleted.");
     }
 }
