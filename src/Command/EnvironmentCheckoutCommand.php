@@ -32,8 +32,11 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
 
         $branch = $input->getArgument('id');
         if (empty($branch) && $input->isInteractive()) {
-            $currentEnvironment = $this->getCurrentEnvironment($project);
             $environments = $this->getEnvironments($project);
+            $currentEnvironment = $this->getCurrentEnvironment($project);
+            if ($currentEnvironment) {
+                $output->writeln("The current environment is <info>{$currentEnvironment['id']}</info>.");
+            }
             $environmentList = array();
             foreach ($environments as $environment) {
                 if ($currentEnvironment && $environment['id'] == $currentEnvironment['id']) {
@@ -41,11 +44,11 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
                 }
                 $environmentList[] = $environment['id'];
             }
-            $chooseEnvironmentText = '';
-            if ($currentEnvironment) {
-                $chooseEnvironmentText = "The current environment is <info>{$currentEnvironment['id']}</info>.\n\n";
+            if (!count($environmentList)) {
+                $output->writeln("Use <info>platform branch</info> to create an environment.");
+                return 1;
             }
-            $chooseEnvironmentText .= "Enter a number to check out another environment:";
+            $chooseEnvironmentText = "Enter a number to check out another environment:";
             $helper = $this->getHelper('question');
             $question = new ChoiceQuestion($chooseEnvironmentText, $environmentList);
             $question->setMaxAttempts(5);
