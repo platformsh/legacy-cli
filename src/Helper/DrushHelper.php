@@ -33,6 +33,10 @@ class DrushHelper extends Helper {
      */
     public function ensureInstalled($minVersion = '6')
     {
+        static $checked;
+        if ($checked) {
+            return true;
+        }
         $drushVersion = $this->execute(array('--version'));
         if (!is_string($drushVersion)) {
             throw new \Exception('Drush must be installed');
@@ -42,6 +46,7 @@ class DrushHelper extends Helper {
         if (version_compare($versionNumber, $minVersion) === -1) {
             throw new \Exception('Drush version must be at least: ' . $minVersion);
         }
+        $checked = true;
     }
 
     /**

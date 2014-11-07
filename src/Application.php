@@ -102,6 +102,7 @@ class Application extends ConsoleApplication {
         $commands[] = new Command\ProjectCleanCommand();
         $commands[] = new Command\ProjectDrushAliasesCommand();
         $commands[] = new Command\ProjectGetCommand();
+        $commands[] = new Command\ProjectInitCommand();
         $commands[] = new Command\SshKeyAddCommand();
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();
