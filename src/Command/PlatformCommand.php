@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
+use CommerceGuys\Platform\Cli\Api\PlatformClient;
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
@@ -172,7 +173,7 @@ class PlatformCommand extends Command
         if (!$this->platformClient) {
             $description = ServiceDescription::factory(CLI_ROOT . '/services/platform.php');
             $oauth2Plugin = $this->getOauth2Plugin();
-            $this->platformClient = new Client();
+            $this->platformClient = new PlatformClient();
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
         }
