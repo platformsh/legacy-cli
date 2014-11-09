@@ -16,8 +16,8 @@ class ProjectCleanCommand extends PlatformCommand
             ->setAliases(array('clean'))
             ->setDescription('Remove project builds.')
             ->addOption(
-                'number',
-                'c',
+                'keep',
+                null,
                 InputOption::VALUE_OPTIONAL,
                 'Number of builds to keep.',
                 5
@@ -37,47 +37,46 @@ class ProjectCleanCommand extends PlatformCommand
         }
 
         $buildsDir = $projectRoot . '/builds';
-        if ($this->dir_empty($buildsDir)) {
-            $output->writeln("<error>There are no builds to clean.</error>");
-            return;
-        }
 
         // Collect directories.
         $builds = array();
         $handle = opendir($buildsDir);
-        while (false !== ($entry = readdir($handle))) {
-            if ($entry != "." && $entry != "..") {
+        while ($entry = readdir($handle)) {
+            if (strpos($entry, '.') !== 0) {
                 $builds[] = $entry;
             }
         }
 
+        $count = count($builds);
+
+        if (!$count) {
+            $output->writeln("There are no builds to delete.");
+            return;
+        }
+
         // Remove old builds.
         sort($builds);
-        $deleted = 0;
-        $keep = (int) $input->getOption('number');
+        $numDeleted = 0;
+        $numKept = 0;
+        $keep = (int) $input->getOption('keep');
         foreach ($builds as $build) {
-            if ((count($builds) - $deleted) > $keep) {
+            if ($count - $numDeleted > $keep) {
+                $output->writeln("Deleting: $build");
                 $this->rmdir($projectRoot . '/builds/' . $build);
-                $deleted++;
+                $numDeleted++;
+            }
+            else {
+                $numKept++;
             }
         }
 
-        $output->writeln('<info>Deleted ' . $deleted . ' old build(s).</info>');
+        if ($numDeleted) {
+            $output->writeln("Deleted <info>$numDeleted</info> build(s).");
+        }
+
+        if ($numKept) {
+            $output->writeln("Kept <info>$numKept</info> build(s).");
+        }
     }
 
-    /**
-     * Check if directory contains files.
-     *
-     * @return boolean False if there are no files in directory.
-     */
-    private function dir_empty($dir) {
-        if (!is_readable($dir)) return true;
-        $handle = opendir($dir);
-        while (false !== ($entry = readdir($handle))) {
-            if ($entry != "." && $entry != "..") {
-                return false;
-            }
-        }
-        return true;
-    }
 }
