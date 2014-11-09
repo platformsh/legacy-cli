@@ -21,6 +21,11 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->buildDir = $projectRoot . '/builds/' . $buildName;
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
+
+        // Force absolute links on Windows.
+        if (strpos(PHP_OS, 'WIN') !== false) {
+            $this->absoluteLinks = true;
+        }
         return $this;
     }
 
