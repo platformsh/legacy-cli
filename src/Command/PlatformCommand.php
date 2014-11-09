@@ -6,7 +6,7 @@ use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
 use CommerceGuys\Platform\Cli\Api\PlatformClient;
-use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
+use CommerceGuys\Platform\Cli\Utils\Drush;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
@@ -39,7 +39,7 @@ class PlatformCommand extends Command
     protected function loadConfig()
     {
         if (!$this->config) {
-            $configPath = $this->getHomeDirectory() . '/.platform';
+            $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
             if (!file_exists($configPath)) {
                 $this->login();
             }
@@ -268,13 +268,14 @@ class PlatformCommand extends Command
 
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
-        $remote = trim($this->shellExec("cd $escapedRepoDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}"));
+        $shellHelper = $this->getHelper('shell');
+        $remote = trim($shellHelper->execute("cd $escapedRepoDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}"));
         if ($remote && strpos($remote, '/') !== false) {
             list($remoteName, $potentialEnvironment) = explode('/', $remote, 2);
             $environment = $this->getEnvironment($potentialEnvironment, $project);
             if ($environment) {
                 // Check that the remote is Platform's.
-                $remoteUrl = trim($this->shellExec("cd $escapedRepoDir && git config --get remote.$remoteName.url"));
+                $remoteUrl = trim($shellHelper->execute("cd $escapedRepoDir && git config --get remote.$remoteName.url"));
                 if (strpos($remoteUrl, 'platform.sh')) {
                     return $environment;
                 }
@@ -283,7 +284,7 @@ class PlatformCommand extends Command
 
         // There is no Git remote set, or it's set to a non-Platform URL.
         // Fall back to trying the current branch name.
-        $currentBranch = trim($this->shellExec("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
+        $currentBranch = trim($shellHelper->execute("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
         if ($currentBranch) {
             $currentBranchSanitized = $this->sanitizeEnvironmentId($currentBranch);
             $environment = $this->getEnvironment($currentBranchSanitized, $project);
@@ -299,12 +300,17 @@ class PlatformCommand extends Command
      * Find the root of the current project.
      *
      * The project root contains a .platform-project yaml file.
-     * The current directory tree is traversed until the file is found, or
-     * the home directory is reached.
+     * The current directory tree is traversed until the file is found.
+     *
+     * @return string|null
      */
     protected function getProjectRoot()
     {
-        $homeDir = $this->getHomeDirectory();
+        static $projectRoot;
+        if ($projectRoot !== null) {
+            return $projectRoot;
+        }
+
         $currentDir = getcwd();
         $projectRoot = null;
         while (!$projectRoot) {
@@ -321,10 +327,6 @@ class PlatformCommand extends Command
                 break;
             }
             $currentDir = implode('/', $dirParts);
-            if ($currentDir == $homeDir) {
-                // We've reached the home directory, stop.
-                break;
-            }
         }
 
         return $projectRoot;
@@ -416,7 +418,10 @@ class PlatformCommand extends Command
 
             // Recreate the aliases if the list of environments has changed.
             if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
-                $this->createDrushAliases($project, $environments);
+                if ($projectRoot = $this->getProjectRoot()) {
+                    $homeDir = $this->getHelper('fs')->getHomeDirectory();
+                    Drush::createAliases($project, $projectRoot, $environments, $homeDir);
+                }
             }
 
             $this->config['environments'][$projectId] = $environments;
@@ -473,118 +478,6 @@ class PlatformCommand extends Command
     }
 
     /**
-     * Create drush aliases for the provided project and environments.
-     *
-     * @param array $project The project
-     * @param array $environments The environments
-     * @param bool $merge Whether to merge existing alias settings.
-     */
-    protected function createDrushAliases($project, $environments, $merge = true)
-    {
-        // Fail if there is no project root, or if it doesn't contain a Drupal
-        // application.
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot || !Drupal::isDrupal($projectRoot . '/repository')) {
-            return false;
-        }
-
-        $group = $project['id'];
-        if (!empty($project['alias-group'])) {
-          $group = $project['alias-group'];
-        }
-
-        // Ensure the existence of the .drush directory.
-        $drushDir = $this->getHomeDirectory() . '/.drush';
-        if (!is_dir($drushDir)) {
-            mkdir($drushDir);
-        }
-        $filename = $drushDir . '/' . $group . '.aliases.drushrc.php';
-
-        $aliases = array();
-        if (file_exists($filename) && $merge) {
-            include $filename;
-        }
-
-        $export = '';
-
-        $has_valid_environment = false;
-        foreach ($environments as $environment) {
-            if (isset($environment['_links']['ssh'])) {
-                $sshUrl = parse_url($environment['_links']['ssh']['href']);
-                $newAlias = array(
-                  'parent' => '@parent',
-                  'uri' => $environment['_links']['public-url']['href'],
-                  'site' => $project['id'],
-                  'env' => $environment['id'],
-                  'remote-host' => $sshUrl['host'],
-                  'remote-user' => $sshUrl['user'],
-                  'root' => '/app/public',
-                  'platformsh-cli-auto-remove' => true,
-                );
-
-                // If the alias already exists, recursively replace existing
-                // settings with new ones.
-                if (isset($aliases[$environment['id']])) {
-                    $newAlias = array_replace_recursive($aliases[$environment['id']], $newAlias);
-                    unset($aliases[$environment['id']]);
-                }
-
-                $export .= "\n// Automatically generated alias for the environment: " . $environment['title'] . "\n";
-                $export .= "\$aliases['" . $environment['id'] . "'] = " . var_export($newAlias, true) . ";\n";
-                $has_valid_environment = true;
-            }
-        }
-
-        // Add a local alias as well.
-        if ($projectRoot) {
-            $wwwRoot = $projectRoot . '/www';
-            if (is_dir($wwwRoot)) {
-                $local = array(
-                  'parent' => '@parent',
-                  'site' => $project['id'],
-                  'env' => '_local',
-                  'root' => $wwwRoot,
-                  'platformsh-cli-auto-remove' => true,
-                );
-
-                if (isset($aliases['_local'])) {
-                    $local = array_replace_recursive($aliases['_local'], $local);
-                    unset($aliases['_local']);
-                }
-
-                $export .= "\n// Automatically generated alias for the local environment.\n";
-                $export .= "\$aliases['_local'] = " . var_export($local, true) . ";\n";
-                $has_valid_environment = true;
-            }
-        }
-
-        // Re-add any additional aliases that the user might have defined.
-        foreach ($aliases as $name => $alias) {
-            if (!empty($alias['platformsh-cli-auto-remove'])) {
-                unset($aliases[$name]);
-            }
-        }
-        if (count($aliases)) {
-            $user = "// User-defined aliases.\n";
-            foreach ($aliases as $name => $alias) {
-                $user .= "\$aliases['$name'] = " . var_export($alias, true) . ";\n";
-            }
-            $export = $user . "\n" . $export;
-        }
-
-        $header = "<?php\n";
-
-        $header .= "/**\n * @file\n * Drush aliases for the Platform.sh project {$project['name']}.\n *";
-        $header .= "\n * Generated by the Platform.sh CLI.\n */\n\n";
-
-        $export = $header . $export;
-
-        if ($has_valid_environment) {
-            file_put_contents($filename, $export);
-        }
-    }
-
-    /**
      * Ask the user to confirm an action.
      *
      * @param string $questionText
@@ -601,63 +494,6 @@ class PlatformCommand extends Command
     }
 
     /**
-     * Delete a directory and all of its files.
-     *
-     * @param string $directory
-     */
-    protected function rmdir($directory)
-    {
-        if (is_dir($directory)) {
-            // Recursively empty the directory.
-            $directoryResource = opendir($directory);
-            while ($file = readdir($directoryResource)) {
-                if (!in_array($file, array('.', '..'))) {
-                    if (is_link($directory . '/' . $file)) {
-                        unlink($directory . '/' . $file);
-                    } else if (is_dir($directory . '/' . $file)) {
-                        $this->rmdir($directory . '/' . $file);
-                    } else {
-                        unlink($directory . '/' . $file);
-                    }
-                }
-            }
-            closedir($directoryResource);
-
-            // Delete the directory itself.
-            rmdir($directory);
-        }
-    }
-
-    /**
-     * Run a shell command in the current directory, suppressing errors.
-     *
-     * @param string $cmd The command, suitably escaped.
-     * @param string &$error Optionally use this to capture errors.
-     *
-     * @throws \Exception
-     *
-     * @return string The command output.
-     */
-    protected function shellExec($cmd, &$error = '')
-    {
-      $descriptorSpec = array(
-        0 => array('pipe', 'r'), // stdin
-        1 => array('pipe', 'w'), // stdout
-        2 => array('pipe', 'w'), // stderr
-      );
-      $process = proc_open($cmd, $descriptorSpec, $pipes);
-      if (!$process) {
-          throw new \Exception('Failed to execute command');
-      }
-      $result = stream_get_contents($pipes[1]);
-      $error = stream_get_contents($pipes[2]);
-      fclose($pipes[1]);
-      fclose($pipes[2]);
-      proc_close($process);
-      return $result;
-    }
-
-    /**
      * Sanitize a proposed environment ID.
      *
      * @param string $proposed
@@ -666,6 +502,56 @@ class PlatformCommand extends Command
      */
     protected function sanitizeEnvironmentId($proposed) {
         return substr(preg_replace('/[^a-z0-9-]+/i', '', strtolower($proposed)), 0, 32);
+    }
+
+    /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return bool
+     */
+    protected function validateInput(InputInterface $input, OutputInterface $output)
+    {
+        // Allow the project to be specified explicitly via --project.
+        $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
+        if (!empty($projectId)) {
+            $project = $this->getProject($projectId);
+            if (!$project) {
+                $output->writeln("<error>Specified project not found.</error>");
+                return false;
+            }
+            $this->project = $project;
+        } else {
+            // Autodetect the project if the user is in a project directory.
+            $this->project = $this->getCurrentProject();
+            if (!$this->project) {
+                $output->writeln("<error>Could not determine the current project.</error>");
+                $output->writeln("<error>Specify it manually using --project or go to a project directory.</error>");
+                return false;
+            }
+        }
+
+        if ($input->hasOption('environment')) {
+            // Allow the environment to be specified explicitly via --environment.
+            $environmentId = $input->getOption('environment');
+            if (!empty($environmentId)) {
+                $this->environment = $this->getEnvironment($environmentId, $this->project);
+                if (!$this->environment) {
+                    $output->writeln("<error>Specified environment not found.</error>");
+                    return false;
+                }
+            } else {
+                // Autodetect the environment if the user is in a project directory.
+                $this->environment = $this->getCurrentEnvironment($this->project);
+                if (!$this->environment) {
+                    $output->writeln("<error>Could not determine the current environment.</error>");
+                    $output->writeln("<error>Specify it manually using --environment or go to a project directory.</error>");
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -679,25 +565,9 @@ class PlatformCommand extends Command
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
             }
 
-            $configPath = $this->getHomeDirectory() . '/.platform';
+            $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
             $dumper = new Dumper();
             file_put_contents($configPath, $dumper->dump($this->config));
         }
-    }
-
-    /**
-     * @return string The absolute path to the user's home directory.
-     */
-    public function getHomeDirectory()
-    {
-        $home = getenv('HOME');
-        if (empty($home)) {
-            // Windows compatibility.
-            if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
-                $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
-            }
-        }
-
-        return $home;
     }
 }

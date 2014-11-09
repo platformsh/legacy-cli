@@ -66,7 +66,8 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
 
         chdir($projectRoot . '/repository');
 
-        $existsLocal = $this->shellExec("git show-ref refs/heads/$machineName");
+        $shellHelper = $this->getHelper('shell');
+        $existsLocal = $shellHelper->execute("git show-ref refs/heads/$machineName");
 
         // If the branch doesn't already exist locally, check whether it is a
         // Platform.sh environment.
@@ -77,7 +78,7 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
             }
             // Fetch from origin.
             // @todo don't assume that the Platform.sh remote is called 'origin'
-            passthru('git fetch origin');
+            $shellHelper->execute('git fetch origin');
         }
 
         // Check out the branch.

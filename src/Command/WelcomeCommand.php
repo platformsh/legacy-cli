@@ -28,16 +28,16 @@ class WelcomeCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln("\nWelcome to Platform.sh!");
+        $output->writeln("Welcome to Platform.sh!\n");
 
         $application = $this->getApplication();
 
         if ($currentProject = $this->getCurrentProject()) {
             // The project is known. Show the environments.
             $projectName = $currentProject['name'];
-            $output->write("\nYour project is <info>$projectName</info>.");
+            $output->writeln("Your project is <info>$projectName</info>.\n");
             $application->find('environments')->run($input, $output);
-            $output->writeln("You can list other projects by running <info>platform projects</info>.\n");
+            $output->writeln("\nYou can list other projects by running <info>platform projects</info>.\n");
             $output->writeln("Manage your domains by running <info>platform domains</info>.");
         } else {
             // The project is not known. Show all projects.
@@ -48,7 +48,7 @@ class WelcomeCommand extends PlatformCommand
 
         $output->writeln("List all commands and their options by running <info>platform help</info>.\n");
 
-        $output->writeln("Type <info>platform list</info> to see all available commands.\n");
+        $output->writeln("Type <info>platform list</info> to see all available commands.");
     }
 
 }

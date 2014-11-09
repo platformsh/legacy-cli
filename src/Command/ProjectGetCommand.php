@@ -123,9 +123,10 @@ class ProjectGetCommand extends PlatformCommand
         // First check if the repo actually exists.
         $checkCommand = "git ls-remote $gitUrl HEAD";
         exec($checkCommand, $checkOutput, $checkReturnVar);
+        $fsHelper = $this->getHelper('fs');
         if ($checkReturnVar) {
             // The ls-remote command failed.
-            $this->rmdir($projectRoot);
+            $fsHelper->rmdir($projectRoot);
             $output->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
             return 1;
@@ -137,7 +138,7 @@ class ProjectGetCommand extends PlatformCommand
             if (!is_dir($repositoryDir)) {
                 // The clone wasn't successful. Clean up the folders we created
                 // and then bow out with a message.
-                $this->rmdir($projectRoot);
+                $fsHelper->rmdir($projectRoot);
                 $output->writeln('<error>Failed to clone Git repository</error>');
                 $output->writeln('Please check your SSH credentials or contact Platform.sh support');
                 return 1;

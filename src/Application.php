@@ -2,8 +2,9 @@
 
 namespace CommerceGuys\Platform\Cli;
 
-use CommerceGuys\Platform\Cli\Console\PlatformQuestionHelper;
-
+use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
+use CommerceGuys\Platform\Cli\Helper\PlatformQuestionHelper;
+use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
@@ -84,9 +85,11 @@ class Application extends ConsoleApplication {
     protected function getDefaultHelperSet()
     {
         return new HelperSet(array(
-          new FormatterHelper(),
-          new TableHelper(),
-          new PlatformQuestionHelper(),
+            new FormatterHelper(),
+            new TableHelper(),
+            new PlatformQuestionHelper(),
+            new FilesystemHelper(),
+            new ShellHelper(),
         ));
     }
 

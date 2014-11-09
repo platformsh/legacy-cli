@@ -27,7 +27,7 @@ class PlatformLogoutCommand extends PlatformCommand
     {
         // We manually check for the configuration file here. If it does not
         // exist then this command should not run.
-        $configPath = $this->getHomeDirectory() . '/.platform';
+        $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
         $configFileExists = file_exists($configPath);
 
         if (!$configFileExists) {
