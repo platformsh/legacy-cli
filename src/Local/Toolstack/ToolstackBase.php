@@ -21,7 +21,37 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->buildDir = $projectRoot . '/builds/' . $buildName;
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
+
+        // Force absolute links on Windows.
+        if (strpos(PHP_OS, 'WIN') !== false) {
+            $this->absoluteLinks = true;
+        }
         return $this;
+    }
+
+    /**
+     * Create a symbolic link to a directory.
+     *
+     * @param string $target The target directory.
+     * @param string $link The name of the link.
+     *
+     * @return bool TRUE on success, FALSE on failure.
+     */
+    protected function symlinkDir($target, $link)
+    {
+        if (!is_dir($target)) {
+            throw new \InvalidArgumentException("The symlink target must be a directory.");
+        }
+        if (is_link($link)) {
+            // Windows needs rmdir(), other systems need unlink().
+            if (strpos(PHP_OS, 'WIN') !== false && is_dir($link)) {
+                rmdir($link);
+            }
+            else {
+                unlink($link);
+            }
+        }
+        return symlink($target, $link);
     }
 
     // @todo: Move this filesystem stuff into a reusable trait somewhere... :(
@@ -60,7 +90,7 @@ abstract class ToolstackBase implements ToolstackInterface
      * @param bool $skipExisting
      * @param array $blacklist
      */
-    protected function symlink($source, $destination, $skipExisting = true, $blacklist = array())
+    protected function symlinkAll($source, $destination, $skipExisting = true, $blacklist = array())
     {
         if (!is_dir($destination)) {
             mkdir($destination);

@@ -61,11 +61,6 @@ class Symfony extends ToolstackBase
         // Point www to the latest build.
         $wwwLink = $this->projectRoot . '/www';
         $relBuildDir = $this->makePathRelative($buildDir, $wwwLink);
-
-        if (file_exists($wwwLink) || is_link($wwwLink)) {
-            // @todo Windows might need rmdir instead of unlink.
-            unlink($wwwLink);
-        }
-        symlink($this->absoluteLinks ? $buildDir : $relBuildDir, $wwwLink);
+        $this->symlinkDir($this->absoluteLinks ? $buildDir : $relBuildDir, $wwwLink);
     }
 }

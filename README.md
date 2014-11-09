@@ -11,16 +11,17 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 * [Install Composer globally](https://getcomposer.org/doc/00-intro.md#globally).
 
-* Make sure Composer's global executable directory is in your system's PATH:
-
-        for FILE in $HOME/.bashrc $HOME/.bash_profile $HOME/.bash_login $HOME/.profile; \
-        do if [ -f $FILE ]; then \
-        printf '\nexport PATH="$HOME/.composer/vendor/bin:$PATH"' >> $FILE && . $FILE; \
-        break; fi; done
-
 * Install the latest stable version of the CLI:
 
         composer global require 'platformsh/cli:1.*'
+
+* Make sure Composer's vendor/bin directory is in your system's PATH. This
+  command works in Linux and OS X:
+
+        for FILE in ~/.bashrc ~/.bash_profile ~/.bash_login ~/.profile; \
+        do if [ -f $FILE ]; then \
+        echo 'export PATH="$PATH:~/.composer/vendor/bin"' >> $FILE && . $FILE; \
+        break; fi; done
 
 ### Usage
 
