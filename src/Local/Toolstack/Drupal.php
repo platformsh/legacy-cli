@@ -147,7 +147,7 @@ class Drupal extends ToolstackBase
                 throw new \Exception('Drush command failed: ' . $drushCommand);
             }
             $symlinkBlacklist[] = 'settings*.php';
-            $this->symlink($this->appRoot, $profileDir, true, $symlinkBlacklist);
+            $this->symlinkAll($this->appRoot, $profileDir, true, $symlinkBlacklist);
         } elseif (file_exists($this->appRoot . '/project.make')) {
             $this->buildMode = 'makefile';
             Drupal::ensureDrushInstalled();
@@ -157,7 +157,7 @@ class Drupal extends ToolstackBase
             if ($return_var > 0 || !is_dir($buildDir)) {
                 throw new \Exception('Drush command failed: ' . $drushCommand);
             }
-            $this->symlink($this->appRoot, $buildDir . '/sites/default', true, $symlinkBlacklist);
+            $this->symlinkAll($this->appRoot, $buildDir . '/sites/default', true, $symlinkBlacklist);
         }
         else {
             $this->buildMode = 'vanilla';
@@ -199,16 +199,11 @@ class Drupal extends ToolstackBase
         // Symlink all files and folders from shared.
         // @todo: Figure out a way to split up local shared resources by application.
 
-        $this->symlink($this->projectRoot . '/shared', $buildDir . '/sites/default');
+        $this->symlinkAll($this->projectRoot . '/shared', $buildDir . '/sites/default');
 
         // Point www to the latest build.
         $wwwLink = $this->projectRoot . '/www';
         $relBuildDir = $this->makePathRelative($buildDir, $wwwLink);
-
-        if (file_exists($wwwLink) || is_link($wwwLink)) {
-            // @todo Windows might need rmdir instead of unlink.
-            unlink($wwwLink);
-        }
-        symlink($this->absoluteLinks ? $buildDir : $relBuildDir, $wwwLink);
+        $this->symlinkDir($this->absoluteLinks ? $buildDir : $relBuildDir, $wwwLink);
     }
 }
