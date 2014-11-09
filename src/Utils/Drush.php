@@ -38,7 +38,7 @@ class Drush {
         }
 
         $filename = $drushDir . '/' . $group . '.aliases.drushrc.php';
-        if (!is_writable($filename)) {
+        if (!is_writable($drushDir) || (file_exists($filename) && !is_writable($filename))) {
             throw new \Exception("Drush alias file not writable: $filename");
         }
 
