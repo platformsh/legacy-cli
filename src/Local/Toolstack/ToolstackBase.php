@@ -30,10 +30,10 @@ abstract class ToolstackBase implements ToolstackInterface
     }
 
     /**
-     * Create a symbolic link from one directory to another.
+     * Create a symbolic link to a directory.
      *
-     * @param string $target
-     * @param string $link
+     * @param string $target The target directory.
+     * @param string $link The name of the link.
      *
      * @return bool TRUE on success, FALSE on failure.
      */
@@ -44,14 +44,14 @@ abstract class ToolstackBase implements ToolstackInterface
         }
         if (is_link($link)) {
             // Windows needs rmdir(), other systems need unlink().
-            if (strpos(PHP_OS, 'WIN') !== false) {
+            if (strpos(PHP_OS, 'WIN') !== false && is_dir($link)) {
                 rmdir($link);
             }
             else {
                 unlink($link);
             }
         }
-        symlink($target, $link);
+        return symlink($target, $link);
     }
 
     // @todo: Move this filesystem stuff into a reusable trait somewhere... :(
