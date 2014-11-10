@@ -30,7 +30,7 @@ class EnvironmentSshCommand extends EnvironmentCommand
 
         $sshUrlString = $this->getSshUrl();
 
-        if ($input->getOption('pipe')) {
+        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->write($sshUrlString);
             return;
         }

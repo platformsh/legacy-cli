@@ -15,7 +15,9 @@ class EnvironmentCommand extends PlatformCommand
     }
 
     /**
-     * Get the SSH URL for an environment.
+     * Get the SSH URL for the selected environment.
+     *
+     * @throws \Exception
      *
      * @return string
      */
@@ -27,7 +29,7 @@ class EnvironmentCommand extends PlatformCommand
 
         if (!isset($this->environment['_links']['ssh']['href'])) {
             $id = $this->environment['id'];
-            throw new \Exception("The environment $id does not have an SSH URL. There may be an operation in progress.");
+            throw new \Exception("The environment $id does not have an SSH URL.");
         }
 
         $sshUrl = parse_url($this->environment['_links']['ssh']['href']);

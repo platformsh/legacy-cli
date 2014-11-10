@@ -12,6 +12,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
@@ -491,6 +492,23 @@ class PlatformCommand extends Command
         $helper = $this->getHelper('question');
         $question = new ConfirmationQuestion($questionText, $default);
         return $helper->ask($input, $output, $question);
+    }
+
+    /**
+     * Detect automatically whether the output is a TTY terminal.
+     *
+     * @param OutputInterface $output
+     *
+     * @return bool
+     */
+    protected function isTerminal(OutputInterface $output)
+    {
+        if (!$output instanceof StreamOutput) {
+            return false;
+        }
+        // This uses the same test as StreamOutput::hasColorSupport().
+        $stream = $output->getStream();
+        return function_exists('posix_isatty') && @posix_isatty($stream);
     }
 
     /**

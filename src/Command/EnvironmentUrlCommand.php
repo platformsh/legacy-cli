@@ -64,7 +64,7 @@ class EnvironmentUrlCommand extends EnvironmentCommand
             $url .= trim($path);
         }
 
-        if ($input->getOption('pipe')) {
+        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->write($url);
             return;
         }

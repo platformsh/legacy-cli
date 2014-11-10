@@ -48,7 +48,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
 
         $current_group = isset($project['alias-group']) ? $project['alias-group'] : $project['id'];
 
-        if ($input->getOption('pipe')) {
+        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->writeln($current_group);
             return;
         }
