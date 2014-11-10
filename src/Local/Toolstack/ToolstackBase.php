@@ -32,10 +32,15 @@ abstract class ToolstackBase implements ToolstackInterface
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
 
+        $forceSymlinks = !empty($settings['forceSymlinks']);
+
         // Force absolute links on Windows.
-        if (strpos(PHP_OS, 'WIN') !== false) {
+        if (strpos(PHP_OS, 'WIN') !== false && $forceSymlinks) {
             $this->absoluteLinks = true;
         }
+
+        $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
+        $this->fsHelper->setCopyOnWindows(!$forceSymlinks);
         return $this;
     }
 

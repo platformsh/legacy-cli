@@ -8,9 +8,32 @@ use Symfony\Component\Filesystem\Filesystem;
 
 class FilesystemHelper extends Helper {
 
+    protected $relative = false;
+    protected $copyOnWindows = false;
+
     public function getName()
     {
         return 'fs';
+    }
+
+    /**
+     * Set whether to use relative links.
+     *
+     * @param bool $relative
+     */
+    public function setRelativeLinks($relative)
+    {
+        $this->relative = $relative;
+    }
+
+    /**
+     * Set whether to copy files on systems that do not support symlinks.
+     *
+     * @param bool $copyOnWindows
+     */
+    public function setCopyOnWindows($copyOnWindows)
+    {
+        $this->copyOnWindows = $copyOnWindows;
     }
 
     /**
@@ -92,17 +115,11 @@ class FilesystemHelper extends Helper {
         if (!is_dir($target)) {
             throw new \InvalidArgumentException("The symlink target must be a directory.");
         }
-        if (is_link($link)) {
-            // Windows needs rmdir(), other systems need unlink().
-            if (strpos(PHP_OS, 'WIN') !== false && is_dir($link)) {
-                rmdir($link);
-            }
-            else {
-                unlink($link);
-            }
-        }
         $fs = new Filesystem();
-        $fs->symlink($target, $link, true);
+        if (is_link($link)) {
+            $fs->remove($link);
+        }
+        $fs->symlink($target, $link, $this->copyOnWindows);
     }
 
     /**
@@ -111,12 +128,11 @@ class FilesystemHelper extends Helper {
      * @param string $source
      * @param string $destination
      * @param bool $skipExisting
-     * @param bool $relative
      * @param array $blacklist
      *
      * @throws \Exception
      */
-    public function symlinkAll($source, $destination, $skipExisting = true, $relative = false, $blacklist = array())
+    public function symlinkAll($source, $destination, $skipExisting = true, $blacklist = array())
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -138,12 +154,13 @@ class FilesystemHelper extends Helper {
         }
 
         $sourceDirectory = opendir($source);
+        $fs = new Filesystem();
         while ($file = readdir($sourceDirectory)) {
             if (!in_array($file, $skip)) {
                 $sourceFile = $source . '/' . $file;
                 $linkFile = $destination . '/' . $file;
 
-                if ($relative) {
+                if ($this->relative) {
                     $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
                 }
 
@@ -159,8 +176,7 @@ class FilesystemHelper extends Helper {
                     }
                 }
 
-                $fs = new Filesystem();
-                $fs->symlink($sourceFile, $linkFile, true);
+                $fs->symlink($sourceFile, $linkFile, $this->copyOnWindows);
             }
         }
         closedir($sourceDirectory);

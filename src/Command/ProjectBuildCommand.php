@@ -21,7 +21,13 @@ class ProjectBuildCommand extends PlatformCommand
                 'abslinks',
                 'a',
                 InputOption::VALUE_NONE,
-                'Use absolute links. This is always enabled for Windows.'
+                'Use absolute links.'
+            )
+            ->addOption(
+                'force-symlinks',
+                null,
+                InputOption::VALUE_NONE,
+                'Force symlinks on systems that might not support them.'
             );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/repository')) {
@@ -81,6 +87,7 @@ class ProjectBuildCommand extends PlatformCommand
         $settings['absoluteLinks'] = $input->hasOption('abslinks') && $input->getOption('abslinks');
         $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : 3;
         $settings['drushWorkingCopy'] = $input->hasOption('working-copy') && $input->getOption('working-copy');
+        $settings['forceSymlinks'] = $input->hasOption('force-symlinks') && $input->getOption('force-symlinks');
 
         try {
             $this->build($projectRoot, $settings, $output);

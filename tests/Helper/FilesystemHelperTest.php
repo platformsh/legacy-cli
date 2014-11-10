@@ -112,7 +112,9 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
 
         // Test with relative links.
         $testDestination = $this->tempDir();
-        $this->filesystemHelper->symlinkAll($testSource, $testDestination, true, true);
+        $this->filesystemHelper->setRelativeLinks(true);
+        $this->filesystemHelper->symlinkAll($testSource, $testDestination);
+        $this->filesystemHelper->setRelativeLinks(false);
         $this->assertFileExists($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
@@ -120,7 +122,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
         // Test with a blacklist.
         $testDestination = $this->tempDir();
         touch($testSource . '/test-file2');
-        $this->filesystemHelper->symlinkAll($testSource, $testDestination, true, false, array('test-file'));
+        $this->filesystemHelper->symlinkAll($testSource, $testDestination, true, array('test-file'));
         $this->assertFileNotExists($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
