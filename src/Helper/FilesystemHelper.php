@@ -112,12 +112,12 @@ class FilesystemHelper extends Helper {
      */
     public function symlinkDir($target, $link)
     {
-        if (!is_dir($target)) {
-            throw new \InvalidArgumentException("The symlink target must be a directory.");
-        }
         $fs = new Filesystem();
         if (is_link($link)) {
             $fs->remove($link);
+        }
+        if ($this->relative) {
+            $target = $this->makePathRelative($target, $link);
         }
         $fs->symlink($target, $link, $this->copyOnWindows);
     }
@@ -185,16 +185,16 @@ class FilesystemHelper extends Helper {
     /**
      * Make relative path between a symlink and a target.
      *
-     * @param string $symlink Path to the symlink that doesn't exist yet.
-     * @param string $target Path of the file we are linking to.
+     * @param string $endPath Path of the file we are linking to.
+     * @param string $startPath Path to the symlink that doesn't exist yet.
      *
      * @return string Relative path to the target.
      */
-    public function makePathRelative($symlink, $target)
+    protected function makePathRelative($endPath, $startPath)
     {
-        $target = substr($target, 0, strrpos($target, DIRECTORY_SEPARATOR));
+        $startPath = substr($startPath, 0, strrpos($startPath, DIRECTORY_SEPARATOR));
         $fs = new Filesystem();
-        $result = rtrim($fs->makePathRelative($symlink, $target), DIRECTORY_SEPARATOR);
+        $result = rtrim($fs->makePathRelative($endPath, $startPath), DIRECTORY_SEPARATOR);
         return $result;
     }
 

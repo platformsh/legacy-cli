@@ -202,8 +202,6 @@ class Drupal extends ToolstackBase
         $this->fsHelper->symlinkAll($this->projectRoot . '/shared', $buildDir . '/sites/default');
 
         // Point www to the latest build.
-        $wwwLink = $this->projectRoot . '/www';
-        $relBuildDir = $this->fsHelper->makePathRelative($buildDir, $wwwLink);
-        $this->fsHelper->symlinkDir($this->absoluteLinks ? $buildDir : $relBuildDir, $wwwLink);
+        $this->fsHelper->symlinkDir($buildDir, $this->projectRoot . '/www');
     }
 }
