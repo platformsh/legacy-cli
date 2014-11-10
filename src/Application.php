@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli;
 
+use CommerceGuys\Platform\Cli\Helper\DrushHelper;
 use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
 use CommerceGuys\Platform\Cli\Helper\PlatformQuestionHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelper;
@@ -90,6 +91,7 @@ class Application extends ConsoleApplication {
             new PlatformQuestionHelper(),
             new FilesystemHelper(),
             new ShellHelper(),
+            new DrushHelper(),
         ));
     }
 

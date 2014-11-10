@@ -1,10 +1,28 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Utils;
+namespace CommerceGuys\Platform\Cli\Helper;
 
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
+use Symfony\Component\Console\Helper\Helper;
 
-class Drush {
+class DrushHelper extends Helper {
+
+    protected $homeDir = '~';
+
+    public function getName()
+    {
+        return 'drush';
+    }
+
+    /**
+     * Set the user's home directory.
+     *
+     * @param string $homeDir
+     */
+    public function setHomeDir($homeDir)
+    {
+        $this->homeDir = $homeDir;
+    }
 
     /**
      * Create Drush aliases for the provided project and environments.
@@ -12,14 +30,13 @@ class Drush {
      * @param array $project The project
      * @param string $projectRoot The project root
      * @param array $environments The environments
-     * @param string $homeDir The user's home directory.
      * @param bool $merge Whether to merge existing alias settings.
      *
      * @throws \Exception
      *
      * @return bool Whether any aliases have been created.
      */
-    public static function createAliases($project, $projectRoot, $environments, $homeDir = '~', $merge = true)
+    public function createAliases($project, $projectRoot, $environments, $merge = true)
     {
         // Ignore the project if it doesn't contain a Drupal application.
         if (!Drupal::isDrupal($projectRoot . '/repository')) {
@@ -32,7 +49,7 @@ class Drush {
         }
 
         // Ensure the existence of the .drush directory.
-        $drushDir = $homeDir . '/.drush';
+        $drushDir = $this->homeDir . '/.drush';
         if (!is_dir($drushDir)) {
             mkdir($drushDir);
         }

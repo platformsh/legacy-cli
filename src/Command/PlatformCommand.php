@@ -6,7 +6,6 @@ use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
 use CommerceGuys\Platform\Cli\Api\PlatformClient;
-use CommerceGuys\Platform\Cli\Utils\Drush;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
@@ -419,8 +418,9 @@ class PlatformCommand extends Command
             // Recreate the aliases if the list of environments has changed.
             if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
                 if ($projectRoot = $this->getProjectRoot()) {
-                    $homeDir = $this->getHelper('fs')->getHomeDirectory();
-                    Drush::createAliases($project, $projectRoot, $environments, $homeDir);
+                    $drushHelper = $this->getHelper('drush');
+                    $drushHelper->setHomeDir($this->getHelper('fs')->getHomeDirectory());
+                    $drushHelper->createAliases($project, $projectRoot, $environments);
                 }
             }
 

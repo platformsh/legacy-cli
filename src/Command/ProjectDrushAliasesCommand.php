@@ -59,7 +59,8 @@ class ProjectDrushAliasesCommand extends PlatformCommand
         $fsHelper = $this->getHelper('fs');
         $shellHelper = $this->getHelper('shell');
 
-        $homeDir = $fsHelper->getHomeDirectory();
+        $drushHelper = $this->getHelper('drush');
+        $drushHelper->setHomeDir($fsHelper->getHomeDirectory());
 
         if ($new_group && $new_group != $current_group) {
             $existing = $shellHelper->execute("drush site-alias --pipe --format=list @" . escapeshellarg($new_group));
@@ -71,7 +72,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $project['alias-group'] = $new_group;
             $this->writeCurrentProjectConfig('alias-group', $new_group);
             $environments = $this->getEnvironments($project, true, false);
-            Drush::createAliases($project, $projectRoot, $environments, $homeDir);
+            $drushHelper->createAliases($project, $projectRoot, $environments);
             $output->writeln("Project aliases created, group: <info>@$new_group</info>");
 
             $drushDir = $fsHelper->getHomeDirectory() . '/.drush';
@@ -89,7 +90,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
         }
         elseif ($input->getOption('recreate')) {
             $environments = $this->getEnvironments($project, true, false);
-            Drush::createAliases($project, $projectRoot, $environments, $homeDir);
+            $drushHelper->createAliases($project, $projectRoot, $environments);
             $shellHelper->execute('drush cache-clear drush');
             $output->writeln("Project aliases recreated");
         }
