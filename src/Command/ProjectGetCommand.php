@@ -54,12 +54,12 @@ class ProjectGetCommand extends PlatformCommand
         $projectId = $input->getArgument('id');
         if (empty($projectId)) {
             $output->writeln("<error>You must specify a project.</error>");
-            return;
+            return 1;
         }
         $project = $this->getProject($projectId);
         if (!$project) {
-            $output->writeln("<error>Project not found.</error>");
-            return;
+            $output->writeln("<error>Project not found: $projectId</error>");
+            return 1;
         }
         $directoryName = $input->getArgument('directory-name');
         if (empty($directoryName)) {
@@ -67,7 +67,7 @@ class ProjectGetCommand extends PlatformCommand
         }
         if (is_dir($directoryName)) {
             $output->writeln("<error>The project directory '$directoryName' already exists.</error>");
-            return;
+            return 1;
         }
 
         $environments = $this->getEnvironments($project, true);
@@ -76,7 +76,7 @@ class ProjectGetCommand extends PlatformCommand
         if ($environmentOption) {
             if (!isset($environments[$environmentOption])) {
                 $output->writeln("<error>Environment not found: $environmentOption</error>");
-                return;
+                return 1;
             }
             $environment = $environmentOption;
         }
@@ -131,49 +131,57 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
             return 1;
         }
-        elseif (!empty($checkOutput)) {
-            // We have a repo! Yay. Clone it.
-            $command = "git clone --branch $environment $gitUrl " . escapeshellarg($repositoryDir);
-            passthru($command);
-            if (!is_dir($repositoryDir)) {
-                // The clone wasn't successful. Clean up the folders we created
-                // and then bow out with a message.
-                $fsHelper->rmdir($projectRoot);
-                $output->writeln('<error>Failed to clone Git repository</error>');
-                $output->writeln('Please check your SSH credentials or contact Platform.sh support');
-                return 1;
-            }
 
-            // Allow the build to be skipped, and always skip it if the cloned
-            // repository is empty ('.', '..', '.git' being the only found items).
-            $noBuild = $input->getOption('no-build');
-            $files = scandir($directoryName . '/repository');
-            if (!$noBuild && count($files) > 3) {
-                // Launch the first build.
-                $application = $this->getApplication();
-                $buildCommand = $application->find('build');
-                chdir($projectRoot);
-                $buildInput = new ArrayInput(array(
-                      'command' => 'project:build',
-                  ));
-                return $buildCommand->run($buildInput, $output);
-            }
-        }
-        else {
+        if (empty($checkOutput)) {
             // The repository doesn't have a HEAD, which means it is empty.
             // We need to create the folder, run git init, and attach the remote.
             mkdir($repositoryDir);
-            $currentDirectory = getcwd();
-            chdir($repositoryDir);
             // Initialize the repo and attach our remotes.
             $output->writeln("<info>Initializing empty project repository...</info>");
+            chdir($repositoryDir);
             passthru("git init");
             $output->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
             passthru("git remote add -m master origin $gitUrl");
             $output->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
             $output->writeln("<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>");
-            chdir($currentDirectory);
+            return 0;
         }
+
+        // We have a repo! Yay. Clone it.
+        $command = "git clone --branch $environment $gitUrl " . escapeshellarg($repositoryDir);
+        exec($command, $gitOutput, $returnVar);
+
+        if ($returnVar) {
+            // The clone wasn't successful. Clean up the folders we created
+            // and then bow out with a message.
+            $fsHelper->rmdir($projectRoot);
+            $output->writeln('<error>Failed to clone Git repository</error>');
+            $output->writeln('Please check your SSH credentials or contact Platform.sh support');
+            return 1;
+        }
+
+        $output->writeln("Downloaded <info>$projectId</info> to <info>$directoryName</info>");
+
+        // Allow the build to be skipped.
+        if ($input->getOption('no-build')) {
+            return 0;
+        }
+
+        // Always skip the build if the cloned repository is empty ('.', '..',
+        // '.git' being the only found items)
+        $files = scandir($directoryName . '/repository');
+        if (count($files) <= 3) {
+            return 0;
+        }
+
+        // Launch the first build.
+        $application = $this->getApplication();
+        $buildCommand = $application->find('build');
+        chdir($projectRoot);
+        $buildInput = new ArrayInput(array(
+            'command' => 'project:build',
+          ));
+        return $buildCommand->run($buildInput, $output);
     }
 
 }
