@@ -4,4 +4,4 @@ php:
   - 5.5
   - 5.4
 install:
-  - composer install --no-dev
+  - composer install

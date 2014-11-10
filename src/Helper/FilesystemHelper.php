@@ -14,29 +14,35 @@ class FilesystemHelper extends Helper {
     /**
      * Delete a directory and all of its files.
      *
-     * @param string $directory
+     * @param string $directory A path to a directory.
+     *
+     * @return bool
      */
     public function rmdir($directory)
     {
-        if (is_dir($directory)) {
-            // Recursively empty the directory.
-            $directoryResource = opendir($directory);
-            while ($file = readdir($directoryResource)) {
-                if (!in_array($file, array('.', '..'))) {
-                    if (is_link($directory . '/' . $file)) {
-                        unlink($directory . '/' . $file);
-                    } else if (is_dir($directory . '/' . $file)) {
-                        self::rmdir($directory . '/' . $file);
-                    } else {
-                        unlink($directory . '/' . $file);
+        if (!is_dir($directory)) {
+            throw new \InvalidArgumentException("Not a directory: $directory");
+        }
+        // Recursively empty the directory.
+        $directoryResource = opendir($directory);
+        while ($file = readdir($directoryResource)) {
+            if (!in_array($file, array('.', '..'))) {
+                if (is_link($directory . '/' . $file)) {
+                    unlink($directory . '/' . $file);
+                } else if (is_dir($directory . '/' . $file)) {
+                    $success = $this->rmdir($directory . '/' . $file);
+                    if (!$success) {
+                        return false;
                     }
+                } else {
+                    unlink($directory . '/' . $file);
                 }
             }
-            closedir($directoryResource);
-
-            // Delete the directory itself.
-            rmdir($directory);
         }
+        closedir($directoryResource);
+
+        // Delete the directory itself.
+        return rmdir($directory);
     }
 
     /**
@@ -175,6 +181,8 @@ class FilesystemHelper extends Helper {
      * @param string $source Path of the file we are linking to.
      * @param string $destination Path to the symlink.
      * @return string Relative path to the source, or file linking to.
+     *
+     * @todo make this work for more cases, it is hard to test
      */
     public function makePathRelative($source, $destination)
     {

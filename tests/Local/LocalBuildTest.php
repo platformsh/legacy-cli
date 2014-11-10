@@ -1,5 +1,7 @@
 <?php
 
+namespace CommerceGuys\Platform\Cli\Tests;
+
 use CommerceGuys\Platform\Cli\Local\LocalBuild;
 
 class LocalBuildTest extends \PHPUnit_Framework_TestCase
