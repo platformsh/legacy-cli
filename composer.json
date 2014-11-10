@@ -6,7 +6,8 @@
         "commerceguys/guzzle-oauth2-plugin": "~1.0",
         "symfony/console": "~2.5",
         "symfony/yaml": "~2.5",
-        "symfony/finder": "~2.5"
+        "symfony/finder": "~2.5",
+        "symfony/filesystem": "~2.5"
     },
     "suggest": {
         "drush/drush": "For Drupal projects"

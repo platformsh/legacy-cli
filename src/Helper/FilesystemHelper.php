@@ -3,6 +3,8 @@
 namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Filesystem\Filesystem;
 
 class FilesystemHelper extends Helper {
 
@@ -23,26 +25,14 @@ class FilesystemHelper extends Helper {
         if (!is_dir($directory)) {
             throw new \InvalidArgumentException("Not a directory: $directory");
         }
-        // Recursively empty the directory.
-        $directoryResource = opendir($directory);
-        while ($file = readdir($directoryResource)) {
-            if (!in_array($file, array('.', '..'))) {
-                if (is_link($directory . '/' . $file)) {
-                    unlink($directory . '/' . $file);
-                } else if (is_dir($directory . '/' . $file)) {
-                    $success = $this->rmdir($directory . '/' . $file);
-                    if (!$success) {
-                        return false;
-                    }
-                } else {
-                    unlink($directory . '/' . $file);
-                }
-            }
+        $fs = new Filesystem();
+        try {
+            $fs->remove($directory);
         }
-        closedir($directoryResource);
-
-        // Delete the directory itself.
-        return rmdir($directory);
+        catch (IOException $e) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -75,6 +65,7 @@ class FilesystemHelper extends Helper {
         if (!is_dir($destination)) {
             mkdir($destination);
         }
+        $fs = new Filesystem();
 
         $skip = array('.', '..', '.git');
         $sourceDirectory = opendir($source);
@@ -83,7 +74,7 @@ class FilesystemHelper extends Helper {
                 if (is_dir($source . '/' . $file)) {
                     $this->copy($source . '/' . $file, $destination . '/' . $file);
                 } else {
-                    copy($source . '/' . $file, $destination . '/' . $file);
+                    $fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }
         }
@@ -95,8 +86,6 @@ class FilesystemHelper extends Helper {
      *
      * @param string $target The target directory.
      * @param string $link The name of the link.
-     *
-     * @return bool TRUE on success, FALSE on failure.
      */
     public function symlinkDir($target, $link)
     {
@@ -112,7 +101,8 @@ class FilesystemHelper extends Helper {
                 unlink($link);
             }
         }
-        return symlink($target, $link);
+        $fs = new Filesystem();
+        $fs->symlink($target, $link, true);
     }
 
     /**
@@ -169,40 +159,27 @@ class FilesystemHelper extends Helper {
                     }
                 }
 
-                symlink($sourceFile, $linkFile);
+                $fs = new Filesystem();
+                $fs->symlink($sourceFile, $linkFile, true);
             }
         }
         closedir($sourceDirectory);
     }
 
     /**
-     * Make relative path between two files.
+     * Make relative path between a symlink and a target.
      *
-     * @param string $source Path of the file we are linking to.
-     * @param string $destination Path to the symlink.
-     * @return string Relative path to the source, or file linking to.
+     * @param string $symlink Path to the symlink that doesn't exist yet.
+     * @param string $target Path of the file we are linking to.
      *
-     * @todo make this work for more cases, it is hard to test
+     * @return string Relative path to the target.
      */
-    public function makePathRelative($source, $destination)
+    public function makePathRelative($symlink, $target)
     {
-        $i = 0;
-        while (true) {
-            if(substr($source, $i, 1) != substr($destination, $i, 1)) {
-                break;
-            }
-            $i++;
-        }
-        $distance = substr_count(substr($destination, $i - 1, strlen($destination)), '/') - 1;
-
-        $path = '';
-        while ($distance) {
-            $path .= '../';
-            $distance--;
-        }
-        $path .= substr($source, $i, strlen($source));
-
-        return $path;
+        $target = substr($target, 0, strrpos($target, DIRECTORY_SEPARATOR));
+        $fs = new Filesystem();
+        $result = rtrim($fs->makePathRelative($symlink, $target), DIRECTORY_SEPARATOR);
+        return $result;
     }
 
 
