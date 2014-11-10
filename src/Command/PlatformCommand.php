@@ -33,14 +33,19 @@ class PlatformCommand extends Command
      * already. This allows LoginCommand to avoid writing the config file
      * before using the client for the first time.
      *
-     * @return array The populated configuration array.
+     * @param bool $login
+     *
+     * @return array|false The configuration array or false on failure.
      */
-    protected function loadConfig()
+    public function loadConfig($login = true)
     {
         if (!$this->config) {
             $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
-            if (!file_exists($configPath)) {
+            if (!file_exists($configPath) && $login) {
                 $this->login();
+            }
+            if (!file_exists($configPath)) {
+                return false;
             }
             $yaml = new Parser();
             $this->config = $yaml->parse(file_get_contents($configPath));
@@ -188,7 +193,7 @@ class PlatformCommand extends Command
      *
      * @return array|null The current project
      */
-    protected function getCurrentProject()
+    public function getCurrentProject()
     {
         $project = null;
         $config = $this->getCurrentProjectConfig();
@@ -256,7 +261,7 @@ class PlatformCommand extends Command
      *
      * @return array|null The current environment
      */
-    protected function getCurrentEnvironment($project)
+    public function getCurrentEnvironment($project)
     {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
@@ -343,7 +348,7 @@ class PlatformCommand extends Command
      *
      * @return array The user's projects.
      */
-    protected function getProjects($refresh = false)
+    public function getProjects($refresh = false)
     {
         $this->loadConfig();
         if (empty($this->config['projects']) || $refresh) {
@@ -395,7 +400,7 @@ class PlatformCommand extends Command
      *
      * @return array The user's environments.
      */
-    protected function getEnvironments($project, $refresh = false, $updateAliases = true)
+    public function getEnvironments($project, $refresh = false, $updateAliases = true)
     {
         $projectId = $project['id'];
         $this->loadConfig();

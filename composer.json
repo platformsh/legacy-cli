@@ -8,7 +8,8 @@
         "symfony/yaml": "~2.5",
         "symfony/finder": "~2.5",
         "symfony/filesystem": "~2.5",
-        "symfony/process": "~2.5"
+        "symfony/process": "~2.5",
+        "stecman/symfony-console-completion": "dev-master#cf6a6a5f498d26692a5f7a234dd630e2f38222ad"
     },
     "suggest": {
         "drush/drush": "For Drupal projects"
