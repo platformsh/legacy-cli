@@ -3,6 +3,8 @@
 namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\ProcessBuilder;
 
 class ShellHelper extends Helper {
 
@@ -17,26 +19,34 @@ class ShellHelper extends Helper {
      * @param string $cmd The command, suitably escaped.
      * @param string &$error Optionally use this to capture errors.
      *
-     * @throws \Exception
-     *
      * @return string The command output.
      */
     public function execute($cmd, &$error = '')
     {
-        $descriptorSpec = array(
-          0 => array('pipe', 'r'), // stdin
-          1 => array('pipe', 'w'), // stdout
-          2 => array('pipe', 'w'), // stderr
-        );
-        $process = proc_open($cmd, $descriptorSpec, $pipes);
-        if (!$process) {
-            throw new \Exception('Failed to execute command');
+        $process = new Process($cmd);
+        $process->run();
+        $error = $process->getErrorOutput();
+        return $process->getOutput();
+    }
+
+    /**
+     * Build and run a process.
+     *
+     * @param array $args
+     * @param bool $mustRun
+     *
+     * @return string
+     */
+    public function executeArgs(array $args, $mustRun = false)
+    {
+        $builder = new ProcessBuilder($args);
+        $process = $builder->getProcess();
+        if ($mustRun) {
+            $process->mustRun();
         }
-        $result = stream_get_contents($pipes[1]);
-        $error = stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        proc_close($process);
-        return $result;
+        else {
+            $process->run();
+        }
+        return $process->getOutput();
     }
 }

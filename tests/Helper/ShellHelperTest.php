@@ -25,4 +25,17 @@ class ShellHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertEmpty($this->shellHelper->execute('nonexistent command test'));
     }
 
+    /**
+     * Test ShellHelper::executeArgs().
+     */
+    public function testExecuteArgs()
+    {
+        $this->assertNotEmpty($this->shellHelper->executeArgs(array('which', 'git')), false);
+        $this->assertEmpty($this->shellHelper->executeArgs(array('which', 'nonexistent'), false));
+
+        $this->assertNotEmpty($this->shellHelper->executeArgs(array('which', 'git')), true);
+        $this->setExpectedException('Symfony\\Component\\Process\\Exception\\ProcessFailedException');
+        $this->shellHelper->executeArgs(array('which', 'nonexistent'), true);
+    }
+
 }
