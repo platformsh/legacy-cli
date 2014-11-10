@@ -2,7 +2,6 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Utils\Drush;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
