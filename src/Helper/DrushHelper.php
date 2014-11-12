@@ -100,7 +100,7 @@ class DrushHelper extends Helper {
         // Generate an alias for the local environment.
         $wwwRoot = $projectRoot . '/www';
         $localAlias = '';
-        if (is_dir($wwwRoot)) {
+        if (is_link($wwwRoot)) {
             $local = array(
               'root' => $wwwRoot,
               'platformsh-cli-auto-remove' => true,
