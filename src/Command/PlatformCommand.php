@@ -405,6 +405,7 @@ class PlatformCommand extends Command
             $urlParts = parse_url($project['endpoint']);
             $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
             $client = $this->getPlatformClient($project['endpoint']);
+            $client->setDefaultOption('exceptions', false);
             $environments = array();
             foreach ($client->getEnvironments() as $environment) {
                 // The environments endpoint is temporarily not serving
