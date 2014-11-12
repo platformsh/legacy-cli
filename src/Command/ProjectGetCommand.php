@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Yaml\Dumper;
 
 class ProjectGetCommand extends PlatformCommand
@@ -108,6 +109,8 @@ class ProjectGetCommand extends PlatformCommand
         mkdir($projectRoot . '/builds');
         mkdir($projectRoot . '/shared');
 
+        $fsHelper = $this->getHelper('fs');
+
         // Create the .platform-project file.
         $projectConfig = array(
             'id' => $projectId,
@@ -120,38 +123,34 @@ class ProjectGetCommand extends PlatformCommand
         $cluster = $projectUriParts[0];
         $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
         $repositoryDir = $directoryName . '/repository';
+
         // First check if the repo actually exists.
-        $checkCommand = "git ls-remote $gitUrl HEAD";
-        exec($checkCommand, $checkOutput, $checkReturnVar);
-        $fsHelper = $this->getHelper('fs');
-        if ($checkReturnVar) {
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setOutput($output);
+        $repoHead = $gitHelper->execute(array('ls-remote', $gitUrl, 'HEAD'), false);
+        if ($repoHead === false) {
             // The ls-remote command failed.
             $fsHelper->rmdir($projectRoot);
             $output->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
             return 1;
         }
-
-        if (empty($checkOutput)) {
+        elseif (empty($repoHead)) {
             // The repository doesn't have a HEAD, which means it is empty.
             // We need to create the folder, run git init, and attach the remote.
             mkdir($repositoryDir);
             // Initialize the repo and attach our remotes.
             $output->writeln("<info>Initializing empty project repository...</info>");
-            chdir($repositoryDir);
-            passthru("git init");
+            $gitHelper->execute(array('init'), $repositoryDir, true);
             $output->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
-            passthru("git remote add -m master origin $gitUrl");
+            $gitHelper->execute(array('remote', 'add', '-m', 'master', 'origin', $gitUrl), $repositoryDir, true);
             $output->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
             $output->writeln("<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>");
             return 0;
         }
 
         // We have a repo! Yay. Clone it.
-        $command = "git clone --branch $environment $gitUrl " . escapeshellarg($repositoryDir);
-        exec($command, $gitOutput, $returnVar);
-
-        if ($returnVar) {
+        if (!$gitHelper->cloneRepo($gitUrl, $repositoryDir, $environment)) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $fsHelper->rmdir($projectRoot);

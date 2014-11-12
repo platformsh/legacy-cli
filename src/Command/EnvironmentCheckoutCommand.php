@@ -64,24 +64,23 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
 
         $projectRoot = $this->getProjectRoot();
 
-        chdir($projectRoot . '/repository');
-
-        $shellHelper = $this->getHelper('shell');
-        $existsLocal = $shellHelper->executeArgs(array('git', 'show-ref', "refs/heads/$machineName"));
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
 
         // If the branch doesn't already exist locally, check whether it is a
         // Platform.sh environment.
-        if (!$existsLocal) {
+        if (!$gitHelper->branchExists($machineName)) {
             if (!$this->getEnvironment($machineName, $project)) {
                 $output->writeln("<error>Environment not found: $machineName</error>");
                 return 1;
             }
             // Fetch from origin.
             // @todo don't assume that the Platform.sh remote is called 'origin'
-            $shellHelper->executeArgs(array('git', 'fetch', 'origin'));
+            $gitHelper->execute(array('fetch', 'origin'));
         }
 
         // Check out the branch.
-        passthru("git checkout $machineName");
+        $gitHelper->setOutput($output);
+        $gitHelper->checkOut($machineName, null, true);
     }
 }

@@ -100,34 +100,31 @@ class EnvironmentBranchCommand extends EnvironmentCommand
 
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
-            $cwd = getcwd();
-            chdir($projectRoot . '/repository');
-            $shellHelper = $this->getHelper('shell');
-            if ($shellHelper->executeArgs(array('git', 'show-ref', "refs/heads/$machineName"))) {
-                // The Git branch already exists locally, so check it out.
-                $command = "git checkout $machineName";
-                $error = "Failed to checkout branch locally: $machineName";
-            }
-            else {
-                // Create a new branch, using the current or specified
-                // environment as the parent.
-                $parent = $this->environment['id'];
-                $command = "git checkout --quiet -b $machineName $parent";
-                $error = "Failed to create branch locally: $machineName";
-            }
-            $returnVar = '';
-            exec($command, $null, $returnVar);
-            if ($returnVar > 0) {
-                $output->writeln("<error>$error</error>");
+            $gitHelper = $this->getHelper('git');
+            $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
+            // If the Git branch already exists locally, check it out.
+            if ($gitHelper->branchExists($machineName) && !$gitHelper->checkOut($machineName)) {
+                $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
+                $local_error = true;
                 if (!$force) {
                     return 1;
                 }
-                $local_error = true;
             }
-            chdir($cwd);
+            else {
+                // Create a new branch, using the current or specified environment as the parent.
+                $parent = $this->environment['id'];
+                if (!$gitHelper->branch($machineName, $parent)) {
+                    $output->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
+                    $local_error = true;
+                    if (!$force) {
+                        return 1;
+                    }
+                }
+            }
         }
         elseif ($force) {
-            $output->writeln('<comment>Because this command was run from outside your local project root, the new Platform.sh branch could not be checked out in your local Git repository. Make sure to run platform checkout or git checkout in your repository directory to switch to the branch you are expecting.</comment>');
+            $output->writeln("<comment>Because this command was run from outside your local project root, the new Platform.sh branch could not be checked out in your local Git repository."
+                . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>");
             $local_error = true;
         }
         else {
