@@ -9,7 +9,7 @@ use Symfony\Component\Filesystem\Filesystem;
 class FilesystemHelper extends Helper {
 
     protected $relative = false;
-    protected $copyOnWindows = false;
+    protected $copyIfSymlinkUnavailable = true;
 
     public function getName()
     {
@@ -23,17 +23,11 @@ class FilesystemHelper extends Helper {
      */
     public function setRelativeLinks($relative)
     {
+        // This is not possible on Windows.
+        if (strpos(PHP_OS, 'WIN') !== false) {
+            $relative = false;
+        }
         $this->relative = $relative;
-    }
-
-    /**
-     * Set whether to copy files on systems that do not support symlinks.
-     *
-     * @param bool $copyOnWindows
-     */
-    public function setCopyOnWindows($copyOnWindows)
-    {
-        $this->copyOnWindows = $copyOnWindows;
     }
 
     /**
@@ -119,7 +113,7 @@ class FilesystemHelper extends Helper {
         if ($this->relative) {
             $target = $this->makePathRelative($target, $link);
         }
-        $fs->symlink($target, $link, $this->copyOnWindows);
+        $fs->symlink($target, $link, $this->copyIfSymlinkUnavailable);
     }
 
     /**
@@ -175,7 +169,7 @@ class FilesystemHelper extends Helper {
                     }
                 }
 
-                if (!function_exists('symlink') && $this->copyOnWindows) {
+                if (!function_exists('symlink') && $this->copyIfSymlinkUnavailable) {
                     copy($sourceFile, $linkFile);
                     continue;
                 }

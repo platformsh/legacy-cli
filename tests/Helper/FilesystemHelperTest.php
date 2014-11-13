@@ -110,7 +110,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
 
-        // Test with relative links.
+        // Test with relative links. This has no effect on Windows.
         $testDestination = $this->tempDir();
         $this->filesystemHelper->setRelativeLinks(true);
         $this->filesystemHelper->symlinkAll($testSource, $testDestination);
