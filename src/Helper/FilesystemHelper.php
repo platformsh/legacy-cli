@@ -154,7 +154,6 @@ class FilesystemHelper extends Helper {
         }
 
         $sourceDirectory = opendir($source);
-        $fs = new Filesystem();
         while ($file = readdir($sourceDirectory)) {
             if (!in_array($file, $skip)) {
                 $sourceFile = $source . '/' . $file;
@@ -176,7 +175,12 @@ class FilesystemHelper extends Helper {
                     }
                 }
 
-                $fs->symlink($sourceFile, $linkFile, $this->copyOnWindows);
+                if (!function_exists('symlink') && $this->copyOnWindows) {
+                    copy($sourceFile, $linkFile);
+                    continue;
+                }
+
+                symlink($sourceFile, $linkFile);
             }
         }
         closedir($sourceDirectory);
