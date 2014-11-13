@@ -149,7 +149,7 @@ class EnvironmentListCommand extends EnvironmentCommand
             $this->showStatus = in_array('status', $show);
         }
 
-        $refresh = $input->getFirstArgument() == 'welcome' || ($input->hasOption('refresh') && $input->getOption('refresh'));
+        $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
         $environments = $this->getEnvironments($this->project, $refresh);
 
@@ -169,12 +169,13 @@ class EnvironmentListCommand extends EnvironmentCommand
             $tree['master']['children'] = array();
         }
 
-        $output->writeln("\nYour environments are: ");
+        $output->writeln("Your environments are: ");
         $table = $this->buildEnvironmentTable($tree);
         $table->render($output);
 
-        $output->writeln("\n<info>*</info> - Indicates the current environment.");
-        $output->writeln("Checkout a different environment by running <info>platform checkout [id]</info>.");
+        $output->writeln("<info>*</info> - Indicates the current environment.\n");
+
+        $output->writeln("Check out a different environment by running <info>platform checkout [id]</info>.");
         if ($this->operationAllowed('branch', $this->currentEnvironment)) {
             $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.");
         }
@@ -196,8 +197,11 @@ class EnvironmentListCommand extends EnvironmentCommand
         if ($this->operationAllowed('synchronize', $this->currentEnvironment)) {
             $output->writeln("Sync the current environment by running <info>platform environment:synchronize</info>.");
         }
-        $output->writeln("Execute drush commands against the current environment by running <info>platform drush</info>.");
-        // Output a newline after the current block of commands.
-        $output->writeln("");
+
+        if ($this->getApplication()->find('drush')->isEnabled()) {
+            $output->writeln(
+              "Execute Drush commands against the current environment by running <info>platform drush</info>."
+            );
+        }
     }
 }

@@ -31,7 +31,7 @@ class Symfony extends ToolstackBase
         }
 
         mkdir($buildDir);
-        $this->copy($this->appRoot, $buildDir);
+        $this->fsHelper->copy($this->appRoot, $buildDir);
         if (is_dir($buildDir)) {
             chdir($buildDir);
             shell_exec("composer install --no-progress --no-interaction  --working-dir " . escapeshellcmd($buildDir));
@@ -59,8 +59,6 @@ class Symfony extends ToolstackBase
         }
 
         // Point www to the latest build.
-        $wwwLink = $this->projectRoot . '/www';
-        $relBuildDir = $this->makePathRelative($buildDir, $wwwLink);
-        $this->symlinkDir($this->absoluteLinks ? $buildDir : $relBuildDir, $wwwLink);
+        $this->fsHelper->symlinkDir($buildDir, $this->projectRoot . '/www');
     }
 }

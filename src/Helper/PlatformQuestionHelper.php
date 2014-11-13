@@ -4,7 +4,7 @@
  * Overrides Symfony's QuestionHelper to provide --yes and --no options.
  */
 
-namespace CommerceGuys\Platform\Cli\Console;
+namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;

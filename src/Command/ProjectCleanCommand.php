@@ -62,7 +62,7 @@ class ProjectCleanCommand extends PlatformCommand
         foreach ($builds as $build) {
             if ($count - $numDeleted > $keep) {
                 $output->writeln("Deleting: $build");
-                $this->rmdir($projectRoot . '/builds/' . $build);
+                $this->getHelper('fs')->rmdir($projectRoot . '/builds/' . $build);
                 $numDeleted++;
             }
             else {

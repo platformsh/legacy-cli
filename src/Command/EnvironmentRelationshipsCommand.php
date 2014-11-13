@@ -27,16 +27,11 @@ class EnvironmentRelationshipsCommand extends EnvironmentCommand
             return 1;
         }
 
-        $sshUrlString = $this->getSshUrl();
-        $command = 'ssh ' . $sshUrlString . " 'echo \$PLATFORM_RELATIONSHIPS'";
-        $relationships = $this->shellExec($command, $commandError);
-        if (!empty($commandError)) {
-            throw new \Exception($commandError);
-        }
-        elseif (!$relationships) {
+        $args = array('ssh', $this->getSshUrl(), 'echo $PLATFORM_RELATIONSHIPS');
+        $relationships = $this->getHelper('shell')->executeArgs($args, true);
+        if (!$relationships) {
             throw new \Exception('No relationships found');
         }
-
         $results = json_decode(base64_decode($relationships));
 
         foreach ($results as $key => $relationship) {

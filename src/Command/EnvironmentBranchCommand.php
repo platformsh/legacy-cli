@@ -102,7 +102,8 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         if ($projectRoot) {
             $cwd = getcwd();
             chdir($projectRoot . '/repository');
-            if ($this->shellExec("git show-ref refs/heads/$machineName")) {
+            $shellHelper = $this->getHelper('shell');
+            if ($shellHelper->executeArgs(array('git', 'show-ref', "refs/heads/$machineName"))) {
                 // The Git branch already exists locally, so check it out.
                 $command = "git checkout $machineName";
                 $error = "Failed to checkout branch locally: $machineName";
