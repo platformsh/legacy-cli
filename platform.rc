@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Platform.sh CLI shell configuration.
+
+# Enable auto-completion.
+platform _completion --generate-hook --program platform | source /dev/stdin
