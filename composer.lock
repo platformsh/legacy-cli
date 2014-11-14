@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "f6a72b436f7c352baf1b45b803269406",
+    "hash": "606eba93481e6e4a961b572348c11a27",
     "packages": [
         {
             "name": "commerceguys/guzzle-oauth2-plugin",
@@ -138,7 +138,7 @@
         },
         {
             "name": "stecman/symfony-console-completion",
-            "version": "dev-master",
+            "version": "0.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stecman/symfony-console-completion.git",
@@ -1214,9 +1214,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "stecman/symfony-console-completion": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "platform": [],
     "platform-dev": []
