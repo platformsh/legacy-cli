@@ -13,9 +13,13 @@ define('CLI_ROOT', __DIR__);
 
 if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
     require CLI_ROOT . '/vendor/autoload.php';
-} else {
+} elseif (file_exists(CLI_ROOT . '/../../autoload.php')) {
     // we are globally installed via Composer
     require CLI_ROOT . '/../../autoload.php';
+} else {
+    echo "Composer autoload file not found.\n";
+    echo "You need to run 'composer install'.\n";
+    exit(1);
 }
 
 use CommerceGuys\Platform\Cli\Application;
