@@ -153,7 +153,7 @@ class EnvironmentListCommand extends EnvironmentCommand
 
         $environments = $this->getEnvironments($this->project, $refresh);
 
-        if ($input->getOption('pipe')) {
+        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
           $output->writeln(array_keys($environments));
           return;
         }
