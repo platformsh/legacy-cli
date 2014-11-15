@@ -62,9 +62,10 @@ class ProjectDrushAliasesCommand extends PlatformCommand
         $drushHelper->setHomeDir($fsHelper->getHomeDirectory());
 
         if ($new_group && $new_group != $current_group) {
+            $questionHelper = $this->getHelper('question');
             $existing = $shellHelper->execute("drush site-alias --pipe --format=list @" . escapeshellarg($new_group));
             if ($existing) {
-                if (!$this->confirm("The alias group <info>@$new_group</info> already exists. Overwrite? [y/N] ", $input, $output, false)) {
+                if (!$questionHelper->confirm("The alias group <info>@$new_group</info> already exists. Overwrite?", $input, $output, false)) {
                     return;
                 }
             }
@@ -77,7 +78,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $drushDir = $fsHelper->getHomeDirectory() . '/.drush';
             $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
             if (file_exists($oldFile)) {
-                if (!$this->confirm("Delete old alias group <info>@$current_group</info>? [Y/n] ", $input, $output)) {
+                if (!$questionHelper->confirm("Delete old alias group <info>@$current_group</info>?", $input, $output)) {
                     unlink($oldFile);
                 }
             }

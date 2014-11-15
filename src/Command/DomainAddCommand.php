@@ -80,9 +80,8 @@ class DomainAddCommand extends PlatformCommand
             return;
         }
 
-        $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('Is your domain a wildcard? [y/n] ');
-        $wildcard = $helper->ask($input, $output, $question);
+        $wildcard = $this->getHelper('question')
+                         ->confirm("Is your domain a wildcard?", $input, $output, false);
 
         // @todo: Ask about SSL uploads if option --ssl is specified instead of inline filenames
 

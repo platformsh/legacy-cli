@@ -9,28 +9,34 @@ namespace CommerceGuys\Platform\Cli\Helper;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class PlatformQuestionHelper extends QuestionHelper
 {
+
     /**
-     * {@inheritdoc}
+     * Ask the user to confirm an action.
      *
-     * @return string|bool  The user's answer.
+     * @param string $questionText
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @param bool $default
+     *
+     * @return bool
      */
-    public function ask(InputInterface $input, OutputInterface $output, Question $question)
+    public function confirm($questionText, InputInterface $input, OutputInterface $output, $default = true)
     {
-        if ($question instanceof ConfirmationQuestion) {
-            $yes = $input->hasOption('yes') && $input->getOption('yes');
-            $no = $input->hasOption('no') && $input->getOption('no');
-            if ($yes && !$no) {
-                return true;
-            }
-            elseif ($no && !$yes) {
-                return false;
-            }
+        $yes = $input->hasOption('yes') && $input->getOption('yes');
+        $no = $input->hasOption('no') && $input->getOption('no');
+        if ($yes && !$no) {
+            return true;
         }
-        return parent::ask($input, $output, $question);
+        elseif ($no && !$yes) {
+            return false;
+        }
+        $questionText .= ' <question>' . ($default ? '[Y/n]' : '[y/N]') . '</question> ';
+        $question = new ConfirmationQuestion($questionText, $default);
+        return $this->ask($input, $output, $question);
     }
+
 }

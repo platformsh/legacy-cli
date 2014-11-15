@@ -70,8 +70,8 @@ class PlatformLoginCommand extends PlatformCommand
         $userExists = true;
         if (!$userExists) {
             $createAccountText = "\nThis email address is not associated with a Platform.sh account. \n";
-            $createAccountText .= 'Would you like to create a new account? [Y/N] ';
-            $createAccount = $helper->ask($input, $output, new ConfirmationQuestion($createAccountText, false));
+            $createAccountText .= 'Would you like to create a new account?';
+            $createAccount = $helper->confirm($createAccountText, $input, $output);
             if ($createAccount) {
                 // @todo
             } else {
@@ -86,8 +86,8 @@ class PlatformLoginCommand extends PlatformCommand
             $resendInviteText = "\nThis email address is associated with a Platform.sh account, \n";
             $resendInviteText .= "but you haven't verified your email address yet. \n";
             $resendInviteText .= "Please click on the link in the email we sent you. \n";
-            $resendInviteText .= "Do you want us to send you the email again? [Y/N] ";
-            $resendInvite = $helper->ask($input, $output, new ConfirmationQuestion($resendInviteText, false));
+            $resendInviteText .= "Do you want us to send you the email again?";
+            $resendInvite = $helper->confirm($resendInviteText, $input, $output, false);
             if ($resendInvite) {
                 // @todo
             }
