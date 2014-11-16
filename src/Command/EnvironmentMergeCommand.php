@@ -43,7 +43,7 @@ class EnvironmentMergeCommand extends EnvironmentCommand
 
         $parentId = $this->environment['parent'];
 
-        if (!$this->confirm("Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>? [Y/n] ", $input, $output)) {
+        if (!$this->getHelper('question')->confirm("Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?", $input, $output)) {
             return 0;
         }
 

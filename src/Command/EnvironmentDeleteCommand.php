@@ -48,7 +48,7 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             return 1;
         }
 
-        if (!$this->confirm("Are you sure you want to delete the environment <info>$environmentId</info>? [Y/n] ", $input, $output)) {
+        if (!$this->getHelper('question')->confirm("Are you sure you want to delete the environment <info>$environmentId</info>?", $input, $output)) {
             return 0;
         }
 

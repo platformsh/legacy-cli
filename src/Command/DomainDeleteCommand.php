@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
-class DomainDeleteCommand extends DomainCommand
+class DomainDeleteCommand extends PlatformCommand
 {
     /**
      * {@inheritdoc}
@@ -52,7 +52,7 @@ class DomainDeleteCommand extends DomainCommand
             return 1;
         }
 
-        if (!$this->confirm("Are you sure you want to delete the domain <info>$name</info>? [Y/n] ", $input, $output)) {
+        if (!$this->getHelper('question')->confirm("Are you sure you want to delete the domain <info>$name</info>?", $input, $output)) {
             return 0;
         }
 

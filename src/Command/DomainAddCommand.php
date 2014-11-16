@@ -8,11 +8,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 
-class DomainAddCommand extends DomainCommand
+class DomainAddCommand extends PlatformCommand
 {
 
     // The final array of SSL options for the client parameters.
     protected $sslOptions;
+
+    protected $domainName;
 
     protected $certPath;
     protected $keyPath;
@@ -53,7 +55,7 @@ class DomainAddCommand extends DomainCommand
         if (empty($this->domainName)) {
             $output->writeln("<error>You must specify the name of the domain.</error>");
             return;
-        } else if (!$this->validDomain($this->domainName, $output)) {
+        } else if (!$this->validDomain($this->domainName)) {
             $output->writeln("<error>You must specify a valid domain name.</error>");
             return;
         }
@@ -78,9 +80,8 @@ class DomainAddCommand extends DomainCommand
             return;
         }
 
-        $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('Is your domain a wildcard? [y/n] ');
-        $wildcard = $helper->ask($input, $output, $question);
+        $wildcard = $this->getHelper('question')
+                         ->confirm("Is your domain a wildcard?", $input, $output, false);
 
         // @todo: Ask about SSL uploads if option --ssl is specified instead of inline filenames
 
@@ -142,6 +143,23 @@ class DomainAddCommand extends DomainCommand
         );
 
         return TRUE;
+    }
+
+    /**
+     * Validate a domain.
+     *
+     * @param string $domain
+     *
+     * @return bool
+     */
+    protected function validDomain($domain)
+    {
+        // @todo: Use symfony/Validator here once it gets the ability to validate just domain.
+        if (preg_match("/^[a-zA-Z0-9][a-zA-Z0-9-_]{0,61}[a-zA-Z0-9]{0,1}\.([a-zA-Z]{1,6}|[a-zA-Z0-9-]{1,30}\.[a-zA-Z]{2,3})$/", $domain))
+        {
+            return true;
+        }
+        return false;
     }
 
     protected function assembleChainFiles($chainPaths)

@@ -15,13 +15,18 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
         composer global require 'platformsh/cli:1.*'
 
-* Make sure Composer's vendor/bin directory is in your system's PATH. This
+* Make sure Composer's `vendor/bin` directory is in your system's PATH. This
   command works in Linux and OS X:
 
         for FILE in ~/.bashrc ~/.bash_profile ~/.bash_login ~/.profile; \
         do if [ -f $FILE ]; then \
         echo 'export PATH="$PATH:~/.composer/vendor/bin"' >> $FILE && . $FILE; \
         break; fi; done
+
+* Optionally, enable auto-completion. Add these lines to your shell profile file:
+
+        PLATFORMSH_CONF=~/.composer/vendor/platformsh/cli/platform.rc
+        [ -f "$PLATFORMSH_CONF" ] && . "$PLATFORMSH_CONF"
 
 ### Usage
 

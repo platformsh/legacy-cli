@@ -21,7 +21,7 @@ class ProjectBuildCommand extends PlatformCommand
                 'abslinks',
                 'a',
                 InputOption::VALUE_NONE,
-                'Use absolute links. This is always enabled for Windows.'
+                'Use absolute links.'
             );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/repository')) {
@@ -85,8 +85,12 @@ class ProjectBuildCommand extends PlatformCommand
         try {
             $this->build($projectRoot, $settings, $output);
         } catch (\Exception $e) {
-            $output->writeln("<error>" . $e->getMessage() . '</error>');
+            $output->writeln('The build failed with an error:');
+            $output->writeln('<error>'.  $e->getMessage() . '</error>');
+            return 1;
         }
+
+        return 0;
     }
 
     /**

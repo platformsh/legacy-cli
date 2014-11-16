@@ -24,12 +24,14 @@ class EnvironmentRelationshipsCommand extends EnvironmentCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
-            return;
+            return 1;
         }
 
-        $sshUrlString = $this->getSshUrl();
-        $command = 'ssh ' . $sshUrlString . " 'echo \$PLATFORM_RELATIONSHIPS'";
-        $relationships = shell_exec($command);
+        $args = array('ssh', $this->getSshUrl(), 'echo $PLATFORM_RELATIONSHIPS');
+        $relationships = $this->getHelper('shell')->executeArgs($args, true);
+        if (!$relationships) {
+            throw new \Exception('No relationships found');
+        }
         $results = json_decode(base64_decode($relationships));
 
         foreach ($results as $key => $relationship) {
@@ -43,6 +45,7 @@ class EnvironmentRelationshipsCommand extends EnvironmentCommand
                 }
             }
         }
+        return 0;
     }
 
 }

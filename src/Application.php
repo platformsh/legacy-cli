@@ -2,8 +2,10 @@
 
 namespace CommerceGuys\Platform\Cli;
 
-use CommerceGuys\Platform\Cli\Console\PlatformQuestionHelper;
-
+use CommerceGuys\Platform\Cli\Helper\DrushHelper;
+use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
+use CommerceGuys\Platform\Cli\Helper\PlatformQuestionHelper;
+use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
@@ -25,37 +27,9 @@ class Application extends ConsoleApplication {
      */
     public function __construct()
     {
-        parent::__construct('Platform.sh CLI', '1.2.6');
+        parent::__construct('Platform.sh CLI', '1.3.0');
 
         $this->setDefaultTimezone();
-
-        $this->add(new Command\PlatformLogoutCommand);
-        $this->add(new Command\PlatformLoginCommand);
-        $this->add(new Command\DrushCommand);
-        $this->add(new Command\ProjectListCommand);
-        $this->add(new Command\DomainAddCommand);
-        $this->add(new Command\DomainDeleteCommand);
-        $this->add(new Command\DomainListCommand);
-        $this->add(new Command\EnvironmentActivateCommand);
-        $this->add(new Command\EnvironmentBackupCommand);
-        $this->add(new Command\EnvironmentBranchCommand);
-        $this->add(new Command\EnvironmentCheckoutCommand);
-        $this->add(new Command\EnvironmentDeactivateCommand);
-        $this->add(new Command\EnvironmentDeleteCommand);
-        $this->add(new Command\EnvironmentListCommand);
-        $this->add(new Command\EnvironmentMergeCommand);
-        $this->add(new Command\EnvironmentRelationshipsCommand);
-        $this->add(new Command\EnvironmentSshCommand);
-        $this->add(new Command\EnvironmentSynchronizeCommand);
-        $this->add(new Command\EnvironmentUrlCommand);
-        $this->add(new Command\ProjectBuildCommand);
-        $this->add(new Command\ProjectCleanCommand);
-        $this->add(new Command\ProjectDrushAliasesCommand);
-        $this->add(new Command\ProjectGetCommand);
-        $this->add(new Command\SshKeyAddCommand);
-        $this->add(new Command\SshKeyDeleteCommand);
-        $this->add(new Command\SshKeyListCommand);
-        $this->add(new Command\WelcomeCommand);
 
         $this->setDefaultCommand('welcome');
     }
@@ -84,10 +58,50 @@ class Application extends ConsoleApplication {
     protected function getDefaultHelperSet()
     {
         return new HelperSet(array(
-          new FormatterHelper(),
-          new TableHelper(),
-          new PlatformQuestionHelper(),
+            new FormatterHelper(),
+            new TableHelper(),
+            new PlatformQuestionHelper(),
+            new FilesystemHelper(),
+            new ShellHelper(),
+            new DrushHelper(),
         ));
+    }
+
+    /**
+      * {@inheritdoc}
+      */
+    protected function getDefaultCommands()
+    {
+        $commands = parent::getDefaultCommands();
+        $commands[] = new Command\CompletionCommand();
+        $commands[] = new Command\PlatformLogoutCommand;;
+        $commands[] = new Command\PlatformLoginCommand;;
+        $commands[] = new Command\DrushCommand;;
+        $commands[] = new Command\ProjectListCommand;;
+        $commands[] = new Command\DomainAddCommand;;
+        $commands[] = new Command\DomainDeleteCommand;;
+        $commands[] = new Command\DomainListCommand;;
+        $commands[] = new Command\EnvironmentActivateCommand;;
+        $commands[] = new Command\EnvironmentBackupCommand;;
+        $commands[] = new Command\EnvironmentBranchCommand;;
+        $commands[] = new Command\EnvironmentCheckoutCommand;;
+        $commands[] = new Command\EnvironmentDeactivateCommand;;
+        $commands[] = new Command\EnvironmentDeleteCommand;;
+        $commands[] = new Command\EnvironmentListCommand;;
+        $commands[] = new Command\EnvironmentMergeCommand;;
+        $commands[] = new Command\EnvironmentRelationshipsCommand;;
+        $commands[] = new Command\EnvironmentSshCommand;;
+        $commands[] = new Command\EnvironmentSynchronizeCommand;;
+        $commands[] = new Command\EnvironmentUrlCommand;;
+        $commands[] = new Command\ProjectBuildCommand;;
+        $commands[] = new Command\ProjectCleanCommand;;
+        $commands[] = new Command\ProjectDrushAliasesCommand;;
+        $commands[] = new Command\ProjectGetCommand;;
+        $commands[] = new Command\SshKeyAddCommand;;
+        $commands[] = new Command\SshKeyDeleteCommand;;
+        $commands[] = new Command\SshKeyListCommand;;
+        $commands[] = new Command\WelcomeCommand;;
+        return $commands;
     }
 
     /**

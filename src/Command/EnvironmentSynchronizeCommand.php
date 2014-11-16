@@ -50,16 +50,18 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
 
         $parentId = $this->environment['parent'];
 
+        $questionHelper = $this->getHelper('question');
+
         if ($synchronize = $input->getArgument('synchronize')) {
             $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
             $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
-            if (!$this->confirm("Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>? [y/N] ", $input, $output, false)) {
+            if (!$questionHelper->confirm("Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?", $input, $output, false)) {
                 return 0;
             }
         }
         else {
-            $syncCode = $this->confirm("Synchronize code from <info>$parentId</info> to <info>$environmentId</info>? [y/N] ", $input, $output, false);
-            $syncData = $this->confirm("Synchronize data from <info>$parentId</info> to <info>$environmentId</info>? [y/N] ", $input, $output, false);
+            $syncCode = $questionHelper->confirm("Synchronize code from <info>$parentId</info> to <info>$environmentId</info>?", $input, $output, false);
+            $syncData = $questionHelper->confirm("Synchronize data from <info>$parentId</info> to <info>$environmentId</info>?", $input, $output, false);
         }
         if (!$syncCode && !$syncData) {
             $output->writeln("<error>You must synchronize at least code or data.</error>");
