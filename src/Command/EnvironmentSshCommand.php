@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -28,7 +29,8 @@ class EnvironmentSshCommand extends EnvironmentCommand
             return;
         }
 
-        $sshUrlString = $this->getSshUrl();
+        $environment = new Environment($this->environment);
+        $sshUrlString = $environment->getSshUrl();
 
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->write($sshUrlString);

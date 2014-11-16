@@ -43,7 +43,14 @@ class PlatformClient extends Client
                 if (!empty($json['detail'])) {
                     $message .= "\n  " . $json['detail'];
                 }
-                throw new \RuntimeException("The Platform.sh API call failed.\nURL: $url\nError: $code $reason\nMessage:\n  $message");
+                // Re-throw the exception with a more detailed message.
+                $exception = new ClientErrorResponseException(
+                  "The Platform.sh API call failed.\nURL: $url\nError: $code $reason\nMessage:\n  $message",
+                  $code
+                );
+                $exception->setRequest($e->getRequest());
+                $exception->setResponse($response);
+                throw $exception;
             }
             throw $e;
         }
