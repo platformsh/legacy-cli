@@ -132,9 +132,6 @@ class GitHelper extends Helper
         // If enabled, set the working directory to the repository.
         if ($dir !== false) {
             $dir = $dir ?: $this->repositoryDir;
-            if ($args[0] != 'init' && !$this->isRepository($dir)) {
-                throw new \RuntimeException("Not a Git repository: " . $dir);
-            }
         }
         // Run the command.
         array_unshift($args, 'git');

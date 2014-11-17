@@ -39,6 +39,15 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf($toolstackClassName, $toolstackNoConfig, 'Detect Symfony app from file structure');
     }
 
+    public function testToolstackDetectionMultiple()
+    {
+        $fakeRepositoryRoot = 'tests/data/repositories/multiple';
+
+        $builder = new LocalBuild();
+        $applications = $builder->getApplications($fakeRepositoryRoot);
+        $this->assertCount(2, $applications, 'Detect multiple apps');
+    }
+
     public function testToolstackDetectionNone()
     {
         $fakeAppRoot = 'tests/data/apps';
