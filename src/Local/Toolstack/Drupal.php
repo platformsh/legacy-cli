@@ -48,7 +48,7 @@ class Drupal extends ToolstackBase
 
     public static function ensureDrushInstalled()
     {
-        $drushVersion = shell_exec('drush version');
+        $drushVersion = shell_exec('drush --version');
         if (strpos(strtolower($drushVersion), 'drush version') === false) {
             throw new \Exception('Drush must be installed.');
         }
@@ -172,13 +172,13 @@ class Drupal extends ToolstackBase
         $buildDir = $this->buildDir;
 
         // The build has been done, create a settings.php if it is missing.
-        if (!file_exists($buildDir . '/sites/default/settings.php')) {
+        if (!file_exists($buildDir . '/sites/default/settings.php') && file_exists($buildDir . '/sites/default')) {
             copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
         }
 
         // Create the settings.local.php if it doesn't exist in either shared/
         // or in the app.
-        if (!file_exists($this->projectRoot . '/shared/settings.local.php') && !file_exists($buildDir . '/sites/default/settings.local.php')) {
+        if (!file_exists($this->projectRoot . '/shared/settings.local.php') && file_exists($buildDir . '/sites/default') && !file_exists($buildDir . '/sites/default/settings.local.php')) {
             copy(CLI_ROOT . '/resources/drupal/settings.local.php', $this->projectRoot . '/shared/settings.local.php');
         }
 
