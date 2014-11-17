@@ -22,7 +22,7 @@ class LocalBuild {
      *
      * @param string $repositoryRoot   The absolute path to the repository.
      *
-     * @return array    A list of directories containing applications.
+     * @return string[]    A list of directories containing applications.
      */
     public static function getApplications($repositoryRoot)
     {

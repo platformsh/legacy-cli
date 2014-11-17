@@ -27,6 +27,7 @@ class DomainListCommand extends PlatformCommand
 
     /**
      * Build a table of domains.
+     * @param OutputInterface $output
      */
     protected function buildDomainTable($tree, $output)
     {

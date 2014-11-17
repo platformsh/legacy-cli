@@ -122,7 +122,7 @@ class FilesystemHelper extends Helper {
      * @param string $source
      * @param string $destination
      * @param bool $skipExisting
-     * @param array $blacklist
+     * @param string[] $blacklist
      *
      * @throws \Exception
      */

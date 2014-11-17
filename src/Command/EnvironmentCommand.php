@@ -6,7 +6,10 @@ class EnvironmentCommand extends PlatformCommand
 {
 
     /**
-     * @return bool Whether the operation is allowed on the current environment.
+     * @param string $operation
+     * @param array|null $environment
+     *
+     * @return bool Whether the operation is allowed on the environment.
      */
     protected function operationAllowed($operation, $environment = null)
     {
