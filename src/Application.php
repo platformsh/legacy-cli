@@ -9,7 +9,6 @@ use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
-use Symfony\Component\Console\Helper\TableHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -61,7 +60,6 @@ class Application extends ConsoleApplication {
     {
         return new HelperSet(array(
             new FormatterHelper(),
-            new TableHelper(),
             new PlatformQuestionHelper(),
             new FilesystemHelper(),
             new ShellHelper(),

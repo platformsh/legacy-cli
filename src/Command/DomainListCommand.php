@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -27,12 +28,12 @@ class DomainListCommand extends PlatformCommand
     /**
      * Build a table of domains.
      */
-    protected function buildDomainTable($tree)
+    protected function buildDomainTable($tree, $output)
     {
-        $table = $this->getHelperSet()->get('table');
+        $table = new Table($output);
         $table
             ->setHeaders(array('Name', 'Wildcard', 'SSL enabled', 'Creation date'))
-            ->setRows($this->buildDomainRows($tree));
+            ->addRows($this->buildDomainRows($tree));
 
         return $table;
     }
@@ -78,8 +79,8 @@ class DomainListCommand extends PlatformCommand
             $output->writeln("\nNo domains found for " . $project_name);
         } else {
             $output->writeln("\nYour domains are: ");
-            $table = $this->buildDomainTable($domains);
-            $table->render($output);
+            $table = $this->buildDomainTable($domains, $output);
+            $table->render();
         }
 
         $output->writeln("\nAdd a domain to your project by running <info>platform domain:add [domain-name]</info>");

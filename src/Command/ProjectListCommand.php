@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -28,11 +29,10 @@ class ProjectListCommand extends PlatformCommand
         }
 
         $output->writeln("\nYour projects are: ");
-        $table = $this->getHelperSet()->get('table');
-        $table
-            ->setHeaders(array('ID', 'Name', "URL"))
-            ->setRows($rows);
-        $table->render($output);
+        $table = new Table($output);
+        $table->setHeaders(array('ID', 'Name', "URL"))
+            ->addRows($rows);
+        $table->render();
 
         $output->writeln("\nGet a project by running <info>platform get [id]</info>.");
         $output->writeln("Delete a project by running <info>platform project:delete [id]</info>.");
