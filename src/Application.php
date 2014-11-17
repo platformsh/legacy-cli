@@ -31,6 +31,8 @@ class Application extends ConsoleApplication {
 
         $this->setDefaultTimezone();
 
+        $this->addCommands($this->getCommands());
+
         $this->setDefaultCommand('welcome');
     }
 
@@ -68,11 +70,10 @@ class Application extends ConsoleApplication {
     }
 
     /**
-      * {@inheritdoc}
-      */
-    protected function getDefaultCommands()
+     * @return \Symfony\Component\Console\Command\Command[]
+     */
+    protected function getCommands()
     {
-        $commands = parent::getDefaultCommands();
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\PlatformLogoutCommand();
         $commands[] = new Command\PlatformLoginCommand();
