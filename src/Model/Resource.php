@@ -101,11 +101,10 @@ class Resource implements ResourceInterface
 
     /**
      * @param string $uri
-     * @param string $filter
      *
      * @return Resource[]
      */
-    protected function getCollection($uri, $filter = '')
+    public function getCollection($uri)
     {
         $collection = $this->client
           ->get($uri)
@@ -114,17 +113,9 @@ class Resource implements ResourceInterface
         if (!is_array($collection)) {
             throw new \UnexpectedValueException("Unexpected response");
         }
-        foreach ($collection as &$item) {
-            $item = new Resource($item);
-            $item->setClient($this->client);
-        }
-        if ($collection && $filter) {
-            return array_filter(
-              $collection,
-              function (Resource $element) use ($filter) {
-                  return strpos(strtolower($element->getId()), strtolower($filter)) !== false;
-              }
-            );
+        foreach ($collection as &$resource) {
+            $resource = new Resource($resource);
+            $resource->setClient($this->client);
         }
         return $collection;
     }

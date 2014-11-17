@@ -33,13 +33,11 @@ class Environment extends Resource
     /**
      * Get a list of variables.
      *
-     * @param string $filter
-     *
      * @return Resource[]
      */
-    public function getVariables($filter = '')
+    public function getVariables()
     {
-        return $this->getCollection('variables', $filter);
+        return $this->getCollection('variables');
     }
 
     /**
