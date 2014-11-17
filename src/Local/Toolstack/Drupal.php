@@ -48,7 +48,7 @@ class Drupal extends ToolstackBase
 
     public static function ensureDrushInstalled()
     {
-        $drushVersion = shell_exec('drush version');
+        $drushVersion = shell_exec('drush --version');
         if (strpos(strtolower($drushVersion), 'drush version') === false) {
             throw new \Exception('Drush must be installed.');
         }
