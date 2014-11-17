@@ -17,6 +17,16 @@ class CompletionCommand extends ParentCompletionCommand
      */
     protected $projects;
 
+    public function isEnabled() {
+        // Hide the command in the list.
+        global $argv;
+        return !isset($argv[1]) || $argv[1] != 'list';
+    }
+
+    public function isLocal() {
+        return true;
+    }
+
     protected function setUp()
     {
         $this->platformCommand = new PlatformCommand('welcome');
