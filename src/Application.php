@@ -26,7 +26,7 @@ class Application extends ConsoleApplication {
      */
     public function __construct()
     {
-        parent::__construct('Platform.sh CLI', '1.3.0');
+        parent::__construct('Platform.sh CLI', '1.4-dev');
 
         $this->setDefaultTimezone();
 
