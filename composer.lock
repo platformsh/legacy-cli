@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "606eba93481e6e4a961b572348c11a27",
+    "hash": "49a48aa5137603bac0a5d6bd00f33d72",
     "packages": [
         {
             "name": "commerceguys/guzzle-oauth2-plugin",
@@ -138,16 +138,16 @@
         },
         {
             "name": "stecman/symfony-console-completion",
-            "version": "0.4.3",
+            "version": "0.4.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stecman/symfony-console-completion.git",
-                "reference": "cf6a6a5f498d26692a5f7a234dd630e2f38222ad"
+                "reference": "2bf3ddcaf31db1f0622a7db29bfc85fbc776bdaf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stecman/symfony-console-completion/zipball/cf6a6a5f498d26692a5f7a234dd630e2f38222ad",
-                "reference": "cf6a6a5f498d26692a5f7a234dd630e2f38222ad",
+                "url": "https://api.github.com/repos/stecman/symfony-console-completion/zipball/2bf3ddcaf31db1f0622a7db29bfc85fbc776bdaf",
+                "reference": "2bf3ddcaf31db1f0622a7db29bfc85fbc776bdaf",
                 "shasum": ""
             },
             "require": {
@@ -173,7 +173,7 @@
                 }
             ],
             "description": "Automatic BASH completion for Symfony Console Component based applications.",
-            "time": "2014-11-13 22:57:11"
+            "time": "2014-11-18 03:19:13"
         },
         {
             "name": "symfony/console",

@@ -9,7 +9,6 @@ use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
-use Symfony\Component\Console\Helper\TableHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -30,6 +29,8 @@ class Application extends ConsoleApplication {
         parent::__construct('Platform.sh CLI', '1.3.0');
 
         $this->setDefaultTimezone();
+
+        $this->addCommands($this->getCommands());
 
         $this->setDefaultCommand('welcome');
     }
@@ -59,7 +60,6 @@ class Application extends ConsoleApplication {
     {
         return new HelperSet(array(
             new FormatterHelper(),
-            new TableHelper(),
             new PlatformQuestionHelper(),
             new FilesystemHelper(),
             new ShellHelper(),
@@ -68,11 +68,10 @@ class Application extends ConsoleApplication {
     }
 
     /**
-      * {@inheritdoc}
-      */
-    protected function getDefaultCommands()
+     * @return \Symfony\Component\Console\Command\Command[]
+     */
+    protected function getCommands()
     {
-        $commands = parent::getDefaultCommands();
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\PlatformLogoutCommand();
         $commands[] = new Command\PlatformLoginCommand();

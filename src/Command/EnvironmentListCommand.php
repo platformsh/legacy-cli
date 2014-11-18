@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -45,8 +46,9 @@ class EnvironmentListCommand extends EnvironmentCommand
             ->addOption(
                 'refresh',
                 null,
-                InputOption::VALUE_NONE,
-                'Refresh the list.'
+                InputOption::VALUE_OPTIONAL,
+                'Whether to refresh the list.',
+                1
             );
     }
 
@@ -68,7 +70,7 @@ class EnvironmentListCommand extends EnvironmentCommand
     /**
      * Build a table of environments.
      */
-    protected function buildEnvironmentTable($tree)
+    protected function buildEnvironmentTable($tree, OutputInterface $output)
     {
         $headers = array('ID');
         if ($this->showNames) {
@@ -80,10 +82,10 @@ class EnvironmentListCommand extends EnvironmentCommand
         if ($this->showUrls) {
             $headers[] = 'URL';
         }
-        $table = $this->getHelper('table');
+        $table = new Table($output);
         $table
             ->setHeaders($headers)
-            ->setRows($this->buildEnvironmentRows($tree));
+            ->addRows($this->buildEnvironmentRows($tree));
 
         return $table;
     }
@@ -170,8 +172,8 @@ class EnvironmentListCommand extends EnvironmentCommand
         }
 
         $output->writeln("Your environments are: ");
-        $table = $this->buildEnvironmentTable($tree);
-        $table->render($output);
+        $table = $this->buildEnvironmentTable($tree, $output);
+        $table->render();
 
         $output->writeln("<info>*</info> - Indicates the current environment.\n");
 

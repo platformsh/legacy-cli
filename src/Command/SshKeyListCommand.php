@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -29,11 +30,11 @@ class SshKeyListCommand extends PlatformCommand
         }
 
         $output->writeln("\nYour SSH keys are: ");
-        $table = $this->getHelperSet()->get('table');
+        $table = new Table($output);
         $table
             ->setHeaders(array('ID', 'Key'))
-            ->setRows($key_rows);
-        $table->render($output);
+            ->addRows($key_rows);
+        $table->render();
 
         $output->writeln("\nAdd a new SSH key by running <info>platform ssh-key:add [path]</info>.");
         $output->writeln("Delete an SSH key by running <info>platform ssh-key:delete [id]</info>.\n");

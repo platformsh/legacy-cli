@@ -32,7 +32,7 @@ class ShellHelper extends Helper {
     /**
      * Build and run a process.
      *
-     * @param array $args
+     * @param string[] $args
      * @param bool $mustRun
      *
      * @return string
