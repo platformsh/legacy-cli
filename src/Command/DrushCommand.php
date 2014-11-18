@@ -35,20 +35,20 @@ class DrushCommand extends PlatformCommand
         // There is no point in allowing the user to override them
         // using --project and --environment, in that case they can run
         // drush by themselves and specify the site alias manually.
-        $this->project = $this->getCurrentProject();
-        if (!$this->project) {
+        $project = $this->getCurrentProject();
+        if (!$project) {
             $output->writeln("<error>You must run this command from a project folder.</error>");
-            return;
+            return 1;
         }
-        $this->environment = $this->getCurrentEnvironment($this->project);
-        if (!$this->environment) {
+        $environment = $this->getCurrentEnvironment($project);
+        if (!$environment) {
             $output->writeln("<error>Could not determine the current environment.</error>");
-            return;
+            return 1;
         }
 
-        $aliasGroup = isset($this->project['alias-group']) ? $this->project['alias-group'] : $this->project['id'];
+        $aliasGroup = isset($project['alias-group']) ? $project['alias-group'] : $project['id'];
 
-        $alias = $aliasGroup . '.' . $this->environment['id'];
+        $alias = $aliasGroup . '.' . $environment['id'];
         $command = 'drush @' . $alias . ' ';
         // Take the entire input string (all arguments and options) after the
         // name of the drush command.

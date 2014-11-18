@@ -54,19 +54,12 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
         }
 
         $name = $input->getArgument('name');
-        $pipe = $input->getOption('pipe') || !$this->isTerminal($output);
 
         if ($name) {
             $variable = $environment->getVariable($name);
             if (!$variable) {
                 $output->writeln("Variable not found: <error>$name</error>");
                 return 1;
-            }
-
-            if ($pipe) {
-                /** @var \CommerceGuys\Platform\Cli\Model\Resource $variable */
-                $output->write($variable->getProperty('value'));
-                return 0;
             }
             $results = array($variable);
         }
@@ -78,22 +71,21 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
             }
         }
 
-        /** @var \CommerceGuys\Platform\Cli\Model\Resource[] $results */
-
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             foreach ($results as $variable) {
-                $output->writeln($variable->getId() . "\t" . $variable->getProperty('value'));
+                $output->writeln($variable->id() . "\t" . $variable->getProperty('value'));
             }
-            return 0;
+        }
+        else {
+            $table = $this->buildVariablesTable($results, $output);
+            $table->render();
         }
 
-        $table = $this->buildVariablesTable($results, $output);
-        $table->render();
         return 0;
     }
 
     /**
-     * @param \CommerceGuys\Platform\Cli\Model\Resource[] $variables
+     * @param \CommerceGuys\Platform\Cli\Model\HalResource[] $variables
      * @param OutputInterface $output
      *
      * @return Table
@@ -111,7 +103,7 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
             // Wrap long values.
             $value = wordwrap($value, 30, "\n", true);
             $table->addRow(array(
-                $variable->getId(),
+                $variable->id(),
                 $value,
                 $variable->getProperty('inherited') ? 'Yes' : 'No',
                 $variable->getProperty('is_json') ? 'Yes' : 'No',

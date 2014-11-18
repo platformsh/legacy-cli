@@ -11,7 +11,7 @@ class PlatformClient extends Client
 {
 
     /**
-     * @{inheritdoc}
+     * @inheritdoc
      *
      * Catch ClientErrorResponseException to alter the message.
      */

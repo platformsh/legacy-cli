@@ -40,10 +40,6 @@ class EnvironmentVariableDeleteCommand extends EnvironmentCommand
             return 1;
         }
 
-        /** @var \CommerceGuys\Platform\Cli\Model\Resource $variable */
-
-        $environmentId = $environment->getId();
-
         if (!$variable->operationAllowed('delete')) {
             if ($variable->getProperty('inherited')) {
                 $output->writeln("The variable <error>$variableName</error> is inherited,"
@@ -57,6 +53,7 @@ class EnvironmentVariableDeleteCommand extends EnvironmentCommand
             return 1;
         }
 
+        $environmentId = $environment->id();
         $confirm = $this->getHelper('question')
           ->confirm(
             "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",

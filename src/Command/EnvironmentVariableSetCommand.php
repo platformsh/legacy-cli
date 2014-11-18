@@ -38,19 +38,20 @@ class EnvironmentVariableSetCommand extends EnvironmentCommand
         $variableValue = $input->getArgument('value');
         $json = $input->getOption('json');
 
-        if ($json && $variableValue && json_decode($variableValue) === null) {
+        if ($json && !$this->validateJson($variableValue)) {
             throw new \Exception("Invalid JSON: <error>$variableValue</error>");
         }
 
-        /** @var \CommerceGuys\Platform\Cli\Model\Resource|false $variable */
-        $variable = $environment->getVariable($variableName);
-        if ($variable && $variable->getProperty('value') === $variableValue && $variable->getProperty('is_json') == $json) {
+        // Check whether the variable already exists. If there is no change,
+        // quit early.
+        $existing = $environment->getVariable($variableName);
+        if ($existing && $existing->getProperty('value') === $variableValue && $existing->getProperty('is_json') == $json) {
             $output->writeln("$variableName already set to <info>$variableValue</info>");
             return 0;
         }
 
+        // Set the variable to a new value.
         $variable = $environment->setVariable($variableName, $variableValue, $json);
-
         if (!$variable) {
             $output->writeln("Failed to set variable <error>$variableName</error>");
             return 1;
@@ -64,6 +65,16 @@ class EnvironmentVariableSetCommand extends EnvironmentCommand
             );
         }
         return 0;
+    }
+
+    /**
+     * @param $string
+     * @return bool
+     */
+    protected function validateJson($string)
+    {
+        $null = json_decode($string) === null;
+        return !$null || ($null && $string === 'null');
     }
 
 }

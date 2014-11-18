@@ -1,13 +1,8 @@
 <?php
 namespace CommerceGuys\Platform\Cli\Model;
 
-use Guzzle\Http\Exception\ClientErrorResponseException;
-
-class Environment extends Resource
+class Environment extends HalResource
 {
-
-    /** @var Resource[] */
-    protected $variables;
 
     /**
      * Get the SSH URL for the environment.
@@ -33,34 +28,23 @@ class Environment extends Resource
     /**
      * Get a list of variables.
      *
-     * @return Resource[]
+     * @return HalResource[]
      */
     public function getVariables()
     {
-        return $this->getCollection('variables');
+        return self::getCollection('variables', $this->client);
     }
 
     /**
      * Get a single variable.
      *
-     * @param string $name
+     * @param string $id
      *
-     * @return Resource|false
+     * @return HalResource|false
      */
-    public function getVariable($name)
+    public function getVariable($id)
     {
-        try {
-            $variable = $this->client
-              ->get('variables/' . urlencode($name))
-              ->send()
-              ->json();
-        }
-        catch (ClientErrorResponseException $e) {
-            return false;
-        }
-        $variable = new Resource($variable);
-        $variable->setClient($this->client);
-        return $variable;
+        return self::get($id, $this->data['endpoint'] . '/variables', $this->client);
     }
 
     /**
@@ -70,7 +54,7 @@ class Environment extends Resource
      * @param mixed $value
      * @param bool $json
      *
-     * @return Resource|false
+     * @return HalResource|false
      */
     public function setVariable($name, $value, $json = false)
     {
@@ -78,33 +62,13 @@ class Environment extends Resource
             $value = json_encode($value);
             $json = true;
         }
+        $values = array('value' => $value, 'is_json' => $json);
         $existing = $this->getVariable($name);
         if ($existing) {
-            $values = array('value' => $value, 'is_json' => $json);
             return $existing->update($values) ? $existing : false;
         }
-        return $this->createVariable($name, $value, $json);
-    }
-
-    /**
-     * Create a variable
-     *
-     * @param string $name
-     * @param string $value
-     * @param bool $json
-     *
-     * @return Resource|false
-     */
-    protected function createVariable($name, $value, $json = false)
-    {
-        $body = array('name' => $name, 'value' => $value, 'is_json' => $json);
-        $response = $this->client
-          ->post('variables', null, json_encode($body))
-          ->send();
-        if ($response->getStatusCode() == 201) {
-            return new Resource($response->json());
-        }
-        return false;
+        $values['name'] = $name;
+        return self::create($values, $this->data['endpoint'] . '/variables', $this->client);
     }
 
 }

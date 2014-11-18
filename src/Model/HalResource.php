@@ -2,11 +2,12 @@
 namespace CommerceGuys\Platform\Cli\Model;
 
 use Guzzle\Http\Client as HttpClient;
+use Guzzle\Http\Exception\ClientErrorResponseException;
 
 /**
  * @todo make this work for all hypermedia entities/actions.
  */
-class Resource implements ResourceInterface
+class HalResource implements HalResourceInterface
 {
 
     /** @var array */
@@ -16,17 +17,60 @@ class Resource implements ResourceInterface
     protected $client;
 
     /**
-     * @{inheritdoc}
+     * @inheritdoc
      */
-    public function __construct(array $data)
+    public function __construct(array $data, HttpClient $client = null)
     {
         $this->data = $data;
+        $this->client = $client;
     }
 
     /**
-     * @{inheritdoc}
+     * Get a resource at a URL.
+     *
+     * @param string $id
+     * @param string $collectionUrl
+     * @param HttpClient $client
+     *
+     * @return HalResource|false
      */
-    public function getId()
+    public static function get($id, $collectionUrl, HttpClient $client)
+    {
+        try {
+            $data = $client->get($collectionUrl . '/' . urlencode($id))
+                           ->send()
+                           ->json();
+        }
+        catch (ClientErrorResponseException $e) {
+            return false;
+        }
+        return new HalResource($data, $client);
+    }
+
+    /**
+     * Create a resource.
+     *
+     * @param array $values
+     * @param string $collectionUrl
+     * @param HttpClient $client
+     *
+     * @return HalResource|false
+     */
+    public static function create(array $values, $collectionUrl, HttpClient $client)
+    {
+        $response = $client
+          ->post($collectionUrl, null, json_encode($values))
+          ->send();
+        if ($response->getStatusCode() == 201) {
+            return new HalResource($response->json(), $client);
+        }
+        return false;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function id()
     {
         return $this->getProperty('id');
     }
@@ -48,7 +92,7 @@ class Resource implements ResourceInterface
      *
      * @param string $op
      * @param string $method
-     * @param null   $body
+     * @param mixed $body
      *
      * @return bool
      */
@@ -68,7 +112,7 @@ class Resource implements ResourceInterface
     }
 
     /**
-     * @{inheritdoc}
+     * @inheritdoc
      */
     public function update(array $values)
     {
@@ -76,7 +120,7 @@ class Resource implements ResourceInterface
     }
 
     /**
-     * @{inheritdoc}
+     * @inheritdoc
      */
     public function delete()
     {
@@ -84,7 +128,7 @@ class Resource implements ResourceInterface
     }
 
     /**
-     * @{inheritdoc}
+     * @inheritdoc
      */
     public function operationAllowed($operation)
     {
@@ -92,7 +136,7 @@ class Resource implements ResourceInterface
     }
 
     /**
-     * @{inheritdoc}
+     * @inheritdoc
      */
     public function setClient(HttpClient $client)
     {
@@ -101,12 +145,13 @@ class Resource implements ResourceInterface
 
     /**
      * @param string $uri
+     * @param HttpClient $client
      *
-     * @return Resource[]
+     * @return HalResource[]
      */
-    public function getCollection($uri)
+    public static function getCollection($uri, HttpClient $client)
     {
-        $collection = $this->client
+        $collection = $client
           ->get($uri)
           ->send()
           ->json();
@@ -114,8 +159,7 @@ class Resource implements ResourceInterface
             throw new \UnexpectedValueException("Unexpected response");
         }
         foreach ($collection as &$resource) {
-            $resource = new Resource($resource);
-            $resource->setClient($this->client);
+            $resource = new HalResource($resource, $client);
         }
         return $collection;
     }

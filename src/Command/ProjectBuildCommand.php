@@ -50,15 +50,17 @@ class ProjectBuildCommand extends PlatformCommand
         $projectRoot = $this->getProjectRoot();
         if (empty($projectRoot)) {
             $output->writeln("<error>You must run this command from a project folder.</error>");
-            return;
+            return 1;
         }
         if ($this->config) {
             $project = $this->getCurrentProject();
+            if (!$project) {
+                throw new \RuntimeException("Could not determine the current project");
+            }
             $environment = $this->getCurrentEnvironment($project);
-                if (!$environment) {
-                    $output->writeln("<error>Could not determine the current environment.</error>");
-                    return;
-                }
+            if (!$environment) {
+                throw new \RuntimeException("Could not determine the current environment");
+            }
             $envId = $environment['id'];
         }
         else {
