@@ -46,8 +46,9 @@ class EnvironmentListCommand extends EnvironmentCommand
             ->addOption(
                 'refresh',
                 null,
-                InputOption::VALUE_NONE,
-                'Refresh the list.'
+                InputOption::VALUE_OPTIONAL,
+                'Whether to refresh the list.',
+                1
             );
     }
 
