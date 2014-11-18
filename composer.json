@@ -9,7 +9,7 @@
         "symfony/finder": "~2.5",
         "symfony/filesystem": "~2.5",
         "symfony/process": "~2.5",
-        "stecman/symfony-console-completion": "0.4.3"
+        "stecman/symfony-console-completion": "0.4.4"
     },
     "suggest": {
         "drush/drush": "For Drupal projects"
