@@ -65,6 +65,26 @@ class CompletionCommand extends ParentCompletionCommand
               'id',
               Completion::TYPE_ARGUMENT,
               array($this, 'getEnvironmentsforCheckout')
+            ),
+            new Completion\ShellPathCompletion(
+              'ssh-key:add',
+              'path',
+              Completion::TYPE_ARGUMENT
+            ),
+            new Completion\ShellPathCompletion(
+              'domain:add',
+              'cert',
+              Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+              'domain:add',
+              'key',
+              Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+              'domain:add',
+              'chain',
+              Completion::TYPE_OPTION
             )
           )
         );
