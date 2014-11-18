@@ -35,8 +35,7 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
         $environment = new Environment($this->environment);
         $environment->setClient($this->getPlatformClient($this->environment['endpoint']));
 
-        // This is only here as a workaround, because Platform.sh does not
-        // currently rebuild environments when variables are changed.
+        // @todo This --ssh option is only here as a temporary workaround.
         if ($input->getOption('ssh')) {
             $shellHelper = $this->getHelper('shell');
             $platformVariables = $shellHelper->executeArgs(array(
@@ -45,12 +44,12 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
                 'echo $PLATFORM_VARIABLES',
               ), true);
             $results = json_decode(base64_decode($platformVariables), true);
-            $table = new Table($output);
-            $table->setHeaders(array("ID", "Value"));
-            foreach ($results as $key => $id) {
-                $table->addRow(array($key, $id));
+            foreach ($results as $id => $value) {
+                if (!is_scalar($value)) {
+                    $value = json_encode($value);
+                }
+                $output->writeln("$id\t$value");
             }
-            $table->render();
             return 0;
         }
 
