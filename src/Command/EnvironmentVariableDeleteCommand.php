@@ -42,12 +42,28 @@ class EnvironmentVariableDeleteCommand extends EnvironmentCommand
 
         /** @var \CommerceGuys\Platform\Cli\Model\Resource $variable */
 
+        $environmentId = $environment->getId();
+
         if (!$variable->operationAllowed('delete')) {
-            $output->writeln("The variable <error>$variableName</error> cannot be deleted from this environment.");
+            if ($variable->getProperty('inherited')) {
+                $output->writeln("The variable <error>$variableName</error> is inherited,"
+                  . " so it cannot be deleted from this environment."
+                  . "\nYou could override it with the <comment>variable:set</comment> command."
+                );
+            }
+            else {
+                $output->writeln("The variable <error>$variableName</error> cannot be deleted");
+            }
             return 1;
         }
 
-        if (!$this->getHelper('question')->confirm("Are you sure you want to delete the variable <info>$variableName</info>?", $input, $output, false)) {
+        $confirm = $this->getHelper('question')
+          ->confirm(
+            "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
+            $input, $output, false
+          );
+
+        if (!$confirm) {
             return 1;
         }
 
