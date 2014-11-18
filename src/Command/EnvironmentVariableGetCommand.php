@@ -55,6 +55,7 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
         }
 
         $name = $input->getArgument('name');
+        $pipe = $input->getOption('pipe') || !$this->isTerminal($output);
 
         if ($name) {
             $variable = $environment->getVariable($name);
@@ -63,7 +64,7 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
                 return 1;
             }
 
-            if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+            if ($pipe) {
                 /** @var \CommerceGuys\Platform\Cli\Model\Resource $variable */
                 $output->write($variable->getProperty('value'));
                 return 0;
@@ -76,6 +77,15 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
                 $output->writeln('No variables found');
                 return 1;
             }
+        }
+
+        /** @var \CommerceGuys\Platform\Cli\Model\Resource[] $results */
+
+        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+            foreach ($results as $variable) {
+                $output->writeln($variable->getId() . "\t" . $variable->getProperty('value'));
+            }
+            return 0;
         }
 
         $table = $this->buildVariablesTable($results, $output);
@@ -95,9 +105,12 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
         $table->setHeaders(array("ID", "Value", "Inherited", "JSON"));
         foreach ($variables as $variable) {
             $value = $variable->getProperty('value');
-            if (strlen($value) > 43) {
-                $value = substr($value, 0, 40) . '...';
+            // Truncate long values.
+            if (strlen($value) > 60) {
+                $value = substr($value, 0, 57) . '...';
             }
+            // Wrap long values.
+            $value = wordwrap($value, 30, "\n", true);
             $table->addRow(array(
                 $variable->getId(),
                 $value,
