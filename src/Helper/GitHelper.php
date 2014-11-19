@@ -6,6 +6,7 @@ use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\ProcessBuilder;
+use Symfony\Component\Process\Process;
 
 class GitHelper extends Helper
 {
@@ -74,29 +75,6 @@ class GitHelper extends Helper
     }
 
     /**
-     * Get the working directory for a command.
-     *
-     * @param string|false $override
-     *   The repository dir, or false if the command should not run inside the
-     *   repository.
-     *
-     * @see setDefaultRepositoryDir()
-     *
-     * @return string|null
-     */
-    protected function getWorkingDir($override = null)
-    {
-        $dir = null;
-        if ($override !== false) {
-            $dir = $override ?: $this->repositoryDir;
-            if (!$this->isRepository($dir)) {
-                throw new \RuntimeException("Not a Git repository: " . $dir);
-            }
-        }
-        return $dir;
-    }
-
-    /**
      * Execute a Git command.
      *
      * @param string|false $dir
@@ -114,14 +92,16 @@ class GitHelper extends Helper
      */
     public function execute(array $args, $dir = null, $mustRun = false)
     {
-        // Build the process.
-        if (reset($args) != 'git') {
-            array_unshift($args, 'git');
-        }
-        $processBuilder = new ProcessBuilder($args);
-        $process = $processBuilder->getProcess();
+        array_unshift($args, 'git');
+        $process = $this->buildProcess($args);
         // If enabled, set the working directory to the repository.
-        $process->setWorkingDirectory($this->getWorkingDir($dir));
+        if ($dir !== false) {
+            $dir = $dir ?: $this->repositoryDir;
+            if ($args[1] != 'init' && !$this->isRepository($dir)) {
+                throw new \RuntimeException("Not a Git repository: " . $dir);
+            }
+            $process->setWorkingDirectory($dir);
+        }
         // Run the command.
         try {
             $process->mustRun(array($this, 'log'));
@@ -137,11 +117,41 @@ class GitHelper extends Helper
     }
 
     /**
+     * @param array $args
+     * @return Process
+     */
+    protected function buildProcess(array $args)
+    {
+        $processBuilder = new ProcessBuilder($args);
+        return $processBuilder->getProcess();
+    }
+
+    /**
+     * Create a Git repository in a directory.
+     *
+     * @param string $dir
+     * @param bool   $mustRun
+     *   Enable exceptions if the Git command fails.
+     *
+     * @return bool
+     */
+    public function init($dir, $mustRun = false)
+    {
+        if ($this->isRepository($dir)) {
+            throw new \InvalidArgumentException("Already a repository: $dir");
+        }
+
+        return (bool) $this->execute(array('init'), $dir, $mustRun);
+    }
+
+    /**
+     * Check whether a directory is a Git repository.
+     *
      * @param string $dir
      *
      * @return bool
      */
-    protected function isRepository($dir)
+    public function isRepository($dir)
     {
         return is_dir($dir . '/.git');
     }
@@ -177,9 +187,13 @@ class GitHelper extends Helper
      *
      * @return bool
      */
-    public function branch($name, $parent = 'master', $dir = null, $mustRun = false)
+    public function branch($name, $parent = null, $dir = null, $mustRun = false)
     {
-        return (bool) $this->execute(array('checkout', '-b', $name, $parent), $dir, $mustRun);
+        $args = array('checkout', '-b', $name);
+        if ($parent) {
+            $args[] = $parent;
+        }
+        return (bool) $this->execute($args, $dir, $mustRun);
     }
 
     /**
@@ -255,13 +269,13 @@ class GitHelper extends Helper
      * @param bool   $mustRun
      *   Enable exceptions if the Git command fails.
      *
-     * @return string
+     * @return string|false
      */
     public function getConfig($key, $dir = null, $mustRun = false)
     {
         $args = array('config', '--get', $key);
 
-        return (bool) $this->execute($args, $dir, $mustRun);
+        return $this->execute($args, $dir, $mustRun);
     }
 
 }
