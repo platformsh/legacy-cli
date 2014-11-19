@@ -90,6 +90,9 @@ class Drupal extends ToolstackBase
         if (!empty($this->settings['drushWorkingCopy'])) {
             $drushFlags[] = '--working-copy';
         }
+        if (!empty($this->settings['noCache'])) {
+            $drushFlags[] = '--no-cache';
+        }
 
         // Flatten the options.
         $drushFlags = implode(' ', $drushFlags);

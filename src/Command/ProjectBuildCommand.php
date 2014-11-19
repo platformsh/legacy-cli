@@ -36,6 +36,11 @@ class ProjectBuildCommand extends PlatformCommand
                 InputOption::VALUE_OPTIONAL,
                 'Drush: set the number of concurrent projects that will be processed at the same time.',
                 3
+            )->addOption(
+              'no-cache',
+              null,
+              InputOption::VALUE_NONE,
+              'Drush: disable pm-download caching.'
             );
         }
     }
@@ -76,11 +81,17 @@ class ProjectBuildCommand extends PlatformCommand
 
         $settings['verbosity'] = $output->getVerbosity();
 
-        // Explicitly check for the existence of each option, so that this
-        // command can be invoked from ProjectGetCommand.
-        $settings['absoluteLinks'] = $input->hasOption('abslinks') && $input->getOption('abslinks');
         $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : 3;
-        $settings['drushWorkingCopy'] = $input->hasOption('working-copy') && $input->getOption('working-copy');
+
+        // Some simple settings flags.
+        $settingsMap = array(
+          'absoluteLinks' => 'abslinks',
+          'drushWorkingCopy' => 'working-copy',
+          'noCache' => 'no-cache',
+        );
+        foreach ($settingsMap as $setting => $option) {
+            $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
+        }
 
         try {
             $this->build($projectRoot, $settings, $output);
