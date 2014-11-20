@@ -119,6 +119,13 @@ variable
   variable:set                Set a variable for an environment.
 ```
 
+### Known issues
+
+#### Caching
+The CLI caches details of your projects and their environments. These caches
+could become out-of-date. You can get a fresh list of projects or environments
+with the `platform projects` and `platform environments` commands.
+
 ### Credits
 
 * Maintained by [Commerce Guys](https://commerceguys.com).

@@ -200,10 +200,15 @@ class EnvironmentListCommand extends EnvironmentCommand
             $output->writeln("Sync the current environment by running <info>platform environment:synchronize</info>.");
         }
 
-        if ($this->getApplication()->find('drush')->isEnabled()) {
+        // Only mention Drush if the command exists, i.e. if it is enabled.
+        try {
+            $this->getApplication()->get('drush');
             $output->writeln(
               "Execute Drush commands against the current environment by running <info>platform drush</info>."
             );
+        }
+        catch (\InvalidArgumentException $e) {
+            // Ignore 'command not found' errors.
         }
     }
 }
