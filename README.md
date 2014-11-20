@@ -113,6 +113,10 @@ project
 ssh-key
   ssh-key:add                 Add a new SSH key.
   ssh-key:delete              Delete an SSH key.
+variable
+  variable:delete             Delete a variable from an environment.
+  variable:get                Get a variable for an environment.
+  variable:set                Set a variable for an environment.
 ```
 
 ### Credits

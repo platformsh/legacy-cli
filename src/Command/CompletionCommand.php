@@ -35,7 +35,7 @@ class CompletionCommand extends ParentCompletionCommand
     }
 
     /**
-     * @{inheritdoc}
+     * @inheritdoc
      */
     protected function runCompletion()
     {

@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -27,7 +28,9 @@ class EnvironmentRelationshipsCommand extends EnvironmentCommand
             return 1;
         }
 
-        $args = array('ssh', $this->getSshUrl(), 'echo $PLATFORM_RELATIONSHIPS');
+        $environment = new Environment($this->environment);
+
+        $args = array('ssh', $environment->getSshUrl(), 'echo $PLATFORM_RELATIONSHIPS');
         $relationships = $this->getHelper('shell')->executeArgs($args, true);
         if (!$relationships) {
             throw new \Exception('No relationships found');

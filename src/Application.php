@@ -72,6 +72,7 @@ class Application extends ConsoleApplication {
      */
     protected function getCommands()
     {
+        $commands = array();
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\PlatformLogoutCommand();
         $commands[] = new Command\PlatformLoginCommand();
@@ -92,6 +93,9 @@ class Application extends ConsoleApplication {
         $commands[] = new Command\EnvironmentSshCommand();
         $commands[] = new Command\EnvironmentSynchronizeCommand();
         $commands[] = new Command\EnvironmentUrlCommand();
+        $commands[] = new Command\EnvironmentVariableDeleteCommand();
+        $commands[] = new Command\EnvironmentVariableGetCommand();
+        $commands[] = new Command\EnvironmentVariableSetCommand();
         $commands[] = new Command\ProjectBuildCommand();
         $commands[] = new Command\ProjectCleanCommand();
         $commands[] = new Command\ProjectDrushAliasesCommand();

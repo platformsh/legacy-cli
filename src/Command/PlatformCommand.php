@@ -23,7 +23,10 @@ class PlatformCommand extends Command
     protected $accountClient;
     protected $platformClient;
 
+    /** @var array */
     protected $project;
+
+    /** @var array */
     protected $environment;
 
     /**
@@ -445,6 +448,9 @@ class PlatformCommand extends Command
     protected function getEnvironment($id, $project = null)
     {
         $project = $project ?: $this->getCurrentProject();
+        if (!$project) {
+            return null;
+        }
         $environments = $this->getEnvironments($project, false);
         if (!isset($environments[$id])) {
             // The list of environments is cached and might be older than the
@@ -530,35 +536,37 @@ class PlatformCommand extends Command
                 $output->writeln("<error>Specified project not found.</error>");
                 return false;
             }
-            $this->project = $project;
         } else {
             // Autodetect the project if the user is in a project directory.
-            $this->project = $this->getCurrentProject();
-            if (!$this->project) {
+            $project = $this->getCurrentProject();
+            if (!$project) {
                 $output->writeln("<error>Could not determine the current project.</error>");
                 $output->writeln("<error>Specify it manually using --project or go to a project directory.</error>");
                 return false;
             }
         }
 
+        $this->project = $project;
+
         if ($input->hasOption('environment')) {
             // Allow the environment to be specified explicitly via --environment.
             $environmentId = $input->getOption('environment');
             if (!empty($environmentId)) {
-                $this->environment = $this->getEnvironment($environmentId, $this->project);
-                if (!$this->environment) {
+                $environment = $this->getEnvironment($environmentId, $this->project);
+                if (!$environment) {
                     $output->writeln("<error>Specified environment not found.</error>");
                     return false;
                 }
             } else {
                 // Autodetect the environment if the user is in a project directory.
-                $this->environment = $this->getCurrentEnvironment($this->project);
-                if (!$this->environment) {
+                $environment = $this->getCurrentEnvironment($this->project);
+                if (!$environment) {
                     $output->writeln("<error>Could not determine the current environment.</error>");
                     $output->writeln("<error>Specify it manually using --environment or go to a project directory.</error>");
                     return false;
                 }
             }
+            $this->environment = $environment;
         }
 
         return true;
