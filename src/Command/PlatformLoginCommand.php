@@ -28,10 +28,6 @@ class PlatformLoginCommand extends PlatformCommand
         $output->writeln("\nPlease log in using your Platform.sh account\n");
         $this->configureAccount($input, $output);
         $output->writeln("\n<info>Thank you, you are all set.</info>");
-
-        // Run the destructor right away to ensure configuration gets persisted.
-        // That way any commands that are executed next in the chain will work.
-        $this->__destruct();
     }
 
     protected function checkRequirements()

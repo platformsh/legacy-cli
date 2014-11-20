@@ -122,7 +122,7 @@ class ProjectGetCommand extends PlatformCommand
         $repoHead = $gitHelper->execute(array('ls-remote', $gitUrl, 'HEAD'), false);
         if ($repoHead === false) {
             // The ls-remote command failed.
-            $fsHelper->rmdir($projectRoot);
+            $fsHelper->remove($projectRoot);
             $output->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
             return 1;
@@ -145,7 +145,7 @@ class ProjectGetCommand extends PlatformCommand
         if (!$gitHelper->cloneRepo($gitUrl, $repositoryDir, $environment)) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
-            $fsHelper->rmdir($projectRoot);
+            $fsHelper->remove($projectRoot);
             $output->writeln('<error>Failed to clone Git repository</error>');
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
             return 1;

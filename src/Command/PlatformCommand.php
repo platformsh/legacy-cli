@@ -9,6 +9,10 @@ use CommerceGuys\Platform\Cli\Api\PlatformClient;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Model\Environment;
 use CommerceGuys\Platform\Cli\Model\HalResource;
+use Doctrine\Common\Cache\FilesystemCache;
+use Guzzle\Cache\DoctrineCacheAdapter;
+use Guzzle\Plugin\Cache\CachePlugin;
+use Guzzle\Plugin\Cache\DefaultCacheStorage;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
@@ -23,6 +27,9 @@ use Symfony\Component\Yaml\Dumper;
 abstract class PlatformCommand extends Command
 {
     protected $config;
+    protected $originalConfig;
+    protected $deleteConfig;
+
     protected $oauth2Plugin;
     protected $accountClient;
     protected $platformClient;
@@ -41,6 +48,8 @@ abstract class PlatformCommand extends Command
      * already. This allows LoginCommand to avoid writing the config file
      * before using the client for the first time.
      *
+     * @todo refactor config / session storage into a separate class
+     *
      * @param bool $login
      *
      * @return array|false The configuration array or false on failure.
@@ -48,7 +57,7 @@ abstract class PlatformCommand extends Command
     public function loadConfig($login = true)
     {
         if (!$this->config) {
-            $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
+            $configPath = $this->getConfigPath();
             if (!file_exists($configPath) && $login) {
                 $this->login();
             }
@@ -57,6 +66,7 @@ abstract class PlatformCommand extends Command
             }
             $yaml = new Parser();
             $this->config = $yaml->parse(file_get_contents($configPath));
+            $this->originalConfig = $this->config;
         }
 
         return $this->config;
@@ -159,6 +169,7 @@ abstract class PlatformCommand extends Command
             $this->accountClient->setBaseUrl(CLI_ACCOUNTS_SITE . '/api/platform');
             $this->accountClient->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
             $this->accountClient->setUserAgent($this->getUserAgent());
+            $this->accountClient->addSubscriber($this->getCacheSubscriber());
         }
 
         return $this->accountClient;
@@ -180,6 +191,7 @@ abstract class PlatformCommand extends Command
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
             $this->platformClient->setUserAgent($this->getUserAgent());
+            $this->platformClient->addSubscriber($this->getCacheSubscriber());
         }
 
         // The base url can change between two requests in the same command,
@@ -201,6 +213,17 @@ abstract class PlatformCommand extends Command
         $version = $application->getVersion();
         $url = 'https://github.com/platformsh/platformsh-cli';
         return "$name/$version (+$url)";
+    }
+
+    /**
+     * @return CachePlugin
+     */
+    protected function getCacheSubscriber()
+    {
+        $cache = new FilesystemCache($this->getCacheDir());
+        $adapter = new DoctrineCacheAdapter($cache);
+        $storage = new DefaultCacheStorage($adapter);
+        return new CachePlugin(array('storage' => $storage));
     }
 
     /**
@@ -272,30 +295,29 @@ abstract class PlatformCommand extends Command
      * project, so this persistence allows them to avoid loading the platform
      * list each time.
      *
-     * @param boolean $refresh Whether to refetch the list of projects.
+     * @param boolean $refresh Whether to refresh the static cache.
      *
      * @return array The user's projects.
      */
     public function getProjects($refresh = false)
     {
-        $this->loadConfig();
-        if (empty($this->config['projects']) || $refresh) {
-            $accountClient = $this->getAccountClient();
-            $data = $accountClient->getProjects();
-            // Extract the project id and rekey the array.
-            $projects = array();
-            foreach ($data['projects'] as $project) {
-                if (!empty($project['uri'])) {
-                    $urlParts = explode('/', $project['uri']);
-                    $id = end($urlParts);
-                    $project['id'] = $id;
-                    $projects[$id] = $project;
-                }
-            }
-            $this->config['projects'] = $projects;
+        static $projects;
+        if (!$refresh && !empty($projects)) {
+            return $projects;
         }
-
-        return $this->config['projects'];
+        $accountClient = $this->getAccountClient();
+        $data = $accountClient->getProjects();
+        // Extract the project ID and re-key the array.
+        $projects = array();
+        foreach ($data['projects'] as $project) {
+            if (!empty($project['uri'])) {
+                $urlParts = explode('/', $project['uri']);
+                $id = end($urlParts);
+                $project['id'] = $id;
+                $projects[$id] = $project;
+            }
+        }
+        return $projects;
     }
 
     /**
@@ -330,34 +352,41 @@ abstract class PlatformCommand extends Command
      */
     public function getEnvironments($project, $refresh = false, $updateAliases = true)
     {
+        static $staticCache = array();
         $projectId = $project['id'];
+        if (!$refresh && !empty($staticCache[$projectId])) {
+            return $staticCache[$projectId];
+        }
         $this->loadConfig();
-        if (empty($this->config['environments'][$projectId]) || $refresh) {
-            if (!isset($this->config['environments'][$projectId])) {
-                $this->config['environments'][$projectId] = array();
-            }
-
-            // Fetch and assemble a list of environments.
-            $urlParts = parse_url($project['endpoint']);
-            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
-            $client = $this->getPlatformClient($project['endpoint']);
-            $environments = array();
-            foreach ($client->getEnvironments() as $environment) {
-                // The environments endpoint is temporarily not serving
-                // absolute urls, so we need to construct one.
-                $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
-                $environments[$environment['id']] = $environment;
-            }
-
-            // Recreate the aliases if the list of environments has changed.
-            if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
-                $this->updateDrushAliases($project, $environments);
-            }
-
-            $this->config['environments'][$projectId] = $environments;
+        if (!$refresh && !empty($this->config['environments'][$projectId])) {
+            return $this->config['environments'][$projectId];
         }
 
-        return $this->config['environments'][$projectId];
+        if (!isset($this->config['environments'][$projectId])) {
+            $this->config['environments'][$projectId] = array();
+        }
+
+        // Fetch and assemble a list of environments.
+        $urlParts = parse_url($project['endpoint']);
+        $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
+        $client = $this->getPlatformClient($project['endpoint']);
+        $environments = array();
+        foreach ($client->getEnvironments() as $environment) {
+            // The environments endpoint is temporarily not serving
+            // absolute urls, so we need to construct one.
+            $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
+            $environments[$environment['id']] = $environment;
+        }
+
+        // Recreate the aliases if the list of environments has changed.
+        if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
+            $this->updateDrushAliases($project, $environments);
+        }
+
+        $this->config['environments'][$projectId] = $environments;
+
+        $staticCache[$projectId] = $environments;
+        return $environments;
     }
 
     /**
@@ -588,21 +617,83 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * Destructor: Write the configuration to disk.
+     * Delete the config file and cache directory (log the user out).
+     */
+    protected function deleteConfig()
+    {
+        $fsHelper = $this->getHelper('fs');
+        $fsHelper->remove($this->getCacheDir());
+        $fsHelper->remove($this->getConfigPath());
+        // Prevent config from being saved in the destructor.
+        $this->deleteConfig = true;
+    }
+
+    /**
+     * Get the config path.
+     *
+     * @return string
+     */
+    protected function getCacheDir()
+    {
+        $dir = $this->getHelper('fs')
+          ->getHomeDirectory()
+          . '/.platformsh-cli/cache';
+        if (!file_exists($dir)) {
+            if (!mkdir($dir, 0700, true)) {
+                throw new \RuntimeException("Cannot create directory: $dir");
+            }
+            chmod($dir, 0700);
+        }
+        return $dir;
+    }
+
+    /**
+     * Get the config path.
+     *
+     * @return string
+     */
+    protected function getConfigPath()
+    {
+        $filename = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
+        if (!file_exists($filename)) {
+            touch($filename);
+            chmod($filename, 0600);
+        }
+        return $filename;
+    }
+
+    /**
+     * Save the 'config' for the session (authentication tokens, etc.).
+     *
+     * @todo this currently caches the environments, that can be removed when the API has good HTTP caching
+     */
+    protected function saveConfig()
+    {
+        if ($this->deleteConfig || !is_array($this->config)) {
+            return;
+        }
+        if ($this->oauth2Plugin) {
+            // Save the access token for future requests.
+            $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
+        }
+
+        if ($this->config == $this->originalConfig) {
+            // Nothing has changed.
+            return;
+        }
+
+        $dumper = new Dumper();
+        file_put_contents($this->getConfigPath(), $dumper->dump($this->config));
+    }
+
+    /**
+     * Destructor.
+     *
+     * Ensure configuration is saved after every command.
      */
     public function __destruct()
     {
-        static $written;
-        if (is_array($this->config) && !$written) {
-            if ($this->oauth2Plugin) {
-                // Save the access token for future requests.
-                $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
-            }
-
-            $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
-            $dumper = new Dumper();
-            file_put_contents($configPath, $dumper->dump($this->config));
-            $written = true;
-        }
+        $this->saveConfig();
     }
+
 }
