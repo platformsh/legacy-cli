@@ -495,7 +495,7 @@ class PlatformCommand extends Command
         }
         // If the POSIX extension doesn't exist, default to true. It's better
         // for Windows users if we assume the output is a terminal.
-        if (!function_exists('posix_is_atty')) {
+        if (!function_exists('posix_isatty')) {
             return true;
         }
         // This uses the same test as StreamOutput::hasColorSupport().
