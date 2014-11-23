@@ -8,7 +8,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Yaml\Dumper;
 
 class ProjectGetCommand extends PlatformCommand
@@ -124,9 +123,13 @@ class ProjectGetCommand extends PlatformCommand
         $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
         $repositoryDir = $directoryName . '/repository';
 
-        // First check if the repo actually exists.
+        // @todo these setters could be improved with e.g. a LoggerTrait in PHP 5.4+
+        $shellHelper = $this->getHelper('shell');
+        $shellHelper->setOutput($output);
         $gitHelper = $this->getHelper('git');
-        $gitHelper->setOutput($output);
+        $gitHelper->setShellHelper($shellHelper);
+
+        // First check if the repo actually exists.
         $repoHead = $gitHelper->execute(array('ls-remote', $gitUrl, 'HEAD'), false);
         if ($repoHead === false) {
             // The ls-remote command failed.

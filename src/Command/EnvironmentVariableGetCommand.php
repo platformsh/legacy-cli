@@ -38,7 +38,7 @@ class EnvironmentVariableGetCommand extends EnvironmentCommand
         // @todo This --ssh option is only here as a temporary workaround.
         if ($input->getOption('ssh')) {
             $shellHelper = $this->getHelper('shell');
-            $platformVariables = $shellHelper->executeArgs(array(
+            $platformVariables = $shellHelper->execute(array(
                 'ssh',
                 $environment->getSshUrl(),
                 'echo $PLATFORM_VARIABLES',

@@ -39,17 +39,6 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Get a Git repository directory.
-     *
-     * @return string
-     */
-    protected function getRepositoryDir() {
-        $repositoryDir = $this->root . '/repo';
-        $this->gitHelper->init($repositoryDir, true);
-        return $repositoryDir;
-    }
-
-    /**
      * Test GitHelper::isRepository().
      */
     public function testIsRepository()
@@ -57,6 +46,19 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($this->gitHelper->isRepository($this->root));
         $repository = $this->getRepositoryDir();
         $this->assertTrue($this->gitHelper->isRepository($repository));
+    }
+
+    /**
+     * Get a Git repository directory.
+     *
+     * @return string
+     */
+    protected function getRepositoryDir()
+    {
+        $repositoryDir = $this->root . '/repo';
+        $this->gitHelper->init($repositoryDir, true);
+
+        return $repositoryDir;
     }
 
     /**

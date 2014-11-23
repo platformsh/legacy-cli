@@ -3,10 +3,6 @@
 namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\ProcessBuilder;
-use Symfony\Component\Process\Process;
 
 class GitHelper extends Helper
 {
@@ -14,8 +10,8 @@ class GitHelper extends Helper
     /** @var string */
     protected $repositoryDir = '.';
 
-    /** @var OutputInterface|false */
-    protected $output;
+    /** @var ShellHelperInterface */
+    protected $shellHelper;
 
     /**
      * @inheritdoc
@@ -26,22 +22,22 @@ class GitHelper extends Helper
     }
 
     /**
-     * @param OutputInterface|false $output
+     * @param ShellHelperInterface $helper
      */
-    public function setOutput(OutputInterface $output)
+    public function setShellHelper(ShellHelperInterface $helper)
     {
-        $this->output = $output;
+        $this->shellHelper = $helper;
     }
 
     /**
-     * @param int    $type
-     * @param string $buffer
+     * @return ShellHelperInterface
      */
-    public function log($type, $buffer)
+    protected function getShellHelper()
     {
-        if ($this->output) {
-            $this->output->write($buffer);
+        if (!$this->shellHelper) {
+            $this->shellHelper = new ShellHelper();
         }
+        return $this->shellHelper;
     }
 
     /**
@@ -77,53 +73,44 @@ class GitHelper extends Helper
     /**
      * Execute a Git command.
      *
+     * @param string[]     $args
+     *   Command arguments (everything after 'git').
      * @param string|false $dir
      *   The path to a Git repository. Set to false if the command should not
      *   run inside a repository.
-     * @param string[]     $args
-     *   Command arguments (everything after 'git').
      * @param bool         $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @throws \RuntimeException If the repository directory is invalid.
-     * @throws ProcessFailedException If $mustRun is enabled and the command fails.
      *
      * @return string|bool
      */
     public function execute(array $args, $dir = null, $mustRun = false)
     {
-        array_unshift($args, 'git');
-        $process = $this->buildProcess($args);
+        $helper = $this->getShellHelper();
         // If enabled, set the working directory to the repository.
         if ($dir !== false) {
             $dir = $dir ?: $this->repositoryDir;
-            if ($args[1] != 'init' && !$this->isRepository($dir)) {
+            if ($args[0] != 'init' && !$this->isRepository($dir)) {
                 throw new \RuntimeException("Not a Git repository: " . $dir);
             }
-            $process->setWorkingDirectory($dir);
+            $helper->setWorkingDirectory($dir);
         }
         // Run the command.
-        try {
-            $process->mustRun(array($this, 'log'));
-        } catch (ProcessFailedException $e) {
-            if (!$mustRun) {
-                return false;
-            }
-            throw $e;
-        }
-        $output = $process->getOutput();
-
-        return $output ? rtrim($output) : true;
+        array_unshift($args, 'git');
+        return $helper->execute($args, $mustRun);
     }
 
     /**
-     * @param array $args
-     * @return Process
+     * Check whether a directory is a Git repository.
+     *
+     * @param string $dir
+     *
+     * @return bool
      */
-    protected function buildProcess(array $args)
+    public function isRepository($dir)
     {
-        $processBuilder = new ProcessBuilder($args);
-        return $processBuilder->getProcess();
+        return is_dir($dir . '/.git');
     }
 
     /**
@@ -142,18 +129,6 @@ class GitHelper extends Helper
         }
 
         return (bool) $this->execute(array('init'), $dir, $mustRun);
-    }
-
-    /**
-     * Check whether a directory is a Git repository.
-     *
-     * @param string $dir
-     *
-     * @return bool
-     */
-    public function isRepository($dir)
-    {
-        return is_dir($dir . '/.git');
     }
 
     /**
@@ -193,6 +168,7 @@ class GitHelper extends Helper
         if ($parent) {
             $args[] = $parent;
         }
+
         return (bool) $this->execute($args, $dir, $mustRun);
     }
 

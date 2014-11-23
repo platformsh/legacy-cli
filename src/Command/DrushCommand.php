@@ -29,8 +29,6 @@ class DrushCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        Drupal::ensureDrushInstalled();
-
         // Try to autodetect the project and environment.
         // There is no point in allowing the user to override them
         // using --project and --environment, in that case they can run
@@ -46,7 +44,9 @@ class DrushCommand extends PlatformCommand
             return 1;
         }
 
-        $aliasGroup = isset($project['alias-group']) ? $project['alias-group'] : $project['id'];
+        $this->getHelper('drush')->ensureInstalled();
+
+        $aliasGroup = isset($this->project['alias-group']) ? $this->project['alias-group'] : $this->project['id'];
 
         $alias = $aliasGroup . '.' . $environment['id'];
         $command = 'drush @' . $alias . ' ';

@@ -80,7 +80,9 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         }
 
         // Check out the branch.
-        $gitHelper->setOutput($output);
+        $shellHelper = $this->getHelper('shell');
+        $shellHelper->setOutput($output);
+        $gitHelper->setShellHelper($shellHelper);
         $gitHelper->checkOut($machineName, null, true);
     }
 }

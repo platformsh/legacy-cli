@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
+use CommerceGuys\Platform\Cli\Helper\DrushHelper;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -44,19 +45,6 @@ class Drupal extends ToolstackBase
             }
         }
         return false;
-    }
-
-    public static function ensureDrushInstalled()
-    {
-        $drushVersion = shell_exec('drush --version');
-        if (strpos(strtolower($drushVersion), 'drush version') === false) {
-            throw new \Exception('Drush must be installed.');
-        }
-        $versionParts = explode(':', $drushVersion);
-        $versionNumber = trim($versionParts[1]);
-        if (version_compare($versionNumber, '6.0') === -1) {
-            throw new \Exception('Drush version must be 6.0 or newer.');
-        }
     }
 
     public function detect($appRoot)
@@ -110,9 +98,11 @@ class Drupal extends ToolstackBase
           'config',
         );
 
+        $drushHelper = new DrushHelper();
+
         if (count($profiles) == 1) {
             $this->buildMode = 'profile';
-            Drupal::ensureDrushInstalled();
+            $drushHelper->ensureInstalled();
             // Find the contrib make file.
             if (file_exists($this->appRoot . '/project.make')) {
                 $projectMake = $this->appRoot . '/project.make';
@@ -153,7 +143,7 @@ class Drupal extends ToolstackBase
             $this->fsHelper->symlinkAll($this->appRoot, $profileDir, true, $symlinkBlacklist);
         } elseif (file_exists($this->appRoot . '/project.make')) {
             $this->buildMode = 'makefile';
-            Drupal::ensureDrushInstalled();
+            $drushHelper->ensureInstalled();
             $projectMake = $this->appRoot . '/project.make';
             $drushCommand = "drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir);
             exec($drushCommand, $output, $return_var);

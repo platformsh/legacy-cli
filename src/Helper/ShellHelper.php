@@ -3,10 +3,17 @@
 namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Process\Process;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\ProcessBuilder;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
-class ShellHelper extends Helper {
+class ShellHelper extends Helper implements ShellHelperInterface {
+
+    /** @var OutputInterface|null */
+    protected $output;
+
+    /** @var string */
+    protected $directory;
 
     public function getName()
     {
@@ -14,39 +21,51 @@ class ShellHelper extends Helper {
     }
 
     /**
-     * Run a shell command in the current directory, suppressing errors.
-     *
-     * @param string $cmd The command, suitably escaped.
-     * @param string &$error Optionally use this to capture errors.
-     *
-     * @return string The command output.
+     * @inheritdoc
      */
-    public function execute($cmd, &$error = '')
+    public function setOutput(OutputInterface $output = null)
     {
-        $process = new Process($cmd);
-        $process->run();
-        $error = $process->getErrorOutput();
-        return $process->getOutput();
+        $this->output = $output;
     }
 
     /**
-     * Build and run a process.
-     *
-     * @param string[] $args
-     * @param bool $mustRun
-     *
-     * @return string
+     * @inheritdoc
      */
-    public function executeArgs(array $args, $mustRun = false)
+    public function setWorkingDirectory($dir)
+    {
+        $this->directory = $dir;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function log($level, $message)
+    {
+        if ($this->output) {
+            $this->output->write($message);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function execute(array $args, $mustRun = false)
     {
         $builder = new ProcessBuilder($args);
         $process = $builder->getProcess();
-        if ($mustRun) {
-            $process->mustRun();
+        if ($this->directory) {
+            $process->setWorkingDirectory($this->directory);
         }
-        else {
-            $process->run();
+        try {
+            $process->mustRun(array($this, 'log'));
+        } catch (ProcessFailedException $e) {
+            if (!$mustRun) {
+                return false;
+            }
+            throw $e;
         }
-        return $process->getOutput();
+        $output = $process->getOutput();
+
+        return $output ? rtrim($output) : true;
     }
 }

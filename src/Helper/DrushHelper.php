@@ -9,9 +9,30 @@ class DrushHelper extends Helper {
 
     protected $homeDir = '~';
 
+    /** @var ShellHelperInterface */
+    protected $shellHelper;
+
     public function getName()
     {
         return 'drush';
+    }
+
+    /**
+     * @param string $minVersion
+     *
+     * @throws \Exception
+     */
+    public function ensureInstalled($minVersion = '6')
+    {
+        $drushVersion = $this->getShellHelper()->execute(array('drush', '--version'));
+        if (!is_string($drushVersion)) {
+            throw new \Exception('Drush must be installed');
+        }
+        $versionParts = explode(':', $drushVersion);
+        $versionNumber = trim($versionParts[1]);
+        if (version_compare($versionNumber, $minVersion) === -1) {
+            throw new \Exception('Drush version must be at least: ' . $minVersion);
+        }
     }
 
     /**
@@ -22,6 +43,45 @@ class DrushHelper extends Helper {
     public function setHomeDir($homeDir)
     {
         $this->homeDir = $homeDir;
+    }
+
+    /**
+     * @return ShellHelperInterface
+     */
+    protected function getShellHelper()
+    {
+        if (!$this->shellHelper) {
+            $this->shellHelper = new ShellHelper();
+        }
+        return $this->shellHelper;
+    }
+
+    /**
+     * @return bool
+     */
+    public function clearCache()
+    {
+        return (bool) $this->getShellHelper()->execute(array(
+            'drush',
+            'cache-clear',
+            'drush',
+          ));
+    }
+
+    /**
+     * @param string $groupName
+     *
+     * @return string|bool
+     */
+    public function getAliases($groupName)
+    {
+        return $this->getShellHelper()->execute(array(
+            'drush',
+            'site-alias',
+            '--pipe',
+            '--format=list',
+            '@' . $groupName,
+          ));
     }
 
     /**
