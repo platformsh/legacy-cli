@@ -141,6 +141,7 @@ class ProjectBuildCommand extends PlatformCommand
             $message .= " using the toolstack <info>" . $toolstack->getKey() . "</info>";
             $output->writeln($message);
 
+            $toolstack->setOutput($output);
             $toolstack->prepareBuild($appRoot, $projectRoot, $settings);
 
             $toolstack->build();

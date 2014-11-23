@@ -12,52 +12,48 @@ class ShellHelper extends Helper implements ShellHelperInterface {
     /** @var OutputInterface|null */
     protected $output;
 
-    /** @var string */
-    protected $directory;
-
     public function getName()
     {
         return 'shell';
     }
 
-    /**
-     * @inheritdoc
-     */
+    public function __construct(OutputInterface $output = null)
+    {
+        $this->output = $output;
+    }
+
     public function setOutput(OutputInterface $output = null)
     {
         $this->output = $output;
     }
 
     /**
-     * @inheritdoc
+     * Log output messages.
+     *
+     * @param mixed $type
+     * @param string $buffer
+     *
+     * @todo in theory this could use the ConsoleLogger, but the formatting is ugly and impossible to override
      */
-    public function setWorkingDirectory($dir)
-    {
-        $this->directory = $dir;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function log($level, $message)
+    public function log($type, $buffer)
     {
         if ($this->output) {
-            $this->output->write($message);
+            $this->output->write($buffer);
         }
     }
 
     /**
      * @inheritdoc
      */
-    public function execute(array $args, $mustRun = false)
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
     {
         $builder = new ProcessBuilder($args);
         $process = $builder->getProcess();
-        if ($this->directory) {
-            $process->setWorkingDirectory($this->directory);
+        if ($dir) {
+            $process->setWorkingDirectory($dir);
         }
         try {
-            $process->mustRun(array($this, 'log'));
+            $process->mustRun($quiet ? null : array($this, 'log'));
         } catch (ProcessFailedException $e) {
             if (!$mustRun) {
                 return false;

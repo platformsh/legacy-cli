@@ -22,9 +22,9 @@ class ShellHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($shellHelper->execute(array('which', 'nonexistent')));
 
         // With $mustRun enabled.
-        $this->assertNotEmpty($shellHelper->execute(array($workingCommand), true));
+        $this->assertNotEmpty($shellHelper->execute(array($workingCommand), null, true));
         $this->setExpectedException('Symfony\\Component\\Process\\Exception\\ProcessFailedException');
-        $shellHelper->execute(array('which', 'nonexistent'), true);
+        $shellHelper->execute(array('which', 'nonexistent'), null, true);
     }
 
 }

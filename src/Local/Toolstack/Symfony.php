@@ -33,8 +33,8 @@ class Symfony extends ToolstackBase
         mkdir($buildDir);
         $this->fsHelper->copy($this->appRoot, $buildDir);
         if (is_dir($buildDir)) {
-            chdir($buildDir);
-            shell_exec("composer install --no-progress --no-interaction  --working-dir " . escapeshellcmd($buildDir));
+            $args = array('composer', 'install', '--no-progress', '--no-interaction', '--working-dir', $buildDir);
+            $this->shellHelper->execute($args, $buildDir, true, false);
         }
         else {
           throw new \Exception("Couldn't create build directory");

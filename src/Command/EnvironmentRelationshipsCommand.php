@@ -31,7 +31,7 @@ class EnvironmentRelationshipsCommand extends EnvironmentCommand
         $environment = new Environment($this->environment);
 
         $args = array('ssh', $environment->getSshUrl(), 'echo $PLATFORM_RELATIONSHIPS');
-        $relationships = $this->getHelper('shell')->execute($args, true);
+        $relationships = $this->getHelper('shell')->execute($args, null, true);
 
         if (!$relationships) {
             throw new \Exception('No relationships found');

@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class GitHelper extends Helper
 {
@@ -13,6 +14,9 @@ class GitHelper extends Helper
     /** @var ShellHelperInterface */
     protected $shellHelper;
 
+    /** @var OutputInterface */
+    protected $output;
+
     /**
      * @inheritdoc
      */
@@ -21,12 +25,12 @@ class GitHelper extends Helper
         return 'git';
     }
 
-    /**
-     * @param ShellHelperInterface $helper
-     */
-    public function setShellHelper(ShellHelperInterface $helper)
+    public function setOutput(OutputInterface $output)
     {
-        $this->shellHelper = $helper;
+        $this->output = $output;
+        if ($this->shellHelper) {
+            $this->shellHelper->setOutput($output);
+        }
     }
 
     /**
@@ -35,7 +39,7 @@ class GitHelper extends Helper
     protected function getShellHelper()
     {
         if (!$this->shellHelper) {
-            $this->shellHelper = new ShellHelper();
+            $this->shellHelper = new ShellHelper($this->output);
         }
         return $this->shellHelper;
     }
@@ -80,12 +84,14 @@ class GitHelper extends Helper
      *   run inside a repository.
      * @param bool         $mustRun
      *   Enable exceptions if the Git command fails.
+     * @param bool $quiet
+     *   Suppress command output.
      *
      * @throws \RuntimeException If the repository directory is invalid.
      *
      * @return string|bool
      */
-    public function execute(array $args, $dir = null, $mustRun = false)
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
     {
         $helper = $this->getShellHelper();
         // If enabled, set the working directory to the repository.
@@ -94,11 +100,10 @@ class GitHelper extends Helper
             if ($args[0] != 'init' && !$this->isRepository($dir)) {
                 throw new \RuntimeException("Not a Git repository: " . $dir);
             }
-            $helper->setWorkingDirectory($dir);
         }
         // Run the command.
         array_unshift($args, 'git');
-        return $helper->execute($args, $mustRun);
+        return $helper->execute($args, $dir, $mustRun, $quiet);
     }
 
     /**
@@ -128,7 +133,7 @@ class GitHelper extends Helper
             throw new \InvalidArgumentException("Already a repository: $dir");
         }
 
-        return (bool) $this->execute(array('init'), $dir, $mustRun);
+        return (bool) $this->execute(array('init'), $dir, $mustRun, false);
     }
 
     /**
@@ -169,7 +174,7 @@ class GitHelper extends Helper
             $args[] = $parent;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun);
+        return (bool) $this->execute($args, $dir, $mustRun, false);
     }
 
     /**
@@ -185,7 +190,7 @@ class GitHelper extends Helper
      */
     public function checkOut($name, $dir = null, $mustRun = false)
     {
-        return (bool) $this->execute(array('checkout', $name), $dir, $mustRun);
+        return (bool) $this->execute(array('checkout', $name), $dir, $mustRun, false);
     }
 
     /**
@@ -232,7 +237,7 @@ class GitHelper extends Helper
             $args[] = $branch;
         }
 
-        return (bool) $this->execute($args, false, $mustRun);
+        return (bool) $this->execute($args, false, $mustRun, false);
     }
 
     /**

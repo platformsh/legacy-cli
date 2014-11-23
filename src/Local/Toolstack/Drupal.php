@@ -82,9 +82,6 @@ class Drupal extends ToolstackBase
             $drushFlags[] = '--no-cache';
         }
 
-        // Flatten the options.
-        $drushFlags = implode(' ', $drushFlags);
-
         $profiles = glob($this->appRoot . '/*.profile');
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
@@ -98,7 +95,7 @@ class Drupal extends ToolstackBase
           'config',
         );
 
-        $drushHelper = new DrushHelper();
+        $drushHelper = new DrushHelper($this->output);
 
         if (count($profiles) == 1) {
             $this->buildMode = 'profile';
@@ -120,39 +117,29 @@ class Drupal extends ToolstackBase
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the directory.");
             }
 
-            $drushCommand = "drush make $drushFlags " . escapeshellarg($projectCoreMake) . " " . escapeshellarg($buildDir);
-            exec($drushCommand, $output, $return_var);
-            if ($return_var > 0  || !is_dir($buildDir)) {
-                throw new \Exception('Drush command failed: ' . $drushCommand);
-            }
+            $args = array('make', $projectCoreMake, $buildDir) + $drushFlags;
+            $drushHelper->execute($args, null, true, false);
+
             // Drush will only create the $buildDir if the build succeeds.
             $profile = str_replace($this->appRoot, '', $profiles[0]);
             $profile = strtok($profile, '.');
             $profileDir = $buildDir . '/profiles/' . ltrim($profile, '/');
-            // Drush Make requires $profileDir to not exist if it's passed
-            // as the target. This chdir($this->appRoot) works around that.
-            $cwd = getcwd();
-            chdir($this->appRoot);
-            $drushCommand = "drush make $drushFlags --no-core --contrib-destination=. " . escapeshellarg($projectMake);
-            exec($drushCommand, $output, $return_var);
-            chdir($cwd);
-            if ($return_var > 0) {
-                throw new \Exception('Drush command failed: ' . $drushCommand);
-            }
+
+            $args = array('make', '--no-core', '--contrib-destination=.', $projectMake) + $drushFlags;
+            $drushHelper->execute($args, $this->appRoot, true, false);
+
             $symlinkBlacklist[] = 'settings*.php';
             $this->fsHelper->symlinkAll($this->appRoot, $profileDir, true, $symlinkBlacklist);
         } elseif (file_exists($this->appRoot . '/project.make')) {
             $this->buildMode = 'makefile';
             $drushHelper->ensureInstalled();
             $projectMake = $this->appRoot . '/project.make';
-            $drushCommand = "drush make $drushFlags " . escapeshellarg($projectMake) . " " . escapeshellarg($buildDir);
-            exec($drushCommand, $output, $return_var);
-            if ($return_var > 0 || !is_dir($buildDir)) {
-                throw new \Exception('Drush command failed: ' . $drushCommand);
-            }
+            $args = array('make', $projectMake, $buildDir) + $drushFlags;
+            $drushHelper->execute($args, null, true, false);
             $this->fsHelper->symlinkAll($this->appRoot, $buildDir . '/sites/default', true, $symlinkBlacklist);
         }
         else {
+            $this->output->writeln("Building in vanilla mode: you are missing out!");
             $this->buildMode = 'vanilla';
             $this->buildDir = $this->appRoot;
         }

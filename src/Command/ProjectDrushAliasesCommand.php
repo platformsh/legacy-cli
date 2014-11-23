@@ -69,9 +69,10 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             }
             $project['alias-group'] = $new_group;
             $this->writeCurrentProjectConfig('alias-group', $new_group);
+            $output->write("Creating Drush aliases in the group <info>@$new_group</info>...");
             $environments = $this->getEnvironments($project, true, false);
             $drushHelper->createAliases($project, $projectRoot, $environments);
-            $output->writeln("Project aliases created, group: <info>@$new_group</info>");
+            $output->writeln(" done");
 
             $drushDir = $homeDir . '/.drush';
             $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
@@ -87,10 +88,11 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $current_group = $new_group;
         }
         elseif ($input->getOption('recreate')) {
+            $output->write("Recreating Drush aliases...");
             $environments = $this->getEnvironments($project, true, false);
             $drushHelper->createAliases($project, $projectRoot, $environments);
             $drushHelper->clearCache();
-            $output->writeln("Project aliases recreated");
+            $output->writeln(' done');
         }
 
         // Don't run expensive drush calls if they are not needed.

@@ -11,29 +11,25 @@ interface ShellHelperInterface {
      * Run a shell command, suppressing errors.
      *
      * @param string[] $args
+     * @param string|false $dir
      * @param bool $mustRun
+     * @param bool $quiet
      *
      * @throws ProcessFailedException If $mustRun is enabled and the command fails.
      *
      * @return string|bool
      *   The command's output or true on success, false on failure.
      */
-    public function execute(array $args, $mustRun = false);
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = false);
 
     /**
      * @param OutputInterface $output
      */
-    public function setOutput(OutputInterface $output = null);
+    public function __construct(OutputInterface $output = null);
 
     /**
-     * @param string $dir
+     * @param OutputInterface $output
      */
-    public function setWorkingDirectory($dir);
-
-    /**
-     * @param string $level
-     * @param string $message
-     */
-    public function log($level, $message);
+    public function setOutput(OutputInterface $output);
 
 }

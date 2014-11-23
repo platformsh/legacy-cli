@@ -65,6 +65,7 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         $projectRoot = $this->getProjectRoot();
 
         $gitHelper = $this->getHelper('git');
+        $gitHelper->setOutput($output);
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
 
         // If the branch doesn't already exist locally, check whether it is a
@@ -80,9 +81,6 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         }
 
         // Check out the branch.
-        $shellHelper = $this->getHelper('shell');
-        $shellHelper->setOutput($output);
-        $gitHelper->setShellHelper($shellHelper);
         $gitHelper->checkOut($machineName, null, true);
     }
 }

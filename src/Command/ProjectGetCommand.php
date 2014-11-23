@@ -123,11 +123,8 @@ class ProjectGetCommand extends PlatformCommand
         $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
         $repositoryDir = $directoryName . '/repository';
 
-        // @todo these setters could be improved with e.g. a LoggerTrait in PHP 5.4+
-        $shellHelper = $this->getHelper('shell');
-        $shellHelper->setOutput($output);
         $gitHelper = $this->getHelper('git');
-        $gitHelper->setShellHelper($shellHelper);
+        $gitHelper->setOutput($output);
 
         // First check if the repo actually exists.
         $repoHead = $gitHelper->execute(array('ls-remote', $gitUrl, 'HEAD'), false);
