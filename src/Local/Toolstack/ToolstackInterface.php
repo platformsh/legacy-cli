@@ -2,6 +2,8 @@
 
 namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
+use Symfony\Component\Console\Output\OutputInterface;
+
 interface ToolstackInterface
 {
 
@@ -13,27 +15,32 @@ interface ToolstackInterface
     public function getKey();
 
     /**
-     * Detect if the files in a given "application root" folder path belong to 
-     * this toolstack.
-     * 
+     * Set the output stream for the toolstack.
+     *
+     * @param OutputInterface $output
+     */
+    public function setOutput(OutputInterface $output);
+
+    /**
+     * Detect if the files in a given directory belong to this toolstack.
+     *
      * @param   string  $appRoot The absolute path to the application folder
      *
      * @return  bool    Whether this toolstack is a valid choice or not
      */
     public function detect($appRoot);
-    
+
     /**
-     * Prepare this application to be built. This function should be isometric
-     * and not affect the file system.
+     * Prepare this application to be built.
+     *
+     * This function should be isometric and not affect the file system.
      *
      * @param string $appRoot
      * @param string $projectRoot
      * @param array $settings
-     *
-     * @return self
      */
     public function prepareBuild($appRoot, $projectRoot, array $settings);
-    
+
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and
      * submodules.
@@ -47,5 +54,5 @@ interface ToolstackInterface
      * from the local shared/ folder into the application's web root.
      */
     public function install();
-    
+
 }

@@ -71,6 +71,7 @@ class EnvironmentUrlCommand extends EnvironmentCommand
 
         $browser = $input->getOption('browser');
 
+        $shellHelper = $this->getHelper('shell');
         if ($browser === '0') {
             // The user has requested not to use a browser.
             $browser = false;
@@ -79,13 +80,13 @@ class EnvironmentUrlCommand extends EnvironmentCommand
             // Find a default browser to use.
             $defaults = array('xdg-open', 'open', 'start');
             foreach ($defaults as $default) {
-                if (shell_exec("which $default")) {
+                if ($shellHelper->execute(array('which', $default))) {
                     $browser = $default;
                     break;
                 }
             }
         }
-        elseif (!shell_exec('which ' . escapeshellarg($browser))) {
+        elseif (!$shellHelper->execute(array('which', $browser))) {
             // The user has specified a browser, but it can't be found.
             $output->writeln("<error>Browser not found: $browser</error>");
             $browser = false;
@@ -94,7 +95,7 @@ class EnvironmentUrlCommand extends EnvironmentCommand
         $output->writeln($url);
 
         if ($browser) {
-            shell_exec($browser . ' ' . escapeshellarg($url));
+            $shellHelper->execute(array($browser, $url));
         }
     }
 }
