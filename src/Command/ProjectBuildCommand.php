@@ -98,8 +98,9 @@ class ProjectBuildCommand extends PlatformCommand
         try {
             $this->build($projectRoot, $settings, $output);
         } catch (\Exception $e) {
-            $output->writeln('The build failed with an error:');
-            $output->writeln('<error>'.  $e->getMessage() . '</error>');
+            $output->writeln("<error>The build failed with an error</error>");
+            $formattedMessage = $this->getHelper('formatter')->formatBlock($e->getMessage(), 'error');
+            $output->writeln($formattedMessage);
             return 1;
         }
 

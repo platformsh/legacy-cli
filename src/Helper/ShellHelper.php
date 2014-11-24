@@ -44,6 +44,9 @@ class ShellHelper extends Helper implements ShellHelperInterface {
 
     /**
      * @inheritdoc
+     *
+     * @throws \Exception
+     *   If $mustRun is enabled and the command fails.
      */
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
     {
@@ -58,7 +61,19 @@ class ShellHelper extends Helper implements ShellHelperInterface {
             if (!$mustRun) {
                 return false;
             }
-            throw $e;
+            // The default for ProcessFailedException is to print the entire
+            // STDOUT and STDERR. But if $quiet is disabled, then the user will
+            // have already seen the command's output.  So we need to re-throw
+            // the exception with a much shorter message.
+            $message = "The command failed with the exit code: " . $process->getExitCode();
+            if ($process->getExitCodeText()) {
+                $message .= ' (' . $process->getExitCodeText() . ')';
+            }
+            $message .= "\n\nFull command: " . $process->getCommandLine();
+            if ($quiet) {
+                $message .= "\n\nError output:\n" . $process->getErrorOutput();
+            }
+            throw new \Exception($message);
         }
         $output = $process->getOutput();
 
