@@ -136,6 +136,22 @@ class Drupal extends ToolstackBase
             $projectMake = $this->appRoot . '/project.make';
             $args = array('make', $projectMake, $buildDir) + $drushFlags;
             $drushHelper->execute($args, null, true, false);
+
+            // If the user has a custom settings.php file, and we symlink it into
+            // sites/default, then it will probably fail to pick up
+            // settings.local.php from the right place. So we should copy the
+            // settings.php instead of symlinking it.
+            // See https://github.com/platformsh/platformsh-cli/issues/175
+            $settingsPhpFile = $this->appRoot . '/settings.php';
+            if (file_exists($settingsPhpFile)) {
+                $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
+                copy($settingsPhpFile, $buildDir . '/sites/default/settings.php');
+                $this->output->writeln(
+                  "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
+                 . "\nYou will need to rebuild if you edit this file.</comment>");
+                $symlinkBlacklist[] = 'settings.php';
+            }
+
             $this->fsHelper->symlinkAll($this->appRoot, $buildDir . '/sites/default', true, $symlinkBlacklist);
         }
         else {
