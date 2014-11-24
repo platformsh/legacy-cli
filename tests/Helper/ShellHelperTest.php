@@ -23,7 +23,7 @@ class ShellHelperTest extends \PHPUnit_Framework_TestCase
 
         // With $mustRun enabled.
         $this->assertNotEmpty($shellHelper->execute(array($workingCommand), null, true));
-        $this->setExpectedException('Symfony\\Component\\Process\\Exception\\ProcessFailedException');
+        $this->setExpectedException('Exception');
         $shellHelper->execute(array('which', 'nonexistent'), null, true);
     }
 
