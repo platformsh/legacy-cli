@@ -131,7 +131,8 @@ class ProjectBuildCommand extends PlatformCommand
 
             $toolstack = LocalBuild::getToolstack($appRoot, $appConfig);
             if (!$toolstack) {
-                throw new \Exception("Could not detect toolstack for directory: " . $appRoot);
+                $output->writeln("<comment>Could not detect toolstack for directory: $appRoot</comment>");
+                continue;
             }
 
             $message = "Building application";

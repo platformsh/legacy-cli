@@ -50,7 +50,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
 
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->writeln($current_group);
-            return;
+            return 0;
         }
 
         $new_group = ltrim($input->getOption('group'), '@');
@@ -66,7 +66,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $existing = $shellHelper->execute("drush site-alias --pipe --format=list @" . escapeshellarg($new_group));
             if ($existing) {
                 if (!$questionHelper->confirm("The alias group <info>@$new_group</info> already exists. Overwrite?", $input, $output, false)) {
-                    return;
+                    return 1;
                 }
             }
             $project['alias-group'] = $new_group;
@@ -78,7 +78,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             $drushDir = $fsHelper->getHomeDirectory() . '/.drush';
             $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
             if (file_exists($oldFile)) {
-                if (!$questionHelper->confirm("Delete old alias group <info>@$current_group</info>?", $input, $output)) {
+                if ($questionHelper->confirm("Delete old alias group <info>@$current_group</info>?", $input, $output)) {
                     unlink($oldFile);
                 }
             }
@@ -97,7 +97,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
 
         // Don't run expensive drush calls if they are not needed.
         if ($input->getOption('quiet')) {
-            return;
+            return 0;
         }
 
         $aliases = $shellHelper->execute("drush site-alias --pipe --format=list @" . escapeshellarg($current_group));
