@@ -79,6 +79,9 @@ Available commands:
   login                                   Log in to Platform.sh
   logout                                  Log out of Platform.sh
   web                                     Open the Platform.sh Web UI
+activity
+  activity:list (activities)              Get the most recent activities for an environment
+  activity:log                            Display the log for an environment activity
 domain
   domain:add                              Add a new domain to the project
   domain:delete                           Delete a domain from the project

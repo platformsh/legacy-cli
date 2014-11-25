@@ -204,7 +204,7 @@ class HalResource implements HalResourceInterface
     }
 
     /**
-     * @return array
+     * @inheritdoc
      */
     public function getData()
     {
