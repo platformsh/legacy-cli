@@ -117,7 +117,10 @@ class Drupal extends ToolstackBase
                 throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the directory.");
             }
 
-            $args = array('make', $projectCoreMake, $buildDir) + $drushFlags;
+            $args = array_merge(
+              array('make', $projectCoreMake, $buildDir),
+              $drushFlags
+            );
             $drushHelper->execute($args, null, true, false);
 
             // Drush will only create the $buildDir if the build succeeds.
@@ -125,7 +128,10 @@ class Drupal extends ToolstackBase
             $profile = strtok($profile, '.');
             $profileDir = $buildDir . '/profiles/' . ltrim($profile, '/');
 
-            $args = array('make', '--no-core', '--contrib-destination=.', $projectMake) + $drushFlags;
+            $args = array_merge(
+              array('make', '--no-core', '--contrib-destination=.', $projectMake),
+              $drushFlags
+            );
             $drushHelper->execute($args, $this->appRoot, true, false);
 
             $symlinkBlacklist[] = 'settings*.php';
@@ -134,7 +140,10 @@ class Drupal extends ToolstackBase
             $this->buildMode = 'makefile';
             $drushHelper->ensureInstalled();
             $projectMake = $this->appRoot . '/project.make';
-            $args = array('make', $projectMake, $buildDir) + $drushFlags;
+            $args = array_merge(
+              array('make', $projectMake, $buildDir),
+              $drushFlags
+            );
             $drushHelper->execute($args, null, true, false);
 
             // If the user has a custom settings.php file, and we symlink it into
