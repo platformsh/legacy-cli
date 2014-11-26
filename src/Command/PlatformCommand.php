@@ -576,7 +576,8 @@ class PlatformCommand extends Command
      */
     public function __destruct()
     {
-        if (is_array($this->config)) {
+        static $written;
+        if (is_array($this->config) && !$written) {
             if ($this->oauth2Plugin) {
                 // Save the access token for future requests.
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
@@ -585,6 +586,7 @@ class PlatformCommand extends Command
             $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
             $dumper = new Dumper();
             file_put_contents($configPath, $dumper->dump($this->config));
+            $written = true;
         }
     }
 }
