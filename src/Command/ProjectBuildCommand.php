@@ -123,7 +123,7 @@ class ProjectBuildCommand extends PlatformCommand
         foreach (LocalBuild::getApplications($repositoryRoot) as $appRoot) {
             $appConfig = LocalBuild::getAppConfig($appRoot);
             $appName = false;
-            if ($appConfig && isset($appConfig['name'])) {
+            if (isset($appConfig['name'])) {
                 $appName = $appConfig['name'];
             }
             elseif ($appRoot != $repositoryRoot) {
@@ -149,6 +149,8 @@ class ProjectBuildCommand extends PlatformCommand
             $toolstack->build();
             $toolstack->install();
 
+            $this->warnAboutHooks($appConfig, $output);
+
             $message = "Build complete";
             if ($appName) {
                 $message .= " for <info>$appName</info>";
@@ -156,5 +158,33 @@ class ProjectBuildCommand extends PlatformCommand
             $output->writeln($message);
         }
 
+    }
+
+    /**
+     * Warn the user that the CLI will not run build/deploy hooks.
+     *
+     * @param array $appConfig
+     * @param OutputInterface $output
+     *
+     * @return bool
+     */
+    protected function warnAboutHooks(array $appConfig, OutputInterface $output)
+    {
+        if (empty($appConfig['hooks'])) {
+            return false;
+        }
+        $indent = '        ';
+        $output->writeln("<comment>You have defined the following hook(s). The CLI cannot run them locally.</comment>");
+        foreach (array('build', 'deploy') as $hookType) {
+            if (empty($appConfig['hooks'][$hookType])) {
+                continue;
+            }
+            $output->writeln("    $hookType: |");
+            $hooks = (array) $appConfig['hooks'][$hookType];
+            $asString = implode("\n", array_map('trim', $hooks));
+            $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
+            $output->writeln($withIndent);
+        }
+        return true;
     }
 }

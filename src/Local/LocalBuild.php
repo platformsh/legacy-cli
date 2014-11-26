@@ -35,15 +35,15 @@ class LocalBuild {
      *
      * @param string $appRoot   The absolute path to the application.
      *
-     * @return array|false  The configuration, or false if not found.
+     * @return array
      */
     public static function getAppConfig($appRoot)
     {
         if (file_exists($appRoot . '/.platform.app.yaml')) {
             $parser = new Parser();
-            return $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
+            return (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
         }
-        return false;
+        return array();
     }
 
     /**
@@ -56,10 +56,10 @@ class LocalBuild {
      *
      * @return ToolstackInterface|false
      */
-    public static function getToolstack($appRoot, $appConfig = false)
+    public static function getToolstack($appRoot, array $appConfig = array())
     {
         $toolstackChoice = false;
-        if ($appConfig && isset($appConfig['toolstack'])) {
+        if (isset($appConfig['toolstack'])) {
             $toolstackChoice = $appConfig['toolstack'];
         }
         foreach (self::getToolstacks() as $toolstack) {
