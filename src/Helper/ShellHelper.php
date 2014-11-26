@@ -52,6 +52,10 @@ class ShellHelper extends Helper implements ShellHelperInterface {
     {
         $builder = new ProcessBuilder($args);
         $process = $builder->getProcess();
+
+        // The default timeout is 1 minute. Increase it to 1 hour.
+        $process->setTimeout(3600);
+
         if ($dir) {
             $process->setWorkingDirectory($dir);
         }
