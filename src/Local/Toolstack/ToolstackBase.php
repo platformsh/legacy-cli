@@ -3,6 +3,9 @@
 namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
 use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
+use CommerceGuys\Platform\Cli\Helper\ShellHelper;
+use CommerceGuys\Platform\Cli\Helper\ShellHelperInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class ToolstackBase implements ToolstackInterface
 {
@@ -13,12 +16,25 @@ abstract class ToolstackBase implements ToolstackInterface
     protected $buildDir;
     protected $absoluteLinks = false;
 
+    /** @var OutputInterface */
+    protected $output;
+
     /** @var FilesystemHelper */
     protected $fsHelper;
 
-    public function __construct()
+    /** @var ShellHelperInterface */
+    protected $shellHelper;
+
+    public function __construct(FilesystemHelper $fsHelper = null, ShellHelperInterface $shellHelper = null)
     {
-        $this->fsHelper = new FilesystemHelper();
+        $this->fsHelper = $fsHelper ?: new FilesystemHelper();
+        $this->shellHelper = $shellHelper ?: new ShellHelper();
+    }
+
+    public function setOutput(OutputInterface $output)
+    {
+        $this->output = $output;
+        $this->shellHelper->setOutput($output);
     }
 
     public function prepareBuild($appRoot, $projectRoot, array $settings)
@@ -32,8 +48,6 @@ abstract class ToolstackBase implements ToolstackInterface
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
         $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
-
-        return $this;
     }
 
 }

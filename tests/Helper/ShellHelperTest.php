@@ -7,39 +7,24 @@ use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 class ShellHelperTest extends \PHPUnit_Framework_TestCase
 {
 
-    /** @var ShellHelper */
-    protected $shellHelper;
-
-    /** @var string */
-    protected $workingCommand;
-
-    public function setUp()
-    {
-        $this->shellHelper = new ShellHelper();
-        $this->workingCommand = strpos(PHP_OS, 'WIN') !== false ? 'help' : 'pwd';
-    }
-
     /**
-     * Test ShellHelper::execute();
+     * Test ShellHelper::execute().
      */
     public function testExecute()
     {
-        $this->assertNotEmpty($this->shellHelper->execute($this->workingCommand));
-        $this->assertEmpty($this->shellHelper->execute('which nonexistent'));
-        $this->assertEmpty($this->shellHelper->execute('nonexistent command test'));
-    }
+        $shellHelper = new ShellHelper();
 
-    /**
-     * Test ShellHelper::executeArgs().
-     */
-    public function testExecuteArgs()
-    {
-        $this->assertNotEmpty($this->shellHelper->executeArgs(array($this->workingCommand)), false);
-        $this->assertEmpty($this->shellHelper->executeArgs(array('which', 'nonexistent'), false));
+        // Find a command that will work on all platforms.
+        $workingCommand = strpos(PHP_OS, 'WIN') !== false ? 'help' : 'pwd';
 
-        $this->assertNotEmpty($this->shellHelper->executeArgs(array($this->workingCommand)), true);
-        $this->setExpectedException('Symfony\\Component\\Process\\Exception\\ProcessFailedException');
-        $this->shellHelper->executeArgs(array('which', 'nonexistent'), true);
+        // With $mustRun disabled.
+        $this->assertNotEmpty($shellHelper->execute(array($workingCommand)));
+        $this->assertFalse($shellHelper->execute(array('which', 'nonexistent')));
+
+        // With $mustRun enabled.
+        $this->assertNotEmpty($shellHelper->execute(array($workingCommand), null, true));
+        $this->setExpectedException('Exception');
+        $shellHelper->execute(array('which', 'nonexistent'), null, true);
     }
 
 }

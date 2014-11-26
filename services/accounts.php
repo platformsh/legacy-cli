@@ -7,7 +7,6 @@ return array(
             'httpMethod' => 'GET',
             'uri' => 'me',
             'summary' => 'Gets a list of ssh_keys',
-            'responseClass' => 'SshKeys',
         ),
         'createSshKey' => array(
             'httpMethod' => 'POST',
@@ -40,7 +39,6 @@ return array(
             'httpMethod' => 'GET',
             'uri' => 'me',
             'summary' => 'Gets a list of projects',
-            'responseClass' => 'Projects',
         ),
     ),
     'models' => array(

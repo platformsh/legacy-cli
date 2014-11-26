@@ -3,50 +3,84 @@
 namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Process\Process;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\ProcessBuilder;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
-class ShellHelper extends Helper {
+class ShellHelper extends Helper implements ShellHelperInterface {
+
+    /** @var OutputInterface|null */
+    protected $output;
 
     public function getName()
     {
         return 'shell';
     }
 
-    /**
-     * Run a shell command in the current directory, suppressing errors.
-     *
-     * @param string $cmd The command, suitably escaped.
-     * @param string &$error Optionally use this to capture errors.
-     *
-     * @return string The command output.
-     */
-    public function execute($cmd, &$error = '')
+    public function __construct(OutputInterface $output = null)
     {
-        $process = new Process($cmd);
-        $process->run();
-        $error = $process->getErrorOutput();
-        return $process->getOutput();
+        $this->output = $output;
+    }
+
+    public function setOutput(OutputInterface $output = null)
+    {
+        $this->output = $output;
     }
 
     /**
-     * Build and run a process.
+     * Log output messages.
      *
-     * @param string[] $args
-     * @param bool $mustRun
+     * @param mixed $type
+     * @param string $buffer
      *
-     * @return string
+     * @todo in theory this could use the ConsoleLogger, but the formatting is ugly and impossible to override
      */
-    public function executeArgs(array $args, $mustRun = false)
+    public function log($type, $buffer)
+    {
+        if ($this->output) {
+            $this->output->write($buffer);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @throws \Exception
+     *   If $mustRun is enabled and the command fails.
+     */
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
     {
         $builder = new ProcessBuilder($args);
         $process = $builder->getProcess();
-        if ($mustRun) {
-            $process->mustRun();
+
+        // The default timeout is 1 minute. Increase it to 1 hour.
+        $process->setTimeout(3600);
+
+        if ($dir) {
+            $process->setWorkingDirectory($dir);
         }
-        else {
-            $process->run();
+        try {
+            $process->mustRun($quiet ? null : array($this, 'log'));
+        } catch (ProcessFailedException $e) {
+            if (!$mustRun) {
+                return false;
+            }
+            // The default for ProcessFailedException is to print the entire
+            // STDOUT and STDERR. But if $quiet is disabled, then the user will
+            // have already seen the command's output.  So we need to re-throw
+            // the exception with a much shorter message.
+            $message = "The command failed with the exit code: " . $process->getExitCode();
+            if ($process->getExitCodeText()) {
+                $message .= ' (' . $process->getExitCodeText() . ')';
+            }
+            $message .= "\n\nFull command: " . $process->getCommandLine();
+            if ($quiet) {
+                $message .= "\n\nError output:\n" . $process->getErrorOutput();
+            }
+            throw new \Exception($message);
         }
-        return $process->getOutput();
+        $output = $process->getOutput();
+
+        return $output ? rtrim($output) : true;
     }
 }

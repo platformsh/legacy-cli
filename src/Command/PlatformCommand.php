@@ -270,19 +270,18 @@ class PlatformCommand extends Command
         if (!$projectRoot) {
             return null;
         }
-        $repositoryDir = $projectRoot . '/repository';
-        $escapedRepoDir = escapeshellarg($repositoryDir);
 
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
-        $shellHelper = $this->getHelper('shell');
-        $remote = trim($shellHelper->execute("cd $escapedRepoDir && git rev-parse --abbrev-ref --symbolic-full-name @{u}"));
-        if ($remote && strpos($remote, '/') !== false) {
-            list($remoteName, $potentialEnvironment) = explode('/', $remote, 2);
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
+        $upstream = $gitHelper->getUpstream();
+        if ($upstream && strpos($upstream, '/') !== false) {
+            list($remoteName, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->getEnvironment($potentialEnvironment, $project);
             if ($environment) {
                 // Check that the remote is Platform's.
-                $remoteUrl = trim($shellHelper->execute("cd $escapedRepoDir && git config --get remote.$remoteName.url"));
+                $remoteUrl = $gitHelper->getConfig("remote.$remoteName.url");
                 if (strpos($remoteUrl, 'platform.sh')) {
                     return $environment;
                 }
@@ -291,7 +290,7 @@ class PlatformCommand extends Command
 
         // There is no Git remote set, or it's set to a non-Platform URL.
         // Fall back to trying the current branch name.
-        $currentBranch = trim($shellHelper->execute("cd $escapedRepoDir && git symbolic-ref --short HEAD"));
+        $currentBranch = $gitHelper->getCurrentBranch();
         if ($currentBranch) {
             $currentBranchSanitized = $this->sanitizeEnvironmentId($currentBranch);
             $environment = $this->getEnvironment($currentBranchSanitized, $project);
@@ -577,7 +576,8 @@ class PlatformCommand extends Command
      */
     public function __destruct()
     {
-        if (is_array($this->config)) {
+        static $written;
+        if (is_array($this->config) && !$written) {
             if ($this->oauth2Plugin) {
                 // Save the access token for future requests.
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
@@ -586,6 +586,7 @@ class PlatformCommand extends Command
             $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
             $dumper = new Dumper();
             file_put_contents($configPath, $dumper->dump($this->config));
+            $written = true;
         }
     }
 }

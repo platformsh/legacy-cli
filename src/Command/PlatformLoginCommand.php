@@ -44,8 +44,7 @@ class PlatformLoginCommand extends PlatformCommand
         if (ini_get('safe_mode')) {
             throw new \Exception('PHP safe_mode must be disabled.');
         }
-        $gitVersion = shell_exec('git version');
-        if (strpos($gitVersion, 'git version') === false) {
+        if (!$this->getHelper('shell')->execute(array('git', '--version'))) {
             throw new \Exception('Git must be installed.');
         }
     }

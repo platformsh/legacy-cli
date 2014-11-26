@@ -79,6 +79,9 @@ class FilesystemHelper extends Helper {
      */
     public function copy($source, $destination)
     {
+        if (!is_dir($source)) {
+            throw new \InvalidArgumentException("Not a directory: $source");
+        }
         if (!is_dir($destination)) {
             mkdir($destination);
         }

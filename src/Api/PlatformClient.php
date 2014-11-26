@@ -41,7 +41,7 @@ class PlatformClient extends Client
                 $code = $json['code'];
                 $message = $json['message'];
                 if (!empty($json['detail'])) {
-                    $message .= "\n  " . $json['detail'];
+                    $message .= "\n  " . implode("\n  ", (array) $json['detail']);
                 }
                 // Re-throw the exception with a more detailed message.
                 $exception = new ClientErrorResponseException(

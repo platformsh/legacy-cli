@@ -4,6 +4,7 @@ namespace CommerceGuys\Platform\Cli;
 
 use CommerceGuys\Platform\Cli\Helper\DrushHelper;
 use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
+use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use CommerceGuys\Platform\Cli\Helper\PlatformQuestionHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ConsoleApplication;
@@ -64,6 +65,7 @@ class Application extends ConsoleApplication {
             new FilesystemHelper(),
             new ShellHelper(),
             new DrushHelper(),
+            new GitHelper(),
         ));
     }
 

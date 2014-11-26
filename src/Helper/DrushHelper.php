@@ -4,14 +4,44 @@ namespace CommerceGuys\Platform\Cli\Helper;
 
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class DrushHelper extends Helper {
 
     protected $homeDir = '~';
 
+    /** @var ShellHelperInterface */
+    protected $shellHelper;
+
+    /** @var OutputInterface */
+    protected $output;
+
     public function getName()
     {
         return 'drush';
+    }
+
+    public function __construct(OutputInterface $output = null)
+    {
+        $this->output = $output;
+    }
+
+    /**
+     * @param string $minVersion
+     *
+     * @throws \Exception
+     */
+    public function ensureInstalled($minVersion = '6')
+    {
+        $drushVersion = $this->execute(array('--version'));
+        if (!is_string($drushVersion)) {
+            throw new \Exception('Drush must be installed');
+        }
+        $versionParts = explode(':', $drushVersion);
+        $versionNumber = trim($versionParts[1]);
+        if (version_compare($versionNumber, $minVersion) === -1) {
+            throw new \Exception('Drush version must be at least: ' . $minVersion);
+        }
     }
 
     /**
@@ -22,6 +52,60 @@ class DrushHelper extends Helper {
     public function setHomeDir($homeDir)
     {
         $this->homeDir = $homeDir;
+    }
+
+    /**
+     * @return ShellHelperInterface
+     */
+    protected function getShellHelper()
+    {
+        if (!$this->shellHelper) {
+            $this->shellHelper = new ShellHelper($this->output);
+        }
+        return $this->shellHelper;
+    }
+
+    /**
+     * Execute a Drush command.
+     *
+     * @param string[]     $args
+     *   Command arguments (everything after 'drush').
+     * @param string $dir
+     *   The working directory.
+     * @param bool         $mustRun
+     *   Enable exceptions if the command fails.
+     * @param bool         $quiet
+     *   Suppress command output.
+     *
+     * @return string|bool
+     */
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
+    {
+        array_unshift($args, 'drush');
+        return $this->getShellHelper()->execute($args, $dir, $mustRun, $quiet);
+    }
+
+    /**
+     * @return bool
+     */
+    public function clearCache()
+    {
+        return (bool) $this->execute(array('cache-clear', 'drush'));
+    }
+
+    /**
+     * @param string $groupName
+     *
+     * @return string|bool
+     */
+    public function getAliases($groupName)
+    {
+        return $this->execute(array(
+            'site-alias',
+            '--pipe',
+            '--format=list',
+            '@' . $groupName,
+          ));
     }
 
     /**
