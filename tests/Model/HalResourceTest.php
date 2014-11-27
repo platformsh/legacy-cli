@@ -24,8 +24,11 @@ class HalResourceTest extends \PHPUnit_Framework_TestCase
         $data = $this->properties + array(
             '_embedded' => array(),
             '_links' => array(
-                '#operate' => array(
+                '#self' => array(
                   'href' => 'https://example.com/',
+                ),
+                '#operate' => array(
+                  'href' => 'https://example.com/operate',
                 ),
             ),
           );
@@ -59,6 +62,17 @@ class HalResourceTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertTrue($this->resource->operationAllowed('operate'));
         $this->assertFalse($this->resource->operationAllowed('nonexistent'));
+    }
+
+    /**
+     * Test HalResource::operationAllowed().
+     */
+    public function testGetLink()
+    {
+        $this->assertNotEmpty($this->resource->getLink());
+        $this->assertNotEmpty($this->resource->getLink('operate'));
+        $this->setExpectedException('\Exception');
+        $this->resource->getLink('nonexistent');
     }
 
 }

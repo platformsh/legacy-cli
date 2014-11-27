@@ -88,6 +88,12 @@ interface HalResourceInterface
     public function getProperty($property);
 
     /**
+     * @param $rel
+     * @return string
+     */
+    public function getLink($rel = 'self');
+
+    /**
      * @return string[]
      *   An array of the resource's property names.
      */

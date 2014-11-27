@@ -105,10 +105,20 @@ class HalResource implements HalResourceInterface
             $body = json_encode($body);
         }
         $request = $this->client
-          ->createRequest($method, $this->data['_links']['#' . $op]['href'], null, $body);
+          ->createRequest($method, $this->getLink($op), null, $body);
         $response = $request->send();
         $this->data = $response->json();
         return $response->getStatusCode() == 200;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getLink($rel = 'self') {
+        if (empty($this->data['_links']['#' . $rel]['href'])) {
+            throw new \Exception("Link not available: $rel");
+        }
+        return $this->data['_links']['#' . $rel]['href'];
     }
 
     /**
