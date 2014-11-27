@@ -13,8 +13,9 @@ class DrushCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('drush')
-            ->setDescription('Invoke a drush command using the site alias for the current environment.');
+            ->setName('environment:drush')
+            ->setAliases(array('drush'))
+            ->setDescription('Run a drush command on the remote environment');
         $this->ignoreValidationErrors();
     }
 

@@ -18,7 +18,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
             ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
             ->addOption('group', 'g', InputOption::VALUE_OPTIONAL, 'Recreate the aliases with a new group name.')
             ->addOption('pipe', 'p', InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
-            ->setDescription('Determine and/or recreate the project\'s Drush aliases (if any).');
+            ->setDescription('Find the project\'s Drush aliases');
     }
 
     public function isLocal()

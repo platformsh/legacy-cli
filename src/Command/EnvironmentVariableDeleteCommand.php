@@ -20,7 +20,7 @@ class EnvironmentVariableDeleteCommand extends EnvironmentCommand
           ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
           ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
           ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
-          ->setDescription('Delete a variable from an environment.');
+          ->setDescription('Delete a variable from an environment');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

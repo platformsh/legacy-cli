@@ -13,7 +13,7 @@ class EnvironmentActivateCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:activate')
-            ->setDescription('Activate an environment.')
+            ->setDescription('Activate an environment')
             ->addOption(
                 'project',
                 null,

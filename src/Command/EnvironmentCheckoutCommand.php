@@ -15,7 +15,7 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         $this
             ->setName('environment:checkout')
             ->setAliases(array('checkout'))
-            ->setDescription('Check out an environment.')
+            ->setDescription('Check out an environment')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,

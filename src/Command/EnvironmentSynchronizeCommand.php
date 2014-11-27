@@ -14,7 +14,8 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:synchronize')
-            ->setDescription('Synchronize an environment.')
+            ->setAliases(array('sync'))
+            ->setDescription('Synchronize an environment')
             ->addArgument(
                 'synchronize',
                 InputArgument::IS_ARRAY,

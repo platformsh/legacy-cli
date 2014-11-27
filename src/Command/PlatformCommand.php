@@ -77,10 +77,11 @@ class PlatformCommand extends Command
      */
     public function setDescription($text)
     {
-      $tag = $this->isLocal() ? "cyan" : "red";
-      parent::setDescription("<fg={$tag}>{$text}</fg={$tag}>");
-
-      return $this;
+        if (!$this->isLocal()) {
+            $text = "<fg=cyan>$text</fg=cyan>";
+        }
+        parent::setDescription($text);
+        return $this;
     }
 
     /**

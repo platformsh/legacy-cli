@@ -13,7 +13,7 @@ class SshKeyDeleteCommand extends PlatformCommand
     {
         $this
             ->setName('ssh-key:delete')
-            ->setDescription('Delete an SSH key.')
+            ->setDescription('Delete an SSH key')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,

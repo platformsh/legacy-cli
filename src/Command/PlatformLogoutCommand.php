@@ -14,7 +14,6 @@ class PlatformLogoutCommand extends PlatformCommand
     {
         $this
             ->setName('logout')
-            ->setAliases(array('logout'))
             ->setDescription('Log out of Platform.sh');
     }
 
