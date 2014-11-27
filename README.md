@@ -73,6 +73,7 @@ Global options:
   --shell          -s Launch the shell
 
 Available commands:
+  docs                                    Open the Platform.sh online documentation
   help                                    Displays help for a command
   list                                    Lists commands
   login                                   Log in to Platform.sh
