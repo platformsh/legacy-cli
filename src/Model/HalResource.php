@@ -193,6 +193,14 @@ class HalResource implements HalResourceInterface
     }
 
     /**
+     * @return array
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
+
+    /**
      * @inheritdoc
      */
     public function getPropertyNames()

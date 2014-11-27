@@ -6,6 +6,7 @@ use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
 use CommerceGuys\Platform\Cli\Api\PlatformClient;
+use CommerceGuys\Platform\Cli\Model\HalResource;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
@@ -441,22 +442,27 @@ class PlatformCommand extends Command
      *
      * @param string $id The environment ID to load.
      * @param array $project The project.
+     * @param bool $refresh
      *
      * @return array|null The environment, or null if not found.
      */
-    protected function getEnvironment($id, $project = null)
+    protected function getEnvironment($id, $project = null, $refresh = false)
     {
         $project = $project ?: $this->getCurrentProject();
         if (!$project) {
             return null;
         }
-        $environments = $this->getEnvironments($project, false);
-        if (!isset($environments[$id])) {
-            // The list of environments is cached and might be older than the
-            // requested environment, so refresh it as a precaution.
-            $environments = $this->getEnvironments($project, true);
+        $this->loadConfig();
+        $projectId = $project['id'];
+        if ($refresh || empty($this->config['environments'][$projectId][$id])) {
+            $client = $this->getPlatformClient($project['endpoint']);
+            $environment = HalResource::get($id, $project['endpoint'] . '/environments', $client);
+            if (!$environment) {
+                return null;
+            }
+            $this->config['environments'][$projectId][$id] = $environment->getData();
         }
-        return isset($environments[$id]) ? $environments[$id] : null;
+        return $this->config['environments'][$projectId][$id];
     }
 
     /**
