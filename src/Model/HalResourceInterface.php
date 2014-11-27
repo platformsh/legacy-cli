@@ -87,4 +87,16 @@ interface HalResourceInterface
      */
     public function getProperty($property);
 
+    /**
+     * @return string[]
+     *   An array of the resource's property names.
+     */
+    public function getPropertyNames();
+
+    /**
+     * @return array
+     *   An array of the resource's properties, keyed by their names.
+     */
+    public function getProperties();
+
 }

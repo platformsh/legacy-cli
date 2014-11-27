@@ -32,7 +32,7 @@ class Environment extends HalResource
      */
     public function getVariables()
     {
-        return self::getCollection('variables', $this->client);
+        return self::getCollection('variables', array(), $this->client);
     }
 
     /**

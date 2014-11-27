@@ -145,35 +145,72 @@ class HalResource implements HalResourceInterface
 
     /**
      * @param string $uri
+     * @param array $options
      * @param HttpClient $client
      *
      * @return HalResource[]
      */
-    public static function getCollection($uri, HttpClient $client)
+    public static function getCollection($uri, array $options = array(), HttpClient $client)
     {
         $collection = $client
-          ->get($uri)
+          ->get($uri, null, $options)
           ->send()
           ->json();
         if (!is_array($collection)) {
             throw new \UnexpectedValueException("Unexpected response");
         }
-        foreach ($collection as &$resource) {
-            $resource = new HalResource($resource, $client);
+        $resources = array();
+        foreach ($collection as $data) {
+            $resources[$data['id']] = new HalResource($data, $client);
         }
-        return $collection;
+        return $resources;
     }
 
     /**
      * @param string $property
+     * @param bool $required
      * @return mixed
      */
-    public function getProperty($property)
+    public function getProperty($property, $required = true)
     {
         if (!isset($this->data[$property]) || strpos($property, '_') === 0) {
+            if (!$required) {
+                return null;
+            }
             throw new \InvalidArgumentException("Undefined property: $property");
         }
         return $this->data[$property];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getPropertyNames()
+    {
+        $keys = array_filter(array_keys($this->data), function($key) {
+              return strpos($key, '_') !== 0;
+          });
+        return $keys;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getProperties()
+    {
+        $keys = $this->getPropertyNames();
+        return array_intersect_key($this->data, array_flip($keys));
+    }
+
+    /**
+     * @param string $property
+     * @param string $format
+     *
+     * @return string
+     */
+    public function getDate($property = 'created_at', $format = 'Y-m-d H:i:s')
+    {
+        return date($format, strtotime($this->getProperty($property)));
     }
 
 }
