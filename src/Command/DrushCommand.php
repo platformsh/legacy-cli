@@ -3,8 +3,10 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
-use Symfony\Component\Console\Input\ArgvInput;
+use CommerceGuys\Platform\Cli\Model\Environment;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DrushCommand extends PlatformCommand
@@ -14,8 +16,21 @@ class DrushCommand extends PlatformCommand
     {
         $this
             ->setName('drush')
-            ->setDescription('Invoke a drush command using the site alias for the current environment.');
-        $this->ignoreValidationErrors();
+            ->setDescription('Run a drush command on the remote environment.')
+            ->addArgument('drush', InputArgument::IS_ARRAY, 'A command and arguments to pass to Drush.', array('status'))
+            ->addOption('ssh', null, InputOption::VALUE_NONE, 'Use SSH to connect directly.')
+            ->addOption(
+              'project',
+              null,
+              InputOption::VALUE_OPTIONAL,
+              'The project ID'
+            )
+            ->addOption(
+              'environment',
+              null,
+              InputOption::VALUE_OPTIONAL,
+              'The environment ID'
+            );
     }
 
     public function isEnabled()
@@ -29,34 +44,48 @@ class DrushCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Try to autodetect the project and environment.
-        // There is no point in allowing the user to override them
-        // using --project and --environment, in that case they can run
-        // drush by themselves and specify the site alias manually.
-        $project = $this->getCurrentProject();
-        if (!$project) {
-            $output->writeln("<error>You must run this command from a project folder.</error>");
-            return 1;
-        }
-        $environment = $this->getCurrentEnvironment($project);
-        if (!$environment) {
-            $output->writeln("<error>Could not determine the current environment.</error>");
+        if (!$this->validateInput($input, $output)) {
             return 1;
         }
 
         $this->getHelper('drush')->ensureInstalled();
 
-        $aliasGroup = isset($this->project['alias-group']) ? $this->project['alias-group'] : $this->project['id'];
+        $drushArgs = $input->getArgument('drush');
 
-        $alias = $aliasGroup . '.' . $environment['id'];
-        $command = 'drush @' . $alias . ' ';
-        // Take the entire input string (all arguments and options) after the
-        // name of the drush command.
-        if (!$input instanceof ArgvInput) {
-            throw new \InvalidArgumentException('Invalid input type');
+        // Pass through options that the CLI shares with Drush.
+        foreach (array('yes', 'no', 'quiet') as $option) {
+            if ($input->getOption($option)) {
+                $drushArgs[] = "--$option";
+            }
         }
-        $command .= substr($input->__toString(), 6);
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $drushArgs[] = "--debug";
+        }
+        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            $drushArgs[] = "--verbose";
+        }
 
-        passthru($command);
+        $drushCommand = implode(' ', array_map('escapeshellarg', $drushArgs));
+
+        // SSH method.
+        if ($input->getOption('ssh')) {
+            $environment = new Environment($this->environment);
+            $sshUrl = $environment->getSshUrl();
+            $command = 'ssh -qt ' . escapeshellarg($sshUrl)
+              . ' ' . escapeshellarg('cd /app/public; drush ' . $drushCommand);
+        }
+        // Site alias method (default).
+        else {
+            $aliasGroup = isset($this->project['alias-group']) ? $this->project['alias-group'] : $this->project['id'];
+            $alias = '@' . $aliasGroup . '.' . $this->environment['id'];
+            $command = "drush $alias $drushCommand";
+        }
+
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            $output->writeln("Running command: $command");
+        }
+
+        passthru($command, $return_var);
+        return $return_var;
     }
 }
