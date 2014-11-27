@@ -90,6 +90,7 @@ environment
   environment:drush (drush)               Run a drush command on the remote environment
   environment:list (environments)         Get a list of all environments
   environment:merge (merge)               Merge an environment
+  environment:metadata                    Read metadata for an environment
   environment:relationships               List the environment's relationships
   environment:ssh (ssh)                   SSH to the current environment
   environment:synchronize (sync)          Synchronize an environment

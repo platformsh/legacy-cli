@@ -100,6 +100,7 @@ class Application extends ParentApplication {
         $commands[] = new Command\EnvironmentDeactivateCommand();
         $commands[] = new Command\EnvironmentDeleteCommand();
         $commands[] = new Command\EnvironmentListCommand();
+        $commands[] = new Command\EnvironmentMetadataCommand();
         $commands[] = new Command\EnvironmentMergeCommand();
         $commands[] = new Command\EnvironmentRelationshipsCommand();
         $commands[] = new Command\EnvironmentSshCommand();
