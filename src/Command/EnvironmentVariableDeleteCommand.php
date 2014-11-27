@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
-class EnvironmentVariableDeleteCommand extends EnvironmentCommand
+class EnvironmentVariableDeleteCommand extends EnvironmentCommandBase
 {
     /**
      * {@inheritdoc}

@@ -107,6 +107,7 @@ class Application extends ConsoleApplication {
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();
         $commands[] = new Command\WelcomeCommand();
+        $commands[] = new Command\WebCommand();
         return $commands;
     }
 

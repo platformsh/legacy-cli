@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 
-class EnvironmentCheckoutCommand extends EnvironmentCommand
+class EnvironmentCheckoutCommand extends EnvironmentCommandBase
 {
 
     protected function configure()

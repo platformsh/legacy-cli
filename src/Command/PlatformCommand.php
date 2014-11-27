@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
 
-class PlatformCommand extends Command
+abstract class PlatformCommand extends Command
 {
     protected $config;
     protected $oauth2Plugin;
