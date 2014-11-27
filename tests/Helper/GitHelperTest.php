@@ -39,6 +39,19 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Test GitHelper::ensureInstalled().
+     */
+    public function testEnsureInstalled()
+    {
+        try {
+            $this->gitHelper->ensureInstalled();
+        }
+        catch (\Exception $e) {
+            $this->fail();
+        }
+    }
+
+    /**
      * Test GitHelper::isRepository().
      */
     public function testIsRepository()

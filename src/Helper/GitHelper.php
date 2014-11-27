@@ -42,7 +42,7 @@ class GitHelper extends Helper
         if ($checked) {
             return true;
         }
-        $version = $this->execute(array('--version'));
+        $version = $this->execute(array('--version'), false);
         if (!is_string($version)) {
             throw new \Exception('Git must be installed');
         }
