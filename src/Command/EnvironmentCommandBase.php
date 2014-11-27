@@ -4,7 +4,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Model\Environment;
 
-class EnvironmentCommand extends PlatformCommand
+abstract class EnvironmentCommandBase extends PlatformCommand
 {
 
     /**

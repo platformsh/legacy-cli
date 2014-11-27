@@ -91,6 +91,7 @@ Available commands:
   projects                    Get a list of all active projects.
   ssh                         SSH to the current environment.
   ssh-keys                    Get a list of all added SSH keys.
+  web                         Open the Platform.sh Web UI.
   url                         Get the public URL to an environment, and open it in a browser.
 domain
   domain:add                  Add a new domain to the project.

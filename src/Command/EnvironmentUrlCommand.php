@@ -7,11 +7,12 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentUrlCommand extends EnvironmentCommand
+class EnvironmentUrlCommand extends UrlCommandBase
 {
 
     protected function configure()
     {
+        parent::configure();
         $this
             ->setName('environment:url')
             ->setAliases(array('url'))
@@ -20,18 +21,6 @@ class EnvironmentUrlCommand extends EnvironmentCommand
                 'path',
                 InputArgument::OPTIONAL,
                 'A path to append to the URL.'
-            )
-            ->addOption(
-                'browser',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The browser to use to open the URL. Set 0 for none.'
-            )
-            ->addOption(
-                'pipe',
-                null,
-                InputOption::VALUE_NONE,
-                'Output the raw URL, suitable for piping to another command.'
             )
             ->addOption(
                 'project',
@@ -64,38 +53,6 @@ class EnvironmentUrlCommand extends EnvironmentCommand
             $url .= trim($path);
         }
 
-        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
-            $output->write($url);
-            return;
-        }
-
-        $browser = $input->getOption('browser');
-
-        $shellHelper = $this->getHelper('shell');
-        if ($browser === '0') {
-            // The user has requested not to use a browser.
-            $browser = false;
-        }
-        elseif (empty($browser)) {
-            // Find a default browser to use.
-            $defaults = array('xdg-open', 'open', 'start');
-            foreach ($defaults as $default) {
-                if ($shellHelper->execute(array('which', $default))) {
-                    $browser = $default;
-                    break;
-                }
-            }
-        }
-        elseif (!$shellHelper->execute(array('which', $browser))) {
-            // The user has specified a browser, but it can't be found.
-            $output->writeln("<error>Browser not found: $browser</error>");
-            $browser = false;
-        }
-
-        $output->writeln($url);
-
-        if ($browser) {
-            $shellHelper->execute(array($browser, $url));
-        }
+        $this->openUrl($url, $input, $output);
     }
 }
