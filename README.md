@@ -110,6 +110,7 @@ project
   project:clean               Remove project builds.
   project:drush-aliases       Determine and/or recreate the project's Drush aliases (if any).
   project:get                 Does a git clone of the referenced project.
+  project:init                Initialize a project from a cloned Git repository.
 ssh-key
   ssh-key:add                 Add a new SSH key.
   ssh-key:delete              Delete an SSH key.
