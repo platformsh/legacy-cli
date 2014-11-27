@@ -105,7 +105,7 @@ class HalResource implements HalResourceInterface
             $body = json_encode($body);
         }
         $request = $this->client
-          ->createRequest($method, $this->getLink($op), null, $body);
+          ->createRequest($method, $this->getLink('#' . $op), null, $body);
         $response = $request->send();
         $this->data = $response->json();
         return $response->getStatusCode() == 200;
@@ -115,10 +115,10 @@ class HalResource implements HalResourceInterface
      * @inheritdoc
      */
     public function getLink($rel = 'self') {
-        if (empty($this->data['_links']['#' . $rel]['href'])) {
-            throw new \Exception("Link not available: $rel");
+        if (empty($this->data['_links'][$rel]['href'])) {
+            throw new \InvalidArgumentException("Link not available: $rel");
         }
-        return $this->data['_links']['#' . $rel]['href'];
+        return $this->data['_links'][$rel]['href'];
     }
 
     /**
