@@ -128,12 +128,7 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
             $environmentId = $this->environment['id'];
             $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>");
             if (!$environment->hasActivity()) {
-                $output->writeln(
-                  "<comment>"
-                  . "The remote environment must be rebuilt for the change to take effect."
-                  . " Use 'git push' with new commit(s) to trigger a rebuild."
-                  . "</comment>"
-                );
+                $this->rebuildWarning($output);
             }
         }
         else {
@@ -141,10 +136,7 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
             $environment->setData($this->getEnvironment($this->environment['id'], $this->project, true));
         }
 
-        $current = $environment->getProperty('http_access');
-
-        $output->writeln("Access: " . json_encode($current['addresses']));
-        $output->writeln("Auth: " . json_encode($current['basic_auth']));
+        $output->writeln($environment->getPropertyFormatted('http_access'));
         return 0;
     }
 

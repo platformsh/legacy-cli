@@ -459,6 +459,17 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Warn the user that the remote environment needs rebuilding.
+     *
+     * @param OutputInterface $output
+     */
+    protected function rebuildWarning(OutputInterface $output)
+    {
+        $output->writeln('<comment>The remote environment must be rebuilt for the change to take effect.</comment>');
+        $output->writeln("Use 'git push' with new commit(s) to trigger a rebuild.");
+    }
+
+    /**
      * Detect automatically whether the output is a TTY terminal.
      *
      * @param OutputInterface $output

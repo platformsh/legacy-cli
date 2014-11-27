@@ -73,7 +73,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
 
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             foreach ($results as $variable) {
-                $output->writeln($variable->id() . "\t" . $variable->getProperty('value'));
+                $output->writeln($variable->id() . "\t" . $variable->getPropertyFormatted('value'));
             }
         }
         else {
@@ -95,7 +95,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
         $table = new Table($output);
         $table->setHeaders(array("ID", "Value", "Inherited", "JSON"));
         foreach ($variables as $variable) {
-            $value = $variable->getProperty('value');
+            $value = $variable->getPropertyFormatted('value');
             // Truncate long values.
             if (strlen($value) > 60) {
                 $value = substr($value, 0, 57) . '...';
@@ -105,8 +105,8 @@ class EnvironmentVariableGetCommand extends PlatformCommand
             $table->addRow(array(
                 $variable->id(),
                 $value,
-                $variable->getProperty('inherited') ? 'Yes' : 'No',
-                $variable->getProperty('is_json') ? 'Yes' : 'No',
+                $variable->getPropertyFormatted('inherited'),
+                $variable->getPropertyFormatted('is_json'),
               ));
         }
         return $table;
