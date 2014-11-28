@@ -16,7 +16,7 @@ class DomainDeleteCommand extends PlatformCommand
     {
         $this
             ->setName('domain:delete')
-            ->setDescription('Delete a domain from the project.')
+            ->setDescription('Delete a domain from the project')
             ->addArgument(
                 'name',
                 InputArgument::OPTIONAL,

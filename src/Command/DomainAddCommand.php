@@ -26,7 +26,7 @@ class DomainAddCommand extends PlatformCommand
     {
         $this
             ->setName('domain:add')
-            ->setDescription('Add a new domain to the project.')
+            ->setDescription('Add a new domain to the project')
             ->addArgument(
                 'name',
                 InputArgument::OPTIONAL,

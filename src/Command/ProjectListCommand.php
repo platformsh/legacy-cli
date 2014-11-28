@@ -13,8 +13,9 @@ class ProjectListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('projects')
-            ->setDescription('Get a list of all active projects.')
+            ->setName('project:list')
+            ->setAliases(array('projects'))
+            ->setDescription('Get a list of all active projects')
             ->addOption(
               'pipe',
               null,

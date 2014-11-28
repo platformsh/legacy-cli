@@ -15,7 +15,7 @@ class EnvironmentUrlCommand extends EnvironmentCommand
         $this
             ->setName('environment:url')
             ->setAliases(array('url'))
-            ->setDescription('Get the public URL to an environment, and open it in a browser.')
+            ->setDescription('Get the public URL of an environment')
             ->addArgument(
                 'path',
                 InputArgument::OPTIONAL,

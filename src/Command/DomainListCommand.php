@@ -15,8 +15,9 @@ class DomainListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('domains')
-            ->setDescription('Get a list of all domains.')
+            ->setName('domain:list')
+            ->setAliases(array('domains'))
+            ->setDescription('Get a list of all domains')
             ->addOption(
                 'project',
                 null,

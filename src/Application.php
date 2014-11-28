@@ -7,7 +7,8 @@ use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
 use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use CommerceGuys\Platform\Cli\Helper\PlatformQuestionHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelper;
-use Symfony\Component\Console\Application as ConsoleApplication;
+use Symfony\Component\Console\Application as ParentApplication;
+use Symfony\Component\Console\Command\HelpCommand;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Shell;
 
-class Application extends ConsoleApplication {
+class Application extends ParentApplication {
 
     protected $output;
 
@@ -44,13 +45,13 @@ class Application extends ConsoleApplication {
         // We remove the confusing `--ansi` and `--no-ansi` options.
         return new InputDefinition(array(
             new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
-            new InputOption('--help', '-h', InputOption::VALUE_NONE, 'Display this help message.'),
-            new InputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Do not output any message.'),
-            new InputOption('--verbose', '-v|vv|vvv', InputOption::VALUE_NONE, 'Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug'),
-            new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version.'),
-            new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts.'),
-            new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts.'),
-            new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell.'),
+            new InputOption('--help', '-h', InputOption::VALUE_NONE, 'Display this help message'),
+            new InputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Do not output any message'),
+            new InputOption('--verbose', '-v|vv|vvv', InputOption::VALUE_NONE, 'Increase the verbosity of messages'),
+            new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
+            new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts'),
+            new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
+            new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell'),
         ));
     }
 
@@ -67,6 +68,15 @@ class Application extends ConsoleApplication {
             new DrushHelper(),
             new GitHelper(),
         ));
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getDefaultCommands()
+    {
+        // Override the default commands to add a custom ListCommand.
+        return array(new HelpCommand(), new Command\ListCommand());
     }
 
     /**
@@ -108,6 +118,28 @@ class Application extends ConsoleApplication {
         $commands[] = new Command\SshKeyListCommand();
         $commands[] = new Command\WelcomeCommand();
         return $commands;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getHelp()
+    {
+        $messages = array(
+          $this->getLongVersion(),
+          '',
+          '<comment>Global options:</comment>',
+        );
+
+        foreach ($this->getDefinition()->getOptions() as $option) {
+            $messages[] = sprintf('  %-29s %s %s',
+              '<info>--'.$option->getName().'</info>',
+              $option->getShortcut() ? '<info>-'.$option->getShortcut().'</info>' : '  ',
+              $option->getDescription()
+            );
+        }
+
+        return implode(PHP_EOL, $messages);
     }
 
     /**

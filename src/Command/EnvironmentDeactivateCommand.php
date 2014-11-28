@@ -13,7 +13,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:deactivate')
-            ->setDescription('Deactivate an environment.')
+            ->setDescription('Deactivate an environment')
             ->addOption(
                 'project',
                 null,

@@ -16,7 +16,7 @@ class ProjectInitCommand extends PlatformCommand
             ->setName('project:init')
             ->setAliases(array('init'))
             ->addArgument('directory', InputArgument::OPTIONAL, 'The path to the repository.')
-            ->setDescription('Initialize a project from a cloned Git repository.');
+            ->setDescription('Initialize from a plain Git repository');
     }
 
     public function isLocal()

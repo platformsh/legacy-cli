@@ -22,8 +22,9 @@ class EnvironmentListCommand extends EnvironmentCommand
     protected function configure()
     {
         $this
-            ->setName('environments')
-            ->setDescription('Get a list of all environments.')
+            ->setName('environment:list')
+            ->setAliases(array('environments'))
+            ->setDescription('Get a list of all environments')
             ->addOption(
                 'project',
                 null,

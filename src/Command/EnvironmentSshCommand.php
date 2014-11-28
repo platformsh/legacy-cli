@@ -20,7 +20,7 @@ class EnvironmentSshCommand extends EnvironmentCommand
             ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
             ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
             ->addOption('pipe', NULL, InputOption::VALUE_NONE, "Output the SSH URL only.")
-            ->setDescription('SSH to the current environment.');
+            ->setDescription('SSH to the current environment');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

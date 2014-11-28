@@ -18,7 +18,7 @@ class ProjectGetCommand extends PlatformCommand
         $this
             ->setName('project:get')
             ->setAliases(array('get'))
-            ->setDescription('Does a git clone of the referenced project.')
+            ->setDescription('Clone and build a project locally')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,

@@ -16,7 +16,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $this
             ->setName('environment:branch')
             ->setAliases(array('branch'))
-            ->setDescription('Branch an environment.')
+            ->setDescription('Branch an environment')
             ->addArgument(
                 'name',
                 InputArgument::OPTIONAL,

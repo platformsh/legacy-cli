@@ -17,11 +17,6 @@ class PlatformLoginCommand extends PlatformCommand
             ->setDescription('Log in to Platform.sh');
     }
 
-    public function isLocal()
-    {
-        return true;
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->checkRequirements();
