@@ -75,13 +75,13 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test GitHelper::branch().
+     * Test GitHelper::checkOutNew().
      */
-    public function testBranch()
+    public function testCheckOutNew()
     {
         $repository = $this->getRepositoryDir();
         $this->gitHelper->setDefaultRepositoryDir($repository);
-        $this->assertTrue($this->gitHelper->branch('new'));
+        $this->assertTrue($this->gitHelper->checkOutNew('new'));
     }
 
     /**

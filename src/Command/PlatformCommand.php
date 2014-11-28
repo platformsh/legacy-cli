@@ -461,6 +461,9 @@ class PlatformCommand extends Command
             if (!$environment) {
                 return null;
             }
+            $urlParts = parse_url($project['endpoint']);
+            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
+            $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
             $this->config['environments'][$projectId][$id] = $environment->getData();
         }
         return $this->config['environments'][$projectId][$id];
