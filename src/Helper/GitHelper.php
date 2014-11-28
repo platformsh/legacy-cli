@@ -172,7 +172,7 @@ class GitHelper extends Helper
     }
 
     /**
-     * Create a new branch.
+     * Create a new branch and check it out.
      *
      * @param string $name
      * @param string $parent
@@ -183,7 +183,7 @@ class GitHelper extends Helper
      *
      * @return bool
      */
-    public function branch($name, $parent = null, $dir = null, $mustRun = false)
+    public function checkOutNew($name, $parent = null, $dir = null, $mustRun = false)
     {
         $args = array('checkout', '-b', $name);
         if ($parent) {
