@@ -46,7 +46,7 @@ class DrushCommand extends PlatformCommand
 
         $this->getHelper('drush')->ensureInstalled();
 
-        $aliasGroup = isset($this->project['alias-group']) ? $this->project['alias-group'] : $this->project['id'];
+        $aliasGroup = isset($project['alias-group']) ? $project['alias-group'] : $project['id'];
 
         $alias = $aliasGroup . '.' . $environment['id'];
         $command = 'drush @' . $alias . ' ';
