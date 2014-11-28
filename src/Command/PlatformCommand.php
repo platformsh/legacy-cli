@@ -447,7 +447,7 @@ class PlatformCommand extends Command
      *
      * @return array|null The environment, or null if not found.
      */
-    protected function getEnvironment($id, $project = null, $refresh = false)
+    protected function getEnvironment($id, $project = null, $refresh = true)
     {
         $project = $project ?: $this->getCurrentProject();
         if (!$project) {
