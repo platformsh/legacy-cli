@@ -13,7 +13,8 @@ class EnvironmentMergeCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:merge')
-            ->setDescription('Merge an environment.')
+            ->setAliases(array('merge'))
+            ->setDescription('Merge an environment')
             ->addOption(
                 'project',
                 null,

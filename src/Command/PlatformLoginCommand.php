@@ -17,11 +17,6 @@ class PlatformLoginCommand extends PlatformCommand
             ->setDescription('Log in to Platform.sh');
     }
 
-    public function isLocal()
-    {
-        return true;
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->checkRequirements();
@@ -44,9 +39,7 @@ class PlatformLoginCommand extends PlatformCommand
         if (ini_get('safe_mode')) {
             throw new \Exception('PHP safe_mode must be disabled.');
         }
-        if (!$this->getHelper('shell')->execute(array('git', '--version'))) {
-            throw new \Exception('Git must be installed.');
-        }
+        $this->getHelper('git')->ensureInstalled();
     }
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)

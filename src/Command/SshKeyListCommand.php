@@ -12,8 +12,9 @@ class SshKeyListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('ssh-keys')
-            ->setDescription('Get a list of all added SSH keys.');
+            ->setName('ssh-key:list')
+            ->setAliases(array('ssh-keys'))
+            ->setDescription('Get a list of all added SSH keys');
         ;
     }
 

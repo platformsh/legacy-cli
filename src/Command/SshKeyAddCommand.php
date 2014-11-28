@@ -15,7 +15,7 @@ class SshKeyAddCommand extends PlatformCommand
     {
         $this
             ->setName('ssh-key:add')
-            ->setDescription('Add a new SSH key.')
+            ->setDescription('Add a new SSH key')
             ->addArgument(
                 'path',
                 InputArgument::OPTIONAL,

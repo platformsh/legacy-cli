@@ -34,6 +34,22 @@ class GitHelper extends Helper
     }
 
     /**
+     * @throws \Exception
+     */
+    public function ensureInstalled()
+    {
+        static $checked;
+        if ($checked) {
+            return true;
+        }
+        $version = $this->execute(array('--version'), false);
+        if (!is_string($version)) {
+            throw new \Exception('Git must be installed');
+        }
+        $checked = true;
+    }
+
+    /**
      * @return ShellHelperInterface
      */
     protected function getShellHelper()

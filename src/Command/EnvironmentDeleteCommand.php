@@ -13,7 +13,7 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:delete')
-            ->setDescription('Delete an environment.')
+            ->setDescription('Delete an environment')
             ->addOption(
                 'project',
                 null,

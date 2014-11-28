@@ -2,13 +2,13 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
-use Symfony\Component\Yaml\Dumper;
 
 class ProjectGetCommand extends PlatformCommand
 {
@@ -18,7 +18,7 @@ class ProjectGetCommand extends PlatformCommand
         $this
             ->setName('project:get')
             ->setAliases(array('get'))
-            ->setDescription('Does a git clone of the referenced project.')
+            ->setDescription('Clone and build a project locally')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
@@ -98,24 +98,17 @@ class ProjectGetCommand extends PlatformCommand
             $environment = 'master';
         }
 
-        // Create the directory structure
+        // Create the directory structure.
         mkdir($directoryName);
         $projectRoot = realpath($directoryName);
+        $local = new LocalProject();
         if (!$projectRoot) {
            throw new \Exception('Failed to create project directory: ' . $directoryName);
         }
 
-        mkdir($projectRoot . '/builds');
-        mkdir($projectRoot . '/shared');
+        $local->createProjectFiles($projectRoot, $projectId);
 
         $fsHelper = $this->getHelper('fs');
-
-        // Create the .platform-project file.
-        $projectConfig = array(
-            'id' => $projectId,
-        );
-        $dumper = new Dumper();
-        file_put_contents($directoryName . '/.platform-project', $dumper->dump($projectConfig));
 
         // Prepare to talk to the Platform.sh repository.
         $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));

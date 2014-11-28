@@ -7,6 +7,7 @@ return array(
             'httpMethod' => 'GET',
             'uri' => 'environments',
             'summary' => 'Gets a list of environments',
+            'responseClass' => 'Environments',
         ),
         'deleteEnvironment' => array(
             'httpMethod' => 'DELETE',
@@ -67,6 +68,7 @@ return array(
             'httpMethod' => 'GET',
             'uri' => 'domains',
             'summary' => 'Gets a list of domains',
+            'responseClass' => 'Domains',
         ),
         'addDomain' => array(
             'httpMethod' => 'POST',

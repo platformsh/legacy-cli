@@ -32,7 +32,7 @@ class Environment extends HalResource
      */
     public function getVariables()
     {
-        return self::getCollection('variables', $this->client);
+        return self::getCollection($this->getLink('manage-variables'), array(), $this->client);
     }
 
     /**
@@ -44,7 +44,7 @@ class Environment extends HalResource
      */
     public function getVariable($id)
     {
-        return self::get($id, $this->data['endpoint'] . '/variables', $this->client);
+        return self::get($id, $this->getLink('manage-variables'), $this->client);
     }
 
     /**
@@ -68,7 +68,7 @@ class Environment extends HalResource
             return $existing->update($values) ? $existing : false;
         }
         $values['name'] = $name;
-        return self::create($values, $this->data['endpoint'] . '/variables', $this->client);
+        return self::create($values, $this->getLink('manage-variables'), $this->client);
     }
 
 }
