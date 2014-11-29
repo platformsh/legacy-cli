@@ -76,8 +76,16 @@ class CustomTextDescriptor extends TextDescriptor
      */
     protected function getTerminalWidth()
     {
-        $null = strpos(PHP_OS, 'WIN') !== false ? 'NUL' : '/dev/null';
-        $cols = shell_exec('tput cols 2> ' . $null);
+        // Try to determine the number of columns in the terminal, using the
+        // 'tput' command. If the command does not exist, an error will be
+        // printed to STDERR. We cannot redirect the error, as that would
+        // confuse tput, so we check first whether the command exists.
+        $which = strpos(PHP_OS, 'WIN') !== false ? 'where' : 'which';
+        exec("$which tput", $output, $returnVar);
+        if ($returnVar || !$output) {
+            return 80;
+        }
+        $cols = shell_exec('tput cols');
         return $cols ?: 80;
     }
 
