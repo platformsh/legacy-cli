@@ -76,7 +76,8 @@ class CustomTextDescriptor extends TextDescriptor
      */
     protected function getTerminalWidth()
     {
-        $cols = shell_exec('tput cols');
+        $null = strpos(PHP_OS, 'WIN') !== false ? 'NUL' : '/dev/null';
+        $cols = shell_exec('tput cols 2> ' . $null);
         return $cols ?: 80;
     }
 
