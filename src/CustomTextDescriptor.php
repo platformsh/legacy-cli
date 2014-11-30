@@ -78,21 +78,17 @@ class CustomTextDescriptor extends TextDescriptor
     }
 
     /**
+     * @param int $default
      * @return int
      */
-    protected function getTerminalWidth()
+    protected function getTerminalWidth($default = 80)
     {
-        // Try to determine the number of columns in the terminal, using the
-        // 'tput' command. If the command does not exist, an error will be
-        // printed to STDERR. We cannot redirect the error, as that would
-        // confuse tput, so we check first whether the command exists.
-        $which = strpos(PHP_OS, 'WIN') !== false ? 'where' : 'which';
-        exec("$which tput", $output, $returnVar);
-        if ($returnVar || !$output) {
-            return 80;
+        static $dimensions;
+        if (!$dimensions) {
+            $application = new ConsoleApplication();
+            $dimensions = $application->getTerminalDimensions();
         }
-        $cols = shell_exec('tput cols');
-        return $cols ?: 80;
+        return $dimensions[0] ?: $default;
     }
 
     /**
