@@ -49,18 +49,24 @@ class CustomTextDescriptor extends TextDescriptor
                 }
 
                 foreach ($namespace['commands'] as $name) {
-                    $aliases = $description->getCommand($name)->getAliases();
+                    $command = $description->getCommand($name);
+                    $aliases = $command->getAliases();
                     if ($aliases && ApplicationDescription::GLOBAL_NAMESPACE === $namespace['id']) {
                         // If the command has aliases, do not list it in the
                         // 'global' namespace. The aliases will be shown inline
                         // with the full command name.
                         continue;
                     }
+                    // Colour local commands differently from remote ones.
+                    $commandDescription = $command->getDescription();
+                    if (method_exists($command, 'isLocal') && !$command->isLocal()) {
+                        $commandDescription = "<fg=cyan>$commandDescription</fg=cyan>";
+                    }
                     $this->writeText("\n");
                     $this->writeText(sprintf(
                         "  %-${width}s %s",
                         "<info>$name</info>" . $this->formatAliases($aliases),
-                        $description->getCommand($name)->getDescription()
+                        $commandDescription
                       ),
                       $options
                     );

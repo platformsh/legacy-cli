@@ -72,25 +72,12 @@ class PlatformCommand extends Command
     }
 
     /**
-     * Override the base setDescription method to color local commands
-     * differently from remote commands.
-     */
-    public function setDescription($text)
-    {
-        if (!$this->isLocal()) {
-            $text = "<fg=cyan>$text</fg=cyan>";
-        }
-        parent::setDescription($text);
-        return $this;
-    }
-
-    /**
      * Is this command used to work with your local environment or send
      * commands to the Platform remote environment? Defaults to FALSE.
      */
     public function isLocal()
     {
-      return FALSE;
+          return false;
     }
 
     /**
