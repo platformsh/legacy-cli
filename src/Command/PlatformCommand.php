@@ -266,14 +266,10 @@ class PlatformCommand extends Command
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
         $upstream = $gitHelper->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
-            list($remoteName, $potentialEnvironment) = explode('/', $upstream, 2);
+            list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->getEnvironment($potentialEnvironment, $project);
             if ($environment) {
-                // Check that the remote is Platform's.
-                $remoteUrl = $gitHelper->getConfig("remote.$remoteName.url");
-                if (strpos($remoteUrl, 'platform.sh')) {
-                    return $environment;
-                }
+                return $environment;
             }
         }
 
@@ -518,70 +514,50 @@ class PlatformCommand extends Command
     }
 
     /**
-     * @param InputInterface  $input
-     * @param OutputInterface $output
-     *
-     * @return bool
+     * @param string $projectId
+     * @return array
      */
-    protected function selectProject(InputInterface $input, OutputInterface $output)
+    protected function selectProject($projectId = null)
     {
-        // Allow the project to be specified explicitly via --project.
-        $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         if (!empty($projectId)) {
             $project = $this->getProject($projectId);
             if (!$project) {
-                $output->writeln("<error>Specified project not found.</error>");
-                return false;
+                throw new \RuntimeException('Specified project not found: ' . $projectId);
             }
         } else {
-            // Autodetect the project if the user is in a project directory.
             $project = $this->getCurrentProject();
             if (!$project) {
-                $output->writeln("<error>Could not determine the current project.</error>");
-                $output->writeln("<error>Specify it manually using --project or go to a project directory.</error>");
-                return false;
+                throw new \RuntimeException(
+                  "Could not determine the current project."
+                  . "\nSpecify it manually using --project or go to a project directory."
+                );
             }
         }
-
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $output->writeln("Selected project: <info>" . $project['id'] . "</info>");
-        }
-        $this->project = $project;
-        return true;
+        return $project;
     }
 
     /**
-     * @param InputInterface  $input
-     * @param OutputInterface $output
+     * @param string $environmentId
      *
-     * @return bool
+     * @return array
      */
-    protected function selectEnvironment(InputInterface $input, OutputInterface $output)
+    protected function selectEnvironment($environmentId = null)
     {
-        if ($input->hasOption('environment')) {
-            // Allow the environment to be specified explicitly via --environment.
-            $environmentId = $input->getOption('environment');
-            if (!empty($environmentId)) {
-                $environment = $this->getEnvironment($environmentId, $this->project);
-                if (!$environment) {
-                    $output->writeln("<error>Specified environment not found.</error>");
-                    return false;
-                }
-            } else {
-                // Autodetect the environment if the user is in a project directory.
-                $environment = $this->getCurrentEnvironment($this->project);
-                if (!$environment) {
-                    $output->writeln("<error>Could not determine the current environment.</error>");
-                    $output->writeln("<error>Specify it manually using --environment or go to a project directory.</error>");
-                    return false;
-                }
+        if (!empty($environmentId)) {
+            $environment = $this->getEnvironment($environmentId, $this->project);
+            if (!$environment) {
+                throw new \RuntimeException("Specified environment not found: " . $environmentId);
             }
-            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-                $output->writeln("Selected environment: <info>" . $environment['id'] . "</info>");
+        } else {
+            $environment = $this->getCurrentEnvironment($this->project);
+            if (!$environment) {
+                throw new \RuntimeException(
+                  "Could not determine the current environment."
+                  . "\nSpecify it manually using --environment or go to a project directory."
+                );
             }
-            $this->environment = $environment;
         }
-        return true;
+        return $environment;
     }
 
     /**
@@ -592,7 +568,23 @@ class PlatformCommand extends Command
      */
     protected function validateInput(InputInterface $input, OutputInterface $output)
     {
-        return $this->selectProject($input, $output) && $this->selectEnvironment($input, $output);
+        $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
+        try {
+            $this->project = $this->selectProject($projectId);
+            if ($input->hasOption('environment')) {
+                $this->environment = $this->selectEnvironment($input->getOption('environment'));
+            }
+        }
+        catch (\RuntimeException $e) {
+            $output->writeln('<error>' . $e->getMessage() . '</error>');
+            return false;
+        }
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $output->writeln("Selected project: " . $this->project['id']);
+            $environmentId = $this->environment ? $this->environment['id'] : '[none]';
+            $output->writeln("Selected environment: $environmentId");
+        }
+        return true;
     }
 
     /**

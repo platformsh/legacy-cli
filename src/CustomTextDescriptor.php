@@ -6,6 +6,7 @@
 
 namespace CommerceGuys\Platform\Cli;
 
+use CommerceGuys\Platform\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;
@@ -59,7 +60,7 @@ class CustomTextDescriptor extends TextDescriptor
                     }
                     // Colour local commands differently from remote ones.
                     $commandDescription = $command->getDescription();
-                    if (method_exists($command, 'isLocal') && !$command->isLocal()) {
+                    if ($command instanceof PlatformCommand && !$command->isLocal()) {
                         $commandDescription = "<fg=cyan>$commandDescription</fg=cyan>";
                     }
                     $this->writeText("\n");
