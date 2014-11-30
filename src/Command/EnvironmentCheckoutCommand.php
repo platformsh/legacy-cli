@@ -81,6 +81,6 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         }
 
         // Check out the branch.
-        $gitHelper->checkOut($machineName, null, true);
+        return $gitHelper->checkOut($machineName) ? 0 : 1;
     }
 }
