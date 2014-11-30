@@ -523,7 +523,7 @@ class PlatformCommand extends Command
      *
      * @return bool
      */
-    protected function validateInput(InputInterface $input, OutputInterface $output)
+    protected function selectProject(InputInterface $input, OutputInterface $output)
     {
         // Allow the project to be specified explicitly via --project.
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
@@ -543,8 +543,21 @@ class PlatformCommand extends Command
             }
         }
 
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $output->writeln("Selected project: <info>" . $project['id'] . "</info>");
+        }
         $this->project = $project;
+        return true;
+    }
 
+    /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return bool
+     */
+    protected function selectEnvironment(InputInterface $input, OutputInterface $output)
+    {
         if ($input->hasOption('environment')) {
             // Allow the environment to be specified explicitly via --environment.
             $environmentId = $input->getOption('environment');
@@ -563,10 +576,23 @@ class PlatformCommand extends Command
                     return false;
                 }
             }
+            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+                $output->writeln("Selected environment: <info>" . $environment['id'] . "</info>");
+            }
             $this->environment = $environment;
         }
-
         return true;
+    }
+
+    /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return bool
+     */
+    protected function validateInput(InputInterface $input, OutputInterface $output)
+    {
+        return $this->selectProject($input, $output) && $this->selectEnvironment($input, $output);
     }
 
     /**
