@@ -16,7 +16,7 @@ class ProjectBuildCommand extends PlatformCommand
         $this
             ->setName('project:build')
             ->setAliases(array('build'))
-            ->setDescription('Builds the current project')
+            ->setDescription('Build the current project locally')
             ->addOption(
                 'abslinks',
                 'a',

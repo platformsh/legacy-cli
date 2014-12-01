@@ -14,7 +14,7 @@ class ProjectCleanCommand extends PlatformCommand
         $this
             ->setName('project:clean')
             ->setAliases(array('clean'))
-            ->setDescription('Remove project builds')
+            ->setDescription('Remove old project builds')
             ->addOption(
                 'keep',
                 null,

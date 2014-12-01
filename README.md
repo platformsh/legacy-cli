@@ -95,8 +95,8 @@ environment
   environment:synchronize (sync)          Synchronize an environment
   environment:url (url)                   Get the public URL of an environment
 project
-  project:build (build)                   Builds the current project
-  project:clean (clean)                   Remove project builds
+  project:build (build)                   Build the current project locally
+  project:clean (clean)                   Remove old project builds
   project:drush-aliases (drush-aliases)   Find the project's Drush aliases
   project:get (get)                       Clone and build a project locally
   project:init (init)                     Initialize from a plain Git repository
