@@ -62,7 +62,10 @@ class EnvironmentVariableSetCommand extends PlatformCommand
 
         if (!$variable->hasActivity()) {
             $output->writeln(
-              "<comment>The environment must be rebuilt for the variable change to take effect</comment>"
+              "<comment>"
+              . "The remote environment must be rebuilt for the variable change to take effect."
+              . " Use 'git push' with new commit(s) to trigger a rebuild."
+              . "</comment>"
             );
         }
         return 0;
