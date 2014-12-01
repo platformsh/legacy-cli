@@ -24,7 +24,7 @@ class HalResourceTest extends \PHPUnit_Framework_TestCase
         $data = $this->properties + array(
             '_embedded' => array(),
             '_links' => array(
-                '#self' => array(
+                'self' => array(
                   'href' => 'https://example.com/',
                 ),
                 '#operate' => array(
@@ -70,8 +70,8 @@ class HalResourceTest extends \PHPUnit_Framework_TestCase
     public function testGetLink()
     {
         $this->assertNotEmpty($this->resource->getLink());
-        $this->assertNotEmpty($this->resource->getLink('operate'));
-        $this->setExpectedException('\Exception');
+        $this->assertNotEmpty($this->resource->getLink('#operate'));
+        $this->setExpectedException('\InvalidArgumentException');
         $this->resource->getLink('nonexistent');
     }
 
