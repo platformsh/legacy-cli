@@ -114,77 +114,12 @@ class ProjectBuildCommand extends PlatformCommand
      * @param array $settings
      * @param OutputInterface $output
      *
-     * @throws \Exception
+     * @return bool
      */
     public function build($projectRoot, array $settings, OutputInterface $output)
     {
-        $repositoryRoot = $projectRoot . '/repository';
-
-        foreach (LocalBuild::getApplications($repositoryRoot) as $appRoot) {
-            $appConfig = LocalBuild::getAppConfig($appRoot);
-            $appName = false;
-            if (isset($appConfig['name'])) {
-                $appName = $appConfig['name'];
-            }
-            elseif ($appRoot != $repositoryRoot) {
-                $appName = str_replace($repositoryRoot, '', $appRoot);
-            }
-
-            $toolstack = LocalBuild::getToolstack($appRoot, $appConfig);
-            if (!$toolstack) {
-                $output->writeln("<comment>Could not detect toolstack for directory: $appRoot</comment>");
-                continue;
-            }
-
-            $message = "Building application";
-            if ($appName) {
-                $message .= " <info>$appName</info>";
-            }
-            $message .= " using the toolstack <info>" . $toolstack->getKey() . "</info>";
-            $output->writeln($message);
-
-            $toolstack->setOutput($output);
-            $toolstack->prepareBuild($appRoot, $projectRoot, $settings);
-
-            $toolstack->build();
-            $toolstack->install();
-
-            $this->warnAboutHooks($appConfig, $output);
-
-            $message = "Build complete";
-            if ($appName) {
-                $message .= " for <info>$appName</info>";
-            }
-            $output->writeln($message);
-        }
-
+        $builder = new LocalBuild($settings);
+        return $builder->buildProject($projectRoot, $output);
     }
 
-    /**
-     * Warn the user that the CLI will not run build/deploy hooks.
-     *
-     * @param array $appConfig
-     * @param OutputInterface $output
-     *
-     * @return bool
-     */
-    protected function warnAboutHooks(array $appConfig, OutputInterface $output)
-    {
-        if (empty($appConfig['hooks']['build'])) {
-            return false;
-        }
-        $indent = '        ';
-        $output->writeln("<comment>You have defined the following hook(s). Please note that the CLI cannot run them locally.</comment>");
-        foreach (array('build', 'deploy') as $hookType) {
-            if (empty($appConfig['hooks'][$hookType])) {
-                continue;
-            }
-            $output->writeln("    $hookType: |");
-            $hooks = (array) $appConfig['hooks'][$hookType];
-            $asString = implode("\n", array_map('trim', $hooks));
-            $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
-            $output->writeln($withIndent);
-        }
-        return true;
-    }
 }
