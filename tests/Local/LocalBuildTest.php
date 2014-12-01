@@ -53,7 +53,7 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
 
         $builder = new LocalBuild();
         $config = $builder->getAppConfig($fakeAppRoot);
-        $this->assertEquals(array(), $config);
+        $this->assertEquals(array('name' => 'data'), $config);
     }
 
 }

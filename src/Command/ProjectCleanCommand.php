@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Local\LocalBuild;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,8 +20,15 @@ class ProjectCleanCommand extends PlatformCommand
                 'keep',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'Number of builds to keep.',
+                'The maximum number of builds to keep',
                 5
+            )
+            ->addOption(
+                'ttl',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'The maximum age of builds, in seconds',
+                86400
             );
     }
 
@@ -36,46 +44,24 @@ class ProjectCleanCommand extends PlatformCommand
             return;
         }
 
-        $buildsDir = $projectRoot . '/builds';
+        $builder = new LocalBuild(array());
+        $result = $builder->cleanBuilds($projectRoot, $input->getOption('ttl'), $input->getOption('keep'), $output);
 
-        // Collect directories.
-        $builds = array();
-        $handle = opendir($buildsDir);
-        while ($entry = readdir($handle)) {
-            if (strpos($entry, '.') !== 0) {
-                $builds[] = $entry;
+        if (!$result[0] && !$result[1]) {
+            $output->writeln("There are no builds to delete");
+        }
+        else {
+            if ($result[0]) {
+                $output->writeln("Deleted <info>{$result[0]}</info> build(s)");
+            }
+            if ($result[1]) {
+                $output->writeln("Kept <info>{$result[1]}</info> build(s)");
             }
         }
 
-        $count = count($builds);
-
-        if (!$count) {
-            $output->writeln("There are no builds to delete.");
-            return;
-        }
-
-        // Remove old builds.
-        sort($builds);
-        $numDeleted = 0;
-        $numKept = 0;
-        $keep = (int) $input->getOption('keep');
-        foreach ($builds as $build) {
-            if ($count - $numDeleted > $keep) {
-                $output->writeln("Deleting: $build");
-                $this->getHelper('fs')->rmdir($projectRoot . '/builds/' . $build);
-                $numDeleted++;
-            }
-            else {
-                $numKept++;
-            }
-        }
-
-        if ($numDeleted) {
-            $output->writeln("Deleted <info>$numDeleted</info> build(s).");
-        }
-
-        if ($numKept) {
-            $output->writeln("Kept <info>$numKept</info> build(s).");
+        $archivesResult = $builder->cleanArchives($projectRoot);
+        if ($archivesResult[0]) {
+            $output->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
         }
     }
 

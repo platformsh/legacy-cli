@@ -35,11 +35,12 @@ interface ToolstackInterface
      *
      * This function should be isometric and not affect the file system.
      *
+     * @param string $buildDir
      * @param string $appRoot
      * @param string $projectRoot
      * @param array $settings
      */
-    public function prepareBuild($appRoot, $projectRoot, array $settings);
+    public function prepare($buildDir, $appRoot, $projectRoot, array $settings);
 
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and

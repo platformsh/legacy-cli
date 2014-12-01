@@ -41,6 +41,8 @@ abstract class UrlCommandBase extends PlatformCommand
             return;
         }
 
+        $shellHelper = $this->getHelper('shell');
+
         if ($browser === '0') {
             // The user has requested not to use a browser.
             $browser = false;
@@ -49,14 +51,14 @@ abstract class UrlCommandBase extends PlatformCommand
             // Find a default browser to use.
             $browser = $this->getDefaultBrowser();
         }
-        elseif (!$this->browserExists($browser)) {
+        elseif (!$shellHelper->commandExists($browser)) {
             // The user has specified a browser, but it can't be found.
             $output->writeln("<error>Browser not found: $browser</error>");
             $browser = false;
         }
 
         if ($browser) {
-            $opened = $this->getHelper('shell')->execute(array($browser, $url));
+            $opened = $shellHelper->execute(array($browser, $url));
             if ($opened) {
                 $output->writeln("Opened: $url");
                 return;
@@ -64,22 +66,6 @@ abstract class UrlCommandBase extends PlatformCommand
         }
 
         $output->writeln($url);
-    }
-
-
-    /**
-     * @param string $browser
-     * @return bool
-     */
-    protected function browserExists($browser)
-    {
-        if (strpos(PHP_OS, 'WIN') !== false) {
-            $args = array('where', $browser);
-        }
-        else {
-            $args = array('command', '-v', $browser);
-        }
-        return (bool) $this->getHelper('shell')->execute($args);
     }
 
     /**
@@ -92,7 +78,7 @@ abstract class UrlCommandBase extends PlatformCommand
         $potential = array('xdg-open', 'open', 'start');
         $shellHelper = $this->getHelper('shell');
         foreach ($potential as $browser) {
-            if ($shellHelper->execute(array('which', $browser))) {
+            if ($shellHelper->commandExists($browser)) {
                 return $browser;
             }
         }

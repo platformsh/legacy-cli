@@ -21,7 +21,17 @@ class ProjectBuildCommand extends PlatformCommand
                 'abslinks',
                 'a',
                 InputOption::VALUE_NONE,
-                'Use absolute links.'
+                'Use absolute links'
+            )->addOption(
+                'no-clean',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not remove old builds'
+            )->addOption(
+                'no-archive',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not create or use a build archive'
             );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/repository')) {
@@ -89,14 +99,17 @@ class ProjectBuildCommand extends PlatformCommand
         $settingsMap = array(
           'absoluteLinks' => 'abslinks',
           'drushWorkingCopy' => 'working-copy',
+          'noArchive' => 'no-archive',
           'noCache' => 'no-cache',
+          'noClean' => 'no-clean',
         );
         foreach ($settingsMap as $setting => $option) {
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
         }
 
         try {
-            $this->build($projectRoot, $settings, $output);
+            $builder = new LocalBuild($settings);
+            $success = $builder->buildProject($projectRoot, $output);
         } catch (\Exception $e) {
             $output->writeln("<error>The build failed with an error</error>");
             $formattedMessage = $this->getHelper('formatter')->formatBlock($e->getMessage(), 'error');
@@ -104,22 +117,7 @@ class ProjectBuildCommand extends PlatformCommand
             return 1;
         }
 
-        return 0;
-    }
-
-    /**
-     * Build the project.
-     *
-     * @param string $projectRoot The path to the project to be built.
-     * @param array $settings
-     * @param OutputInterface $output
-     *
-     * @return bool
-     */
-    public function build($projectRoot, array $settings, OutputInterface $output)
-    {
-        $builder = new LocalBuild($settings);
-        return $builder->buildProject($projectRoot, $output);
+        return $success ? 0 : 2;
     }
 
 }
