@@ -50,7 +50,10 @@ class ArgvHelper extends Helper
         // If the string contains '=', expand it into the option and value.
         if (strpos($arg, '=')) {
             list($option, $value) = explode('=', $arg, 2);
-            return $argv->escapeToken($option) . '=' . $argv->escapeToken($value);
+            return $option . '=' . $argv->escapeToken($value);
+        }
+        if (strpos($arg, '-') === 0) {
+            return $arg;
         }
         return $argv->escapeToken($arg);
     }
