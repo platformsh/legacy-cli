@@ -88,7 +88,6 @@ class Application extends ParentApplication {
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\PlatformLogoutCommand();
         $commands[] = new Command\PlatformLoginCommand();
-        $commands[] = new Command\DrushCommand();
         $commands[] = new Command\ProjectListCommand();
         $commands[] = new Command\DomainAddCommand();
         $commands[] = new Command\DomainDeleteCommand();
@@ -99,6 +98,7 @@ class Application extends ParentApplication {
         $commands[] = new Command\EnvironmentCheckoutCommand();
         $commands[] = new Command\EnvironmentDeactivateCommand();
         $commands[] = new Command\EnvironmentDeleteCommand();
+        $commands[] = new Command\EnvironmentDrushCommand();
         $commands[] = new Command\EnvironmentListCommand();
         $commands[] = new Command\EnvironmentMergeCommand();
         $commands[] = new Command\EnvironmentRelationshipsCommand();

@@ -6,6 +6,7 @@
 
 namespace CommerceGuys\Platform\Cli;
 
+use CommerceGuys\Platform\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;
@@ -49,18 +50,24 @@ class CustomTextDescriptor extends TextDescriptor
                 }
 
                 foreach ($namespace['commands'] as $name) {
-                    $aliases = $description->getCommand($name)->getAliases();
+                    $command = $description->getCommand($name);
+                    $aliases = $command->getAliases();
                     if ($aliases && ApplicationDescription::GLOBAL_NAMESPACE === $namespace['id']) {
                         // If the command has aliases, do not list it in the
                         // 'global' namespace. The aliases will be shown inline
                         // with the full command name.
                         continue;
                     }
+                    // Colour local commands differently from remote ones.
+                    $commandDescription = $command->getDescription();
+                    if ($command instanceof PlatformCommand && !$command->isLocal()) {
+                        $commandDescription = "<fg=cyan>$commandDescription</fg=cyan>";
+                    }
                     $this->writeText("\n");
                     $this->writeText(sprintf(
                         "  %-${width}s %s",
                         "<info>$name</info>" . $this->formatAliases($aliases),
-                        $description->getCommand($name)->getDescription()
+                        $commandDescription
                       ),
                       $options
                     );
@@ -72,12 +79,17 @@ class CustomTextDescriptor extends TextDescriptor
     }
 
     /**
+     * @param int $default
      * @return int
      */
-    protected function getTerminalWidth()
+    protected function getTerminalWidth($default = 80)
     {
-        $cols = shell_exec('tput cols');
-        return $cols ?: 80;
+        static $dimensions;
+        if (!$dimensions) {
+            $application = new ConsoleApplication();
+            $dimensions = $application->getTerminalDimensions();
+        }
+        return $dimensions[0] ?: $default;
     }
 
     /**

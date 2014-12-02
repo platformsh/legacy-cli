@@ -16,7 +16,7 @@ class ProjectBuildCommand extends PlatformCommand
         $this
             ->setName('project:build')
             ->setAliases(array('build'))
-            ->setDescription('Builds the current project')
+            ->setDescription('Build the current project locally')
             ->addOption(
                 'abslinks',
                 'a',
@@ -170,11 +170,11 @@ class ProjectBuildCommand extends PlatformCommand
      */
     protected function warnAboutHooks(array $appConfig, OutputInterface $output)
     {
-        if (empty($appConfig['hooks'])) {
+        if (empty($appConfig['hooks']['build'])) {
             return false;
         }
         $indent = '        ';
-        $output->writeln("<comment>You have defined the following hook(s). The CLI cannot run them locally.</comment>");
+        $output->writeln("<comment>You have defined the following hook(s). Please note that the CLI cannot run them locally.</comment>");
         foreach (array('build', 'deploy') as $hookType) {
             if (empty($appConfig['hooks'][$hookType])) {
                 continue;

@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 
-class EnvironmentCheckoutCommand extends EnvironmentCommand
+class EnvironmentCheckoutCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -81,6 +81,6 @@ class EnvironmentCheckoutCommand extends EnvironmentCommand
         }
 
         // Check out the branch.
-        $gitHelper->checkOut($machineName, null, true);
+        return $gitHelper->checkOut($machineName) ? 0 : 1;
     }
 }

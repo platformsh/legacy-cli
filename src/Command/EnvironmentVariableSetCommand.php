@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
-class EnvironmentVariableSetCommand extends EnvironmentCommand
+class EnvironmentVariableSetCommand extends PlatformCommand
 {
     /**
      * {@inheritdoc}
@@ -62,7 +62,10 @@ class EnvironmentVariableSetCommand extends EnvironmentCommand
 
         if (!$variable->hasActivity()) {
             $output->writeln(
-              "<comment>The environment must be rebuilt for the variable change to take effect</comment>"
+              "<comment>"
+              . "The remote environment must be rebuilt for the variable change to take effect."
+              . " Use 'git push' with new commit(s) to trigger a rebuild."
+              . "</comment>"
             );
         }
         return 0;
