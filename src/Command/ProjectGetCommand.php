@@ -3,7 +3,6 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Local\LocalProject;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -173,13 +172,21 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         // Launch the first build.
-        $application = $this->getApplication();
-        $buildCommand = $application->find('build');
-        chdir($projectRoot);
-        $buildInput = new ArrayInput(array(
-            'command' => 'project:build',
-          ));
-        return $buildCommand->run($buildInput, $output);
+        /** @var ProjectBuildCommand $buildCommand */
+        $buildCommand = $this->getApplication()->find('build');
+        $buildSettings = array(
+            'environmentId' => $environment,
+        );
+        try {
+            $buildCommand->build($projectRoot, $buildSettings, $output);
+        }
+        catch (\Exception $e) {
+            $output->writeln("<comment>The build failed with an error</comment>");
+            $formattedMessage = $this->getHelper('formatter')->formatBlock($e->getMessage(), 'comment');
+            $output->writeln($formattedMessage);
+        }
+
+        return 0;
     }
 
 }
