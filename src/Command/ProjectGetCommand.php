@@ -69,6 +69,12 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln("<error>The project directory '$directoryName' already exists.</error>");
             return 1;
         }
+        if ($projectRoot = $this->getProjectRoot()) {
+            if (strpos(realpath(dirname($directoryName)), $projectRoot) === 0) {
+                $output->writeln("<error>A project cannot be cloned inside another project.</error>");
+                return 1;
+            }
+        }
 
         $environments = $this->getEnvironments($project, true);
 
