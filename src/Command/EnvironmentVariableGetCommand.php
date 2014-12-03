@@ -22,9 +22,8 @@ class EnvironmentVariableGetCommand extends PlatformCommand
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only')
             ->addOption('ssh', null, InputOption::VALUE_NONE, 'Use SSH to get the currently active variables')
-            ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
-            ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
             ->setDescription('Get a variable for an environment');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

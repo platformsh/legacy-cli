@@ -21,9 +21,8 @@ class EnvironmentVariableSetCommand extends PlatformCommand
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
-            ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
-            ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
             ->setDescription('Set a variable for an environment');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

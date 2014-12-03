@@ -21,11 +21,9 @@ class EnvironmentSshCommand extends PlatformCommand
             ->setName('environment:ssh')
             ->setAliases(array('ssh'))
             ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
-            ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
-            ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
             ->addOption('pipe', NULL, InputOption::VALUE_NONE, "Output the SSH URL only.")
             ->setDescription('SSH to the current environment');
-
+        $this->addProjectOption()->addEnvironmentOption();
         $this->ignoreValidationErrors();
     }
 

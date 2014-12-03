@@ -3,7 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
+
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentDeactivateCommand extends EnvironmentCommand
@@ -13,19 +13,8 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:deactivate')
-            ->setDescription('Deactivate an environment')
-            ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The environment ID'
-            );
+            ->setDescription('Deactivate an environment');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

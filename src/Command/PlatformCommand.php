@@ -12,6 +12,7 @@ use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Yaml\Parser;
@@ -511,6 +512,26 @@ abstract class PlatformCommand extends Command
      */
     protected function sanitizeEnvironmentId($proposed) {
         return substr(preg_replace('/[^a-z0-9-]+/i', '', strtolower($proposed)), 0, 32);
+    }
+
+    /**
+     * Add the --project option.
+     *
+     * @return self
+     */
+    protected function addProjectOption()
+    {
+        return $this->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID');
+    }
+
+    /**
+     * Add the --environment option.
+     *
+     * @return self
+     */
+    protected function addEnvironmentOption()
+    {
+        return $this->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID');
     }
 
     /**

@@ -26,12 +26,6 @@ class EnvironmentListCommand extends EnvironmentCommand
             ->setAliases(array('environments'))
             ->setDescription('Get a list of all environments')
             ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
                 'pipe',
                 null,
                 InputOption::VALUE_NONE,
@@ -51,6 +45,7 @@ class EnvironmentListCommand extends EnvironmentCommand
                 'Whether to refresh the list.',
                 1
             );
+        $this->addProjectOption();
     }
 
     /**

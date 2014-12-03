@@ -23,18 +23,6 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 'The name of the new environment. For example: "Sprint 2"'
             )
             ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The parent environment ID'
-            )
-            ->addOption(
                 'force',
                 null,
                 InputOption::VALUE_NONE,
@@ -46,6 +34,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 InputOption::VALUE_NONE,
                 "Build the new environment locally"
             );
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

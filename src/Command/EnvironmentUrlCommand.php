@@ -4,7 +4,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
+
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentUrlCommand extends UrlCommandBase
@@ -21,19 +21,8 @@ class EnvironmentUrlCommand extends UrlCommandBase
                 'path',
                 InputArgument::OPTIONAL,
                 'A path to append to the URL.'
-            )
-            ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The environment ID'
             );
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -3,7 +3,6 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMergeCommand extends EnvironmentCommand
@@ -14,19 +13,8 @@ class EnvironmentMergeCommand extends EnvironmentCommand
         $this
             ->setName('environment:merge')
             ->setAliases(array('merge'))
-            ->setDescription('Merge an environment')
-            ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The environment ID'
-            );
+            ->setDescription('Merge an environment');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
