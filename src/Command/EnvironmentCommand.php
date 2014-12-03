@@ -19,8 +19,21 @@ class EnvironmentCommand extends PlatformCommand
         if (!$data) {
             return false;
         }
-        $environment = new Environment($data);
-        return $environment->operationAllowed($operation);
+        $wrapper = new Environment($data);
+        $result = $wrapper->operationAllowed($operation);
+
+        // Refresh the environment to work around caching issues.
+        // @todo remove this when HTTP caching is enabled
+        if (!$result && $environment === null) {
+            $data = $this->getEnvironment($wrapper->id(), null, true);
+            if (!$data) {
+                throw new \RuntimeException("Environment not found: " . $wrapper->id());
+            }
+            $wrapper = new Environment($data);
+            return $wrapper->operationAllowed($operation);
+        }
+
+        return $result;
     }
 
 }
