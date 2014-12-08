@@ -411,11 +411,7 @@ abstract class PlatformCommand extends Command
 
             // Recreate the aliases if the list of environments has changed.
             if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
-                if ($projectRoot = $this->getProjectRoot()) {
-                    $drushHelper = $this->getHelper('drush');
-                    $drushHelper->setHomeDir($this->getHelper('fs')->getHomeDirectory());
-                    $drushHelper->createAliases($project, $projectRoot, $environments);
-                }
+                $this->updateDrushAliases($project, $environments);
             }
 
             $this->config['environments'][$projectId] = $environments;
@@ -452,8 +448,30 @@ abstract class PlatformCommand extends Command
             $environment = $environment->getData();
             $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
             $this->config['environments'][$projectId][$id] = $environment;
+
+            // Recreate the aliases, assuming the list of environments has changed.
+            $this->updateDrushAliases($project, $this->config['environments'][$projectId]);
         }
         return $this->config['environments'][$projectId][$id];
+    }
+
+    /**
+     * @param array $project
+     * @param array $environments
+     */
+    protected function updateDrushAliases(array $project, array $environments) {
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot) {
+            return;
+        }
+        // Double-check that the passed project is the current one.
+        $currentProject = $this->getCurrentProject();
+        if (!$currentProject || $currentProject['id'] != $project['id']) {
+            return;
+        }
+        $drushHelper = $this->getHelper('drush');
+        $drushHelper->setHomeDir($this->getHelper('fs')->getHomeDirectory());
+        $drushHelper->createAliases($project, $projectRoot, $environments);
     }
 
     /**
