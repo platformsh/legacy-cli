@@ -393,7 +393,9 @@ abstract class PlatformCommand extends Command
         $projectId = $project['id'];
         $this->loadConfig();
         if (empty($this->config['environments'][$projectId]) || $refresh) {
-            $this->config['environments'][$projectId] = array();
+            if (!isset($this->config['environments'][$projectId])) {
+                $this->config['environments'][$projectId] = array();
+            }
 
             // Fetch and assemble a list of environments.
             $urlParts = parse_url($project['endpoint']);
