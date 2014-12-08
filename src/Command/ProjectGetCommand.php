@@ -26,13 +26,13 @@ class ProjectGetCommand extends PlatformCommand
             ->addArgument(
                 'directory-name',
                 InputArgument::OPTIONAL,
-                'The directory name. Defaults to the project ID if not provided'
+                'The directory name. Defaults to the project ID'
             )
             ->addOption(
                 'environment',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                "The environment ID to clone"
+                "The environment ID to clone. Defaults to 'master'"
             )
             ->addOption(
                 'no-build',
@@ -52,8 +52,13 @@ class ProjectGetCommand extends PlatformCommand
     {
         $projectId = $input->getArgument('id');
         if (empty($projectId)) {
-            $output->writeln("<error>You must specify a project.</error>");
-            return 1;
+            if ($input->isInteractive() && ($projects = $this->getProjects(true))) {
+                $projectId = $this->offerProjectChoice($projects, $input, $output);
+            }
+            else {
+                $output->writeln("<error>You must specify a project.</error>");
+                return 1;
+            }
         }
         $project = $this->getProject($projectId);
         if (!$project) {
@@ -86,18 +91,7 @@ class ProjectGetCommand extends PlatformCommand
             $environment = $environmentOption;
         }
         elseif (count($environments) > 1 && $input->isInteractive()) {
-            // Create a numerically indexed list, starting with "master".
-            $environmentList = array($environments['master']['id']);
-            foreach ($environments as $environment) {
-                if ($environment['id'] != 'master' && (!array_key_exists('#activate', $environment['_links']) || $input->getOption('include-inactive'))) {
-                    $environmentList[] = $environment['id'];
-                }
-            }
-            $chooseEnvironmentText = "Enter a number to choose which environment to check out:";
-            $helper = $this->getHelper('question');
-            $question = new ChoiceQuestion($chooseEnvironmentText, $environmentList);
-            $question->setMaxAttempts(5);
-            $environment = $helper->ask($input, $output, $question);
+            $environment = $this->offerEnvironmentChoice($environments, $input, $output);
         }
         else {
             $environment = 'master';
@@ -187,6 +181,61 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         return 0;
+    }
+
+    /**
+     * @param array $environments
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return string
+     *   The chosen environment ID.
+     */
+    protected function offerEnvironmentChoice(array $environments, InputInterface $input, OutputInterface $output)
+    {
+        // Create a numerically indexed list, starting with "master".
+        $includeInactive = $input->hasOption('include-inactive') && $input->getOption('include-inactive');
+        $default = 'master';
+        $environmentList = array($default);
+        foreach ($environments as $environment) {
+            if ($environment['id'] != $default && (!array_key_exists('#activate', $environment['_links']) || $includeInactive)) {
+                $item =  $environment['id'];
+                if ($environment['id'] != $environment['title']) {
+                    $item .= ' (' . $environment['title'] . ')';
+                }
+                $environmentList[] = $item;
+            }
+        }
+        $chooseEnvironmentText = "Enter a number to choose which environment to check out:";
+        $helper = $this->getHelper('question');
+        $question = new ChoiceQuestion($chooseEnvironmentText, $environmentList, 0);
+        $question->setMaxAttempts(5);
+        $choice = $helper->ask($input, $output, $question);
+        list($environmentId,) = explode(' ', $choice);
+        return $environmentId;
+    }
+
+    /**
+     * @param array $projects
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return string
+     *   The chosen project ID.
+     */
+    protected function offerProjectChoice(array $projects, InputInterface $input, OutputInterface $output)
+    {
+        $projectList = array();
+        foreach ($projects as $project) {
+            $projectList[] = $project['id'] . ' (' . $project['name'] . ')';
+        }
+        $chooseEnvironmentText = "Enter a number to choose which project to clone:";
+        $helper = $this->getHelper('question');
+        $question = new ChoiceQuestion($chooseEnvironmentText, $projectList);
+        $question->setMaxAttempts(5);
+        $choice = $helper->ask($input, $output, $question);
+        list($projectId,) = explode(' ', $choice);
+        return $projectId;
     }
 
 }
