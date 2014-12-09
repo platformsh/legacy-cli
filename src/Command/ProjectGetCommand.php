@@ -7,7 +7,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class ProjectGetCommand extends PlatformCommand
 {
@@ -193,26 +192,17 @@ class ProjectGetCommand extends PlatformCommand
      */
     protected function offerEnvironmentChoice(array $environments, InputInterface $input, OutputInterface $output)
     {
-        // Create a numerically indexed list, starting with "master".
         $includeInactive = $input->hasOption('include-inactive') && $input->getOption('include-inactive');
+        // Create a list starting with "master".
         $default = 'master';
-        $environmentList = array($default);
-        foreach ($environments as $environment) {
-            if ($environment['id'] != $default && (!array_key_exists('#activate', $environment['_links']) || $includeInactive)) {
-                $item =  $environment['id'];
-                if ($environment['id'] != $environment['title']) {
-                    $item .= ' (' . $environment['title'] . ')';
-                }
-                $environmentList[] = $item;
+        $environmentList = array($default => $environments[$default]['title']);
+        foreach ($environments as $id => $environment) {
+            if ($id != $default && (!array_key_exists('#activate', $environment['_links']) || $includeInactive)) {
+                $environmentList[$id] = $environment['title'];
             }
         }
-        $chooseEnvironmentText = "Enter a number to choose which environment to check out:";
-        $helper = $this->getHelper('question');
-        $question = new ChoiceQuestion($chooseEnvironmentText, $environmentList, 0);
-        $question->setMaxAttempts(5);
-        $choice = $helper->ask($input, $output, $question);
-        list($environmentId,) = explode(' ', $choice);
-        return $environmentId;
+        $text = "Enter a number to choose which environment to check out:";
+        return $this->getHelper('question')->choose($environmentList, $text, $input, $output, $default);
     }
 
     /**
@@ -227,15 +217,10 @@ class ProjectGetCommand extends PlatformCommand
     {
         $projectList = array();
         foreach ($projects as $project) {
-            $projectList[] = $project['id'] . ' (' . $project['name'] . ')';
+            $projectList[$project['id']] = $project['id'] . ' (' . $project['name'] . ')';
         }
-        $chooseEnvironmentText = "Enter a number to choose which project to clone:";
-        $helper = $this->getHelper('question');
-        $question = new ChoiceQuestion($chooseEnvironmentText, $projectList);
-        $question->setMaxAttempts(5);
-        $choice = $helper->ask($input, $output, $question);
-        list($projectId,) = explode(' ', $choice);
-        return $projectId;
+        $text = "Enter a number to choose which project to clone:";
+        return $this->getHelper('question')->choose($projectList, $text, $input, $output);
     }
 
 }

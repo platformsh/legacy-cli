@@ -5,7 +5,6 @@ namespace CommerceGuys\Platform\Cli\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class EnvironmentCheckoutCommand extends PlatformCommand
 {
@@ -35,14 +34,14 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             $environments = $this->getEnvironments($project);
             $currentEnvironment = $this->getCurrentEnvironment($project);
             if ($currentEnvironment) {
-                $output->writeln("The current environment is <info>{$currentEnvironment['id']}</info>.");
+                $output->writeln("The current environment is <info>{$currentEnvironment['title']}</info>.");
             }
             $environmentList = array();
-            foreach ($environments as $environment) {
-                if ($currentEnvironment && $environment['id'] == $currentEnvironment['id']) {
+            foreach ($environments as $id => $environment) {
+                if ($currentEnvironment && $id == $currentEnvironment['id']) {
                     continue;
                 }
-                $environmentList[] = $environment['id'];
+                $environmentList[$id] = $environment['title'];
             }
             if (!count($environmentList)) {
                 $output->writeln("Use <info>platform branch</info> to create an environment.");
@@ -50,9 +49,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             }
             $chooseEnvironmentText = "Enter a number to check out another environment:";
             $helper = $this->getHelper('question');
-            $question = new ChoiceQuestion($chooseEnvironmentText, $environmentList);
-            $question->setMaxAttempts(5);
-            $machineName = $helper->ask($input, $output, $question);
+            $machineName = $helper->choose($environmentList, $chooseEnvironmentText, $input, $output);
         }
         elseif (empty($branch)) {
             $output->writeln("<error>No branch specified.</error>");
