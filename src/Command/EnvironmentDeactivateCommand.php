@@ -30,7 +30,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         }
 
         if (!$this->operationAllowed('deactivate')) {
-            if (empty($this->environment['_links']['public-url'])) {
+            if ($this->environment['status'] == 'inactive') {
                 $output->writeln("The environment <info>$environmentId</info> is already inactive.");
                 return 0;
             }

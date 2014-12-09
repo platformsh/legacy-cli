@@ -25,7 +25,7 @@ class EnvironmentActivateCommand extends EnvironmentCommand
         $environmentId = $this->environment['id'];
 
         if (!$this->operationAllowed('activate')) {
-            if (!empty($this->environment['_links']['public-url'])) {
+            if ($this->environment['status'] == 'active') {
                 $output->writeln("The environment <info>$environmentId</info> is already active.");
                 return 0;
             }
