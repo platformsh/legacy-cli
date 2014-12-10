@@ -28,24 +28,12 @@ class WebCommand extends UrlCommandBase
             $this->validateInput($input, new NullOutput());
         }
 
-        $url = 'https://platform.sh';
+        $url = 'https://marketplace.commerceguys.com/platform/login';
         if ($this->project) {
             $url = $this->project['uri'];
             if ($this->environment) {
                 $url .= '/environments/' . $this->environment['id'];
             }
-        }
-        elseif ($this->config) {
-            // If no project is selected, find the appropriate Web UI hostname
-            // for the user's first project.
-            // @todo update this when there is a unified UI domain
-            $projects = $this->getProjects();
-            $project = reset($projects);
-            $parsed = parse_url($project['uri']);
-            if (!$parsed) {
-                throw new \RuntimeException("Failed to parse project URL");
-            }
-            $url = 'https://' . $parsed['host'];
         }
 
         $this->openUrl($url, $input, $output);
