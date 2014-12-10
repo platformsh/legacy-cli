@@ -118,6 +118,7 @@ class Application extends ParentApplication {
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();
         $commands[] = new Command\WelcomeCommand();
+        $commands[] = new Command\WebCommand();
         return $commands;
     }
 

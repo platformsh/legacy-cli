@@ -78,6 +78,7 @@ Available commands:
   list                                    Lists commands
   login                                   Log in to Platform.sh
   logout                                  Log out of Platform.sh
+  web                                     Open the Platform.sh Web UI
 domain
   domain:add                              Add a new domain to the project
   domain:delete                           Delete a domain from the project
