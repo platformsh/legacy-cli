@@ -12,12 +12,13 @@ use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
 
-class PlatformCommand extends Command
+abstract class PlatformCommand extends Command
 {
     protected $config;
     protected $oauth2Plugin;
@@ -392,7 +393,9 @@ class PlatformCommand extends Command
         $projectId = $project['id'];
         $this->loadConfig();
         if (empty($this->config['environments'][$projectId]) || $refresh) {
-            $this->config['environments'][$projectId] = array();
+            if (!isset($this->config['environments'][$projectId])) {
+                $this->config['environments'][$projectId] = array();
+            }
 
             // Fetch and assemble a list of environments.
             $urlParts = parse_url($project['endpoint']);
@@ -408,11 +411,7 @@ class PlatformCommand extends Command
 
             // Recreate the aliases if the list of environments has changed.
             if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
-                if ($projectRoot = $this->getProjectRoot()) {
-                    $drushHelper = $this->getHelper('drush');
-                    $drushHelper->setHomeDir($this->getHelper('fs')->getHomeDirectory());
-                    $drushHelper->createAliases($project, $projectRoot, $environments);
-                }
+                $this->updateDrushAliases($project, $environments);
             }
 
             $this->config['environments'][$projectId] = $environments;
@@ -449,8 +448,30 @@ class PlatformCommand extends Command
             $environment = $environment->getData();
             $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
             $this->config['environments'][$projectId][$id] = $environment;
+
+            // Recreate the aliases, assuming the list of environments has changed.
+            $this->updateDrushAliases($project, $this->config['environments'][$projectId]);
         }
         return $this->config['environments'][$projectId][$id];
+    }
+
+    /**
+     * @param array $project
+     * @param array $environments
+     */
+    protected function updateDrushAliases(array $project, array $environments) {
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot) {
+            return;
+        }
+        // Double-check that the passed project is the current one.
+        $currentProject = $this->getCurrentProject();
+        if (!$currentProject || $currentProject['id'] != $project['id']) {
+            return;
+        }
+        $drushHelper = $this->getHelper('drush');
+        $drushHelper->setHomeDir($this->getHelper('fs')->getHomeDirectory());
+        $drushHelper->createAliases($project, $projectRoot, $environments);
     }
 
     /**
@@ -511,6 +532,26 @@ class PlatformCommand extends Command
      */
     protected function sanitizeEnvironmentId($proposed) {
         return substr(preg_replace('/[^a-z0-9-]+/i', '', strtolower($proposed)), 0, 32);
+    }
+
+    /**
+     * Add the --project option.
+     *
+     * @return self
+     */
+    protected function addProjectOption()
+    {
+        return $this->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID');
+    }
+
+    /**
+     * Add the --environment option.
+     *
+     * @return self
+     */
+    protected function addEnvironmentOption()
+    {
+        return $this->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID');
     }
 
     /**

@@ -23,18 +23,6 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 'The name of the new environment. For example: "Sprint 2"'
             )
             ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The parent environment ID'
-            )
-            ->addOption(
                 'force',
                 null,
                 InputOption::VALUE_NONE,
@@ -46,6 +34,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 InputOption::VALUE_NONE,
                 "Build the new environment locally"
             );
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -92,7 +81,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         }
 
         if (!$this->operationAllowed('branch')) {
-            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be branched.</error>");
+            $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be branched.");
             return 1;
         }
 

@@ -21,19 +21,8 @@ class EnvironmentDrushCommand extends PlatformCommand
             ->setAliases(array('drush'))
             ->setDescription('Run a drush command on the remote environment')
             ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status')
-            ->addOption('ssh', null, InputOption::VALUE_NONE, 'Connect via SSH instead of a site alias')
-            ->addOption(
-              'project',
-              null,
-              InputOption::VALUE_OPTIONAL,
-              'The project ID'
-            )
-            ->addOption(
-              'environment',
-              null,
-              InputOption::VALUE_OPTIONAL,
-              'The environment ID'
-            );
+            ->addOption('ssh', null, InputOption::VALUE_NONE, 'Connect via SSH instead of a site alias');
+        $this->addProjectOption()->addEnvironmentOption();
         $this->ignoreValidationErrors();
     }
 

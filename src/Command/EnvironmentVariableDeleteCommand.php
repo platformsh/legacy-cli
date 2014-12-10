@@ -6,7 +6,7 @@ use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Input\InputOption;
+
 
 class EnvironmentVariableDeleteCommand extends PlatformCommand
 {
@@ -18,9 +18,8 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
         $this
           ->setName('variable:delete')
           ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
-          ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
-          ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
           ->setDescription('Delete a variable from an environment');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

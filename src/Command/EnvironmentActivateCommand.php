@@ -3,7 +3,6 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentActivateCommand extends EnvironmentCommand
@@ -13,19 +12,8 @@ class EnvironmentActivateCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:activate')
-            ->setDescription('Activate an environment')
-            ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The environment ID'
-            );
+            ->setDescription('Activate an environment');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -41,7 +29,9 @@ class EnvironmentActivateCommand extends EnvironmentCommand
                 $output->writeln("The environment <info>$environmentId</info> is already active.");
                 return 0;
             }
-            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be activated.</error>");
+            $output->writeln(
+              "Operation not permitted: The environment <error>$environmentId</error> can't be activated."
+            );
             return 1;
         }
 

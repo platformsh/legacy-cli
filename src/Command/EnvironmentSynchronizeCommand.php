@@ -4,7 +4,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
+
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSynchronizeCommand extends EnvironmentCommand
@@ -21,19 +21,8 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
                 InputArgument::IS_ARRAY,
                 'What to synchronize: code, data or both',
                 null
-            )
-            ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The environment ID'
             );
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -45,7 +34,7 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         $environmentId = $this->environment['id'];
 
         if (!$this->operationAllowed('synchronize')) {
-            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be synchronized.</error>");
+            $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be synchronized.");
             return 1;
         }
 

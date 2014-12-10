@@ -88,6 +88,7 @@ class Application extends ParentApplication {
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\PlatformLogoutCommand();
         $commands[] = new Command\PlatformLoginCommand();
+        $commands[] = new Command\DocsCommand();
         $commands[] = new Command\ProjectListCommand();
         $commands[] = new Command\DomainAddCommand();
         $commands[] = new Command\DomainDeleteCommand();
@@ -117,6 +118,7 @@ class Application extends ParentApplication {
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();
         $commands[] = new Command\WelcomeCommand();
+        $commands[] = new Command\WebCommand();
         return $commands;
     }
 

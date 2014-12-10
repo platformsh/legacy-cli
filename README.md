@@ -19,7 +19,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 * Make sure Composer's `vendor/bin` directory is in your system's PATH.
 
-  In Linux or OS X, add this line to your shell configuration file<sup>*</sup>:
+  In Linux or OS X, add this line to your [shell configuration file](#shell-configuration-file):
 
         export PATH="$PATH:~/.composer/vendor/bin"
 
@@ -29,14 +29,15 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
   Start a new shell before continuing.
 
-* Optionally, enable auto-completion. Add these lines to your shell
-  configuration file:
+* Optionally, enable auto-completion. Add these lines to your [shell
+  configuration file](#shell-configuration-file):
 
         # Platform.sh CLI configuration
         PLATFORMSH_CONF=~/.composer/vendor/platformsh/cli/platform.rc
         [ -f "$PLATFORMSH_CONF" ] && . "$PLATFORMSH_CONF"
 
-<sup>*</sup> Your 'shell configuration file' might be in any of the following
+#### Shell configuration file
+Your 'shell configuration file' might be in any of the following
 locations:
 
 * `~/.bashrc` (common in Linux)
@@ -72,10 +73,12 @@ Global options:
   --shell          -s Launch the shell
 
 Available commands:
+  docs                                    Open the Platform.sh online documentation
   help                                    Displays help for a command
   list                                    Lists commands
   login                                   Log in to Platform.sh
   logout                                  Log out of Platform.sh
+  web                                     Open the Platform.sh Web UI
 domain
   domain:add                              Add a new domain to the project
   domain:delete                           Delete a domain from the project

@@ -29,7 +29,7 @@ class CompletionCommand extends ParentCompletionCommand
 
     protected function setUp()
     {
-        $this->platformCommand = new PlatformCommand('welcome');
+        $this->platformCommand = new WelcomeCommand();
         $this->platformCommand->setApplication($this->getApplication());
         $this->projects = $this->getProjects();
     }

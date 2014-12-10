@@ -3,7 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
+
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentBackupCommand extends EnvironmentCommand
@@ -13,19 +13,8 @@ class EnvironmentBackupCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:backup')
-            ->setDescription('Make a backup of an environment')
-            ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The environment ID'
-            );
+            ->setDescription('Make a backup of an environment');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -36,7 +25,7 @@ class EnvironmentBackupCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         if (!$this->operationAllowed('backup')) {
-            $output->writeln("<error>Operation not permitted: Can't make a backup of the environment '$environmentId''.</error>");
+            $output->writeln("Operation not permitted: Can't make a backup of the environment <error>$environmentId</error>.");
             return 1;
         }
 

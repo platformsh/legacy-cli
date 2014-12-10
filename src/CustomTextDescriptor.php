@@ -52,7 +52,7 @@ class CustomTextDescriptor extends TextDescriptor
                 foreach ($namespace['commands'] as $name) {
                     $command = $description->getCommand($name);
                     $aliases = $command->getAliases();
-                    if ($aliases && ApplicationDescription::GLOBAL_NAMESPACE === $namespace['id']) {
+                    if ($aliases && $aliases[0] === $name && ApplicationDescription::GLOBAL_NAMESPACE === $namespace['id']) {
                         // If the command has aliases, do not list it in the
                         // 'global' namespace. The aliases will be shown inline
                         // with the full command name.

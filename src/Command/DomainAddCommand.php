@@ -48,15 +48,15 @@ class DomainAddCommand extends PlatformCommand
     protected function validateInput(InputInterface $input, OutputInterface $output)
     {
         if (!parent::validateInput($input, $output)) {
-            return;
+            return false;
         }
         $this->domainName = $input->getArgument('name');
         if (empty($this->domainName)) {
             $output->writeln("<error>You must specify the name of the domain.</error>");
-            return;
+            return false;
         } else if (!$this->validDomain($this->domainName)) {
             $output->writeln("<error>You must specify a valid domain name.</error>");
-            return;
+            return false;
         }
 
         $this->certPath = $input->getOption('cert');
@@ -65,9 +65,8 @@ class DomainAddCommand extends PlatformCommand
         if ($this->certPath || $this->keyPath || $this->chainPaths) {
             return $this->validateSslOptions();
         }
-        else {
-            return TRUE;
-        }
+
+        return true;
     }
 
     /**
@@ -76,7 +75,7 @@ class DomainAddCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
-            return;
+            return 1;
         }
 
         $wildcard = $this->getHelper('question')

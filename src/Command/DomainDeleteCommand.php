@@ -36,15 +36,8 @@ class DomainDeleteCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$this->validateInput($input, $output)) {
-            return;
+            return 1;
         }
-        // @Todo: If we want to do this check, we need to override the operationAllowed to work with domains too.
-        /*
-        if (!$this->operationAllowed('delete')) {
-            $output->writeln("<error>Operation not permitted: The current environment can't be deleted.</error>");
-            return;
-        }
-        */
 
         $name = $input->getArgument('name');
         if (empty($name)) {
