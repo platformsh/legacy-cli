@@ -25,7 +25,7 @@ class EnvironmentBackupCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         if (!$this->operationAllowed('backup')) {
-            $output->writeln("<error>Operation not permitted: Can't make a backup of the environment '$environmentId''.</error>");
+            $output->writeln("Operation not permitted: Can't make a backup of the environment <error>$environmentId</error>.");
             return 1;
         }
 

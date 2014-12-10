@@ -34,7 +34,7 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         $environmentId = $this->environment['id'];
 
         if (!$this->operationAllowed('synchronize')) {
-            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be synchronized.</error>");
+            $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be synchronized.");
             return 1;
         }
 

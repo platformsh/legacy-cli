@@ -81,7 +81,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         }
 
         if (!$this->operationAllowed('branch')) {
-            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be branched.</error>");
+            $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be branched.");
             return 1;
         }
 

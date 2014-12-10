@@ -34,7 +34,9 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
                 $output->writeln("The environment <info>$environmentId</info> is already inactive.");
                 return 0;
             }
-            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be deactivated.</error>");
+            $output->writeln(
+              "Operation not permitted: The environment <error>$environmentId</error> can't be deactivated."
+            );
             return 1;
         }
 

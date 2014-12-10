@@ -29,12 +29,27 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             return 1;
         }
 
+
         if (!$this->operationAllowed('delete')) {
             if (!empty($this->environment['_links']['public-url'])) {
-                $output->writeln("Active environments cannot be deleted.");
+                $output->writeln("The environment <error>$environmentId</error> is active and therefore can't be deleted.");
+                $output->writeln("Please deactivate the environment first.");
+                return 1;
             }
-            $output->writeln("<error>Operation not permitted: The environment '$environmentId' can't be deleted.</error>");
+            $output->writeln(
+              "Operation not permitted: The environment <error>$environmentId</error> can't be deleted."
+            );
             return 1;
+        }
+
+        // Check that the environment does not have children.
+        // @todo remove this check when Platform's behavior is fixed
+        foreach ($this->getEnvironments($this->project) as $environment) {
+            if ($environment['parent'] == $this->environment['id']) {
+                $output->writeln("The environment <error>$environmentId</error> has children and therefore can't be deleted.");
+                $output->writeln("Please delete the environment's children first.");
+                return 1;
+            }
         }
 
         if (!$this->getHelper('question')->confirm("Are you sure you want to delete the environment <info>$environmentId</info>?", $input, $output)) {
