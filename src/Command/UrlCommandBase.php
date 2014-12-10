@@ -55,11 +55,15 @@ abstract class UrlCommandBase extends PlatformCommand
             $browser = false;
         }
 
-        $output->writeln($url);
-
         if ($browser) {
-            $this->getHelper('shell')->execute(array($browser, $url));
+            $opened = $this->getHelper('shell')->execute(array($browser, $url));
+            if ($opened) {
+                $output->writeln("Opened: $url");
+                return;
+            }
         }
+
+        $output->writeln($url);
     }
 
 
@@ -69,7 +73,13 @@ abstract class UrlCommandBase extends PlatformCommand
      */
     protected function browserExists($browser)
     {
-       return (bool) $this->getHelper('shell')->execute(array('which', $browser));
+        if (strpos(PHP_OS, 'WIN') !== false) {
+            $args = array('where', $browser);
+        }
+        else {
+            $args = array('command', '-v', $browser);
+        }
+        return (bool) $this->getHelper('shell')->execute($args);
     }
 
     /**
