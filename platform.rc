@@ -2,4 +2,8 @@
 # Platform.sh CLI shell configuration.
 
 # Enable auto-completion.
-platform _completion --generate-hook --program platform | source /dev/stdin
+HOOK=$(platform _completion -g -p platform)
+# Try two commands.
+# See https://github.com/stecman/symfony-console-completion/issues/12
+echo "$HOOK" | source /dev/stdin
+source <(echo "$HOOK")
