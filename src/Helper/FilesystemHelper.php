@@ -42,9 +42,21 @@ class FilesystemHelper extends Helper {
         if (!is_dir($directory)) {
             throw new \InvalidArgumentException("Not a directory: $directory");
         }
+        return $this->remove($directory);
+    }
+
+    /**
+     * Delete a file or directory.
+     *
+     * @param string $filename
+     *
+     * @return bool
+     */
+    public function remove($filename)
+    {
         $fs = new Filesystem();
         try {
-            $fs->remove($directory);
+            $fs->remove($filename);
         }
         catch (IOException $e) {
             return false;
@@ -102,15 +114,15 @@ class FilesystemHelper extends Helper {
     }
 
     /**
-     * Create a symbolic link to a directory.
+     * Create a symbolic link to a file or directory.
      *
-     * @param string $target The target directory.
-     * @param string $link The name of the link.
+     * @param $target
+     * @param $link
      */
-    public function symlinkDir($target, $link)
+    public function symLink($target, $link)
     {
         $fs = new Filesystem();
-        if (is_link($link)) {
+        if (file_exists($link)) {
             $fs->remove($link);
         }
         if ($this->relative) {
