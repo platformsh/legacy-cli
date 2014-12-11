@@ -76,13 +76,28 @@ class EnvironmentCheckoutCommand extends PlatformCommand
         }
 
         if (!$gitHelper->branchExists($branch)) {
-            $gitHelper->execute(array('fetch', 'origin'));
+            // Fetch from platform.
+            $localProject = new LocalProject();
+            $gitUrl = $project->getGitUrl();
+            $localProject->ensureGitRemote($projectRoot . '/repository', $gitUrl);
+            // Two remotes with the same content can cause trouble with tracking.
+            if ($gitHelper->getConfig("remote.origin.url") == $gitHelper->getConfig("remote.platform.url")) {
+                $gitHelper->execute(array('remote', 'rm', 'origin'));
+                $mustRestoreOrigin = true;
+            }
+            $gitHelper->execute(array('fetch', 'platform'));
+            $success = $gitHelper->checkoutNew($branch, 'platform/' . $branch);
+            if (!empty($mustRestoreOrigin)) {
+                $gitHelper->execute(array('remote', 'add', 'origin', $gitUrl));
+            }
+        }
+        else {
+            // Check out the existing branch.
+            $output->writeln("Checking out <info>$branch</info>");
+            $success = $gitHelper->checkOut($branch);
         }
 
-        // Check out the branch.
-        $output->writeln("Checking out <info>$branch</info>");
-
-        return $gitHelper->checkOut($branch) ? 0 : 1;
+        return $success ? 0 : 1;
     }
 
     /**

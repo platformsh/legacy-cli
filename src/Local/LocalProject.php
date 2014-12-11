@@ -59,7 +59,8 @@ class LocalProject
         }
 
         // Get the project ID from the Git repository.
-        $projectId = $this->getProjectIdFromGit($dir);
+        $remoteUrl = $this->getGitRemote($dir);
+        $projectId = $this->getProjectId($remoteUrl);
 
         // Move the directory into a 'repository' subdirectory.
         $backupDir = $this->getBackupDir($dir);
@@ -70,35 +71,73 @@ class LocalProject
         $fs->rename($backupDir, $dir . '/' . LocalProject::REPOSITORY_DIR);
 
         $this->createProjectFiles($dir, $projectId);
+        $this->ensureGitRemote($dir, $remoteUrl);
 
         return $dir;
+    }
+
+    /**
+     * @throws \RuntimeException If the URL is not a Platform.sh Git URL.
+     *
+     * @param $gitUrl
+     */
+    protected function getProjectId($gitUrl)
+    {
+        if (!preg_match('/^([a-z][a-z0-9]{12})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $gitUrl, $matches)) {
+            throw new \RuntimeException("Not a Platform.sh Git URL: $gitUrl");
+        }
+
+        return $matches[1];
     }
 
     /**
      * @param string $dir
      *
      * @throws \RuntimeException
-     *   If the directory is not a clone of a Platform.sh Git repository.
+     *   If no remote can be found.
      *
-     * @return string|false
-     *   The project ID, or false if it cannot be determined.
+     * @return string
+     *   The Git remote URL.
      */
-    protected function getProjectIdFromGit($dir)
+    protected function getGitRemote($dir)
     {
         if (!file_exists("$dir/.git")) {
             throw new \RuntimeException('The directory is not a Git repository');
         }
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
-        $originUrl = $gitHelper->getConfig("remote.origin.url", $dir);
-        if (!$originUrl) {
-            throw new \RuntimeException("Git remote 'origin' not found");
+        $remoteUrl = $gitHelper->getConfig("remote.origin.url", $dir) || $gitHelper->getConfig("remote.platform.url", $dir);
+        if (!$remoteUrl) {
+            throw new \RuntimeException("Git remote not found");
         }
-        if (!preg_match('/^([a-z][a-z0-9]{12})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $originUrl, $matches)) {
-            throw new \RuntimeException("The Git remote 'origin' is not a Platform.sh URL");
-        }
+        return $remoteUrl;
+    }
 
-        return $matches[1];
+    /**
+     * Ensure there are appropriate Git remotes in the repository.
+     *
+     * @param string $dir
+     * @param string $url
+     */
+    public function ensureGitRemote($dir, $url)
+    {
+        if (!file_exists("$dir/.git")) {
+            throw new \InvalidArgumentException('The directory is not a Git repository');
+        }
+        $gitHelper = new GitHelper();
+        $gitHelper->ensureInstalled();
+        $gitHelper->setDefaultRepositoryDir($dir);
+        $platformUrl = $gitHelper->getConfig("remote.platform.url", $dir);
+        if (!$platformUrl) {
+            $gitHelper->execute(array('remote', 'add', 'platform', $url), $dir, true);
+        }
+        elseif ($platformUrl != $url) {
+            $gitHelper->execute(array('remote', 'set-url', 'platform', $url), $dir, true);
+        }
+        // Add an origin remote too.
+        if (!$gitHelper->getConfig("remote.origin.url", $dir)) {
+            $gitHelper->execute(array('remote', 'add', 'origin', $url));
+        }
     }
 
     /**

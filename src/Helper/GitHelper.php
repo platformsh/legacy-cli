@@ -27,19 +27,29 @@ class GitHelper extends Helper
     }
 
     /**
+     * @return string|false
+     */
+    public function getVersion()
+    {
+        static $version;
+        if (!$version) {
+            $version = false;
+            $string = $this->execute(array('--version'), false);
+            if ($string && preg_match('/(^| )([0-9]+[^ ]*)/', $string, $matches)) {
+                $version = $matches[2];
+            }
+        }
+        return $version;
+    }
+
+    /**
      * @throws \Exception
      */
     public function ensureInstalled()
     {
-        static $checked;
-        if ($checked) {
-            return;
-        }
-        $version = $this->execute(array('--version'), false);
-        if (!is_string($version)) {
+        if (!$this->getVersion()) {
             throw new \Exception('Git must be installed');
         }
-        $checked = true;
     }
 
     /**
@@ -229,6 +239,14 @@ class GitHelper extends Helper
     }
 
     /**
+     * @return bool
+     */
+    public function supportsShallowClone()
+    {
+        return version_compare($this->getVersion(), '1.9', '>=');
+    }
+
+    /**
      * Clone a repository.
      *
      * A ProcessFailedException will be thrown if the command fails.
@@ -237,22 +255,18 @@ class GitHelper extends Helper
      *   The Git repository URL.
      * @param string $destination
      *   A directory name to clone into.
-     * @param string $branch
-     *   The name of a branch to clone.
+     * @param array $args
+     *   Extra arguments for the Git command.
      * @param bool   $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return bool
      */
-    public function cloneRepo($url, $destination = null, $branch = null, $mustRun = false)
+    public function cloneRepo($url, $destination = null, array $args = array(), $mustRun = false)
     {
-        $args = array('clone', $url);
+        $args = array_merge(array('clone', $url), $args);
         if ($destination) {
             $args[] = $destination;
-        }
-        if ($branch) {
-            $args[] = '--branch';
-            $args[] = $branch;
         }
 
         return (bool) $this->execute($args, false, $mustRun, false);

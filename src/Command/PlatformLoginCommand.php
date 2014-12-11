@@ -18,8 +18,6 @@ class PlatformLoginCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->checkRequirements();
-
         if (!$input->isInteractive()) {
             throw new \Exception('Non-interactive login not supported');
         }
@@ -27,15 +25,6 @@ class PlatformLoginCommand extends PlatformCommand
         $output->writeln("Please log in using your <info>Platform.sh</info> account\n");
         $this->configureAccount($input, $output);
         $output->writeln("\n<info>Thank you, you are all set.</info>\n");
-    }
-
-    protected function checkRequirements()
-    {
-        if (ini_get('safe_mode')) {
-            throw new \Exception('PHP safe_mode must be disabled.');
-        }
-        $this->getHelper('git')
-             ->ensureInstalled();
     }
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)
