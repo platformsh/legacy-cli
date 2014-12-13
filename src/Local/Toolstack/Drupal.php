@@ -11,6 +11,8 @@ class Drupal extends ToolstackBase
 
     public $buildMode;
 
+    protected $drushFlags = array();
+
     public function getKey() {
         return 'php:drupal';
     }
@@ -54,122 +56,159 @@ class Drupal extends ToolstackBase
 
     public function build()
     {
-        $buildDir = $this->buildDir;
-
-        // Options to pass to the drush command.
-        $drushFlags = array();
-        $drushFlags[] = '--yes';
-        if (!empty($this->settings['verbosity'])) {
-            $verbosity = $this->settings['verbosity'];
-            if ($verbosity === OutputInterface::VERBOSITY_QUIET) {
-                $drushFlags[] = '--quiet';
-            }
-            elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
-                $drushFlags[] = '--debug';
-            }
-            elseif ($verbosity >= OutputInterface::VERBOSITY_VERBOSE) {
-                $drushFlags[] = '--verbose';
-            }
-        }
-
-        if (!empty($this->settings['drushConcurrency'])) {
-            $drushFlags[] = '--concurrency=' . $this->settings['drushConcurrency'];
-        }
-        if (!empty($this->settings['drushWorkingCopy'])) {
-            $drushFlags[] = '--working-copy';
-        }
-        if (!empty($this->settings['noCache'])) {
-            $drushFlags[] = '--no-cache';
-        }
+        $this->setUpDrushFlags();
 
         $profiles = glob($this->appRoot . '/*.profile');
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
         }
-
-        $symlinkBlacklist = array(
-          '.*',
-          '*.make',
-          'sites.php',
-          'robots.txt',
-          'config',
-        );
-
-        $drushHelper = new DrushHelper($this->output);
-
-        if (count($profiles) == 1) {
-            $this->buildMode = 'profile';
-            $drushHelper->ensureInstalled();
-            // Find the contrib make file.
-            if (file_exists($this->appRoot . '/project.make')) {
-                $projectMake = $this->appRoot . '/project.make';
-            } elseif (file_exists($this->appRoot . '/drupal-org.make')) {
-                $projectMake = $this->appRoot . '/drupal-org.make';
-            } else {
-                throw new \Exception("Couldn't find a project.make or drupal-org.make in the directory.");
-            }
-            // Find the core make file.
-            if (file_exists($this->appRoot . '/project-core.make')) {
-                $projectCoreMake = $this->appRoot . '/project-core.make';
-            } elseif (file_exists($this->appRoot . '/drupal-org-core.make')) {
-                $projectCoreMake = $this->appRoot . '/drupal-org-core.make';
-            } else {
-                throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the directory.");
-            }
-
-            $args = array_merge(
-              array('make', $projectCoreMake, $buildDir),
-              $drushFlags
-            );
-            $drushHelper->execute($args, null, true, false);
-
-            // Drush will only create the $buildDir if the build succeeds.
-            $profile = str_replace($this->appRoot, '', $profiles[0]);
-            $profile = strtok($profile, '.');
-            $profileDir = $buildDir . '/profiles/' . ltrim($profile, '/');
-
-            $args = array_merge(
-              array('make', '--no-core', '--contrib-destination=.', $projectMake),
-              $drushFlags
-            );
-            $drushHelper->execute($args, $this->appRoot, true, false);
-
-            $symlinkBlacklist[] = 'settings*.php';
-            $this->fsHelper->symlinkAll($this->appRoot, $profileDir, true, $symlinkBlacklist);
-        } elseif (file_exists($this->appRoot . '/project.make')) {
-            $this->buildMode = 'makefile';
-            $drushHelper->ensureInstalled();
-            $projectMake = $this->appRoot . '/project.make';
-            $args = array_merge(
-              array('make', $projectMake, $buildDir),
-              $drushFlags
-            );
-            $drushHelper->execute($args, null, true, false);
-
-            // If the user has a custom settings.php file, and we symlink it into
-            // sites/default, then it will probably fail to pick up
-            // settings.local.php from the right place. So we should copy the
-            // settings.php instead of symlinking it.
-            // See https://github.com/platformsh/platformsh-cli/issues/175
-            $settingsPhpFile = $this->appRoot . '/settings.php';
-            if (file_exists($settingsPhpFile)) {
-                $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
-                copy($settingsPhpFile, $buildDir . '/sites/default/settings.php');
-                $this->output->writeln(
-                  "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
-                 . "\nYou will need to rebuild if you edit this file.</comment>");
-                $symlinkBlacklist[] = 'settings.php';
-            }
-
-            $this->fsHelper->symlinkAll($this->appRoot, $buildDir . '/sites/default', true, $symlinkBlacklist);
+        elseif (count($profiles) == 1) {
+            $profileName = strtok(basename($profiles[0]), '.');
+            $this->buildInProfileMode($profileName);
+        }
+        elseif (file_exists($this->appRoot . '/project.make')) {
+            $this->buildInProjectMode($this->appRoot . '/project.make');
         }
         else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
             $this->buildMode = 'vanilla';
             $this->buildDir = $this->appRoot;
         }
+    }
 
-        return true;
+    /**
+     * Set up options to pass to the drush commands.
+     */
+    protected function setUpDrushFlags()
+    {
+        $this->drushFlags = array();
+        $this->drushFlags[] = '--yes';
+        if (!empty($this->settings['verbosity'])) {
+            $verbosity = $this->settings['verbosity'];
+            if ($verbosity === OutputInterface::VERBOSITY_QUIET) {
+                $this->drushFlags[] = '--quiet';
+            }
+            elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
+                $this->drushFlags[] = '--debug';
+            }
+            elseif ($verbosity >= OutputInterface::VERBOSITY_VERBOSE) {
+                $this->drushFlags[] = '--verbose';
+            }
+        }
+
+        if (!empty($this->settings['drushConcurrency'])) {
+            $this->drushFlags[] = '--concurrency=' . $this->settings['drushConcurrency'];
+        }
+        if (!empty($this->settings['drushWorkingCopy'])) {
+            $this->drushFlags[] = '--working-copy';
+        }
+        if (!empty($this->settings['noCache'])) {
+            $this->drushFlags[] = '--no-cache';
+        }
+    }
+
+    /**
+     * Build in 'project' mode, i.e. just using a Drush make file.
+     *
+     * @param string $projectMake
+     */
+    protected function buildInProjectMode($projectMake)
+    {
+        $drushHelper = new DrushHelper($this->output);
+        $this->buildMode = 'project';
+        $drushHelper->ensureInstalled();
+        $args = array_merge(
+          array('make', $projectMake, $this->buildDir),
+          $this->drushFlags
+        );
+        $drushHelper->execute($args, null, true, false);
+
+        $this->processSettingsPhp();
+
+        $this->ignoredFiles[] = 'project.make';
+        $this->specialDestinations['sites.php'] = '{webroot}/sites';
+
+        $this->fsHelper->symlinkAll($this->appRoot, $this->buildDir . '/sites/default', true, array_merge($this->ignoredFiles, array_keys($this->specialDestinations)));
+    }
+
+    /**
+     * Build in 'profile' mode: the application contains a site profile.
+     *
+     * @param string $profileName
+     *
+     * @throws \Exception
+     */
+    protected function buildInProfileMode($profileName)
+    {
+        $drushHelper = new DrushHelper($this->output);
+        $this->buildMode = 'profile';
+        $drushHelper->ensureInstalled();
+
+        // Find the contrib make file.
+        if (file_exists($this->appRoot . '/project.make')) {
+            $projectMake = $this->appRoot . '/project.make';
+        } elseif (file_exists($this->appRoot . '/drupal-org.make')) {
+            $projectMake = $this->appRoot . '/drupal-org.make';
+        } else {
+            throw new \Exception("Couldn't find a project.make or drupal-org.make in the directory.");
+        }
+
+        // Find the core make file.
+        if (file_exists($this->appRoot . '/project-core.make')) {
+            $projectCoreMake = $this->appRoot . '/project-core.make';
+        } elseif (file_exists($this->appRoot . '/drupal-org-core.make')) {
+            $projectCoreMake = $this->appRoot . '/drupal-org-core.make';
+        } else {
+            throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the directory.");
+        }
+
+        $args = array_merge(
+          array('make', $projectCoreMake, $this->buildDir),
+          $this->drushFlags
+        );
+        $drushHelper->execute($args, null, true, false);
+
+        // Drush will only create the $buildDir if the build succeeds.
+        $profileDir = $this->buildDir . '/profiles/' . $profileName;
+
+        $args = array_merge(
+          array('make', '--no-core', '--contrib-destination=.', $projectMake),
+          $this->drushFlags
+        );
+        $drushHelper->execute($args, $this->appRoot, true, false);
+
+        $this->ignoredFiles[] = $projectMake;
+        $this->ignoredFiles[] = $projectCoreMake;
+
+        $this->specialDestinations['settings*.php'] = '{webroot}/sites/default';
+        $this->specialDestinations['sites.php'] = '{webroot}/sites';
+
+        $this->processSettingsPhp();
+
+        $this->fsHelper->symlinkAll($this->appRoot, $profileDir, true, array_merge($this->ignoredFiles, array_keys($this->specialDestinations)));
+    }
+
+    /**
+     * Handle a custom settings.php file for project and profile mode.
+     *
+     * If the user has a custom settings.php file, and we symlink it into
+     * sites/default, then it will probably fail to pick up
+     * settings.local.php from the right place. So we need to copy the
+     * settings.php instead of symlinking it.
+     *
+     * See https://github.com/platformsh/platformsh-cli/issues/175
+     */
+    protected function processSettingsPhp()
+    {
+        $settingsPhpFile = $this->appRoot . '/settings.php';
+        if (file_exists($settingsPhpFile)) {
+            $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
+            copy($settingsPhpFile, $this->buildDir . '/sites/default/settings.php');
+            $this->output->writeln(
+              "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
+              . "\nYou will need to rebuild if you edit this file.</comment>");
+            $this->ignoredFiles[] = 'settings.php';
+        }
     }
 
     public function install()
@@ -206,7 +245,10 @@ class Drupal extends ToolstackBase
 
         $this->fsHelper->symlinkAll($this->projectRoot . '/shared', $buildDir . '/sites/default');
 
+        $this->symLinkSpecialDestinations();
+
         // Point www to the latest build.
-        $this->fsHelper->symlinkDir($buildDir, $this->projectRoot . '/www');
+        $this->fsHelper->symLink($buildDir, $this->projectRoot . '/www');
     }
+
 }

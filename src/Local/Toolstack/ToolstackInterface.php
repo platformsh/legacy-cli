@@ -44,8 +44,6 @@ interface ToolstackInterface
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and
      * submodules.
-     *
-     * @return bool
      */
     public function build();
 
