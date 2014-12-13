@@ -63,12 +63,10 @@ class Drupal extends ToolstackBase
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
         }
         elseif (count($profiles) == 1) {
-            $this->buildMode = 'profile';
-            $profile = str_replace($this->appRoot, '', $profiles[0]);
-            $profileName = ltrim(strtok($profile, '.'), '/');
+            $profileName = strtok(basename($profiles[0]), '.');
             $this->buildInProfileMode($profileName);
-
-        } elseif (file_exists($this->appRoot . '/project.make')) {
+        }
+        elseif (file_exists($this->appRoot . '/project.make')) {
             $this->buildInProjectMode($this->appRoot . '/project.make');
         }
         else {
