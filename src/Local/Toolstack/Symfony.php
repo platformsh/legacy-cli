@@ -37,10 +37,8 @@ class Symfony extends ToolstackBase
             $this->shellHelper->execute($args, $buildDir, true, false);
         }
         else {
-          throw new \Exception("Couldn't create build directory");
+            throw new \Exception("Couldn't create build directory");
         }
-
-        return true;
     }
 
     public function install() {
@@ -58,7 +56,9 @@ class Symfony extends ToolstackBase
             }
         }
 
+        $this->symLinkSpecialDestinations();
+
         // Point www to the latest build.
-        $this->fsHelper->symlinkDir($buildDir, $this->projectRoot . '/www');
+        $this->fsHelper->symLink($buildDir, $this->projectRoot . '/www');
     }
 }
