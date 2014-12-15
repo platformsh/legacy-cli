@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -56,7 +57,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             return 1;
         }
         else {
-            $machineName = $this->sanitizeEnvironmentId($branch);
+            $machineName = Environment::sanitizeId($branch);
         }
 
         $projectRoot = $this->getProjectRoot();
