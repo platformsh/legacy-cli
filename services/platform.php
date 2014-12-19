@@ -64,6 +64,11 @@ return array(
             'uri' => 'backup',
             'summary' => 'Creates a new environment branched from the existing one',
         ),
+        'modifyEnvironmentAccess' => array(
+            'httpMethod' => 'POST',
+            'uri' => '',
+            'summary' => 'Modify access on environment',
+        ),
         'getDomains' => array(
             'httpMethod' => 'GET',
             'uri' => 'domains',
