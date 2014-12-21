@@ -1,9 +1,46 @@
 #!/usr/bin/env bash
 # Platform.sh CLI shell configuration.
+#
+# This file is intended to be sourced from the user's shell.
+
+# Get the full path to this installation.
+SOURCE=$0
+[ ! -z "$BASH_SOURCE" ] && SOURCE=${BASH_SOURCE[0]}
+INSTALL_DIR=$(cd "$(dirname -- "${SOURCE}")" && pwd)
+
+# Get the path to the directory containing the 'platform' executable.
+BIN_DIR=${INSTALL_DIR}/bin
+# If installed via Composer, the BIN_DIR is Composer's vendor/bin directory.
+if [ "$(basename ${INSTALL_DIR})" = 'cli' ] && [ -d "${INSTALL_DIR}/../../bin" ]; then
+    BIN_DIR=$(cd "${INSTALL_DIR}/../../bin" && pwd)
+fi
+
+# Add the BIN_DIR to the PATH, if it isn't there already.
+if [ -f "${BIN_DIR}/platform" ] && [[ ! ":$PATH:" == *:${BIN_DIR}:* ]]; then
+    export PATH="$BIN_DIR:$PATH"
+fi
 
 # Enable auto-completion.
-HOOK=$(platform _completion -g -p platform)
-# Try two commands.
-# See https://github.com/stecman/symfony-console-completion/issues/12
-echo "$HOOK" | source /dev/stdin
-source <(echo "$HOOK") 2>/dev/null
+SHELL_TYPE=''
+# Bash autocompletion requires the _get_comp_words_by_ref function.
+if command -v _get_comp_words_by_ref > /dev/null; then
+    # Specify an explicit shell type if the function exists (so we are
+    # using Bash) yet $SHELL was not defined.
+    [ -z "$SHELL" ] && SHELL_TYPE=bash
+elif [[ "$SHELL" == *bash ]]; then
+    # Fail if the shell is Bash, yet the function does not exist.
+    return
+fi
+
+HOOK=$("${BIN_DIR}/platform" _completion -g -p platform --shell-type=${SHELL_TYPE} 2>/dev/null)
+[ -z "$HOOK" ] && return
+
+# Try three methods of registering autocompletion.
+# See https://github.com/stecman/symfony-console-completion#zero-config-use
+if [[ "${BASH_VERSION}" == 4* ]]; then
+    source <(echo ${HOOK})
+elif [ ! -z "${BASH_VERSION}" ]; then
+    eval "${HOOK}"
+elif [ ! -z "$ZSH" ]; then
+    echo "${HOOK}" | source /dev/stdin
+fi

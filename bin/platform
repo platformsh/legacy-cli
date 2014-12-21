@@ -9,7 +9,7 @@ define('CLI_VERIFY_SSL_CERT', (bool) !getenv("PLATFORM_CLI_SKIP_SSL_VERIFY"));
 
 // __DIR__ called in a class will point to the class directory. Saved now it
 // ensure there's always a path to the cli root.
-define('CLI_ROOT', __DIR__);
+define('CLI_ROOT', dirname(__DIR__));
 
 if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
     require CLI_ROOT . '/vendor/autoload.php';
