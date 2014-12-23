@@ -21,7 +21,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
   In Linux or OS X, add this line to your [shell configuration file](#shell-configuration-file):
 
-        export PATH="$PATH:~/.composer/vendor/bin"
+        export PATH="$PATH:$HOME/.composer/vendor/bin"
 
   In Windows, use this command from a Command Prompt (cmd.exe):
 
