@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Helper\DrushHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -55,7 +56,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
 
         $homeDir = $this->getHelper('fs')->getHomeDirectory();
 
-        $drushHelper = $this->getHelper('drush');
+        $drushHelper = new DrushHelper($output);
         $drushHelper->ensureInstalled();
         $drushHelper->setHomeDir($homeDir);
 
