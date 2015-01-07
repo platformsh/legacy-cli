@@ -3,6 +3,7 @@
     "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
+        "cocur/slugify": "~1.0",
         "commerceguys/guzzle-oauth2-plugin": "~1.0",
         "symfony/console": "~2.5",
         "symfony/yaml": "~2.5",

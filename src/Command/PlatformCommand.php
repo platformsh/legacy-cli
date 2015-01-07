@@ -6,6 +6,7 @@ use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
 use CommerceGuys\Platform\Cli\Api\PlatformClient;
+use CommerceGuys\Platform\Cli\Model\Environment;
 use CommerceGuys\Platform\Cli\Model\HalResource;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
@@ -278,7 +279,7 @@ abstract class PlatformCommand extends Command
         // Fall back to trying the current branch name.
         $currentBranch = $gitHelper->getCurrentBranch();
         if ($currentBranch) {
-            $currentBranchSanitized = $this->sanitizeEnvironmentId($currentBranch);
+            $currentBranchSanitized = Environment::sanitizeId($currentBranch);
             $environment = $this->getEnvironment($currentBranchSanitized, $project);
             if ($environment) {
                 return $environment;
@@ -521,17 +522,6 @@ abstract class PlatformCommand extends Command
         // This uses the same test as StreamOutput::hasColorSupport().
         $stream = $output->getStream();
         return @posix_isatty($stream);
-    }
-
-    /**
-     * Sanitize a proposed environment ID.
-     *
-     * @param string $proposed
-     *
-     * @return string
-     */
-    protected function sanitizeEnvironmentId($proposed) {
-        return substr(preg_replace('/[^a-z0-9-]+/i', '', strtolower($proposed)), 0, 32);
     }
 
     /**

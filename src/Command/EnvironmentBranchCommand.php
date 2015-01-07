@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -59,7 +60,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return 1;
         }
 
-        $machineName = $this->sanitizeEnvironmentId($branchName);
+        $machineName = Environment::sanitizeId($branchName);
         $environmentId = $this->environment['id'];
 
         if ($machineName == $environmentId) {
