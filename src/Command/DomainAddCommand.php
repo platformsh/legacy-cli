@@ -153,11 +153,7 @@ class DomainAddCommand extends PlatformCommand
     protected function validDomain($domain)
     {
         // @todo: Use symfony/Validator here once it gets the ability to validate just domain.
-        if (preg_match("/^[a-zA-Z0-9][a-zA-Z0-9-_]{0,61}[a-zA-Z0-9]{0,1}\.([a-zA-Z]{1,6}|[a-zA-Z0-9-]{1,30}\.[a-zA-Z]{2,3})$/", $domain))
-        {
-            return true;
-        }
-        return false;
+        return (bool) preg_match('/^([^\.]{1,63}\.)+[^\.]{2,63}$/', $domain);
     }
 
     protected function assembleChainFiles($chainPaths)
