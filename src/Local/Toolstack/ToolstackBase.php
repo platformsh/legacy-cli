@@ -86,7 +86,6 @@ abstract class ToolstackBase implements ToolstackInterface
             if (!$matched) {
                 continue;
             }
-            $this->output->writeln("Symlinking $sourcePattern to $relDestination");
 
             // On Platform these replacements would be a bit different.
             $absDestination = str_replace(array('{webroot}', '{approot}'), $this->buildDir, $relDestination);
@@ -97,6 +96,7 @@ abstract class ToolstackBase implements ToolstackInterface
                 if (in_array($relSource, $this->ignoredFiles)) {
                     continue;
                 }
+                $this->output->writeln("Symlinking $relSource to $relDestination");
                 $destination = $absDestination;
                 // Do not overwrite directories with files.
                 if (!is_dir($source) && is_dir($destination)) {

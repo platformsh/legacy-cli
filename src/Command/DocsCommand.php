@@ -24,16 +24,38 @@ class DocsCommand extends UrlCommandBase
 
         $search = $input->getArgument('search');
         if ($search) {
-            $term = implode(' ', $search);
+            $query = $this->getSearchQuery($search);
 
             // @todo provide native or other search options?
             //$url .= '/search?q=' . urlencode($term);
 
             // Use Google search.
             $url = 'https://www.google.com/search?q='
-              . urlencode('site:docs.platform.sh ' . $term);
+              . urlencode('site:docs.platform.sh ' . $query);
         }
 
         $this->openUrl($url, $input, $output);
     }
+
+    /**
+     * @param array $args
+     *
+     * @return string
+     */
+    protected function getSearchQuery(array $args)
+    {
+        $quoted = array_map(array($this, 'quoteTerm'), $args);
+        return implode(' ', $quoted);
+    }
+
+    /**
+     * @param string $term
+     *
+     * @return string
+     */
+    public function quoteTerm($term)
+    {
+        return strpos($term, ' ') ? '"' . $term . '"' : $term;
+    }
+
 }

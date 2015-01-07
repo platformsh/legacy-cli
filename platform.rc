@@ -6,4 +6,4 @@ HOOK=$(platform _completion -g -p platform)
 # Try two commands.
 # See https://github.com/stecman/symfony-console-completion/issues/12
 echo "$HOOK" | source /dev/stdin
-source <(echo "$HOOK")
+source <(echo "$HOOK") 2>/dev/null

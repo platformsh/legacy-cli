@@ -2,6 +2,8 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Environment;
+use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -29,8 +31,8 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             throw new \Exception('This can only be run from inside a project directory');
         }
 
-        $branch = $input->getArgument('id');
-        if (empty($branch) && $input->isInteractive()) {
+        $specifiedBranch = $input->getArgument('id');
+        if (empty($specifiedBranch) && $input->isInteractive()) {
             $environments = $this->getEnvironments($project);
             $currentEnvironment = $this->getCurrentEnvironment($project);
             if ($currentEnvironment) {
@@ -49,35 +51,61 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             }
             $chooseEnvironmentText = "Enter a number to check out another environment:";
             $helper = $this->getHelper('question');
-            $machineName = $helper->choose($environmentList, $chooseEnvironmentText, $input, $output);
+            $specifiedBranch = $helper->choose($environmentList, $chooseEnvironmentText, $input, $output);
         }
-        elseif (empty($branch)) {
+        elseif (empty($specifiedBranch)) {
             $output->writeln("<error>No branch specified.</error>");
             return 1;
-        }
-        else {
-            $machineName = $this->sanitizeEnvironmentId($branch);
         }
 
         $projectRoot = $this->getProjectRoot();
 
-        $gitHelper = $this->getHelper('git');
+        $gitHelper = new GitHelper();
         $gitHelper->setOutput($output);
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
 
-        // If the branch doesn't already exist locally, check whether it is a
-        // Platform.sh environment.
-        if (!$gitHelper->branchExists($machineName)) {
-            if (!$this->getEnvironment($machineName, $project)) {
-                $output->writeln("<error>Environment not found: $machineName</error>");
-                return 1;
-            }
-            // Fetch from origin.
-            // @todo don't assume that the Platform.sh remote is called 'origin'
+        $branch = $this->branchExists($specifiedBranch, $project, $gitHelper);
+
+        if (!$branch) {
+            $output->writeln("<error>Branch not found: $specifiedBranch</error>");
+            return 1;
+        }
+
+        if (!$gitHelper->branchExists($branch)) {
             $gitHelper->execute(array('fetch', 'origin'));
         }
 
         // Check out the branch.
-        return $gitHelper->checkOut($machineName) ? 0 : 1;
+        return $gitHelper->checkOut($branch) ? 0 : 1;
     }
+
+    /**
+     * Check whether a branch exists, locally in Git or on the remote.
+     *
+     * @param string $branch
+     * @param array $project
+     * @param GitHelper $gitHelper
+     *
+     * @return string|false
+     */
+    protected function branchExists($branch, array $project, GitHelper $gitHelper)
+    {
+        // Check if the Git branch exists locally.
+        $candidates = array_unique(array(Environment::sanitizeId($branch), $branch));
+        foreach ($candidates as $candidate) {
+            if ($gitHelper->branchExists($candidate)) {
+                return $candidate;
+            }
+        }
+        // Check if the environment exists by title or ID. This is usually faster
+        // than running 'git ls-remote'.
+        $environments = $this->getEnvironments($project);
+        foreach ($environments as $environment) {
+            if ($environment['title'] == $branch || $environment['id'] == $branch) {
+                return $environment['id'];
+            }
+        }
+        return false;
+    }
+
 }

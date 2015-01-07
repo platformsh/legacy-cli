@@ -58,7 +58,6 @@ class ProjectListCommand extends PlatformCommand
         $table->render();
 
         $output->writeln("\nGet a project by running <info>platform get [id]</info>.");
-        $output->writeln("Delete a project by running <info>platform project:delete [id]</info>.");
         $output->writeln("List a project's environments by running <info>platform environments</info>.\n");
     }
 }

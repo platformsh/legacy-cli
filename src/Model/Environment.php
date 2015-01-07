@@ -1,6 +1,8 @@
 <?php
 namespace CommerceGuys\Platform\Cli\Model;
 
+use Cocur\Slugify\Slugify;
+
 class Environment extends HalResource
 {
 
@@ -69,6 +71,16 @@ class Environment extends HalResource
         }
         $values['name'] = $name;
         return self::create($values, $this->getLink('#manage-variables'), $this->client);
+    }
+
+    /**
+     * @param string $proposed
+     * @return string
+     */
+    public static function sanitizeId($proposed)
+    {
+        $slugify = new Slugify();
+        return substr($slugify->slugify($proposed), 0, 32);
     }
 
 }
