@@ -12,6 +12,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSetRemoteCommand extends CommandBase
 {
+    // @todo remove this command in v3
+    protected $hiddenInList = true;
 
     protected function configure()
     {
