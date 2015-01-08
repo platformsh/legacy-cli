@@ -90,7 +90,7 @@ class ProjectInfoCommand extends CommandBase
                 $value = $this->formatter->format($value, $key);
                 $value = wordwrap($value, 50, "\n", true);
                 $headings[] = $key;
-                $values = $value;
+                $values[] = $value;
             }
         }
         $table->renderSimple($values, $headings);
