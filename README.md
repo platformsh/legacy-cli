@@ -46,17 +46,13 @@ you are doing.
 
 3. Enable autocompletion and shell aliases:
 
-        platform local:install
+        platform self:install
 
 ## Updating
 
 New releases of the CLI are made regularly. Update with this command:
 
-    platform self-update
-
-If you installed the CLI using Composer, then you may need this command instead:
-
-    composer global update
+    platform self:update
 
 ## Usage
 
@@ -91,11 +87,13 @@ Available commands:
   list                                      Lists commands
   login                                     Log in to Platform.sh
   logout                                    Log out of Platform.sh
-  self-update (up)                          Update the CLI to the latest version
   web                                       Open the Platform.sh Web UI
 activity
   activity:list (activities)                Get the most recent activities for an environment
   activity:log                              Display the log for an environment activity
+app
+  app:config-get                            Get the configuration of an app
+  app:list (apps)                           Get a list of all apps in the local repository
 domain
   domain:add                                Add a new domain to the project
   domain:delete                             Delete a domain from the project
@@ -112,7 +110,6 @@ environment
   environment:merge (merge)                 Merge an environment
   environment:relationships (relationships) List an environment's relationships
   environment:routes (routes)               List an environment's routes
-  environment:set-remote                    Set the remote environment to track for a branch
   environment:sql (sql)                     Run SQL on the remote database
   environment:sql-dump (sql-dump)           Create a local dump of the remote database
   environment:ssh (ssh)                     SSH to the current environment
@@ -133,6 +130,9 @@ project
   project:get (get)                         Clone and build a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
+self
+  self:install                              Install or update CLI configuration files
+  self:update                               Update the CLI to the latest version
 snapshot
   snapshot:create                           Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment

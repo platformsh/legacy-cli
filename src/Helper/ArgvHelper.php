@@ -36,7 +36,7 @@ class ArgvHelper extends Helper
         // was just one argument, it indicates that the user passed an entire
         // command inside quotes.
         if (count($args) > 1) {
-            $args = array_map(array($this, 'escapeArg'), $args);
+            $args = array_map([$this, 'escapeArg'], $args);
         }
         $command = implode(' ', $args);
 
@@ -115,9 +115,9 @@ class ArgvHelper extends Helper
             unset($args[$key]);
             // Unset the option's value too.
             if ($option->acceptValue()
-              && isset($args[$key + 1])
-              && !strpos($arg, '=')
-              && $args[$key + 1][0] !== '-'
+                && isset($args[$key + 1])
+                && !strpos($arg, '=')
+                && $args[$key + 1][0] !== '-'
             ) {
                 unset($args[$key + 1]);
             }

@@ -16,12 +16,12 @@ class VariableSetCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('variable:set')
-          ->setAliases(array('vset'))
-          ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
-          ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
-          ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
-          ->setDescription('Set a variable for an environment');
+            ->setName('variable:set')
+            ->setAliases(['vset'])
+            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
+            ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
+            ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
+            ->setDescription('Set a variable for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -47,8 +47,8 @@ class VariableSetCommand extends CommandBase
         $existing = $this->getSelectedEnvironment()
                          ->getVariable($variableName);
         if ($existing && $existing->getProperty('value') === $variableValue && $existing->getProperty(
-            'is_json'
-          ) == $json
+                'is_json'
+            ) == $json
         ) {
             $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
 

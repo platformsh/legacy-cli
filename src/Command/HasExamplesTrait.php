@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Command;
 trait HasExamplesTrait
 {
     /** @var array */
-    protected $examples = array();
+    protected $examples = [];
 
     /**
      * @param string $description

@@ -13,12 +13,13 @@ class SelfUpdateCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('self-update')
-          ->setAliases(array('up'))
-          ->setDescription('Update the CLI to the latest version')
-          ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
-          ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
-          ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version');
+            ->setName('self:update')
+            ->setAliases(['self-update'])
+            ->setDescription('Update the CLI to the latest version')
+            ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
+            ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
+            ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version');
+        $this->setHiddenAliases(['update']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -29,11 +30,14 @@ class SelfUpdateCommand extends CommandBase
 
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln('This instance of the CLI was not installed as a Phar archive.');
+
+            // Instructions for users who are running a global Composer install.
             if (file_exists(CLI_ROOT . '/../../autoload.php')) {
-                $this->stdErr->writeln("Update using:\n  composer global update");
+                $this->stdErr->writeln("Update using:\n\n  composer global update");
+                $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>):\n");
+                $this->stdErr->writeln("  composer global remove platformsh/cli");
+                $this->stdErr->writeln("  curl -sS https://platform.sh/cli/installer | php\n");
             }
-            $this->stdErr->writeln("\nYou can switch to a Phar install (recommended):");
-            $this->stdErr->writeln("  curl -sS https://platform.sh/cli/installer | php");
             return 1;
         }
 
@@ -67,5 +71,13 @@ class SelfUpdateCommand extends CommandBase
         // because the autoloader's name has changed. We avoid the problem by
         // terminating now.
         exit;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function checkUpdates(InputInterface $input, OutputInterface $output, $reset = false)
+    {
+        // Don't check for updates automatically when running self-update.
     }
 }

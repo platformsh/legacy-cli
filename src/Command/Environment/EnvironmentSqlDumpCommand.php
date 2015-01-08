@@ -15,7 +15,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
     {
         $this
             ->setName('environment:sql-dump')
-            ->setAliases(array('sql-dump'))
+            ->setAliases(['sql-dump'])
             ->setDescription('Create a local dump of the remote database')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "environment-dump.sql" in the project root')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
@@ -42,7 +42,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
             else {
                 if (!$projectRoot = $this->getProjectRoot()) {
                     throw new RootNotFoundException(
-                      'Project root not found. Specify --file or go to a project directory.'
+                        'Project root not found. Specify --file or go to a project directory.'
                     );
                 }
                 $dumpFile = $projectRoot . '/' . $environment->id;
@@ -73,28 +73,26 @@ class EnvironmentSqlDumpCommand extends CommandBase
         switch ($database['scheme']) {
             case 'pgsql':
                 $dumpCommand = "pg_dump --clean"
-                  . " postgresql://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
+                    . " postgresql://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
                 break;
 
             default:
                 $dumpCommand = "mysqldump --no-autocommit --single-transaction"
-                  . " --opt -Q {$database['path']}"
-                  . " --host={$database['host']} --port={$database['port']}"
-                  . " --user={$database['username']} --password={$database['password']}";
+                    . " --opt -Q {$database['path']}"
+                    . " --host={$database['host']} --port={$database['port']}"
+                    . " --user={$database['username']} --password={$database['password']}";
                 break;
         }
 
         set_time_limit(0);
 
         $command = 'ssh ' . escapeshellarg($sshUrl)
-          . ' ' . escapeshellarg($dumpCommand);
+            . ' ' . escapeshellarg($dumpCommand);
         if (isset($dumpFile)) {
             $command .= ' > ' . escapeshellarg($dumpFile);
         }
 
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->stdErr->writeln("Running command: <info>$command</info>");
-        }
+        $this->debug("Running command: <info>$command</info>");
 
         passthru($command, $return_var);
         return $return_var;

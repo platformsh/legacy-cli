@@ -2,13 +2,13 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
-use Platformsh\Client\Model\Integration;
 
 abstract class IntegrationCommandBase extends CommandBase
 {
@@ -32,67 +32,67 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     private function getFields()
     {
-        return array(
-          'type' => new OptionsField('Integration type', [
-            'name' => 'Integration type',
-            'optionName' => 'type',
-            'description' => "The integration type ('github', 'hipchat', or 'webhook')",
-            'options' => ['github', 'hipchat', 'webhook'],
-          ]),
-          'token' => new Field('Token', [
-            'conditions' => ['type' => ['github', 'hipchat']],
-            'name' => 'Token',
-            'description' => 'GitHub or HipChat: An OAuth token for the integration',
-            'validator' => function ($string) {
-                return base64_decode($string, true) !== false;
-            },
-          ]),
-          'repository' => new Field('Repository', [
-            'conditions' => ['type' => 'github'],
-            'description' => 'GitHub: the repository to track (the URL, e.g. \'https://github.com/user/repo\')',
-            'validator' => function ($string) {
-                return substr_count($string, '/', 1) === 1;
-            },
-            'normalizer' => function ($string) {
-                if (preg_match('#^https?://#', $string)) {
-                    return parse_url($string, PHP_URL_PATH);
-                }
+        return [
+            'type' => new OptionsField('Integration type', [
+                'name' => 'Integration type',
+                'optionName' => 'type',
+                'description' => "The integration type ('github', 'hipchat', or 'webhook')",
+                'options' => ['github', 'hipchat', 'webhook'],
+            ]),
+            'token' => new Field('Token', [
+                'conditions' => ['type' => ['github', 'hipchat']],
+                'name' => 'Token',
+                'description' => 'GitHub or HipChat: An OAuth token for the integration',
+                'validator' => function ($string) {
+                    return base64_decode($string, true) !== false;
+                },
+            ]),
+            'repository' => new Field('Repository', [
+                'conditions' => ['type' => 'github'],
+                'description' => 'GitHub: the repository to track (the URL, e.g. \'https://github.com/user/repo\')',
+                'validator' => function ($string) {
+                    return substr_count($string, '/', 1) === 1;
+                },
+                'normalizer' => function ($string) {
+                    if (preg_match('#^https?://#', $string)) {
+                        return parse_url($string, PHP_URL_PATH);
+                    }
 
-                return $string;
-            },
-          ]),
-          'build_pull_requests' => new BooleanField('Build pull requests', [
-            'conditions' => ['type' => 'github'],
-            'description' => 'GitHub: build pull requests as environments',
-          ]),
-          'fetch_branches' => new BooleanField('Fetch branches', [
-            'conditions' => ['type' => 'github'],
-            'description' => 'GitHub: sync all branches to Platform.sh',
-          ]),
-          'room' => new Field('Hipchat room ID', [
-            'conditions' => ['type' => 'hipchat'],
-            'validator' => 'is_numeric',
-            'optionName' => 'room',
-            'name' => 'HipChat room ID',
-          ]),
-          'events' => new ArrayField('Events to report', [
-            'conditions' => ['type' => 'hipchat'],
-            'optionName' => 'events',
-            'default' => ['*'],
-            'description' => 'HipChat: events to report',
-          ]),
-          'states' => new ArrayField('States to report', [
-            'conditions' => ['type' => 'hipchat'],
-            'optionName' => 'states',
-            'name' => 'States to report',
-            'default' => ['complete'],
-            'description' => 'HipChat: states to report, e.g. complete,in_progress',
-          ]),
-          'url' => new UrlField('URL', [
-            'conditions' => ['type' => 'webhook'],
-            'description' => 'Generic webhook: a URL to receive JSON data',
-          ]),
-        );
+                    return $string;
+                },
+            ]),
+            'build_pull_requests' => new BooleanField('Build pull requests', [
+                'conditions' => ['type' => 'github'],
+                'description' => 'GitHub: build pull requests as environments',
+            ]),
+            'fetch_branches' => new BooleanField('Fetch branches', [
+                'conditions' => ['type' => 'github'],
+                'description' => 'GitHub: sync all branches to Platform.sh',
+            ]),
+            'room' => new Field('Hipchat room ID', [
+                'conditions' => ['type' => 'hipchat'],
+                'validator' => 'is_numeric',
+                'optionName' => 'room',
+                'name' => 'HipChat room ID',
+            ]),
+            'events' => new ArrayField('Events to report', [
+                'conditions' => ['type' => 'hipchat'],
+                'optionName' => 'events',
+                'default' => ['*'],
+                'description' => 'HipChat: events to report',
+            ]),
+            'states' => new ArrayField('States to report', [
+                'conditions' => ['type' => 'hipchat'],
+                'optionName' => 'states',
+                'name' => 'States to report',
+                'default' => ['complete'],
+                'description' => 'HipChat: states to report, e.g. complete,in_progress',
+            ]),
+            'url' => new UrlField('URL', [
+                'conditions' => ['type' => 'webhook'],
+                'description' => 'Generic webhook: a URL to receive JSON data',
+            ]),
+        ];
     }
 
     /**

@@ -1,9 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Domain;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,7 +15,7 @@ abstract class DomainCommandBase extends CommandBase
 {
 
     // The final array of SSL options for the client parameters.
-    protected $sslOptions = array();
+    protected $sslOptions = [];
 
     protected $domainName;
 
@@ -68,9 +70,9 @@ abstract class DomainCommandBase extends CommandBase
     protected function addDomainOptions()
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The domain name')
-          ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file for this domain')
-          ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the private key file for the provided certificate.')
-          ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file or files for the provided certificate');
+             ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file for this domain')
+             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the private key file for the provided certificate.')
+             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file or files for the provided certificate');
     }
 
     /**
@@ -119,7 +121,7 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         // Split up the chain file contents.
-        $chain = array();
+        $chain = [];
         $begin = '-----BEGIN CERTIFICATE-----';
         foreach ($chainFileContents as $data) {
             if (substr_count($data, $begin) > 1) {
@@ -133,11 +135,11 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         // Yay we win.
-        $this->sslOptions = array(
-          'certificate' => $sslCert,
-          'key' => $sslPrivateKey,
-          'chain' => $chain,
-        );
+        $this->sslOptions = [
+            'certificate' => $sslCert,
+            'key' => $sslPrivateKey,
+            'chain' => $chain,
+        ];
 
         return true;
     }
@@ -167,7 +169,7 @@ abstract class DomainCommandBase extends CommandBase
      */
     protected function readChainFiles(array $chainPaths)
     {
-        $chainFiles = array();
+        $chainFiles = [];
         foreach ($chainPaths as $chainPath) {
             if (!is_readable($chainPath)) {
                 throw new \Exception("The chain file could not be read: $chainPath");
@@ -176,6 +178,29 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         return $chainFiles;
+    }
+
+    /**
+     * Output a clear explanation for domains API errors.
+     *
+     * @param ClientException $e
+     * @param Project         $project
+     *
+     * @throws ClientException If it can't be explained.
+     */
+    protected function handleApiException(ClientException $e, Project $project)
+    {
+        $response = $e->getResponse();
+        if ($response !== null && $response->getStatusCode() === 403) {
+            $project->ensureFull();
+            $data = $project->getData();
+            if (!$project->hasLink('#manage-domains') && !empty($data['subscription']['plan']) && $data['subscription']['plan'] === 'development') {
+                $this->stdErr->writeln('This project is on a Development plan. Upgrade the plan to add domains.');
+            }
+        }
+        else {
+            throw $e;
+        }
     }
 
 }

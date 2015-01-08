@@ -18,14 +18,14 @@ class EnvironmentCheckoutCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:checkout')
-          ->setAliases(array('checkout'))
-          ->setDescription('Check out an environment')
-          ->addArgument(
-            'id',
-            InputArgument::OPTIONAL,
-            'The ID of the environment to check out. For example: "sprint2"'
-          );
+            ->setName('environment:checkout')
+            ->setAliases(['checkout'])
+            ->setDescription('Check out an environment')
+            ->addArgument(
+                'id',
+                InputArgument::OPTIONAL,
+                'The ID of the environment to check out. For example: "sprint2"'
+            );
         $this->addExample('Check out the environment "develop"', 'master');
     }
 
@@ -43,7 +43,7 @@ class EnvironmentCheckoutCommand extends CommandBase
             if ($currentEnvironment) {
                 $this->stdErr->writeln("The current environment is <info>{$currentEnvironment->title}</info>.");
             }
-            $environmentList = array();
+            $environmentList = [];
             foreach ($environments as $id => $environment) {
                 if ($currentEnvironment && $id == $currentEnvironment->id) {
                     continue;
@@ -112,7 +112,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         $this->stdErr->writeln("Creating branch $branch based on upstream $upstreamRemote/$branch");
 
         // Fetch the branch from the upstream remote.
-        $gitHelper->execute(array('fetch', $upstreamRemote, $branch));
+        $gitHelper->execute(['fetch', $upstreamRemote, $branch]);
 
         // Create the new branch, and set the correct upstream.
         $success = $gitHelper->checkoutNew($branch, $upstreamRemote . '/' . $branch);
@@ -132,7 +132,7 @@ class EnvironmentCheckoutCommand extends CommandBase
     protected function branchExists($branch, Project $project, GitHelper $gitHelper)
     {
         // Check if the Git branch exists locally.
-        $candidates = array_unique(array(Environment::sanitizeId($branch), $branch));
+        $candidates = array_unique([Environment::sanitizeId($branch), $branch]);
         foreach ($candidates as $candidate) {
             if ($gitHelper->branchExists($candidate)) {
                 return $candidate;

@@ -11,19 +11,19 @@ class Bot extends ConsoleAnimation
      */
     public function __construct(OutputInterface $output)
     {
-        $interval = 500000;
         $filenames = [
-          CLI_ROOT . '/resources/bot/bot1',
-          CLI_ROOT . '/resources/bot/bot2',
-          CLI_ROOT . '/resources/bot/bot3',
-          CLI_ROOT . '/resources/bot/bot4',
+            CLI_ROOT . '/resources/bot/bot1',
+            CLI_ROOT . '/resources/bot/bot2',
+            CLI_ROOT . '/resources/bot/bot3',
+            CLI_ROOT . '/resources/bot/bot4',
         ];
 
         // The frames are the contents of each file, with each line indented.
         $frames = array_map(function ($filename) {
-            return preg_replace('/^/m', '    ', file_get_contents($filename));
+            return preg_replace('/^/m', '    ', file_get_contents($filename))
+                . "\n    <info>Platform.sh</info>";
         }, $filenames);
 
-        parent::__construct($output, $interval, $frames);
+        parent::__construct($output, $frames);
     }
 }

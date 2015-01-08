@@ -1,8 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Client\Model\Integration;
-use Symfony\Component\Console\Helper\Table;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -15,12 +14,13 @@ class IntegrationGetCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-          ->setName('integration:get')
-          ->setAliases(array('integrations'))
-          ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
-          ->setDescription('View project integration(s)');
+            ->setName('integration:get')
+            ->setAliases(['integrations'])
+            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
+            ->setDescription('View project integration(s)');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
-        $this->setHiddenAliases(array('integration:list'));
+        $this->setHiddenAliases(['integration:list']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -37,7 +37,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
 
                 return 1;
             }
-            $results = array($integration);
+            $results = [$integration];
         } else {
             $results = $this->getSelectedProject()
                             ->getIntegrations();
@@ -48,34 +48,21 @@ class IntegrationGetCommand extends IntegrationCommandBase
             }
         }
 
-        $table = $this->buildTable($results, $output);
-        $table->render();
+        $table = new Table($input, $output);
 
-        return 0;
-    }
-
-    /**
-     * @param Integration[]   $integrations
-     * @param OutputInterface $output
-     *
-     * @return Table
-     */
-    protected function buildTable(array $integrations, OutputInterface $output)
-    {
-        $table = new Table($output);
-        $table->setHeaders(array("ID", "Type", "Details"));
-        foreach ($integrations as $integration) {
+        $header = ['ID', 'Type', 'Details'];
+        $rows = [];
+        foreach ($results as $integration) {
             $data = $this->formatIntegrationData($integration);
-            $table->addRow(
-              array(
+            $rows[] = [
                 $integration->id,
                 $integration->type,
                 $data,
-              )
-            );
+            ];
         }
 
-        return $table;
-    }
+        $table->render($rows, $header);
 
+        return 0;
+    }
 }

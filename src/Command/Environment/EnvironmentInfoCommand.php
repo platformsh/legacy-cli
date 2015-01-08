@@ -3,9 +3,9 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Environment;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,21 +22,22 @@ class EnvironmentInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:info')
-          ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
-          ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-          ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-          ->setDescription('Read or set properties for an environment');
+            ->setName('environment:info')
+            ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+            ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
+            ->setDescription('Read or set properties for an environment');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
         $this->addExample('Read all environment properties')
-          ->addExample("Show the environment's status", 'status')
-          ->addExample('Show the date the environment was created', 'created_at')
-          ->addExample('Enable email sending', 'enable_smtp true')
-          ->addExample('Change the environment title', 'title "New feature"')
-          ->addExample("Change the environment's parent branch", 'parent sprint-2');
-        $this->setHiddenAliases(array('environment:metadata'));
+             ->addExample("Show the environment's status", 'status')
+             ->addExample('Show the date the environment was created', 'created_at')
+             ->addExample('Enable email sending', 'enable_smtp true')
+             ->addExample('Change the environment title', 'title "New feature"')
+             ->addExample("Change the environment's parent branch", 'parent sprint-2');
+        $this->setHiddenAliases(['environment:metadata']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -54,7 +55,7 @@ class EnvironmentInfoCommand extends CommandBase
         $this->formatter = new PropertyFormatter();
 
         if (!$property) {
-            return $this->listProperties($environment, $output);
+            return $this->listProperties($environment, new Table($input, $output));
         }
 
         $value = $input->getArgument('value');
@@ -68,19 +69,21 @@ class EnvironmentInfoCommand extends CommandBase
     }
 
     /**
-     * @param Environment     $environment
-     * @param OutputInterface $output
+     * @param Environment $environment
+     *
+     * @param Table       $table
      *
      * @return int
      */
-    protected function listProperties(Environment $environment, OutputInterface $output)
+    protected function listProperties(Environment $environment, Table $table)
     {
-        $table = new Table($output);
-        $table->setHeaders(array("Property", "Value"));
+        $headings = [];
+        $values = [];
         foreach ($environment->getProperties() as $key => $value) {
-            $table->addRow(array($key, $this->formatter->format($value, $key)));
+            $headings[] = $key;
+            $values[] = $this->formatter->format($value, $key);
         }
-        $table->render();
+        $table->renderSimple($values, $headings);
 
         return 0;
     }
@@ -106,17 +109,17 @@ class EnvironmentInfoCommand extends CommandBase
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-              "Property <info>$property</info> already set as: " . $this->formatter->format($environment->getProperty($property, false), $property)
+                "Property <info>$property</info> already set as: " . $this->formatter->format($environment->getProperty($property, false), $property)
             );
 
             return 0;
         }
-        $result = $environment->update(array($property => $value));
+        $result = $environment->update([$property => $value]);
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment->$property, $property));
 
         $this->clearEnvironmentsCache();
 
-        $rebuildProperties = array('enable_smtp', 'restrict_robots');
+        $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
         if ($result->countActivities() && !$noWait) {
             $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
@@ -137,12 +140,12 @@ class EnvironmentInfoCommand extends CommandBase
      */
     protected function getType($property)
     {
-        $writableProperties = array(
-          'enable_smtp' => 'boolean',
-          'parent' => 'string',
-          'title' => 'string',
-          'restrict_robots' => 'boolean',
-        );
+        $writableProperties = [
+            'enable_smtp' => 'boolean',
+            'parent' => 'string',
+            'title' => 'string',
+            'restrict_robots' => 'boolean',
+        ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }
@@ -184,7 +187,7 @@ class EnvironmentInfoCommand extends CommandBase
         }
         switch ($type) {
             case 'boolean':
-                $valid = in_array($value, array('1', '0', 'false', 'true'));
+                $valid = in_array($value, ['1', '0', 'false', 'true']);
                 break;
 
         }

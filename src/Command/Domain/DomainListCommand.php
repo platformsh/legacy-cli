@@ -1,14 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
-use Platformsh\Cli\Command\CommandBase;
+use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Util\Table;
 use Platformsh\Client\Model\Domain;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class DomainListCommand extends CommandBase
+class DomainListCommand extends DomainCommandBase
 {
     /**
      * {@inheritdoc}
@@ -16,28 +16,11 @@ class DomainListCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('domain:list')
-          ->setAliases(array('domains'))
-          ->setDescription('Get a list of all domains');
+            ->setName('domain:list')
+            ->setAliases(['domains'])
+            ->setDescription('Get a list of all domains');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
-    }
-
-    /**
-     * Build a table of domains.
-     *
-     * @param Domain[] $tree
-     * @param OutputInterface $output
-     *
-     * @return Table
-     */
-    protected function buildDomainTable(array $tree, $output)
-    {
-        $table = new Table($output);
-        $table
-          ->setHeaders(array('Name', 'SSL enabled', 'Creation date'))
-          ->addRows($this->buildDomainRows($tree));
-
-        return $table;
     }
 
     /**
@@ -49,16 +32,16 @@ class DomainListCommand extends CommandBase
      */
     protected function buildDomainRows(array $tree)
     {
-        $rows = array();
+        $rows = [];
 
         $formatter = new PropertyFormatter();
 
         foreach ($tree as $domain) {
-            $rows[] = array(
-              $domain->id,
-              $formatter->format((bool) $domain['ssl']['has_certificate']),
-              $formatter->format($domain['created_at'], 'created_at'),
-            );
+            $rows[] = [
+                $domain->id,
+                $formatter->format((bool) $domain['ssl']['has_certificate']),
+                $formatter->format($domain['created_at'], 'created_at'),
+            ];
         }
 
         return $rows;
@@ -72,21 +55,41 @@ class DomainListCommand extends CommandBase
         $this->validateInput($input);
 
         $project = $this->getSelectedProject();
-        $domains = $project->getDomains();
+
+
+        try {
+            $domains = $project->getDomains();
+        }
+        catch (ClientException $e) {
+            $this->handleApiException($e, $project);
+            return 1;
+        }
 
         if (empty($domains)) {
             $this->stdErr->writeln("No domains found for <info>{$project->title}</info>");
-        } else {
-            $this->stdErr->writeln("Your domains are: ");
-            $table = $this->buildDomainTable($domains, $output);
-            $table->render();
+            $this->stdErr->writeln("\nAdd a domain to the project by running <info>platform domain:add [domain-name]</info>");
+
+            return 1;
         }
 
-        $this->stdErr->writeln("\nAdd a domain to the project by running <info>platform domain:add [domain-name]</info>");
-        if (!empty($domains)) {
-            $this->stdErr->writeln(
-              "Delete domains by running <info>platform domain:delete [domain-name]</info>"
-            );
+        $table = new Table($input, $output);
+        $header = ['Name', 'SSL enabled', 'Creation date'];
+        $rows = $this->buildDomainRows($domains);
+
+        if ($table->formatIsMachineReadable()) {
+            $table->render($rows, $header);
+
+            return 0;
         }
+
+        $this->stdErr->writeln("Your domains are: ");
+        $table->render($rows, $header);
+
+        $this->stdErr->writeln("\nAdd a new domain by running <info>platform domain:add [domain-name]</info>");
+        $this->stdErr->writeln(
+            "Delete a domain by running <info>platform domain:delete [domain-name]</info>"
+        );
+
+        return 0;
     }
 }

@@ -15,9 +15,9 @@ class DomainDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('domain:delete')
-          ->setDescription('Delete a domain from the project')
-          ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
+            ->setName('domain:delete')
+            ->setDescription('Delete a domain from the project')
+            ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Delete the domain example.com', 'example.com');
     }
@@ -30,18 +30,17 @@ class DomainDeleteCommand extends CommandBase
         $this->validateInput($input);
 
         $name = $input->getArgument('name');
-        $domain = $this->getSelectedProject()
-                       ->getDomain($name);
+        $project = $this->getSelectedProject();
+
+        $domain = $project->getDomain($name);
+
         if (!$domain) {
             $this->stdErr->writeln("Domain not found: <error>$name</error>");
-
             return 1;
         }
 
-        if (!$this->getHelper('question')
-                  ->confirm("Are you sure you want to delete the domain <info>$name</info>?", $input, $this->stdErr)
-        ) {
-            return 0;
+        if (!$this->getHelper('question')->confirm("Are you sure you want to delete the domain <info>$name</info>?", $input, $this->stdErr)) {
+            return 1;
         }
 
         $result = $domain->delete();

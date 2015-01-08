@@ -20,7 +20,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeCommand(Command $command, array $options = array())
+    protected function describeCommand(Command $command, array $options = [])
     {
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
@@ -72,7 +72,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeApplication(ConsoleApplication $application, array $options = array())
+    protected function describeApplication(ConsoleApplication $application, array $options = [])
     {
         $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
         $description = new ApplicationDescription($application, $describedNamespace);
@@ -92,22 +92,39 @@ class CustomTextDescriptor extends TextDescriptor
 
             if ($describedNamespace) {
                 $this->writeText(
-                  sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace),
-                  $options
+                    sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace),
+                    $options
                 );
             } else {
                 $this->writeText('<comment>Available commands:</comment>', $options);
             }
 
-            // add commands by namespace
+            // Display commands grouped by namespace.
             foreach ($description->getNamespaces() as $namespace) {
+                // Filter hidden commands in the namespace.
+                /** @var Command[] $commands */
+                $commands = [];
+                foreach ($namespace['commands'] as $name) {
+                    $command = $description->getCommand($name);
+                    if (!$describedNamespace && $command instanceof CanHideInListInterface && $command->hideInList()) {
+                        continue;
+                    }
+                    $commands[$name] = $command;
+                }
+
+                // Skip the namespace if it doesn't contain any commands.
+                if (!count($commands)) {
+                    continue;
+                }
+
+                // Display the namespace name.
                 if (!$describedNamespace && ApplicationDescription::GLOBAL_NAMESPACE !== $namespace['id']) {
                     $this->writeText("\n");
                     $this->writeText('<comment>' . $namespace['id'] . '</comment>', $options);
                 }
 
-                foreach ($namespace['commands'] as $name) {
-                    $command = $description->getCommand($name);
+                // Display each command.
+                foreach ($commands as $name => $command) {
                     $aliases = $command->getAliases();
                     if ($aliases && in_array($name, $aliases)) {
                         // If the command is an alias, do not list it in the
@@ -120,10 +137,6 @@ class CustomTextDescriptor extends TextDescriptor
                         $aliases = $command->getVisibleAliases();
                     }
 
-                    if ($command instanceof CanHideInListInterface && $command->hideInList()) {
-                        continue;
-                    }
-
                     // Colour local commands differently from remote ones.
                     $commandDescription = $command->getDescription();
                     if ($command instanceof CommandBase && !$command->isLocal()) {
@@ -131,12 +144,12 @@ class CustomTextDescriptor extends TextDescriptor
                     }
                     $this->writeText("\n");
                     $this->writeText(
-                      sprintf(
-                        "  %-${width}s %s",
-                        "<info>$name</info>" . $this->formatAliases($aliases),
-                        $commandDescription
-                      ),
-                      $options
+                        sprintf(
+                            "  %-${width}s %s",
+                            "<info>$name</info>" . $this->formatAliases($aliases),
+                            $commandDescription
+                        ),
+                        $options
                     );
                 }
             }
@@ -164,11 +177,11 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function writeText($content, array $options = array())
+    protected function writeText($content, array $options = [])
     {
         $this->write(
-          isset($options['raw_text']) && $options['raw_text'] ? strip_tags($content) : $content,
-          isset($options['raw_output']) ? !$options['raw_output'] : true
+            isset($options['raw_text']) && $options['raw_text'] ? strip_tags($content) : $content,
+            isset($options['raw_output']) ? !$options['raw_output'] : true
         );
     }
 

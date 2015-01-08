@@ -21,7 +21,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     /** @var LocalBuild */
     protected $builder;
 
-    protected $buildSettings = array('noClean' => true);
+    protected $buildSettings = ['noClean' => true];
 
     /**
      * {@inheritdoc}
@@ -38,8 +38,8 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->builder = new LocalBuild(
-          $this->buildSettings,
-          self::$output
+            $this->buildSettings,
+            self::$output
         );
     }
 

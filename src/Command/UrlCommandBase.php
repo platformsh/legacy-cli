@@ -12,15 +12,15 @@ abstract class UrlCommandBase extends CommandBase
     protected function configure()
     {
         $this->addOption(
-          'browser',
-          null,
-          InputOption::VALUE_REQUIRED,
-          'The browser to use to open the URL. Set 0 for none.'
+            'browser',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'The browser to use to open the URL. Set 0 for none.'
         )->addOption(
-          'pipe',
-          null,
-          InputOption::VALUE_NONE,
-          'Output the raw URL, suitable for piping to another command.'
+            'pipe',
+            null,
+            InputOption::VALUE_NONE,
+            'Output the raw URL, suitable for piping to another command.'
         );
     }
 
@@ -56,7 +56,7 @@ abstract class UrlCommandBase extends CommandBase
         }
 
         if ($browser) {
-            $opened = $shellHelper->execute(array($browser, $url));
+            $opened = $shellHelper->execute([$browser, $url]);
             if ($opened) {
                 $this->stdErr->writeln("Opened: $url");
 
@@ -74,7 +74,7 @@ abstract class UrlCommandBase extends CommandBase
      */
     protected function getDefaultBrowser()
     {
-        $potential = array('xdg-open', 'open', 'start');
+        $potential = ['xdg-open', 'open', 'start'];
         $shellHelper = $this->getHelper('shell');
         foreach ($potential as $browser) {
             if ($shellHelper->commandExists($browser)) {

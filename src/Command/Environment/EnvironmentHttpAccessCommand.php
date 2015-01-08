@@ -15,27 +15,27 @@ class EnvironmentHttpAccessCommand extends CommandBase
     {
         parent::configure();
         $this
-          ->setName('environment:http-access')
-          ->setAliases(array('httpaccess'))
-          ->setDescription('Update HTTP access settings for an environment')
-          ->addOption(
-            'access',
-            null,
-            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-            'Access restriction in the format "permission:address"'
-          )
-          ->addOption(
-            'auth',
-            null,
-            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-            'Authentication details in the format "username:password"'
-          )
-          ->addOption(
-            'enabled',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Whether access control should be enabled: 1 to enable, 0 to disable'
-          );
+            ->setName('environment:http-access')
+            ->setAliases(['httpaccess'])
+            ->setDescription('Update HTTP access settings for an environment')
+            ->addOption(
+                'access',
+                null,
+                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+                'Access restriction in the format "permission:address"'
+            )
+            ->addOption(
+                'auth',
+                null,
+                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+                'Authentication details in the format "username:password"'
+            )
+            ->addOption(
+                'enabled',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Whether access control should be enabled: 1 to enable, 0 to disable'
+            );
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -71,7 +71,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
             throw new \InvalidArgumentException($message);
         }
 
-        return array("username" => $parts[0], "password" => $parts[1]);
+        return ["username" => $parts[0], "password" => $parts[1]];
     }
 
     /**
@@ -86,16 +86,16 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $parts = explode(':', $access, 2);
         if (count($parts) != 2) {
             $message = sprintf(
-              'Access "<error>%s</error>" is not valid, please use the format: permission:address',
-              $access
+                'Access "<error>%s</error>" is not valid, please use the format: permission:address',
+                $access
             );
             throw new \InvalidArgumentException($message);
         }
 
-        if (!in_array($parts[0], array('allow', 'deny'))) {
+        if (!in_array($parts[0], ['allow', 'deny'])) {
             $message = sprintf(
-              "The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'",
-              $parts[0]
+                "The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'",
+                $parts[0]
             );
             throw new \InvalidArgumentException($message);
         }
@@ -112,7 +112,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
             $address .= '/32';
         }
 
-        return array("address" => $address, "permission" => $permission);
+        return ["address" => $address, "permission" => $permission];
     }
 
     /**
@@ -139,22 +139,22 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $auth = $input->getOption('auth');
         $access = $input->getOption('access');
 
-        $accessOpts = array();
+        $accessOpts = [];
 
         $enabled = $input->getOption('enabled');
         if ($enabled !== null) {
-            $accessOpts['is_enabled'] = !in_array($enabled, array('0', 'false'));
+            $accessOpts['is_enabled'] = !in_array($enabled, ['0', 'false']);
         }
 
         if ($access) {
-            $accessOpts['addresses'] = array();
+            $accessOpts['addresses'] = [];
             foreach (array_filter($access) as $access) {
                 $accessOpts["addresses"][] = $this->parseAccess($access);
             }
         }
 
         if ($auth) {
-            $accessOpts['basic_auth'] = array();
+            $accessOpts['basic_auth'] = [];
             foreach (array_filter($auth) as $auth) {
                 $parsed = $this->parseAuth($auth);
                 $accessOpts["basic_auth"][$parsed["username"]] = $parsed["password"];
@@ -183,12 +183,12 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
                 // The API only accepts {} for an empty "basic_auth" value,
                 // rather than [].
-                if (isset($accessOpts['basic_auth']) && $accessOpts['basic_auth'] === array()) {
-                    $accessOpts['basic_auth'] = (object) array();
+                if (isset($accessOpts['basic_auth']) && $accessOpts['basic_auth'] === []) {
+                    $accessOpts['basic_auth'] = (object) [];
                 }
 
                 // Patch the environment with the changes.
-                $result = $selectedEnvironment->update(array('http_access' => $accessOpts));
+                $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
                 $this->clearEnvironmentsCache();
 
                 $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");

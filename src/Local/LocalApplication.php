@@ -81,7 +81,7 @@ class LocalApplication
     public function getConfig()
     {
         if (!isset($this->config)) {
-            $this->config = array();
+            $this->config = [];
             if (file_exists($this->appRoot . '/.platform.app.yaml')) {
                 try {
                     $parser = new Parser();
@@ -90,7 +90,7 @@ class LocalApplication
                 }
                 catch (ParseException $e) {
                     throw new InvalidConfigException(
-                      "Parse error in file '{$this->appRoot}/.platform.app.yaml'. \n" . $e->getMessage()
+                        "Parse error in file '{$this->appRoot}/.platform.app.yaml'. \n" . $e->getMessage()
                     );
                 }
             }
@@ -125,13 +125,13 @@ class LocalApplication
      */
     public function getToolstacks()
     {
-        return array(
-          new Toolstack\Drupal(),
-          new Toolstack\Symfony(),
-          new Toolstack\Composer(),
-          new Toolstack\NodeJs(),
-          new Toolstack\NoToolstack(),
-        );
+        return [
+            new Toolstack\Drupal(),
+            new Toolstack\Symfony(),
+            new Toolstack\Composer(),
+            new Toolstack\NodeJs(),
+            new Toolstack\NoToolstack(),
+        ];
     }
 
     /**
@@ -168,7 +168,7 @@ class LocalApplication
         foreach (self::getToolstacks() as $toolstack) {
             $key = $toolstack->getKey();
             if ((!$toolstackChoice && $toolstack->detect($this->getRoot()))
-              || ($key && $toolstackChoice === $key)
+                || ($key && $toolstackChoice === $key)
             ) {
                 return $toolstack;
             }

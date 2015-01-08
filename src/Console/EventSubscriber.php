@@ -20,7 +20,7 @@ class EventSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return array('console.exception' => 'onException');
+        return ['console.exception' => 'onException'];
     }
 
     /**
@@ -38,9 +38,9 @@ class EventSubscriber implements EventSubscriberInterface
         if ($exception instanceof ConnectException && strpos($exception->getMessage(), 'cURL error 6') !== false) {
             $request = $exception->getRequest();
             $event->setException(new ConnectionFailedException(
-              "Failed to connect to host: " . $request->getHost()
-              . " \nPlease check your Internet connection.",
-              $request
+                "Failed to connect to host: " . $request->getHost()
+                . " \nPlease check your Internet connection.",
+                $request
             ));
             $event->stopPropagation();
         }
@@ -64,8 +64,8 @@ class EventSubscriber implements EventSubscriberInterface
             elseif ($response->getStatusCode() === 401) {
                 $event->setException(new LoginRequiredException(
                     "Unauthorized: please log in again.",
-                     $request,
-                     $response
+                    $request,
+                    $response
                 ));
                 $event->stopPropagation();
             }

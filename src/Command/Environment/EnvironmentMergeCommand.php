@@ -13,10 +13,10 @@ class EnvironmentMergeCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:merge')
-          ->setAliases(array('merge'))
-          ->setDescription('Merge an environment')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
+            ->setName('environment:merge')
+            ->setAliases(['merge'])
+            ->setDescription('Merge an environment')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -40,9 +40,9 @@ class EnvironmentMergeCommand extends CommandBase
 
         if (!$this->getHelper('question')
                   ->confirm(
-                    "Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?",
-                    $input,
-                    $this->stdErr
+                      "Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?",
+                      $input,
+                      $this->stdErr
                   )
         ) {
             return 0;
@@ -55,10 +55,10 @@ class EnvironmentMergeCommand extends CommandBase
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
             $success = ActivityUtil::waitAndLog(
-              $activity,
-              $this->stdErr,
-              'Merge complete',
-              'Merge failed'
+                $activity,
+                $this->stdErr,
+                'Merge complete',
+                'Merge failed'
             );
             if (!$success) {
                 return 1;

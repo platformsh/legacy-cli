@@ -11,8 +11,8 @@ class ProjectDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('project:delete')
-          ->setDescription('Delete a project');
+            ->setName('project:delete')
+            ->setDescription('Delete a project');
         $this->addProjectOption();
     }
 
@@ -33,12 +33,12 @@ class ProjectDeleteCommand extends CommandBase
         $title = $project->title;
 
         $confirmQuestion = "You are about to delete the project:"
-          . "\n  <comment>$title</comment> (<comment>{$project->id}</comment>)"
-          . "\n\n * This action is <options=bold>irreversible</>."
-          . "\n * Your site will no longer be accessible."
-          . "\n * All data associated with this project will be deleted, including backups."
-          . "\n * You will be charged at the end of the month for any remaining project costs."
-          . "\n\nAre you sure you want to delete this project?";
+            . "\n  <comment>$title</comment> (<comment>{$project->id}</comment>)"
+            . "\n\n * This action is <options=bold>irreversible</>."
+            . "\n * Your site will no longer be accessible."
+            . "\n * All data associated with this project will be deleted, including backups."
+            . "\n * You will be charged at the end of the month for any remaining project costs."
+            . "\n\nAre you sure you want to delete this project?";
         if (!$questionHelper->confirm($confirmQuestion, $input, $output, false)) {
             return 1;
         }

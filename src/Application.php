@@ -45,8 +45,7 @@ class Application extends ParentApplication
     protected function getDefaultInputDefinition()
     {
         // We remove the confusing `--ansi` and `--no-ansi` options.
-        return new InputDefinition(
-          array(
+        return new InputDefinition([
             new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
             new InputOption('--help', '-h', InputOption::VALUE_NONE, 'Display this help message'),
             new InputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Do not output any message'),
@@ -55,8 +54,7 @@ class Application extends ParentApplication
             new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts'),
             new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
             new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell'),
-          )
-        );
+        ]);
     }
 
     /**
@@ -64,16 +62,14 @@ class Application extends ParentApplication
      */
     protected function getDefaultHelperSet()
     {
-        return new HelperSet(
-          array(
+        return new HelperSet([
             new FormatterHelper(),
             new PlatformQuestionHelper(),
             new FilesystemHelper(),
             new ShellHelper(),
             new DrushHelper(),
             new GitHelper(),
-          )
-        );
+        ]);
     }
 
     /**
@@ -83,7 +79,7 @@ class Application extends ParentApplication
     {
         // Override the default commands to add a custom HelpCommand and
         // ListCommand.
-        return array(new Command\HelpCommand(), new Command\ListCommand());
+        return [new Command\HelpCommand(), new Command\ListCommand()];
     }
 
     /**
@@ -91,7 +87,7 @@ class Application extends ParentApplication
      */
     protected function getCommands()
     {
-        static $commands = array();
+        static $commands = [];
         if (count($commands)) {
             return $commands;
         }
@@ -102,6 +98,8 @@ class Application extends ParentApplication
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\Activity\ActivityListCommand();
         $commands[] = new Command\Activity\ActivityLogCommand();
+        $commands[] = new Command\App\AppConfigGetCommand();
+        $commands[] = new Command\App\AppListCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
         $commands[] = new Command\Domain\DomainAddCommand();
@@ -133,12 +131,12 @@ class Application extends ParentApplication
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
         $commands[] = new Command\Local\LocalDirCommand();
         $commands[] = new Command\Local\LocalInitCommand();
-        $commands[] = new Command\Local\LocalInstallCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
         $commands[] = new Command\Project\ProjectGetCommand();
         $commands[] = new Command\Project\ProjectListCommand();
         $commands[] = new Command\Project\ProjectInfoCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
+        $commands[] = new Command\Self\SelfInstallCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
         $commands[] = new Command\Snapshot\SnapshotListCommand();
@@ -165,19 +163,19 @@ class Application extends ParentApplication
      */
     public function getHelp()
     {
-        $messages = array(
-          $this->getLongVersion(),
-          '',
-          '<comment>Global options:</comment>',
-        );
+        $messages = [
+            $this->getLongVersion(),
+            '',
+            '<comment>Global options:</comment>',
+        ];
 
         foreach ($this->getDefinition()
                       ->getOptions() as $option) {
             $messages[] = sprintf(
-              '  %-29s %s %s',
-              '<info>--' . $option->getName() . '</info>',
-              $option->getShortcut() ? '<info>-' . $option->getShortcut() . '</info>' : '  ',
-              $option->getDescription()
+                '  %-29s %s %s',
+                '<info>--' . $option->getName() . '</info>',
+                $option->getShortcut() ? '<info>-' . $option->getShortcut() . '</info>' : '  ',
+                $option->getDescription()
             );
         }
 
@@ -190,10 +188,10 @@ class Application extends ParentApplication
     public function doRun(InputInterface $input, OutputInterface $output)
     {
         // Set the input to non-interactive if the yes or no options are used.
-        if ($input->hasParameterOption(array('--yes', '-y')) || $input->hasParameterOption(array('--no', '-n'))) {
+        if ($input->hasParameterOption(['--yes', '-y']) || $input->hasParameterOption(['--no', '-n'])) {
             $input->setInteractive(false);
         } // Enable the shell.
-        elseif ($input->hasParameterOption(array('--shell', '-s'))) {
+        elseif ($input->hasParameterOption(['--shell', '-s'])) {
             $shell = new Shell($this);
             $shell->run();
 

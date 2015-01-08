@@ -15,9 +15,9 @@ class VariableDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('variable:delete')
-          ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
-          ->setDescription('Delete a variable from an environment');
+            ->setName('variable:delete')
+            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
+            ->setDescription('Delete a variable from an environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -41,9 +41,9 @@ class VariableDeleteCommand extends CommandBase
         if (!$variable->operationAvailable('delete')) {
             if ($variable->inherited) {
                 $this->stdErr->writeln(
-                  "The variable <error>$variableName</error> is inherited,"
-                  . " so it cannot be deleted from this environment."
-                  . "\nYou could override it with the <comment>variable:set</comment> command."
+                    "The variable <error>$variableName</error> is inherited,"
+                    . " so it cannot be deleted from this environment."
+                    . "\nYou could override it with the <comment>variable:set</comment> command."
                 );
             } else {
                 $this->stdErr->writeln("The variable <error>$variableName</error> cannot be deleted");
@@ -55,10 +55,10 @@ class VariableDeleteCommand extends CommandBase
         $environmentId = $this->getSelectedEnvironment()->id;
         $confirm = $this->getHelper('question')
                         ->confirm(
-                          "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
-                          $input,
-                          $this->stdErr,
-                          false
+                            "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
+                            $input,
+                            $this->stdErr,
+                            false
                         );
 
         if (!$confirm) {

@@ -16,15 +16,15 @@ class UserRoleCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('user:role')
-          ->setDescription("View or change a user's role")
-          ->addArgument('email', InputArgument::REQUIRED, "The user's email address")
-          ->addOption('role', 'r', InputOption::VALUE_REQUIRED, "A new role for the user")
-          ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", 'project')
-          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only');
+            ->setName('user:role')
+            ->setDescription("View or change a user's role")
+            ->addArgument('email', InputArgument::REQUIRED, "The user's email address")
+            ->addOption('role', 'r', InputOption::VALUE_REQUIRED, "A new role for the user")
+            ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", 'project')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only');
         $this->addProjectOption()
-          ->addEnvironmentOption()
-          ->addNoWaitOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
         $this->addExample("View Alice's role on the project", 'alice@example.com');
         $this->addExample("View Alice's role on the environment", 'alice@example.com --level environment');
         $this->addExample("Give Alice the 'contributor' role on the environment 'test'", 'alice@example.com --level environment --environment test --role contributor');
@@ -33,7 +33,7 @@ class UserRoleCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $level = $input->getOption('level');
-        $validLevels = array('project', 'environment');
+        $validLevels = ['project', 'environment'];
         if (!in_array($level, $validLevels)) {
             $this->stdErr->writeln("Invalid level: <error>$level</error>");
             return 1;
@@ -45,7 +45,7 @@ class UserRoleCommand extends CommandBase
 
         $email = $input->getArgument('email');
         foreach ($project->getUsers() as $user) {
-            $account = $user->getAccount();
+            $account = $this->getAccount($user);
             if ($account['email'] === $email) {
                 $selectedUser = $user;
                 break;
@@ -56,7 +56,8 @@ class UserRoleCommand extends CommandBase
             return 1;
         }
 
-        $currentRole = null;
+        $currentRole = false;
+        $environmentAccess = false;
         $validRoles = ProjectAccess::$roles;
         if ($level == 'project') {
             $currentRole = $selectedUser['role'];
@@ -66,7 +67,15 @@ class UserRoleCommand extends CommandBase
                 $this->stdErr->writeln('You must specify an environment');
                 return 1;
             }
-            $currentRole = $selectedUser->getEnvironmentRole($this->getSelectedEnvironment());
+            $environment = $this->getSelectedEnvironment();
+            $environmentAccesses = $environment->getUsers();
+            foreach ($environmentAccesses as $candidate) {
+                if ($candidate->user === $selectedUser->id) {
+                    $environmentAccess = $candidate;
+                    $currentRole = $environmentAccess->role;
+                    break;
+                }
+            }
             $validRoles = EnvironmentAccess::$roles;
         }
 
@@ -86,19 +95,18 @@ class UserRoleCommand extends CommandBase
             $this->stdErr->writeln("There is nothing to change");
         }
         elseif ($role && $level == 'project') {
-            $result = $selectedUser->update(array('role' => $role));
+            $result = $selectedUser->update(['role' => $role]);
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
         elseif ($role && $level == 'environment') {
             $environment = $this->getSelectedEnvironment();
-            $access = $environment->getUser($selectedUser->id);
             if ($role == 'none') {
-                if ($access) {
-                    $result = $access->delete();
+                if ($environmentAccess) {
+                    $result = $environmentAccess->delete();
                 }
             }
-            elseif ($access) {
-                $result = $access->update(['role' => $role]);
+            elseif ($environmentAccess) {
+                $result = $environmentAccess->update(['role' => $role]);
             }
             else {
                 $result = $environment->addUser($selectedUser->id, $role);
@@ -121,12 +129,18 @@ class UserRoleCommand extends CommandBase
             return 0;
         }
 
-        if ($level == 'project') {
-            $output->writeln("Project role: <info>{$selectedUser->role}</info>");
-        } elseif ($level == 'environment') {
+        $output->writeln("Project role: <info>{$selectedUser->role}</info>");
+
+        if ($this->hasSelectedEnvironment()) {
             $environment = $this->getSelectedEnvironment();
-            $environmentRole = $selectedUser->getEnvironmentRole($environment) ?: 'none';
-            $output->writeln("Role for environment {$environment->title}: <info>$environmentRole</info>");
+            $environmentAccesses = $environment->getUsers();
+            $currentEnvironmentRole = 'none';
+            foreach ($environmentAccesses as $environmentAccess) {
+                if ($selectedUser->id === $environmentAccess->user) {
+                    $currentEnvironmentRole = $environmentAccess->role;
+                }
+            }
+            $output->writeln("Role for environment {$environment->title}: <info>$currentEnvironmentRole</info>");
         }
 
         return 0;

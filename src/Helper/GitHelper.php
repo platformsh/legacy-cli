@@ -41,7 +41,7 @@ class GitHelper extends Helper
             }
 
             $version = false;
-            $string = $this->execute(array('--version'), false);
+            $string = $this->execute(['--version'], false);
             if ($string && preg_match('/(^| )([0-9]+[^ ]*)/', $string, $matches)) {
                 $version = $matches[2];
             }
@@ -83,7 +83,7 @@ class GitHelper extends Helper
      */
     public function getCurrentBranch($dir = null, $mustRun = false)
     {
-        $args = array('symbolic-ref', '--short', 'HEAD');
+        $args = ['symbolic-ref', '--short', 'HEAD'];
 
         return $this->execute($args, $dir, $mustRun);
     }
@@ -99,13 +99,13 @@ class GitHelper extends Helper
      */
     public function getMergedBranches($ref = 'HEAD', $dir = null, $mustRun = false)
     {
-        $args = array('branch', '--list', '--merged', $ref);
+        $args = ['branch', '--list', '--merged', $ref];
         $mergedBranches = $this->execute($args, $dir, $mustRun);
         $array = array_map(
-          function ($element) {
-              return trim($element, ' *');
-          },
-          explode("\n", $mergedBranches)
+            function ($element) {
+                return trim($element, ' *');
+            },
+            explode("\n", $mergedBranches)
         );
 
         return $array;
@@ -167,7 +167,7 @@ class GitHelper extends Helper
             throw new \InvalidArgumentException("Already a repository: $dir");
         }
 
-        return (bool) $this->execute(array('init'), $dir, $mustRun, false);
+        return (bool) $this->execute(['init'], $dir, $mustRun, false);
     }
 
     /**
@@ -184,7 +184,7 @@ class GitHelper extends Helper
      */
     public function branchExists($branchName, $dir = null, $mustRun = false)
     {
-        $args = array('show-ref', "refs/heads/$branchName");
+        $args = ['show-ref', "refs/heads/$branchName"];
 
         return (bool) $this->execute($args, $dir, $mustRun);
     }
@@ -201,7 +201,7 @@ class GitHelper extends Helper
      */
     public function remoteBranchExists($remote, $branchName, $dir = null, $mustRun = false)
     {
-        $args = array('ls-remote', $remote, $branchName);
+        $args = ['ls-remote', $remote, $branchName];
         $result = $this->execute($args, $dir, $mustRun);
 
         return is_string($result) && strlen(trim($result));
@@ -221,7 +221,7 @@ class GitHelper extends Helper
      */
     public function checkOutNew($name, $parent = null, $dir = null, $mustRun = false)
     {
-        $args = array('checkout', '-b', $name);
+        $args = ['checkout', '-b', $name];
         if ($parent) {
             $args[] = $parent;
         }
@@ -242,7 +242,7 @@ class GitHelper extends Helper
      */
     public function checkOut($name, $dir = null, $mustRun = false)
     {
-        return (bool) $this->execute(array('checkout', $name), $dir, $mustRun, false);
+        return (bool) $this->execute(['checkout', $name], $dir, $mustRun, false);
     }
 
     /**
@@ -263,7 +263,7 @@ class GitHelper extends Helper
     public function getUpstream($branch = null, $dir = null, $mustRun = false)
     {
         if ($branch === null) {
-            $args = array('rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}');
+            $args = ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'];
 
             return $this->execute($args, $dir, $mustRun);
         }
@@ -291,7 +291,7 @@ class GitHelper extends Helper
      */
     public function setUpstream($upstream, $dir = null, $mustRun = false)
     {
-        $args = array('branch');
+        $args = ['branch'];
         if ($upstream !== false) {
             $args[] = '--set-upstream-to=' . $upstream;
         }
@@ -326,9 +326,9 @@ class GitHelper extends Helper
      *
      * @return bool
      */
-    public function cloneRepo($url, $destination = null, array $args = array(), $mustRun = false)
+    public function cloneRepo($url, $destination = null, array $args = [], $mustRun = false)
     {
-        $args = array_merge(array('clone', $url), $args);
+        $args = array_merge(['clone', $url], $args);
         if ($destination) {
             $args[] = $destination;
         }
@@ -350,7 +350,7 @@ class GitHelper extends Helper
      */
     public function getConfig($key, $dir = null, $mustRun = false)
     {
-        $args = array('config', '--get', $key);
+        $args = ['config', '--get', $key];
 
         return $this->execute($args, $dir, $mustRun);
     }

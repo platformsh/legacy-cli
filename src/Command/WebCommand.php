@@ -12,8 +12,8 @@ class WebCommand extends UrlCommandBase
     {
         parent::configure();
         $this
-          ->setName('web')
-          ->setDescription('Open the Platform.sh Web UI');
+            ->setName('web')
+            ->setDescription('Open the Platform.sh Web UI');
         $this->addProjectOption()
              ->addEnvironmentOption();
     }

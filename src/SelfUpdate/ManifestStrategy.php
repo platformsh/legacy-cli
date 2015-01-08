@@ -49,35 +49,35 @@ class ManifestStrategy implements StrategyInterface
         $versionInfo = $this->getAvailableVersions();
         if (!isset($versionInfo[$version]['url'])) {
             throw new \Exception(
-              sprintf('Failed to find download URL for version %s', $version)
+                sprintf('Failed to find download URL for version %s', $version)
             );
         }
         if (!isset($versionInfo[$version]['sha1'])) {
             throw new \Exception(
-              sprintf(
-                'Failed to find download checksum for version %s',
-                $version
-              )
+                sprintf(
+                    'Failed to find download checksum for version %s',
+                    $version
+                )
             );
         }
 
         $downloadResult = file_get_contents($versionInfo[$version]['url']);
         if ($downloadResult === false) {
             throw new HttpRequestException(
-              sprintf(
-                'Request to URL failed: %s',
-                $versionInfo[$version]['url']
-              )
+                sprintf(
+                    'Request to URL failed: %s',
+                    $versionInfo[$version]['url']
+                )
             );
         }
 
         $saveResult = file_put_contents(
-          $updater->getTempPharFile(),
-          $downloadResult
+            $updater->getTempPharFile(),
+            $downloadResult
         );
         if ($saveResult === false) {
             throw new \Exception(
-              sprintf('Failed to write file: %s', $updater->getTempPharFile())
+                sprintf('Failed to write file: %s', $updater->getTempPharFile())
             );
         }
 
@@ -85,8 +85,8 @@ class ManifestStrategy implements StrategyInterface
         if ($tmpSha !== $versionInfo[$version]['sha1']) {
             unlink($updater->getTempPharFile());
             throw new \Exception(sprintf(
-              'The downloaded file does not have the expected SHA-1 hash: %s',
-              $versionInfo[$version]['sha1']
+                'The downloaded file does not have the expected SHA-1 hash: %s',
+                $versionInfo[$version]['sha1']
             ));
         }
     }
@@ -134,8 +134,8 @@ class ManifestStrategy implements StrategyInterface
             $this->manifest = json_decode($manifestContents, true);
             if (null === $this->manifest || json_last_error() !== JSON_ERROR_NONE) {
                 throw new JsonParsingException(
-                  'Error parsing package manifest'
-                  . (function_exists('json_last_error_msg') ? ': ' . json_last_error_msg() : '')
+                    'Error parsing package manifest'
+                    . (function_exists('json_last_error_msg') ? ': ' . json_last_error_msg() : '')
                 );
             }
         }

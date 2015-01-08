@@ -13,9 +13,9 @@ class DocsCommand extends UrlCommandBase
     {
         parent::configure();
         $this
-          ->setName('docs')
-          ->setDescription('Open the Platform.sh online documentation')
-          ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
+            ->setName('docs')
+            ->setDescription('Open the Platform.sh online documentation')
+            ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
         $this->addExample('Search for information about the CLI', 'CLI');
     }
 
@@ -32,7 +32,7 @@ class DocsCommand extends UrlCommandBase
 
             // Use Google search.
             $url = 'https://www.google.com/search?q='
-              . urlencode('site:docs.platform.sh ' . $query);
+                . urlencode('site:docs.platform.sh ' . $query);
         }
 
         $this->openUrl($url, $input, $output);
@@ -45,7 +45,7 @@ class DocsCommand extends UrlCommandBase
      */
     protected function getSearchQuery(array $args)
     {
-        $quoted = array_map(array($this, 'quoteTerm'), $args);
+        $quoted = array_map([$this, 'quoteTerm'], $args);
 
         return implode(' ', $quoted);
     }

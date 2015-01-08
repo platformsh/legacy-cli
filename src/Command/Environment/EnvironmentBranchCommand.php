@@ -18,27 +18,27 @@ class EnvironmentBranchCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:branch')
-          ->setAliases(array('branch'))
-          ->setDescription('Branch an environment')
-          ->addArgument(
-            'name',
-            InputArgument::OPTIONAL,
-            'The name of the new environment. For example: "Sprint 2"'
-          )
-          ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
-          ->addOption(
-            'force',
-            null,
-            InputOption::VALUE_NONE,
-            "Create the new environment even if the branch cannot be checked out locally"
-          )
-          ->addOption(
-            'build',
-            null,
-            InputOption::VALUE_NONE,
-            "Build the new environment locally"
-          );
+            ->setName('environment:branch')
+            ->setAliases(['branch'])
+            ->setDescription('Branch an environment')
+            ->addArgument(
+                'name',
+                InputArgument::OPTIONAL,
+                'The name of the new environment. For example: "Sprint 2"'
+            )
+            ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
+            ->addOption(
+                'force',
+                null,
+                InputOption::VALUE_NONE,
+                "Create the new environment even if the branch cannot be checked out locally"
+            )
+            ->addOption(
+                'build',
+                null,
+                InputOption::VALUE_NONE,
+                "Build the new environment locally"
+            );
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption("Do not wait for the environment to be branched");
@@ -57,8 +57,8 @@ class EnvironmentBranchCommand extends CommandBase
             if ($input->isInteractive()) {
                 // List environments.
                 return $this->runOtherCommand(
-                  'environments',
-                  array('--project' => $selectedProject->id)
+                    'environments',
+                    ['--project' => $selectedProject->id]
                 );
             }
             $this->stdErr->writeln("<error>You must specify the name of the new branch.</error>");
@@ -77,14 +77,14 @@ class EnvironmentBranchCommand extends CommandBase
         if ($environment = $this->getEnvironment($machineName, $selectedProject)) {
             $checkout = $this->getHelper('question')
                              ->confirm(
-                               "The environment <comment>$machineName</comment> already exists. Check out?",
-                               $input,
-                               $this->stdErr
+                                 "The environment <comment>$machineName</comment> already exists. Check out?",
+                                 $input,
+                                 $this->stdErr
                              );
             if ($checkout) {
                 return $this->runOtherCommand(
-                  'environment:checkout',
-                  array('id' => $environment->id)
+                    'environment:checkout',
+                    ['id' => $environment->id]
                 );
             }
 
@@ -93,7 +93,7 @@ class EnvironmentBranchCommand extends CommandBase
 
         if (!$parentEnvironment->operationAvailable('branch')) {
             $this->stdErr->writeln(
-              "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
+                "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
             );
             if ($parentEnvironment->is_dirty) {
                 $this->clearEnvironmentsCache();
@@ -107,8 +107,8 @@ class EnvironmentBranchCommand extends CommandBase
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot && $force) {
             $this->stdErr->writeln(
-              "<comment>This command was run from outside your local project root, the new Platform.sh branch cannot be checked out in your local Git repository."
-              . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
+                "<comment>This command was run from outside your local project root, the new Platform.sh branch cannot be checked out in your local Git repository."
+                . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
             );
         } elseif (!$projectRoot) {
             $this->stdErr->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
@@ -117,7 +117,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $this->stdErr->writeln(
-          "Creating a new environment <info>$branchName</info>, branched from <info>{$parentEnvironment->title}</info>"
+            "Creating a new environment <info>$branchName</info>, branched from <info>{$parentEnvironment->title}</info>"
         );
 
         $activity = $parentEnvironment->branch($branchName, $machineName);
@@ -158,10 +158,10 @@ class EnvironmentBranchCommand extends CommandBase
         $remoteSuccess = true;
         if (!$input->getOption('no-wait')) {
             $remoteSuccess = ActivityUtil::waitAndLog(
-              $activity,
-              $this->stdErr,
-              "The environment <info>$branchName</info> has been branched.",
-              '<error>Branching failed</error>'
+                $activity,
+                $this->stdErr,
+                "The environment <info>$branchName</info> has been branched.",
+                '<error>Branching failed</error>'
             );
         }
 

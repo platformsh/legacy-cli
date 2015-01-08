@@ -2,9 +2,10 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\CacheUtil;
+use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\RelationshipsUtil;
+use Platformsh\Cli\Util\Util;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,12 +19,12 @@ class EnvironmentRelationshipsCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:relationships')
-          ->setAliases(array('relationships'))
-          ->setDescription('Show an environment\'s relationships')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
-          ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view')
-          ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the relationships', '0');
+            ->setName('environment:relationships')
+            ->setAliases(['relationships'])
+            ->setDescription('Show an environment\'s relationships')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
+            ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view')
+            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the relationships', '0');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
@@ -59,7 +60,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         if ($property = $input->getOption('property')) {
             $parents = explode('.', $property);
             $key = end($parents);
-            $value = self::getNestedArrayValue($relationships, $parents, $key_exists);
+            $value = Util::getNestedArrayValue($relationships, $parents, $key_exists);
             if (!$key_exists) {
                 $this->stdErr->writeln("Relationship property not found: <error>$property</error>");
 
@@ -68,38 +69,9 @@ class EnvironmentRelationshipsCommand extends CommandBase
         }
 
         $formatter = new PropertyFormatter();
-        $formatter->jsonOptions = JSON_PRETTY_PRINT;
+        $formatter->yamlInline = 10;
         $output->writeln($formatter->format($value, $key));
 
         return 0;
-    }
-
-    /**
-     * Get a nested value in an array.
-     *
-     * @see Copied from \Drupal\Component\Utility\NestedArray::getValue()
-     *
-     * @param array $array
-     * @param array $parents
-     * @param bool  $key_exists
-     *
-     * @return mixed
-     */
-    protected static function &getNestedArrayValue(array &$array, array $parents, &$key_exists = NULL)
-    {
-        $ref = &$array;
-        foreach ($parents as $parent) {
-            if (is_array($ref) && array_key_exists($parent, $ref)) {
-                $ref = &$ref[$parent];
-            }
-            else {
-                $key_exists = FALSE;
-                $null = NULL;
-                return $null;
-            }
-        }
-        $key_exists = TRUE;
-
-        return $ref;
     }
 }

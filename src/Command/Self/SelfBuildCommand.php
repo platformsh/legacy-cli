@@ -14,19 +14,21 @@ class SelfBuildCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('self-build')
-          ->setDescription('Build a new package of the CLI')
-          ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
-          ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename');
+            ->setName('self:build')
+            ->setDescription('Build a new package of the CLI')
+            ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
+            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename');
+    }
+
+    public function isEnabled()
+    {
+        // You can't build a Phar from another Phar.
+        return !extension_loaded('Phar') || !\Phar::running(false);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (extension_loaded('Phar') && \Phar::running(false)) {
-            $this->stdErr->writeln('Cannot build a Phar from another Phar');
-            return 1;
-        }
-        elseif (!file_exists(CLI_ROOT . '/vendor')) {
+        if (!file_exists(CLI_ROOT . '/vendor')) {
             $this->stdErr->writeln('Directory not found: <error>' . CLI_ROOT . '/vendor</error>');
             $this->stdErr->writeln('Cannot build from a global install');
             return 1;
@@ -54,7 +56,7 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        $config = array();
+        $config = [];
         if ($outputFilename) {
             /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
             $fsHelper = $this->getHelper('fs');
@@ -84,18 +86,18 @@ class SelfBuildCommand extends CommandBase
 
         // Remove the 'vendor' directory, in case the developer has incorporated
         // their own version of dependencies locally.
-        $shellHelper->execute(array('rm', '-r', 'vendor'), CLI_ROOT, true, false);
+        $shellHelper->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
 
-        $shellHelper->execute(array(
-          $shellHelper->resolveCommand('composer'),
-          'install',
-          '--no-dev',
-          '--classmap-authoritative',
-          '--no-interaction',
-          '--no-progress',
-        ), CLI_ROOT, true, false);
+        $shellHelper->execute([
+            $shellHelper->resolveCommand('composer'),
+            'install',
+            '--no-dev',
+            '--classmap-authoritative',
+            '--no-interaction',
+            '--no-progress',
+        ], CLI_ROOT, true, false);
 
-        $boxArgs = array($shellHelper->resolveCommand('box'), 'build', '--no-interaction');
+        $boxArgs = [$shellHelper->resolveCommand('box'), 'build', '--no-interaction'];
 
         // Create a temporary box.json file for this build.
         if (!empty($config)) {

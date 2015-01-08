@@ -18,77 +18,77 @@ class LocalBuildCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('local:build')
-          ->setAliases(array('build'))
-          ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
-          ->setDescription('Build the current project locally')
-          ->addOption(
-            'abslinks',
-            'a',
-            InputOption::VALUE_NONE,
-            'Use absolute links'
-          )
-          ->addOption(
-            'source',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'The source directory. Default: ' . LocalProject::REPOSITORY_DIR
-          )
-          ->addOption(
-            'destination',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'The destination, to which the web root of each app will be symlinked. Default: ' . LocalProject::WEB_ROOT
-          )
-          ->addOption(
-            'copy',
-            null,
-            InputOption::VALUE_NONE,
-            'Copy to a build directory, instead of symlinking from the source'
-          )
-          ->addOption(
-            'no-clean',
-            null,
-            InputOption::VALUE_NONE,
-            'Do not remove old builds'
-          )
-          ->addOption(
-            'no-archive',
-            null,
-            InputOption::VALUE_NONE,
-            'Do not create or use a build archive'
-          )
-          ->addOption(
-            'no-cache',
-            null,
-            InputOption::VALUE_NONE,
-            'Disable caching'
-          )
-          ->addOption(
-            'no-build-hooks',
-            null,
-            InputOption::VALUE_NONE,
-            'Do not run post-build hooks'
-          )
-          ->addOption(
-            'working-copy',
-            null,
-            InputOption::VALUE_NONE,
-            'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version'
-          )
-          ->addOption(
-            'concurrency',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Drush: set the number of concurrent projects that will be processed at the same time',
-            $this->defaultDrushConcurrency
-          )
-          ->addOption(
-            'lock',
-            null,
-            InputOption::VALUE_NONE,
-            'Drush: create or update a lock file (only available with Drush version 7+)'
-          );
+            ->setName('local:build')
+            ->setAliases(['build'])
+            ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
+            ->setDescription('Build the current project locally')
+            ->addOption(
+                'abslinks',
+                'a',
+                InputOption::VALUE_NONE,
+                'Use absolute links'
+            )
+            ->addOption(
+                'source',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'The source directory. Default: ' . LocalProject::REPOSITORY_DIR
+            )
+            ->addOption(
+                'destination',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'The destination, to which the web root of each app will be symlinked. Default: ' . LocalProject::WEB_ROOT
+            )
+            ->addOption(
+                'copy',
+                null,
+                InputOption::VALUE_NONE,
+                'Copy to a build directory, instead of symlinking from the source'
+            )
+            ->addOption(
+                'no-clean',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not remove old builds'
+            )
+            ->addOption(
+                'no-archive',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not create or use a build archive'
+            )
+            ->addOption(
+                'no-cache',
+                null,
+                InputOption::VALUE_NONE,
+                'Disable caching'
+            )
+            ->addOption(
+                'no-build-hooks',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not run post-build hooks'
+            )
+            ->addOption(
+                'working-copy',
+                null,
+                InputOption::VALUE_NONE,
+                'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version'
+            )
+            ->addOption(
+                'concurrency',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Drush: set the number of concurrent projects that will be processed at the same time',
+                $this->defaultDrushConcurrency
+            )
+            ->addOption(
+                'lock',
+                null,
+                InputOption::VALUE_NONE,
+                'Drush: create or update a lock file (only available with Drush version 7+)'
+            );
         $this->addExample('Build the current project');
         $this->addExample('Build the app "example" without symlinking the source files', 'example --copy');
         $this->addExample('Rebuild the current project without using an archive', '--no-archive');
@@ -164,7 +164,7 @@ class LocalBuildCommand extends CommandBase
             }
         }
 
-        $settings = array();
+        $settings = [];
 
         $settings['projectRoot'] = $projectRoot;
 
@@ -175,16 +175,16 @@ class LocalBuildCommand extends CommandBase
         $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : $this->defaultDrushConcurrency;
 
         // Some simple settings flags.
-        $settingsMap = array(
-          'absoluteLinks' => 'abslinks',
-          'copy' => 'copy',
-          'drushWorkingCopy' => 'working-copy',
-          'drushUpdateLock' => 'lock',
-          'noArchive' => 'no-archive',
-          'noCache' => 'no-cache',
-          'noClean' => 'no-clean',
-          'noBuildHooks' => 'no-build-hooks',
-        );
+        $settingsMap = [
+            'absoluteLinks' => 'abslinks',
+            'copy' => 'copy',
+            'drushWorkingCopy' => 'working-copy',
+            'drushUpdateLock' => 'lock',
+            'noArchive' => 'no-archive',
+            'noCache' => 'no-cache',
+            'noClean' => 'no-clean',
+            'noBuildHooks' => 'no-build-hooks',
+        ];
         foreach ($settingsMap as $setting => $option) {
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
         }

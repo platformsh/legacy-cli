@@ -17,11 +17,11 @@ class EnvironmentSshCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:ssh')
-          ->setAliases(array('ssh'))
-          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
-          ->addOption('pipe', null, InputOption::VALUE_NONE, "Output the SSH URL only.")
-          ->setDescription('SSH to the current environment');
+            ->setName('environment:ssh')
+            ->setAliases(['ssh'])
+            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, "Output the SSH URL only.")
+            ->setDescription('SSH to the current environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
@@ -65,9 +65,7 @@ class EnvironmentSshCommand extends CommandBase
             $command .= ' ' . escapeshellarg($remoteCommand);
         }
 
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->stdErr->writeln("Running command: <info>$command</info>");
-        }
+        $this->debug("Running command: <info>$command</info>");
 
         passthru($command, $returnVar);
 

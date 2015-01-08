@@ -15,15 +15,15 @@ class DomainAddCommand extends DomainCommandBase
     protected function configure()
     {
         $this
-          ->setName('domain:add')
-          ->setDescription('Add a new domain to the project');
+            ->setName('domain:add')
+            ->setDescription('Add a new domain to the project');
         $this->addProjectOption()->addNoWaitOption();
         $this->addDomainOptions();
         $this->setHelp('See https://docs.platform.sh/use-platform/going-live.html#1-domains');
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
-          'Add the domain secure.example.com with SSL enabled',
-          'secure.example.com --cert=/etc/ssl/private/secure-example-com.crt --key=/etc/ssl/private/secure-example-com.key'
+            'Add the domain secure.example.com with SSL enabled',
+            'secure.example.com --cert=/etc/ssl/private/secure-example-com.crt --key=/etc/ssl/private/secure-example-com.key'
         );
     }
 
@@ -38,10 +38,11 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
+        $project = $this->getSelectedProject();
+
         try {
             $this->stdErr->writeln("Adding the domain <info>{$this->domainName}</info>");
-            $result = $this->getSelectedProject()
-                           ->addDomain($this->domainName, $this->sslOptions);
+            $result = $project->addDomain($this->domainName, $this->sslOptions);
         }
         catch (ClientException $e) {
             // Catch 409 Conflict errors.
@@ -49,10 +50,12 @@ class DomainAddCommand extends DomainCommandBase
             if ($response && $response->getStatusCode() === 409) {
                 $this->stdErr->writeln("The domain <error>{$this->domainName}</error> already exists on the project.");
                 $this->stdErr->writeln("Use <info>domain:delete</info> to delete an existing domain");
-                return 1;
+            }
+            else {
+                $this->handleApiException($e, $project);
             }
 
-            throw $e;
+            return 1;
         }
 
         if (!$input->getOption('no-wait')) {

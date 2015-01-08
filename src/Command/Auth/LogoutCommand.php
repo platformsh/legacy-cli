@@ -13,9 +13,9 @@ class LogoutCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('logout')
-          ->addOption('all', null, InputOption::VALUE_NONE, 'Log out of all sessions')
-          ->setDescription('Log out of Platform.sh');
+            ->setName('logout')
+            ->addOption('all', null, InputOption::VALUE_NONE, 'Log out of all sessions')
+            ->setDescription('Log out of Platform.sh');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -29,7 +29,7 @@ class LogoutCommand extends CommandBase
 
         if (!$this->isLoggedIn() && !$input->getOption('all')) {
             $this->stdErr->writeln(
-              "You are not currently logged in to the Platform.sh CLI"
+                "You are not currently logged in to the Platform.sh CLI"
             );
 
             return 0;
@@ -37,7 +37,7 @@ class LogoutCommand extends CommandBase
 
         // Ask for a confirmation.
         $confirm = $this->getHelper('question')
-          ->confirm("Are you sure you wish to log out?", $input, $this->stdErr);
+                        ->confirm("Are you sure you wish to log out?", $input, $this->stdErr);
 
         if (!$confirm) {
             $this->stdErr->writeln("You remain logged in to the Platform.sh CLI.");

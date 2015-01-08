@@ -15,9 +15,9 @@ class IntegrationDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('integration:delete')
-          ->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
-          ->setDescription('Delete an integration from a project');
+            ->setName('integration:delete')
+            ->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
+            ->setDescription('Delete an integration from a project');
         $this->addProjectOption()->addNoWaitOption();
     }
 

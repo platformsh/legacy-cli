@@ -12,22 +12,24 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSetRemoteCommand extends CommandBase
 {
+    // @todo remove this command in v3
+    protected $hiddenInList = true;
 
     protected function configure()
     {
         $this
-          ->setName('environment:set-remote')
-          ->setDescription('Set the remote environment to track for a branch')
-          ->addArgument(
-            'environment',
-            InputArgument::REQUIRED,
-            'The environment machine name. Set to 0 to stop tracking a branch'
-          )
-          ->addArgument(
-            'branch',
-            InputArgument::OPTIONAL,
-            'The Git branch to track (defaults to the current branch)'
-          );
+            ->setName('environment:set-remote')
+            ->setDescription('Set the remote environment to track for a branch')
+            ->addArgument(
+                'environment',
+                InputArgument::REQUIRED,
+                'The environment machine name. Set to 0 to stop tracking a branch'
+            )
+            ->addArgument(
+                'branch',
+                InputArgument::OPTIONAL,
+                'The Git branch to track (defaults to the current branch)'
+            );
         $this->addExample('Set the remote environment for this branch to "pr-655"', 'pr-655');
     }
 
@@ -106,8 +108,8 @@ class EnvironmentSetRemoteCommand extends CommandBase
         }
 
         $success = !empty($actualRemoteEnvironment)
-          ? $actualRemoteEnvironment == $specifiedEnvironmentId
-          : $specifiedEnvironmentId == '0';
+            ? $actualRemoteEnvironment == $specifiedEnvironmentId
+            : $specifiedEnvironmentId == '0';
 
         return $success ? 0 : 1;
     }

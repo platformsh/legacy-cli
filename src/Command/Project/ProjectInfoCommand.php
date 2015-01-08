@@ -3,9 +3,9 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Project;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,16 +22,17 @@ class ProjectInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('project:info')
-          ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
-          ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-          ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-          ->setDescription('Read or set properties for a project');
+            ->setName('project:info')
+            ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+            ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
+            ->setDescription('Read or set properties for a project');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
-        $this->setHiddenAliases(array('project:metadata'));
+        $this->setHiddenAliases(['project:metadata']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -48,7 +49,7 @@ class ProjectInfoCommand extends CommandBase
         $property = $input->getArgument('property');
 
         if (!$property) {
-            return $this->listProperties($project, $output);
+            return $this->listProperties($project, new Table($input, $output));
         }
 
         $value = $input->getArgument('value');
@@ -62,36 +63,37 @@ class ProjectInfoCommand extends CommandBase
     }
 
     /**
-     * @param Project         $project
-     * @param OutputInterface $output
+     * @param Project $project
+     * @param Table   $table
      *
      * @return int
      */
-    protected function listProperties(Project $project, OutputInterface $output)
+    protected function listProperties(Project $project, Table $table)
     {
         // Properties not to display, as they are internal, deprecated, or
         // otherwise confusing.
-        $blacklist = array(
-          'name',
-          'cluster',
-          'cluster_label',
-          'license_id',
-          'plan',
-          '_endpoint',
-          'repository',
-          'subscription',
-        );
+        $blacklist = [
+            'name',
+            'cluster',
+            'cluster_label',
+            'license_id',
+            'plan',
+            '_endpoint',
+            'repository',
+            'subscription',
+        ];
 
-        $table = new Table($output);
-        $table->setHeaders(array("Property", "Value"));
+        $headings = [];
+        $values = [];
         foreach ($project->getProperties() as $key => $value) {
             if (!in_array($key, $blacklist)) {
                 $value = $this->formatter->format($value, $key);
                 $value = wordwrap($value, 50, "\n", true);
-                $table->addRow(array($key, $value));
+                $headings[] = $key;
+                $values[] = $value;
             }
         }
-        $table->render();
+        $table->renderSimple($values, $headings);
 
         return 0;
     }
@@ -117,14 +119,14 @@ class ProjectInfoCommand extends CommandBase
         $currentValue = $project->getProperty($property);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-              "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
+                "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
             );
 
             return 0;
         }
 
         $project->ensureFull();
-        $result = $project->update(array($property => $value));
+        $result = $project->update([$property => $value]);
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
 
         $this->clearProjectsCache();
@@ -146,7 +148,7 @@ class ProjectInfoCommand extends CommandBase
      */
     protected function getType($property)
     {
-        $writableProperties = array('title' => 'string');
+        $writableProperties = ['title' => 'string'];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }

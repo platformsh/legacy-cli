@@ -77,7 +77,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
 
         $app = new LocalApplication($fakeAppRoot);
         $config = $app->getConfig();
-        $this->assertEquals(array('name' => 'simple'), $config);
+        $this->assertEquals(['name' => 'simple'], $config);
         $this->assertEquals('simple', $app->getId());
     }
 
@@ -87,7 +87,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
 
         $app = new LocalApplication($fakeAppRoot);
         $config = $app->getConfig();
-        $this->assertEquals(array('name' => 'nested1'), $config);
+        $this->assertEquals(['name' => 'nested1'], $config);
         $this->assertEquals('nested1', $app->getName());
         $this->assertEquals('nested1', $app->getId());
     }

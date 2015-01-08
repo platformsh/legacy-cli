@@ -17,10 +17,10 @@ class EnvironmentDrushCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:drush')
-          ->setAliases(array('drush'))
-          ->setDescription('Run a drush command on the remote environment')
-          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
+            ->setName('environment:drush')
+            ->setAliases(['drush'])
+            ->setDescription('Run a drush command on the remote environment')
+            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
@@ -58,7 +58,7 @@ class EnvironmentDrushCommand extends CommandBase
         $sshOptions = '';
 
         // Pass through options that the CLI shares with Drush and SSH.
-        foreach (array('yes', 'no', 'quiet') as $option) {
+        foreach (['yes', 'no', 'quiet'] as $option) {
             if ($input->getOption($option)) {
                 $drushCommand .= " --$option";
             }
@@ -108,9 +108,7 @@ class EnvironmentDrushCommand extends CommandBase
             // specified as '/'.
             $drupalRoot = '${PLATFORM_DOCUMENT_ROOT:-/app/public}';
 
-            if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-                $this->stdErr->writeln('<comment>Warning:</comment> using $PLATFORM_DOCUMENT_ROOT for the Drupal root. This fails in cases where the document_root is /.');
-            }
+            $this->debug('<comment>Warning:</comment> using $PLATFORM_DOCUMENT_ROOT for the Drupal root. This fails in cases where the document_root is /.');
         }
 
         $dimensions = $this->getApplication()
@@ -124,7 +122,7 @@ class EnvironmentDrushCommand extends CommandBase
         $sshDrushCommand .= ' ' . $drushCommand . ' 2>&1';
 
         $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
-          . ' ' . escapeshellarg($sshDrushCommand);
+            . ' ' . escapeshellarg($sshDrushCommand);
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $this->stdErr->writeln("Running command: <info>$command</info>");

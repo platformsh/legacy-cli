@@ -2,10 +2,12 @@
 
 namespace Platformsh\Cli\Util;
 
+use Symfony\Component\Yaml\Yaml;
+
 class PropertyFormatter
 {
     /** @var int */
-    public $jsonOptions;
+    public $yamlInline = 2;
 
     /**
      * @param mixed  $value
@@ -27,7 +29,7 @@ class PropertyFormatter
         }
 
         if (!is_string($value)) {
-            $value = json_encode($value, $this->jsonOptions);
+            $value = rtrim(Yaml::dump($value, $this->yamlInline));
         }
 
         return $value;
@@ -51,18 +53,18 @@ class PropertyFormatter
     protected function formatHttpAccess($httpAccess)
     {
         $info = (array) $httpAccess;
-        $info += array(
-          'addresses' => array(),
-          'basic_auth' => array(),
-          'is_enabled' => true,
-        );
+        $info += [
+            'addresses' => [],
+            'basic_auth' => [],
+            'is_enabled' => true,
+        ];
         // Hide passwords.
         $info['basic_auth'] = array_map(function () {
             return '******';
         }, $info['basic_auth']);
 
         return "Enabled: " . json_encode($info['is_enabled'])
-            . "\nAccess: " . json_encode($info['addresses'])
-            . "\nAuth: " . json_encode($info['basic_auth']);
+        . "\nAccess: " . json_encode($info['addresses'])
+        . "\nAuth: " . json_encode($info['basic_auth']);
     }
 }

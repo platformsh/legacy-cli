@@ -13,13 +13,13 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeCommand(Command $command, array $options = array())
+    protected function describeCommand(Command $command, array $options = [])
     {
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
 
         $this->write($command->getName() . "\n"
-          . str_repeat('-', strlen($command->getName()))."\n");
+            . str_repeat('-', strlen($command->getName()))."\n");
 
         if ($description = $command->getDescription()) {
             $this->write("$description\n\n");
@@ -28,7 +28,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
         $aliases = $command instanceof CommandBase ? $command->getVisibleAliases() : $command->getAliases();
         if ($aliases) {
             $this->write(
-              'Aliases: ' . '`'.implode('`, `', $aliases).'`' . "\n\n"
+                'Aliases: ' . '`'.implode('`, `', $aliases).'`' . "\n\n"
             );
         }
 
@@ -59,12 +59,12 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function describeInputArgument(InputArgument $argument, array $options = array())
+    protected function describeInputArgument(InputArgument $argument, array $options = [])
     {
         $this->write('* **`' . $argument->getName() . "`**");
-        $notes = array(
-          $argument->isRequired() ? "required" : "optional",
-        );
+        $notes = [
+            $argument->isRequired() ? "required" : "optional",
+        ];
         if ($argument->isArray()) {
             $notes[] = "multiple values allowed";
         }
@@ -79,13 +79,13 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function describeInputOption(InputOption $option, array $options = array())
+    protected function describeInputOption(InputOption $option, array $options = [])
     {
         $this->write('* **`--' . $option->getName() . "`**");
         if ($shortcut = $option->getShortcut()) {
             $this->write(" (`-" . implode('|-', explode('|', $shortcut)). "`)");
         }
-        $notes = array();
+        $notes = [];
         if ($option->isArray()) {
             $notes[] = 'multiple values allowed';
         }

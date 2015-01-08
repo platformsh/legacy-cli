@@ -14,13 +14,13 @@ class IntegrationAddCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-          ->setName('integration:add')
-          ->setDescription('Add an integration to the project');
+            ->setName('integration:add')
+            ->setDescription('Add an integration to the project');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample(
-          'Add an integration with a GitHub repository',
-          '--type github --repository myuser/example-repo --token UFpYS1MzQktjNw --fetch-branches 0'
+            'Add an integration with a GitHub repository',
+            '--type github --repository myuser/example-repo --token UFpYS1MzQktjNw --fetch-branches 0'
         );
     }
 
@@ -29,10 +29,10 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->validateInput($input);
 
         $values = $this->getForm()
-          ->resolveOptions($input, $this->stdErr, $this->getHelper('question'));
+                       ->resolveOptions($input, $this->stdErr, $this->getHelper('question'));
 
         $result = $this->getSelectedProject()
-                         ->addIntegration($values['type'], $values);
+                       ->addIntegration($values['type'], $values);
 
         /** @var Integration $integration */
         $integration = $result->getEntity();

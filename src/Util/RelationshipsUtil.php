@@ -39,7 +39,7 @@ class RelationshipsUtil
         }
         elseif (count($relationships['database']) > 1) {
             $questionHelper = new PlatformQuestionHelper();
-            $choices = array();
+            $choices = [];
             foreach ($relationships['database'] as $key => $database) {
                 $choices[$key] = $database['host'] . '/' . $database['path'];
             }
@@ -60,7 +60,7 @@ class RelationshipsUtil
      */
     public function getRelationships($sshUrl)
     {
-        $args = array('ssh', $sshUrl, 'echo $PLATFORM_RELATIONSHIPS');
+        $args = ['ssh', $sshUrl, 'echo $PLATFORM_RELATIONSHIPS'];
         $result = $this->shellHelper->execute($args, null, true);
 
         return json_decode(base64_decode($result), true);

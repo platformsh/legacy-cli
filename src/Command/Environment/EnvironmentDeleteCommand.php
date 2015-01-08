@@ -17,12 +17,12 @@ class EnvironmentDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:delete')
-          ->setDescription('Delete an environment')
-          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
-          ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
-          ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
-          ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
+            ->setName('environment:delete')
+            ->setDescription('Delete an environment')
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
+            ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
+            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
+            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -39,11 +39,11 @@ class EnvironmentDeleteCommand extends CommandBase
 
         if ($input->getOption('inactive')) {
             $toDelete = array_filter(
-              $environments,
-              function ($environment) {
-                  /** @var Environment $environment */
-                  return $environment->status == 'inactive';
-              }
+                $environments,
+                function ($environment) {
+                    /** @var Environment $environment */
+                    return $environment->status == 'inactive';
+                }
             );
             if (!$toDelete) {
                 $this->stdErr->writeln("No inactive environments found");
@@ -65,7 +65,7 @@ class EnvironmentDeleteCommand extends CommandBase
                 return 0;
             }
         } elseif ($this->hasSelectedEnvironment()) {
-            $toDelete = array($this->getSelectedEnvironment());
+            $toDelete = [$this->getSelectedEnvironment()];
         } elseif ($environmentIds = $input->getArgument('environment')) {
             $toDelete = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
@@ -99,7 +99,7 @@ class EnvironmentDeleteCommand extends CommandBase
         $environments = $this->getEnvironments($this->getSelectedProject(), true);
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
-        $gitHelper->execute(array('fetch', 'origin'));
+        $gitHelper->execute(['fetch', 'origin']);
         $mergedBranches = $gitHelper->getMergedBranches($base);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
         unset($mergedEnvironments[$base], $mergedEnvironments['master']);
@@ -121,8 +121,8 @@ class EnvironmentDeleteCommand extends CommandBase
     protected function deleteMultiple(array $environments, InputInterface $input, OutputInterface $output)
     {
         // Confirm which environments the user wishes to be deleted.
-        $delete = array();
-        $deactivate = array();
+        $delete = [];
+        $deactivate = [];
         $error = false;
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
@@ -137,7 +137,7 @@ class EnvironmentDeleteCommand extends CommandBase
             foreach ($this->getEnvironments() as $potentialChild) {
                 if ($potentialChild->parent == $environment->id) {
                     $output->writeln(
-                      "The environment <error>$environmentId</error> has children and therefore can't be deleted."
+                        "The environment <error>$environmentId</error> has children and therefore can't be deleted."
                     );
                     $output->writeln("Please delete the environment's children first.");
                     $error = true;
@@ -167,7 +167,7 @@ class EnvironmentDeleteCommand extends CommandBase
             }
         }
 
-        $deactivateActivities = array();
+        $deactivateActivities = [];
         $deactivated = 0;
         /** @var Environment $environment */
         foreach ($deactivate as $environmentId => $environment) {

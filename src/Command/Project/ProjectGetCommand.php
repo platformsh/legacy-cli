@@ -21,37 +21,37 @@ class ProjectGetCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('project:get')
-          ->setAliases(array('get'))
-          ->setDescription('Clone and build a project locally')
-          ->addArgument(
-            'id',
-            InputArgument::OPTIONAL,
-            'The project ID'
-          )
-          ->addArgument(
-            'directory',
-            InputArgument::OPTIONAL,
-            'The directory to clone to. Defaults to the project title'
-          )
-          ->addOption(
-            'environment',
-            'e',
-            InputOption::VALUE_REQUIRED,
-            "The environment ID to clone. Defaults to 'master'"
-          )
-          ->addOption(
-            'no-build',
-            null,
-            InputOption::VALUE_NONE,
-            "Do not build the retrieved project"
-          )
-          ->addOption(
-            'host',
-            null,
-            InputOption::VALUE_REQUIRED,
-            "The project's API hostname"
-          );
+            ->setName('project:get')
+            ->setAliases(['get'])
+            ->setDescription('Clone and build a project locally')
+            ->addArgument(
+                'id',
+                InputArgument::OPTIONAL,
+                'The project ID'
+            )
+            ->addArgument(
+                'directory',
+                InputArgument::OPTIONAL,
+                'The directory to clone to. Defaults to the project title'
+            )
+            ->addOption(
+                'environment',
+                'e',
+                InputOption::VALUE_REQUIRED,
+                "The environment ID to clone. Defaults to 'master'"
+            )
+            ->addOption(
+                'no-build',
+                null,
+                InputOption::VALUE_NONE,
+                "Do not build the retrieved project"
+            )
+            ->addOption(
+                'host',
+                null,
+                InputOption::VALUE_REQUIRED,
+                "The project's API hostname"
+            );
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
 
@@ -150,7 +150,7 @@ class ProjectGetCommand extends CommandBase
         $gitHelper->ensureInstalled();
 
         // First check if the repo actually exists.
-        $repoHead = $gitHelper->execute(array('ls-remote', $gitUrl, 'HEAD'), false);
+        $repoHead = $gitHelper->execute(['ls-remote', $gitUrl, 'HEAD'], false);
         if ($repoHead === false) {
             // The ls-remote command failed.
             $fsHelper->rmdir($projectRoot);
@@ -181,19 +181,19 @@ class ProjectGetCommand extends CommandBase
             mkdir($repositoryDir);
             // Initialize the repo and attach our remotes.
             $this->stdErr->writeln("Initializing empty project repository");
-            $gitHelper->execute(array('init'), $repositoryDir, true);
+            $gitHelper->execute(['init'], $repositoryDir, true);
             $this->stdErr->writeln("Adding Platform.sh Git remote");
             $local->ensureGitRemote($repositoryDir, $gitUrl);
             $this->stdErr->writeln("Your repository has been initialized and connected to <info>Platform.sh</info>!");
             $this->stdErr->writeln(
-              "Commit and push to the <info>$environment</info> branch and Platform.sh will build your project automatically"
+                "Commit and push to the <info>$environment</info> branch and Platform.sh will build your project automatically"
             );
 
             return 0;
         }
 
         // We have a repo! Yay. Clone it.
-        $cloneArgs = array('--branch', $environment, '--origin', 'platform');
+        $cloneArgs = ['--branch', $environment, '--origin', 'platform'];
         $cloned = $gitHelper->cloneRepo($gitUrl, $repositoryDir, $cloneArgs);
         if (!$cloned) {
             // The clone wasn't successful. Clean up the folders we created
@@ -214,11 +214,15 @@ class ProjectGetCommand extends CommandBase
         // Ensure that Drush aliases are created.
         if (Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             $this->stdErr->writeln('');
-            $this->runOtherCommand('local:drush-aliases', array(
-              // The default Drush alias group is the final part of the
-              // directory path.
-              '--group' => basename($directory),
-            ), $input);
+            $this->runOtherCommand(
+                'local:drush-aliases',
+                [
+                    // The default Drush alias group is the final part of the
+                    // directory path.
+                    '--group' => basename($directory),
+                ],
+                $input
+            );
         }
 
         // Allow the build to be skipped.
@@ -235,7 +239,7 @@ class ProjectGetCommand extends CommandBase
         // Launch the first build.
         $this->stdErr->writeln('');
         $this->stdErr->writeln('Building the project locally for the first time. Run <info>platform build</info> to repeat this.');
-        $builder = new LocalBuild(array('environmentId' => $environment), $output);
+        $builder = new LocalBuild(['environmentId' => $environment], $output);
         $success = $builder->buildProject($projectRoot);
 
         return $success ? 0 : 1;
@@ -252,7 +256,7 @@ class ProjectGetCommand extends CommandBase
     {
         // Create a list starting with "master".
         $default = 'master';
-        $environmentList = array($default => $environments[$default]->title);
+        $environmentList = [$default => $environments[$default]->title];
         foreach ($environments as $environment) {
             $id = $environment->id;
             if ($id != $default) {
@@ -278,7 +282,7 @@ class ProjectGetCommand extends CommandBase
      */
     protected function offerProjectChoice(array $projects, InputInterface $input)
     {
-        $projectList = array();
+        $projectList = [];
         foreach ($projects as $project) {
             $projectList[$project->id] = $project->id . ' (' . $project->title . ')';
         }
