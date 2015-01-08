@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Symfony\Component\Console\Helper\Table;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,6 +19,7 @@ class EnvironmentRoutesCommand extends CommandBase
             ->setAliases(['routes'])
             ->setDescription('List an environment\'s routes')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -36,25 +37,32 @@ class EnvironmentRoutesCommand extends CommandBase
             return 0;
         }
 
-        $header = ['Route', 'Type', 'To', 'Cache', 'SSI'];
+        $table = new Table($input, $output);
 
+        $header = ['Route', 'Type', 'To', 'Cache', 'SSI'];
         $rows = [];
         foreach ($routes as $route) {
-            $rows[] = [
+            $row = [
                 $route->id,
                 $route->type,
                 $route->type == 'upstream' ? $route->upstream : $route->to,
-                wordwrap(json_encode($route->cache), 30, "\n", true),
-                wordwrap(json_encode($route->ssi), 30, "\n", true),
             ];
+            if ($table->formatIsMachineReadable()) {
+                $row[] = json_encode($route->cache);
+                $row[] = json_encode($route->ssi);
+            }
+            else {
+                $row[] = wordwrap(json_encode($route->cache), 30, "\n", true);
+                $row[] = wordwrap(json_encode($route->ssi), 30, "\n", true);
+            }
+            $rows[] = $row;
         }
 
-        $this->stdErr->writeln("Routes for the environment <info>{$environment->id}</info>:");
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln("Routes for the environment <info>{$environment->id}</info>:");
+        }
 
-        $table = new Table($output);
-        $table->setHeaders($header);
-        $table->setRows($rows);
-        $table->render();
+        $table->render($rows, $header);
 
         return 0;
     }
