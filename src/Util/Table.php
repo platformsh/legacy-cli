@@ -37,13 +37,18 @@ class Table
     }
 
     /**
-     * Render a simple table of property-value pairs (2 columns).
+     * Render an single-dimensional array of values, with their property names.
      *
      * @param string[] $values
      * @param string[] $propertyNames
      */
     public function renderSimple(array $values, array $propertyNames)
     {
+        if ($this->getFormat() !== 'table') {
+            $this->render([$values], $propertyNames);
+            return;
+        }
+        // For the table format just output 2 columns.
         $data = [];
         foreach ($propertyNames as $key => $label) {
             $data[] = [$label, $values[$key]];
