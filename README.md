@@ -91,6 +91,7 @@ environment
   environment:deactivate                  Deactivate an environment
   environment:delete                      Delete an environment
   environment:drush (drush)               Run a drush command on the remote environment
+  environment:http-access (httpaccess)    Control HTTP access for an environment
   environment:list (environments)         Get a list of all environments
   environment:merge (merge)               Merge an environment
   environment:relationships               List the environment's relationships
