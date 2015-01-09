@@ -91,6 +91,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
             $gitHelper = $this->getHelper('git');
+            $gitHelper->setOutput($output);
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
             // If the Git branch already exists locally, check it out.
             $existsLocally = $gitHelper->branchExists($machineName);
