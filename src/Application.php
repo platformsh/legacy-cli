@@ -100,7 +100,7 @@ class Application extends ParentApplication {
         $commands[] = new Command\EnvironmentDeactivateCommand();
         $commands[] = new Command\EnvironmentDeleteCommand();
         $commands[] = new Command\EnvironmentDrushCommand();
-        $commands[] = new Command\EnvironmentHttpaccessCommand();
+        $commands[] = new Command\EnvironmentHttpAccessCommand();
         $commands[] = new Command\EnvironmentListCommand();
         $commands[] = new Command\EnvironmentMergeCommand();
         $commands[] = new Command\EnvironmentRelationshipsCommand();
