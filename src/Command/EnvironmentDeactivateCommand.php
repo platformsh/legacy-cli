@@ -15,18 +15,18 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         $this
           ->setName('environment:deactivate')
           ->setDescription('Deactivate an environment')
-          ->addArgument('environments', InputArgument::IS_ARRAY, 'The environment(s) to deactivate')
+          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to deactivate')
           ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output, 'environments')) {
+        if (!$this->validateInput($input, $output)) {
             return 1;
         }
 
-        $environments = $input->getArgument('environments') ?: array($this->environment);
+        $environments = $this->environment ? array($this->environment) : $input->getArgument('environment');
 
         if ($input->getOption('merged')) {
             $parent = reset($environments);
