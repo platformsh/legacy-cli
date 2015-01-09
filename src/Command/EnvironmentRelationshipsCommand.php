@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Model\Environment;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -15,7 +16,8 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
     {
         $this
             ->setName('environment:relationships')
-            ->setDescription('List the environment\'s relationships');
+            ->setDescription('List an environment\'s relationships')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()->addEnvironmentOption();
         // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
     }

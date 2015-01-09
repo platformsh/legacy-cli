@@ -2,8 +2,8 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentDeleteCommand extends EnvironmentCommand
@@ -13,7 +13,8 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:delete')
-            ->setDescription('Delete an environment');
+            ->setDescription('Delete an environment')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to delete');
         $this->addProjectOption()->addEnvironmentOption();
     }
 

@@ -594,16 +594,24 @@ abstract class PlatformCommand extends Command
     /**
      * @param InputInterface  $input
      * @param OutputInterface $output
+     * @param string $envArgName
      *
      * @return bool
      */
-    protected function validateInput(InputInterface $input, OutputInterface $output)
+    protected function validateInput(InputInterface $input, OutputInterface $output, $envArgName = 'environment')
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         try {
             $this->project = $this->selectProject($projectId);
-            if ($input->hasOption('environment')) {
-                $this->environment = $this->selectEnvironment($input->getOption('environment'));
+            $envOptionName = 'environment';
+            if ($input->hasArgument($envArgName) && $input->getArgument($envArgName)) {
+                if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
+                    throw new \InvalidArgumentException(sprintf("You cannot use both the '%s' argument and the '--%s' option", $envArgName, $envOptionName));
+                }
+                $this->environment = $this->selectEnvironment($input->getArgument($envArgName));
+            }
+            elseif ($input->hasOption($envOptionName)) {
+                $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
             }
         }
         catch (\RuntimeException $e) {

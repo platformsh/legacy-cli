@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -12,7 +13,8 @@ class EnvironmentActivateCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:activate')
-            ->setDescription('Activate an environment');
+            ->setDescription('Activate an environment')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to activate');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
