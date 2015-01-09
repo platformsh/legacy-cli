@@ -91,6 +91,25 @@ class GitHelper extends Helper
     }
 
     /**
+     * Get a list of branches merged with a specific ref.
+     *
+     * @param string $ref
+     * @param null   $dir
+     * @param bool   $mustRun
+     *
+     * @return string[]
+     */
+    public function getMergedBranches($ref = 'HEAD', $dir = null, $mustRun = false)
+    {
+        $args = array('branch', '--list', '--merged', $ref);
+        $mergedBranches = $this->execute($args, $dir, $mustRun);
+        $array = array_map(function($element) {
+              return trim($element, ' *');
+          }, explode("\n", $mergedBranches));
+        return $array;
+    }
+
+    /**
      * Execute a Git command.
      *
      * @param string[]     $args
