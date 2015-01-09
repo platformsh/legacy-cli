@@ -111,6 +111,9 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
                 $output->writeln($e->getMessage());
             }
         }
+        if ($deactivated) {
+            $this->getEnvironments($this->project, true);
+        }
         return $deactivated >= $count;
     }
 

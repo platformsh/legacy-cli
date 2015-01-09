@@ -4,6 +4,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentDeleteCommand extends EnvironmentCommand
@@ -14,7 +15,8 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
         $this
             ->setName('environment:delete')
             ->setDescription('Delete an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete');
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
+            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -24,7 +26,14 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environments = $this->environment ? array($this->environment) : $input->getArgument('environment');
+        if ($input->getOption('inactive')) {
+            $environments = array_filter($this->getEnvironments($this->project), function ($environment) {
+                return empty($environment['_links']['public-url']);
+            });
+        }
+        else {
+            $environments = $this->environment ? array($this->environment) : $input->getArgument('environment');
+        }
 
         $success = $this->deleteMultiple($environments, $input, $output);
 
@@ -91,6 +100,9 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
+        }
+        if ($processed) {
+            $this->getEnvironments($this->project, true);
         }
         return $processed >= $count;
     }

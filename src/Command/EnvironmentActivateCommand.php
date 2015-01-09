@@ -81,6 +81,9 @@ class EnvironmentActivateCommand extends EnvironmentCommand
                 $output->writeln($e->getMessage());
             }
         }
+        if ($processed) {
+            $this->getEnvironments($this->project, true);
+        }
         return $processed >= $count;
     }
 
