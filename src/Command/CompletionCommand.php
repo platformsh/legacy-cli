@@ -57,7 +57,18 @@ class CompletionCommand extends ParentCompletionCommand
             ),
             Completion::makeGlobalHandler(
               'environment',
+              Completion::TYPE_ARGUMENT,
+              array($this, 'getEnvironments')
+            ),
+            Completion::makeGlobalHandler(
+              'environment',
               Completion::TYPE_OPTION,
+              array($this, 'getEnvironments')
+            ),
+            new Completion(
+              'environment:branch',
+              'parent',
+              Completion::TYPE_ARGUMENT,
               array($this, 'getEnvironments')
             ),
             new Completion(
