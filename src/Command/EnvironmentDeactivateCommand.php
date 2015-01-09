@@ -13,24 +13,24 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
     protected function configure()
     {
         $this
-            ->setName('environment:deactivate')
-            ->setDescription('Deactivate an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to deactivate');
-            ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments');
+          ->setName('environment:deactivate')
+          ->setDescription('Deactivate an environment')
+          ->addArgument('environments', InputArgument::IS_ARRAY, 'The environment(s) to deactivate')
+          ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
+        if (!$this->validateInput($input, $output, 'environments')) {
             return 1;
         }
 
-        $environmentId = $this->environment['id'];
-        $environments = array($environmentId => $this->environment);
+        $environments = $input->getArgument('environments') ?: array($this->environment);
 
         if ($input->getOption('merged')) {
-            $output->writeln("Finding environments merged with <info>$environmentId</info>");
+            $parent = reset($environments);
+            $output->writeln("Finding environments merged with <info>$parent</info>");
             $environments = $this->getMergedEnvironments($output);
             if (!$environments) {
                 $output->writeln("No merged environments found");
@@ -73,7 +73,13 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         // Confirm which environments the user wishes to be deactivated.
         $deactivate = array();
         $questionHelper = $this->getHelper('question');
-        foreach ($environments as $key => $environment) {
+        foreach ($environments as $environment) {
+            if (!is_array($environment)) {
+                $environment = $this->getEnvironment($environment, $this->project);
+                if (!$environment) {
+                    continue;
+                }
+            }
             $environmentId = $environment['id'];
             if ($environmentId == 'master') {
                 $output->writeln("The <error>master</error> environment cannot be deactivated or deleted.");
