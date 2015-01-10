@@ -27,9 +27,13 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         }
 
         if ($input->getOption('merged')) {
-            $parent = reset($environments);
-            $output->writeln("Finding environments merged with <info>$parent</info>");
-            $toDeactivate = $this->getMergedEnvironments();
+            if (!$this->environment) {
+                $output->writeln("No base environment specified");
+                return 1;
+            }
+            $base = $this->environment['id'];
+            $output->writeln("Finding environments merged with <info>$base</info>");
+            $toDeactivate = $this->getMergedEnvironments($base);
             if (!$toDeactivate) {
                 $output->writeln("No merged environments found");
                 return 0;
@@ -54,7 +58,12 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         return $success ? 0 : 1;
     }
 
-    protected function getMergedEnvironments()
+    /**
+     * @param string $base
+     *
+     * @return array
+     */
+    protected function getMergedEnvironments($base)
     {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
@@ -64,9 +73,9 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
         $gitHelper->execute(array('fetch', 'origin'));
-        $mergedBranches = $gitHelper->getMergedBranches($this->environment['id']);
+        $mergedBranches = $gitHelper->getMergedBranches($base);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
-        unset($mergedEnvironments[$this->environment['id']], $mergedEnvironments['master']);
+        unset($mergedEnvironments[$base], $mergedEnvironments['master']);
         return $mergedEnvironments;
     }
 
