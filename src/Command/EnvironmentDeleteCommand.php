@@ -26,16 +26,26 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             return 1;
         }
 
+        $environments = $this->getEnvironments($this->project);
+
         if ($input->getOption('inactive')) {
-            $environments = array_filter($this->getEnvironments($this->project), function ($environment) {
+            $toDelete = array_filter($environments, function ($environment) {
                 return empty($environment['_links']['public-url']);
             });
         }
+        elseif ($this->environment) {
+            $toDelete = array($this->environment);
+        }
         else {
-            $environments = $this->environment ? array($this->environment) : $input->getArgument('environment');
+            $environmentIds = $input->getArgument('environment');
+            $toDelete = array_intersect_key($environments, array_flip($environmentIds));
+            $notFound = array_diff($environmentIds, array_keys($environments));
+            foreach ($notFound as $notFoundId) {
+                $output->writeln("Environment not found: <error>$notFoundId</error>");
+            }
         }
 
-        $success = $this->deleteMultiple($environments, $input, $output);
+        $success = $this->deleteMultiple($toDelete, $input, $output);
 
         return $success ? 0 : 1;
     }
@@ -55,12 +65,6 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
         $process = array();
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
-            if (!is_array($environment)) {
-                $environment = $this->getEnvironment($environment, $this->project);
-                if (!$environment) {
-                    continue;
-                }
-            }
             $environmentId = $environment['id'];
             if ($environmentId == 'master') {
                 $output->writeln("The <error>master</error> environment cannot be deactivated or deleted.");

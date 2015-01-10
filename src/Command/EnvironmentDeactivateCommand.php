@@ -26,19 +26,30 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environments = $this->environment ? array($this->environment) : $input->getArgument('environment');
-
         if ($input->getOption('merged')) {
             $parent = reset($environments);
             $output->writeln("Finding environments merged with <info>$parent</info>");
-            $environments = $this->getMergedEnvironments($output);
-            if (!$environments) {
+            $toDeactivate = $this->getMergedEnvironments();
+            if (!$toDeactivate) {
                 $output->writeln("No merged environments found");
                 return 0;
             }
         }
+        elseif ($this->environment) {
+            $toDeactivate = array($this->environment);
+        }
+        else {
+            $environments = $this->getEnvironments($this->project);
+            $environmentIds = $input->getArgument('environment');
+            $toDeactivate = array_intersect_key($environments, array_flip($environmentIds));
 
-        $success = $this->deactivateMultiple($environments, $input, $output);
+            $notFound = array_diff($environmentIds, array_keys($environments));
+            foreach ($notFound as $notFoundId) {
+                $output->writeln("Environment not found: <error>$notFoundId</error>");
+            }
+        }
+
+        $success = $this->deactivateMultiple($toDeactivate, $input, $output);
 
         return $success ? 0 : 1;
     }
@@ -69,17 +80,11 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
     protected function deactivateMultiple(array $environments, InputInterface $input, OutputInterface $output)
     {
         $count = count($environments);
-        $deactivated = 0;
+        $processed = 0;
         // Confirm which environments the user wishes to be deactivated.
-        $deactivate = array();
+        $process = array();
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
-            if (!is_array($environment)) {
-                $environment = $this->getEnvironment($environment, $this->project);
-                if (!$environment) {
-                    continue;
-                }
-            }
             $environmentId = $environment['id'];
             if ($environmentId == 'master') {
                 $output->writeln("The <error>master</error> environment cannot be deactivated or deleted.");
@@ -87,7 +92,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
             }
             if (empty($environment['_links']['public-url'])) {
                 $output->writeln("The environment <info>$environmentId</info> is already inactive.");
-                $deactivated++;
+                $count--;
                 continue;
             }
             if (!$this->operationAllowed('deactivate', $environment)) {
@@ -98,23 +103,23 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
             if (!$questionHelper->confirm($question, $input, $output)) {
                 continue;
             }
-            $deactivate[$environmentId] = $environment;
+            $process[$environmentId] = $environment;
         }
-        foreach ($deactivate as $environmentId =>  $environment) {
+        foreach ($process as $environmentId =>  $environment) {
             $client = $this->getPlatformClient($environment['endpoint']);
             try {
                 $client->deactivateEnvironment();
-                $deactivated++;
+                $processed++;
                 $output->writeln("Deactivated environment <info>$environmentId</info>");
             }
             catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
         }
-        if ($deactivated) {
+        if ($processed) {
             $this->getEnvironments($this->project, true);
         }
-        return $deactivated >= $count;
+        return $processed >= $count;
     }
 
 }

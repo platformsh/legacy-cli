@@ -24,9 +24,20 @@ class EnvironmentActivateCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environments = $this->environment ? array($this->environment) : $input->getArgument('environment');
+        if ($this->environment) {
+            $toActivate = array($this->environment);
+        }
+        else {
+            $environments = $this->getEnvironments($this->project);
+            $environmentIds = $input->getArgument('environment');
+            $toActivate = array_intersect_key($environments, array_flip($environmentIds));
+            $notFound = array_diff($environmentIds, array_keys($environments));
+            foreach ($notFound as $notFoundId) {
+                $output->writeln("Environment not found: <error>$notFoundId</error>");
+            }
+        }
 
-        $success = $this->activateMultiple($environments, $input, $output);
+        $success = $this->activateMultiple($toActivate, $input, $output);
 
         return $success ? 0 : 1;
     }
@@ -46,18 +57,10 @@ class EnvironmentActivateCommand extends EnvironmentCommand
         $process = array();
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
-            if (!is_array($environment)) {
-                $requested = $environment;
-                $environment = $this->getEnvironment($environment, $this->project);
-                if (!$environment) {
-                    $output->writeln("Environment not found: <error>$requested</error>");
-                    continue;
-                }
-            }
             $environmentId = $environment['id'];
             if (!empty($environment['_links']['public-url'])) {
                 $output->writeln("The environment <info>$environmentId</info> is already active.");
-                $processed++;
+                $count--;
                 continue;
             }
             if (!$this->operationAllowed('activate', $environment)) {
