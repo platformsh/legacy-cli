@@ -34,30 +34,30 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
             return false;
         }
 
-        $auth_parts = explode(':', $auth, 2);
-        if (count($auth_parts) != 2) {
+        $parts = explode(':', $auth, 2);
+        if (count($parts) != 2) {
             return false;
         }
 
-        return array("username" => $auth_parts[0], "password" => $auth_parts[1]);
+        return array("username" => $parts[0], "password" => $parts[1]);
     }
 
     /**
-     * @param $auth
+     * @param $access
      *
      * @return array|false
      */
-    protected function parseAccess($auth) {
-        if (empty($auth)) {
+    protected function parseAccess($access) {
+        if (empty($access)) {
             return false;
         }
 
-        $auth_parts = explode(':', $auth, 2);
-        if (count($auth_parts) != 2) {
+        $parts = explode(':', $access, 2);
+        if (count($parts) != 2) {
             return false;
         }
 
-        return array("permission" => $auth_parts[0], "address" => $auth_parts[1]);
+        return array("permission" => $parts[0], "address" => $parts[1]);
     }
 
     protected function validateInput(InputInterface $input, OutputInterface $output)
