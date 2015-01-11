@@ -110,6 +110,9 @@ class Application extends ParentApplication {
         $commands[] = new Command\EnvironmentVariableDeleteCommand();
         $commands[] = new Command\EnvironmentVariableGetCommand();
         $commands[] = new Command\EnvironmentVariableSetCommand();
+        $commands[] = new Command\IntegrationSetCommand();
+        $commands[] = new Command\IntegrationDeleteCommand();
+        $commands[] = new Command\IntegrationGetCommand();
         $commands[] = new Command\ProjectBuildCommand();
         $commands[] = new Command\ProjectCleanCommand();
         $commands[] = new Command\ProjectDrushAliasesCommand();

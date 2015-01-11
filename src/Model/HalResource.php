@@ -62,7 +62,11 @@ class HalResource implements HalResourceInterface
           ->post($collectionUrl, null, json_encode($values))
           ->send();
         if ($response->getStatusCode() == 201) {
-            return new static($response->json(), $client);
+            $data = $response->json();
+            if (isset($data['_embedded']['entity'])) {
+                $data = $data['_embedded']['entity'];
+            }
+            return new static($data, $client);
         }
         return false;
     }
