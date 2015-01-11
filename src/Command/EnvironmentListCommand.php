@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentListCommand extends EnvironmentCommand
 {
 
-    protected $showNames = true;
+    protected $showNames = false;
     protected $showUrls = false;
     protected $showStatus = false;
 
@@ -36,7 +36,7 @@ class EnvironmentListCommand extends EnvironmentCommand
                 null,
                 InputOption::VALUE_OPTIONAL,
                 "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
-                'name'
+                'name,status'
             )
             ->addOption(
                 'refresh',
@@ -151,7 +151,7 @@ class EnvironmentListCommand extends EnvironmentCommand
 
         $environments = $this->getEnvironments($this->project, $refresh);
 
-        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+        if ($input->getOption('pipe')) {
           $output->writeln(array_keys($environments));
           return;
         }

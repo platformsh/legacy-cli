@@ -36,11 +36,6 @@ class EnvironmentSshCommand extends PlatformCommand
         $environment = new Environment($this->environment);
         $sshUrl = $environment->getSshUrl();
 
-        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
-            $output->write($sshUrl);
-            return 0;
-        }
-
         $command = $input->getArgument('cmd');
         if ($input instanceof ArgvInput) {
             $helper = new ArgvHelper();
@@ -48,6 +43,10 @@ class EnvironmentSshCommand extends PlatformCommand
         }
 
         if (!$command) {
+            if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+                $output->write($sshUrl);
+                return 0;
+            }
             $command = "ssh " . escapeshellarg($sshUrl);
             passthru($command, $returnVar);
             return $returnVar;

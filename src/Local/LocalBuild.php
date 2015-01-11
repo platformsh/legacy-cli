@@ -63,8 +63,8 @@ class LocalBuild {
             $toolstackChoice = $appConfig['toolstack'];
         }
         foreach (self::getToolstacks() as $toolstack) {
-            if (($toolstackChoice && $toolstack->getKey() == $toolstackChoice)
-                || $toolstack->detect($appRoot)) {
+            if ((!$toolstackChoice && $toolstack->detect($appRoot))
+                || $toolstackChoice == $toolstack->getKey()) {
                 return $toolstack;
             }
         }

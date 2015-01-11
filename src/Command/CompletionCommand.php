@@ -123,20 +123,18 @@ class CompletionCommand extends ParentCompletionCommand
         if (!$project) {
             return array();
         }
-        $environments = $this->platformCommand->getEnvironments($project, false, false);
         try {
             $currentEnvironment = $this->platformCommand->getCurrentEnvironment($project);
         } catch (\Exception $e) {
             $currentEnvironment = false;
         }
-        $ids = array();
-        foreach ($environments as $environment) {
-            if ($currentEnvironment && $environment['id'] == $currentEnvironment['id']) {
-                continue;
-            }
-            $ids[] = $environment['id'];
+        $environments = $this->platformCommand->getEnvironments($project, false, false);
+        if ($currentEnvironment) {
+            $environments = array_filter($environments, function ($environment) use ($currentEnvironment) {
+                return $environment['id'] != $currentEnvironment['id'];
+            });
         }
-        return $ids;
+        return array_keys($environments);
     }
 
     /**
