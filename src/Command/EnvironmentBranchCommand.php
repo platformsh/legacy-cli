@@ -23,6 +23,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 InputArgument::OPTIONAL,
                 'The name of the new environment. For example: "Sprint 2"'
             )
+            ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
             ->addOption(
                 'force',
                 null,
@@ -40,7 +41,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
+        if (!$this->validateInput($input, $output, 'parent')) {
             return 1;
         }
 

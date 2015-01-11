@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -12,7 +13,8 @@ class EnvironmentActivateCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:activate')
-            ->setDescription('Activate an environment');
+            ->setDescription('Activate an environment')
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -22,23 +24,70 @@ class EnvironmentActivateCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environmentId = $this->environment['id'];
-
-        if (!$this->operationAllowed('activate')) {
-            if (!empty($this->environment['_links']['public-url'])) {
-                $output->writeln("The environment <info>$environmentId</info> is already active.");
-                return 0;
+        if ($this->environment) {
+            $toActivate = array($this->environment);
+        }
+        else {
+            $environments = $this->getEnvironments($this->project);
+            $environmentIds = $input->getArgument('environment');
+            $toActivate = array_intersect_key($environments, array_flip($environmentIds));
+            $notFound = array_diff($environmentIds, array_keys($environments));
+            foreach ($notFound as $notFoundId) {
+                $output->writeln("Environment not found: <error>$notFoundId</error>");
             }
-            $output->writeln(
-              "Operation not permitted: The environment <error>$environmentId</error> can't be activated."
-            );
-            return 1;
         }
 
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->activateEnvironment();
+        $success = $this->activateMultiple($toActivate, $input, $output);
 
-        $output->writeln("The environment <info>$environmentId</info> has been activated.");
-        return 0;
+        return $success ? 0 : 1;
     }
+
+    /**
+     * @param array           $environments
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return bool
+     */
+    protected function activateMultiple(array $environments, InputInterface $input, OutputInterface $output)
+    {
+        $count = count($environments);
+        $processed = 0;
+        // Confirm which environments the user wishes to be deactivated.
+        $process = array();
+        $questionHelper = $this->getHelper('question');
+        foreach ($environments as $environment) {
+            $environmentId = $environment['id'];
+            if (!empty($environment['_links']['public-url'])) {
+                $output->writeln("The environment <info>$environmentId</info> is already active.");
+                $count--;
+                continue;
+            }
+            if (!$this->operationAllowed('activate', $environment)) {
+                $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be activated.");
+                continue;
+            }
+            $question = "Are you sure you want to activate the environment <info>$environmentId</info>?";
+            if (!$questionHelper->confirm($question, $input, $output)) {
+                continue;
+            }
+            $process[$environmentId] = $environment;
+        }
+        foreach ($process as $environmentId =>  $environment) {
+            $client = $this->getPlatformClient($environment['endpoint']);
+            try {
+                $client->activateEnvironment();
+                $processed++;
+                $output->writeln("Activated environment <info>$environmentId</info>");
+            }
+            catch (\Exception $e) {
+                $output->writeln($e->getMessage());
+            }
+        }
+        if ($processed) {
+            $this->getEnvironments($this->project, true);
+        }
+        return $processed >= $count;
+    }
+
 }
