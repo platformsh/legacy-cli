@@ -20,8 +20,7 @@ class EnvironmentDrushCommand extends PlatformCommand
             ->setName('environment:drush')
             ->setAliases(array('drush'))
             ->setDescription('Run a drush command on the remote environment')
-            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status')
-            ->addOption('ssh', null, InputOption::VALUE_NONE, 'Connect via SSH instead of a site alias');
+            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
         $this->addProjectOption()->addEnvironmentOption();
         $this->ignoreValidationErrors();
     }
@@ -54,7 +53,9 @@ class EnvironmentDrushCommand extends PlatformCommand
             $drushCommand = 'status';
         }
 
-        // Pass through options that the CLI shares with Drush.
+        $sshOptions = '';
+
+        // Pass through options that the CLI shares with Drush and SSH.
         foreach (array('yes', 'no', 'quiet') as $option) {
             if ($input->getOption($option)) {
                 $drushCommand .= " --$option";
@@ -62,33 +63,34 @@ class EnvironmentDrushCommand extends PlatformCommand
         }
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $drushCommand .= " --debug";
+            $sshOptions .= ' -vv';
+        }
+        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            $drushCommand .= " --verbose";
+            $sshOptions .= ' -v';
         }
         elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $drushCommand .= " --verbose";
         }
-
-        // SSH method.
-        if ($input->getOption('ssh')) {
-            $environment = new Environment($this->environment);
-            $sshUrl = $environment->getSshUrl();
-
-            // Add some options that would normally come from the site alias.
-            $appRoot = '/app/public';
-            $sshDrushCommand = "drush -r $appRoot";
-            if ($environmentUrl = $environment->getLink('public-url')) {
-                $sshDrushCommand .= " -l $environmentUrl";
-            }
-            $sshDrushCommand .= ' ' . $drushCommand;
-
-            $command = 'ssh -qt ' . escapeshellarg($sshUrl)
-              . ' ' . escapeshellarg($sshDrushCommand);
+        elseif ($output->getVerbosity() == OutputInterface::VERBOSITY_QUIET) {
+            $drushCommand .= " --quiet";
+            $sshOptions .= ' -q';
         }
-        // Site alias method (default).
-        else {
-            $aliasGroup = isset($this->project['alias-group']) ? $this->project['alias-group'] : $this->project['id'];
-            $alias = '@' . $aliasGroup . '.' . $this->environment['id'];
-            $command = "drush $alias $drushCommand";
+
+        $environment = new Environment($this->environment);
+        $sshUrl = $environment->getSshUrl();
+
+        $appRoot = '/app/public';
+        $dimensions = $this->getApplication()->getTerminalDimensions();
+        $columns = $dimensions[0] ?: 80;
+        $sshDrushCommand = "COLUMNS=$columns drush -r $appRoot";
+        if ($environmentUrl = $environment->getLink('public-url')) {
+            $sshDrushCommand .= " -l $environmentUrl";
         }
+        $sshDrushCommand .= ' ' . $drushCommand . ' 2>&1';
+
+        $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
+          . ' ' . escapeshellarg($sshDrushCommand);
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $output->writeln("Running command: <info>$command</info>");
