@@ -8,7 +8,6 @@ use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentDrushCommand extends PlatformCommand
@@ -47,7 +46,7 @@ class EnvironmentDrushCommand extends PlatformCommand
             $drushCommand = $helper->getPassedCommand($this, $input);
         }
 
-        if (!$drushCommand) {
+        if (empty($drushCommand)) {
             $drushCommand = $input->getArgument('cmd');
         }
 
