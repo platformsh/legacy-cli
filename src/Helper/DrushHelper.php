@@ -43,7 +43,7 @@ class DrushHelper extends Helper {
      */
     public function ensureInstalled($minVersion = '6')
     {
-        exec('drush --version', $drushVersion, $returnCode);
+        exec($this->getDrushExecutable() . ' --version', $drushVersion, $returnCode);
         if ($returnCode && $returnCode === 127) {
             throw new \Exception('Drush must be installed');
         }
@@ -86,8 +86,22 @@ class DrushHelper extends Helper {
      */
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
     {
-        array_unshift($args, 'drush');
+        array_unshift($args, $this->getDrushExecutable());
         return $this->shellHelper->execute($args, $dir, $mustRun, $quiet);
+    }
+
+    /**
+     * Get the full path to the Drush executable.
+     *
+     * @return string
+     */
+    public function getDrushExecutable()
+    {
+        $executable = 'drush';
+        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = exec('where drush'))) {
+            $executable = $fullPath;
+        }
+        return $executable;
     }
 
     /**
