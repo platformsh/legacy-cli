@@ -19,7 +19,7 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         $this
             ->setName('environment:http-access')
             ->setAliases(array('httpaccess'))
-            ->setDescription('Control HTTP access for an environment')
+            ->setDescription('Update HTTP access settings for an environment')
             ->addOption('access', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Access restriction in the format "permission:address"')
             ->addOption('auth', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Authentication details in the format "username:password"');
         $this->addProjectOption()->addEnvironmentOption();
@@ -129,7 +129,16 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         $environment->update($accessOpts);
 
         $environmentId = $this->environment['id'];
-        $output->writeln("Updated HTTP access restrictions for <info>$environmentId</info>");
+        $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>");
+
+        if (!$environment->hasActivity()) {
+            $output->writeln(
+              "<comment>"
+              . "The remote environment must be rebuilt for the HTTP access change to take effect."
+              . " Use 'git push' with new commit(s) to trigger a rebuild."
+              . "</comment>"
+            );
+        }
         return 0;
     }
 }
