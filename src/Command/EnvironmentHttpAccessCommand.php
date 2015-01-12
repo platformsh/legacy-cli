@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -68,27 +69,23 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
 
         $valid = true;
 
-        $this->auth   = $input->getOption('auth');
+        $this->auth = $input->getOption('auth');
         $this->access = $input->getOption('access');
 
-        if (empty($this->auth)) {
-            $output->writeln('<error>The --auth option is required.</error>');
-            $valid = false;
-        }
-        if (empty($this->access)) {
-            $output->writeln('<error>The --access option is required.</error>');
+        if (!$this->auth && !$this->access) {
+            $output->writeln('<error>You must specify at least one of --auth or --access</error>');
             $valid = false;
         }
 
         foreach ($this->auth as $auth) {
-            if (!$this->parseAuth($auth)) {
+            if ($auth !== '0' && !$this->parseAuth($auth)) {
                 $output->writeln(sprintf('Auth "<error>%s</error>" is not valid, please use the format: username:password', $auth));
                 $valid = false;
             }
         }
 
         foreach ($this->access as $access) {
-            if (!$this->parseAccess($access)) {
+            if ($access !== '0' && !$this->parseAccess($access)) {
                 $output->writeln(sprintf('Access "<error>%s</error>" is not valid, please use the format: permission:address', $access));
                 $valid = false;
             }
@@ -106,19 +103,33 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         $accessOpts = array();
         $accessOpts["http_access"] = array();
 
-        $accessOpts["http_access"]["basic_auth"] = array();
-        foreach ($this->auth as $auth) {
-            $parsed = $this->parseAuth($auth);
-            $accessOpts["http_access"]["basic_auth"][$parsed["username"]] = $parsed["password"];
+        if ($this->auth) {
+            $accessOpts["http_access"]["basic_auth"] = new \stdClass();
+            foreach ($this->auth as $auth) {
+                if ($auth === '0') {
+                    continue;
+                }
+                $parsed = $this->parseAuth($auth);
+                $accessOpts["http_access"]["basic_auth"]->{$parsed["username"]} = $parsed["password"];
+            }
         }
 
-        $accessOpts["http_access"]["addresses"] = array();
-        foreach ($this->access as $access) {
-            $accessOpts["http_access"]["addresses"][] = $this->parseAccess($access);
+        if ($this->access) {
+            $accessOpts["http_access"]["addresses"] = array();
+            foreach ($this->access as $access) {
+                if ($access === '0') {
+                    continue;
+                }
+                $accessOpts["http_access"]["addresses"][] = $this->parseAccess($access);
+            }
         }
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->modifyEnvironmentAccess($accessOpts);
+        $environment = new Environment($this->environment, $client);
+        $environment->update($accessOpts);
+
+        $environmentId = $this->environment['id'];
+        $output->writeln("Updated HTTP access restrictions for <info>$environmentId</info>");
         return 0;
     }
 }
