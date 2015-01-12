@@ -41,7 +41,8 @@ class EnvironmentBranchCommand extends EnvironmentCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output, 'parent')) {
+        $this->envArgName = 'parent';
+        if (!$this->validateInput($input, $output)) {
             return 1;
         }
 

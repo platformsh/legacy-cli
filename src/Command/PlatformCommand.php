@@ -25,6 +25,7 @@ abstract class PlatformCommand extends Command
     protected $oauth2Plugin;
     protected $accountClient;
     protected $platformClient;
+    protected $envArgName = 'environment';
 
     /** @var array */
     protected $project;
@@ -594,21 +595,20 @@ abstract class PlatformCommand extends Command
     /**
      * @param InputInterface  $input
      * @param OutputInterface $output
-     * @param string $envArgName
      *
      * @return bool
      */
-    protected function validateInput(InputInterface $input, OutputInterface $output, $envArgName = 'environment')
+    protected function validateInput(InputInterface $input, OutputInterface $output)
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         try {
             $this->project = $this->selectProject($projectId);
             $envOptionName = 'environment';
-            if ($input->hasArgument($envArgName) && $input->getArgument($envArgName)) {
+            if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
                 if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
-                    throw new \InvalidArgumentException(sprintf("You cannot use both the '%s' argument and the '--%s' option", $envArgName, $envOptionName));
+                    throw new \InvalidArgumentException(sprintf("You cannot use both the '%s' argument and the '--%s' option", $this->envArgName, $envOptionName));
                 }
-                $argument = $input->getArgument($envArgName);
+                $argument = $input->getArgument($this->envArgName);
                 if (is_array($argument) && count($argument) == 1) {
                     $argument = $argument[0];
                 }
