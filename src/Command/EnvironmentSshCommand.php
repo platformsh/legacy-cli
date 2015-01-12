@@ -62,7 +62,7 @@ class EnvironmentSshCommand extends PlatformCommand
             $sshOptions .= 'v';
         }
 
-        $command = "ssh -$sshOptions $sshUrl " . $command;
+        $command = "ssh -$sshOptions " . escapeshellarg($sshUrl) . ' ' . escapeshellarg($command);
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $output->writeln("Running command: <info>$command</info>");

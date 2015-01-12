@@ -42,15 +42,13 @@ class EnvironmentDrushCommand extends PlatformCommand
 
         $this->getHelper('drush')->ensureInstalled();
 
-        $drushCommand = (array) $input->getArgument('cmd');
         if ($input instanceof ArgvInput) {
             $helper = new ArgvHelper();
             $drushCommand = $helper->getPassedCommand($this, $input);
         }
 
-        // Set a default Drush command.
         if (!$drushCommand) {
-            $drushCommand = 'status';
+            $drushCommand = $input->getArgument('cmd');
         }
 
         $sshOptions = '';
