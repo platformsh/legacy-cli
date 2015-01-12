@@ -10,9 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentHttpAccessCommand extends EnvironmentCommand
 {
 
-    protected $auth;
-    protected $access;
-
     protected function configure()
     {
         parent::configure();
@@ -28,16 +25,21 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
     /**
      * @param $auth
      *
-     * @return array|false
+     * @throws \InvalidArgumentException
+     *
+     * @return array
      */
     protected function parseAuth($auth) {
-        if (empty($auth)) {
-            return false;
-        }
-
         $parts = explode(':', $auth, 2);
         if (count($parts) != 2) {
-            return false;
+            $message = sprintf('Auth "<error>%s</error>" is not valid. The format should be username:password', $auth);
+            throw new \InvalidArgumentException($message);
+        }
+
+        $minLength = 6;
+        if (strlen($parts[1] < $minLength)) {
+            $message = sprintf('Auth "<error>%s</error>" is not valid. The minimum password length is %d characters', $auth, $minLength);
+            throw new \InvalidArgumentException($message);
         }
 
         return array("username" => $parts[0], "password" => $parts[1]);
@@ -46,52 +48,30 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
     /**
      * @param $access
      *
-     * @return array|false
+     * @throws \InvalidArgumentException
+     *
+     * @return array
      */
     protected function parseAccess($access) {
-        if (empty($access)) {
-            return false;
-        }
-
         $parts = explode(':', $access, 2);
         if (count($parts) != 2) {
-            return false;
+            $message = sprintf('Access "<error>%s</error>" is not valid, please use the format: permission:address', $access);
+            throw new \InvalidArgumentException($message);
         }
 
-        return array("permission" => $parts[0], "address" => $parts[1]);
-    }
-
-    protected function validateInput(InputInterface $input, OutputInterface $output)
-    {
-        if (!parent::validateInput($input, $output)) {
-            return false;
+        if (!in_array($parts[0], array('allow', 'deny'))) {
+            $message = sprintf("The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'", $parts[0]);
+            throw new \InvalidArgumentException($message);
         }
 
-        $valid = true;
-
-        $this->auth = $input->getOption('auth');
-        $this->access = $input->getOption('access');
-
-        if (!$this->auth && !$this->access) {
-            $output->writeln('<error>You must specify at least one of --auth or --access</error>');
-            $valid = false;
+        $address = $parts[1];
+        $extractIp = preg_match('#^([^/]+)(/([0-9]{1,2}))?$#', $address, $matches);
+        if (!$extractIp || !filter_var($matches[1], FILTER_VALIDATE_IP) || (isset($matches[3]) && $matches[3] > 32)) {
+            $message = sprintf('The address "<error>%s</error>" is not a valid IP address or CIDR', $address);
+            throw new \InvalidArgumentException($message);
         }
 
-        foreach ($this->auth as $auth) {
-            if ($auth !== '0' && !$this->parseAuth($auth)) {
-                $output->writeln(sprintf('Auth "<error>%s</error>" is not valid, please use the format: username:password', $auth));
-                $valid = false;
-            }
-        }
-
-        foreach ($this->access as $access) {
-            if ($access !== '0' && !$this->parseAccess($access)) {
-                $output->writeln(sprintf('Access "<error>%s</error>" is not valid, please use the format: permission:address', $access));
-                $valid = false;
-            }
-        }
-
-        return $valid;
+        return array("permission" => $parts[0], "address" => $address);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -100,27 +80,30 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
             return 1;
         }
 
+        $auth = $input->getOption('auth');
+        $access = $input->getOption('access');
+
+        if (!$auth && !$access) {
+            $output->writeln('<error>You must specify at least one of --auth or --access</error>');
+            return false;
+        }
+
+
         $accessOpts = array();
         $accessOpts["http_access"] = array();
 
-        if ($this->auth) {
-            $accessOpts["http_access"]["basic_auth"] = new \stdClass();
-            foreach ($this->auth as $auth) {
-                if ($auth === '0') {
-                    continue;
-                }
-                $parsed = $this->parseAuth($auth);
-                $accessOpts["http_access"]["basic_auth"]->{$parsed["username"]} = $parsed["password"];
+        if ($access) {
+            $accessOpts["http_access"]["addresses"] = array();
+            foreach (array_filter($access) as $access) {
+                $accessOpts["http_access"]["addresses"][] = $this->parseAccess($access);
             }
         }
 
-        if ($this->access) {
-            $accessOpts["http_access"]["addresses"] = array();
-            foreach ($this->access as $access) {
-                if ($access === '0') {
-                    continue;
-                }
-                $accessOpts["http_access"]["addresses"][] = $this->parseAccess($access);
+        if ($auth) {
+            $accessOpts["http_access"]["basic_auth"] = new \stdClass();
+            foreach (array_filter($auth) as $auth) {
+                $parsed = $this->parseAuth($auth);
+                $accessOpts["http_access"]["basic_auth"]->{$parsed["username"]} = $parsed["password"];
             }
         }
 
