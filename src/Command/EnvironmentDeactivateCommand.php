@@ -76,6 +76,10 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         $mergedBranches = $gitHelper->getMergedBranches($base);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
         unset($mergedEnvironments[$base], $mergedEnvironments['master']);
+        $parent = $environments[$base]['parent'];
+        if ($parent) {
+            unset($mergedEnvironments[$parent]);
+        }
         return $mergedEnvironments;
     }
 
