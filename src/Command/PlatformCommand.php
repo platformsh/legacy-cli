@@ -609,6 +609,9 @@ abstract class PlatformCommand extends Command
                     throw new \InvalidArgumentException(sprintf("You cannot use both the '%s' argument and the '--%s' option", $envArgName, $envOptionName));
                 }
                 $argument = $input->getArgument($envArgName);
+                if (is_array($argument) && count($argument) == 1) {
+                    $argument = $argument[0];
+                }
                 if (!is_array($argument)) {
                     $this->environment = $this->selectEnvironment($argument);
                 }
