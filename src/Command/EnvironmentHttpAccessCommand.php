@@ -29,16 +29,22 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
      *
      * @return array
      */
-    protected function parseAuth($auth) {
+    protected function parseAuth($auth)
+    {
         $parts = explode(':', $auth, 2);
         if (count($parts) != 2) {
             $message = sprintf('Auth "<error>%s</error>" is not valid. The format should be username:password', $auth);
             throw new \InvalidArgumentException($message);
         }
 
+        if (!preg_match('#^[a-zA-Z0-9]{2,}$#', $parts[0])) {
+            $message = sprintf('The username "<error>%s</error>" for --auth is not valid', $parts[0]);
+            throw new \InvalidArgumentException($message);
+        }
+
         $minLength = 6;
         if (strlen($parts[1] < $minLength)) {
-            $message = sprintf('Auth "<error>%s</error>" is not valid. The minimum password length is %d characters', $auth, $minLength);
+            $message = sprintf('The minimum password length for --auth is %d characters', $minLength);
             throw new \InvalidArgumentException($message);
         }
 
@@ -52,7 +58,8 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
      *
      * @return array
      */
-    protected function parseAccess($access) {
+    protected function parseAccess($access)
+    {
         $parts = explode(':', $access, 2);
         if (count($parts) != 2) {
             $message = sprintf('Access "<error>%s</error>" is not valid, please use the format: permission:address', $access);
@@ -64,14 +71,26 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
             throw new \InvalidArgumentException($message);
         }
 
-        $address = $parts[1];
+        $this->validateAddress($parts[1]);
+
+        return array("permission" => $parts[0], "address" => $parts[1]);
+    }
+
+    /**
+     * @param string $address
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function validateAddress($address)
+    {
+        if ($address == 'any') {
+            return;
+        }
         $extractIp = preg_match('#^([^/]+)(/([0-9]{1,2}))?$#', $address, $matches);
         if (!$extractIp || !filter_var($matches[1], FILTER_VALIDATE_IP) || (isset($matches[3]) && $matches[3] > 32)) {
             $message = sprintf('The address "<error>%s</error>" is not a valid IP address or CIDR', $address);
             throw new \InvalidArgumentException($message);
         }
-
-        return array("permission" => $parts[0], "address" => $address);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -124,4 +143,5 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         }
         return 0;
     }
+
 }
