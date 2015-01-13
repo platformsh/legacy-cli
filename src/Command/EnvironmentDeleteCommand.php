@@ -32,6 +32,10 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             $toDelete = array_filter($environments, function ($environment) {
                 return empty($environment['_links']['public-url']);
             });
+            if (!$toDelete) {
+                $output->writeln("No inactive environments found");
+                return 0;
+            }
         }
         elseif ($this->environment) {
             $toDelete = array($this->environment);
