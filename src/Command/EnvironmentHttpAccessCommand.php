@@ -43,7 +43,7 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         }
 
         $minLength = 6;
-        if (strlen($parts[1] < $minLength)) {
+        if (strlen($parts[1]) < $minLength) {
             $message = sprintf('The minimum password length for --auth is %d characters', $minLength);
             throw new \InvalidArgumentException($message);
         }
