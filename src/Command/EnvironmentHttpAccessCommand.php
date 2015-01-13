@@ -102,12 +102,6 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         $auth = $input->getOption('auth');
         $access = $input->getOption('access');
 
-        if (!$auth && !$access) {
-            $output->writeln('<error>You must specify at least one of --auth or --access</error>');
-            return false;
-        }
-
-
         $accessOpts = array();
         $accessOpts["http_access"] = array();
 
@@ -128,19 +122,29 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $environment = new Environment($this->environment, $client);
-        $environment->update($accessOpts);
 
-        $environmentId = $this->environment['id'];
-        $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>");
-
-        if (!$environment->hasActivity()) {
-            $output->writeln(
-              "<comment>"
-              . "The remote environment must be rebuilt for the HTTP access change to take effect."
-              . " Use 'git push' with new commit(s) to trigger a rebuild."
-              . "</comment>"
-            );
+        if ($auth || $access) {
+            $environment->update($accessOpts);
+            $environmentId = $this->environment['id'];
+            $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>");
+            if (!$environment->hasActivity()) {
+                $output->writeln(
+                  "<comment>"
+                  . "The remote environment must be rebuilt for the change to take effect."
+                  . " Use 'git push' with new commit(s) to trigger a rebuild."
+                  . "</comment>"
+                );
+            }
         }
+        else {
+            // Ensure the environment is refreshed.
+            $environment->setData($this->getEnvironment($this->environment['id'], $this->project, true));
+        }
+
+        $current = $environment->getProperty('http_access');
+
+        $output->writeln("Access: " . json_encode($current['addresses']));
+        $output->writeln("Auth: " . json_encode($current['basic_auth']));
         return 0;
     }
 

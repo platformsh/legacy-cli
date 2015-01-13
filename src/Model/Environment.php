@@ -83,4 +83,38 @@ class Environment extends HalResource
         return substr($slugify->slugify($proposed), 0, 32);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function getProperties()
+    {
+        // Override the parent method to ensure passwords are not revealed.
+        $this->sanitizeAuth();
+        return parent::getProperties();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getProperty($property, $required = true)
+    {
+        // Override the parent method to ensure passwords are not revealed.
+        if ($property == 'http_access') {
+            $this->sanitizeAuth();
+        }
+        return parent::getProperty($property, $required);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function sanitizeAuth()
+    {
+        if (!empty($this->data['http_access']['basic_auth'])) {
+            $this->data['http_access']['basic_auth'] = array_map(function () {
+                return '******';
+            }, $this->data['http_access']['basic_auth']);
+        }
+    }
+
 }
