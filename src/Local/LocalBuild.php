@@ -234,6 +234,8 @@ class LocalBuild
 
             $toolstack->build();
 
+            $this->warnAboutHooks($appConfig, $output);
+
             if ($archive) {
                 $output->writeln("Saving build archive...");
                 if (!is_dir(dirname($archive))) {
@@ -244,8 +246,6 @@ class LocalBuild
         }
 
         $toolstack->install();
-
-        $this->warnAboutHooks($appConfig, $output);
 
         $message = "Build complete";
         if ($appName) {
