@@ -349,7 +349,7 @@ class LocalBuild
                 continue;
             }
             $filename = $directory . '/' . $entry;
-            if ($ttl && $now - filemtime($filename) > $ttl || $keepMax && $numKept >= $keepMax) {
+            if (($ttl && $now - filemtime($filename) > $ttl) || $numKept >= $keepMax) {
                 $output->writeln("Deleting: $entry");
                 $this->fsHelper->remove($filename);
                 $numDeleted++;
