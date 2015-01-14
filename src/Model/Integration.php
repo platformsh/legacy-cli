@@ -14,7 +14,7 @@ class Integration extends HalResource
             $output = "Repository: " . $this->data['repository']
               . "\nBuild PRs: " . ($this->data['build_pull_requests'] ? 'yes' : 'no')
               . "\nFetch branches: " . ($this->data['fetch_branches'] ? 'yes' : 'no')
-              . "\nPayload URL: " . $this->getLink('#hook');
+              . "\nPayload URL: " . $this->getLink('#hook', true);
         }
         elseif ($this->data['type'] == 'hipchat') {
             $output = "Room ID: " . $this->data['room']

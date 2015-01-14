@@ -121,11 +121,16 @@ class HalResource implements HalResourceInterface
     /**
      * @inheritdoc
      */
-    public function getLink($rel = 'self') {
+    public function getLink($rel = 'self', $absolute = false) {
         if (empty($this->data['_links'][$rel]['href'])) {
             throw new \InvalidArgumentException("Link not available: $rel");
         }
-        return $this->data['_links'][$rel]['href'];
+        $url = $this->data['_links'][$rel]['href'];
+        if ($absolute && strpos($url, '//') === false) {
+            $base = parse_url($this->client->getBaseUrl());
+            $url = $base['scheme'] . '://' . $base['host'] . $url;
+        }
+        return $url;
     }
 
     /**
