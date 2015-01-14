@@ -39,9 +39,12 @@ class Symfony extends ToolstackBase
         else {
             throw new \Exception("Couldn't create build directory");
         }
+
+        $this->symLinkSpecialDestinations();
     }
 
-    public function install() {
+    public function install()
+    {
         $buildDir = $this->buildDir;
 
         // The build has been done, create a config_dev.yml if it is missing.
