@@ -35,11 +35,12 @@ interface ToolstackInterface
      *
      * This function should be isometric and not affect the file system.
      *
+     * @param string $buildDir
      * @param string $appRoot
      * @param string $projectRoot
      * @param array $settings
      */
-    public function prepareBuild($appRoot, $projectRoot, array $settings);
+    public function prepare($buildDir, $appRoot, $projectRoot, array $settings);
 
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and
@@ -48,8 +49,8 @@ interface ToolstackInterface
     public function build();
 
     /**
-     * Move files into place and symlink appropriate locations
-     * from the local shared/ folder into the application's web root.
+     * Move files into place. This could happen straight after the build, or
+     * after an old build archive has been extracted.
      */
     public function install();
 

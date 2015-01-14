@@ -15,10 +15,12 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
         $appRoot = 'tests/data/apps/drupal';
         $appConfig = array('toolstack' => 'php:drupal');
 
-        $toolstackWithConfig = LocalBuild::getToolstack($appRoot, $appConfig);
+        $builder = new LocalBuild();
+
+        $toolstackWithConfig = $builder->getToolstack($appRoot, $appConfig);
         $this->assertInstanceOf($toolstackClassName, $toolstackWithConfig, 'Detect Drupal app from config');
 
-        $toolstackNoConfig = LocalBuild::getToolstack($appRoot);
+        $toolstackNoConfig = $builder->getToolstack($appRoot);
         $this->assertInstanceOf($toolstackClassName, $toolstackNoConfig, 'Detect Drupal app from makefile-based file structure');
     }
 
@@ -28,10 +30,12 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
         $appRoot = 'tests/data/apps/symfony';
         $appConfig = array('toolstack' => 'php:symfony');
 
-        $toolstackWithConfig = LocalBuild::getToolstack($appRoot, $appConfig);
+        $builder = new LocalBuild();
+
+        $toolstackWithConfig = $builder->getToolstack($appRoot, $appConfig);
         $this->assertInstanceOf($toolstackClassName, $toolstackWithConfig, 'Detect Symfony app from config');
 
-        $toolstackNoConfig = LocalBuild::getToolstack($appRoot);
+        $toolstackNoConfig = $builder->getToolstack($appRoot);
         $this->assertInstanceOf($toolstackClassName, $toolstackNoConfig, 'Detect Symfony app from file structure');
     }
 
@@ -39,15 +43,17 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
     {
         $fakeAppRoot = 'tests/data/apps';
 
-        $this->assertFalse(LocalBuild::getToolstack($fakeAppRoot));
+        $builder = new LocalBuild();
+        $this->assertFalse($builder->getToolstack($fakeAppRoot));
     }
 
     public function testGetAppConfig()
     {
         $fakeAppRoot = 'tests/data/apps';
 
-        $config = LocalBuild::getAppConfig($fakeAppRoot);
-        $this->assertEquals(array(), $config);
+        $builder = new LocalBuild();
+        $config = $builder->getAppConfig($fakeAppRoot);
+        $this->assertEquals(array('name' => 'data'), $config);
     }
 
 }
