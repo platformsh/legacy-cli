@@ -18,7 +18,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
     {
         $this
             ->setName('variable:get')
-            ->setAliases(array('vget'))
+            ->setAliases(array('variables', 'vget'))
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only')
             ->addOption('ssh', null, InputOption::VALUE_NONE, 'Use SSH to get the currently active variables')
