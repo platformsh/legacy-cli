@@ -111,7 +111,7 @@ ssh-key
   ssh-key:list (ssh-keys)                 Get a list of all added SSH keys
 variable
   variable:delete                         Delete a variable from an environment
-  variable:get (vget)                     Get a variable for an environment
+  variable:get (variables, vget)          Get a variable for an environment
   variable:set (vset)                     Set a variable for an environment
 ```
 
