@@ -164,10 +164,11 @@ class HalResource implements HalResourceInterface
      * @param string $uri
      * @param array $options
      * @param HttpClient $client
+     * @param HalResource $prototype
      *
      * @return HalResource[]
      */
-    public static function getCollection($uri, array $options = array(), HttpClient $client)
+    public static function getCollection($uri, array $options = array(), HttpClient $client, HalResource $prototype = null)
     {
         $collection = $client
           ->get($uri, null, $options)
@@ -178,7 +179,14 @@ class HalResource implements HalResourceInterface
         }
         $resources = array();
         foreach ($collection as $data) {
-            $resources[$data['id']] = new HalResource($data, $client);
+            if ($prototype) {
+                $resource = clone $prototype;
+                $resource->setData($data);
+            }
+            else {
+                $resource = new HalResource($data, $client);
+            }
+            $resources[$data['id']] = $resource;
         }
         return $resources;
     }

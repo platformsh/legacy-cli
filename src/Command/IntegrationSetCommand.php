@@ -58,7 +58,8 @@ class IntegrationSetCommand extends PlatformCommand
             $output->writeln("Integration <info>$id</info> created for <info>{$this->values['type']}</info>");
         }
 
-        $output->writeln(Integration::formatData($this->values));
+        /** @var Integration $integration */
+        $output->writeln($integration->formatData());
 
         return 0;
     }

@@ -42,7 +42,9 @@ class IntegrationGetCommand extends PlatformCommand
             $results = array($integration);
         }
         else {
-            $results = Integration::getCollection('integrations', array(), $client);
+            $prototype = new Integration(array(), $client);
+            /** @var Integration[] $results */
+            $results = Integration::getCollection('integrations', array(), $client, $prototype);
             if (!$results) {
                 $output->writeln('No integrations found');
                 return 1;
@@ -56,7 +58,7 @@ class IntegrationGetCommand extends PlatformCommand
     }
 
     /**
-     * @param \CommerceGuys\Platform\Cli\Model\HalResource[] $integrations
+     * @param Integration[] $integrations
      * @param OutputInterface $output
      *
      * @return Table
@@ -66,7 +68,7 @@ class IntegrationGetCommand extends PlatformCommand
         $table = new Table($output);
         $table->setHeaders(array("ID", "Type", "Details"));
         foreach ($integrations as $integration) {
-            $data = Integration::formatData($integration->getData());
+            $data = $integration->formatData();
             $table->addRow(array(
                 $integration->id(),
                 $integration->getProperty('type'),

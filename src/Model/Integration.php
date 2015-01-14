@@ -5,22 +5,21 @@ class Integration extends HalResource
 {
 
     /**
-     * @param array $data
-     *
      * @return string
      */
-    public static function formatData(array $data)
+    public function formatData()
     {
         $output = '';
-        if ($data['type'] == 'github') {
-            $output = "Repository: " . $data['repository']
-              . "\nBuild PRs: " . ($data['build_pull_requests'] ? 'yes' : 'no')
-              . "\nFetch branches: " . ($data['fetch_branches'] ? 'yes' : 'no');
+        if ($this->data['type'] == 'github') {
+            $output = "Repository: " . $this->data['repository']
+              . "\nBuild PRs: " . ($this->data['build_pull_requests'] ? 'yes' : 'no')
+              . "\nFetch branches: " . ($this->data['fetch_branches'] ? 'yes' : 'no')
+              . "\nPayload URL: " . $this->getLink('#hook');
         }
-        elseif ($data['type'] == 'hipchat') {
-            $output = "Room ID: " . $data['room']
-              . "\nEvents: " . implode(', ', $data['events'])
-              . "\nStates: " . implode(', ', $data['states']);
+        elseif ($this->data['type'] == 'hipchat') {
+            $output = "Room ID: " . $this->data['room']
+              . "\nEvents: " . implode(', ', $this->data['events'])
+              . "\nStates: " . implode(', ', $this->data['states']);
         }
         return $output;
     }
