@@ -6,6 +6,7 @@ use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use CommerceGuys\Platform\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Parser;
 
 class LocalBuild
@@ -35,6 +36,7 @@ class LocalBuild
     {
         $this->settings = $settings;
         $this->fsHelper = $fsHelper ?: new FilesystemHelper();
+        $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
         $this->gitHelper = $gitHelper ?: new GitHelper();
     }
 
@@ -69,8 +71,26 @@ class LocalBuild
      */
     public function getApplications($repositoryRoot)
     {
-        // @todo: Determine multiple project roots, perhaps using Finder again
-        return array($repositoryRoot);
+        $finder = new Finder();
+        $finder->in($repositoryRoot)
+            ->ignoreDotFiles(false)
+            ->name('.platform.app.yaml')
+            ->name('.platform')
+            ->depth('> 0');
+        if ($finder->count() == 0) {
+            return array($repositoryRoot);
+        }
+        $applications = array();
+        /** @var \Symfony\Component\Finder\SplFileInfo $file */
+        foreach ($finder as $file) {
+            $filename = $file->getRealPath();
+            $appRoot = dirname($filename);
+            if (basename($appRoot) == '.platform') {
+                $appRoot = dirname($appRoot);
+            }
+            $applications[basename($appRoot)] = $appRoot;
+        }
+        return array_unique($applications);
     }
 
     /**
@@ -189,9 +209,14 @@ class LocalBuild
         $appConfig = $this->getAppConfig($appRoot);
         $verbose = $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE;
 
+        $multiApp = $appRoot != $projectRoot . '/repository';
         $appName = isset($appConfig['name']) ? $appConfig['name'] : false;
-
         $buildName = date('Y-m-d--H-i-s') . '--' . $this->settings['environmentId'];
+
+        if ($multiApp && $appName) {
+            $buildName .= '--' . $appName;
+        }
+
         $buildDir = $projectRoot . '/builds/' . $buildName;
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
@@ -247,6 +272,17 @@ class LocalBuild
 
         $toolstack->install();
 
+        // Symlink the build into www or www/appname.
+        $wwwLink = "$projectRoot/www";
+        if ($multiApp) {
+            $appDirName = $appName ?: 'default';
+            $wwwLink = "$projectRoot/www/$appDirName";
+            if (is_link("$projectRoot/www")) {
+                $this->fsHelper->remove("$projectRoot/www");
+            }
+        }
+        $this->fsHelper->symlink($buildDir, $wwwLink);
+
         $message = "Build complete";
         if ($appName) {
             $message .= " for <info>$appName</info>";
@@ -300,9 +336,23 @@ class LocalBuild
      */
     public function cleanBuilds($projectRoot, $ttl = 86400, $keepMax = 10, OutputInterface $output = null)
     {
+        // Find all the potentially active symlinks, which might be www itself
+        // or symlinks inside www. This is so we can avoid deleting the active
+        // build(s).
+        $www = $projectRoot . '/www';
+        $possibleActiveLinks = array($www);
         $blacklist = array();
-        if (is_link($projectRoot . '/www') && ($target = readlink($projectRoot . '/www'))) {
-            $blacklist[] = basename($target);
+        if (is_dir($www)) {
+            $finder = new Finder();
+            /** @var \Symfony\Component\Finder\SplFileInfo $file */
+            foreach ($finder->in($www)->directories()->depth(0) as $file) {
+                $possibleActiveLinks[] = $file->getPathname();
+            }
+        }
+        foreach ($possibleActiveLinks as $link) {
+            if (is_link($link) && ($target = readlink($link))) {
+                $blacklist[] = basename($target);
+            }
         }
 
         return $this->cleanDirectory($projectRoot . '/builds', $ttl, $keepMax, $blacklist, $output);

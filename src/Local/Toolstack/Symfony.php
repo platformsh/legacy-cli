@@ -58,8 +58,6 @@ class Symfony extends ToolstackBase
                 copy(CLI_ROOT . '/resources/symfony/routing_dev.yml', $buildDir . '/app/config/');
             }
         }
-
-        // Point www to the latest build.
-        $this->fsHelper->symLink($buildDir, $this->projectRoot . '/www');
     }
+
 }
