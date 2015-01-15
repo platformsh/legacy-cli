@@ -83,4 +83,17 @@ class ShellHelper extends Helper implements ShellHelperInterface {
 
         return $output ? rtrim($output) : true;
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function commandExists($command)
+    {
+        $args = array('command', '-v', $command);
+        if (strpos(PHP_OS, 'WIN') !== false) {
+            $args = array('where', $command);
+        }
+        return (bool) $this->execute($args);
+    }
+
 }

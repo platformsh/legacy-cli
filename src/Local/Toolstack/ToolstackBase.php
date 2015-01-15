@@ -63,14 +63,13 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->shellHelper->setOutput($output);
     }
 
-    public function prepareBuild($appRoot, $projectRoot, array $settings)
+    public function prepare($buildDir, $appRoot, $projectRoot, array $settings)
     {
         $this->appRoot = $appRoot;
         $this->projectRoot = $projectRoot;
         $this->settings = $settings;
 
-        $buildName = date('Y-m-d--H-i-s') . '--' . $settings['environmentId'];
-        $this->buildDir = $projectRoot . '/builds/' . $buildName;
+        $this->buildDir = $buildDir;
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
         $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);

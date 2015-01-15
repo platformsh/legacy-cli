@@ -25,6 +25,7 @@ abstract class PlatformCommand extends Command
     protected $oauth2Plugin;
     protected $accountClient;
     protected $platformClient;
+    protected $envArgName = 'environment';
 
     /** @var array */
     protected $project;
@@ -602,8 +603,21 @@ abstract class PlatformCommand extends Command
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         try {
             $this->project = $this->selectProject($projectId);
-            if ($input->hasOption('environment')) {
-                $this->environment = $this->selectEnvironment($input->getOption('environment'));
+            $envOptionName = 'environment';
+            if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
+                if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
+                    throw new \InvalidArgumentException(sprintf("You cannot use both the '%s' argument and the '--%s' option", $this->envArgName, $envOptionName));
+                }
+                $argument = $input->getArgument($this->envArgName);
+                if (is_array($argument) && count($argument) == 1) {
+                    $argument = $argument[0];
+                }
+                if (!is_array($argument)) {
+                    $this->environment = $this->selectEnvironment($argument);
+                }
+            }
+            elseif ($input->hasOption($envOptionName)) {
+                $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
             }
         }
         catch (\RuntimeException $e) {

@@ -11,9 +11,17 @@ class FilesystemHelper extends Helper {
     protected $relative = false;
     protected $copyIfSymlinkUnavailable = true;
 
+    /** @var ShellHelperInterface */
+    protected $shellHelper;
+
     public function getName()
     {
         return 'fs';
+    }
+
+    public function __construct(ShellHelperInterface $shellHelper = null)
+    {
+        $this->shellHelper = $shellHelper ?: new ShellHelper();
     }
 
     /**
@@ -149,7 +157,7 @@ class FilesystemHelper extends Helper {
 
         // The symlink won't work if $source is a relative path.
         $source = realpath($source);
-        $skip = array('.', '..');
+        $skip = array('.', '..', '.git');
 
         // Go through the blacklist, adding files to $skip.
         foreach ($blacklist as $pattern) {
@@ -211,5 +219,51 @@ class FilesystemHelper extends Helper {
         return $result;
     }
 
+    /**
+     * Create a gzipped tar archive of a directory's contents.
+     *
+     * @param string $dir
+     * @param string $destination
+     */
+    public function archiveDir($dir, $destination)
+    {
+        $tar = $this->getTarExecutable();
+        $this->shellHelper->execute(array($tar, '-czp', '-C' . $dir, '-f' . $destination, '.'), null, true);
+    }
 
-} 
+    /**
+     * Extract a gzipped tar archive into the specified destination directory.
+     *
+     * @param string $archive
+     * @param string $destination
+     */
+    public function extractArchive($archive, $destination)
+    {
+        if (!file_exists($archive)) {
+            throw new \InvalidArgumentException("Archive not found: $archive");
+        }
+        if (!is_writable(dirname($destination))) {
+            throw new \InvalidArgumentException("Destination not writable: $destination");
+        }
+        $tar = $this->getTarExecutable();
+        if (!file_exists($destination)) {
+            mkdir($destination);
+        }
+        $this->shellHelper->execute(array($tar, '-xzp', '-C' . $destination, '-f' . $archive), null, true);
+    }
+
+    /**
+     * @return string
+     */
+    protected function getTarExecutable()
+    {
+        $candidates = array('tar', 'tar.exe', 'bsdtar.exe');
+        foreach ($candidates as $command) {
+            if ($this->shellHelper->commandExists($command)) {
+                return $command;
+            }
+        }
+        throw new \RuntimeException("Tar command not found");
+    }
+
+}

@@ -21,7 +21,17 @@ class ProjectBuildCommand extends PlatformCommand
                 'abslinks',
                 'a',
                 InputOption::VALUE_NONE,
-                'Use absolute links.'
+                'Use absolute links'
+            )->addOption(
+                'no-clean',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not remove old builds'
+            )->addOption(
+                'no-archive',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not create or use a build archive'
             );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/repository')) {
@@ -89,14 +99,17 @@ class ProjectBuildCommand extends PlatformCommand
         $settingsMap = array(
           'absoluteLinks' => 'abslinks',
           'drushWorkingCopy' => 'working-copy',
+          'noArchive' => 'no-archive',
           'noCache' => 'no-cache',
+          'noClean' => 'no-clean',
         );
         foreach ($settingsMap as $setting => $option) {
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
         }
 
         try {
-            $this->build($projectRoot, $settings, $output);
+            $builder = new LocalBuild($settings);
+            $success = $builder->buildProject($projectRoot, $output);
         } catch (\Exception $e) {
             $output->writeln("<error>The build failed with an error</error>");
             $formattedMessage = $this->getHelper('formatter')->formatBlock($e->getMessage(), 'error');
@@ -104,87 +117,7 @@ class ProjectBuildCommand extends PlatformCommand
             return 1;
         }
 
-        return 0;
+        return $success ? 0 : 2;
     }
 
-    /**
-     * Build the project.
-     *
-     * @param string $projectRoot The path to the project to be built.
-     * @param array $settings
-     * @param OutputInterface $output
-     *
-     * @throws \Exception
-     */
-    public function build($projectRoot, array $settings, OutputInterface $output)
-    {
-        $repositoryRoot = $projectRoot . '/repository';
-
-        foreach (LocalBuild::getApplications($repositoryRoot) as $appRoot) {
-            $appConfig = LocalBuild::getAppConfig($appRoot);
-            $appName = false;
-            if (isset($appConfig['name'])) {
-                $appName = $appConfig['name'];
-            }
-            elseif ($appRoot != $repositoryRoot) {
-                $appName = str_replace($repositoryRoot, '', $appRoot);
-            }
-
-            $toolstack = LocalBuild::getToolstack($appRoot, $appConfig);
-            if (!$toolstack) {
-                $output->writeln("<comment>Could not detect toolstack for directory: $appRoot</comment>");
-                continue;
-            }
-
-            $message = "Building application";
-            if ($appName) {
-                $message .= " <info>$appName</info>";
-            }
-            $message .= " using the toolstack <info>" . $toolstack->getKey() . "</info>";
-            $output->writeln($message);
-
-            $toolstack->setOutput($output);
-            $toolstack->prepareBuild($appRoot, $projectRoot, $settings);
-
-            $toolstack->build();
-            $toolstack->install();
-
-            $this->warnAboutHooks($appConfig, $output);
-
-            $message = "Build complete";
-            if ($appName) {
-                $message .= " for <info>$appName</info>";
-            }
-            $output->writeln($message);
-        }
-
-    }
-
-    /**
-     * Warn the user that the CLI will not run build/deploy hooks.
-     *
-     * @param array $appConfig
-     * @param OutputInterface $output
-     *
-     * @return bool
-     */
-    protected function warnAboutHooks(array $appConfig, OutputInterface $output)
-    {
-        if (empty($appConfig['hooks']['build'])) {
-            return false;
-        }
-        $indent = '        ';
-        $output->writeln("<comment>You have defined the following hook(s). Please note that the CLI cannot run them locally.</comment>");
-        foreach (array('build', 'deploy') as $hookType) {
-            if (empty($appConfig['hooks'][$hookType])) {
-                continue;
-            }
-            $output->writeln("    $hookType: |");
-            $hooks = (array) $appConfig['hooks'][$hookType];
-            $asString = implode("\n", array_map('trim', $hooks));
-            $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
-            $output->writeln($withIndent);
-        }
-        return true;
-    }
 }

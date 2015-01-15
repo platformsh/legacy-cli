@@ -74,6 +74,7 @@ class Drupal extends ToolstackBase
             $this->buildMode = 'vanilla';
             $this->buildDir = $this->appRoot;
         }
+        $this->symLinkSpecialDestinations();
     }
 
     /**
@@ -244,8 +245,6 @@ class Drupal extends ToolstackBase
         // @todo: Figure out a way to split up local shared resources by application.
 
         $this->fsHelper->symlinkAll($this->projectRoot . '/shared', $buildDir . '/sites/default');
-
-        $this->symLinkSpecialDestinations();
 
         // Point www to the latest build.
         $this->fsHelper->symLink($buildDir, $this->projectRoot . '/www');

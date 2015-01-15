@@ -69,10 +69,8 @@ class ArgvHelper extends Helper
         // Strip out the application name.
         array_shift($args);
         // Strip out the command name.
-        foreach ($args as $key => $arg) {
-            if ($input->getFirstArgument() === $arg) {
-                unset($args[$key]);
-            }
+        if (($key = array_search($input->getFirstArgument(), $args)) !== false) {
+            unset($args[$key]);
         }
         return $args;
     }

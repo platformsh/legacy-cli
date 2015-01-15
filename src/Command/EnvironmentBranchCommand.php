@@ -23,6 +23,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 InputArgument::OPTIONAL,
                 'The name of the new environment. For example: "Sprint 2"'
             )
+            ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
             ->addOption(
                 'force',
                 null,
@@ -40,6 +41,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->envArgName = 'parent';
         if (!$this->validateInput($input, $output)) {
             return 1;
         }
@@ -91,6 +93,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
             $gitHelper = $this->getHelper('git');
+            $gitHelper->setOutput($output);
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
             // If the Git branch already exists locally, check it out.
             $existsLocally = $gitHelper->branchExists($machineName);

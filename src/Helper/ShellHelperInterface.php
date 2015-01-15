@@ -32,4 +32,13 @@ interface ShellHelperInterface {
      */
     public function setOutput(OutputInterface $output);
 
+    /**
+     * Check whether a shell command exists.
+     *
+     * @param string $command
+     *
+     * @return bool
+     */
+    public function commandExists($command);
+
 }

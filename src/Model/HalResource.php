@@ -21,7 +21,7 @@ class HalResource implements HalResourceInterface
      */
     public function __construct(array $data, HttpClient $client = null)
     {
-        $this->data = $data;
+        $this->setData($data);
         $this->client = $client;
     }
 
@@ -44,7 +44,7 @@ class HalResource implements HalResourceInterface
         catch (ClientErrorResponseException $e) {
             return false;
         }
-        return new HalResource($data, $client);
+        return new static($data, $client);
     }
 
     /**
@@ -62,7 +62,7 @@ class HalResource implements HalResourceInterface
           ->post($collectionUrl, null, json_encode($values))
           ->send();
         if ($response->getStatusCode() == 201) {
-            return new HalResource($response->json(), $client);
+            return new static($response->json(), $client);
         }
         return false;
     }
@@ -107,8 +107,11 @@ class HalResource implements HalResourceInterface
         $request = $this->client
           ->createRequest($method, $this->getLink('#' . $op), null, $body);
         $response = $request->send();
-        $this->data = $response->json();
-        return $response->getStatusCode() == 200;
+        $data = $response->json();
+        if (!empty($data['_embedded']['entity'])) {
+            $this->setData($data['_embedded']['entity']);
+        }
+        return true;
     }
 
     /**
@@ -198,6 +201,14 @@ class HalResource implements HalResourceInterface
     public function getData()
     {
         return $this->data;
+    }
+
+    /**
+     * @param array $data
+     */
+    public function setData(array $data)
+    {
+        $this->data = $data;
     }
 
     /**
