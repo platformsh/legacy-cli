@@ -11,7 +11,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 ### Installation
 
-* On Windows, [install Composer globally](https://getcomposer.org/doc/00-intro.md#globally).
+* On Windows, install Composer first using [Composer-Setup.exe](https://getcomposer.org/Composer-Setup.exe).
 
 * Install or update the CLI using this command:
 
