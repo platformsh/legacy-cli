@@ -59,8 +59,6 @@ class Symfony extends ToolstackBase
             }
         }
 
-        $this->symLinkSpecialDestinations();
-
         // Point www to the latest build.
         $this->fsHelper->symLink($buildDir, $this->projectRoot . '/www');
     }
