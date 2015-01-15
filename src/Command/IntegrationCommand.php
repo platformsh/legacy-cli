@@ -2,67 +2,15 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Integration;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class IntegrationSetCommand extends PlatformCommand
+abstract class IntegrationCommand extends PlatformCommand
 {
 
     protected $values = array();
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-          ->setName('integration:set')
-          ->addArgument('id', InputArgument::OPTIONAL, 'The ID of the integration to modify (leave blank to create a new integration)')
-          ->setDescription('Add an integration to the project, or modify an integration');
-        $this->setUpOptions();
-        $this->addProjectOption();
-    }
-
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
-
-        $client = $this->getPlatformClient($this->project['endpoint']);
-
-        $id = $input->getArgument('id');
-        if ($id) {
-            $integration = Integration::get($id, 'integrations', $client);
-            if (!$integration) {
-                $output->writeln("Integration not found: <error>$id</error>");
-                return 1;
-            }
-            $this->values = $integration->getProperties();
-            if (!$this->validateOptions($input, $output)) {
-                return 1;
-            }
-            $integration->update($this->values);
-            $output->writeln("Integration <info>$id</info> (<info>{$this->values['type']}</info>) updated");
-        }
-        elseif (!$this->validateOptions($input, $output)) {
-            return 1;
-        }
-        else {
-            $integration = Integration::create($this->values, 'integrations', $client);
-            $id = $integration->id();
-            $output->writeln("Integration <info>$id</info> created for <info>{$this->values['type']}</info>");
-        }
-
-        /** @var Integration $integration */
-        $output->writeln($integration->formatData());
-
-        return 0;
-    }
 
     /**
      * @inheritdoc
