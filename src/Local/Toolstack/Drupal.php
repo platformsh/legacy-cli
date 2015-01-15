@@ -9,8 +9,6 @@ use Symfony\Component\Finder\Finder;
 class Drupal extends ToolstackBase
 {
 
-    public $buildMode;
-
     protected $drushFlags = array();
 
     public function getKey() {
@@ -64,17 +62,27 @@ class Drupal extends ToolstackBase
         }
         elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
+            $buildMode = 'profile';
             $this->buildInProfileMode($profileName);
         }
         elseif (file_exists($this->appRoot . '/project.make')) {
+            $buildMode = 'project';
             $this->buildInProjectMode($this->appRoot . '/project.make');
         }
         else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
-            $this->buildMode = 'vanilla';
+            $buildMode = 'vanilla';
             $this->buildDir = $this->appRoot;
         }
+
         $this->symLinkSpecialDestinations();
+
+        // Create a .gitignore file if it's missing, and if this app is the
+        // whole repository.
+        if ($this->appRoot == $this->projectRoot . '/repository' && !file_exists($this->projectRoot . '/repository/.gitignore')) {
+            // There is a different default gitignore file for each build mode.
+            copy(CLI_ROOT . '/resources/drupal/gitignore-' . $buildMode, $this->projectRoot . '/repository/.gitignore');
+        }
     }
 
     /**
@@ -116,7 +124,6 @@ class Drupal extends ToolstackBase
     protected function buildInProjectMode($projectMake)
     {
         $drushHelper = new DrushHelper($this->output);
-        $this->buildMode = 'project';
         $drushHelper->ensureInstalled();
         $args = array_merge(
           array('make', $projectMake, $this->buildDir),
@@ -142,7 +149,6 @@ class Drupal extends ToolstackBase
     protected function buildInProfileMode($profileName)
     {
         $drushHelper = new DrushHelper($this->output);
-        $this->buildMode = 'profile';
         $drushHelper->ensureInstalled();
 
         // Find the contrib make file.
@@ -232,13 +238,6 @@ class Drupal extends ToolstackBase
             mkdir($this->projectRoot . '/shared/files');
             // Group write access is potentially useful and probably harmless.
             chmod($this->projectRoot . '/shared/files', 0775);
-        }
-
-        // Create a .gitignore file if it's missing, and if this app is the
-        // whole repository.
-        if ($this->appRoot == $this->projectRoot . '/repository' && !file_exists($this->projectRoot . '/repository/.gitignore')) {
-            // There is a different default gitignore file for each build mode.
-            copy(CLI_ROOT . '/resources/drupal/gitignore-' . $this->buildMode, $this->projectRoot . '/repository/.gitignore');
         }
 
         // Symlink all files and folders from shared.
