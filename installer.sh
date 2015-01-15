@@ -14,9 +14,8 @@ PROFILE=${PROFILE:-''}
 main() {
 	local VERSION=${1:-'1.*'}
 	local CLI_DIR="${HOME}/.platformsh-cli"
-	local FIRST_INSTALL=0
 
-	[ ! -d "$CLI_DIR" ] && FIRST_INSTALL=1 && mkdir "$CLI_DIR"
+	[ ! -d "$CLI_DIR" ] && mkdir "$CLI_DIR"
 
 	_check_requirements
 
@@ -32,9 +31,10 @@ main() {
 
 	_update_shrc "$CLI_DIR"
 
-	local PLATFORM="${CLI_DIR}/vendor/bin/platform"
+	local PLATFORM_BIN="${CLI_DIR}/vendor/bin"
+	local PLATFORM="${PLATFORM_BIN}/platform"
 
-	if [ "$FIRST_INSTALL" = 1 ]; then
+	if [[ ! :$PATH: == *:${PLATFORM_BIN}:* ]]; then
 		echo "Installed successfully: $(${PLATFORM} --version)"
 		echo
 		echo "Run this command to set up your shell:"
