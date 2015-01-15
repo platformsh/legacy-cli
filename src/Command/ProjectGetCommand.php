@@ -113,7 +113,7 @@ class ProjectGetCommand extends PlatformCommand
         $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));
         $cluster = $projectUriParts[0];
         $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
-        $repositoryDir = $directoryName . '/repository';
+        $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = $this->getHelper('git');
         $gitHelper->setOutput($output);
@@ -160,8 +160,7 @@ class ProjectGetCommand extends PlatformCommand
 
         // Always skip the build if the cloned repository is empty ('.', '..',
         // '.git' being the only found items)
-        $files = scandir($directoryName . '/repository');
-        if (count($files) <= 3) {
+        if (count(scandir($repositoryDir)) <= 3) {
             return 0;
         }
 

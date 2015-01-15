@@ -48,7 +48,7 @@ class LocalBuild
      */
     public function buildProject($projectRoot, OutputInterface $output)
     {
-        $repositoryRoot = $this->getRepositoryRoot($projectRoot);
+        $repositoryRoot = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $success = true;
         foreach ($this->getApplications($repositoryRoot) as $appRoot) {
             $success = $this->buildApp($appRoot, $projectRoot, $output) && $success;
@@ -109,7 +109,7 @@ class LocalBuild
         }
         if (!isset($config['name'])) {
             $dir = basename(dirname($appRoot));
-            if ($dir != 'repository') {
+            if ($dir != LocalProject::REPOSITORY_DIR) {
                 $config['name'] = $dir;
             }
         }
@@ -144,15 +144,6 @@ class LocalBuild
         }
 
         return false;
-    }
-
-    /**
-     * @var string $projectRoot
-     * @return string
-     */
-    protected function getRepositoryRoot($projectRoot)
-    {
-        return $projectRoot . '/repository';
     }
 
     /**
@@ -209,15 +200,17 @@ class LocalBuild
         $appConfig = $this->getAppConfig($appRoot);
         $verbose = $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE;
 
-        $multiApp = $appRoot != $projectRoot . '/repository';
+        $multiApp = $appRoot != $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $appName = isset($appConfig['name']) ? $appConfig['name'] : false;
-        $buildName = date('Y-m-d--H-i-s') . '--' . $this->settings['environmentId'];
+        $this->settings['multiApp'] = $multiApp;
+        $this->settings['appName'] = $appName;
 
+        $buildName = date('Y-m-d--H-i-s') . '--' . $this->settings['environmentId'];
         if ($multiApp && $appName) {
             $buildName .= '--' . $appName;
         }
 
-        $buildDir = $projectRoot . '/builds/' . $buildName;
+        $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
         if (!$toolstack) {
@@ -235,7 +228,7 @@ class LocalBuild
                 if ($verbose) {
                     $output->writeln("Tree ID: $treeId");
                 }
-                $archive = $projectRoot . '/.build-archives/' . $treeId . '.tar.gz';
+                $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -273,13 +266,13 @@ class LocalBuild
         $toolstack->install();
 
         // Symlink the build into www or www/appname.
-        $wwwLink = "$projectRoot/www";
+        $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;
         if ($multiApp) {
             $appDirName = $appName ?: 'default';
-            $wwwLink = "$projectRoot/www/$appDirName";
-            if (is_link("$projectRoot/www")) {
-                $this->fsHelper->remove("$projectRoot/www");
+            if (is_link($wwwLink)) {
+                $this->fsHelper->remove($wwwLink);
             }
+            $wwwLink .= "/$appDirName";
         }
         $this->fsHelper->symlink($buildDir, $wwwLink);
 
@@ -345,7 +338,7 @@ class LocalBuild
             $blacklist = array_map('basename', $this->getActiveBuilds($projectRoot));
         }
 
-        return $this->cleanDirectory($projectRoot . '/builds', $ttl, $keepMax, $blacklist, $output);
+        return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $ttl, $keepMax, $blacklist, $output);
     }
 
     /**
@@ -355,7 +348,7 @@ class LocalBuild
      */
     protected function getActiveBuilds($projectRoot)
     {
-        $www = $projectRoot . '/www';
+        $www = $projectRoot . '/' . LocalProject::WEB_ROOT;
         if (!file_exists($www)) {
             return array();
         }
@@ -390,7 +383,7 @@ class LocalBuild
      */
     public function cleanArchives($projectRoot, $ttl = 604800, $keepMax = 10)
     {
-        return $this->cleanDirectory($projectRoot . '/.build-archives', $ttl, $keepMax);
+        return $this->cleanDirectory($projectRoot . '/' . LocalProject::ARCHIVE_DIR, $ttl, $keepMax);
     }
 
     /**

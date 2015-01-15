@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Helper\DrushHelper;
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -31,7 +32,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
     {
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
-            return Drupal::isDrupal($projectRoot . '/repository');
+            return Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
         }
         return true;
     }
@@ -69,7 +70,7 @@ class ProjectDrushAliasesCommand extends PlatformCommand
                 }
             }
             $project['alias-group'] = $new_group;
-            $this->writeCurrentProjectConfig('alias-group', $new_group);
+            LocalProject::writeCurrentProjectConfig('alias-group', $new_group);
             $output->write("Creating Drush aliases in the group <info>@$new_group</info>...");
             $environments = $this->getEnvironments($project, true, false);
             $drushHelper->createAliases($project, $projectRoot, $environments);

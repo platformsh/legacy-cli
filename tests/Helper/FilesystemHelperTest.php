@@ -68,7 +68,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
         $destination = $this->tempDir();
 
         // Copy files.
-        $this->filesystemHelper->copy($source, $destination);
+        $this->filesystemHelper->copyAll($source, $destination);
 
         // Check that they have been copied.
         $this->assertFileExists($destination . '/test-file');
