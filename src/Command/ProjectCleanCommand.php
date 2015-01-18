@@ -17,18 +17,24 @@ class ProjectCleanCommand extends PlatformCommand
             ->setAliases(array('clean'))
             ->setDescription('Remove old project builds')
             ->addOption(
-                'keep',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The maximum number of builds to keep',
-                5
+              'keep',
+              null,
+              InputOption::VALUE_OPTIONAL,
+              'The maximum number of builds to keep',
+              5
             )
             ->addOption(
-                'ttl',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The maximum age of builds, in seconds',
-                86400
+              'ttl',
+              null,
+              InputOption::VALUE_OPTIONAL,
+              'The maximum age of builds, in seconds',
+              86400
+            )
+            ->addOption(
+              'include-active',
+              null,
+              InputOption::VALUE_NONE,
+              'Delete active build(s) too'
             );
     }
 
@@ -45,7 +51,7 @@ class ProjectCleanCommand extends PlatformCommand
         }
 
         $builder = new LocalBuild(array());
-        $result = $builder->cleanBuilds($projectRoot, $input->getOption('ttl'), $input->getOption('keep'), $output);
+        $result = $builder->cleanBuilds($projectRoot, $input->getOption('ttl'), $input->getOption('keep'), $input->getOption('include-active'), $output);
 
         if (!$result[0] && !$result[1]) {
             $output->writeln("There are no builds to delete");

@@ -329,33 +329,53 @@ class LocalBuild
      * @param string          $projectRoot
      * @param int             $ttl
      * @param int             $keepMax
+     * @param bool            $includeActive
      * @param OutputInterface $output
      *
      * @return int[]
      *   The numbers of kept and deleted builds.
      */
-    public function cleanBuilds($projectRoot, $ttl = 86400, $keepMax = 10, OutputInterface $output = null)
+    public function cleanBuilds($projectRoot, $ttl = 86400, $keepMax = 10, $includeActive = false, OutputInterface $output = null)
     {
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
         // build(s).
-        $www = $projectRoot . '/www';
-        $possibleActiveLinks = array($www);
         $blacklist = array();
-        if (is_dir($www)) {
-            $finder = new Finder();
-            /** @var \Symfony\Component\Finder\SplFileInfo $file */
-            foreach ($finder->in($www)->directories()->depth(0) as $file) {
-                $possibleActiveLinks[] = $file->getPathname();
-            }
-        }
-        foreach ($possibleActiveLinks as $link) {
-            if (is_link($link) && ($target = readlink($link))) {
-                $blacklist[] = basename($target);
-            }
+        if (!$includeActive) {
+            $blacklist = array_map('basename', $this->getActiveBuilds($projectRoot));
         }
 
         return $this->cleanDirectory($projectRoot . '/builds', $ttl, $keepMax, $blacklist, $output);
+    }
+
+    /**
+     * @param string $projectRoot
+     *
+     * @return array The absolute paths to any active builds in the project.
+     */
+    protected function getActiveBuilds($projectRoot)
+    {
+        $www = $projectRoot . '/www';
+        if (!file_exists($www)) {
+            return array();
+        }
+        $links = array($www);
+        if (is_dir($www)) {
+            $finder = new Finder();
+            /** @var \Symfony\Component\Finder\SplFileInfo $file */
+            foreach ($finder->in($www)
+                            ->directories()
+                            ->depth(0) as $file) {
+                $links[] = $file->getPathname();
+            }
+        }
+        $activeBuilds = array();
+        foreach ($links as $link) {
+            if (is_link($link) && ($target = readlink($link)) && file_exists($target)) {
+                $activeBuilds[] = $target;
+            }
+        }
+        return $activeBuilds;
     }
 
     /**
@@ -382,7 +402,7 @@ class LocalBuild
      * @param array           $blacklist
      * @param OutputInterface $output
      *
-     * @return array
+     * @return int[]
      */
     protected function cleanDirectory($directory, $ttl, $keepMax = 0, array $blacklist = array(), OutputInterface $output = null)
     {
@@ -395,7 +415,11 @@ class LocalBuild
         $numDeleted = 0;
         $numKept = 0;
         while ($entry = readdir($handle)) {
-            if ($entry[0] == '.' || in_array($entry, $blacklist)) {
+            if ($entry[0] == '.') {
+                continue;
+            }
+            if (in_array($entry, $blacklist)) {
+                $numKept++;
                 continue;
             }
             $filename = $directory . '/' . $entry;
