@@ -50,7 +50,7 @@ class ProjectCleanCommand extends PlatformCommand
             return;
         }
 
-        $builder = new LocalBuild(array());
+        $builder = new LocalBuild();
         $result = $builder->cleanBuilds($projectRoot, $input->getOption('ttl'), $input->getOption('keep'), $input->getOption('include-active'), $output);
 
         if (!$result[0] && !$result[1]) {

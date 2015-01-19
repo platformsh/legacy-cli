@@ -333,7 +333,7 @@ class LocalBuild
      * @param OutputInterface $output
      *
      * @return int[]
-     *   The numbers of kept and deleted builds.
+     *   The numbers of deleted and kept builds.
      */
     public function cleanBuilds($projectRoot, $ttl = 86400, $keepMax = 10, $includeActive = false, OutputInterface $output = null)
     {
@@ -386,7 +386,7 @@ class LocalBuild
      * @param int    $keepMax
      *
      * @return int[]
-     *   The numbers of kept and deleted builds.
+     *   The numbers of deleted and kept builds.
      */
     public function cleanArchives($projectRoot, $ttl = 604800, $keepMax = 10)
     {
