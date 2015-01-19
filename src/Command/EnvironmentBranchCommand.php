@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
@@ -94,7 +95,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         if ($projectRoot) {
             $gitHelper = $this->getHelper('git');
             $gitHelper->setOutput($output);
-            $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
+            $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
             // If the Git branch already exists locally, check it out.
             $existsLocally = $gitHelper->branchExists($machineName);
             if ($existsLocally && !$gitHelper->checkOut($machineName)) {

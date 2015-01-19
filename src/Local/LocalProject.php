@@ -5,9 +5,17 @@ namespace CommerceGuys\Platform\Cli\Local;
 use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
+use Symfony\Component\Yaml\Parser;
 
 class LocalProject
 {
+
+    const ARCHIVE_DIR = '.build-archives';
+    const BUILD_DIR = 'builds';
+    const PROJECT_CONFIG = '.platform-project';
+    const REPOSITORY_DIR = 'repository';
+    const SHARED_DIR = 'shared';
+    const WEB_ROOT = 'www';
 
     /**
      * Create the default files for a project.
@@ -17,15 +25,15 @@ class LocalProject
      */
     public function createProjectFiles($projectRoot, $projectId)
     {
-        mkdir($projectRoot . '/builds');
-        mkdir($projectRoot . '/shared');
+        mkdir($projectRoot . '/' . self::BUILD_DIR);
+        mkdir($projectRoot . '/' . self::SHARED_DIR);
 
         // Create the .platform-project file.
         $projectConfig = array(
           'id' => $projectId,
         );
         $dumper = new Dumper();
-        file_put_contents($projectRoot . '/.platform-project', $dumper->dump($projectConfig));
+        file_put_contents($projectRoot . '/' . self::PROJECT_CONFIG, $dumper->dump($projectConfig));
     }
 
     /**
@@ -45,7 +53,7 @@ class LocalProject
 
         $dir = $realPath;
 
-        if (file_exists("$dir/../.platform-project")) {
+        if (file_exists($dir . '/../' . self::PROJECT_CONFIG)) {
             throw new \RuntimeException("The project is already initialized");
         }
 
@@ -58,7 +66,7 @@ class LocalProject
         $fs = new Filesystem();
         $fs->rename($dir, $backupDir);
         $fs->mkdir($dir, 0755);
-        $fs->rename($backupDir, "$dir/repository");
+        $fs->rename($backupDir, $dir . '/' . LocalProject::REPOSITORY_DIR);
 
         $this->createProjectFiles($dir, $projectId);
 
@@ -107,6 +115,88 @@ class LocalProject
             return $this->getBackupDir($dir, ++$inc);
         }
         return $backupDir;
+    }
+
+    /**
+     * Find the root of the current project.
+     *
+     * The project root contains a .platform-project yaml file.
+     * The current directory tree is traversed until the file is found.
+     *
+     * @return string|null
+     */
+    public static function getProjectRoot()
+    {
+        static $projectRoot;
+        if ($projectRoot !== null) {
+            return $projectRoot;
+        }
+
+        $currentDir = getcwd();
+        $projectRoot = null;
+        while (!$projectRoot) {
+            if (file_exists($currentDir . '/' . self::PROJECT_CONFIG)) {
+                $projectRoot = $currentDir;
+                break;
+            }
+
+            // The file was not found, go one directory up.
+            $dirParts = explode('/', $currentDir);
+            array_pop($dirParts);
+            if (count($dirParts) == 0) {
+                // We've reached the end, stop.
+                break;
+            }
+            $currentDir = implode('/', $dirParts);
+        }
+
+        return $projectRoot;
+    }
+
+    /**
+     * Get the configuration for the current project.
+     *
+     * @return array|null
+     *   The current project's configuration.
+     */
+    public static function getCurrentProjectConfig() {
+        $projectConfig = null;
+        $projectRoot = self::getProjectRoot();
+        if ($projectRoot) {
+            $yaml = new Parser();
+            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . self::PROJECT_CONFIG));
+        }
+        return $projectConfig;
+    }
+
+    /**
+     * Add a configuration value to a project.
+     *
+     * @param string $key The configuration key
+     * @param mixed $value The configuration value
+     *
+     * @throws \Exception On failure
+     *
+     * @return array
+     *   The updated project configuration.
+     */
+    public static function writeCurrentProjectConfig($key, $value) {
+        $projectConfig = self::getCurrentProjectConfig();
+        if (!$projectConfig) {
+            throw new \Exception('Current project configuration not found');
+        }
+        $projectRoot = self::getProjectRoot();
+        if (!$projectRoot) {
+            throw new \Exception('Project root not found');
+        }
+        $file = $projectRoot . '/' . self::PROJECT_CONFIG;
+        if (!is_writable($file)) {
+            throw new \Exception('Project config file not writable');
+        }
+        $dumper = new Dumper();
+        $projectConfig[$key] = $value;
+        file_put_contents($file, $dumper->dump($projectConfig));
+        return $projectConfig;
     }
 
 }

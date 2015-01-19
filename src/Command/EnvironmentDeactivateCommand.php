@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -71,7 +72,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         }
         $environments = $this->getEnvironments($this->project, true);
         $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
+        $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
         $gitHelper->execute(array('fetch', 'origin'));
         $mergedBranches = $gitHelper->getMergedBranches($base);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));

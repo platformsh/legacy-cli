@@ -6,6 +6,7 @@ use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
 use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
 use CommerceGuys\Platform\Cli\Api\PlatformClient;
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Model\Environment;
 use CommerceGuys\Platform\Cli\Model\HalResource;
 use Guzzle\Service\Client;
@@ -191,7 +192,7 @@ abstract class PlatformCommand extends Command
     public function getCurrentProject()
     {
         $project = null;
-        $config = $this->getCurrentProjectConfig();
+        $config = LocalProject::getCurrentProjectConfig();
         if ($config) {
           $project = $this->getProject($config['id']);
           // There is a chance that the project isn't available.
@@ -201,52 +202,6 @@ abstract class PlatformCommand extends Command
           $project += $config;
         }
         return $project;
-    }
-
-    /**
-     * Get the configuration for the current project.
-     *
-     * @return array|null
-     *   The current project's configuration.
-     */
-    protected function getCurrentProjectConfig() {
-        $projectConfig = null;
-        $projectRoot = $this->getProjectRoot();
-        if ($projectRoot) {
-            $yaml = new Parser();
-            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/.platform-project'));
-        }
-        return $projectConfig;
-    }
-
-    /**
-     * Add a configuration value to a project.
-     *
-     * @param string $key The configuration key
-     * @param mixed $value The configuration value
-     *
-     * @throws \Exception On failure
-     *
-     * @return array
-     *   The updated project configuration.
-     */
-    protected function writeCurrentProjectConfig($key, $value) {
-        $projectConfig = $this->getCurrentProjectConfig();
-        if (!$projectConfig) {
-            throw new \Exception('Current project configuration not found');
-        }
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
-            throw new \Exception('Project root not found');
-        }
-        $file = $projectRoot . '/.platform-project';
-        if (!is_writable($file)) {
-            throw new \Exception('Project config file not writable');
-        }
-        $dumper = new Dumper();
-        $projectConfig[$key] = $value;
-        file_put_contents($file, $dumper->dump($projectConfig));
-        return $projectConfig;
     }
 
     /**
@@ -266,7 +221,7 @@ abstract class PlatformCommand extends Command
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
         $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($projectRoot . '/repository');
+        $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
         $upstream = $gitHelper->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
@@ -288,42 +243,6 @@ abstract class PlatformCommand extends Command
         }
 
         return null;
-    }
-
-    /**
-     * Find the root of the current project.
-     *
-     * The project root contains a .platform-project yaml file.
-     * The current directory tree is traversed until the file is found.
-     *
-     * @return string|null
-     */
-    protected function getProjectRoot()
-    {
-        static $projectRoot;
-        if ($projectRoot !== null) {
-            return $projectRoot;
-        }
-
-        $currentDir = getcwd();
-        $projectRoot = null;
-        while (!$projectRoot) {
-            if (file_exists($currentDir . '/.platform-project')) {
-                $projectRoot = $currentDir;
-                break;
-            }
-
-            // The file was not found, go one directory up.
-            $dirParts = explode('/', $currentDir);
-            array_pop($dirParts);
-            if (count($dirParts) == 0) {
-                // We've reached the end, stop.
-                break;
-            }
-            $currentDir = implode('/', $dirParts);
-        }
-
-        return $projectRoot;
     }
 
     /**
@@ -474,6 +393,14 @@ abstract class PlatformCommand extends Command
         $drushHelper = $this->getHelper('drush');
         $drushHelper->setHomeDir($this->getHelper('fs')->getHomeDirectory());
         $drushHelper->createAliases($project, $projectRoot, $environments);
+    }
+
+    /**
+     * @return string
+     */
+    protected function getProjectRoot()
+    {
+        return LocalProject::getProjectRoot();
     }
 
     /**

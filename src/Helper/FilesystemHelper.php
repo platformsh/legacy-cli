@@ -9,6 +9,7 @@ use Symfony\Component\Filesystem\Filesystem;
 class FilesystemHelper extends Helper {
 
     protected $relative = false;
+    protected $fs;
     protected $copyIfSymlinkUnavailable = true;
 
     /** @var ShellHelperInterface */
@@ -19,9 +20,10 @@ class FilesystemHelper extends Helper {
         return 'fs';
     }
 
-    public function __construct(ShellHelperInterface $shellHelper = null)
+    public function __construct(ShellHelperInterface $shellHelper = null, Filesystem $fs = null)
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
+        $this->fs = $fs ?: new Filesystem();
     }
 
     /**
@@ -62,9 +64,8 @@ class FilesystemHelper extends Helper {
      */
     public function remove($filename)
     {
-        $fs = new Filesystem();
         try {
-            $fs->remove($filename);
+            $this->fs->remove($filename);
         }
         catch (IOException $e) {
             return false;
@@ -92,12 +93,27 @@ class FilesystemHelper extends Helper {
     }
 
     /**
+     * Copy a file, if it is newer than the destination.
+     *
+     * @param string $source
+     * @param string $destination
+     * @param bool $override
+     */
+    public function copy($source, $destination, $override = false)
+    {
+        if (is_dir($destination) && !is_dir($source)) {
+            $destination = rtrim($destination, '/') . '/' . basename($source);
+        }
+        $this->fs->copy($source, $destination, $override);
+    }
+
+    /**
      * Copy all files and folders between directories.
      *
      * @param string $source
      * @param string $destination
      */
-    public function copy($source, $destination)
+    public function copyAll($source, $destination)
     {
         if (!is_dir($source)) {
             throw new \InvalidArgumentException("Not a directory: $source");
@@ -105,16 +121,15 @@ class FilesystemHelper extends Helper {
         if (!is_dir($destination)) {
             mkdir($destination);
         }
-        $fs = new Filesystem();
 
         $skip = array('.', '..', '.git');
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
             if (!in_array($file, $skip)) {
                 if (is_dir($source . '/' . $file)) {
-                    $this->copy($source . '/' . $file, $destination . '/' . $file);
+                    $this->copyAll($source . '/' . $file, $destination . '/' . $file);
                 } else {
-                    $fs->copy($source . '/' . $file, $destination . '/' . $file);
+                    $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }
         }
@@ -129,14 +144,13 @@ class FilesystemHelper extends Helper {
      */
     public function symLink($target, $link)
     {
-        $fs = new Filesystem();
         if (file_exists($link)) {
-            $fs->remove($link);
+            $this->fs->remove($link);
         }
         if ($this->relative) {
             $target = $this->makePathRelative($target, $link);
         }
-        $fs->symlink($target, $link, $this->copyIfSymlinkUnavailable);
+        $this->fs->symlink($target, $link, $this->copyIfSymlinkUnavailable);
     }
 
     /**
@@ -214,8 +228,7 @@ class FilesystemHelper extends Helper {
     protected function makePathRelative($endPath, $startPath)
     {
         $startPath = substr($startPath, 0, strrpos($startPath, DIRECTORY_SEPARATOR));
-        $fs = new Filesystem();
-        $result = rtrim($fs->makePathRelative($endPath, $startPath), DIRECTORY_SEPARATOR);
+        $result = rtrim($this->fs->makePathRelative($endPath, $startPath), DIRECTORY_SEPARATOR);
         return $result;
     }
 

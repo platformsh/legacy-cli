@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Helper\ArgvHelper;
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -28,7 +29,7 @@ class EnvironmentDrushCommand extends PlatformCommand
     {
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
-            return Drupal::isDrupal($projectRoot . '/repository');
+            return Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
         }
         return true;
     }

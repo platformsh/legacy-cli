@@ -3,13 +3,12 @@
 namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
 use CommerceGuys\Platform\Cli\Helper\DrushHelper;
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
 class Drupal extends ToolstackBase
 {
-
-    public $buildMode;
 
     protected $drushFlags = array();
 
@@ -64,17 +63,28 @@ class Drupal extends ToolstackBase
         }
         elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
+            $buildMode = 'profile';
             $this->buildInProfileMode($profileName);
         }
         elseif (file_exists($this->appRoot . '/project.make')) {
+            $buildMode = 'project';
             $this->buildInProjectMode($this->appRoot . '/project.make');
         }
         else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
-            $this->buildMode = 'vanilla';
+            $buildMode = 'vanilla';
             $this->buildDir = $this->appRoot;
         }
+
         $this->symLinkSpecialDestinations();
+
+        // Create a .gitignore file if it's missing, and if this app is the
+        // whole repository.
+        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        if ($this->appRoot == $repositoryDir && !file_exists($repositoryDir . '/.gitignore')) {
+            // There is a different default gitignore file for each build mode.
+            copy(CLI_ROOT . '/resources/drupal/gitignore-' . $buildMode, $repositoryDir . '/.gitignore');
+        }
     }
 
     /**
@@ -116,7 +126,6 @@ class Drupal extends ToolstackBase
     protected function buildInProjectMode($projectMake)
     {
         $drushHelper = new DrushHelper($this->output);
-        $this->buildMode = 'project';
         $drushHelper->ensureInstalled();
         $args = array_merge(
           array('make', $projectMake, $this->buildDir),
@@ -142,7 +151,6 @@ class Drupal extends ToolstackBase
     protected function buildInProfileMode($profileName)
     {
         $drushHelper = new DrushHelper($this->output);
-        $this->buildMode = 'profile';
         $drushHelper->ensureInstalled();
 
         // Find the contrib make file.
@@ -215,39 +223,26 @@ class Drupal extends ToolstackBase
     public function install()
     {
         $buildDir = $this->buildDir;
+        $sitesDefault = $buildDir . '/sites/default';
+        $resources = CLI_ROOT . '/resources/drupal';
+        $shared = $this->getSharedDir();
 
         // The build has been done, create a settings.php if it is missing.
-        if (!file_exists($buildDir . '/sites/default/settings.php') && file_exists($buildDir . '/sites/default')) {
-            copy(CLI_ROOT . '/resources/drupal/settings.php', $buildDir . '/sites/default/settings.php');
-        }
+        $this->fsHelper->copy($resources . '/settings.php', $sitesDefault . '/settings.php');
 
-        // Create the settings.local.php if it doesn't exist in either shared/
-        // or in the app.
-        if (!file_exists($this->projectRoot . '/shared/settings.local.php') && file_exists($buildDir . '/sites/default') && !file_exists($buildDir . '/sites/default/settings.local.php')) {
-            copy(CLI_ROOT . '/resources/drupal/settings.local.php', $this->projectRoot . '/shared/settings.local.php');
-        }
+        // Create the shared/settings.local.php if it doesn't exist. Everything
+        // in shared will be symlinked into sites/default.
+        $this->fsHelper->copy($resources . '/settings.local.php', $shared . '/settings.local.php');
 
         // Create a shared/files directory.
-        if (!file_exists($this->projectRoot . '/shared/files')) {
-            mkdir($this->projectRoot . '/shared/files');
+        if (!file_exists($shared . '/files')) {
+            mkdir($shared . '/files');
             // Group write access is potentially useful and probably harmless.
-            chmod($this->projectRoot . '/shared/files', 0775);
-        }
-
-        // Create a .gitignore file if it's missing, and if this app is the
-        // whole repository.
-        if ($this->appRoot == $this->projectRoot . '/repository' && !file_exists($this->projectRoot . '/repository/.gitignore')) {
-            // There is a different default gitignore file for each build mode.
-            copy(CLI_ROOT . '/resources/drupal/gitignore-' . $this->buildMode, $this->projectRoot . '/repository/.gitignore');
+            chmod($shared . '/files', 0775);
         }
 
         // Symlink all files and folders from shared.
-        // @todo: Figure out a way to split up local shared resources by application.
-
-        $this->fsHelper->symlinkAll($this->projectRoot . '/shared', $buildDir . '/sites/default');
-
-        // Point www to the latest build.
-        $this->fsHelper->symLink($buildDir, $this->projectRoot . '/www');
+        $this->fsHelper->symlinkAll($shared, $sitesDefault);
     }
 
 }

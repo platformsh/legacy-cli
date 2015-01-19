@@ -6,6 +6,7 @@ use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use CommerceGuys\Platform\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Parser;
 
 class LocalBuild
@@ -35,6 +36,7 @@ class LocalBuild
     {
         $this->settings = $settings;
         $this->fsHelper = $fsHelper ?: new FilesystemHelper();
+        $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
         $this->gitHelper = $gitHelper ?: new GitHelper();
     }
 
@@ -46,7 +48,7 @@ class LocalBuild
      */
     public function buildProject($projectRoot, OutputInterface $output)
     {
-        $repositoryRoot = $this->getRepositoryRoot($projectRoot);
+        $repositoryRoot = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $success = true;
         foreach ($this->getApplications($repositoryRoot) as $appRoot) {
             $success = $this->buildApp($appRoot, $projectRoot, $output) && $success;
@@ -69,8 +71,26 @@ class LocalBuild
      */
     public function getApplications($repositoryRoot)
     {
-        // @todo: Determine multiple project roots, perhaps using Finder again
-        return array($repositoryRoot);
+        $finder = new Finder();
+        $finder->in($repositoryRoot)
+            ->ignoreDotFiles(false)
+            ->name('.platform.app.yaml')
+            ->name('.platform')
+            ->depth('> 0');
+        if ($finder->count() == 0) {
+            return array($repositoryRoot);
+        }
+        $applications = array();
+        /** @var \Symfony\Component\Finder\SplFileInfo $file */
+        foreach ($finder as $file) {
+            $filename = $file->getRealPath();
+            $appRoot = dirname($filename);
+            if (basename($appRoot) == '.platform') {
+                $appRoot = dirname($appRoot);
+            }
+            $applications[basename($appRoot)] = $appRoot;
+        }
+        return array_unique($applications);
     }
 
     /**
@@ -89,7 +109,7 @@ class LocalBuild
         }
         if (!isset($config['name'])) {
             $dir = basename(dirname($appRoot));
-            if ($dir != 'repository') {
+            if ($dir != LocalProject::REPOSITORY_DIR) {
                 $config['name'] = $dir;
             }
         }
@@ -124,15 +144,6 @@ class LocalBuild
         }
 
         return false;
-    }
-
-    /**
-     * @var string $projectRoot
-     * @return string
-     */
-    protected function getRepositoryRoot($projectRoot)
-    {
-        return $projectRoot . '/repository';
     }
 
     /**
@@ -189,10 +200,17 @@ class LocalBuild
         $appConfig = $this->getAppConfig($appRoot);
         $verbose = $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE;
 
+        $multiApp = $appRoot != $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $appName = isset($appConfig['name']) ? $appConfig['name'] : false;
+        $this->settings['multiApp'] = $multiApp;
+        $this->settings['appName'] = $appName;
 
         $buildName = date('Y-m-d--H-i-s') . '--' . $this->settings['environmentId'];
-        $buildDir = $projectRoot . '/builds/' . $buildName;
+        if ($multiApp && $appName) {
+            $buildName .= '--' . $appName;
+        }
+
+        $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
         if (!$toolstack) {
@@ -210,7 +228,7 @@ class LocalBuild
                 if ($verbose) {
                     $output->writeln("Tree ID: $treeId");
                 }
-                $archive = $projectRoot . '/.build-archives/' . $treeId . '.tar.gz';
+                $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -246,6 +264,17 @@ class LocalBuild
         }
 
         $toolstack->install();
+
+        // Symlink the build into www or www/appname.
+        $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        if ($multiApp) {
+            $appDirName = $appName ?: 'default';
+            if (is_link($wwwLink)) {
+                $this->fsHelper->remove($wwwLink);
+            }
+            $wwwLink .= "/$appDirName";
+        }
+        $this->fsHelper->symlink($buildDir, $wwwLink);
 
         $message = "Build complete";
         if ($appName) {
@@ -293,19 +322,53 @@ class LocalBuild
      * @param string          $projectRoot
      * @param int             $ttl
      * @param int             $keepMax
+     * @param bool            $includeActive
      * @param OutputInterface $output
      *
      * @return int[]
-     *   The numbers of kept and deleted builds.
+     *   The numbers of deleted and kept builds.
      */
-    public function cleanBuilds($projectRoot, $ttl = 86400, $keepMax = 10, OutputInterface $output = null)
+    public function cleanBuilds($projectRoot, $ttl = 86400, $keepMax = 10, $includeActive = false, OutputInterface $output = null)
     {
+        // Find all the potentially active symlinks, which might be www itself
+        // or symlinks inside www. This is so we can avoid deleting the active
+        // build(s).
         $blacklist = array();
-        if (is_link($projectRoot . '/www') && ($target = readlink($projectRoot . '/www'))) {
-            $blacklist[] = basename($target);
+        if (!$includeActive) {
+            $blacklist = array_map('basename', $this->getActiveBuilds($projectRoot));
         }
 
-        return $this->cleanDirectory($projectRoot . '/builds', $ttl, $keepMax, $blacklist, $output);
+        return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $ttl, $keepMax, $blacklist, $output);
+    }
+
+    /**
+     * @param string $projectRoot
+     *
+     * @return array The absolute paths to any active builds in the project.
+     */
+    protected function getActiveBuilds($projectRoot)
+    {
+        $www = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        if (!file_exists($www)) {
+            return array();
+        }
+        $links = array($www);
+        if (is_dir($www)) {
+            $finder = new Finder();
+            /** @var \Symfony\Component\Finder\SplFileInfo $file */
+            foreach ($finder->in($www)
+                            ->directories()
+                            ->depth(0) as $file) {
+                $links[] = $file->getPathname();
+            }
+        }
+        $activeBuilds = array();
+        foreach ($links as $link) {
+            if (is_link($link) && ($target = readlink($link)) && file_exists($target)) {
+                $activeBuilds[] = $target;
+            }
+        }
+        return $activeBuilds;
     }
 
     /**
@@ -316,11 +379,11 @@ class LocalBuild
      * @param int    $keepMax
      *
      * @return int[]
-     *   The numbers of kept and deleted builds.
+     *   The numbers of deleted and kept builds.
      */
     public function cleanArchives($projectRoot, $ttl = 604800, $keepMax = 10)
     {
-        return $this->cleanDirectory($projectRoot . '/.build-archives', $ttl, $keepMax);
+        return $this->cleanDirectory($projectRoot . '/' . LocalProject::ARCHIVE_DIR, $ttl, $keepMax);
     }
 
     /**
@@ -332,7 +395,7 @@ class LocalBuild
      * @param array           $blacklist
      * @param OutputInterface $output
      *
-     * @return array
+     * @return int[]
      */
     protected function cleanDirectory($directory, $ttl, $keepMax = 0, array $blacklist = array(), OutputInterface $output = null)
     {
@@ -345,7 +408,11 @@ class LocalBuild
         $numDeleted = 0;
         $numKept = 0;
         while ($entry = readdir($handle)) {
-            if ($entry[0] == '.' || in_array($entry, $blacklist)) {
+            if ($entry[0] == '.') {
+                continue;
+            }
+            if (in_array($entry, $blacklist)) {
+                $numKept++;
                 continue;
             }
             $filename = $directory . '/' . $entry;

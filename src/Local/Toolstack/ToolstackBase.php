@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelperInterface;
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class ToolstackBase implements ToolstackInterface
@@ -112,6 +113,26 @@ abstract class ToolstackBase implements ToolstackInterface
                 $this->fsHelper->symlink($source, $destination);
             }
         }
+    }
+
+    /**
+     * Get the directory containing files shared between builds.
+     *
+     * This will be 'shared' for a single-application project, or
+     * 'shared/<appName>' when there are multiple applications.
+     *
+     * @return string
+     */
+    protected function getSharedDir()
+    {
+        $shared = $this->projectRoot . '/' . LocalProject::SHARED_DIR;
+        if (!empty($this->settings['multiApp']) && !empty($this->settings['appName'])) {
+            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->settings['appName']);
+        }
+        if (!is_dir($shared)) {
+            mkdir($shared);
+        }
+        return $shared;
     }
 
 }

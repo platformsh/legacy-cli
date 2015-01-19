@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Helper;
 
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Output\NullOutput;
@@ -142,7 +143,7 @@ class DrushHelper extends Helper {
     public function createAliases($project, $projectRoot, $environments, $merge = true)
     {
         // Ignore the project if it doesn't contain a Drupal application.
-        if (!Drupal::isDrupal($projectRoot . '/repository')) {
+        if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             return false;
         }
 
@@ -192,7 +193,7 @@ class DrushHelper extends Helper {
         // Generate an alias for the local environment.
         $localAliasName = '_local';
         $local = array(
-          'root' => $projectRoot . '/www',
+          'root' => $projectRoot . '/' . LocalProject::WEB_ROOT,
           self::AUTO_REMOVE_KEY => true,
         );
         if (isset($aliases[$localAliasName])) {

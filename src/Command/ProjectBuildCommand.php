@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Local\LocalBuild;
+use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -34,7 +35,7 @@ class ProjectBuildCommand extends PlatformCommand
                 'Do not create or use a build archive'
             );
         $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot || Drupal::isDrupal($projectRoot . '/repository')) {
+        if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             $this->addOption(
                 'working-copy',
                 null,
@@ -80,7 +81,7 @@ class ProjectBuildCommand extends PlatformCommand
         }
         else {
             // Login was skipped so we figure out the environment ID from git.
-            $head = file($projectRoot . '/repository/.git/HEAD');
+            $head = file($projectRoot . '/' . LocalProject::REPOSITORY_DIR . '/.git/HEAD');
             $branchRef = $head[0];
             $branch = trim(substr($branchRef,16));
             $envId = $branch;

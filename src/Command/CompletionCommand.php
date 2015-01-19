@@ -75,7 +75,7 @@ class CompletionCommand extends ParentCompletionCommand
               'environment:checkout',
               'id',
               Completion::TYPE_ARGUMENT,
-              array($this, 'getEnvironmentsforCheckout')
+              array($this, 'getEnvironmentsForCheckout')
             ),
             new Completion\ShellPathCompletion(
               'ssh-key:add',

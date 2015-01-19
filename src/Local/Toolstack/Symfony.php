@@ -31,37 +31,25 @@ class Symfony extends ToolstackBase
         }
 
         mkdir($buildDir);
-        $this->fsHelper->copy($this->appRoot, $buildDir);
-        if (is_dir($buildDir)) {
-            $args = array('composer', 'install', '--no-progress', '--no-interaction', '--working-dir', $buildDir);
-            $this->shellHelper->execute($args, $buildDir, true, false);
-        }
-        else {
-            throw new \Exception("Couldn't create build directory");
-        }
+        $this->fsHelper->copyAll($this->appRoot, $buildDir);
+
+        $args = array('composer', 'install', '--no-progress', '--no-interaction', '--working-dir', $buildDir);
+        $this->shellHelper->execute($args, $buildDir, true);
 
         $this->symLinkSpecialDestinations();
     }
 
     public function install()
     {
-        $buildDir = $this->buildDir;
+        $configDir = $this->buildDir . '/app/config';
+        $sharedDir = $this->getSharedDir();
+        $symfonyResources = CLI_ROOT . '/resources/symfony';
 
-        // The build has been done, create a config_dev.yml if it is missing.
-        if (is_dir($buildDir) && file_exists($buildDir . '/app/config')) {
-            if (!file_exists($buildDir . '/app/config/config_dev.yml')) {
-                // Create the config_dev.yml file.
-                copy(CLI_ROOT . '/resources/symfony/config_dev.yml', $buildDir . '/app/config/');
-            }
-            if (!file_exists($buildDir . '/app/config/routing_dev.yml')) {
-                // Create the routing_dev.yml file.
-                copy(CLI_ROOT . '/resources/symfony/routing_dev.yml', $buildDir . '/app/config/');
-            }
+        // Create and symlink configuration files.
+        foreach (array('config_dev.yml', 'routing_dev.yml') as $file) {
+            $this->fsHelper->copy("$symfonyResources/$file", "$sharedDir/$file");
+            $this->fsHelper->symLink("$sharedDir/$file", "$configDir/$file");
         }
-
-        $this->symLinkSpecialDestinations();
-
-        // Point www to the latest build.
-        $this->fsHelper->symLink($buildDir, $this->projectRoot . '/www');
     }
+
 }
