@@ -31,16 +31,13 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
         touch("$expectedRoot/.platform-project");
 
         chdir($testDir);
-        $root = LocalProject::getProjectRoot();
-        $this->assertEquals(false, $root);
+        $this->assertFalse(LocalProject::getProjectRoot());
 
         chdir($expectedRoot);
-        $root = LocalProject::getProjectRoot();
-        $this->assertEquals($expectedRoot, $root);
+        $this->assertEquals($expectedRoot, LocalProject::getProjectRoot(true));
 
         chdir("$testDir/1/2/3/4/5");
-        $root = LocalProject::getProjectRoot();
-        $this->assertEquals($expectedRoot, $root);
+        $this->assertEquals($expectedRoot, LocalProject::getProjectRoot(true));
     }
 
 }

@@ -396,7 +396,7 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * @return string
+     * @return string|false
      */
     protected function getProjectRoot()
     {
