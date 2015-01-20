@@ -34,7 +34,7 @@ class FilesystemHelper extends Helper {
     public function setRelativeLinks($relative)
     {
         // This is not possible on Windows.
-        if (strpos(PHP_OS, 'WIN') !== false) {
+        if ($this->isWindows()) {
             $relative = false;
         }
         $this->relative = $relative;
@@ -241,6 +241,8 @@ class FilesystemHelper extends Helper {
     public function archiveDir($dir, $destination)
     {
         $tar = $this->getTarExecutable();
+        $dir = $this->fixTarPath($dir);
+        $destination = $this->fixTarPath($destination);
         $this->shellHelper->execute(array($tar, '-czp', '-C' . $dir, '-f' . $destination, '.'), null, true);
     }
 
@@ -262,7 +264,28 @@ class FilesystemHelper extends Helper {
         if (!file_exists($destination)) {
             mkdir($destination);
         }
+        $destination = $this->fixTarPath($destination);
+        $archive = $this->fixTarPath($archive);
         $this->shellHelper->execute(array($tar, '-xzp', '-C' . $destination, '-f' . $archive), null, true);
+    }
+
+    /**
+     * Fix a path so that it can be used with tar on Windows.
+     *
+     * @see http://betterlogic.com/roger/2009/01/tar-woes-with-windows/
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    protected function fixTarPath($path)
+    {
+        if ($this->isWindows()) {
+            $path = preg_replace_callback('#^([A-Z]):/#i', function (array $matches) {
+                return '/' . strtolower($matches[1]) . '/';
+            }, str_replace('\\', '/', $path));
+        }
+        return $path;
     }
 
     /**
@@ -277,6 +300,14 @@ class FilesystemHelper extends Helper {
             }
         }
         throw new \RuntimeException("Tar command not found");
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isWindows()
+    {
+        return strpos(PHP_OS, 'WIN') !== false;
     }
 
 }
