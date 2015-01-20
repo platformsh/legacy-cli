@@ -128,12 +128,13 @@ class LocalProject
     public static function getProjectRoot()
     {
         // Statically cache the result, unless the CWD changes.
-        static $projectRoot, $currentDir;
+        static $projectRoot, $lastDir;
         $cwd = getcwd();
-        if ($projectRoot !== null && $currentDir === $cwd) {
+        if ($projectRoot !== null && $lastDir === $cwd) {
             return $projectRoot;
         }
 
+        $lastDir = $cwd;
         $projectRoot = false;
 
         // It's possible that getcwd() can fail.

@@ -378,7 +378,8 @@ abstract class PlatformCommand extends Command
 
         // Cache not found environments.
         static $notFound = array();
-        if (!$refresh && isset($notFound[$id])) {
+        $cacheKey = $project['id'] . ':' . $id;
+        if (!$refresh && isset($notFound[$cacheKey])) {
             return null;
         }
 
@@ -388,7 +389,7 @@ abstract class PlatformCommand extends Command
             $client = $this->getPlatformClient($project['endpoint']);
             $environment = HalResource::get($id, $project['endpoint'] . '/environments', $client);
             if (!$environment) {
-                $notFound[$id] = true;
+                $notFound[$cacheKey] = true;
                 return null;
             }
             $urlParts = parse_url($project['endpoint']);

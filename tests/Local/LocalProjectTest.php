@@ -34,10 +34,10 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse(LocalProject::getProjectRoot());
 
         chdir($expectedRoot);
-        $this->assertEquals($expectedRoot, LocalProject::getProjectRoot(true));
+        $this->assertEquals($expectedRoot, LocalProject::getProjectRoot());
 
         chdir("$testDir/1/2/3/4/5");
-        $this->assertEquals($expectedRoot, LocalProject::getProjectRoot(true));
+        $this->assertEquals($expectedRoot, LocalProject::getProjectRoot());
     }
 
 }
