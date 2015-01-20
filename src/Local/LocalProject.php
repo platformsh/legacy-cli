@@ -141,13 +141,11 @@ class LocalProject
             }
 
             // The file was not found, go one directory up.
-            $dirParts = explode('/', $currentDir);
-            array_pop($dirParts);
-            if (count($dirParts) == 0) {
-                // We've reached the end, stop.
+            $levelUp = dirname($currentDir);
+            if ($levelUp == '.') {
                 break;
             }
-            $currentDir = implode('/', $dirParts);
+            $currentDir = $levelUp;
         }
 
         return $projectRoot;
