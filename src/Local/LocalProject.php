@@ -142,7 +142,7 @@ class LocalProject
 
             // The file was not found, go one directory up.
             $levelUp = dirname($currentDir);
-            if ($levelUp == '/' || $levelUp == '.') {
+            if ($levelUp === $currentDir || $levelUp === '.') {
                 break;
             }
             $currentDir = $levelUp;

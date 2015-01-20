@@ -20,7 +20,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
     public function setUp()
     {
         $this->filesystemHelper = new FilesystemHelper();
-        $this->root = vfsStream::setup('pshCliTests');
+        $this->root = vfsStream::setup(__CLASS__);
     }
 
     /**
