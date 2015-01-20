@@ -375,12 +375,20 @@ abstract class PlatformCommand extends Command
         if (!$project) {
             return null;
         }
+
+        // Cache not found environments.
+        static $notFound = array();
+        if (!$refresh && isset($notFound[$id])) {
+            return null;
+        }
+
         $this->loadConfig();
         $projectId = $project['id'];
         if ($refresh || empty($this->config['environments'][$projectId][$id])) {
             $client = $this->getPlatformClient($project['endpoint']);
             $environment = HalResource::get($id, $project['endpoint'] . '/environments', $client);
             if (!$environment) {
+                $notFound[$id] = true;
                 return null;
             }
             $urlParts = parse_url($project['endpoint']);

@@ -2,6 +2,7 @@
 namespace CommerceGuys\Platform\Cli\Model;
 
 use Guzzle\Http\Client as HttpClient;
+use Guzzle\Http\Exception\ClientErrorResponseException;
 
 interface HalResourceInterface
 {
@@ -18,13 +19,17 @@ interface HalResourceInterface
     public static function create(array $values, $collectionUrl, HttpClient $client);
 
     /**
-     * Get a resource.
+     * Get a resource at a URL.
      *
-     * @param string     $id
-     * @param string     $collectionUrl
+     * @param string $id
+     * @param string $collectionUrl
      * @param HttpClient $client
      *
-     * @return HalResourceInterface|false
+     * @throws ClientErrorResponseException On failure.
+     *
+     * @return HalResource|false
+     *   The resource, or false if it has not been found (if the response code
+     *   is 404).
      */
     public static function get($id, $collectionUrl, HttpClient $client);
 
