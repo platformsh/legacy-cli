@@ -99,6 +99,7 @@ abstract class PlatformCommand extends Command
 
             $oauth2Client = new Client(CLI_ACCOUNTS_SITE . '/oauth2/token');
             $oauth2Client->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
+            $oauth2Client->setUserAgent($this->getUserAgent());
             $config = array(
                 'client_id' => 'platform-cli',
             );
@@ -128,6 +129,7 @@ abstract class PlatformCommand extends Command
     {
         $oauth2Client = new Client(CLI_ACCOUNTS_SITE . '/oauth2/token');
         $oauth2Client->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
+        $oauth2Client->setUserAgent($this->getUserAgent());
         $config = array(
             'username' => $email,
             'password' => $password,
@@ -156,6 +158,7 @@ abstract class PlatformCommand extends Command
             $this->accountClient->addSubscriber($oauth2Plugin);
             $this->accountClient->setBaseUrl(CLI_ACCOUNTS_SITE . '/api/platform');
             $this->accountClient->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
+            $this->accountClient->setUserAgent($this->getUserAgent());
         }
 
         return $this->accountClient;
@@ -176,12 +179,28 @@ abstract class PlatformCommand extends Command
             $this->platformClient = new PlatformClient();
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
+            $this->platformClient->setUserAgent($this->getUserAgent());
         }
+
         // The base url can change between two requests in the same command,
         // so it needs to be explicitly set every time.
         $this->platformClient->setBaseUrl($baseUrl);
 
         return $this->platformClient;
+    }
+
+    /**
+     * Get an HTTP User Agent string representing this application.
+     *
+     * @return string
+     */
+    protected function getUserAgent()
+    {
+        $application = $this->getApplication();
+        $name = str_replace(' ', '-', $application->getName());
+        $version = $application->getVersion();
+        $url = 'https://github.com/platformsh/platformsh-cli';
+        return "$name/$version (+$url)";
     }
 
     /**
