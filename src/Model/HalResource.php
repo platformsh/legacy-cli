@@ -26,13 +26,7 @@ class HalResource implements HalResourceInterface
     }
 
     /**
-     * Get a resource at a URL.
-     *
-     * @param string $id
-     * @param string $collectionUrl
-     * @param HttpClient $client
-     *
-     * @return HalResource|false
+     * @inheritdoc
      */
     public static function get($id, $collectionUrl, HttpClient $client)
     {
@@ -42,19 +36,16 @@ class HalResource implements HalResourceInterface
                            ->json();
         }
         catch (ClientErrorResponseException $e) {
-            return false;
+            if ($e->getCode() === 404) {
+                return false;
+            }
+            throw $e;
         }
         return new static($data, $client);
     }
 
     /**
-     * Create a resource.
-     *
-     * @param array $values
-     * @param string $collectionUrl
-     * @param HttpClient $client
-     *
-     * @return HalResource|false
+     * @inheritdoc
      */
     public static function create(array $values, $collectionUrl, HttpClient $client)
     {

@@ -120,20 +120,29 @@ class LocalProject
     /**
      * Find the root of the current project.
      *
-     * The project root contains a .platform-project yaml file.
-     * The current directory tree is traversed until the file is found.
+     * The project root contains a .platform-project YAML file. The current
+     * directory tree is traversed until the file is found.
      *
-     * @return string|null
+     * @return string|false
      */
     public static function getProjectRoot()
     {
-        static $projectRoot;
-        if ($projectRoot !== null) {
+        // Statically cache the result, unless the CWD changes.
+        static $projectRoot, $lastDir;
+        $cwd = getcwd();
+        if ($projectRoot !== null && $lastDir === $cwd) {
             return $projectRoot;
         }
 
-        $currentDir = getcwd();
-        $projectRoot = null;
+        $lastDir = $cwd;
+        $projectRoot = false;
+
+        // It's possible that getcwd() can fail.
+        if ($cwd === false) {
+            return false;
+        }
+
+        $currentDir = $cwd;
         while (!$projectRoot) {
             if (file_exists($currentDir . '/' . self::PROJECT_CONFIG)) {
                 $projectRoot = $currentDir;
@@ -142,7 +151,7 @@ class LocalProject
 
             // The file was not found, go one directory up.
             $levelUp = dirname($currentDir);
-            if ($levelUp == '/' || $levelUp == '.') {
+            if ($levelUp === $currentDir || $levelUp === '.') {
                 break;
             }
             $currentDir = $levelUp;

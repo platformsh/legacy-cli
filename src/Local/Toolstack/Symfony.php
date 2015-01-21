@@ -34,7 +34,7 @@ class Symfony extends ToolstackBase
         $this->fsHelper->copyAll($this->appRoot, $buildDir);
 
         $args = array('composer', 'install', '--no-progress', '--no-interaction', '--working-dir', $buildDir);
-        $this->shellHelper->execute($args, $buildDir, true);
+        $this->shellHelper->execute($args, $buildDir, true, false);
 
         $this->symLinkSpecialDestinations();
     }

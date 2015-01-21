@@ -147,6 +147,11 @@ class LocalBuild
     }
 
     /**
+     * Get a hash of the application files.
+     *
+     * This should change if any of the application files or build settings
+     * change.
+     *
      * @param string $appRoot
      *
      * @return string|false
@@ -183,6 +188,14 @@ class LocalBuild
                 $count++;
             }
         }
+
+        // Include relevant build settings.
+        $settings = $this->settings;
+        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity');
+        foreach ($irrelevant as $setting) {
+            unset($settings[$setting]);
+        }
+        $hashes[] = serialize($settings);
 
         // Combine them all.
         return sha1(implode(' ', $hashes));
@@ -335,7 +348,7 @@ class LocalBuild
         // build(s).
         $blacklist = array();
         if (!$includeActive) {
-            $blacklist = array_map('basename', $this->getActiveBuilds($projectRoot));
+            $blacklist = $this->getActiveBuilds($projectRoot);
         }
 
         return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $ttl, $keepMax, $blacklist, $output);
@@ -403,29 +416,30 @@ class LocalBuild
             return array(0, 0);
         }
         $output = $output ?: new NullOutput();
-        $handle = opendir($directory);
+        $files = glob($directory . '/*');
+        if (!$files) {
+            return array(0, 0);
+        }
+        // Sort files by modified time (descending).
+        usort($files, function ($a, $b) {
+            return filemtime($a) < filemtime($b);
+        });
         $now = time();
         $numDeleted = 0;
         $numKept = 0;
-        while ($entry = readdir($handle)) {
-            if ($entry[0] == '.') {
-                continue;
-            }
-            if (in_array($entry, $blacklist)) {
+        foreach ($files as $filename) {
+            if (in_array($filename, $blacklist)) {
                 $numKept++;
                 continue;
             }
-            $filename = $directory . '/' . $entry;
-            if (($ttl && $now - filemtime($filename) > $ttl) || $numKept >= $keepMax) {
-                $output->writeln("Deleting: $entry");
+            if ($numKept >= $keepMax || ($ttl && $now - filemtime($filename) > $ttl)) {
+                $output->writeln("Deleting: " . basename($filename));
                 $this->fsHelper->remove($filename);
                 $numDeleted++;
             } else {
                 $numKept++;
             }
         }
-        closedir($handle);
-
         return array($numDeleted, $numKept);
     }
 
