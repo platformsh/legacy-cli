@@ -147,6 +147,11 @@ class LocalBuild
     }
 
     /**
+     * Get a hash of the application files.
+     *
+     * This should change if any of the application files or build settings
+     * change.
+     *
      * @param string $appRoot
      *
      * @return string|false
@@ -183,6 +188,14 @@ class LocalBuild
                 $count++;
             }
         }
+
+        // Include relevant build settings.
+        $settings = $this->settings;
+        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity');
+        foreach ($irrelevant as $setting) {
+            unset($settings[$setting]);
+        }
+        $hashes[] = serialize($settings);
 
         // Combine them all.
         return sha1(implode(' ', $hashes));
