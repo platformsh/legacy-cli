@@ -40,8 +40,6 @@ class EnvironmentDrushCommand extends PlatformCommand
             return 1;
         }
 
-        $this->getHelper('drush')->ensureInstalled();
-
         if ($input instanceof ArgvInput) {
             $helper = new ArgvHelper();
             $drushCommand = $helper->getPassedCommand($this, $input);

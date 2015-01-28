@@ -89,7 +89,7 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
                 if ($potentialChild['parent'] == $environment['id']) {
                     $output->writeln("The environment <error>$environmentId</error> has children and therefore can't be deleted.");
                     $output->writeln("Please delete the environment's children first.");
-                    continue;
+                    continue 2;
                 }
             }
             $question = "Are you sure you want to delete the environment <info>$environmentId</info>?";
