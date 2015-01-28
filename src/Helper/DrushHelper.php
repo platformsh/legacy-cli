@@ -39,13 +39,18 @@ class DrushHelper extends Helper {
 
     /**
      * @param string $minVersion
+     * @param bool $attemptInstall
      *
      * @throws \Exception
      */
-    public function ensureInstalled($minVersion = '6')
+    public function ensureInstalled($minVersion = '6', $attemptInstall = true)
     {
         exec($this->getDrushExecutable() . ' --version', $drushVersion, $returnCode);
         if ($returnCode && $returnCode === 127) {
+            if ($attemptInstall && $this->install()) {
+                $this->ensureInstalled($minVersion, false);
+                return;
+            }
             throw new \Exception('Drush must be installed');
         }
         elseif ($returnCode) {
@@ -59,6 +64,20 @@ class DrushHelper extends Helper {
         if (version_compare($versionNumber, $minVersion, '<')) {
             throw new \Exception(sprintf('Drush version %s found, but %s (or later) is required', $versionNumber, $minVersion));
         }
+    }
+
+    /**
+     * Install Drush globally, using Composer.
+     *
+     * @param string $version The version to install. At the time of writing,
+     *                        Platform.sh uses Drush 6.4.0.
+     *
+     * @return bool
+     */
+    protected function install($version = '6.4.0')
+    {
+        $args = array('composer', 'global', 'require', 'drush/drush:' . $version);
+        return (bool) $this->shellHelper->execute($args, null, false, false);
     }
 
     /**
