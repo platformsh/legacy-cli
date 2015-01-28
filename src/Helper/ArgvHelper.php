@@ -47,13 +47,10 @@ class ArgvHelper extends Helper
     {
         // Get a blank ArgvInput object so we can use the 'escapeToken' method.
         $argv = new ArgvInput();
-        // If the string contains '=', and the part before the '=' could be an
-        // option name, expand it into the option and value.
-        if (strpos($arg, '=')) {
+        // If the string looks like an option=value pair, split them up.
+        if ($arg[0] === '-' && strpos($arg, '=')) {
             list($option, $value) = explode('=', $arg, 2);
-            if (preg_match('{^[\w-]+$}', $option)) {
-                return $option . '=' . $argv->escapeToken($value);
-            }
+            return $option . '=' . $argv->escapeToken($value);
         }
         if (strpos($arg, '-') === 0) {
             return $arg;
