@@ -50,8 +50,8 @@ class ProjectCleanCommand extends PlatformCommand
             return;
         }
 
-        $builder = new LocalBuild();
-        $result = $builder->cleanBuilds($projectRoot, $input->getOption('ttl'), $input->getOption('keep'), $input->getOption('include-active'), $output);
+        $builder = new LocalBuild(array(), $output);
+        $result = $builder->cleanBuilds($projectRoot, $input->getOption('ttl'), $input->getOption('keep'), $input->getOption('include-active'), false);
 
         if (!$result[0] && !$result[1]) {
             $output->writeln("There are no builds to delete");
