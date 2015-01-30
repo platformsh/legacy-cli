@@ -141,6 +141,10 @@ class FilesystemHelper extends Helper {
      *
      * @param $target
      * @param $link
+     *
+     * @return string
+     *   The final symlink target, which could be a relative path, depending on
+     *   $this->relative.
      */
     public function symLink($target, $link)
     {
@@ -151,6 +155,7 @@ class FilesystemHelper extends Helper {
             $target = $this->makePathRelative($target, $link);
         }
         $this->fs->symlink($target, $link, $this->copyIfSymlinkUnavailable);
+        return $target;
     }
 
     /**
@@ -218,17 +223,19 @@ class FilesystemHelper extends Helper {
     }
 
     /**
-     * Make relative path between a symlink and a target.
+     * Make a absolute path into a relative one.
      *
-     * @param string $endPath Path of the file we are linking to.
-     * @param string $startPath Path to the symlink that doesn't exist yet.
+     * @param string $path1 Absolute path.
+     * @param string $path2 Target path.
      *
-     * @return string Relative path to the target.
+     * @return string The first path, made relative to the second path.
      */
-    protected function makePathRelative($endPath, $startPath)
+    public function makePathRelative($path1, $path2)
     {
-        $startPath = substr($startPath, 0, strrpos($startPath, DIRECTORY_SEPARATOR));
-        $result = rtrim($this->fs->makePathRelative($endPath, $startPath), DIRECTORY_SEPARATOR);
+        if (!is_dir($path2)) {
+            $path2 = dirname($path2);
+        }
+        $result = rtrim($this->fs->makePathRelative($path1, $path2), DIRECTORY_SEPARATOR);
         return $result;
     }
 
