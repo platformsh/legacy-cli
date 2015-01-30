@@ -2,8 +2,8 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Activity;
 use CommerceGuys\Platform\Cli\Model\Environment;
-use CommerceGuys\Platform\Cli\Model\HalResource;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -35,7 +35,7 @@ class ActivityLogCommand extends PlatformCommand
 
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = HalResource::get($id, $this->environment['endpoint'] . '/activities', $client);
+            $activity = Activity::get($id, $this->environment['endpoint'] . '/activities', $client);
             if (!$activity) {
                 $output->writeln("Activity not found: <error>$id</error>");
                 return 1;
@@ -43,12 +43,15 @@ class ActivityLogCommand extends PlatformCommand
         }
         else {
             $environment = new Environment($this->environment, $client);
-            $activity = reset($environment->getActivities(1, $input->getOption('type')));
+            $activities = $environment->getActivities(1, $input->getOption('type'));
+            $activity = reset($activities);
             if (!$activity) {
                 $output->writeln('No activities found');
                 return 1;
             }
         }
+
+        $output->writeln("Log for activity <info>" . $activity->id() . "</info> (" . $activity->getDescription() . "):");
 
         $output->write($activity->getProperty('log'));
         return 0;

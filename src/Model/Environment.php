@@ -33,7 +33,7 @@ class Environment extends HalResource
      * @param int $limit
      * @param string $type
      *
-     * @return HalResource[]
+     * @return Activity[]
      */
     public function getActivities($limit = 3, $type = null)
     {
@@ -45,7 +45,8 @@ class Environment extends HalResource
         if ($type) {
             $options['query']['type'] = $type;
         }
-        return self::getCollection('activities', $options, $this->client);
+        $prototype = new Activity(array(), $this->client);
+        return self::getCollection('activities', $options, $this->client, $prototype);
     }
 
     /**
