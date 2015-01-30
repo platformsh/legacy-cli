@@ -9,11 +9,13 @@ class Environment extends HalResource
     /**
      * Get the SSH URL for the environment.
      *
+     * @param string $app An application name.
+     *
      * @throws \Exception
      *
      * @return string
      */
-    public function getSshUrl()
+    public function getSshUrl($app = '')
     {
         if (!isset($this->data['_links']['ssh']['href'])) {
             $id = $this->data['id'];
@@ -23,6 +25,10 @@ class Environment extends HalResource
         $sshUrl = parse_url($this->data['_links']['ssh']['href']);
         $host = $sshUrl['host'];
         $user = $sshUrl['user'];
+
+        if ($app) {
+            $user .= '--' . $app;
+        }
 
         return $user . '@' . $host;
     }
