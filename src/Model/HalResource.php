@@ -53,7 +53,11 @@ class HalResource implements HalResourceInterface
           ->post($collectionUrl, null, json_encode($values))
           ->send();
         if ($response->getStatusCode() == 201) {
-            return new static($response->json(), $client);
+            $data = $response->json();
+            if (isset($data['_embedded']['entity'])) {
+                $data = $data['_embedded']['entity'];
+            }
+            return new static($data, $client);
         }
         return false;
     }
@@ -108,11 +112,16 @@ class HalResource implements HalResourceInterface
     /**
      * @inheritdoc
      */
-    public function getLink($rel = 'self') {
+    public function getLink($rel = 'self', $absolute = false) {
         if (empty($this->data['_links'][$rel]['href'])) {
             throw new \InvalidArgumentException("Link not available: $rel");
         }
-        return $this->data['_links'][$rel]['href'];
+        $url = $this->data['_links'][$rel]['href'];
+        if ($absolute && strpos($url, '//') === false) {
+            $base = parse_url($this->client->getBaseUrl());
+            $url = $base['scheme'] . '://' . $base['host'] . $url;
+        }
+        return $url;
     }
 
     /**
@@ -151,10 +160,11 @@ class HalResource implements HalResourceInterface
      * @param string $uri
      * @param array $options
      * @param HttpClient $client
+     * @param HalResource $prototype
      *
      * @return HalResource[]
      */
-    public static function getCollection($uri, array $options = array(), HttpClient $client)
+    public static function getCollection($uri, array $options = array(), HttpClient $client, HalResource $prototype = null)
     {
         $collection = $client
           ->get($uri, null, $options)
@@ -165,7 +175,14 @@ class HalResource implements HalResourceInterface
         }
         $resources = array();
         foreach ($collection as $data) {
-            $resources[$data['id']] = new HalResource($data, $client);
+            if ($prototype) {
+                $resource = clone $prototype;
+                $resource->setData($data);
+            }
+            else {
+                $resource = new HalResource($data, $client);
+            }
+            $resources[$data['id']] = $resource;
         }
         return $resources;
     }

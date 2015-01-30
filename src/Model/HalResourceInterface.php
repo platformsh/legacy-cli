@@ -94,9 +94,11 @@ interface HalResourceInterface
 
     /**
      * @param $rel
+     * @param bool $absolute
+     *
      * @return string
      */
-    public function getLink($rel = 'self');
+    public function getLink($rel = 'self', $absolute = false);
 
     /** @var array */
     public function getData();
