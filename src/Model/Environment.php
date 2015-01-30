@@ -38,9 +38,10 @@ class Environment extends HalResource
     public function getActivities($limit = 3, $type = null)
     {
         $options = array();
-        if ($limit) {
-            $options['query']['count'] = $limit;
-        }
+        // @todo this does not work yet in the API
+//        if ($limit) {
+//            $options['query']['count'] = $limit;
+//        }
         if ($type) {
             $options['query']['type'] = $type;
         }
