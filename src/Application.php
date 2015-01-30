@@ -94,6 +94,8 @@ class Application extends ParentApplication {
         $commands[] = new Command\DomainDeleteCommand();
         $commands[] = new Command\DomainListCommand();
         $commands[] = new Command\EnvironmentActivateCommand();
+        $commands[] = new Command\ActivityListCommand();
+        $commands[] = new Command\ActivityLogCommand();
         $commands[] = new Command\EnvironmentBackupCommand();
         $commands[] = new Command\EnvironmentBranchCommand();
         $commands[] = new Command\EnvironmentCheckoutCommand();
