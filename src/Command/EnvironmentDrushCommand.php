@@ -73,10 +73,12 @@ class EnvironmentDrushCommand extends PlatformCommand
             $sshOptions .= ' -q';
         }
 
-        $environment = new Environment($this->environment);
-        $sshUrl = $environment->getSshUrl($input->getOption('app'));
+        $app = $input->getOption('app');
 
-        $appRoot = '/app/public';
+        $environment = new Environment($this->environment);
+        $sshUrl = $environment->getSshUrl($app);
+
+        $appRoot = '/app/' . ($app ?: 'public');
         $dimensions = $this->getApplication()->getTerminalDimensions();
         $columns = $dimensions[0] ?: 80;
         $sshDrushCommand = "COLUMNS=$columns drush -r $appRoot";
