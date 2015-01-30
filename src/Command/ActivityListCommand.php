@@ -20,6 +20,7 @@ class ActivityListCommand extends PlatformCommand
         $this
             ->setName('activity:list')
             ->setAliases(array('activities'))
+            ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of results displayed', 3)
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
             ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
@@ -36,7 +37,7 @@ class ActivityListCommand extends PlatformCommand
         $environment = new Environment($this->environment);
         $environment->setClient($this->getPlatformClient($this->environment['endpoint']));
 
-        $results = $environment->getActivities($input->getOption('limit'));
+        $results = $environment->getActivities($input->getOption('limit'), $input->getOption('type'));
         if (!$results) {
             $output->writeln('No activities found');
             return 1;

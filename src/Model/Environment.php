@@ -31,14 +31,18 @@ class Environment extends HalResource
      * Get activities for this environment.
      *
      * @param int $limit
+     * @param string $type
      *
      * @return HalResource[]
      */
-    public function getActivities($limit = 3)
+    public function getActivities($limit = 3, $type = null)
     {
         $options = array();
         if ($limit) {
             $options['query']['count'] = $limit;
+        }
+        if ($type) {
+            $options['query']['type'] = $type;
         }
         return self::getCollection('activities', $options, $this->client);
     }

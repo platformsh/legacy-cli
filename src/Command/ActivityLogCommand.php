@@ -19,6 +19,7 @@ class ActivityLogCommand extends PlatformCommand
         $this
             ->setName('activity:log')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
+            ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
             ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
             ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
             ->setDescription('Display the log for an environment activity');
@@ -42,7 +43,7 @@ class ActivityLogCommand extends PlatformCommand
         }
         else {
             $environment = new Environment($this->environment, $client);
-            $activity = reset($environment->getActivities(1));
+            $activity = reset($environment->getActivities(1, $input->getOption('type')));
             if (!$activity) {
                 $output->writeln('No activities found');
                 return 1;
