@@ -74,6 +74,7 @@ class Drupal extends ToolstackBase
             $this->output->writeln("Building in vanilla mode: you are missing out!");
             $buildMode = 'vanilla';
             $this->buildDir = $this->appRoot;
+            $this->preventArchive = true;
         }
 
         $this->symLinkSpecialDestinations();
