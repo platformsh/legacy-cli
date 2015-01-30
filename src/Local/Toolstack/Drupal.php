@@ -26,6 +26,8 @@ class Drupal extends ToolstackBase
      */
     public static function isDrupal($directory, $depth = '< 2') {
         $finder = new Finder();
+
+        // Look for at least one Drush make file.
         $finder->in($directory)
             ->files()
             ->depth($depth)
@@ -36,15 +38,19 @@ class Drupal extends ToolstackBase
         foreach ($finder as $file) {
             return true;
         }
-        $finder->in($directory)->files()->depth($depth)->name('COPYRIGHT.txt');
+
+        // Check whether there is an index.php file whose first few lines
+        // contain the word "Drupal".
+        $finder->in($directory)->files()->depth($depth)->name('index.php');
         foreach ($finder as $file) {
             $f = fopen($file, 'r');
-            $line = fgets($f);
+            $beginning = fread($f, 3178);
             fclose($f);
-            if (preg_match('#^All Drupal code#', $line) === 1) {
+            if (strpos($beginning, 'Drupal') !== false) {
                 return true;
             }
         }
+
         return false;
     }
 
