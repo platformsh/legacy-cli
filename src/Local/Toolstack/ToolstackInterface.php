@@ -54,4 +54,9 @@ interface ToolstackInterface
      */
     public function install();
 
+    /**
+     * @return string
+     */
+    public function getBuildDir();
+
 }

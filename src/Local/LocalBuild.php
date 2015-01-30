@@ -267,7 +267,7 @@ class LocalBuild
 
             $this->warnAboutHooks($appConfig, $output);
 
-            if ($archive) {
+            if ($archive && empty($toolstack->preventArchive)) {
                 $output->writeln("Saving build archive...");
                 if (!is_dir(dirname($archive))) {
                     mkdir(dirname($archive));
@@ -277,6 +277,9 @@ class LocalBuild
         }
 
         $toolstack->install();
+
+        // Allow the toolstack to change the build dir.
+        $buildDir = $toolstack->getBuildDir();
 
         // Symlink the build into www or www/appname.
         $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;

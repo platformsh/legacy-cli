@@ -11,6 +11,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 abstract class ToolstackBase implements ToolstackInterface
 {
 
+    public $preventArchive = false;
+
     /**
      * Files from the app root to ignore during install.
      *
@@ -133,6 +135,11 @@ abstract class ToolstackBase implements ToolstackInterface
             mkdir($shared);
         }
         return $shared;
+    }
+
+    public function getBuildDir()
+    {
+        return $this->buildDir;
     }
 
 }
