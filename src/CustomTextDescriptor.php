@@ -1,7 +1,8 @@
 <?php
 /**
  * @file
- * Override Symfony Console's TextDescriptor to customize the command list.
+ * Override Symfony Console's TextDescriptor to customize the appearance of the
+ * command list and each command's help.
  */
 
 namespace CommerceGuys\Platform\Cli;
@@ -14,6 +15,44 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 
 class CustomTextDescriptor extends TextDescriptor
 {
+
+    /**
+     * @inheritdoc
+     */
+    protected function describeCommand(Command $command, array $options = array())
+    {
+        $command->getSynopsis();
+        $command->mergeApplicationDefinition(false);
+
+        $this->writeText("<comment>Command:</comment> " . $command->getName(), $options);
+        if ($aliases = $command->getAliases()) {
+            $this->writeText("\n");
+            $this->writeText('<comment>Aliases:</comment> ' . implode(', ', $aliases), $options);
+        }
+        if ($description = $command->getDescription()) {
+            $this->writeText("\n");
+            $this->writeText("<comment>Description:</comment> $description", $options);
+        }
+        $this->writeText("\n\n");
+
+        $this->writeText('<comment>Usage:</comment>', $options);
+        $this->writeText("\n");
+        $this->writeText(' '.$command->getSynopsis(), $options);
+        $this->writeText("\n");
+
+        if ($definition = $command->getNativeDefinition()) {
+            $this->writeText("\n");
+            $this->describeInputDefinition($definition, $options);
+        }
+
+        if ($help = $command->getProcessedHelp()) {
+            $this->writeText("\n");
+            $this->writeText('<comment>Help:</comment>', $options);
+            $this->writeText("\n");
+            $this->writeText(' '.str_replace("\n", "\n ", $help), $options);
+            $this->writeText("\n");
+        }
+    }
 
     /**
      * @inheritdoc
