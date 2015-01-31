@@ -67,6 +67,14 @@ class Activity extends HalResource
                   $data['payload']['environment']['title']
                 );
 
+            case 'environment.restore':
+                return sprintf(
+                  "%s restored %s to %s",
+                  $data['payload']['user']['display_name'],
+                  $data['payload']['environment'],
+                  substr($data['payload']['commit'], 0, 7)
+                );
+
             case 'environment.synchronize':
                 $syncedCode = !empty($data['payload']['synchronize_code']);
                 if ($syncedCode && !empty($data['payload']['synchronize_data'])) {
