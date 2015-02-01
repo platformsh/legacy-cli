@@ -116,9 +116,9 @@ abstract class IntegrationCommand extends PlatformCommand
         return array(
           'type' => array(
             'required' => true,
-            'description' => "The integration type (HipChat or GitHub)",
+            'description' => "The integration type (HipChat, GitHub or Generic Webhook)",
             'validator' => function($value) {
-                return in_array($value, array('hipchat', 'github'));
+                return in_array($value, array('hipchat', 'github', 'webhook'));
             },
           ),
           'token' => array(
@@ -170,6 +170,10 @@ abstract class IntegrationCommand extends PlatformCommand
             'default' => 'complete',
             'description' => 'HipChat: states to report, e.g. complete,in_progress',
             'normalizer' => $arrayNormalizer,
+          ),
+          'url' => array(
+            'for types' => array('webhook'),
+            'description' => 'url for generic webhook',
           ),
         );
     }
