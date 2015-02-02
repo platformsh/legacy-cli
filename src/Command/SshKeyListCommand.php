@@ -14,7 +14,7 @@ class SshKeyListCommand extends PlatformCommand
         $this
             ->setName('ssh-key:list')
             ->setAliases(array('ssh-keys'))
-            ->setDescription('Get a list of all added SSH keys');
+            ->setDescription('Get a list of SSH keys in your account');
         ;
     }
 
@@ -22,22 +22,22 @@ class SshKeyListCommand extends PlatformCommand
     {
         $client = $this->getAccountClient();
         $data = $client->getSshKeys();
-        $key_rows = array();
-        foreach ($data['keys'] as $key) {
-            $key_row = array();
-            $key_row[] = $key['id'];
-            $key_row[] = $key['title'] . ' (' . $key['fingerprint'] . ')';
-            $key_rows[] = $key_row;
+
+        if (!empty($data['keys'])) {
+            $output->writeln("Your SSH keys are:");
+            $table = new Table($output);
+            $headers = array('ID', 'Title', 'Fingerprint');
+            $rows = array();
+            foreach ($data['keys'] as $key) {
+                $rows[] = array($key['id'], $key['title'], $key['fingerprint']);
+            }
+            $table->setHeaders($headers);
+            $table->addRows($rows);
+            $table->render();
+            $output->writeln('');
         }
 
-        $output->writeln("\nYour SSH keys are: ");
-        $table = new Table($output);
-        $table
-            ->setHeaders(array('ID', 'Key'))
-            ->addRows($key_rows);
-        $table->render();
-
-        $output->writeln("\nAdd a new SSH key by running <info>platform ssh-key:add [path]</info>.");
-        $output->writeln("Delete an SSH key by running <info>platform ssh-key:delete [id]</info>.\n");
+        $output->writeln("Add a new SSH key by running <info>platform ssh-key:add [path]</info>");
+        $output->writeln("Delete an SSH key by running <info>platform ssh-key:delete [id]</info>");
     }
 }

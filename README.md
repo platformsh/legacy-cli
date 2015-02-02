@@ -79,6 +79,9 @@ Available commands:
   login                                   Log in to Platform.sh
   logout                                  Log out of Platform.sh
   web                                     Open the Platform.sh Web UI
+activity
+  activity:list (activities)              Get the most recent activities for an environment
+  activity:log                            Display the log for an environment activity
 domain
   domain:add                              Add a new domain to the project
   domain:delete                           Delete a domain from the project
@@ -91,13 +94,18 @@ environment
   environment:deactivate                  Deactivate an environment
   environment:delete                      Delete an environment
   environment:drush (drush)               Run a drush command on the remote environment
-  environment:http-access (httpaccess)    Control HTTP access for an environment
+  environment:http-access (httpaccess)    Update HTTP access settings for an environment
   environment:list (environments)         Get a list of all environments
   environment:merge (merge)               Merge an environment
-  environment:relationships               List the environment's relationships
+  environment:relationships               List an environment's relationships
   environment:ssh (ssh)                   SSH to the current environment
   environment:synchronize (sync)          Synchronize an environment
   environment:url (url)                   Get the public URL of an environment
+integration
+  integration:add                         Add an integration to the project
+  integration:delete                      Delete an integration from a project
+  integration:get (integrations)          View project integration(s)
+  integration:update                      Update an integration
 project
   project:build (build)                   Build the current project locally
   project:clean (clean)                   Remove old project builds

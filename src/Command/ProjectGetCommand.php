@@ -166,8 +166,8 @@ class ProjectGetCommand extends PlatformCommand
 
         // Launch the first build.
         try {
-            $builder = new LocalBuild(array('environmentId' => $environment));
-            $builder->buildProject($projectRoot, $output);
+            $builder = new LocalBuild(array('environmentId' => $environment), $output);
+            $builder->buildProject($projectRoot);
         }
         catch (\Exception $e) {
             $output->writeln("<comment>The build failed with an error</comment>");

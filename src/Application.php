@@ -75,8 +75,9 @@ class Application extends ParentApplication {
      */
     protected function getDefaultCommands()
     {
-        // Override the default commands to add a custom ListCommand.
-        return array(new HelpCommand(), new Command\ListCommand());
+        // Override the default commands to add a custom HelpCommand and
+        // ListCommand.
+        return array(new Command\HelpCommand(), new Command\ListCommand());
     }
 
     /**
@@ -94,6 +95,8 @@ class Application extends ParentApplication {
         $commands[] = new Command\DomainDeleteCommand();
         $commands[] = new Command\DomainListCommand();
         $commands[] = new Command\EnvironmentActivateCommand();
+        $commands[] = new Command\ActivityListCommand();
+        $commands[] = new Command\ActivityLogCommand();
         $commands[] = new Command\EnvironmentBackupCommand();
         $commands[] = new Command\EnvironmentBranchCommand();
         $commands[] = new Command\EnvironmentCheckoutCommand();
@@ -110,6 +113,10 @@ class Application extends ParentApplication {
         $commands[] = new Command\EnvironmentVariableDeleteCommand();
         $commands[] = new Command\EnvironmentVariableGetCommand();
         $commands[] = new Command\EnvironmentVariableSetCommand();
+        $commands[] = new Command\IntegrationAddCommand();
+        $commands[] = new Command\IntegrationDeleteCommand();
+        $commands[] = new Command\IntegrationGetCommand();
+        $commands[] = new Command\IntegrationUpdateCommand();
         $commands[] = new Command\ProjectBuildCommand();
         $commands[] = new Command\ProjectCleanCommand();
         $commands[] = new Command\ProjectDrushAliasesCommand();

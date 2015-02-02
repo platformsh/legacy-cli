@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use CommerceGuys\Platform\Cli\Local\LocalBuild;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -17,6 +18,7 @@ class ProjectBuildCommand extends PlatformCommand
         $this
             ->setName('project:build')
             ->setAliases(array('build'))
+            ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
             ->setDescription('Build the current project locally')
             ->addOption(
                 'abslinks',
@@ -87,6 +89,8 @@ class ProjectBuildCommand extends PlatformCommand
             $envId = $branch;
         }
 
+        $apps = $input->getArgument('app');
+
         $settings = array();
 
         // The environment ID is used in making the build directory name.
@@ -109,8 +113,8 @@ class ProjectBuildCommand extends PlatformCommand
         }
 
         try {
-            $builder = new LocalBuild($settings);
-            $success = $builder->buildProject($projectRoot, $output);
+            $builder = new LocalBuild($settings, $output);
+            $success = $builder->buildProject($projectRoot, $apps);
         } catch (\Exception $e) {
             $output->writeln("<error>The build failed with an error</error>");
             $formattedMessage = $this->getHelper('formatter')->formatBlock($e->getMessage(), 'error');

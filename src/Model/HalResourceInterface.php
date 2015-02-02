@@ -93,12 +93,14 @@ interface HalResourceInterface
     public function getProperty($property);
 
     /**
-     * @param $rel
+     * @param string $rel
+     * @param bool $absolute
+     *
      * @return string
      */
-    public function getLink($rel = 'self');
+    public function getLink($rel = 'self', $absolute = false);
 
-    /** @var array */
+    /** @return array */
     public function getData();
 
     /**

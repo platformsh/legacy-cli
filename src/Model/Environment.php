@@ -28,6 +28,28 @@ class Environment extends HalResource
     }
 
     /**
+     * Get activities for this environment.
+     *
+     * @param int $limit
+     * @param string $type
+     *
+     * @return Activity[]
+     */
+    public function getActivities($limit = 3, $type = null)
+    {
+        $options = array();
+        // @todo this does not work yet in the API
+//        if ($limit) {
+//            $options['query']['count'] = $limit;
+//        }
+        if ($type) {
+            $options['query']['type'] = $type;
+        }
+        $prototype = new Activity(array(), $this->client);
+        return self::getCollection('activities', $options, $this->client, $prototype);
+    }
+
+    /**
      * Get a list of variables.
      *
      * @return HalResource[]
