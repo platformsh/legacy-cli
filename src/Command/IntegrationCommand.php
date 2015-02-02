@@ -116,9 +116,9 @@ abstract class IntegrationCommand extends PlatformCommand
         return array(
           'type' => array(
             'required' => true,
-            'description' => "The integration type (HipChat, GitHub or Generic Webhook)",
+            'description' => "The integration type ('github', 'hipchat', or 'webhook'",
             'validator' => function($value) {
-                return in_array($value, array('hipchat', 'github', 'webhook'));
+                return in_array($value, array('github', 'hipchat', 'webhook'));
             },
           ),
           'token' => array(
@@ -173,7 +173,8 @@ abstract class IntegrationCommand extends PlatformCommand
           ),
           'url' => array(
             'for types' => array('webhook'),
-            'description' => 'url for generic webhook',
+            'description' => 'Generic webhook: a URL to receive JSON data',
+            'required' => true,
           ),
         );
     }
