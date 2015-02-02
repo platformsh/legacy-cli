@@ -75,8 +75,9 @@ class Application extends ParentApplication {
      */
     protected function getDefaultCommands()
     {
-        // Override the default commands to add a custom ListCommand.
-        return array(new HelpCommand(), new Command\ListCommand());
+        // Override the default commands to add a custom HelpCommand and
+        // ListCommand.
+        return array(new Command\HelpCommand(), new Command\ListCommand());
     }
 
     /**
