@@ -116,7 +116,7 @@ abstract class IntegrationCommand extends PlatformCommand
         return array(
           'type' => array(
             'required' => true,
-            'description' => "The integration type ('github', 'hipchat', or 'webhook'",
+            'description' => "The integration type ('github', 'hipchat', or 'webhook')",
             'validator' => function($value) {
                 return in_array($value, array('github', 'hipchat', 'webhook'));
             },
