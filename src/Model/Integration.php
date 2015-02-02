@@ -21,6 +21,10 @@ class Integration extends HalResource
               . "\nEvents: " . implode(', ', $this->data['events'])
               . "\nStates: " . implode(', ', $this->data['states']);
         }
+        elseif ($this->data['type'] == 'webhook') {
+            $output = "URL: " . $this->data['url'];
+        }
+
         return $output;
     }
 
