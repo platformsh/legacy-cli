@@ -22,9 +22,8 @@ class ActivityListCommand extends PlatformCommand
             ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of results displayed', 5)
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
-            ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
-            ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
             ->setDescription('Get the most recent activities for an environment');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

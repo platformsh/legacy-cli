@@ -4,6 +4,17 @@ namespace CommerceGuys\Platform\Cli\Model;
 class Activity extends HalResource
 {
 
+    /**
+     * @return bool
+     */
+    public function isComplete()
+    {
+        return $this->getProperty('completion_percent') >= 100;
+    }
+
+    /**
+     * @return string
+     */
     public function getDescription()
     {
         $data = $this->getProperties();
