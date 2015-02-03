@@ -20,7 +20,7 @@ class ActivityListCommand extends PlatformCommand
             ->setName('activity:list')
             ->setAliases(array('activities'))
             ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
-            //->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of results displayed', 3)
+            ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of results displayed', 5)
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
             ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
             ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
@@ -36,11 +36,16 @@ class ActivityListCommand extends PlatformCommand
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $environment = new Environment($this->environment, $client);
 
-        $results = $environment->getActivities(/*$input->getOption('limit')*/0, $input->getOption('type'));
+        $limit = (int) $input->getOption('limit');
+        $results = $environment->getActivities($limit, $input->getOption('type'));
         if (!$results) {
             $output->writeln('No activities found');
             return 1;
         }
+
+        // @todo This can be removed when the 'count' parameter is supported.
+        /** @var \CommerceGuys\Platform\Cli\Model\Activity[] $results */
+        $results = array_slice($results, 0, $limit);
 
         $headers = array("ID", "Created", "Description", "% Complete", "Result");
         $rows = array();
