@@ -110,6 +110,17 @@ class HalResource implements HalResourceInterface
     }
 
     /**
+     * Refresh the current resource.
+     *
+     * @param array $options Request options.
+     */
+    public function refresh(array $options = array())
+    {
+        $response = $this->client->get($this->getLink(), null, $options)->send();
+        $this->setData($response->json());
+    }
+
+    /**
      * @inheritdoc
      */
     public function getLink($rel = 'self', $absolute = false) {
