@@ -22,9 +22,8 @@ class ActivityLogCommand extends PlatformCommand
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
             ->addOption('refresh', null, InputOption::VALUE_OPTIONAL, 'Log refresh interval (seconds). Set to 0 to disable refreshing.', 1)
             ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
-            ->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID')
-            ->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID')
             ->setDescription('Display the log for an environment activity');
+        $this->addProjectOption()->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
