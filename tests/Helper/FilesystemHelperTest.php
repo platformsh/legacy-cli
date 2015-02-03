@@ -47,15 +47,15 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * Test FilesystemHelper::rmDir().
+     * Test FilesystemHelper::remove().
      */
-    public function testRmDir()
+    public function testRemove()
     {
         // Create a test directory containing some files in several levels.
         $testDir = $this->tempDir(true);
 
         // Check that the directory can be removed.
-        $this->assertTrue($this->filesystemHelper->rmdir($testDir));
+        $this->filesystemHelper->remove($testDir);
         $this->assertFileNotExists($testDir);
     }
 

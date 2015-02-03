@@ -26,7 +26,7 @@ class PlatformLogoutCommand extends PlatformCommand
     {
         // We manually check for the configuration file here. If it does not
         // exist then this command should not run.
-        $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
+        $configPath = $this->getConfigPath();
         $configFileExists = file_exists($configPath);
 
         if (!$configFileExists) {
@@ -41,30 +41,9 @@ class PlatformLogoutCommand extends PlatformCommand
             $output->writeln("<info>Okay! You remain logged in to the Platform.sh CLI with your current credentials.</info>");
             return;
         }
-        else {
-            try {
-                $this->removeConfigFile = TRUE;
-                unlink($configPath);
-                $output->writeln("<comment>Your Platform.sh configuration file has been removed and you have been logged out of the Platform CLI.</comment>");
-            }
-            catch (\Exception $e) {
-                // @todo: Real exception handling here.
-            }
-            return;
-        }
+
+        $this->deleteConfig();
+        $output->writeln("<comment>You have been logged out of the Platform.sh CLI.</comment>");
     }
 
-    /**
-     * Destructor: Override the destructor to nuke the config.
-     */
-    public function __destruct()
-    {
-        if ($this->removeConfigFile) {
-            // Do nothing, especially not trying to commit a non-existent
-            // config to a non-existent file. That would be dumb.
-        }
-        else {
-            parent::__destruct();
-        }
-    }
 }

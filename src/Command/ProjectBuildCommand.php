@@ -70,7 +70,7 @@ class ProjectBuildCommand extends PlatformCommand
             $output->writeln("<error>You must run this command from a project folder.</error>");
             return 1;
         }
-        if ($this->config) {
+        if ($this->loadConfig(false)) {
             $project = $this->getCurrentProject();
             if (!$project) {
                 throw new \RuntimeException("Could not determine the current project");

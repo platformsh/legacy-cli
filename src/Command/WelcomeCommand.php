@@ -52,7 +52,6 @@ class WelcomeCommand extends PlatformCommand
             // The project is not known. Show all projects.
             $projectsInput = new ArrayInput(array(
                 'command' => 'projects',
-                '--refresh' => 0,
               ));
             $application->find('projects')->run($projectsInput, $output);
         }
