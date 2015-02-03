@@ -37,7 +37,7 @@ class IntegrationDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$integration->operationAllowed('delete')) {
+        if (!$integration->operationAvailable('delete')) {
             $output->writeln("The integration <error>$id</error> cannot be deleted");
             return 1;
         }

@@ -93,7 +93,7 @@ class HalResource implements HalResourceInterface
      */
     protected function runOperation($op, $method = 'post', $body = null)
     {
-        if (!$this->operationAllowed($op)) {
+        if (!$this->operationAvailable($op)) {
             throw new \RuntimeException("Operation not available: $op");
         }
         if ($body && !is_scalar($body)) {
@@ -154,7 +154,7 @@ class HalResource implements HalResourceInterface
     /**
      * @inheritdoc
      */
-    public function operationAllowed($operation)
+    public function operationAvailable($operation)
     {
         return !empty($this->data['_links']['#' . $operation]);
     }
