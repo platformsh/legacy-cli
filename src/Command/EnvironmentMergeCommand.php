@@ -27,8 +27,8 @@ class EnvironmentMergeCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
 
-        if (!$this->operationAllowed('merge')) {
-            $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be merged.");
+        if (!$this->operationAvailable('merge')) {
+            $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be merged.");
             return 1;
         }
 

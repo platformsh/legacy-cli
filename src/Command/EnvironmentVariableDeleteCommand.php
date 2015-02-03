@@ -39,7 +39,7 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$variable->operationAllowed('delete')) {
+        if (!$variable->operationAvailable('delete')) {
             if ($variable->getProperty('inherited')) {
                 $output->writeln("The variable <error>$variableName</error> is inherited,"
                   . " so it cannot be deleted from this environment."
