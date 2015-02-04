@@ -8,7 +8,6 @@ use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use CommerceGuys\Platform\Cli\Helper\PlatformQuestionHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ParentApplication;
-use Symfony\Component\Console\Command\HelpCommand;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputArgument;
@@ -28,7 +27,7 @@ class Application extends ParentApplication {
      */
     public function __construct()
     {
-        parent::__construct('Platform.sh CLI', '1.8.0-alpha1');
+        parent::__construct('Platform.sh CLI', '1.8.0-alpha2');
 
         $this->setDefaultTimezone();
 
