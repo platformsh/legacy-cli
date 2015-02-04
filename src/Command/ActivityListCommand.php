@@ -53,10 +53,10 @@ class ActivityListCommand extends PlatformCommand
             $description = wordwrap($description, 40);
             $rows[] = array(
               $result->id(),
-              $result->getDate(),
+              $result->getPropertyFormatted('created_at'),
               $description,
-              $result->getProperty('completion_percent'),
-              $result->getProperty('result', false),
+              $result->getPropertyFormatted('completion_percent'),
+              $result->getPropertyFormatted('result', false),
             );
         }
 

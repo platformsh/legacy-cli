@@ -8,7 +8,6 @@ use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
 use CommerceGuys\Platform\Cli\Api\PlatformClient;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Model\Environment;
-use CommerceGuys\Platform\Cli\Model\HalResource;
 use Guzzle\Service\Client;
 use Guzzle\Service\Description\ServiceDescription;
 use Symfony\Component\Console\Command\Command;
@@ -386,21 +385,13 @@ abstract class PlatformCommand extends Command
         $this->loadConfig();
         $projectId = $project['id'];
         if ($refresh || empty($this->config['environments'][$projectId][$id])) {
-            $client = $this->getPlatformClient($project['endpoint']);
-            $environment = HalResource::get($id, $project['endpoint'] . '/environments', $client);
-            if (!$environment) {
+            $this->getEnvironments($project, true);
+            if (!isset($this->config['environments'][$projectId][$id])) {
                 $notFound[$cacheKey] = true;
                 return null;
             }
-            $urlParts = parse_url($project['endpoint']);
-            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
-            $environment = $environment->getData();
-            $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
-            $this->config['environments'][$projectId][$id] = $environment;
-
-            // Recreate the aliases, assuming the list of environments has changed.
-            $this->updateDrushAliases($project, $this->config['environments'][$projectId]);
         }
+
         return $this->config['environments'][$projectId][$id];
     }
 
@@ -456,6 +447,17 @@ abstract class PlatformCommand extends Command
         $this->config['domains'][$projectId] = $domains;
 
         return $this->config['domains'][$projectId];
+    }
+
+    /**
+     * Warn the user that the remote environment needs rebuilding.
+     *
+     * @param OutputInterface $output
+     */
+    protected function rebuildWarning(OutputInterface $output)
+    {
+        $output->writeln('<comment>The remote environment must be rebuilt for the change to take effect.</comment>');
+        $output->writeln("Use 'git push' with new commit(s) to trigger a rebuild.");
     }
 
     /**

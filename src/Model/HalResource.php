@@ -52,14 +52,11 @@ class HalResource implements HalResourceInterface
         $response = $client
           ->post($collectionUrl, null, json_encode($values))
           ->send();
-        if ($response->getStatusCode() == 201) {
-            $data = $response->json();
-            if (isset($data['_embedded']['entity'])) {
-                $data = $data['_embedded']['entity'];
-            }
-            return new static($data, $client);
+        $data = $response->json();
+        if (isset($data['_embedded']['entity'])) {
+            $data = $data['_embedded']['entity'];
         }
-        return false;
+        return new static($data, $client);
     }
 
     /**
@@ -205,7 +202,7 @@ class HalResource implements HalResourceInterface
      */
     public function getProperty($property, $required = true)
     {
-        if (!isset($this->data[$property]) || strpos($property, '_') === 0) {
+        if (!array_key_exists($property, $this->data) || strpos($property, '_') === 0) {
             if (!$required) {
                 return null;
             }
@@ -215,7 +212,39 @@ class HalResource implements HalResourceInterface
     }
 
     /**
-     * @inheritdoc
+     * @param string $property
+     * @param bool $required
+     * @return string
+     */
+    public function getPropertyFormatted($property, $required = true)
+    {
+        $value = $this->getProperty($property, $required);
+        if (!is_scalar($value)) {
+            return json_encode($value);
+        }
+        elseif (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+        elseif ($property == 'created_at' || $property == 'updated_at') {
+            return $this->getDate($value);
+        }
+        return $value;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getPropertiesFormatted()
+    {
+        $output = array();
+        foreach ($this->getPropertyNames() as $property) {
+            $output[$property] = $this->getPropertyFormatted($property);
+        }
+        return $output;
+    }
+
+    /**
+     * @return array
      */
     public function getData()
     {
@@ -251,14 +280,14 @@ class HalResource implements HalResourceInterface
     }
 
     /**
-     * @param string $property
+     * @param string $timestamp
      * @param string $format
      *
      * @return string
      */
-    public function getDate($property = 'created_at', $format = 'Y-m-d H:i:s')
+    public function getDate($timestamp, $format = 'Y-m-d H:i:s')
     {
-        return date($format, strtotime($this->getProperty($property)));
+        return date($format, strtotime($timestamp));
     }
 
 }

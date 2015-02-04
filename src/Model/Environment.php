@@ -108,35 +108,29 @@ class Environment extends HalResource
     /**
      * @inheritdoc
      */
-    public function getProperties()
+    public function getPropertyFormatted($property, $required = true)
     {
-        // Override the parent method to ensure passwords are not revealed.
-        $this->sanitizeAuth();
-        return parent::getProperties();
+        if ($property === 'http_access') {
+            return $this->formatHttpAccess($this->getProperty($property, $required));
+        }
+        return parent::getPropertyFormatted($property, $required);
     }
 
     /**
-     * @inheritdoc
+     * @param mixed $value
+     *
+     * @return string
      */
-    public function getProperty($property, $required = true)
+    protected function formatHttpAccess($value)
     {
-        // Override the parent method to ensure passwords are not revealed.
-        if ($property == 'http_access') {
-            $this->sanitizeAuth();
-        }
-        return parent::getProperty($property, $required);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function sanitizeAuth()
-    {
-        if (!empty($this->data['http_access']['basic_auth'])) {
-            $this->data['http_access']['basic_auth'] = array_map(function () {
-                return '******';
-            }, $this->data['http_access']['basic_auth']);
-        }
+        $value = (array) $value;
+        $value += array('addresses' => array(), 'basic_auth' => array());
+        // Hide passwords.
+        $value['basic_auth'] = array_map(function () {
+            return '******';
+        }, $value['basic_auth']);
+        return "Access: " . json_encode($value['addresses'])
+          . "\nAuth: " . json_encode($value['basic_auth']);
     }
 
 }
