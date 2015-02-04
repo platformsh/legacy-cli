@@ -130,12 +130,12 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
             }
         }
 
+        // Ensure the environment is refreshed.
+        $environmentId = $this->environment['id'];
+        $this->getEnvironment($environmentId, $this->project, true);
+
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $environment = new Environment($this->environment, $client);
-        $environmentId = $this->environment['id'];
-
-        // Ensure the environment is refreshed.
-        $environment->setData($this->getEnvironment($environmentId, $this->project, true));
 
         if ($auth || $access) {
             $current = (array) $environment->getProperty('http_access');

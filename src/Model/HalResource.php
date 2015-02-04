@@ -225,6 +225,9 @@ class HalResource implements HalResourceInterface
         elseif (is_bool($value)) {
             return $value ? 'true' : 'false';
         }
+        elseif ($property == 'created_at' || $property == 'updated_at') {
+            return $this->getDate($value);
+        }
         return $value;
     }
 
@@ -277,14 +280,14 @@ class HalResource implements HalResourceInterface
     }
 
     /**
-     * @param string $property
+     * @param string $timestamp
      * @param string $format
      *
      * @return string
      */
-    public function getDate($property = 'created_at', $format = 'Y-m-d H:i:s')
+    public function getDate($timestamp, $format = 'Y-m-d H:i:s')
     {
-        return date($format, strtotime($this->getProperty($property)));
+        return date($format, strtotime($timestamp));
     }
 
 }

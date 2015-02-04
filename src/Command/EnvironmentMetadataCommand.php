@@ -8,7 +8,6 @@ use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Input\InputOption;
 
 class EnvironmentMetadataCommand extends EnvironmentCommand
 {
@@ -37,8 +36,6 @@ class EnvironmentMetadataCommand extends EnvironmentCommand
         $property = $input->getArgument('property');
 
         if (!$property) {
-            $client->setBaseUrl($this->project['endpoint']);
-            $environment = Environment::get($this->environment['id'], 'environments', $client);
             return $this->listProperties($environment, $output);
         }
 
