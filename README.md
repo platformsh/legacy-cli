@@ -97,6 +97,7 @@ environment
   environment:http-access (httpaccess)    Update HTTP access settings for an environment
   environment:list (environments)         Get a list of all environments
   environment:merge (merge)               Merge an environment
+  environment:metadata                    Read or set metadata for an environment
   environment:relationships               List an environment's relationships
   environment:ssh (ssh)                   SSH to the current environment
   environment:synchronize (sync)          Synchronize an environment
@@ -116,7 +117,7 @@ project
 ssh-key
   ssh-key:add                             Add a new SSH key
   ssh-key:delete                          Delete an SSH key
-  ssh-key:list (ssh-keys)                 Get a list of all added SSH keys
+  ssh-key:list (ssh-keys)                 Get a list of SSH keys in your account
 variable
   variable:delete                         Delete a variable from an environment
   variable:get (variables, vget)          Get a variable for an environment

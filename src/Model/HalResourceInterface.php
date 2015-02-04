@@ -54,7 +54,7 @@ interface HalResourceInterface
      * @param string $operation
      * @return bool
      */
-    public function operationAllowed($operation);
+    public function operationAvailable($operation);
 
     /**
      * Update this resource.

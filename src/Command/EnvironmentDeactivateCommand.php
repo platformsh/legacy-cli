@@ -109,8 +109,8 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
                 $count--;
                 continue;
             }
-            if (!$this->operationAllowed('deactivate', $environment)) {
-                $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be deactivated.");
+            if (!$this->operationAvailable('deactivate', $environment)) {
+                $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be deactivated.");
                 continue;
             }
             $question = "Are you sure you want to deactivate the environment <info>$environmentId</info>?";

@@ -79,8 +79,8 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
                 $output->writeln("Please deactivate the environment first.");
                 continue;
             }
-            if (!$this->operationAllowed('delete', $environment)) {
-                $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be deleted.");
+            if (!$this->operationAvailable('delete', $environment)) {
+                $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be deleted.");
                 continue;
             }
             // Check that the environment does not have children.

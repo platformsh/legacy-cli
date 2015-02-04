@@ -71,9 +71,20 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
             throw new \InvalidArgumentException($message);
         }
 
-        $this->validateAddress($parts[1]);
+        list($permission, $address) = $parts;
 
-        return array("permission" => $parts[0], "address" => $parts[1]);
+        $this->validateAddress($address);
+
+        // Normalize the address so that we can compare accurately with the
+        // current value returned from the API.
+        if ($address == 'any') {
+            $address = '0.0.0.0/0';
+        }
+        elseif ($address && !strpos($address, '/')) {
+            $address .= '/32';
+        }
+
+        return array("address" => $address, "permission" => $permission);
     }
 
     /**
@@ -103,48 +114,64 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         $access = $input->getOption('access');
 
         $accessOpts = array();
-        $accessOpts["http_access"] = array();
 
         if ($access) {
-            $accessOpts["http_access"]["addresses"] = array();
+            $accessOpts['addresses'] = array();
             foreach (array_filter($access) as $access) {
-                $accessOpts["http_access"]["addresses"][] = $this->parseAccess($access);
+                $accessOpts["addresses"][] = $this->parseAccess($access);
             }
         }
 
         if ($auth) {
-            $accessOpts["http_access"]["basic_auth"] = new \stdClass();
+            $accessOpts['basic_auth'] = array();
             foreach (array_filter($auth) as $auth) {
                 $parsed = $this->parseAuth($auth);
-                $accessOpts["http_access"]["basic_auth"]->{$parsed["username"]} = $parsed["password"];
+                $accessOpts["basic_auth"][$parsed["username"]] = $parsed["password"];
             }
         }
+
+        // Ensure the environment is refreshed.
+        $environmentId = $this->environment['id'];
+        $this->getEnvironment($environmentId, $this->project, true);
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $environment = new Environment($this->environment, $client);
 
         if ($auth || $access) {
-            $environment->update($accessOpts);
-            $environmentId = $this->environment['id'];
-            $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>");
-            if (!$environment->hasActivity()) {
-                $output->writeln(
-                  "<comment>"
-                  . "The remote environment must be rebuilt for the change to take effect."
-                  . " Use 'git push' with new commit(s) to trigger a rebuild."
-                  . "</comment>"
-                );
+            $current = (array) $environment->getProperty('http_access');
+
+            // Merge existing settings. Not using a reference here, as that
+            // would affect the comparison with $current later.
+            foreach ($current as $key => $value) {
+                if (!isset($accessOpts[$key])) {
+                    $accessOpts[$key] = $value;
+                }
+            }
+
+            if ($current != $accessOpts) {
+
+                // The API only accepts {} for an empty "basic_auth" value,
+                // rather than [].
+                if (isset($accessOpts['basic_auth']) && $accessOpts['basic_auth'] === array()) {
+                    $accessOpts['basic_auth'] = (object) array();
+                }
+
+                // Patch the environment with the changes.
+                $environment->update(array('http_access' => $accessOpts));
+
+                $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
+
+                $output->writeln($environment->getPropertyFormatted('http_access'));
+
+                if (!$environment->hasActivity()) {
+                    $this->rebuildWarning($output);
+                }
+                return 0;
             }
         }
-        else {
-            // Ensure the environment is refreshed.
-            $environment->setData($this->getEnvironment($this->environment['id'], $this->project, true));
-        }
 
-        $current = $environment->getProperty('http_access');
-
-        $output->writeln("Access: " . json_encode($current['addresses']));
-        $output->writeln("Auth: " . json_encode($current['basic_auth']));
+        $output->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
+        $output->writeln($environment->getPropertyFormatted('http_access'));
         return 0;
     }
 

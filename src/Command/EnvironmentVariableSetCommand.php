@@ -46,7 +46,7 @@ class EnvironmentVariableSetCommand extends PlatformCommand
         // quit early.
         $existing = $environment->getVariable($variableName);
         if ($existing && $existing->getProperty('value') === $variableValue && $existing->getProperty('is_json') == $json) {
-            $output->writeln("$variableName already set to <info>$variableValue</info>");
+            $output->writeln("Variable <info>$variableName</info> already set as: $variableValue");
             return 0;
         }
 
@@ -57,15 +57,10 @@ class EnvironmentVariableSetCommand extends PlatformCommand
             return 1;
         }
 
-        $output->writeln("$variableName set to <info>$variableValue</info>");
+        $output->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
         if (!$variable->hasActivity()) {
-            $output->writeln(
-              "<comment>"
-              . "The remote environment must be rebuilt for the variable change to take effect."
-              . " Use 'git push' with new commit(s) to trigger a rebuild."
-              . "</comment>"
-            );
+            $this->rebuildWarning($output);
         }
         return 0;
     }

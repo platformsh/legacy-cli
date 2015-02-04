@@ -56,12 +56,12 @@ class HalResourceTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test HalResource::operationAllowed().
+     * Test HalResource::operationAvailable().
      */
-    public function testOperationAllowed()
+    public function testOperationAvailable()
     {
-        $this->assertTrue($this->resource->operationAllowed('operate'));
-        $this->assertFalse($this->resource->operationAllowed('nonexistent'));
+        $this->assertTrue($this->resource->operationAvailable('operate'));
+        $this->assertFalse($this->resource->operationAvailable('nonexistent'));
     }
 
     /**

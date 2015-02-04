@@ -11,16 +11,16 @@ abstract class EnvironmentCommand extends PlatformCommand
      * @param string $operation
      * @param array|null $environment
      *
-     * @return bool Whether the operation is allowed on the environment.
+     * @return bool Whether the operation is available on the environment.
      */
-    protected function operationAllowed($operation, array $environment = null)
+    protected function operationAvailable($operation, array $environment = null)
     {
         $data = $environment ?: $this->environment;
         if (!$data) {
             return false;
         }
         $wrapper = new Environment($data);
-        $result = $wrapper->operationAllowed($operation);
+        $result = $wrapper->operationAvailable($operation);
 
         // Refresh the environment to work around caching issues.
         // @todo remove this when HTTP caching is enabled
@@ -30,7 +30,7 @@ abstract class EnvironmentCommand extends PlatformCommand
                 throw new \RuntimeException("Environment not found: " . $wrapper->id());
             }
             $wrapper = new Environment($data);
-            return $wrapper->operationAllowed($operation);
+            return $wrapper->operationAvailable($operation);
         }
 
         return $result;

@@ -63,8 +63,8 @@ class EnvironmentActivateCommand extends EnvironmentCommand
                 $count--;
                 continue;
             }
-            if (!$this->operationAllowed('activate', $environment)) {
-                $output->writeln("Operation not permitted: The environment <error>$environmentId</error> can't be activated.");
+            if (!$this->operationAvailable('activate', $environment)) {
+                $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be activated.");
                 continue;
             }
             $question = "Are you sure you want to activate the environment <info>$environmentId</info>?";

@@ -105,6 +105,7 @@ class Application extends ParentApplication {
         $commands[] = new Command\EnvironmentDrushCommand();
         $commands[] = new Command\EnvironmentHttpAccessCommand();
         $commands[] = new Command\EnvironmentListCommand();
+        $commands[] = new Command\EnvironmentMetadataCommand();
         $commands[] = new Command\EnvironmentMergeCommand();
         $commands[] = new Command\EnvironmentRelationshipsCommand();
         $commands[] = new Command\EnvironmentSshCommand();

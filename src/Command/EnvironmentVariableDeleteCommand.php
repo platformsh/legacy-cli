@@ -39,7 +39,7 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$variable->operationAllowed('delete')) {
+        if (!$variable->operationAvailable('delete')) {
             if ($variable->getProperty('inherited')) {
                 $output->writeln("The variable <error>$variableName</error> is inherited,"
                   . " so it cannot be deleted from this environment."
@@ -67,12 +67,7 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
 
         $output->writeln("Deleted variable <info>$variableName</info>");
         if (!$variable->hasActivity()) {
-            $output->writeln(
-              "<comment>"
-              . "The remote environment must be rebuilt for the variable change to take effect."
-              . " Use 'git push' with new commit(s) to trigger a rebuild."
-              . "</comment>"
-            );
+            $this->rebuildWarning($output);
         }
         return 0;
     }
