@@ -21,6 +21,10 @@ use Symfony\Component\Yaml\Dumper;
 
 abstract class PlatformCommand extends Command
 {
+
+    const PROJECTS_TTL = 3600; // 1 hour
+    const ENVIRONMENTS_TTL = 600; // 10 minutes
+
     protected $config;
     protected $oauth2Plugin;
     protected $accountClient;
@@ -278,6 +282,11 @@ abstract class PlatformCommand extends Command
     public function getProjects($refresh = false)
     {
         $this->loadConfig();
+
+        if (!empty($this->config['projectsRefreshed']) && time() - $this->config['projectsRefreshed'] > self::PROJECTS_TTL) {
+            $refresh = true;
+        }
+
         if (empty($this->config['projects']) || $refresh) {
             $accountClient = $this->getAccountClient();
             $data = $accountClient->getProjects();
@@ -291,6 +300,7 @@ abstract class PlatformCommand extends Command
                     $projects[$id] = $project;
                 }
             }
+            $this->config['projectsRefreshed'] = time();
             $this->config['projects'] = $projects;
         }
 
@@ -331,6 +341,11 @@ abstract class PlatformCommand extends Command
     {
         $projectId = $project['id'];
         $this->loadConfig();
+
+        if (!empty($this->config[$projectId]['environmentsRefreshed']) && time() - $this->config[$projectId]['environmentsRefreshed'] > self::ENVIRONMENTS_TTL) {
+            $refresh = true;
+        }
+
         if (empty($this->config['environments'][$projectId]) || $refresh) {
             if (!isset($this->config['environments'][$projectId])) {
                 $this->config['environments'][$projectId] = array();
@@ -345,6 +360,7 @@ abstract class PlatformCommand extends Command
                 // The environments endpoint is temporarily not serving
                 // absolute urls, so we need to construct one.
                 $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
+                $environment['lastRefreshed'] = time();
                 $environments[$environment['id']] = $environment;
             }
 
@@ -353,6 +369,7 @@ abstract class PlatformCommand extends Command
                 $this->updateDrushAliases($project, $environments);
             }
 
+            $this->config[$projectId]['environmentsRefreshed'] = time();
             $this->config['environments'][$projectId] = $environments;
         }
 
@@ -375,7 +392,7 @@ abstract class PlatformCommand extends Command
             return null;
         }
 
-        // Cache not found environments.
+        // Statically cache not found environments.
         static $notFound = array();
         $cacheKey = $project['id'] . ':' . $id;
         if (!$refresh && isset($notFound[$cacheKey])) {
@@ -384,6 +401,11 @@ abstract class PlatformCommand extends Command
 
         $this->loadConfig();
         $projectId = $project['id'];
+
+        if (!empty($this->config[$projectId]['environmentsRefreshed']) && time() - $this->config[$projectId]['environmentsRefreshed'] > self::ENVIRONMENTS_TTL) {
+            $refresh = true;
+        }
+
         if ($refresh || empty($this->config['environments'][$projectId][$id])) {
             $this->getEnvironments($project, true);
             if (!isset($this->config['environments'][$projectId][$id])) {
