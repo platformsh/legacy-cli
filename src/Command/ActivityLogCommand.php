@@ -72,12 +72,17 @@ class ActivityLogCommand extends PlatformCommand
         $log = $activity->getProperty('log');
         $output->writeln(rtrim($log, "\n"));
 
+        if (!$poll) {
+            return;
+        }
+
         // The minimum interval is 1s.
         if ($interval < 1) {
             $interval = 1;
         }
 
-        while ($poll && !$activity->isComplete()) {
+        $length = strlen($log);
+        while (!$activity->isComplete()) {
             usleep(1000000 * $interval);
             try {
                 $activity->refresh(array('timeout' => $interval));
@@ -87,11 +92,12 @@ class ActivityLogCommand extends PlatformCommand
                 if ($e->getErrorNo() === 28) {
                     continue;
                 }
+                // Stop for any other error.
+                throw $e;
             }
-            $length = strlen($log);
             if ($new = substr($activity->getProperty('log'), $length)) {
                 $output->writeln(rtrim($new, "\n"));
-                $log .= $new;
+                $length += strlen($new);
             }
         }
     }
