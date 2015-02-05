@@ -46,6 +46,10 @@ abstract class ToolstackBase implements ToolstackInterface
     /** @var ShellHelperInterface */
     protected $shellHelper;
 
+    /**
+     * @param FilesystemHelper     $fsHelper
+     * @param ShellHelperInterface $shellHelper
+     */
     public function __construct(FilesystemHelper $fsHelper = null, ShellHelperInterface $shellHelper = null)
     {
         $this->fsHelper = $fsHelper ?: new FilesystemHelper();
