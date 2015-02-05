@@ -37,6 +37,8 @@ class Symfony extends ToolstackBase
         $this->shellHelper->execute($args, $buildDir, true, false);
 
         $this->symLinkSpecialDestinations();
+
+        // @todo should we create a default .gitignore file for Symfony?
     }
 
     public function install()
