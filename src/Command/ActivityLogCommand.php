@@ -91,6 +91,7 @@ class ActivityLogCommand extends PlatformCommand
             $length = strlen($log);
             if ($new = substr($activity->getProperty('log'), $length)) {
                 $output->writeln(rtrim($new, "\n"));
+                $log .= $new;
             }
         }
     }
