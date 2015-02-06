@@ -36,12 +36,13 @@ class SshKeyAddCommand extends PlatformCommand
                 $path = $defaultPath;
             }
             // Offer to generate a key.
-            elseif ($shellHelper->commandExists('ssh-keygen') && $questionHelper->confirm("Generate a new key?", $input, $output)) {
+            elseif ($shellHelper->commandExists('ssh-keygen') && $shellHelper->commandExists('ssh-add') && $questionHelper->confirm("Generate a new key?", $input, $output)) {
                 $newKey = $this->getNewKeyFilename($default);
                 $args = array('ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', '');
                 $shellHelper->execute($args, null, true);
                 $path = "$newKey.pub";
                 $output->writeln("Generated a new key: $path");
+                passthru('ssh-add ' . escapeshellarg($newKey));
             }
             else {
                 $output->writeln("<error>You must specify the path to a public SSH key</error>");
