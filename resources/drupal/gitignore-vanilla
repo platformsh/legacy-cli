@@ -1,13 +1,8 @@
-# Ignore hidden files.
-.*
-!.gitignore
-!.gitmodules
+# Ignore OS X metadata.
+.DS_Store
 
-# Don't ignore Platform.sh configuration files.
-!.platform*
-
-# Don't ignore Drupal's own .htaccess file.
-!.htaccess
+# Ignore PhpStorm project files.
+.idea
 
 # Ignore configuration files that may contain sensitive information.
 sites/*/settings*.php

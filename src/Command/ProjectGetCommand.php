@@ -90,7 +90,10 @@ class ProjectGetCommand extends PlatformCommand
             }
             $environment = $environmentOption;
         }
-        elseif (count($environments) > 1 && $input->isInteractive()) {
+        elseif (count($environments) === 1) {
+            $environment = key($environments);
+        }
+        elseif ($environments && $input->isInteractive()) {
             $environment = $this->offerEnvironmentChoice($environments, $input, $output);
         }
         else {
