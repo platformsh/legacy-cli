@@ -24,7 +24,7 @@ class ProjectCleanCommand extends PlatformCommand
               5
             )
             ->addOption(
-              'ttl',
+              'max-age',
               null,
               InputOption::VALUE_OPTIONAL,
               'The maximum age of builds, in seconds',
@@ -51,7 +51,7 @@ class ProjectCleanCommand extends PlatformCommand
         }
 
         $builder = new LocalBuild(array(), $output);
-        $result = $builder->cleanBuilds($projectRoot, $input->getOption('ttl'), $input->getOption('keep'), $input->getOption('include-active'), false);
+        $result = $builder->cleanBuilds($projectRoot, $input->getOption('max-age'), $input->getOption('keep'), $input->getOption('include-active'), false);
 
         if (!$result[0] && !$result[1]) {
             $output->writeln("There are no builds to delete");
