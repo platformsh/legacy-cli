@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
 use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
+use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelperInterface;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
@@ -43,17 +44,22 @@ abstract class ToolstackBase implements ToolstackInterface
     /** @var FilesystemHelper */
     protected $fsHelper;
 
+    /** @var GitHelper */
+    protected $gitHelper;
+
     /** @var ShellHelperInterface */
     protected $shellHelper;
 
     /**
-     * @param FilesystemHelper     $fsHelper
+     * @param object               $fsHelper
      * @param ShellHelperInterface $shellHelper
+     * @param object               $gitHelper
      */
-    public function __construct(FilesystemHelper $fsHelper = null, ShellHelperInterface $shellHelper = null)
+    public function __construct($fsHelper = null, ShellHelperInterface $shellHelper = null, $gitHelper = null)
     {
         $this->fsHelper = $fsHelper ?: new FilesystemHelper();
         $this->shellHelper = $shellHelper ?: new ShellHelper();
+        $this->gitHelper = $gitHelper ?: new GitHelper();
 
         $this->specialDestinations = array(
           "favicon.ico" => "{webroot}",
@@ -144,6 +150,34 @@ abstract class ToolstackBase implements ToolstackInterface
     public function getBuildDir()
     {
         return $this->buildDir;
+    }
+
+    public function install()
+    {
+        // Override to define install steps.
+    }
+
+    public function getKey()
+    {
+        return false;
+    }
+
+    /**
+     * Create a default .gitignore file for the repository.
+     *
+     * This is only practical if the app is the only one in the repository.
+     *
+     * @param string $source The path to a default .gitignore file, relative to
+     *                       the 'resources' directory.
+     */
+    protected function copyGitIgnore($source)
+    {
+        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $gitIgnore = "$repositoryDir/.gitignore";
+        if ($this->appRoot == $repositoryDir && !file_exists($gitIgnore)) {
+            $this->output->writeln("Creating a .gitignore file");
+            copy(CLI_ROOT . '/resources/' . $source, $gitIgnore);
+        }
     }
 
 }

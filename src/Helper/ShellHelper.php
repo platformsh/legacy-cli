@@ -70,9 +70,6 @@ class ShellHelper extends Helper implements ShellHelperInterface {
             // have already seen the command's output.  So we need to re-throw
             // the exception with a much shorter message.
             $message = "The command failed with the exit code: " . $process->getExitCode();
-            if ($process->getExitCodeText()) {
-                $message .= ' (' . $process->getExitCodeText() . ')';
-            }
             $message .= "\n\nFull command: " . $process->getCommandLine();
             if ($quiet) {
                 $message .= "\n\nError output:\n" . $process->getErrorOutput();

@@ -25,6 +25,7 @@ class LocalBuild
         return array(
           new Toolstack\Drupal(),
           new Toolstack\Symfony(),
+          new Toolstack\Composer(),
         );
     }
 
@@ -156,8 +157,9 @@ class LocalBuild
             $toolstackChoice = $appConfig['toolstack'];
         }
         foreach (self::getToolstacks() as $toolstack) {
+            $key = $toolstack->getKey();
             if ((!$toolstackChoice && $toolstack->detect($appRoot))
-              || $toolstackChoice == $toolstack->getKey()
+              || ($key && $toolstackChoice === $key)
             ) {
                 return $toolstack;
             }
@@ -245,64 +247,67 @@ class LocalBuild
         $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
-        if (!$toolstack) {
-            $this->output->writeln("<comment>Could not detect toolstack for directory: $appRoot</comment>");
 
-            return false;
-        }
+        if ($toolstack) {
+            $buildSettings = $this->settings + array(
+                'multiApp' => $multiApp,
+                'appName' => $appName,
+              );
+            $toolstack->prepare($buildDir, $appRoot, $projectRoot, $buildSettings);
 
-        $buildSettings = $this->settings + array(
-            'multiApp' => $multiApp,
-            'appName' => $appName,
-          );
-        $toolstack->prepare($buildDir, $appRoot, $projectRoot, $buildSettings);
-
-        $archive = false;
-        if (empty($this->settings['noArchive'])) {
-            $treeId = $this->getTreeId($appRoot);
-            if ($treeId) {
-                if ($verbose) {
-                    $this->output->writeln("Tree ID: $treeId");
+            $archive = false;
+            if (empty($this->settings['noArchive'])) {
+                $treeId = $this->getTreeId($appRoot);
+                if ($treeId) {
+                    if ($verbose) {
+                        $this->output->writeln("Tree ID: $treeId");
+                    }
+                    $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
                 }
-                $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
             }
+
+            if ($archive && file_exists($archive)) {
+                $message = "Extracting archive";
+                if ($appName) {
+                    $message .= " for application <info>$appName</info>";
+                }
+                $message .= '...';
+                $this->output->writeln($message);
+                $this->fsHelper->extractArchive($archive, $buildDir);
+            } else {
+                $message = "Building application";
+                if ($appName) {
+                    $message .= " <info>$appName</info>";
+                }
+                if ($key = $toolstack->getKey()) {
+                    $message .= " using the toolstack <info>$key</info>";
+                }
+                $this->output->writeln($message);
+
+                $toolstack->setOutput($this->output);
+
+                $toolstack->build();
+
+                $this->warnAboutHooks($appConfig);
+
+                if ($archive && empty($toolstack->preventArchive)) {
+                    $this->output->writeln("Saving build archive...");
+                    if (!is_dir(dirname($archive))) {
+                        mkdir(dirname($archive));
+                    }
+                    $this->fsHelper->archiveDir($buildDir, $archive);
+                }
+            }
+
+            $toolstack->install();
+
+            // Allow the toolstack to change the build dir.
+            $buildDir = $toolstack->getBuildDir();
         }
-
-        if ($archive && file_exists($archive)) {
-            $message = "Extracting archive";
-            if ($appName) {
-                $message .= " for application <info>$appName</info>";
-            }
-            $message .= '...';
-            $this->output->writeln($message);
-            $this->fsHelper->extractArchive($archive, $buildDir);
-        } else {
-            $message = "Building application";
-            if ($appName) {
-                $message .= " <info>$appName</info>";
-            }
-            $message .= " using the toolstack <info>" . $toolstack->getKey() . "</info>";
-            $this->output->writeln($message);
-
-            $toolstack->setOutput($this->output);
-
-            $toolstack->build();
-
+        else {
+            $buildDir = $appRoot;
             $this->warnAboutHooks($appConfig);
-
-            if ($archive && empty($toolstack->preventArchive)) {
-                $this->output->writeln("Saving build archive...");
-                if (!is_dir(dirname($archive))) {
-                    mkdir(dirname($archive));
-                }
-                $this->fsHelper->archiveDir($buildDir, $archive);
-            }
         }
-
-        $toolstack->install();
-
-        // Allow the toolstack to change the build dir.
-        $buildDir = $toolstack->getBuildDir();
 
         // Symlink the build into www or www/appname.
         $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;

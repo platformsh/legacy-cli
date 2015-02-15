@@ -29,7 +29,12 @@ class DrushHelper extends Helper {
         return 'drush';
     }
 
-    public function __construct(OutputInterface $output = null, ShellHelperInterface $shellHelper = null, Filesystem $fs = null)
+    /**
+     * @param OutputInterface      $output
+     * @param ShellHelperInterface $shellHelper
+     * @param object               $fs
+     */
+    public function __construct(OutputInterface $output = null, ShellHelperInterface $shellHelper = null, $fs = null)
     {
         $this->output = $output ?: new NullOutput();
         $this->shellHelper = $shellHelper ?: new ShellHelper();

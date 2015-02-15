@@ -20,7 +20,11 @@ class FilesystemHelper extends Helper {
         return 'fs';
     }
 
-    public function __construct(ShellHelperInterface $shellHelper = null, Filesystem $fs = null)
+    /**
+     * @param ShellHelperInterface $shellHelper
+     * @param object               $fs
+     */
+    public function __construct(ShellHelperInterface $shellHelper = null, $fs = null)
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->fs = $fs ?: new Filesystem();
