@@ -96,7 +96,8 @@ class LocalBuild
                ->ignoreDotFiles(false)
                ->name('.platform.app.yaml')
                ->name('.platform')
-               ->depth('> 0');
+               ->depth('> 0')
+               ->depth('< 2');
         if ($finder->count() == 0) {
             return array($repositoryRoot);
         }
