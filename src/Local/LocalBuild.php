@@ -129,7 +129,7 @@ class LocalBuild
             $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
         }
         if (!isset($config['name'])) {
-            $dir = basename(dirname($appRoot));
+            $dir = basename($appRoot);
             if ($dir != LocalProject::REPOSITORY_DIR) {
                 $config['name'] = $dir;
             }
