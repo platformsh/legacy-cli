@@ -21,17 +21,36 @@ use Symfony\Component\Yaml\Dumper;
 
 abstract class PlatformCommand extends Command
 {
+
     protected $config;
     protected $oauth2Plugin;
     protected $accountClient;
     protected $platformClient;
     protected $envArgName = 'environment';
 
+    protected $projectsTtl;
+    protected $environmentsTtl;
+
+    protected $accountsSite;
+    protected $verifySsl;
+    protected $debug;
+
     /** @var array */
     protected $project;
 
     /** @var array */
     protected $environment;
+
+    public function __construct($name = null)
+    {
+        parent::__construct($name);
+
+        $this->accountsSite = getenv('PLATFORM_CLI_ACCOUNTS_SITE') ?: 'https://marketplace.commerceguys.com';
+        $this->verifySsl = getenv('PLATFORM_CLI_SKIP_SSL_VERIFY') ? false : true;
+        $this->projectsTtl = getenv('PLATFORM_CLI_PROJECTS_TTL') ?: 3600;
+        $this->environmentsTtl = getenv('PLATFORM_CLI_ENVIRONMENTS_TTL') ?: 600;
+        $this->debug = (bool) getenv('PLATFORM_CLI_DEBUG');
+    }
 
     /**
      * Load configuration from the user's .platform file.
@@ -96,8 +115,8 @@ abstract class PlatformCommand extends Command
                 throw new \Exception('Refresh token not found in PlatformCommand::getOauth2Plugin.');
             }
 
-            $oauth2Client = new Client(CLI_ACCOUNTS_SITE . '/oauth2/token');
-            $oauth2Client->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
+            $oauth2Client = new Client($this->accountsSite . '/oauth2/token');
+            $oauth2Client->setDefaultOption('verify', $this->verifySsl);
             $oauth2Client->setUserAgent($this->getUserAgent());
             $config = array(
                 'client_id' => 'platform-cli',
@@ -126,8 +145,9 @@ abstract class PlatformCommand extends Command
      */
     protected function authenticateUser($email, $password)
     {
-        $oauth2Client = new Client(CLI_ACCOUNTS_SITE . '/oauth2/token');
-        $oauth2Client->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
+        $oauth2Client = new Client($this->accountsSite . '/oauth2/token');
+        $oauth2Client->setDefaultOption('verify', $this->verifySsl);
+        $oauth2Client->setDefaultOption('debug', $this->debug);
         $oauth2Client->setUserAgent($this->getUserAgent());
         $config = array(
             'username' => $email,
@@ -155,8 +175,9 @@ abstract class PlatformCommand extends Command
             $this->accountClient = new Client();
             $this->accountClient->setDescription($description);
             $this->accountClient->addSubscriber($oauth2Plugin);
-            $this->accountClient->setBaseUrl(CLI_ACCOUNTS_SITE . '/api/platform');
-            $this->accountClient->setDefaultOption('verify', CLI_VERIFY_SSL_CERT);
+            $this->accountClient->setBaseUrl($this->accountsSite . '/api/platform');
+            $this->accountClient->setDefaultOption('verify', $this->verifySsl);
+            $this->accountClient->setDefaultOption('debug', $this->debug);
             $this->accountClient->setUserAgent($this->getUserAgent());
         }
 
@@ -179,6 +200,7 @@ abstract class PlatformCommand extends Command
             $this->platformClient->setDescription($description);
             $this->platformClient->addSubscriber($oauth2Plugin);
             $this->platformClient->setUserAgent($this->getUserAgent());
+            $this->platformClient->setDefaultOption('debug', $this->debug);
         }
 
         // The base url can change between two requests in the same command,
@@ -278,6 +300,11 @@ abstract class PlatformCommand extends Command
     public function getProjects($refresh = false)
     {
         $this->loadConfig();
+
+        if (!empty($this->config['projectsRefreshed']) && time() - $this->config['projectsRefreshed'] > $this->projectsTtl) {
+            $refresh = true;
+        }
+
         if (empty($this->config['projects']) || $refresh) {
             $accountClient = $this->getAccountClient();
             $data = $accountClient->getProjects();
@@ -291,6 +318,7 @@ abstract class PlatformCommand extends Command
                     $projects[$id] = $project;
                 }
             }
+            $this->config['projectsRefreshed'] = time();
             $this->config['projects'] = $projects;
         }
 
@@ -331,6 +359,11 @@ abstract class PlatformCommand extends Command
     {
         $projectId = $project['id'];
         $this->loadConfig();
+
+        if (!empty($this->config[$projectId]['environmentsRefreshed']) && time() - $this->config[$projectId]['environmentsRefreshed'] > $this->environmentsTtl) {
+            $refresh = true;
+        }
+
         if (empty($this->config['environments'][$projectId]) || $refresh) {
             if (!isset($this->config['environments'][$projectId])) {
                 $this->config['environments'][$projectId] = array();
@@ -345,6 +378,7 @@ abstract class PlatformCommand extends Command
                 // The environments endpoint is temporarily not serving
                 // absolute urls, so we need to construct one.
                 $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
+                $environment['lastRefreshed'] = time();
                 $environments[$environment['id']] = $environment;
             }
 
@@ -353,6 +387,7 @@ abstract class PlatformCommand extends Command
                 $this->updateDrushAliases($project, $environments);
             }
 
+            $this->config[$projectId]['environmentsRefreshed'] = time();
             $this->config['environments'][$projectId] = $environments;
         }
 
@@ -375,7 +410,7 @@ abstract class PlatformCommand extends Command
             return null;
         }
 
-        // Cache not found environments.
+        // Statically cache not found environments.
         static $notFound = array();
         $cacheKey = $project['id'] . ':' . $id;
         if (!$refresh && isset($notFound[$cacheKey])) {
@@ -384,6 +419,11 @@ abstract class PlatformCommand extends Command
 
         $this->loadConfig();
         $projectId = $project['id'];
+
+        if (!empty($this->config[$projectId]['environmentsRefreshed']) && time() - $this->config[$projectId]['environmentsRefreshed'] > $this->environmentsTtl) {
+            $refresh = true;
+        }
+
         if ($refresh || empty($this->config['environments'][$projectId][$id])) {
             $this->getEnvironments($project, true);
             if (!isset($this->config['environments'][$projectId][$id])) {

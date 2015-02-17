@@ -364,7 +364,7 @@ class LocalBuild
      * This preserves the currently active build.
      *
      * @param string $projectRoot
-     * @param int    $ttl
+     * @param int    $maxAge
      * @param int    $keepMax
      * @param bool   $includeActive
      * @param bool   $quiet
@@ -372,7 +372,7 @@ class LocalBuild
      * @return int[]
      *   The numbers of deleted and kept builds.
      */
-    public function cleanBuilds($projectRoot, $ttl = 86400, $keepMax = 10, $includeActive = false, $quiet = true)
+    public function cleanBuilds($projectRoot, $maxAge = 86400, $keepMax = 10, $includeActive = false, $quiet = true)
     {
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
@@ -382,7 +382,7 @@ class LocalBuild
             $blacklist = $this->getActiveBuilds($projectRoot);
         }
 
-        return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $ttl, $keepMax, $blacklist, $quiet);
+        return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $maxAge, $keepMax, $blacklist, $quiet);
     }
 
     /**
@@ -420,30 +420,30 @@ class LocalBuild
      * Remove old build archives.
      *
      * @param string $projectRoot
-     * @param int    $ttl
+     * @param int    $maxAge
      * @param int    $keepMax
      * @param bool   $quiet
      *
      * @return int[]
      *   The numbers of deleted and kept builds.
      */
-    public function cleanArchives($projectRoot, $ttl = 604800, $keepMax = 10, $quiet = true)
+    public function cleanArchives($projectRoot, $maxAge = 604800, $keepMax = 10, $quiet = true)
     {
-        return $this->cleanDirectory($projectRoot . '/' . LocalProject::ARCHIVE_DIR, $ttl, $keepMax, array(), $quiet);
+        return $this->cleanDirectory($projectRoot . '/' . LocalProject::ARCHIVE_DIR, $maxAge, $keepMax, array(), $quiet);
     }
 
     /**
      * Remove old files from a directory.
      *
      * @param string $directory
-     * @param int    $ttl
+     * @param int    $maxAge
      * @param int    $keepMax
      * @param array  $blacklist
      * @param bool   $quiet
      *
      * @return int[]
      */
-    protected function cleanDirectory($directory, $ttl, $keepMax = 0, array $blacklist = array(), $quiet = false)
+    protected function cleanDirectory($directory, $maxAge, $keepMax = 0, array $blacklist = array(), $quiet = false)
     {
         if (!is_dir($directory)) {
             return array(0, 0);
@@ -464,7 +464,7 @@ class LocalBuild
                 $numKept++;
                 continue;
             }
-            if ($numKept >= $keepMax || ($ttl && $now - filemtime($filename) > $ttl)) {
+            if ($numKept >= $keepMax || ($maxAge && $now - filemtime($filename) > $maxAge)) {
                 if (!$quiet) {
                     $this->output->writeln("Deleting: " . basename($filename));
                 }
