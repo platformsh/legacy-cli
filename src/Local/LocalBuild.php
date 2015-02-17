@@ -215,11 +215,8 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $settings = $this->settings;
-        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity');
-        foreach ($irrelevant as $setting) {
-            unset($settings[$setting]);
-        }
+        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency');
+        $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 
         // Combine them all.
