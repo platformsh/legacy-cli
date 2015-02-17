@@ -25,6 +25,7 @@ class LocalBuild
         return array(
           new Toolstack\Drupal(),
           new Toolstack\Symfony(),
+          new Toolstack\Composer(),
         );
     }
 
@@ -96,7 +97,8 @@ class LocalBuild
                ->ignoreDotFiles(false)
                ->name('.platform.app.yaml')
                ->name('.platform')
-               ->depth('> 0');
+               ->depth('> 0')
+               ->depth('< 2');
         if ($finder->count() == 0) {
             return array($repositoryRoot);
         }
@@ -129,7 +131,7 @@ class LocalBuild
             $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
         }
         if (!isset($config['name'])) {
-            $dir = basename(dirname($appRoot));
+            $dir = basename($appRoot);
             if ($dir != LocalProject::REPOSITORY_DIR) {
                 $config['name'] = $dir;
             }
@@ -155,8 +157,9 @@ class LocalBuild
             $toolstackChoice = $appConfig['toolstack'];
         }
         foreach (self::getToolstacks() as $toolstack) {
+            $key = $toolstack->getKey();
             if ((!$toolstackChoice && $toolstack->detect($appRoot))
-              || $toolstackChoice == $toolstack->getKey()
+              || ($key && $toolstackChoice === $key)
             ) {
                 return $toolstack;
             }
@@ -244,64 +247,67 @@ class LocalBuild
         $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
-        if (!$toolstack) {
-            $this->output->writeln("<comment>Could not detect toolstack for directory: $appRoot</comment>");
 
-            return false;
-        }
+        if ($toolstack) {
+            $buildSettings = $this->settings + array(
+                'multiApp' => $multiApp,
+                'appName' => $appName,
+              );
+            $toolstack->prepare($buildDir, $appRoot, $projectRoot, $buildSettings);
 
-        $buildSettings = $this->settings + array(
-            'multiApp' => $multiApp,
-            'appName' => $appName,
-          );
-        $toolstack->prepare($buildDir, $appRoot, $projectRoot, $buildSettings);
-
-        $archive = false;
-        if (empty($this->settings['noArchive'])) {
-            $treeId = $this->getTreeId($appRoot);
-            if ($treeId) {
-                if ($verbose) {
-                    $this->output->writeln("Tree ID: $treeId");
+            $archive = false;
+            if (empty($this->settings['noArchive'])) {
+                $treeId = $this->getTreeId($appRoot);
+                if ($treeId) {
+                    if ($verbose) {
+                        $this->output->writeln("Tree ID: $treeId");
+                    }
+                    $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
                 }
-                $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
             }
+
+            if ($archive && file_exists($archive)) {
+                $message = "Extracting archive";
+                if ($appName) {
+                    $message .= " for application <info>$appName</info>";
+                }
+                $message .= '...';
+                $this->output->writeln($message);
+                $this->fsHelper->extractArchive($archive, $buildDir);
+            } else {
+                $message = "Building application";
+                if ($appName) {
+                    $message .= " <info>$appName</info>";
+                }
+                if ($key = $toolstack->getKey()) {
+                    $message .= " using the toolstack <info>$key</info>";
+                }
+                $this->output->writeln($message);
+
+                $toolstack->setOutput($this->output);
+
+                $toolstack->build();
+
+                $this->warnAboutHooks($appConfig);
+
+                if ($archive && empty($toolstack->preventArchive)) {
+                    $this->output->writeln("Saving build archive...");
+                    if (!is_dir(dirname($archive))) {
+                        mkdir(dirname($archive));
+                    }
+                    $this->fsHelper->archiveDir($buildDir, $archive);
+                }
+            }
+
+            $toolstack->install();
+
+            // Allow the toolstack to change the build dir.
+            $buildDir = $toolstack->getBuildDir();
         }
-
-        if ($archive && file_exists($archive)) {
-            $message = "Extracting archive";
-            if ($appName) {
-                $message .= " for application <info>$appName</info>";
-            }
-            $message .= '...';
-            $this->output->writeln($message);
-            $this->fsHelper->extractArchive($archive, $buildDir);
-        } else {
-            $message = "Building application";
-            if ($appName) {
-                $message .= " <info>$appName</info>";
-            }
-            $message .= " using the toolstack <info>" . $toolstack->getKey() . "</info>";
-            $this->output->writeln($message);
-
-            $toolstack->setOutput($this->output);
-
-            $toolstack->build();
-
+        else {
+            $buildDir = $appRoot;
             $this->warnAboutHooks($appConfig);
-
-            if ($archive && empty($toolstack->preventArchive)) {
-                $this->output->writeln("Saving build archive...");
-                if (!is_dir(dirname($archive))) {
-                    mkdir(dirname($archive));
-                }
-                $this->fsHelper->archiveDir($buildDir, $archive);
-            }
         }
-
-        $toolstack->install();
-
-        // Allow the toolstack to change the build dir.
-        $buildDir = $toolstack->getBuildDir();
 
         // Symlink the build into www or www/appname.
         $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;
@@ -363,7 +369,7 @@ class LocalBuild
      * This preserves the currently active build.
      *
      * @param string $projectRoot
-     * @param int    $ttl
+     * @param int    $maxAge
      * @param int    $keepMax
      * @param bool   $includeActive
      * @param bool   $quiet
@@ -371,7 +377,7 @@ class LocalBuild
      * @return int[]
      *   The numbers of deleted and kept builds.
      */
-    public function cleanBuilds($projectRoot, $ttl = 86400, $keepMax = 10, $includeActive = false, $quiet = true)
+    public function cleanBuilds($projectRoot, $maxAge = 86400, $keepMax = 10, $includeActive = false, $quiet = true)
     {
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
@@ -381,7 +387,7 @@ class LocalBuild
             $blacklist = $this->getActiveBuilds($projectRoot);
         }
 
-        return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $ttl, $keepMax, $blacklist, $quiet);
+        return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $maxAge, $keepMax, $blacklist, $quiet);
     }
 
     /**
@@ -419,30 +425,30 @@ class LocalBuild
      * Remove old build archives.
      *
      * @param string $projectRoot
-     * @param int    $ttl
+     * @param int    $maxAge
      * @param int    $keepMax
      * @param bool   $quiet
      *
      * @return int[]
      *   The numbers of deleted and kept builds.
      */
-    public function cleanArchives($projectRoot, $ttl = 604800, $keepMax = 10, $quiet = true)
+    public function cleanArchives($projectRoot, $maxAge = 604800, $keepMax = 10, $quiet = true)
     {
-        return $this->cleanDirectory($projectRoot . '/' . LocalProject::ARCHIVE_DIR, $ttl, $keepMax, array(), $quiet);
+        return $this->cleanDirectory($projectRoot . '/' . LocalProject::ARCHIVE_DIR, $maxAge, $keepMax, array(), $quiet);
     }
 
     /**
      * Remove old files from a directory.
      *
      * @param string $directory
-     * @param int    $ttl
+     * @param int    $maxAge
      * @param int    $keepMax
      * @param array  $blacklist
      * @param bool   $quiet
      *
      * @return int[]
      */
-    protected function cleanDirectory($directory, $ttl, $keepMax = 0, array $blacklist = array(), $quiet = false)
+    protected function cleanDirectory($directory, $maxAge, $keepMax = 0, array $blacklist = array(), $quiet = false)
     {
         if (!is_dir($directory)) {
             return array(0, 0);
@@ -463,7 +469,7 @@ class LocalBuild
                 $numKept++;
                 continue;
             }
-            if ($numKept >= $keepMax || ($ttl && $now - filemtime($filename) > $ttl)) {
+            if ($numKept >= $keepMax || ($maxAge && $now - filemtime($filename) > $maxAge)) {
                 if (!$quiet) {
                     $this->output->writeln("Deleting: " . basename($filename));
                 }

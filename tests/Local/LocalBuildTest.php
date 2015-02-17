@@ -45,7 +45,7 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
 
         $builder = new LocalBuild();
         $applications = $builder->getApplications($fakeRepositoryRoot);
-        $this->assertCount(2, $applications, 'Detect multiple apps');
+        $this->assertCount(3, $applications, 'Detect multiple apps');
     }
 
     public function testToolstackDetectionNone()
@@ -58,11 +58,11 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
 
     public function testGetAppConfig()
     {
-        $fakeAppRoot = 'tests/data/apps';
+        $fakeAppRoot = 'tests/data/repositories/simple';
 
         $builder = new LocalBuild();
         $config = $builder->getAppConfig($fakeAppRoot);
-        $this->assertEquals(array('name' => 'data'), $config);
+        $this->assertEquals(array('name' => 'simple'), $config);
     }
 
 }

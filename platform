@@ -1,14 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-define('CLI_ACCOUNTS_SITE', (getenv("PLATFORM_CLI_ACCOUNTS_SITE") ?: "https://marketplace.commerceguys.com"));
-
-// Important: CLI_VERIFY_SSL_CERT must always be true in production.
-// We use a reversed environment variable here to account for the crappy behavior of PHP's getenv().
-define('CLI_VERIFY_SSL_CERT', (bool) !getenv("PLATFORM_CLI_SKIP_SSL_VERIFY"));
-
-// __DIR__ called in a class will point to the class directory. Saved now it
-// ensure there's always a path to the cli root.
 define('CLI_ROOT', __DIR__);
 
 if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
