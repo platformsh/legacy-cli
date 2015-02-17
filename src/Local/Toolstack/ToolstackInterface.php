@@ -10,7 +10,7 @@ interface ToolstackInterface
     /**
      * Get the configuration key for the toolstack.
      *
-     * @return string
+     * @return string|false
      */
     public function getKey();
 

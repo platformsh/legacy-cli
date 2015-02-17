@@ -3,9 +3,6 @@
 namespace CommerceGuys\Platform\Cli\Local\Toolstack;
 
 use CommerceGuys\Platform\Cli\Helper\DrushHelper;
-use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
-use CommerceGuys\Platform\Cli\Helper\ShellHelperInterface;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
@@ -14,21 +11,9 @@ class Drupal extends ToolstackBase
 {
 
     protected $drushFlags = array();
-    protected $gitHelper;
 
     public function getKey() {
         return 'php:drupal';
-    }
-
-    /**
-     * @param FilesystemHelper     $fsHelper
-     * @param ShellHelperInterface $shellHelper
-     * @param GitHelper            $gitHelper
-     */
-    public function __construct(FilesystemHelper $fsHelper = null, ShellHelperInterface $shellHelper = null, GitHelper $gitHelper = null)
-    {
-        parent::__construct($fsHelper, $shellHelper);
-        $this->gitHelper = $gitHelper ?: new GitHelper();
     }
 
     /**
@@ -101,18 +86,13 @@ class Drupal extends ToolstackBase
 
         $this->symLinkSpecialDestinations();
 
-        // Create a new .gitignore file if it's missing, and if this app is the
-        // whole repository.
-        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        $gitIgnore = "$repositoryDir/.gitignore";
-        if ($this->appRoot == $repositoryDir && !file_exists($gitIgnore)) {
-            // There is a different default gitignore file for each build mode.
-            $this->output->writeln("Creating a .gitignore file");
-            copy(CLI_ROOT . '/resources/drupal/gitignore-' . $buildMode, $gitIgnore);
-        }
+        // Copy a default .gitignore file: there is a separate one for each
+        // build mode.
+        $this->copyGitIgnore('drupal/gitignore-' . $buildMode);
 
         // Warn if the settings.local.php file is not ignored.
         if ($buildMode == 'vanilla') {
+            $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
             $relative = $this->fsHelper->makePathRelative($this->appRoot . '/sites/default/settings.local.php', $repositoryDir);
             if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
                 $this->output->writeln("<comment>You must exclude this file using .gitignore:</comment> $relative");
