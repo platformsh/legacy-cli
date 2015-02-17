@@ -57,8 +57,8 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function __construct($fsHelper = null, ShellHelperInterface $shellHelper = null, $gitHelper = null)
     {
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper();
         $this->shellHelper = $shellHelper ?: new ShellHelper();
+        $this->fsHelper = $fsHelper ?: new FilesystemHelper($shellHelper);
         $this->gitHelper = $gitHelper ?: new GitHelper();
 
         $this->specialDestinations = array(

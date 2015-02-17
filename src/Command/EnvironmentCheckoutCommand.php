@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Model\Environment;
 use CommerceGuys\Platform\Cli\Helper\GitHelper;
@@ -61,8 +62,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
 
         $projectRoot = $this->getProjectRoot();
 
-        $gitHelper = new GitHelper();
-        $gitHelper->setOutput($output);
+        $gitHelper = new GitHelper(new ShellHelper($output));
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
 
         $branch = $this->branchExists($specifiedBranch, $project, $gitHelper);

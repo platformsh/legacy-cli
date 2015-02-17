@@ -115,20 +115,24 @@ class Drupal extends ToolstackBase
             elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
                 $this->drushFlags[] = '--debug';
             }
-            elseif ($verbosity >= OutputInterface::VERBOSITY_VERBOSE) {
+            elseif ($verbosity >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                 $this->drushFlags[] = '--verbose';
             }
         }
 
-        if (!empty($this->settings['drushConcurrency'])) {
-            $this->drushFlags[] = '--concurrency=' . $this->settings['drushConcurrency'];
-        }
         if (!empty($this->settings['drushWorkingCopy'])) {
             $this->drushFlags[] = '--working-copy';
         }
+
         if (!empty($this->settings['noCache'])) {
             $this->drushFlags[] = '--no-cache';
         }
+        else {
+            $this->drushFlags[] = '--cache-duration-releasexml=300';
+        }
+
+        $concurrency = isset($this->settings['drushConcurrency']) ? $this->settings['drushConcurrency'] : 8;
+        $this->drushFlags[] = '--concurrency=' . $concurrency;
     }
 
     /**

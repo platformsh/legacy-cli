@@ -3,6 +3,7 @@ namespace CommerceGuys\Platform\Cli\Local;
 
 use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
 use CommerceGuys\Platform\Cli\Helper\GitHelper;
+use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use CommerceGuys\Platform\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -39,7 +40,7 @@ class LocalBuild
     {
         $this->settings = $settings;
         $this->output = $output ?: new NullOutput();
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper();
+        $this->fsHelper = $fsHelper ?: new FilesystemHelper(new ShellHelper($output));
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
         $this->gitHelper = $gitHelper ?: new GitHelper();
     }
