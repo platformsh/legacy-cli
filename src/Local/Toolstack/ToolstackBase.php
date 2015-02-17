@@ -170,12 +170,16 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     protected function copyGitIgnore($source)
     {
+        $source = CLI_ROOT . '/resources/' . $source;
+        if (!file_exists($source)) {
+            return;
+        }
         $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $repositoryGitIgnore = "$repositoryDir/.gitignore";
         $appGitIgnore = $this->appRoot . '/.gitignore';
         if (!file_exists($appGitIgnore) && !file_exists($repositoryGitIgnore)) {
             $this->output->writeln("Creating a .gitignore file");
-            copy(CLI_ROOT . '/resources/' . $source, $appGitIgnore);
+            copy($source, $appGitIgnore);
         }
     }
 
