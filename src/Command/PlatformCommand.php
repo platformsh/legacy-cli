@@ -2,14 +2,15 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
-use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
-use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
-use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
-use CommerceGuys\Platform\Cli\Api\PlatformClient;
+use CommerceGuys\Guzzle\Oauth2\AccessToken;
+use CommerceGuys\Guzzle\Oauth2\Oauth2Subscriber;
+use CommerceGuys\Guzzle\Oauth2\GrantType\PasswordCredentials;
+use CommerceGuys\Guzzle\Oauth2\GrantType\RefreshToken;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
 use CommerceGuys\Platform\Cli\Model\Environment;
-use Guzzle\Service\Client;
-use Guzzle\Service\Description\ServiceDescription;
+use GuzzleHttp\Client;
+use GuzzleHttp\Command\Guzzle\Description;
+use GuzzleHttp\Command\Guzzle\GuzzleClient;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -23,7 +24,10 @@ abstract class PlatformCommand extends Command
 {
 
     protected $config;
+
+    /** @var Oauth2Subscriber */
     protected $oauth2Plugin;
+
     protected $accountClient;
     protected $platformClient;
     protected $envArgName = 'environment';
@@ -105,27 +109,36 @@ abstract class PlatformCommand extends Command
     /**
      * Return an instance of Oauth2Plugin.
      *
-     * @return Oauth2Plugin
+     * @return Oauth2Subscriber
      */
     protected function getOauth2Plugin()
     {
         if (!$this->oauth2Plugin) {
             $this->loadConfig();
             if (empty($this->config['refresh_token'])) {
-                throw new \Exception('Refresh token not found in PlatformCommand::getOauth2Plugin.');
+                throw new \Exception('Refresh token not found');
             }
-
-            $oauth2Client = new Client($this->accountsSite . '/oauth2/token');
-            $oauth2Client->setDefaultOption('verify', $this->verifySsl);
-            $oauth2Client->setUserAgent($this->getUserAgent());
+            $options = array(
+              'base_url' => $this->accountsSite . '/',
+              'defaults' => array(
+                'headers' => array('User-Agent' => $this->getUserAgent()),
+                'debug' => $this->debug,
+              ),
+              'verify' => $this->verifySsl,
+            );
+            $oauth2Client = new Client($options);
             $config = array(
-                'client_id' => 'platform-cli',
+              'client_id' => 'platform-cli',
+              // @todo scope?
             );
             $refreshTokenGrantType = new RefreshToken($oauth2Client, $config);
-            $this->oauth2Plugin = new Oauth2Plugin(null, $refreshTokenGrantType);
+            $this->oauth2Plugin = new Oauth2Subscriber(null, $refreshTokenGrantType);
             $this->oauth2Plugin->setRefreshToken($this->config['refresh_token']);
             if (!empty($this->config['access_token'])) {
-                $this->oauth2Plugin->setAccessToken($this->config['access_token']);
+                $accessToken = new AccessToken($this->config['access_token']['access_token'], null, array(
+                  'expires_in' => $this->config['access_token']['expires'],
+                ));
+                $this->oauth2Plugin->setAccessToken($accessToken);
             }
         }
 
@@ -145,20 +158,28 @@ abstract class PlatformCommand extends Command
      */
     protected function authenticateUser($email, $password)
     {
-        $oauth2Client = new Client($this->accountsSite . '/oauth2/token');
-        $oauth2Client->setDefaultOption('verify', $this->verifySsl);
-        $oauth2Client->setDefaultOption('debug', $this->debug);
-        $oauth2Client->setUserAgent($this->getUserAgent());
+        $options = array(
+          'base_url' => $this->accountsSite . '/',
+          'defaults' => array(
+            'headers' => array('User-Agent' => $this->getUserAgent()),
+            'debug' => $this->debug,
+          ),
+          'verify' => $this->verifySsl,
+        );
+        $oauth2Client = new Client($options);
         $config = array(
             'username' => $email,
             'password' => $password,
             'client_id' => 'platform-cli',
         );
         $grantType = new PasswordCredentials($oauth2Client, $config);
-        $oauth2Plugin = new Oauth2Plugin($grantType);
+        $oauth2Plugin = new Oauth2Subscriber($grantType);
         $this->config = array(
-            'access_token' => $oauth2Plugin->getAccessToken(),
-            'refresh_token' => $oauth2Plugin->getRefreshToken(),
+          'access_token' => array(
+            'access_token' => $oauth2Plugin->getAccessToken()->getToken(),
+            'expires' => $oauth2Plugin->getAccessToken()->getExpires()->getTimestamp(),
+          ),
+          'refresh_token' => $oauth2Plugin->getRefreshToken()->getToken(),
         );
     }
 
@@ -170,15 +191,21 @@ abstract class PlatformCommand extends Command
     protected function getAccountClient()
     {
         if (!$this->accountClient) {
-            $description = ServiceDescription::factory(CLI_ROOT . '/services/accounts.php');
+            $config = require CLI_ROOT . '/services/accounts.php';
+            $description = new Description($config);
             $oauth2Plugin = $this->getOauth2Plugin();
-            $this->accountClient = new Client();
-            $this->accountClient->setDescription($description);
-            $this->accountClient->addSubscriber($oauth2Plugin);
-            $this->accountClient->setBaseUrl($this->accountsSite . '/api/platform');
-            $this->accountClient->setDefaultOption('verify', $this->verifySsl);
-            $this->accountClient->setDefaultOption('debug', $this->debug);
-            $this->accountClient->setUserAgent($this->getUserAgent());
+            $options = array(
+              'base_url' => $this->accountsSite . '/api/platform/',
+              'defaults' => array(
+                'headers' => array('User-Agent' => $this->getUserAgent()),
+                'debug' => $this->debug,
+                'subscribers' => array($oauth2Plugin),
+                'verify' => $this->verifySsl,
+                'auth' => 'oauth2',
+              ),
+            );
+            $client = new Client($options);
+            $this->accountClient = new GuzzleClient($client, $description);
         }
 
         return $this->accountClient;
@@ -194,18 +221,24 @@ abstract class PlatformCommand extends Command
     protected function getPlatformClient($baseUrl)
     {
         if (!$this->platformClient) {
-            $description = ServiceDescription::factory(CLI_ROOT . '/services/platform.php');
+            $config = require CLI_ROOT . '/services/platform.php';
+            $description = new Description($config);
             $oauth2Plugin = $this->getOauth2Plugin();
-            $this->platformClient = new PlatformClient();
-            $this->platformClient->setDescription($description);
-            $this->platformClient->addSubscriber($oauth2Plugin);
-            $this->platformClient->setUserAgent($this->getUserAgent());
-            $this->platformClient->setDefaultOption('debug', $this->debug);
+            $options = array(
+              'defaults' => array(
+                'headers' => array('User-Agent' => $this->getUserAgent()),
+                'debug' => $this->debug,
+                'subscribers' => array($oauth2Plugin),
+                'auth' => 'oauth2',
+              ),
+            );
+            $client = new Client($options);
+            $this->platformClient = new GuzzleClient($client, $description);
         }
 
         // The base url can change between two requests in the same command,
         // so it needs to be explicitly set every time.
-        $this->platformClient->setBaseUrl($baseUrl);
+        $this->platformClient->getHttpClient()->setDefaultOption('base_url', rtrim($baseUrl, '/') . '/');
 
         return $this->platformClient;
     }
@@ -638,7 +671,10 @@ abstract class PlatformCommand extends Command
         if (is_array($this->config) && !$written) {
             if ($this->oauth2Plugin) {
                 // Save the access token for future requests.
-                $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
+                $this->config['access_token'] = array(
+                  'access_token' => $this->oauth2Plugin->getAccessToken()->getToken(),
+                  'expires' => $this->oauth2Plugin->getAccessToken()->getExpires()->getTimestamp(),
+                );
             }
 
             $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
