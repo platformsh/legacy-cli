@@ -1,8 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalBuild;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;

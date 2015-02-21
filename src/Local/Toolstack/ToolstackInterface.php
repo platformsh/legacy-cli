@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\Toolstack;
 
 use Symfony\Component\Console\Output\OutputInterface;
 

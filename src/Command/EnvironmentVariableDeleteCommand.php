@@ -1,8 +1,7 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -28,12 +27,9 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        $environment = new Environment($this->environment);
-        $environment->setClient($this->getPlatformClient($this->environment['endpoint']));
-
         $variableName = $input->getArgument('name');
 
-        $variable = $environment->getVariable($variableName);
+        $variable = $this->getSelectedEnvironment()->getVariable($variableName);
         if (!$variable) {
             $output->writeln("Variable not found: <error>$variableName</error>");
             return 1;
@@ -52,7 +48,7 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        $environmentId = $environment->id();
+        $environmentId = $this->getSelectedEnvironment()['id'];
         $confirm = $this->getHelper('question')
           ->confirm(
             "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
@@ -66,7 +62,7 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
         $variable->delete();
 
         $output->writeln("Deleted variable <info>$variableName</info>");
-        if (!$variable->hasActivity()) {
+        if (!$this->getSelectedEnvironment()->getLastActivity()) {
             $this->rebuildWarning($output);
         }
         return 0;

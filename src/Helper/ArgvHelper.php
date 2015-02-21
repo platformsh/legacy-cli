@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Helper;
+namespace Platformsh\Cli\Helper;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Helper;

@@ -3,8 +3,8 @@
     "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
-        "cocur/slugify": "~1.0",
-        "commerceguys/guzzle-oauth2-plugin": "~1.0",
+        "commerceguys/guzzle-oauth2-plugin": "@beta",
+        "platformsh/client": "@dev",
         "symfony/console": "~2.5",
         "symfony/yaml": "~2.5",
         "symfony/finder": "~2.5",
@@ -18,7 +18,7 @@
     },
     "autoload": {
         "psr-4": {
-            "CommerceGuys\\Platform\\Cli\\": "src"
+            "Platformsh\\Cli\\": "src"
         }
     },
     "require-dev": {

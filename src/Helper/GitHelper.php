@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Helper;
+namespace Platformsh\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
 
@@ -33,7 +33,7 @@ class GitHelper extends Helper
     {
         static $checked;
         if ($checked) {
-            return true;
+            return;
         }
         $version = $this->execute(array('--version'), false);
         if (!is_string($version)) {

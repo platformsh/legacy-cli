@@ -1,18 +1,19 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
-use CommerceGuys\Platform\Cli\Helper\ShellHelper;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
-use CommerceGuys\Platform\Cli\Model\Environment;
+use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentBranchCommand extends EnvironmentCommand
+class EnvironmentBranchCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -32,6 +33,12 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 null,
                 InputOption::VALUE_NONE,
                 "Create the new environment even if the branch cannot be checked out locally"
+            )
+            ->addOption(
+                'no-wait',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not wait for the Platform.sh branch to be created'
             )
             ->addOption(
                 'build',
@@ -55,7 +62,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 // List environments.
                 $params = array(
                     'command' => 'environments',
-                    '--project' => $this->project['id'],
+                    '--project' => $this->getSelectedProject()['id'],
                 );
                 return $this->getApplication()
                     ->find('environments')
@@ -66,14 +73,14 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         }
 
         $machineName = Environment::sanitizeId($branchName);
-        $environmentId = $this->environment['id'];
+        $environmentId = $this->getSelectedEnvironment()['id'];
 
         if ($machineName == $environmentId) {
             $output->writeln("<comment>Already on $machineName</comment>");
             return 1;
         }
 
-        if ($environment = $this->getEnvironment($machineName, $this->project)) {
+        if ($environment = $this->getEnvironment($machineName, $this->getSelectedProject())) {
             $checkout = $this->getHelper('question')->confirm("<comment>The environment $machineName already exists.</comment> Check out?", $input, $output);
             if ($checkout) {
                 $checkoutCommand = $this->getApplication()->find('environment:checkout');
@@ -86,7 +93,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return 1;
         }
 
-        if (!$this->operationAvailable('branch')) {
+        if (!$this->getSelectedEnvironment()->operationAvailable('branch')) {
             $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be branched.");
             return 1;
         }
@@ -108,7 +115,7 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             }
             elseif (!$existsLocally) {
                 // Create a new branch, using the current or specified environment as the parent.
-                $parent = $this->environment['id'];
+                $parent = $this->getSelectedEnvironment()['id'];
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
                     $output->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
                     $local_error = true;
@@ -128,12 +135,22 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return 1;
         }
 
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
-        // Reload the stored environments.
-        $this->getEnvironments($this->project, true);
+        $selectedEnvironment = $this->getSelectedEnvironment();
 
-        $output->writeln("The environment <info>$branchName</info> has been branched.");
+        $output->writeln("Creating a new environment <info>$branchName</info>, branched from <info>{$selectedEnvironment['title']}</info>");
+
+        $activity = $selectedEnvironment->branch($branchName, $machineName);
+
+        if (!$input->getOption('no-wait')) {
+            $output->writeln("Waiting...");
+            $activity->wait(
+              null,
+              function ($log) use ($output) {
+                  $output->write(preg_replace('/^/m', '    ', $log));
+              }
+            );
+            $output->writeln("The environment <info>$branchName</info> has been branched.");
+        }
 
         $build = $input->getOption('build');
         if (empty($local_error) && $build && $projectRoot) {
@@ -145,7 +162,8 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                     'environmentId' => $machineName,
                     'verbosity' => $output->getVerbosity(),
                 );
-                $buildCommand->build($projectRoot, $buildSettings, $output);
+                $builder = new LocalBuild($buildSettings, $output);
+                $builder->buildProject($projectRoot);
             } catch (\Exception $e) {
                 $output->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
                 return 1;

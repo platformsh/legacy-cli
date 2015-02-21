@@ -1,13 +1,13 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Helper\DrushHelper;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
+use Platformsh\Cli\Helper\DrushHelper;
+use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Local\Toolstack\Drupal;
 
 class ProjectDrushAliasesCommand extends PlatformCommand
 {
@@ -46,7 +46,8 @@ class ProjectDrushAliasesCommand extends PlatformCommand
 
         $projectRoot = $this->getProjectRoot();
 
-        $current_group = isset($project['alias-group']) ? $project['alias-group'] : $project['id'];
+        $projectConfig = LocalProject::getCurrentProjectConfig();
+        $current_group = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $project['id'];
 
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->writeln($current_group);

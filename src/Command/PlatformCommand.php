@@ -1,83 +1,182 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Guzzle\Plugin\Oauth2\Oauth2Plugin;
-use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\PasswordCredentials;
-use CommerceGuys\Guzzle\Plugin\Oauth2\GrantType\RefreshToken;
-use CommerceGuys\Platform\Cli\Api\PlatformClient;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
-use CommerceGuys\Platform\Cli\Model\Environment;
-use Guzzle\Service\Client;
-use Guzzle\Service\Description\ServiceDescription;
+use Platformsh\Cli\Application;
+use Platformsh\Cli\Local\LocalProject;
+use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\Client\Connection\Connector;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
+use Platformsh\Client\PlatformClient;
+use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
-use Symfony\Component\Yaml\Parser;
-use Symfony\Component\Yaml\Dumper;
+use Symfony\Component\Yaml\Yaml;
 
 abstract class PlatformCommand extends Command
 {
 
-    protected $config;
-    protected $oauth2Plugin;
-    protected $accountClient;
-    protected $platformClient;
+    /** @var PlatformClient|null */
+    private static $client;
+
+    /** @var array|null */
+    private static $cache;
+
+    /** @var array|null */
+    private static $cacheAsLoaded;
+
     protected $envArgName = 'environment';
 
     protected $projectsTtl;
     protected $environmentsTtl;
 
-    protected $accountsSite;
-    protected $verifySsl;
-    protected $debug;
+    /**
+     * The project, selected either by an option or the CWD.
+     *
+     * @var Project|false
+     */
+    private $project;
 
-    /** @var array */
-    protected $project;
-
-    /** @var array */
-    protected $environment;
+    /**
+     * The environment, selected by an option, an argument, or the CWD.
+     *
+     * @var Project|false
+     */
+    private $environment;
 
     public function __construct($name = null)
     {
         parent::__construct($name);
 
-        $this->accountsSite = getenv('PLATFORM_CLI_ACCOUNTS_SITE') ?: 'https://marketplace.commerceguys.com';
-        $this->verifySsl = getenv('PLATFORM_CLI_SKIP_SSL_VERIFY') ? false : true;
         $this->projectsTtl = getenv('PLATFORM_CLI_PROJECTS_TTL') ?: 3600;
         $this->environmentsTtl = getenv('PLATFORM_CLI_ENVIRONMENTS_TTL') ?: 600;
-        $this->debug = (bool) getenv('PLATFORM_CLI_DEBUG');
     }
 
     /**
-     * Load configuration from the user's .platform file.
+     * Get the API client object.
      *
-     * Configuration is loaded only if $this->config hasn't been populated
-     * already. This allows LoginCommand to avoid writing the config file
-     * before using the client for the first time.
+     * @param bool $autoLogin Whether to log in, if the client is not already
+     *                        authenticated (default: true).
      *
-     * @param bool $login
-     *
-     * @return array|false The configuration array or false on failure.
+     * @return PlatformClient
      */
-    public function loadConfig($login = true)
+    public function getClient($autoLogin = true)
     {
-        if (!$this->config) {
-            $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
-            if (!file_exists($configPath) && $login) {
+        if (!isset(self::$client)) {
+            $connectorOptions = [];
+            if (getenv('PLATFORM_CLI_ACCOUNTS_SITE')) {
+                $connectorOptions['accounts'] = getenv('PLATFORM_CLI_ACCOUNTS_SITE');
+            }
+            $connectorOptions['debug'] = (bool) getenv('PLATFORM_CLI_DEBUG');
+            $connectorOptions['client_id'] = 'platform-cli';
+            $connectorOptions['user_agent'] = $this->getUserAgent();
+            $connectorOptions['cache'] = true;
+
+            $connector = new Connector($connectorOptions);
+            $session = $connector->getSession();
+
+            $sessionId = 'cli-' . (getenv('PLATFORM_CLI_SESSION_ID') ?: 'default');
+            $session->setId($sessionId);
+            $session->setStorage(new File());
+
+            self::$client = new PlatformClient($connector);
+
+            if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->login();
             }
-            if (!file_exists($configPath)) {
-                return false;
-            }
-            $yaml = new Parser();
-            $this->config = $yaml->parse(file_get_contents($configPath));
         }
+        return self::$client;
+    }
 
-        return $this->config;
+    /**
+     * Load the persistent file cache.
+     */
+    protected function loadCache()
+    {
+        if (!isset(self::$cache)) {
+            $cacheDir = $this->getCacheDir();
+            $filename = "$cacheDir/cache.yml";
+
+            if (file_exists($filename) && ($raw = file_get_contents($filename))) {
+                $yaml = new Yaml();
+                self::$cache = $yaml->parse($raw);
+                self::$cacheAsLoaded = self::$cache;
+            }
+        }
+    }
+
+    /**
+     * Save the persistent file cache, if possible.
+     *
+     * @return bool
+     */
+    protected function saveCache()
+    {
+        if (!isset(self::$cache) || self::$cache === self::$cacheAsLoaded) {
+            return true;
+        }
+        $cacheDir = $this->getCacheDir();
+        $filename = "$cacheDir/cache.yml";
+        if (self::$cache === array()) {
+            if (file_exists($filename)) {
+                return unlink($filename);
+            }
+            return true;
+        }
+        if (!file_exists($cacheDir)) {
+            mkdir($cacheDir, 0700, true);
+            chmod($cacheDir, 0700);
+        }
+        if (!is_dir($cacheDir)) {
+            return false;
+        }
+        $yaml = new Yaml();
+        if (file_put_contents($filename, $yaml->dump(self::$cache, 0, 4, true))) {
+            chmod($filename, 0600);
+            $lastSaved = self::$cache;
+            return true;
+        }
+        return false;
+    }
+
+    public function __destruct()
+    {
+        $this->saveCache();
+    }
+
+    /**
+     * Clear the cache.
+     */
+    protected function clearCache()
+    {
+        self::$cache = array();
+    }
+
+    /**
+     * @return string
+     */
+    protected function getCacheDir()
+    {
+        return $this->getHelper('fs')->getHomeDirectory() . '/.platformsh/cache';
+    }
+
+    /**
+     * Get an HTTP User Agent string representing this application.
+     *
+     * @return string
+     */
+    protected function getUserAgent()
+    {
+        $application = $this->getApplication();
+        $version = $application ? $application->getVersion() : 'dev';
+        $name = 'Platform.sh-CLI';
+        $url = 'https://github.com/platformsh/platformsh-cli';
+        return "$name/$version (+$url)";
     }
 
     /**
@@ -85,6 +184,9 @@ abstract class PlatformCommand extends Command
      */
     protected function login() {
         $application = $this->getApplication();
+        if (!$application instanceof Application) {
+            throw new \RuntimeException('Incorrect Application instance');
+        }
         $command = $application->find('login');
         $input = new ArrayInput(array('command' => 'login'));
         $exitCode = $command->run($input, $application->getOutput());
@@ -94,42 +196,22 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Check if the user is logged in.
+     *
+     * @return bool
+     */
+    protected function isLoggedIn()
+    {
+        return $this->getClient(false)->getConnector()->isLoggedIn();
+    }
+
+    /**
      * Is this command used to work with your local environment or send
      * commands to the Platform remote environment? Defaults to FALSE.
      */
     public function isLocal()
     {
           return false;
-    }
-
-    /**
-     * Return an instance of Oauth2Plugin.
-     *
-     * @return Oauth2Plugin
-     */
-    protected function getOauth2Plugin()
-    {
-        if (!$this->oauth2Plugin) {
-            $this->loadConfig();
-            if (empty($this->config['refresh_token'])) {
-                throw new \Exception('Refresh token not found in PlatformCommand::getOauth2Plugin.');
-            }
-
-            $oauth2Client = new Client($this->accountsSite . '/oauth2/token');
-            $oauth2Client->setDefaultOption('verify', $this->verifySsl);
-            $oauth2Client->setUserAgent($this->getUserAgent());
-            $config = array(
-                'client_id' => 'platform-cli',
-            );
-            $refreshTokenGrantType = new RefreshToken($oauth2Client, $config);
-            $this->oauth2Plugin = new Oauth2Plugin(null, $refreshTokenGrantType);
-            $this->oauth2Plugin->setRefreshToken($this->config['refresh_token']);
-            if (!empty($this->config['access_token'])) {
-                $this->oauth2Plugin->setAccessToken($this->config['access_token']);
-            }
-        }
-
-        return $this->oauth2Plugin;
     }
 
     /**
@@ -145,83 +227,7 @@ abstract class PlatformCommand extends Command
      */
     protected function authenticateUser($email, $password)
     {
-        $oauth2Client = new Client($this->accountsSite . '/oauth2/token');
-        $oauth2Client->setDefaultOption('verify', $this->verifySsl);
-        $oauth2Client->setDefaultOption('debug', $this->debug);
-        $oauth2Client->setUserAgent($this->getUserAgent());
-        $config = array(
-            'username' => $email,
-            'password' => $password,
-            'client_id' => 'platform-cli',
-        );
-        $grantType = new PasswordCredentials($oauth2Client, $config);
-        $oauth2Plugin = new Oauth2Plugin($grantType);
-        $this->config = array(
-            'access_token' => $oauth2Plugin->getAccessToken(),
-            'refresh_token' => $oauth2Plugin->getRefreshToken(),
-        );
-    }
-
-    /**
-     * Return an instance of the Guzzle client for the Accounts endpoint.
-     *
-     * @return Client
-     */
-    protected function getAccountClient()
-    {
-        if (!$this->accountClient) {
-            $description = ServiceDescription::factory(CLI_ROOT . '/services/accounts.php');
-            $oauth2Plugin = $this->getOauth2Plugin();
-            $this->accountClient = new Client();
-            $this->accountClient->setDescription($description);
-            $this->accountClient->addSubscriber($oauth2Plugin);
-            $this->accountClient->setBaseUrl($this->accountsSite . '/api/platform');
-            $this->accountClient->setDefaultOption('verify', $this->verifySsl);
-            $this->accountClient->setDefaultOption('debug', $this->debug);
-            $this->accountClient->setUserAgent($this->getUserAgent());
-        }
-
-        return $this->accountClient;
-    }
-
-    /**
-     * Return an instance of the Guzzle client for the Platform endpoint.
-     *
-     * @param string $baseUrl The base url for API calls, usually the project URI.
-     *
-     * @return Client
-     */
-    protected function getPlatformClient($baseUrl)
-    {
-        if (!$this->platformClient) {
-            $description = ServiceDescription::factory(CLI_ROOT . '/services/platform.php');
-            $oauth2Plugin = $this->getOauth2Plugin();
-            $this->platformClient = new PlatformClient();
-            $this->platformClient->setDescription($description);
-            $this->platformClient->addSubscriber($oauth2Plugin);
-            $this->platformClient->setUserAgent($this->getUserAgent());
-            $this->platformClient->setDefaultOption('debug', $this->debug);
-        }
-
-        // The base url can change between two requests in the same command,
-        // so it needs to be explicitly set every time.
-        $this->platformClient->setBaseUrl($baseUrl);
-
-        return $this->platformClient;
-    }
-
-    /**
-     * Get an HTTP User Agent string representing this application.
-     *
-     * @return string
-     */
-    protected function getUserAgent()
-    {
-        $application = $this->getApplication();
-        $name = str_replace(' ', '-', $application->getName());
-        $version = $application->getVersion();
-        $url = 'https://github.com/platformsh/platformsh-cli';
-        return "$name/$version (+$url)";
+        $this->getClient(false)->getConnector()->logIn($email, $password, true);
     }
 
     /**
@@ -229,11 +235,11 @@ abstract class PlatformCommand extends Command
      *
      * @throws \RuntimeException
      *
-     * @return array|null The current project
+     * @return Project|false The current project
      */
     public function getCurrentProject()
     {
-        $project = null;
+        $project = false;
         $config = LocalProject::getCurrentProjectConfig();
         if ($config) {
           $project = $this->getProject($config['id']);
@@ -246,7 +252,6 @@ abstract class PlatformCommand extends Command
                 . "\nThe project ID was determined from the file: " . $filename
               );
           }
-          $project += $config;
         }
         return $project;
     }
@@ -254,11 +259,11 @@ abstract class PlatformCommand extends Command
     /**
      * Get the current environment if the user is in a project directory.
      *
-     * @param array $project The current project.
+     * @param Project $project The current project.
      *
-     * @return array|null The current environment
+     * @return Environment|false The current environment
      */
-    public function getCurrentEnvironment($project)
+    public function getCurrentEnvironment(Project $project)
     {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
@@ -289,164 +294,167 @@ abstract class PlatformCommand extends Command
             }
         }
 
-        return null;
+        return false;
     }
 
     /**
      * Return the user's projects.
      *
-     * The projects are persisted in config, refreshed in PlatformListCommand.
-     * Most platform commands (such as the environment ones) operate on a
-     * project, so this persistence allows them to avoid loading the platform
-     * list each time.
+     * @param boolean $refresh Whether to refresh the list of projects.
      *
-     * @param boolean $refresh Whether to refetch the list of projects.
-     *
-     * @return array The user's projects.
+     * @return Project[] The user's projects.
      */
     public function getProjects($refresh = false)
     {
-        $this->loadConfig();
+        $this->loadCache();
+        $cached = isset(self::$cache['projects']);
+        $stale = isset(self::$cache['projectsRefreshed']) && time() - self::$cache['projectsRefreshed'] > $this->projectsTtl;
+        if ($refresh || !$cached || $stale) {
+            $projects = $this->getClient()->getProjects();
 
-        if (!empty($this->config['projectsRefreshed']) && time() - $this->config['projectsRefreshed'] > $this->projectsTtl) {
-            $refresh = true;
-        }
-
-        if (empty($this->config['projects']) || $refresh) {
-            $accountClient = $this->getAccountClient();
-            $data = $accountClient->getProjects();
-            // Extract the project id and rekey the array.
-            $projects = array();
-            foreach ($data['projects'] as $project) {
-                if (!empty($project['uri'])) {
-                    $urlParts = explode('/', $project['uri']);
-                    $id = end($urlParts);
-                    $project['id'] = $id;
-                    $projects[$id] = $project;
-                }
+            foreach ($projects as $id => $project) {
+                self::$cache['projects'][$id] = $project->getData();
+                self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
             }
-            $this->config['projectsRefreshed'] = time();
-            $this->config['projects'] = $projects;
+            self::$cache['projectsRefreshed'] = time();
         }
-
-        return $this->config['projects'];
+        else {
+            $projects = array();
+            $connector = $this->getClient(false)->getConnector();
+            foreach (self::$cache['projects'] as $id => $data) {
+                $projects[$id] = Project::wrap($data, $connector->getClient($data['_endpoint']));
+            }
+        }
+        return $projects;
     }
 
     /**
      * Return the user's project with the given id.
      *
-     * @return array|null
+     * @param string $id
+     *
+     * @return Project|false
      */
     protected function getProject($id)
     {
         $projects = $this->getProjects();
         if (!isset($projects[$id])) {
-            // The list of projects is cached and might be older than the
-            // requested project, so refetch it as a precaution.
-            $projects = $this->getProjects(true);
+            return false;
         }
 
-        return isset($projects[$id]) ? $projects[$id] : null;
+        $project = $projects[$id];
+
+        $this->loadCache();
+        if (!isset($project['title'])) {
+            try {
+                $project->ensureFull();
+            }
+            catch (BadResponseException $e) {
+                $response = $e->getResponse();
+                // Platform.sh can return 502 errors for deleted projects.
+                if ($response->getStatusCode() === 502) {
+                    unset(self::$cache['projects'][$id]);
+                    return false;
+                }
+                throw $e;
+            }
+            self::$cache['projects'][$id] = $project->getData();
+            self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
+
+            // There are inconsistencies between the collection and the single
+            // projects resource.
+            self::$cache['projects'][$id]['name'] = $project['title'];
+            self::$cache['projects'][$id]['uri'] = $project->getLink('#ui');
+        }
+
+        return $project;
     }
 
     /**
      * Return the user's environments.
      *
-     * The environments are persisted in config, so that they can be compared
-     * on next load. This allows the drush aliases to be refreshed only
-     * if the environment list has changed.
-     *
-     * @param array $project The project.
+     * @param Project $project The project.
      * @param bool $refresh Whether to refresh the list.
      * @param bool $updateAliases Whether to update Drush aliases if the list changes.
      *
-     * @return array The user's environments.
+     * @return Environment[] The user's environments.
      */
-    public function getEnvironments($project, $refresh = false, $updateAliases = true)
+    public function getEnvironments(Project $project = null, $refresh = false, $updateAliases = true)
     {
-        $projectId = $project['id'];
-        $this->loadConfig();
+        $project = $project ?: $this->getSelectedProject();
+        $projectId = $project->getProperty('id');
 
-        if (!empty($this->config[$projectId]['environmentsRefreshed']) && time() - $this->config[$projectId]['environmentsRefreshed'] > $this->environmentsTtl) {
-            $refresh = true;
-        }
+        $this->loadCache();
+        $cached = !empty(self::$cache['environments'][$projectId]);
+        $stale = isset(self::$cache['environmentsRefreshed'][$projectId]) && time() - self::$cache['environmentsRefreshed'][$projectId] > $this->environmentsTtl;
 
-        if (empty($this->config['environments'][$projectId]) || $refresh) {
-            if (!isset($this->config['environments'][$projectId])) {
-                $this->config['environments'][$projectId] = array();
-            }
+        if ($refresh || !$cached || $stale) {
+            self::$cache['environments'][$projectId] = array();
 
-            // Fetch and assemble a list of environments.
-            $urlParts = parse_url($project['endpoint']);
-            $baseUrl = $urlParts['scheme'] . '://' . $urlParts['host'];
-            $client = $this->getPlatformClient($project['endpoint']);
             $environments = array();
-            foreach ($client->getEnvironments() as $environment) {
-                // The environments endpoint is temporarily not serving
-                // absolute urls, so we need to construct one.
-                $environment['endpoint'] = $baseUrl . $environment['_links']['self']['href'];
-                $environment['lastRefreshed'] = time();
+            $toCache = array();
+            foreach ($project->getEnvironments() as $environment) {
                 $environments[$environment['id']] = $environment;
+                $toCache[$environment['id']] = $environment->getData();
             }
 
             // Recreate the aliases if the list of environments has changed.
-            if ($updateAliases && $this->config['environments'][$projectId] != $environments) {
+            if ($updateAliases && array_diff_key($environments, self::$cache['environments'])) {
                 $this->updateDrushAliases($project, $environments);
             }
 
-            $this->config[$projectId]['environmentsRefreshed'] = time();
-            $this->config['environments'][$projectId] = $environments;
+            self::$cache['environments'][$projectId] = $toCache;
+            self::$cache['environmentsRefreshed'][$projectId] = time();
         }
-
-        return $this->config['environments'][$projectId];
+        else {
+            $environments = array();
+            $connector = $this->getClient(false)->getConnector();
+            $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project['endpoint'];
+            $client = $connector->getClient($endpoint);
+            foreach (self::$cache['environments'][$projectId] as $id => $data) {
+                $environments[$id] = Environment::wrap($data, $client);
+            }
+        }
+        return $environments;
     }
 
     /**
      * Get a single environment.
      *
      * @param string $id The environment ID to load.
-     * @param array $project The project.
+     * @param Project $project The project.
      * @param bool $refresh
      *
-     * @return array|null The environment, or null if not found.
+     * @return Environment|false The environment, or false if not found.
      */
-    protected function getEnvironment($id, $project = null, $refresh = false)
+    protected function getEnvironment($id, Project $project = null, $refresh = false)
     {
         $project = $project ?: $this->getCurrentProject();
         if (!$project) {
-            return null;
+            return false;
         }
 
         // Statically cache not found environments.
         static $notFound = array();
         $cacheKey = $project['id'] . ':' . $id;
         if (!$refresh && isset($notFound[$cacheKey])) {
-            return null;
+            return false;
         }
 
-        $this->loadConfig();
-        $projectId = $project['id'];
-
-        if (!empty($this->config[$projectId]['environmentsRefreshed']) && time() - $this->config[$projectId]['environmentsRefreshed'] > $this->environmentsTtl) {
-            $refresh = true;
+        $environments = $this->getEnvironments($project, $refresh);
+        if (!isset($environments[$id])) {
+            $notFound[$cacheKey] = true;
+            return false;
         }
 
-        if ($refresh || empty($this->config['environments'][$projectId][$id])) {
-            $this->getEnvironments($project, true);
-            if (!isset($this->config['environments'][$projectId][$id])) {
-                $notFound[$cacheKey] = true;
-                return null;
-            }
-        }
-
-        return $this->config['environments'][$projectId][$id];
+        return $environments[$id];
     }
 
     /**
-     * @param array $project
-     * @param array $environments
+     * @param Project $project
+     * @param Environment[] $environments
      */
-    protected function updateDrushAliases(array $project, array $environments) {
+    protected function updateDrushAliases(Project $project, array $environments) {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
             return;
@@ -467,33 +475,6 @@ abstract class PlatformCommand extends Command
     protected function getProjectRoot()
     {
         return LocalProject::getProjectRoot();
-    }
-
-    /**
-     * Return the user's domains.
-     *
-     * @param array $project The project.
-     *
-     * @return array The user's domains.
-     */
-    protected function getDomains($project)
-    {
-        $this->loadConfig();
-        $projectId = $project['id'];
-        if (!isset($this->config['domains'][$projectId])) {
-            $this->config['domains'][$projectId] = array();
-        }
-
-        // Fetch and assemble a list of domains.
-        $client = $this->getPlatformClient($project['endpoint']);
-        $domains = array();
-        foreach ($client->getDomains() as $domain) {
-            $domains[$domain['id']] = $domain;
-        }
-
-        $this->config['domains'][$projectId] = $domains;
-
-        return $this->config['domains'][$projectId];
     }
 
     /**
@@ -526,6 +507,8 @@ abstract class PlatformCommand extends Command
         }
         // This uses the same test as StreamOutput::hasColorSupport().
         $stream = $output->getStream();
+
+        /** @noinspection PhpParamsInspection */
         return @posix_isatty($stream);
     }
 
@@ -551,7 +534,8 @@ abstract class PlatformCommand extends Command
 
     /**
      * @param string $projectId
-     * @return array
+     *
+     * @return Project
      */
     protected function selectProject($projectId = null)
     {
@@ -637,21 +621,48 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * Destructor: Write the configuration to disk.
+     * Get the project selected by the user.
+     *
+     * The project is selected via validateInput(), if there is a --project
+     * option in the command.
+     *
+     * @throws \BadMethodCallException
+     *
+     * @return Project
      */
-    public function __destruct()
+    protected function getSelectedProject()
     {
-        static $written;
-        if (is_array($this->config) && !$written) {
-            if ($this->oauth2Plugin) {
-                // Save the access token for future requests.
-                $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
-            }
-
-            $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
-            $dumper = new Dumper();
-            file_put_contents($configPath, $dumper->dump($this->config));
-            $written = true;
+        if (!$this->project) {
+            throw new \BadMethodCallException('No project selected');
         }
+
+        return $this->project;
+    }
+
+    /**
+     * Check whether a single environment is selected.
+     *
+     * @return bool
+     */
+    protected function hasSelectedEnvironment()
+    {
+        return !empty($this->environment);
+    }
+
+    /**
+     * Get the environment selected by the user.
+     *
+     * The project is selected via validateInput(), if there is an
+     * --environment option in the command.
+     *
+     * @return Environment
+     */
+    protected function getSelectedEnvironment()
+    {
+        if (!$this->environment) {
+            throw new \BadMethodCallException('No environment selected');
+        }
+
+        return $this->environment;
     }
 }

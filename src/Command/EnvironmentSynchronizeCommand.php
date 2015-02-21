@@ -1,12 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentSynchronizeCommand extends EnvironmentCommand
+class EnvironmentSynchronizeCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -30,14 +30,15 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environmentId = $this->environment['id'];
+        $selectedEnvironment = $this->getSelectedEnvironment();
+        $environmentId = $selectedEnvironment['id'];
 
-        if (!$this->operationAvailable('synchronize')) {
+        if (!$selectedEnvironment->operationAvailable('synchronize')) {
             $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be synchronized.");
             return 1;
         }
 
-        $parentId = $this->environment['parent'];
+        $parentId = $selectedEnvironment['parent'];
 
         $questionHelper = $this->getHelper('question');
 
@@ -57,13 +58,9 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             return 1;
         }
 
-        $params = array(
-            'synchronize_code' => $syncCode,
-            'synchronize_data' => $syncData,
-        );
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->synchronizeEnvironment($params);
+        $selectedEnvironment->synchronize($syncData, $syncCode);
 
         $output->writeln("The environment <info>$environmentId</info> has been synchronized.");
+        return 0;
     }
 }

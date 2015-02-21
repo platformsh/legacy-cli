@@ -1,8 +1,9 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class PlatformLogoutCommand extends PlatformCommand
@@ -14,6 +15,7 @@ class PlatformLogoutCommand extends PlatformCommand
     {
         $this
             ->setName('logout')
+            ->addOption('all', null, InputOption::VALUE_NONE, 'Log out of all sessions')
             ->setDescription('Log out of Platform.sh');
     }
 
@@ -32,39 +34,27 @@ class PlatformLogoutCommand extends PlatformCommand
         if (!$configFileExists) {
             // There is no configuration!
             $output->writeln("<comment>You are not currently logged in to the Platform.sh CLI and, consequently, are unable to log out.</comment>");
-            return;
+            return 1;
         }
         // Ask for a confirmation.
         $confirm = $this->getHelper('question')->confirm("<comment>This command will remove your current Platform.sh configuration.\nYou will have to re-enter your Platform.sh credentials to use the CLI.</comment>\nAre you sure you wish to continue?", $input, $output, false);
 
         if (!$confirm) {
             $output->writeln("<info>Okay! You remain logged in to the Platform.sh CLI with your current credentials.</info>");
-            return;
+            return 1;
         }
-        else {
-            try {
-                $this->removeConfigFile = TRUE;
-                unlink($configPath);
-                $output->writeln("<comment>Your Platform.sh configuration file has been removed and you have been logged out of the Platform CLI.</comment>");
-            }
-            catch (\Exception $e) {
-                // @todo: Real exception handling here.
-            }
-            return;
-        }
-    }
 
-    /**
-     * Destructor: Override the destructor to nuke the config.
-     */
-    public function __destruct()
-    {
-        if ($this->removeConfigFile) {
-            // Do nothing, especially not trying to commit a non-existent
-            // config to a non-existent file. That would be dumb.
+        $this->getClient(false)->getConnector()->logOut();
+        $this->clearCache();
+        $output->writeln("<comment>Your Platform.sh configuration file has been removed and you have been logged out of the Platform CLI.</comment>");
+
+        if ($input->getOption('all')) {
+            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fs */
+            $fs = $this->getHelper('fs');
+            $fs->remove($fs->getHomeDirectory() . '/.platformsh/.session');
+            $output->writeln("All known session files have been deleted");
         }
-        else {
-            parent::__destruct();
-        }
+
+        return 0;
     }
 }

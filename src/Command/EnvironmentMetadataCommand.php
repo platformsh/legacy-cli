@@ -1,15 +1,14 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Environment;
-use CommerceGuys\Platform\Cli\Model\HalResource;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentMetadataCommand extends EnvironmentCommand
+class EnvironmentMetadataCommand extends PlatformCommand
 {
     /**
      * {@inheritdoc}
@@ -53,8 +52,7 @@ EOF
             return 1;
         }
 
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $environment = new Environment($this->environment, $client);
+        $environment = $this->getSelectedEnvironment();
 
         $property = $input->getArgument('property');
 
@@ -67,23 +65,23 @@ EOF
             return $this->setProperty($property, $value, $environment, $output);
         }
 
-        $output->writeln($environment->getPropertyFormatted($property));
+        $output->writeln($environment->getProperty($property));
         return 0;
     }
 
     /**
-     * @param HalResource     $environment
+     * @param Environment     $environment
      * @param OutputInterface $output
      *
      * @return int
      */
-    protected function listProperties(HalResource $environment, OutputInterface $output)
+    protected function listProperties(Environment $environment, OutputInterface $output)
     {
-        $output->writeln("Metadata for the environment <info>" . $environment->id() . "</info>:");
+        $output->writeln("Metadata for the environment <info>" . $environment['id'] . "</info>:");
 
         $table = new Table($output);
         $table->setHeaders(array("Property", "Value"));
-        foreach ($environment->getPropertiesFormatted() as $key => $value) {
+        foreach ($environment->getProperties() as $key => $value) {
             $table->addRow(array($key, $value));
         }
         $table->render();
@@ -93,12 +91,12 @@ EOF
     /**
      * @param string          $property
      * @param string          $value
-     * @param HalResource     $environment
+     * @param Environment     $environment
      * @param OutputInterface $output
      *
      * @return int
      */
-    protected function setProperty($property, $value, HalResource $environment, OutputInterface $output)
+    protected function setProperty($property, $value, Environment $environment, OutputInterface $output)
     {
         if (!$this->validateValue($property, $value, $output)) {
             return 1;
@@ -110,13 +108,12 @@ EOF
         settype($value, $type);
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
-            $output->writeln("Property <info>$property</info> already set as: " . $environment->getPropertyFormatted($property, false));
+            $output->writeln("Property <info>$property</info> already set as: " . $environment->getProperty($property, false));
             return 0;
         }
         $environment->update(array($property => $value));
-        $this->getEnvironment($this->environment['id'], $this->project, true);
-        $output->writeln("Property <info>$property</info> set to: " . $environment->getPropertyFormatted($property));
-        if ($property === 'enable_smtp' && !$environment->hasActivity()) {
+        $output->writeln("Property <info>$property</info> set to: " . $environment[$property]);
+        if ($property === 'enable_smtp' && !$environment->getLastActivity()) {
             $this->rebuildWarning($output);
         }
         return 0;
@@ -155,13 +152,14 @@ EOF
         $valid = true;
         $message = '';
         // @todo find out exactly how these should best be validated
+        $selectedEnvironment = $this->getSelectedEnvironment();
         switch ($property) {
             case 'parent':
-                if ($this->environment['id'] === 'master') {
+                if ($selectedEnvironment['id'] === 'master') {
                     $message = "The master environment cannot have a parent";
                     $valid = false;
                 }
-                elseif ($value === $this->environment['id']) {
+                elseif ($value === $selectedEnvironment['id']) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
                 }
@@ -169,7 +167,7 @@ EOF
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
                 }
-                elseif ($parentEnvironment['parent'] === $this->environment['id']) {
+                elseif ($parentEnvironment['parent'] === $selectedEnvironment['id']) {
                     $valid = false;
                 }
                 break;

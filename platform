@@ -14,7 +14,7 @@ if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
     exit(1);
 }
 
-use CommerceGuys\Platform\Cli\Application;
+use Platformsh\Cli\Application;
 use Symfony\Component\Console\Input\ArgvInput;
 
 $input = new ArgvInput();

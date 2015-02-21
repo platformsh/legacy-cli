@@ -1,8 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Tests;
+namespace Platformsh\Cli\Tests;
 
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\GitHelper;
 
 class GitHelperTest extends \PHPUnit_Framework_TestCase
 {

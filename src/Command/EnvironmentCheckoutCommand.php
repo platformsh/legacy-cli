@@ -1,11 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Helper\ShellHelper;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
-use CommerceGuys\Platform\Cli\Model\Environment;
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -84,12 +85,12 @@ class EnvironmentCheckoutCommand extends PlatformCommand
      * Check whether a branch exists, locally in Git or on the remote.
      *
      * @param string $branch
-     * @param array $project
+     * @param Project $project
      * @param GitHelper $gitHelper
      *
      * @return string|false
      */
-    protected function branchExists($branch, array $project, GitHelper $gitHelper)
+    protected function branchExists($branch, Project $project, GitHelper $gitHelper)
     {
         // Check if the Git branch exists locally.
         $candidates = array_unique(array(Environment::sanitizeId($branch), $branch));

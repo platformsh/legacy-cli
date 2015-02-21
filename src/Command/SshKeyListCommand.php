@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,8 +20,7 @@ class SshKeyListCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $client = $this->getAccountClient();
-        $data = $client->getSshKeys();
+        $data = $this->getClient()->getSshKeys();
 
         if (!empty($data['keys'])) {
             $output->writeln("Your SSH keys are:");

@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
@@ -107,6 +107,8 @@ class CompletionCommand extends ParentCompletionCommand
             // Suppress exceptions so that they are not displayed during
             // completion.
         }
+
+        return '';
     }
 
     /**
@@ -117,7 +119,8 @@ class CompletionCommand extends ParentCompletionCommand
     protected function getProjects()
     {
         // Check that the user is logged in.
-        if (!$this->platformCommand->loadConfig(false)) {
+        $client = $this->platformCommand->getClient(false);
+        if (!$client->getConnector()->isLoggedIn()) {
             return array();
         }
         return $this->platformCommand->getProjects();

@@ -1,10 +1,10 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Local\LocalBuild;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
-use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -70,7 +70,7 @@ class ProjectBuildCommand extends PlatformCommand
             $output->writeln("<error>You must run this command from a project folder.</error>");
             return 1;
         }
-        if ($this->config) {
+        if ($this->isLoggedIn()) {
             $project = $this->getCurrentProject();
             if (!$project) {
                 throw new \RuntimeException("Could not determine the current project");

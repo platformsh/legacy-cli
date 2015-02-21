@@ -4,9 +4,9 @@
  * Override Symfony Console's HelpCommand to customize the appearance of help.
  */
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\CustomTextDescriptor;
+use Platformsh\Cli\CustomTextDescriptor;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\HelpCommand as ParentHelpCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;

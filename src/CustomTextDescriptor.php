@@ -5,9 +5,9 @@
  * command list and each command's help.
  */
 
-namespace CommerceGuys\Platform\Cli;
+namespace Platformsh\Cli;
 
-use CommerceGuys\Platform\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;

@@ -1,19 +1,23 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentListCommand extends EnvironmentCommand
+class EnvironmentListCommand extends PlatformCommand
 {
 
     protected $showNames = false;
     protected $showUrls = false;
     protected $showStatus = false;
 
+    protected $children = array();
+
+    /** @var Environment */
     protected $currentEnvironment;
 
     /**
@@ -50,13 +54,18 @@ class EnvironmentListCommand extends EnvironmentCommand
 
     /**
      * Build a tree out of a list of environments.
+     *
+     * @param Environment[] $environments
+     * @param string $parent
+     *
+     * @return array
      */
-    protected function buildEnvironmentTree($environments, $parent = null)
+    protected function buildEnvironmentTree(array $environments, $parent = null)
     {
         $children = array();
         foreach ($environments as $environment) {
             if ($environment['parent'] === $parent) {
-                $environment['children'] = $this->buildEnvironmentTree($environments, $environment['id']);
+                $this->children[$environment['id']] = $this->buildEnvironmentTree($environments, $environment->getProperty('id'));
                 $children[$environment['id']] = $environment;
             }
         }
@@ -65,6 +74,11 @@ class EnvironmentListCommand extends EnvironmentCommand
 
     /**
      * Build a table of environments.
+     *
+     * @param Environment[] $tree
+     * @param OutputInterface $output
+     *
+     * @return Table
      */
     protected function buildEnvironmentTable($tree, OutputInterface $output)
     {
@@ -88,6 +102,11 @@ class EnvironmentListCommand extends EnvironmentCommand
 
     /**
      * Recursively build rows of the environment table.
+     *
+     * @param Environment[] $tree
+     * @param int $indent
+     *
+     * @return array
      */
     protected function buildEnvironmentRows($tree, $indent = 0)
     {
@@ -107,8 +126,8 @@ class EnvironmentListCommand extends EnvironmentCommand
 
             // Inactive environments have no public url.
             $url = '';
-            if (!empty($environment['_links']['public-url'])) {
-                $url = $environment['_links']['public-url']['href'];
+            if ($environment->isActive()) {
+                $url = $environment->getLink('public-url');
             }
 
             if ($this->showStatus) {
@@ -120,7 +139,7 @@ class EnvironmentListCommand extends EnvironmentCommand
             }
 
             $rows[] = $row;
-            $rows = array_merge($rows, $this->buildEnvironmentRows($environment['children'], $indent + 1));
+            $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment['id']], $indent + 1));
         }
         return $rows;
     }
@@ -149,51 +168,68 @@ class EnvironmentListCommand extends EnvironmentCommand
 
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
-        $environments = $this->getEnvironments($this->project, $refresh);
+        $environments = $this->getEnvironments(null, $refresh);
 
         if ($input->getOption('pipe')) {
           $output->writeln(array_keys($environments));
           return;
         }
 
-        $this->currentEnvironment = $this->getCurrentEnvironment($this->project);
+        $this->currentEnvironment = $this->getCurrentEnvironment($this->getSelectedProject());
 
         $tree = $this->buildEnvironmentTree($environments);
 
         // To make the display nicer, we move all the children of master
         // to the top level.
         if (isset($tree['master'])) {
-            $tree += $tree['master']['children'];
-            $tree['master']['children'] = array();
+            $tree += $this->children['master'];
+            $this->children['master'] = array();
         }
 
         $output->writeln("Your environments are: ");
         $table = $this->buildEnvironmentTable($tree, $output);
         $table->render();
 
+        if (!$this->currentEnvironment) {
+            return;
+        }
+
         $output->writeln("<info>*</info> - Indicates the current environment.\n");
 
+        $currentEnvironment = $this->currentEnvironment;
+
         $output->writeln("Check out a different environment by running <info>platform checkout [id]</info>.");
-        if ($this->operationAvailable('branch', $this->currentEnvironment)) {
-            $output->writeln("Branch a new environment by running <info>platform environment:branch [new-name]</info>.");
+
+        if ($currentEnvironment->operationAvailable('branch')) {
+            $output->writeln(
+              "Branch a new environment by running <info>platform environment:branch [new-name]</info>."
+            );
         }
-        if ($this->operationAvailable('activate', $this->currentEnvironment)) {
-            $output->writeln("Activate the current environment by running <info>platform environment:activate</info>.");
+        if ($currentEnvironment->operationAvailable('activate')) {
+            $output->writeln(
+              "Activate the current environment by running <info>platform environment:activate</info>."
+            );
         }
-        if ($this->operationAvailable('deactivate', $this->currentEnvironment)) {
-            $output->writeln("Deactivate the current environment by running <info>platform environment:deactivate</info>.");
+        if ($currentEnvironment->operationAvailable('deactivate')) {
+            $output->writeln(
+              "Deactivate the current environment by running <info>platform environment:deactivate</info>."
+            );
         }
-        if ($this->operationAvailable('delete', $this->currentEnvironment)) {
+        if ($currentEnvironment->operationAvailable('delete')) {
             $output->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
         }
-        if ($this->operationAvailable('backup', $this->currentEnvironment)) {
-            $output->writeln("Back up the current environment by running <info>platform environment:backup</info>.");
+        if ($currentEnvironment->operationAvailable('backup')) {
+            $output->writeln(
+              "Back up the current environment by running <info>platform environment:backup</info>."
+            );
         }
-        if ($this->operationAvailable('merge', $this->currentEnvironment)) {
+        if ($currentEnvironment->operationAvailable('merge')) {
             $output->writeln("Merge the current environment by running <info>platform environment:merge</info>.");
         }
-        if ($this->operationAvailable('synchronize', $this->currentEnvironment)) {
-            $output->writeln("Sync the current environment by running <info>platform environment:synchronize</info>.");
+        if ($currentEnvironment->operationAvailable('synchronize')) {
+            $output->writeln(
+              "Sync the current environment by running <info>platform environment:synchronize</info>."
+            );
         }
 
         // Only mention Drush if the command exists, i.e. if it is enabled.

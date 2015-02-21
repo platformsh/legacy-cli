@@ -1,12 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\Toolstack;
 
-use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
-use CommerceGuys\Platform\Cli\Helper\ShellHelper;
-use CommerceGuys\Platform\Cli\Helper\ShellHelperInterface;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
+use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Helper\ShellHelperInterface;
+use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class ToolstackBase implements ToolstackInterface

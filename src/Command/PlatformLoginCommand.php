@@ -1,8 +1,7 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use Guzzle\Http\Exception\ClientErrorResponseException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
@@ -25,13 +24,9 @@ class PlatformLoginCommand extends PlatformCommand
             throw new \Exception('Non-interactive login not supported');
         }
 
-        $output->writeln("\nPlease log in using your Platform.sh account\n");
+        $output->writeln("Please log in using your <info>Platform.sh</info> account\n");
         $this->configureAccount($input, $output);
-        $output->writeln("\n<info>Thank you, you are all set.</info>");
-
-        // Run the destructor right away to ensure configuration gets persisted.
-        // That way any commands that are executed next in the chain will work.
-        $this->__destruct();
+        $output->writeln("\n<info>Thank you, you are all set.</info>\n");
     }
 
     protected function checkRequirements()
@@ -99,7 +94,7 @@ class PlatformLoginCommand extends PlatformCommand
 
         try {
             $this->authenticateUser($email, $password);
-        } catch (ClientErrorResponseException $e) {
+        } catch (\InvalidArgumentException $e) {
             $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
             $this->configureAccount($input, $output);
         }

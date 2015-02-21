@@ -1,8 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Local;
+namespace Platformsh\Cli\Local;
 
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\GitHelper;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;

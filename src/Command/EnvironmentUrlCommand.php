@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -30,11 +30,13 @@ class EnvironmentUrlCommand extends UrlCommandBase
             return;
         }
 
-        if (empty($this->environment['_links']['public-url']['href'])) {
+        $selectedEnvironment = $this->getSelectedEnvironment();
+
+        if (!$selectedEnvironment->hasLink('public-url')) {
             throw new \Exception('No URL available');
         }
 
-        $url = $this->environment['_links']['public-url']['href'];
+        $url = $selectedEnvironment->getLink('public-url', true);
 
         $path = $input->getArgument('path');
         if ($path) {

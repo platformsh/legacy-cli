@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,7 +11,7 @@ class DomainAddCommand extends PlatformCommand
 {
 
     // The final array of SSL options for the client parameters.
-    protected $sslOptions;
+    protected $sslOptions = array();
 
     protected $domainName;
 
@@ -83,23 +83,16 @@ class DomainAddCommand extends PlatformCommand
 
         // @todo: Ask about SSL uploads if option --ssl is specified instead of inline filenames
 
-        // Assemble our query parameters.
-        $domainOpts = array();
-        $domainOpts['name'] = $this->domainName;
-        $domainOpts['wildcard'] = $wildcard;
-        if ($this->sslOptions) {
-          $domainOpts['ssl'] = $this->sslOptions;
-        }
-
         // Beam the package up to the mothership.
-        $client = $this->getPlatformClient($this->project['endpoint']);
-        $client->addDomain($domainOpts);
+        $this->getSelectedProject()
+          ->addDomain($this->domainName, $wildcard, $this->sslOptions);
 
         // @todo: Add proper exception/error handling here...seriously.
         $message = '<info>';
         $message .= "\nThe given domain has been successfully added to the project. \n";
         $message .= "</info>";
         $output->writeln($message);
+        return 0;
     }
 
     protected function validateSslOptions()

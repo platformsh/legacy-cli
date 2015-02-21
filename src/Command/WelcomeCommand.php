@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,16 +29,16 @@ class WelcomeCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln("Welcome to Platform.sh!");
+        $output->writeln("Welcome to Platform.sh!\n");
 
         $application = $this->getApplication();
 
         if ($currentProject = $this->getCurrentProject()) {
             // The project is known. Show the environments.
-            $projectName = $currentProject['name'];
-            $projectURI = $currentProject['uri'];
+            $projectName = $currentProject['title'];
+            $projectURI = $currentProject->getLink('#ui');
             $projectId = $currentProject['id'];
-            $output->writeln("\nProject Name: <info>$projectName</info>");
+            $output->writeln("Project Name: <info>$projectName</info>");
             $output->writeln("Project ID: <info>$projectId</info>");
             $output->writeln("Project Dashboard: <info>$projectURI</info>\n");
             $envInput = new ArrayInput(array(
@@ -57,7 +57,7 @@ class WelcomeCommand extends PlatformCommand
             $application->find('projects')->run($projectsInput, $output);
         }
 
-        $output->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>.");
+        $output->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>\n");
 
         $output->writeln("Type <info>platform list</info> to see all available commands.");
     }
