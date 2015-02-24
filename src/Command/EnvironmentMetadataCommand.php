@@ -20,7 +20,21 @@ class EnvironmentMetadataCommand extends EnvironmentCommand
             ->setName('environment:metadata')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->setDescription('Read or set metadata for an environment');
+            ->setDescription('Read or set metadata for an environment')
+            ->setHelp(<<<EOF
+Using <info>%command.name%</info> you can enable or disable email sending,
+change the parent or update the title of environment.
+
+For example, to enable email sending:
+
+  <info>platform %command.name% enable_smtp true</info>
+
+Here is how you can change the title of environment:
+
+  <info>platform %command.name% title "New feature"</info>
+
+EOF
+            );
         $this->addProjectOption()->addEnvironmentOption();
     }
 
