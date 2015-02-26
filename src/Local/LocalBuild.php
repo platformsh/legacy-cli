@@ -57,17 +57,18 @@ class LocalBuild
     {
         $repositoryRoot = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $success = true;
-        $names = array();
-        foreach ($this->getApplications($repositoryRoot) as $appRoot) {
+        $identifiers = array();
+        foreach ($this->getApplications($repositoryRoot) as $identifier => $appRoot) {
             $appConfig = $this->getAppConfig($appRoot);
-            $appName = isset($appConfig['name']) ? $appConfig['name'] : '';
-            $names[] = $appName;
-            if ($apps && !in_array($appName, $apps)) {
+            $appIdentifier = isset($appConfig['name']) ? $appConfig['name'] : $identifier;
+            $appConfig['_identifier'] = $appIdentifier;
+            $identifiers[] = $appIdentifier;
+            if ($apps && !in_array($appIdentifier, $apps)) {
                 continue;
             }
             $success = $this->buildApp($appRoot, $projectRoot, $appConfig) && $success;
         }
-        $notFounds = array_diff($apps, $names);
+        $notFounds = array_diff($apps, $identifiers);
         if ($notFounds) {
             foreach ($notFounds as $notFound) {
                 $this->output->writeln("Application not found: <comment>$notFound</comment>");
@@ -107,10 +108,8 @@ class LocalBuild
         foreach ($finder as $file) {
             $filename = $file->getRealPath();
             $appRoot = dirname($filename);
-            if (basename($appRoot) == '.platform') {
-                $appRoot = dirname($appRoot);
-            }
-            $applications[basename($appRoot)] = $appRoot;
+            $identifier = ltrim(str_replace($repositoryRoot, '', $appRoot), '/');
+            $applications[$identifier] = $appRoot;
         }
 
         return array_unique($applications);
@@ -129,12 +128,6 @@ class LocalBuild
         if (file_exists($appRoot . '/.platform.app.yaml')) {
             $parser = new Parser();
             $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
-        }
-        if (!isset($config['name'])) {
-            $dir = basename($appRoot);
-            if ($dir != LocalProject::REPOSITORY_DIR) {
-                $config['name'] = $dir;
-            }
         }
 
         return $config;
@@ -236,10 +229,11 @@ class LocalBuild
 
         $multiApp = $appRoot != $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $appName = isset($appConfig['name']) ? $appConfig['name'] : false;
+        $appIdentifier = $appName ?: $appConfig['_identifier'];
 
         $buildName = date('Y-m-d--H-i-s') . '--' . $this->settings['environmentId'];
-        if ($multiApp && $appName) {
-            $buildName .= '--' . $appName;
+        if ($multiApp) {
+            $buildName .= '--' . str_replace('/', '-', $appIdentifier);
         }
         $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
@@ -264,18 +258,12 @@ class LocalBuild
             }
 
             if ($archive && file_exists($archive)) {
-                $message = "Extracting archive";
-                if ($appName) {
-                    $message .= " for application <info>$appName</info>";
-                }
+                $message = "Extracting archive for application <info>$appIdentifier</info>";
                 $message .= '...';
                 $this->output->writeln($message);
                 $this->fsHelper->extractArchive($archive, $buildDir);
             } else {
-                $message = "Building application";
-                if ($appName) {
-                    $message .= " <info>$appName</info>";
-                }
+                $message = "Building application <info>$appIdentifier</info>";
                 if ($key = $toolstack->getKey()) {
                     $message .= " using the toolstack <info>$key</info>";
                 }
@@ -306,14 +294,14 @@ class LocalBuild
             $this->warnAboutHooks($appConfig);
         }
 
-        // Symlink the build into www or www/appname.
+        // Symlink the build into www or www/appIdentifier.
         $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;
         if ($multiApp) {
-            $appDirName = $appName ?: 'default';
+            $appDir = str_replace('/', '-', $appIdentifier);
             if (is_link($wwwLink)) {
                 $this->fsHelper->remove($wwwLink);
             }
-            $wwwLink .= "/$appDirName";
+            $wwwLink .= "/$appDir";
         }
         $symlinkTarget = $this->fsHelper->symlink($buildDir, $wwwLink);
 
@@ -321,10 +309,7 @@ class LocalBuild
             $this->output->writeln("Created symlink: $wwwLink -> $symlinkTarget");
         }
 
-        $message = "Build complete";
-        if ($appName) {
-            $message .= " for <info>$appName</info>";
-        }
+        $message = "Build complete for <info>$appIdentifier</info>";
         $this->output->writeln($message);
 
         return true;
