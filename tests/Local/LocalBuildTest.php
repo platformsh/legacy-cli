@@ -45,7 +45,7 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
 
         $builder = new LocalBuild();
         $applications = $builder->getApplications($fakeRepositoryRoot);
-        $this->assertCount(3, $applications, 'Detect multiple apps');
+        $this->assertCount(5, $applications, 'Detect multiple apps');
     }
 
     public function testToolstackDetectionNone()
