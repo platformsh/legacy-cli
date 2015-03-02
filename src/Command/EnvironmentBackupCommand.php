@@ -35,7 +35,7 @@ class EnvironmentBackupCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->backup();
 
-        $output->writeln("Requested backup of <info>$environmentId</info>");
+        $output->writeln("Backing up <info>$environmentId</info>");
 
         if (!$input->getOption('no-wait')) {
             $output->writeln("Waiting for the backup to complete...");

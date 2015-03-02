@@ -42,6 +42,8 @@ class EnvironmentMergeCommand extends PlatformCommand
             return 0;
         }
 
+        $output->writeln("Merging <info>$environmentId</info> with <info>$parentId</info>");
+
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
             ActivityUtil::waitAndLog($activity, $output);
@@ -49,8 +51,6 @@ class EnvironmentMergeCommand extends PlatformCommand
 
         // Reload the stored environments.
         $this->getEnvironments(null, true);
-
-        $output->writeln("The environment <info>$environmentId</info> has been merged with <info>$parentId</info>.");
         return 0;
     }
 }

@@ -61,12 +61,13 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
             return 1;
         }
 
+        $output->writeln("Synchronizing environment <info>$environmentId</info>");
+
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
         if (!$input->getOption('no-wait')) {
             ActivityUtil::waitAndLog($activity, $output);
         }
 
-        $output->writeln("The environment <info>$environmentId</info> has been synchronized.");
         return 0;
     }
 }

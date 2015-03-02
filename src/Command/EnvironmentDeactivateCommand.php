@@ -128,7 +128,7 @@ class EnvironmentDeactivateCommand extends PlatformCommand
             try {
                 $activities[] = $environment->deactivate();
                 $processed++;
-                $output->writeln("Deactivated environment <info>$environmentId</info>");
+                $output->writeln("Deactivating environment <info>$environmentId</info>");
             }
             catch (\Exception $e) {
                 $output->writeln($e->getMessage());
