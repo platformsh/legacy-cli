@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;

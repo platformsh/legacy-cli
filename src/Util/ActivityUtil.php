@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Command;
+namespace Platformsh\Cli\Util;
 
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Helper\ProgressBar;
