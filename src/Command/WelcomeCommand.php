@@ -31,6 +31,10 @@ class WelcomeCommand extends PlatformCommand
     {
         $output->writeln("Welcome to Platform.sh!\n");
 
+        if (!$this->isLoggedIn()) {
+            $this->login();
+        }
+
         $application = $this->getApplication();
 
         if ($currentProject = $this->getCurrentProject()) {
