@@ -13,6 +13,21 @@ class Activity extends HalResource
     }
 
     /**
+     * Restore the backup associated with this activity.
+     *
+     * @return bool
+     */
+    public function restore()
+    {
+        if ($this->getProperty('type') !== 'environment.backup') {
+            throw new \BadMethodCallException('Cannot restore activity (wrong type)');
+        }
+        return $this->runOperation('restore');
+    }
+
+    /**
+     * Get a description of this activity.
+     *
      * @return string
      */
     public function getDescription()

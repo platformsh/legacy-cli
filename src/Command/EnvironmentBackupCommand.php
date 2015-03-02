@@ -26,13 +26,21 @@ class EnvironmentBackupCommand extends EnvironmentCommand
 
         $environmentId = $this->environment['id'];
         if (!$this->operationAvailable('backup')) {
-            $output->writeln("Operation not available: Can't make a backup of the environment <error>$environmentId</error>.");
+            $output->writeln(
+              "Operation not available: the environment <error>$environmentId</error> cannot be backed up"
+            );
             return 1;
         }
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->backupEnvironment();
+        $data = $client->backupEnvironment();
 
         $output->writeln("A backup of environment <info>$environmentId</info> has been created.");
+
+        if (!empty($data['_embedded']['activities'][0]['payload']['backup_name'])) {
+            $name = $data['_embedded']['activities'][0]['payload']['backup_name'];
+            $output->writeln("Backup name: <info>$name</info>");
+        }
+        return 0;
     }
 }
