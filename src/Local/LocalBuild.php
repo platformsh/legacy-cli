@@ -125,9 +125,12 @@ class LocalBuild
     public function getAppConfig($appRoot)
     {
         $config = array();
+        $parser = new Parser();
         if (file_exists($appRoot . '/.platform.app.yaml')) {
-            $parser = new Parser();
             $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
+        }
+        if (file_exists($appRoot . '/.platform.app.local.yaml')) {
+            $config['_local'] = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.local.yaml'));
         }
 
         return $config;
@@ -208,7 +211,7 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency');
+        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency', 'noDeployHooks');
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 
@@ -273,7 +276,7 @@ class LocalBuild
 
                 $toolstack->build();
 
-                $this->warnAboutHooks($appConfig);
+                $this->runLocalHooks($toolstack->getBuildDir(), $appConfig, 'build');
 
                 if ($archive && empty($toolstack->preventArchive)) {
                     $this->output->writeln("Saving build archive...");
@@ -291,7 +294,7 @@ class LocalBuild
         }
         else {
             $buildDir = $appRoot;
-            $this->warnAboutHooks($appConfig);
+            $this->runLocalHooks($buildDir, $appConfig, 'build');
         }
 
         // Symlink the build into www or www/appIdentifier.
@@ -305,6 +308,8 @@ class LocalBuild
         }
         $symlinkTarget = $this->fsHelper->symlink($buildDir, $wwwLink);
 
+        $this->runLocalHooks($buildDir, $appConfig, 'deploy');
+
         if ($verbose) {
             $this->output->writeln("Created symlink: $wwwLink -> $symlinkTarget");
         }
@@ -316,33 +321,43 @@ class LocalBuild
     }
 
     /**
-     * Warn the user that the CLI will not run build/deploy hooks.
+     * Run hooks defined in a .platform.app.local.yaml file.
+     *
+     * @param string $buildDir
+     * @param array $appConfig
+     * @param string $type Either 'build or 'deploy'.
+     */
+    protected function runLocalHooks($buildDir, array $appConfig, $type)
+    {
+        if (empty($appConfig['_local']['hooks'][$type])) {
+            $this->warnAboutRemoteHooks($appConfig, $type);
+            return;
+        }
+        if ($type == 'deploy' && !empty($this->settings['noDeployHooks'])) {
+            $this->output->writeln("Skipping local deploy hook(s)");
+            return;
+        }
+        $hooks = implode(';', (array) $appConfig['_local']['hooks'][$type]);
+        $this->output->writeln("Running local $type hook(s)");
+        chdir($buildDir);
+        passthru($hooks);
+    }
+
+    /**
+     * Warn the user that the CLI needs a different hook configuration.
      *
      * @param array $appConfig
-     *
-     * @return bool
+     * @param string $type Either 'build or 'deploy'.
      */
-    protected function warnAboutHooks(array $appConfig)
+    protected function warnAboutRemoteHooks(array $appConfig, $type)
     {
-        if (empty($appConfig['hooks']['build'])) {
-            return false;
+        if (empty($appConfig['hooks'][$type])) {
+            return;
         }
-        $indent = '        ';
         $this->output->writeln(
-          "<comment>You have defined the following hook(s). The CLI cannot run them locally.</comment>"
+          "You have defined $type hook(s) in your <comment>.platform.app.yaml</comment> file. The CLI will not run them locally."
         );
-        foreach (array('build', 'deploy') as $hookType) {
-            if (empty($appConfig['hooks'][$hookType])) {
-                continue;
-            }
-            $this->output->writeln("    $hookType: |");
-            $hooks = (array) $appConfig['hooks'][$hookType];
-            $asString = implode("\n", array_map('trim', $hooks));
-            $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
-            $this->output->writeln($withIndent);
-        }
-
-        return true;
+        $this->output->writeln("You can add CLI-specific $type hooks to a <comment>.platform.app.local.yaml</comment> file.");
     }
 
     /**

@@ -35,6 +35,11 @@ class ProjectBuildCommand extends PlatformCommand
                 null,
                 InputOption::VALUE_NONE,
                 'Do not create or use a build archive'
+            )->addOption(
+                'no-deploy-hooks',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not run local deploy hooks'
             );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
@@ -107,6 +112,7 @@ class ProjectBuildCommand extends PlatformCommand
           'noArchive' => 'no-archive',
           'noCache' => 'no-cache',
           'noClean' => 'no-clean',
+          'noDeployHooks' => 'no-deploy-hooks',
         );
         foreach ($settingsMap as $setting => $option) {
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
