@@ -165,6 +165,9 @@ class EnvironmentBranchCommand extends PlatformCommand
             }
         }
 
+        // Refresh the environments cache.
+        $this->getEnvironments(null, true);
+
         return 0;
     }
 }
