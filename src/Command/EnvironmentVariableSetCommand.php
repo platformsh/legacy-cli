@@ -1,8 +1,7 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -31,9 +30,6 @@ class EnvironmentVariableSetCommand extends PlatformCommand
             return 1;
         }
 
-        $environment = new Environment($this->environment);
-        $environment->setClient($this->getPlatformClient($this->environment['endpoint']));
-
         $variableName = $input->getArgument('name');
         $variableValue = $input->getArgument('value');
         $json = $input->getOption('json');
@@ -44,14 +40,14 @@ class EnvironmentVariableSetCommand extends PlatformCommand
 
         // Check whether the variable already exists. If there is no change,
         // quit early.
-        $existing = $environment->getVariable($variableName);
+        $existing = $this->getSelectedEnvironment()->getVariable($variableName);
         if ($existing && $existing->getProperty('value') === $variableValue && $existing->getProperty('is_json') == $json) {
             $output->writeln("Variable <info>$variableName</info> already set as: $variableValue");
             return 0;
         }
 
         // Set the variable to a new value.
-        $variable = $environment->setVariable($variableName, $variableValue, $json);
+        $variable = $this->getSelectedEnvironment()->setVariable($variableName, $variableValue, $json);
         if (!$variable) {
             $output->writeln("Failed to set variable <error>$variableName</error>");
             return 1;
@@ -59,7 +55,7 @@ class EnvironmentVariableSetCommand extends PlatformCommand
 
         $output->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
-        if (!$variable->hasActivity()) {
+        if (!$this->getSelectedEnvironment()->getLastActivity()) {
             $this->rebuildWarning($output);
         }
         return 0;

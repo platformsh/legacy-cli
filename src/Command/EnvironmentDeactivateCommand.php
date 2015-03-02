@@ -1,14 +1,15 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentDeactivateCommand extends EnvironmentCommand
+class EnvironmentDeactivateCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -28,11 +29,11 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         }
 
         if ($input->getOption('merged')) {
-            if (!$this->environment) {
+            if (!$this->hasSelectedEnvironment()) {
                 $output->writeln("No base environment specified");
                 return 1;
             }
-            $base = $this->environment['id'];
+            $base = $this->getSelectedEnvironment()['id'];
             $output->writeln("Finding environments merged with <info>$base</info>");
             $toDeactivate = $this->getMergedEnvironments($base);
             if (!$toDeactivate) {
@@ -40,11 +41,11 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
                 return 0;
             }
         }
-        elseif ($this->environment) {
-            $toDeactivate = array($this->environment);
+        elseif ($this->hasSelectedEnvironment()) {
+            $toDeactivate = array($this->getSelectedEnvironment());
         }
         else {
-            $environments = $this->getEnvironments($this->project);
+            $environments = $this->getEnvironments();
             $environmentIds = $input->getArgument('environment');
             $toDeactivate = array_intersect_key($environments, array_flip($environmentIds));
 
@@ -70,7 +71,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         if (!$projectRoot) {
             throw new \RuntimeException("This can only be run from inside a project directory");
         }
-        $environments = $this->getEnvironments($this->project, true);
+        $environments = $this->getEnvironments($this->getCurrentProject(), true);
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
         $gitHelper->execute(array('fetch', 'origin'));
@@ -85,7 +86,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
     }
 
     /**
-     * @param array           $environments
+     * @param Environment[]   $environments
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
@@ -104,12 +105,12 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
                 $output->writeln("The <error>master</error> environment cannot be deactivated or deleted.");
                 continue;
             }
-            if (empty($environment['_links']['public-url'])) {
+            if (!$environment->isActive()) {
                 $output->writeln("The environment <info>$environmentId</info> is already inactive.");
                 $count--;
                 continue;
             }
-            if (!$this->operationAvailable('deactivate', $environment)) {
+            if (!$environment->operationAvailable('deactivate')) {
                 $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be deactivated.");
                 continue;
             }
@@ -119,10 +120,10 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
             }
             $process[$environmentId] = $environment;
         }
+        /** @var Environment $environment */
         foreach ($process as $environmentId =>  $environment) {
-            $client = $this->getPlatformClient($environment['endpoint']);
             try {
-                $client->deactivateEnvironment();
+                $environment->deactivate();
                 $processed++;
                 $output->writeln("Deactivated environment <info>$environmentId</info>");
             }
@@ -131,7 +132,7 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
             }
         }
         if ($processed) {
-            $this->getEnvironments($this->project, true);
+            $this->getEnvironments(null, true);
         }
         return $processed >= $count;
     }

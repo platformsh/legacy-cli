@@ -1,12 +1,13 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentActivateCommand extends EnvironmentCommand
+class EnvironmentActivateCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -24,11 +25,11 @@ class EnvironmentActivateCommand extends EnvironmentCommand
             return 1;
         }
 
-        if ($this->environment) {
-            $toActivate = array($this->environment);
+        if ($this->hasSelectedEnvironment()) {
+            $toActivate = array($this->getSelectedEnvironment());
         }
         else {
-            $environments = $this->getEnvironments($this->project);
+            $environments = $this->getEnvironments();
             $environmentIds = $input->getArgument('environment');
             $toActivate = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
@@ -43,7 +44,7 @@ class EnvironmentActivateCommand extends EnvironmentCommand
     }
 
     /**
-     * @param array           $environments
+     * @param Environment[]   $environments
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
@@ -58,12 +59,12 @@ class EnvironmentActivateCommand extends EnvironmentCommand
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
             $environmentId = $environment['id'];
-            if (!empty($environment['_links']['public-url'])) {
+            if ($environment->isActive()) {
                 $output->writeln("The environment <info>$environmentId</info> is already active.");
                 $count--;
                 continue;
             }
-            if (!$this->operationAvailable('activate', $environment)) {
+            if (!$environment->operationAvailable('activate')) {
                 $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be activated.");
                 continue;
             }
@@ -73,10 +74,10 @@ class EnvironmentActivateCommand extends EnvironmentCommand
             }
             $process[$environmentId] = $environment;
         }
-        foreach ($process as $environmentId =>  $environment) {
-            $client = $this->getPlatformClient($environment['endpoint']);
+        /** @var Environment $environment */
+        foreach ($process as $environmentId => $environment) {
             try {
-                $client->activateEnvironment();
+                $environment->activate();
                 $processed++;
                 $output->writeln("Activated environment <info>$environmentId</info>");
             }
@@ -85,7 +86,7 @@ class EnvironmentActivateCommand extends EnvironmentCommand
             }
         }
         if ($processed) {
-            $this->getEnvironments($this->project, true);
+            $this->getEnvironments(null, true);
         }
         return $processed >= $count;
     }

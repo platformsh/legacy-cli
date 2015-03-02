@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -45,12 +45,17 @@ class DomainDeleteCommand extends PlatformCommand
             return 1;
         }
 
+        $domain = $this->getSelectedProject()->getDomain($name);
+        if (!$domain) {
+            $output->writeln("Domain not found: <error>$name</error>");
+            return 1;
+        }
+
         if (!$this->getHelper('question')->confirm("Are you sure you want to delete the domain <info>$name</info>?", $input, $output)) {
             return 0;
         }
 
-        $client = $this->getPlatformClient($this->project['endpoint'] . "/domains/" . $name);
-        $client->deleteDomain();
+        $domain->delete();
 
         $output->writeln("The domain <info>$name</info> has been deleted.");
         return 0;

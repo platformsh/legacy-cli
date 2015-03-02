@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -20,19 +20,18 @@ class WebCommand extends UrlCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Check whether the user is logged in (do not require login).
-        $this->loadConfig(false);
-        if ($this->config) {
+        if ($this->isLoggedIn()) {
             // If the user is logged in, select the appropriate project and
             // environment, suppressing any errors.
             $this->validateInput($input, new NullOutput());
         }
 
         $url = 'https://marketplace.commerceguys.com/platform/login';
-        if ($this->project) {
-            $url = $this->project['uri'];
-            if ($this->environment) {
-                $url .= '/environments/' . $this->environment['id'];
+        if ($project = $this->getCurrentProject()) {
+            $url = $project['uri'];
+            if ($this->hasSelectedEnvironment()) {
+                $environment = $this->getSelectedEnvironment();
+                $url .= '/environments/' . $environment['id'];
             }
         }
 

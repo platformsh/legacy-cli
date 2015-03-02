@@ -1,8 +1,7 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -28,9 +27,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
             return 1;
         }
 
-        $environment = new Environment($this->environment);
-
-        $args = array('ssh', $environment->getSshUrl(), 'echo $PLATFORM_RELATIONSHIPS');
+        $args = array('ssh', $this->getSelectedEnvironment()->getSshUrl(), 'echo $PLATFORM_RELATIONSHIPS');
         $relationships = $this->getHelper('shell')->execute($args, null, true);
 
         if (!$relationships) {

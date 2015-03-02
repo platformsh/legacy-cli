@@ -1,12 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentMergeCommand extends EnvironmentCommand
+class EnvironmentMergeCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -25,23 +25,24 @@ class EnvironmentMergeCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environmentId = $this->environment['id'];
+        $selectedEnvironment = $this->getSelectedEnvironment();
+        $environmentId = $selectedEnvironment['id'];
 
-        if (!$this->operationAvailable('merge')) {
+        if (!$selectedEnvironment->operationAvailable('merge')) {
             $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be merged.");
             return 1;
         }
 
-        $parentId = $this->environment['parent'];
+        $parentId = $selectedEnvironment['parent'];
 
         if (!$this->getHelper('question')->confirm("Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?", $input, $output)) {
             return 0;
         }
 
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->mergeEnvironment();
+        $selectedEnvironment->merge();
+
         // Reload the stored environments.
-        $this->getEnvironments($this->project, true);
+        $this->getEnvironments(null, true);
 
         $output->writeln("The environment <info>$environmentId</info> has been merged with <info>$parentId</info>.");
         return 0;

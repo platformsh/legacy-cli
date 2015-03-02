@@ -1,13 +1,14 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentDeleteCommand extends EnvironmentCommand
+class EnvironmentDeleteCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -26,19 +27,20 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environments = $this->getEnvironments($this->project);
+        $environments = $this->getEnvironments();
 
         if ($input->getOption('inactive')) {
             $toDelete = array_filter($environments, function ($environment) {
-                return empty($environment['_links']['public-url']);
+                /** @var Environment $environment */
+                return !$environment->isActive();
             });
             if (!$toDelete) {
                 $output->writeln("No inactive environments found");
                 return 0;
             }
         }
-        elseif ($this->environment) {
-            $toDelete = array($this->environment);
+        elseif ($this->hasSelectedEnvironment()) {
+            $toDelete = array($this->getSelectedEnvironment());
         }
         else {
             $environmentIds = $input->getArgument('environment');
@@ -55,7 +57,7 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
     }
 
     /**
-     * @param array           $environments
+     * @param Environment[]   $environments
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
@@ -74,18 +76,18 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
                 $output->writeln("The <error>master</error> environment cannot be deactivated or deleted.");
                 continue;
             }
-            if (!empty($environment['_links']['public-url'])) {
+            if ($environment->isActive()) {
                 $output->writeln("The environment <error>$environmentId</error> is active and therefore can't be deleted.");
                 $output->writeln("Please deactivate the environment first.");
                 continue;
             }
-            if (!$this->operationAvailable('delete', $environment)) {
+            if (!$environment->operationAvailable('delete')) {
                 $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be deleted.");
                 continue;
             }
             // Check that the environment does not have children.
             // @todo remove this check when Platform's behavior is fixed
-            foreach ($this->getEnvironments($this->project) as $potentialChild) {
+            foreach ($this->getEnvironments() as $potentialChild) {
                 if ($potentialChild['parent'] == $environment['id']) {
                     $output->writeln("The environment <error>$environmentId</error> has children and therefore can't be deleted.");
                     $output->writeln("Please delete the environment's children first.");
@@ -98,10 +100,10 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             }
             $process[$environmentId] = $environment;
         }
+        /** @var Environment $environment */
         foreach ($process as $environmentId =>  $environment) {
-            $client = $this->getPlatformClient($environment['endpoint']);
             try {
-                $client->deleteEnvironment();
+                $environment->delete();
                 $processed++;
                 $output->writeln("Deleted environment <info>$environmentId</info>");
             }
@@ -110,7 +112,7 @@ class EnvironmentDeleteCommand extends EnvironmentCommand
             }
         }
         if ($processed) {
-            $this->getEnvironments($this->project, true);
+            $this->getEnvironments(null, true);
         }
         return $processed >= $count;
     }

@@ -1,7 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
+use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -177,6 +178,33 @@ abstract class IntegrationCommand extends PlatformCommand
             'required' => true,
           ),
         );
+    }
+
+    /**
+     * @param Integration $integration
+     *
+     * @return string
+     */
+    protected function formatIntegrationData(Integration $integration)
+    {
+        $properties = $integration->getProperties();
+        $output = '';
+        if ($properties['type'] == 'github') {
+            $payloadUrl = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
+            $output = "Repository: " . $properties['repository']
+              . "\nBuild PRs: " . ($properties['build_pull_requests'] ? 'yes' : 'no')
+              . "\nFetch branches: " . ($properties['fetch_branches'] ? 'yes' : 'no')
+              . "\nPayload URL: " . $payloadUrl;
+        }
+        elseif ($properties['type'] == 'hipchat') {
+            $output = "Room ID: " . $properties['room']
+              . "\nEvents: " . implode(', ', $properties['events'])
+              . "\nStates: " . implode(', ', $properties['states']);
+        }
+        elseif ($properties['type'] == 'webhook') {
+            $output = "URL: " . $properties['url'];
+        }
+        return $output;
     }
 
 }

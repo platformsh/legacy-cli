@@ -1,9 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Helper\ArgvHelper;
-use CommerceGuys\Platform\Cli\Model\Environment;
+use Platformsh\Cli\Helper\ArgvHelper;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -33,8 +32,7 @@ class EnvironmentSshCommand extends PlatformCommand
             return 1;
         }
 
-        $environment = new Environment($this->environment);
-        $sshUrl = $environment->getSshUrl();
+        $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
 
         $command = $input->getArgument('cmd');
         if ($input instanceof ArgvInput) {

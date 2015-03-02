@@ -1,13 +1,13 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Tests;
+namespace Platformsh\Cli\Tests;
 
-use CommerceGuys\Platform\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalBuild;
 
 class LocalBuildTest extends \PHPUnit_Framework_TestCase
 {
 
-    const TOOLSTACK_NAMESPACE = 'CommerceGuys\\Platform\\Cli\\Local\\Toolstack\\';
+    const TOOLSTACK_NAMESPACE = 'Platformsh\\Cli\\Local\\Toolstack\\';
 
     public function testToolstackDetectionDrupal()
     {

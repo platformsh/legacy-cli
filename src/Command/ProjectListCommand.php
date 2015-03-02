@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -51,13 +51,14 @@ class ProjectListCommand extends PlatformCommand
             $rows[] = $row;
         }
 
-        $output->writeln("\nYour projects are: ");
+        $output->writeln("Your projects are: ");
         $table = new Table($output);
         $table->setHeaders(array('ID', 'Name', "URL"))
             ->addRows($rows);
         $table->render();
 
-        $output->writeln("\nGet a project by running <info>platform get [id]</info>.");
-        $output->writeln("List a project's environments by running <info>platform environments</info>.\n");
+        $output->writeln("\nGet a project by running <info>platform get [id]</info>");
+        $output->writeln("List a project's environments by running <info>platform environments</info>");
+        return 0;
     }
 }

@@ -1,13 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentHttpAccessCommand extends EnvironmentCommand
+class EnvironmentHttpAccessCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -131,14 +130,12 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         }
 
         // Ensure the environment is refreshed.
-        $environmentId = $this->environment['id'];
-        $this->getEnvironment($environmentId, $this->project, true);
-
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $environment = new Environment($this->environment, $client);
+        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment->ensureFull();
+        $environmentId = $selectedEnvironment['id'];
 
         if ($auth || $access) {
-            $current = (array) $environment->getProperty('http_access');
+            $current = (array) $selectedEnvironment->getProperty('http_access');
 
             // Merge existing settings. Not using a reference here, as that
             // would affect the comparison with $current later.
@@ -157,21 +154,22 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
                 }
 
                 // Patch the environment with the changes.
-                $environment->update(array('http_access' => $accessOpts));
+                $selectedEnvironment->update(array('http_access' => $accessOpts));
 
                 $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
-                $output->writeln($environment->getPropertyFormatted('http_access'));
+                $output->writeln($selectedEnvironment->getProperty('http_access'));
 
-                if (!$environment->hasActivity()) {
-                    $this->rebuildWarning($output);
-                }
+                // @todo
+//                if (!$environment->hasActivity()) {
+//                    $this->rebuildWarning($output);
+//                }
                 return 0;
             }
         }
 
         $output->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
-        $output->writeln($environment->getPropertyFormatted('http_access'));
+        $output->writeln($selectedEnvironment->getProperty('http_access'));
         return 0;
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -70,8 +70,7 @@ class SshKeyAddCommand extends PlatformCommand
             $name = $questionHelper->ask($input, $output, new Question('Enter a name for the key: '));
         }
 
-        $client = $this->getAccountClient();
-        $client->createSshKey(array('title' => $name, 'value' => $key));
+        $this->getClient()->addSshKey($key, $name);
 
         $output->writeln('The SSH key <info>' . basename($path) . '</info> has been successfully added to your Platform.sh account');
         return 0;

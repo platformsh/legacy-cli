@@ -1,11 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
-use CommerceGuys\Platform\Cli\Helper\ShellHelper;
-use CommerceGuys\Platform\Cli\Local\LocalBuild;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
+use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -183,7 +184,7 @@ class ProjectGetCommand extends PlatformCommand
     }
 
     /**
-     * @param array $environments
+     * @param Environment[] $environments
      * @param InputInterface $input
      * @param OutputInterface $output
      *
@@ -197,7 +198,7 @@ class ProjectGetCommand extends PlatformCommand
         $default = 'master';
         $environmentList = array($default => $environments[$default]['title']);
         foreach ($environments as $id => $environment) {
-            if ($id != $default && (!array_key_exists('#activate', $environment['_links']) || $includeInactive)) {
+            if ($id != $default && (!$environment->operationAvailable('activate') || $includeInactive)) {
                 $environmentList[$id] = $environment['title'];
             }
         }

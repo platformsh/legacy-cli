@@ -1,11 +1,10 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Helper\ArgvHelper;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
-use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
-use CommerceGuys\Platform\Cli\Model\Environment;
+use Platformsh\Cli\Helper\ArgvHelper;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -73,14 +72,14 @@ class EnvironmentDrushCommand extends PlatformCommand
             $sshOptions .= ' -q';
         }
 
-        $environment = new Environment($this->environment);
-        $sshUrl = $environment->getSshUrl();
+        $selectedEnvironment = $this->getSelectedEnvironment();
+        $sshUrl = $selectedEnvironment->getLink('ssh');
 
         $appRoot = '/app/public';
         $dimensions = $this->getApplication()->getTerminalDimensions();
         $columns = $dimensions[0] ?: 80;
         $sshDrushCommand = "COLUMNS=$columns drush -r $appRoot";
-        if ($environmentUrl = $environment->getLink('public-url')) {
+        if ($environmentUrl = $selectedEnvironment->getLink('public-url')) {
             $sshDrushCommand .= " -l $environmentUrl";
         }
         $sshDrushCommand .= ' ' . $drushCommand . ' 2>&1';

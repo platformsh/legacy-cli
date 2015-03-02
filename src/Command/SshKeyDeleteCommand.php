@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,8 +28,13 @@ class SshKeyDeleteCommand extends PlatformCommand
             $output->writeln("<error>You must specify the ID of the key to delete</error>");
             return 1;
         }
-        $client = $this->getAccountClient();
-        $client->deleteSshKey(array('id' => $id));
+
+        $key = $this->getClient()->getSshKey($id);
+        if (!$key) {
+            $output->writeln("SSH key not found: <error>$id</error>");
+        }
+
+        $key->delete();
 
         $output->writeln("The SSH key <info>#$id</info> has been deleted from your Platform.sh account");
         return 0;

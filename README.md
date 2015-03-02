@@ -5,7 +5,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 ### Requirements
 
 * Operating system: Linux, OS X, Windows Vista, Windows 7 (any), or Windows 8 Pro (Win8 Standard does not work due to an issue with symlink permissions)
-* PHP 5.3.3 or higher, with cURL support
+* PHP 5.4.0 or higher, with cURL support
 * [Composer](https://getcomposer.org/)
 * [Drush](https://github.com/drush-ops/drush) (only needed for Drupal projects)
 

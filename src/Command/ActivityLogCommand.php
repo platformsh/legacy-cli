@@ -1,10 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Activity;
-use CommerceGuys\Platform\Cli\Model\Environment;
-use Guzzle\Http\Exception\CurlException;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -32,19 +30,16 @@ class ActivityLogCommand extends PlatformCommand
             return 1;
         }
 
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = Activity::get($id, $this->environment['endpoint'] . '/activities', $client);
+            $activity = $this->getSelectedEnvironment()->getActivity($id);
             if (!$activity) {
                 $output->writeln("Activity not found: <error>$id</error>");
                 return 1;
             }
         }
         else {
-            $environment = new Environment($this->environment, $client);
-            $activities = $environment->getActivities(1, $input->getOption('type'));
+            $activities = $this->getSelectedEnvironment()->getActivities(1, $input->getOption('type'));
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
@@ -53,7 +48,7 @@ class ActivityLogCommand extends PlatformCommand
             }
         }
 
-        $output->writeln("Log for activity <info>" . $activity->id() . "</info> (" . $activity->getDescription() . "):");
+        $output->writeln("Log for activity <info>" . $activity['id'] . "</info> (" . $activity->getDescription() . "):");
 
         $refresh = $input->getOption('refresh');
         $poll = $refresh > 0 && $this->isTerminal($output);
@@ -69,37 +64,14 @@ class ActivityLogCommand extends PlatformCommand
      */
     protected function displayLog(Activity $activity, OutputInterface $output, $poll = true, $interval = 1)
     {
-        $log = $activity->getProperty('log');
-        $output->writeln(rtrim($log, "\n"));
-
+        $logger = function ($log) use ($output) {
+            $output->writeln(rtrim($log, "\n"));
+        };
         if (!$poll) {
+            $logger($activity['log']);
             return;
         }
-
-        // The minimum interval is 1s.
-        if ($interval < 1) {
-            $interval = 1;
-        }
-
-        $length = strlen($log);
-        while (!$activity->isComplete()) {
-            usleep(1000000 * $interval);
-            try {
-                $activity->refresh(array('timeout' => $interval));
-            }
-            catch (CurlException $e) {
-                // If the request times out, try again.
-                if ($e->getErrorNo() === 28) {
-                    continue;
-                }
-                // Stop for any other error.
-                throw $e;
-            }
-            if ($new = substr($activity->getProperty('log'), $length)) {
-                $output->writeln(rtrim($new, "\n"));
-                $length += strlen($new);
-            }
-        }
+        $activity->wait(null, $logger, $interval);
     }
 
 }

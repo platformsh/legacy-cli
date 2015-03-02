@@ -1,9 +1,9 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\Toolstack;
 
-use CommerceGuys\Platform\Cli\Helper\DrushHelper;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
+use Platformsh\Cli\Helper\DrushHelper;
+use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
