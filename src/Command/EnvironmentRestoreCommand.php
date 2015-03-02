@@ -71,7 +71,8 @@ class EnvironmentRestoreCommand extends PlatformCommand
         $questionHelper = $this->getHelper('question');
         $name = $selectedActivity['payload']['backup_name'];
         $environmentId = $environment['id'];
-        if (!$questionHelper->confirm("Are you sure you want to restore the backup <comment>$name</comment>?", $input, $output)) {
+        $date = date('Y-m-d H:i', strtotime($selectedActivity['created_at']));
+        if (!$questionHelper->confirm("Are you sure you want to restore the backup <comment>$name</comment> from <comment>$date</comment>?", $input, $output)) {
             return 1;
         }
 
