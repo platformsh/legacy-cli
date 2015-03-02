@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,8 +17,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
             ->setName('environment:delete')
             ->setDescription('Delete an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
-            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
-            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -102,11 +100,10 @@ class EnvironmentDeleteCommand extends PlatformCommand
             }
             $process[$environmentId] = $environment;
         }
-        $activities = array();
         /** @var Environment $environment */
         foreach ($process as $environmentId =>  $environment) {
             try {
-                $activities[] = $environment->delete();
+                $environment->delete();
                 $processed++;
                 $output->writeln("Deleted environment <info>$environmentId</info>");
             }
@@ -115,9 +112,6 @@ class EnvironmentDeleteCommand extends PlatformCommand
             }
         }
         if ($processed) {
-            if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitMultiple($activities, $output);
-            }
             $this->getEnvironments(null, true);
         }
         return $processed >= $count;
