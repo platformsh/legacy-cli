@@ -45,7 +45,7 @@ abstract class PlatformCommand extends Command
     /**
      * The environment, selected by an option, an argument, or the CWD.
      *
-     * @var Project|false
+     * @var Environment|false
      */
     private $environment;
 
