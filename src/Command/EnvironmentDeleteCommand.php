@@ -14,11 +14,12 @@ class EnvironmentDeleteCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:delete')
-            ->setDescription('Delete an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
-            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:delete')
+          ->setDescription('Delete an environment')
+          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
+          ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -30,19 +31,21 @@ class EnvironmentDeleteCommand extends PlatformCommand
         $environments = $this->getEnvironments();
 
         if ($input->getOption('inactive')) {
-            $toDelete = array_filter($environments, function ($environment) {
-                /** @var Environment $environment */
-                return !$environment->isActive();
-            });
+            $toDelete = array_filter(
+              $environments,
+              function ($environment) {
+                  /** @var Environment $environment */
+                  return !$environment->isActive();
+              }
+            );
             if (!$toDelete) {
                 $output->writeln("No inactive environments found");
+
                 return 0;
             }
-        }
-        elseif ($this->hasSelectedEnvironment()) {
+        } elseif ($this->hasSelectedEnvironment()) {
             $toDelete = array($this->getSelectedEnvironment());
-        }
-        else {
+        } else {
             $environmentIds = $input->getArgument('environment');
             $toDelete = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
@@ -77,19 +80,25 @@ class EnvironmentDeleteCommand extends PlatformCommand
                 continue;
             }
             if ($environment->isActive()) {
-                $output->writeln("The environment <error>$environmentId</error> is active and therefore can't be deleted.");
+                $output->writeln(
+                  "The environment <error>$environmentId</error> is active and therefore can't be deleted."
+                );
                 $output->writeln("Please deactivate the environment first.");
                 continue;
             }
             if (!$environment->operationAvailable('delete')) {
-                $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be deleted.");
+                $output->writeln(
+                  "Operation not available: The environment <error>$environmentId</error> can't be deleted."
+                );
                 continue;
             }
             // Check that the environment does not have children.
             // @todo remove this check when Platform's behavior is fixed
             foreach ($this->getEnvironments() as $potentialChild) {
                 if ($potentialChild['parent'] == $environment['id']) {
-                    $output->writeln("The environment <error>$environmentId</error> has children and therefore can't be deleted.");
+                    $output->writeln(
+                      "The environment <error>$environmentId</error> has children and therefore can't be deleted."
+                    );
                     $output->writeln("Please delete the environment's children first.");
                     continue 2;
                 }
@@ -101,19 +110,19 @@ class EnvironmentDeleteCommand extends PlatformCommand
             $process[$environmentId] = $environment;
         }
         /** @var Environment $environment */
-        foreach ($process as $environmentId =>  $environment) {
+        foreach ($process as $environmentId => $environment) {
             try {
                 $environment->delete();
                 $processed++;
                 $output->writeln("Deleted environment <info>$environmentId</info>");
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
         }
         if ($processed) {
             $this->getEnvironments(null, true);
         }
+
         return $processed >= $count;
     }
 

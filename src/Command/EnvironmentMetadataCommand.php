@@ -16,12 +16,13 @@ class EnvironmentMetadataCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:metadata')
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
-            ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->setDescription('Read or set metadata for an environment')
-            ->setHelp(<<<EOF
-Use this command to read or write an environment's metadata.
+          ->setName('environment:metadata')
+          ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+          ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
+          ->setDescription('Read or set metadata for an environment')
+          ->setHelp(
+            <<<EOF
+            Use this command to read or write an environment's metadata.
 
 <comment>Examples:</comment>
 Read all environment metadata:
@@ -42,8 +43,9 @@ Change the environment title:
 Change the environment's parent branch:
   <info>platform %command.name% parent sprint-2</info>
 EOF
-            );
-        $this->addProjectOption()->addEnvironmentOption();
+          );
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -66,6 +68,7 @@ EOF
         }
 
         $output->writeln($environment->getProperty($property));
+
         return 0;
     }
 
@@ -85,6 +88,7 @@ EOF
             $table->addRow(array($key, $value));
         }
         $table->render();
+
         return 0;
     }
 
@@ -108,7 +112,10 @@ EOF
         settype($value, $type);
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
-            $output->writeln("Property <info>$property</info> already set as: " . $environment->getProperty($property, false));
+            $output->writeln(
+              "Property <info>$property</info> already set as: " . $environment->getProperty($property, false)
+            );
+
             return 0;
         }
         $environment->update(array($property => $value));
@@ -116,6 +123,7 @@ EOF
         if ($property === 'enable_smtp' && !$environment->getLastActivity()) {
             $this->rebuildWarning($output);
         }
+
         return 0;
     }
 
@@ -123,6 +131,7 @@ EOF
      * Get the type of a writable environment property.
      *
      * @param string $property
+     *
      * @return string|false
      */
     protected function getType($property)
@@ -132,12 +141,13 @@ EOF
           'parent' => 'string',
           'title' => 'string',
         );
+
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }
 
     /**
-     * @param string $property
-     * @param string $value
+     * @param string          $property
+     * @param string          $value
      * @param OutputInterface $output
      *
      * @return bool
@@ -147,6 +157,7 @@ EOF
         $type = $this->getType($property);
         if (!$type) {
             $output->writeln("Property not writable: <error>$property</error>");
+
             return false;
         }
         $valid = true;
@@ -158,16 +169,13 @@ EOF
                 if ($selectedEnvironment['id'] === 'master') {
                     $message = "The master environment cannot have a parent";
                     $valid = false;
-                }
-                elseif ($value === $selectedEnvironment['id']) {
+                } elseif ($value === $selectedEnvironment['id']) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
-                }
-                elseif (!$parentEnvironment = $this->getEnvironment($value)) {
+                } elseif (!$parentEnvironment = $this->getEnvironment($value)) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
-                }
-                elseif ($parentEnvironment['parent'] === $selectedEnvironment['id']) {
+                } elseif ($parentEnvironment['parent'] === $selectedEnvironment['id']) {
                     $valid = false;
                 }
                 break;
@@ -182,12 +190,13 @@ EOF
         if (!$valid) {
             if ($message) {
                 $output->writeln($message);
-            }
-            else {
+            } else {
                 $output->writeln("Invalid value for <error>$property</error>: $value");
             }
+
             return false;
         }
+
         return true;
     }
 

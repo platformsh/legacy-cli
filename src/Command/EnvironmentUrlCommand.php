@@ -13,15 +13,16 @@ class EnvironmentUrlCommand extends UrlCommandBase
     {
         parent::configure();
         $this
-            ->setName('environment:url')
-            ->setAliases(array('url'))
-            ->setDescription('Get the public URL of an environment')
-            ->addArgument(
-                'path',
-                InputArgument::OPTIONAL,
-                'A path to append to the URL.'
-            );
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:url')
+          ->setAliases(array('url'))
+          ->setDescription('Get the public URL of an environment')
+          ->addArgument(
+            'path',
+            InputArgument::OPTIONAL,
+            'A path to append to the URL.'
+          );
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

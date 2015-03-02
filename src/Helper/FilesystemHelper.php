@@ -6,7 +6,8 @@ use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
-class FilesystemHelper extends Helper {
+class FilesystemHelper extends Helper
+{
 
     protected $relative = false;
     protected $fs;
@@ -56,6 +57,7 @@ class FilesystemHelper extends Helper {
         if (!is_dir($directory)) {
             throw new \InvalidArgumentException("Not a directory: $directory");
         }
+
         return $this->remove($directory);
     }
 
@@ -70,10 +72,10 @@ class FilesystemHelper extends Helper {
     {
         try {
             $this->fs->remove($filename);
-        }
-        catch (IOException $e) {
+        } catch (IOException $e) {
             return false;
         }
+
         return true;
     }
 
@@ -87,8 +89,7 @@ class FilesystemHelper extends Helper {
             // Windows compatibility.
             if ($userProfile = getenv('USERPROFILE')) {
                 $home = $userProfile;
-            }
-            elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+            } elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
                 $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
             }
         }
@@ -101,7 +102,7 @@ class FilesystemHelper extends Helper {
      *
      * @param string $source
      * @param string $destination
-     * @param bool $override
+     * @param bool   $override
      */
     public function copy($source, $destination, $override = false)
     {
@@ -159,15 +160,16 @@ class FilesystemHelper extends Helper {
             $target = $this->makePathRelative($target, $link);
         }
         $this->fs->symlink($target, $link, $this->copyIfSymlinkUnavailable);
+
         return $target;
     }
 
     /**
      * Symlink all files and folders between two directories.
      *
-     * @param string $source
-     * @param string $destination
-     * @param bool $skipExisting
+     * @param string   $source
+     * @param string   $destination
+     * @param bool     $skipExisting
      * @param string[] $blacklist
      *
      * @throws \Exception
@@ -202,11 +204,9 @@ class FilesystemHelper extends Helper {
                 if (file_exists($linkFile)) {
                     if (is_link($linkFile)) {
                         unlink($linkFile);
-                    }
-                    elseif ($skipExisting) {
+                    } elseif ($skipExisting) {
                         continue;
-                    }
-                    else {
+                    } else {
                         throw new \Exception('File exists: ' . $linkFile);
                     }
                 }
@@ -241,6 +241,7 @@ class FilesystemHelper extends Helper {
             $path2 = dirname($path2);
         }
         $result = rtrim($this->fs->makePathRelative($path1, $path2), DIRECTORY_SEPARATOR);
+
         return $result;
     }
 
@@ -293,10 +294,15 @@ class FilesystemHelper extends Helper {
     protected function fixTarPath($path)
     {
         if ($this->isWindows()) {
-            $path = preg_replace_callback('#^([A-Z]):/#i', function (array $matches) {
-                return '/' . strtolower($matches[1]) . '/';
-            }, str_replace('\\', '/', $path));
+            $path = preg_replace_callback(
+              '#^([A-Z]):/#i',
+              function (array $matches) {
+                  return '/' . strtolower($matches[1]) . '/';
+              },
+              str_replace('\\', '/', $path)
+            );
         }
+
         return $path;
     }
 

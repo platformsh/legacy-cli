@@ -5,10 +5,11 @@ namespace Platformsh\Cli\Helper;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\ProcessBuilder;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\ProcessBuilder;
 
-class ShellHelper extends Helper implements ShellHelperInterface {
+class ShellHelper extends Helper implements ShellHelperInterface
+{
 
     /** @var OutputInterface */
     protected $output;
@@ -31,7 +32,7 @@ class ShellHelper extends Helper implements ShellHelperInterface {
     /**
      * Log output messages.
      *
-     * @param mixed $type
+     * @param mixed  $type
      * @param string $buffer
      *
      * @todo in theory this could use the ConsoleLogger, but the formatting is ugly and impossible to override
@@ -95,6 +96,7 @@ class ShellHelper extends Helper implements ShellHelperInterface {
         if (strpos(PHP_OS, 'WIN') !== false) {
             $args = array('where', $command);
         }
+
         return (bool) $this->execute($args);
     }
 

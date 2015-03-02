@@ -2,9 +2,8 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Application;
-use Platformsh\Cli\Local\LocalProject;
 use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -93,6 +92,7 @@ abstract class PlatformCommand extends Command
                 $this->login();
             }
         }
+
         return self::$client;
     }
 
@@ -140,6 +140,7 @@ abstract class PlatformCommand extends Command
             if (file_exists($filename)) {
                 return unlink($filename);
             }
+
             return true;
         }
         if (!file_exists($cacheDir)) {
@@ -153,8 +154,10 @@ abstract class PlatformCommand extends Command
         if (file_put_contents($filename, $yaml->dump(self::$cache, 0, 4, true))) {
             chmod($filename, 0600);
             $lastSaved = self::$cache;
+
             return true;
         }
+
         return false;
     }
 
@@ -177,7 +180,9 @@ abstract class PlatformCommand extends Command
     protected function getCacheDir()
     {
         $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', $this->sessionId);
-        return $this->getHelper('fs')->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
+
+        return $this->getHelper('fs')
+                    ->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
     }
 
     /**
@@ -191,13 +196,15 @@ abstract class PlatformCommand extends Command
         $version = $application ? $application->getVersion() : 'dev';
         $name = 'Platform.sh-CLI';
         $url = 'https://github.com/platformsh/platformsh-cli';
+
         return "$name/$version (+$url)";
     }
 
     /**
      * Log in the user.
      */
-    protected function login() {
+    protected function login()
+    {
         if (!$this->output) {
             throw new \RuntimeException('Login is required but no output is defined');
         }
@@ -217,7 +224,9 @@ abstract class PlatformCommand extends Command
      */
     protected function isLoggedIn()
     {
-        return $this->getClient(false)->getConnector()->isLoggedIn();
+        return $this->getClient(false)
+                    ->getConnector()
+                    ->isLoggedIn();
     }
 
     /**
@@ -226,7 +235,7 @@ abstract class PlatformCommand extends Command
      */
     public function isLocal()
     {
-          return false;
+        return false;
     }
 
     /**
@@ -237,12 +246,14 @@ abstract class PlatformCommand extends Command
      * The actual credentials are never stored, there is no need to reuse them
      * since the refresh token never expires.
      *
-     * @param string $email The user's email.
+     * @param string $email    The user's email.
      * @param string $password The user's password.
      */
     protected function authenticateUser($email, $password)
     {
-        $this->getClient(false)->getConnector()->logIn($email, $password, true);
+        $this->getClient(false)
+             ->getConnector()
+             ->logIn($email, $password, true);
     }
 
     /**
@@ -257,17 +268,18 @@ abstract class PlatformCommand extends Command
         $project = false;
         $config = LocalProject::getCurrentProjectConfig();
         if ($config) {
-          $project = $this->getProject($config['id']);
-          // There is a chance that the project isn't available.
-          if (!$project) {
-              $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
-              throw new \RuntimeException(
-                "Project ID not found: " . $config['id']
-                . "\nEither you do not have access to the project on Platform.sh, or it no longer exists."
-                . "\nThe project ID was determined from the file: " . $filename
-              );
-          }
+            $project = $this->getProject($config['id']);
+            // There is a chance that the project isn't available.
+            if (!$project) {
+                $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
+                throw new \RuntimeException(
+                  "Project ID not found: " . $config['id']
+                  . "\nEither you do not have access to the project on Platform.sh, or it no longer exists."
+                  . "\nThe project ID was determined from the file: " . $filename
+                );
+            }
         }
+
         return $project;
     }
 
@@ -323,23 +335,26 @@ abstract class PlatformCommand extends Command
     {
         $this->loadCache();
         $cached = isset(self::$cache['projects']);
-        $stale = isset(self::$cache['projectsRefreshed']) && time() - self::$cache['projectsRefreshed'] > $this->projectsTtl;
+        $stale = isset(self::$cache['projectsRefreshed']) && time(
+          ) - self::$cache['projectsRefreshed'] > $this->projectsTtl;
         if ($refresh || !$cached || $stale) {
-            $projects = $this->getClient()->getProjects();
+            $projects = $this->getClient()
+                             ->getProjects();
 
             foreach ($projects as $id => $project) {
                 self::$cache['projects'][$id] = $project->getData();
                 self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
             }
             self::$cache['projectsRefreshed'] = time();
-        }
-        else {
+        } else {
             $projects = array();
-            $connector = $this->getClient(false)->getConnector();
+            $connector = $this->getClient(false)
+                              ->getConnector();
             foreach (self::$cache['projects'] as $id => $data) {
                 $projects[$id] = Project::wrap($data, $connector->getClient($data['_endpoint']));
             }
         }
+
         return $projects;
     }
 
@@ -363,12 +378,12 @@ abstract class PlatformCommand extends Command
         if (!isset($project['title'])) {
             try {
                 $project->ensureFull();
-            }
-            catch (BadResponseException $e) {
+            } catch (BadResponseException $e) {
                 $response = $e->getResponse();
                 // Platform.sh can return 502 errors for deleted projects.
                 if ($response->getStatusCode() === 502) {
                     unset(self::$cache['projects'][$id]);
+
                     return false;
                 }
                 throw $e;
@@ -388,9 +403,9 @@ abstract class PlatformCommand extends Command
     /**
      * Return the user's environments.
      *
-     * @param Project $project The project.
-     * @param bool $refresh Whether to refresh the list.
-     * @param bool $updateAliases Whether to update Drush aliases if the list changes.
+     * @param Project $project       The project.
+     * @param bool    $refresh       Whether to refresh the list.
+     * @param bool    $updateAliases Whether to update Drush aliases if the list changes.
      *
      * @return Environment[] The user's environments.
      */
@@ -401,7 +416,8 @@ abstract class PlatformCommand extends Command
 
         $this->loadCache();
         $cached = !empty(self::$cache['environments'][$projectId]);
-        $stale = isset(self::$cache['environmentsRefreshed'][$projectId]) && time() - self::$cache['environmentsRefreshed'][$projectId] > $this->environmentsTtl;
+        $stale = isset(self::$cache['environmentsRefreshed'][$projectId]) && time(
+          ) - self::$cache['environmentsRefreshed'][$projectId] > $this->environmentsTtl;
 
         if ($refresh || !$cached || $stale) {
             self::$cache['environments'][$projectId] = array();
@@ -420,25 +436,26 @@ abstract class PlatformCommand extends Command
 
             self::$cache['environments'][$projectId] = $toCache;
             self::$cache['environmentsRefreshed'][$projectId] = time();
-        }
-        else {
+        } else {
             $environments = array();
-            $connector = $this->getClient(false)->getConnector();
+            $connector = $this->getClient(false)
+                              ->getConnector();
             $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project['endpoint'];
             $client = $connector->getClient($endpoint);
             foreach (self::$cache['environments'][$projectId] as $id => $data) {
                 $environments[$id] = Environment::wrap($data, $client);
             }
         }
+
         return $environments;
     }
 
     /**
      * Get a single environment.
      *
-     * @param string $id The environment ID to load.
+     * @param string  $id      The environment ID to load.
      * @param Project $project The project.
-     * @param bool $refresh
+     * @param bool    $refresh
      *
      * @return Environment|false The environment, or false if not found.
      */
@@ -459,6 +476,7 @@ abstract class PlatformCommand extends Command
         $environments = $this->getEnvironments($project, $refresh);
         if (!isset($environments[$id])) {
             $notFound[$cacheKey] = true;
+
             return false;
         }
 
@@ -466,10 +484,11 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * @param Project $project
+     * @param Project       $project
      * @param Environment[] $environments
      */
-    protected function updateDrushAliases(Project $project, array $environments) {
+    protected function updateDrushAliases(Project $project, array $environments)
+    {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
             return;
@@ -480,7 +499,10 @@ abstract class PlatformCommand extends Command
             return;
         }
         $drushHelper = $this->getHelper('drush');
-        $drushHelper->setHomeDir($this->getHelper('fs')->getHomeDirectory());
+        $drushHelper->setHomeDir(
+          $this->getHelper('fs')
+               ->getHomeDirectory()
+        );
         $drushHelper->createAliases($project, $projectRoot, $environments);
     }
 
@@ -524,6 +546,7 @@ abstract class PlatformCommand extends Command
         $stream = $output->getStream();
 
         /** @noinspection PhpParamsInspection */
+
         return @posix_isatty($stream);
     }
 
@@ -568,6 +591,7 @@ abstract class PlatformCommand extends Command
                 );
             }
         }
+
         return $project;
     }
 
@@ -592,6 +616,7 @@ abstract class PlatformCommand extends Command
                 );
             }
         }
+
         return $environment;
     }
 
@@ -609,7 +634,13 @@ abstract class PlatformCommand extends Command
             $envOptionName = 'environment';
             if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
                 if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
-                    throw new \InvalidArgumentException(sprintf("You cannot use both the '%s' argument and the '--%s' option", $this->envArgName, $envOptionName));
+                    throw new \InvalidArgumentException(
+                      sprintf(
+                        "You cannot use both the '%s' argument and the '--%s' option",
+                        $this->envArgName,
+                        $envOptionName
+                      )
+                    );
                 }
                 $argument = $input->getArgument($this->envArgName);
                 if (is_array($argument) && count($argument) == 1) {
@@ -618,13 +649,12 @@ abstract class PlatformCommand extends Command
                 if (!is_array($argument)) {
                     $this->environment = $this->selectEnvironment($argument);
                 }
-            }
-            elseif ($input->hasOption($envOptionName)) {
+            } elseif ($input->hasOption($envOptionName)) {
                 $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
             }
-        }
-        catch (\RuntimeException $e) {
+        } catch (\RuntimeException $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
+
             return false;
         }
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
@@ -632,6 +662,7 @@ abstract class PlatformCommand extends Command
             $environmentId = $this->environment ? $this->environment['id'] : '[none]';
             $output->writeln("Selected environment: $environmentId");
         }
+
         return true;
     }
 

@@ -4,8 +4,8 @@ namespace Platformsh\Cli\Command;
 
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 abstract class IntegrationCommand extends PlatformCommand
@@ -33,11 +33,11 @@ abstract class IntegrationCommand extends PlatformCommand
             $resolver = new OptionsResolver();
             $this->setUpResolver($resolver, $options['type']);
             $this->values = $resolver->resolve($options);
-        }
-        catch (\LogicException $e) {
+        } catch (\LogicException $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
             $valid = false;
         }
+
         return $valid;
     }
 
@@ -66,8 +66,7 @@ abstract class IntegrationCommand extends PlatformCommand
             }
             if (!empty($option['default'])) {
                 $defaults[$name] = $option['default'];
-            }
-            else {
+            } else {
                 $defined[] = $name;
             }
         }
@@ -87,8 +86,7 @@ abstract class IntegrationCommand extends PlatformCommand
             }
             if (!empty($option['validator'])) {
                 $resolver->setAllowedValues($name, $option['validator']);
-            }
-            elseif (!empty($option['options'])) {
+            } elseif (!empty($option['options'])) {
                 $resolver->setAllowedValues($name, $option['options']);
             }
         }
@@ -108,17 +106,19 @@ abstract class IntegrationCommand extends PlatformCommand
             if (!is_array($value)) {
                 $value = explode(',', $value);
             }
+
             return $value;
         };
         $boolNormalizer = function ($options, $value) {
             return !in_array($value, array('false', '0', 0), true);
         };
         $boolOptions = array(true, false, '1', '0', 'true', 'false');
+
         return array(
           'type' => array(
             'required' => true,
             'description' => "The integration type ('github', 'hipchat', or 'webhook')",
-            'validator' => function($value) {
+            'validator' => function ($value) {
                 return in_array($value, array('github', 'hipchat', 'webhook'));
             },
           ),
@@ -195,15 +195,14 @@ abstract class IntegrationCommand extends PlatformCommand
               . "\nBuild PRs: " . ($properties['build_pull_requests'] ? 'yes' : 'no')
               . "\nFetch branches: " . ($properties['fetch_branches'] ? 'yes' : 'no')
               . "\nPayload URL: " . $payloadUrl;
-        }
-        elseif ($properties['type'] == 'hipchat') {
+        } elseif ($properties['type'] == 'hipchat') {
             $output = "Room ID: " . $properties['room']
               . "\nEvents: " . implode(', ', $properties['events'])
               . "\nStates: " . implode(', ', $properties['states']);
-        }
-        elseif ($properties['type'] == 'webhook') {
+        } elseif ($properties['type'] == 'webhook') {
             $output = "URL: " . $properties['url'];
         }
+
         return $output;
     }
 

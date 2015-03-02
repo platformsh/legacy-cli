@@ -24,7 +24,7 @@ interface ToolstackInterface
     /**
      * Detect if the files in a given directory belong to this toolstack.
      *
-     * @param   string  $appRoot The absolute path to the application folder
+     * @param   string $appRoot The absolute path to the application folder
      *
      * @return  bool    Whether this toolstack is a valid choice or not
      */
@@ -38,7 +38,7 @@ interface ToolstackInterface
      * @param string $buildDir
      * @param string $appRoot
      * @param string $projectRoot
-     * @param array $settings
+     * @param array  $settings
      */
     public function prepare($buildDir, $appRoot, $projectRoot, array $settings);
 

@@ -16,10 +16,10 @@ class IntegrationGetCommand extends IntegrationCommand
     protected function configure()
     {
         $this
-            ->setName('integration:get')
-            ->setAliases(array('integrations'))
-            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
-            ->setDescription('View project integration(s)');
+          ->setName('integration:get')
+          ->setAliases(array('integrations'))
+          ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
+          ->setDescription('View project integration(s)');
         $this->addProjectOption();
     }
 
@@ -32,17 +32,20 @@ class IntegrationGetCommand extends IntegrationCommand
         $id = $input->getArgument('id');
 
         if ($id) {
-            $integration = $this->getSelectedProject()->getIntegration($id);
+            $integration = $this->getSelectedProject()
+                                ->getIntegration($id);
             if (!$integration) {
                 $output->writeln("Integration not found: <error>$id</error>");
+
                 return 1;
             }
             $results = array($integration);
-        }
-        else {
-            $results = $this->getSelectedProject()->getIntegrations();
+        } else {
+            $results = $this->getSelectedProject()
+                            ->getIntegrations();
             if (!$results) {
                 $output->writeln('No integrations found');
+
                 return 1;
             }
         }
@@ -54,7 +57,7 @@ class IntegrationGetCommand extends IntegrationCommand
     }
 
     /**
-     * @param Integration[] $integrations
+     * @param Integration[]   $integrations
      * @param OutputInterface $output
      *
      * @return Table
@@ -65,12 +68,15 @@ class IntegrationGetCommand extends IntegrationCommand
         $table->setHeaders(array("ID", "Type", "Details"));
         foreach ($integrations as $integration) {
             $data = $this->formatIntegrationData($integration);
-            $table->addRow(array(
+            $table->addRow(
+              array(
                 $integration['id'],
                 $integration->getProperty('type'),
                 $data,
-              ));
+              )
+            );
         }
+
         return $table;
     }
 

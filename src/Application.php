@@ -17,7 +17,8 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Shell;
 
-class Application extends ParentApplication {
+class Application extends ParentApplication
+{
 
     /**
      * {@inheritdoc}
@@ -39,7 +40,8 @@ class Application extends ParentApplication {
     protected function getDefaultInputDefinition()
     {
         // We remove the confusing `--ansi` and `--no-ansi` options.
-        return new InputDefinition(array(
+        return new InputDefinition(
+          array(
             new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
             new InputOption('--help', '-h', InputOption::VALUE_NONE, 'Display this help message'),
             new InputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Do not output any message'),
@@ -49,7 +51,8 @@ class Application extends ParentApplication {
             new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
             new InputOption('--session-id', null, InputOption::VALUE_OPTIONAL, 'Specify the session ID'),
             new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell'),
-        ));
+          )
+        );
     }
 
     /**
@@ -57,14 +60,16 @@ class Application extends ParentApplication {
      */
     protected function getDefaultHelperSet()
     {
-        return new HelperSet(array(
+        return new HelperSet(
+          array(
             new FormatterHelper(),
             new PlatformQuestionHelper(),
             new FilesystemHelper(),
             new ShellHelper(),
             new DrushHelper(),
             new GitHelper(),
-        ));
+          )
+        );
     }
 
     /**
@@ -126,6 +131,7 @@ class Application extends ParentApplication {
         $commands[] = new Command\SshKeyListCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
+
         return $commands;
     }
 
@@ -140,10 +146,12 @@ class Application extends ParentApplication {
           '<comment>Global options:</comment>',
         );
 
-        foreach ($this->getDefinition()->getOptions() as $option) {
-            $messages[] = sprintf('  %-29s %s %s',
-              '<info>--'.$option->getName().'</info>',
-              $option->getShortcut() ? '<info>-'.$option->getShortcut().'</info>' : '  ',
+        foreach ($this->getDefinition()
+                      ->getOptions() as $option) {
+            $messages[] = sprintf(
+              '  %-29s %s %s',
+              '<info>--' . $option->getName() . '</info>',
+              $option->getShortcut() ? '<info>-' . $option->getShortcut() . '</info>' : '  ',
               $option->getDescription()
             );
         }
@@ -159,11 +167,11 @@ class Application extends ParentApplication {
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(array('--yes', '-y')) || $input->hasParameterOption(array('--no', '-n'))) {
             $input->setInteractive(false);
-        }
-        // Enable the shell.
+        } // Enable the shell.
         elseif ($input->hasParameterOption(array('--shell', '-s'))) {
             $shell = new Shell($this);
             $shell->run();
+
             return 0;
         }
 
@@ -177,7 +185,8 @@ class Application extends ParentApplication {
      * so it needs to be done manually.
      * UTC is the fallback in case autodetection fails.
      */
-    protected function setDefaultTimezone() {
+    protected function setDefaultTimezone()
+    {
         $timezone = 'UTC';
         if (is_link('/etc/localtime')) {
             // Mac OS X (and older Linuxes)
@@ -201,6 +210,6 @@ class Application extends ParentApplication {
         }
 
         date_default_timezone_set($timezone);
-     }
+    }
 
 }

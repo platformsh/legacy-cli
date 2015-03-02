@@ -26,29 +26,29 @@ class EnvironmentListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:list')
-            ->setAliases(array('environments'))
-            ->setDescription('Get a list of all environments')
-            ->addOption(
-                'pipe',
-                null,
-                InputOption::VALUE_NONE,
-                'Output a simple list of environment IDs.'
-            )
-            ->addOption(
-                'show',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
-                'name,status'
-            )
-            ->addOption(
-                'refresh',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'Whether to refresh the list.',
-                1
-            );
+          ->setName('environment:list')
+          ->setAliases(array('environments'))
+          ->setDescription('Get a list of all environments')
+          ->addOption(
+            'pipe',
+            null,
+            InputOption::VALUE_NONE,
+            'Output a simple list of environment IDs.'
+          )
+          ->addOption(
+            'show',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
+            'name,status'
+          )
+          ->addOption(
+            'refresh',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Whether to refresh the list.',
+            1
+          );
         $this->addProjectOption();
     }
 
@@ -56,7 +56,7 @@ class EnvironmentListCommand extends PlatformCommand
      * Build a tree out of a list of environments.
      *
      * @param Environment[] $environments
-     * @param string $parent
+     * @param string        $parent
      *
      * @return array
      */
@@ -65,10 +65,14 @@ class EnvironmentListCommand extends PlatformCommand
         $children = array();
         foreach ($environments as $environment) {
             if ($environment['parent'] === $parent) {
-                $this->children[$environment['id']] = $this->buildEnvironmentTree($environments, $environment->getProperty('id'));
+                $this->children[$environment['id']] = $this->buildEnvironmentTree(
+                  $environments,
+                  $environment->getProperty('id')
+                );
                 $children[$environment['id']] = $environment;
             }
         }
+
         return $children;
     }
 
@@ -94,8 +98,8 @@ class EnvironmentListCommand extends PlatformCommand
         }
         $table = new Table($output);
         $table
-            ->setHeaders($headers)
-            ->addRows($this->buildEnvironmentRows($tree));
+          ->setHeaders($headers)
+          ->addRows($this->buildEnvironmentRows($tree));
 
         return $table;
     }
@@ -104,7 +108,7 @@ class EnvironmentListCommand extends PlatformCommand
      * Recursively build rows of the environment table.
      *
      * @param Environment[] $tree
-     * @param int $indent
+     * @param int           $indent
      *
      * @return array
      */
@@ -141,6 +145,7 @@ class EnvironmentListCommand extends PlatformCommand
             $rows[] = $row;
             $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment['id']], $indent + 1));
         }
+
         return $rows;
     }
 
@@ -159,8 +164,7 @@ class EnvironmentListCommand extends PlatformCommand
             $this->showUrls = true;
             $this->showNames = true;
             $this->showStatus = true;
-        }
-        elseif ($show) {
+        } elseif ($show) {
             $this->showUrls = in_array('url', $show);
             $this->showNames = in_array('name', $show);
             $this->showStatus = in_array('status', $show);
@@ -171,8 +175,9 @@ class EnvironmentListCommand extends PlatformCommand
         $environments = $this->getEnvironments(null, $refresh);
 
         if ($input->getOption('pipe')) {
-          $output->writeln(array_keys($environments));
-          return;
+            $output->writeln(array_keys($environments));
+
+            return;
         }
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->getSelectedProject());
@@ -234,12 +239,12 @@ class EnvironmentListCommand extends PlatformCommand
 
         // Only mention Drush if the command exists, i.e. if it is enabled.
         try {
-            $this->getApplication()->get('drush');
+            $this->getApplication()
+                 ->get('drush');
             $output->writeln(
               "Execute Drush commands against the current environment by running <info>platform drush</info>."
             );
-        }
-        catch (\InvalidArgumentException $e) {
+        } catch (\InvalidArgumentException $e) {
             // Ignore 'command not found' errors.
         }
     }

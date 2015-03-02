@@ -21,7 +21,8 @@ class EnvironmentDeactivateCommand extends PlatformCommand
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to deactivate')
           ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments')
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -33,6 +34,7 @@ class EnvironmentDeactivateCommand extends PlatformCommand
         if ($input->getOption('merged')) {
             if (!$this->hasSelectedEnvironment()) {
                 $output->writeln("No base environment specified");
+
                 return 1;
             }
             $base = $this->getSelectedEnvironment()['id'];
@@ -40,13 +42,12 @@ class EnvironmentDeactivateCommand extends PlatformCommand
             $toDeactivate = $this->getMergedEnvironments($base);
             if (!$toDeactivate) {
                 $output->writeln("No merged environments found");
+
                 return 0;
             }
-        }
-        elseif ($this->hasSelectedEnvironment()) {
+        } elseif ($this->hasSelectedEnvironment()) {
             $toDeactivate = array($this->getSelectedEnvironment());
-        }
-        else {
+        } else {
             $environments = $this->getEnvironments();
             $environmentIds = $input->getArgument('environment');
             $toDeactivate = array_intersect_key($environments, array_flip($environmentIds));
@@ -84,6 +85,7 @@ class EnvironmentDeactivateCommand extends PlatformCommand
         if ($parent) {
             unset($mergedEnvironments[$parent]);
         }
+
         return $mergedEnvironments;
     }
 
@@ -113,7 +115,9 @@ class EnvironmentDeactivateCommand extends PlatformCommand
                 continue;
             }
             if (!$environment->operationAvailable('deactivate')) {
-                $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be deactivated.");
+                $output->writeln(
+                  "Operation not available: The environment <error>$environmentId</error> can't be deactivated."
+                );
                 continue;
             }
             $question = "Are you sure you want to deactivate the environment <info>$environmentId</info>?";
@@ -124,22 +128,22 @@ class EnvironmentDeactivateCommand extends PlatformCommand
         }
         $activities = array();
         /** @var Environment $environment */
-        foreach ($process as $environmentId =>  $environment) {
+        foreach ($process as $environmentId => $environment) {
             try {
                 $activities[] = $environment->deactivate();
                 $processed++;
                 $output->writeln("Deactivating environment <info>$environmentId</info>");
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
         }
         if ($processed) {
             if (!$input->getOption('no-wait')) {
-               ActivityUtil::waitMultiple($activities, $output);
+                ActivityUtil::waitMultiple($activities, $output);
             }
             $this->getEnvironments(null, true);
         }
+
         return $processed >= $count;
     }
 

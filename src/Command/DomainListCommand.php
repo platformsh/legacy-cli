@@ -16,15 +16,15 @@ class DomainListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('domain:list')
-            ->setAliases(array('domains'))
-            ->setDescription('Get a list of all domains')
-            ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            );
+          ->setName('domain:list')
+          ->setAliases(array('domains'))
+          ->setDescription('Get a list of all domains')
+          ->addOption(
+            'project',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The project ID'
+          );
     }
 
     /**
@@ -39,8 +39,8 @@ class DomainListCommand extends PlatformCommand
     {
         $table = new Table($output);
         $table
-            ->setHeaders(array('Name', 'Wildcard', 'SSL enabled', 'Creation date'))
-            ->addRows($this->buildDomainRows($tree));
+          ->setHeaders(array('Name', 'Wildcard', 'SSL enabled', 'Creation date'))
+          ->addRows($this->buildDomainRows($tree));
 
         return $table;
     }
@@ -59,18 +59,19 @@ class DomainListCommand extends PlatformCommand
         foreach ($tree as $domain) {
 
             // Indicate that the domain is a wildcard.
-            $wildcard = ($domain['wildcard'] == TRUE) ? "Yes" : "No";
+            $wildcard = ($domain['wildcard'] == true) ? "Yes" : "No";
 
             // Indicate that the domain had a SSL certificate.
-            $hasCert = ($domain['ssl']['has_certificate'] == TRUE) ? "Yes" : "No";
+            $hasCert = ($domain['ssl']['has_certificate'] == true) ? "Yes" : "No";
 
             $rows[] = array(
-                $domain['id'],
-                $wildcard,
-                $hasCert,
-                $domain['created_at'],
+              $domain['id'],
+              $wildcard,
+              $hasCert,
+              $domain['created_at'],
             );
         }
+
         return $rows;
     }
 
@@ -97,7 +98,9 @@ class DomainListCommand extends PlatformCommand
 
         $output->writeln("\nAdd a domain to your project by running <info>platform domain:add [domain-name]</info>");
         if (!empty($domains)) {
-            $output->writeln("Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n");
+            $output->writeln(
+              "Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n"
+            );
         }
 
         // Output a newline after the current block of commands.

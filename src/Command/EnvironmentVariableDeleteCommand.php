@@ -18,7 +18,8 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
           ->setName('variable:delete')
           ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
           ->setDescription('Delete a variable from an environment');
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -29,31 +30,36 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
 
         $variableName = $input->getArgument('name');
 
-        $variable = $this->getSelectedEnvironment()->getVariable($variableName);
+        $variable = $this->getSelectedEnvironment()
+                         ->getVariable($variableName);
         if (!$variable) {
             $output->writeln("Variable not found: <error>$variableName</error>");
+
             return 1;
         }
 
         if (!$variable->operationAvailable('delete')) {
             if ($variable->getProperty('inherited')) {
-                $output->writeln("The variable <error>$variableName</error> is inherited,"
+                $output->writeln(
+                  "The variable <error>$variableName</error> is inherited,"
                   . " so it cannot be deleted from this environment."
                   . "\nYou could override it with the <comment>variable:set</comment> command."
                 );
-            }
-            else {
+            } else {
                 $output->writeln("The variable <error>$variableName</error> cannot be deleted");
             }
+
             return 1;
         }
 
         $environmentId = $this->getSelectedEnvironment()['id'];
         $confirm = $this->getHelper('question')
-          ->confirm(
-            "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
-            $input, $output, false
-          );
+                        ->confirm(
+                          "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
+                          $input,
+                          $output,
+                          false
+                        );
 
         if (!$confirm) {
             return 1;
@@ -62,9 +68,12 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
         $variable->delete();
 
         $output->writeln("Deleted variable <info>$variableName</info>");
-        if (!$this->getSelectedEnvironment()->getLastActivity()) {
+        if (!$this->getSelectedEnvironment()
+                  ->getLastActivity()
+        ) {
             $this->rebuildWarning($output);
         }
+
         return 0;
     }
 

@@ -14,10 +14,11 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:relationships')
-            ->setDescription('List an environment\'s relationships')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:relationships')
+          ->setDescription('List an environment\'s relationships')
+          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
         // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
     }
 
@@ -27,8 +28,13 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
             return 1;
         }
 
-        $args = array('ssh', $this->getSelectedEnvironment()->getSshUrl(), 'echo $PLATFORM_RELATIONSHIPS');
-        $relationships = $this->getHelper('shell')->execute($args, null, true);
+        $args = array('ssh',
+          $this->getSelectedEnvironment()
+               ->getSshUrl(),
+          'echo $PLATFORM_RELATIONSHIPS'
+        );
+        $relationships = $this->getHelper('shell')
+                              ->execute($args, null, true);
 
         if (!$relationships) {
             throw new \Exception('No relationships found');
@@ -40,12 +46,13 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
                 $output->writeln("<comment>$key:$delta:</comment>");
                 foreach ((array) $object as $prop => $value) {
                     if (is_scalar($value)) {
-                        $propString = str_pad("$prop",10," ");
+                        $propString = str_pad("$prop", 10, " ");
                         $output->writeln("<info>  $propString: $value</info>");
                     }
                 }
             }
         }
+
         return 0;
     }
 

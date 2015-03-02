@@ -18,37 +18,37 @@ class ProjectGetCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('project:get')
-            ->setAliases(array('get'))
-            ->setDescription('Clone and build a project locally')
-            ->addArgument(
-                'id',
-                InputArgument::OPTIONAL,
-                'The project ID'
-            )
-            ->addArgument(
-                'directory-name',
-                InputArgument::OPTIONAL,
-                'The directory name. Defaults to the project ID'
-            )
-            ->addOption(
-                'environment',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                "The environment ID to clone. Defaults to 'master'"
-            )
-            ->addOption(
-                'no-build',
-                null,
-                InputOption::VALUE_NONE,
-                "Do not build the retrieved project"
-            )
-            ->addOption(
-                'include-inactive',
-                null,
-                InputOption::VALUE_NONE,
-                "List inactive environments too"
-            );
+          ->setName('project:get')
+          ->setAliases(array('get'))
+          ->setDescription('Clone and build a project locally')
+          ->addArgument(
+            'id',
+            InputArgument::OPTIONAL,
+            'The project ID'
+          )
+          ->addArgument(
+            'directory-name',
+            InputArgument::OPTIONAL,
+            'The directory name. Defaults to the project ID'
+          )
+          ->addOption(
+            'environment',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            "The environment ID to clone. Defaults to 'master'"
+          )
+          ->addOption(
+            'no-build',
+            null,
+            InputOption::VALUE_NONE,
+            "Do not build the retrieved project"
+          )
+          ->addOption(
+            'include-inactive',
+            null,
+            InputOption::VALUE_NONE,
+            "List inactive environments too"
+          );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -57,15 +57,16 @@ class ProjectGetCommand extends PlatformCommand
         if (empty($projectId)) {
             if ($input->isInteractive() && ($projects = $this->getProjects(true))) {
                 $projectId = $this->offerProjectChoice($projects, $input, $output);
-            }
-            else {
+            } else {
                 $output->writeln("<error>You must specify a project.</error>");
+
                 return 1;
             }
         }
         $project = $this->getProject($projectId);
         if (!$project) {
             $output->writeln("<error>Project not found: $projectId</error>");
+
             return 1;
         }
         $directoryName = $input->getArgument('directory-name');
@@ -74,11 +75,13 @@ class ProjectGetCommand extends PlatformCommand
         }
         if (is_dir($directoryName)) {
             $output->writeln("<error>The project directory '$directoryName' already exists.</error>");
+
             return 1;
         }
         if ($projectRoot = $this->getProjectRoot()) {
             if (strpos(realpath(dirname($directoryName)), $projectRoot) === 0) {
                 $output->writeln("<error>A project cannot be cloned inside another project.</error>");
+
                 return 1;
             }
         }
@@ -89,17 +92,15 @@ class ProjectGetCommand extends PlatformCommand
         if ($environmentOption) {
             if (!isset($environments[$environmentOption])) {
                 $output->writeln("<error>Environment not found: $environmentOption</error>");
+
                 return 1;
             }
             $environment = $environmentOption;
-        }
-        elseif (count($environments) === 1) {
+        } elseif (count($environments) === 1) {
             $environment = key($environments);
-        }
-        elseif ($environments && $input->isInteractive()) {
+        } elseif ($environments && $input->isInteractive()) {
             $environment = $this->offerEnvironmentChoice($environments, $input, $output);
-        }
-        else {
+        } else {
             $environment = 'master';
         }
 
@@ -108,7 +109,7 @@ class ProjectGetCommand extends PlatformCommand
         $projectRoot = realpath($directoryName);
         $local = new LocalProject();
         if (!$projectRoot) {
-           throw new \Exception('Failed to create project directory: ' . $directoryName);
+            throw new \Exception('Failed to create project directory: ' . $directoryName);
         }
 
         $local->createProjectFiles($projectRoot, $projectId);
@@ -130,9 +131,9 @@ class ProjectGetCommand extends PlatformCommand
             $fsHelper->rmdir($projectRoot);
             $output->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
+
             return 1;
-        }
-        elseif (empty($repoHead)) {
+        } elseif (empty($repoHead)) {
             // The repository doesn't have a HEAD, which means it is empty.
             // We need to create the folder, run git init, and attach the remote.
             mkdir($repositoryDir);
@@ -142,7 +143,10 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
             $gitHelper->execute(array('remote', 'add', '-m', 'master', 'origin', $gitUrl), $repositoryDir, true);
             $output->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
-            $output->writeln("<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>");
+            $output->writeln(
+              "<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>"
+            );
+
             return 0;
         }
 
@@ -153,6 +157,7 @@ class ProjectGetCommand extends PlatformCommand
             $fsHelper->rmdir($projectRoot);
             $output->writeln('<error>Failed to clone Git repository</error>');
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
+
             return 1;
         }
 
@@ -173,10 +178,10 @@ class ProjectGetCommand extends PlatformCommand
         try {
             $builder = new LocalBuild(array('environmentId' => $environment), $output);
             $builder->buildProject($projectRoot);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $output->writeln("<comment>The build failed with an error</comment>");
-            $formattedMessage = $this->getHelper('formatter')->formatBlock($e->getMessage(), 'comment');
+            $formattedMessage = $this->getHelper('formatter')
+                                     ->formatBlock($e->getMessage(), 'comment');
             $output->writeln($formattedMessage);
         }
 
@@ -184,8 +189,8 @@ class ProjectGetCommand extends PlatformCommand
     }
 
     /**
-     * @param Environment[] $environments
-     * @param InputInterface $input
+     * @param Environment[]   $environments
+     * @param InputInterface  $input
      * @param OutputInterface $output
      *
      * @return string
@@ -203,12 +208,14 @@ class ProjectGetCommand extends PlatformCommand
             }
         }
         $text = "Enter a number to choose which environment to check out:";
-        return $this->getHelper('question')->choose($environmentList, $text, $input, $output, $default);
+
+        return $this->getHelper('question')
+                    ->choose($environmentList, $text, $input, $output, $default);
     }
 
     /**
-     * @param array $projects
-     * @param InputInterface $input
+     * @param array           $projects
+     * @param InputInterface  $input
      * @param OutputInterface $output
      *
      * @return string
@@ -221,7 +228,9 @@ class ProjectGetCommand extends PlatformCommand
             $projectList[$project['id']] = $project['id'] . ' (' . $project['name'] . ')';
         }
         $text = "Enter a number to choose which project to clone:";
-        return $this->getHelper('question')->choose($projectList, $text, $input, $output);
+
+        return $this->getHelper('question')
+                    ->choose($projectList, $text, $input, $output);
     }
 
 }

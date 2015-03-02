@@ -28,26 +28,32 @@ class IntegrationDeleteCommand extends PlatformCommand
 
         $id = $input->getArgument('id');
 
-        $integration = $this->getSelectedProject()->getIntegration($id);
+        $integration = $this->getSelectedProject()
+                            ->getIntegration($id);
         if (!$integration) {
             $output->writeln("Integration not found: <error>$id</error>");
+
             return 1;
         }
 
         if (!$integration->operationAvailable('delete')) {
             $output->writeln("The integration <error>$id</error> cannot be deleted");
+
             return 1;
         }
 
         $type = $integration->getProperty('type');
         $confirmText = "Delete the integration <info>$id</info> (type: $type)?";
-        if (!$this->getHelper('question')->confirm($confirmText, $input, $output)) {
+        if (!$this->getHelper('question')
+                  ->confirm($confirmText, $input, $output)
+        ) {
             return 1;
         }
 
         $integration->delete();
 
         $output->writeln("Deleted integration <info>$id</info>");
+
         return 0;
     }
 

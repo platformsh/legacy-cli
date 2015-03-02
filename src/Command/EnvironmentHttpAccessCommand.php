@@ -13,12 +13,23 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
     {
         parent::configure();
         $this
-            ->setName('environment:http-access')
-            ->setAliases(array('httpaccess'))
-            ->setDescription('Update HTTP access settings for an environment')
-            ->addOption('access', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Access restriction in the format "permission:address"')
-            ->addOption('auth', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Authentication details in the format "username:password"');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:http-access')
+          ->setAliases(array('httpaccess'))
+          ->setDescription('Update HTTP access settings for an environment')
+          ->addOption(
+            'access',
+            null,
+            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+            'Access restriction in the format "permission:address"'
+          )
+          ->addOption(
+            'auth',
+            null,
+            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+            'Authentication details in the format "username:password"'
+          );
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     /**
@@ -61,12 +72,18 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
     {
         $parts = explode(':', $access, 2);
         if (count($parts) != 2) {
-            $message = sprintf('Access "<error>%s</error>" is not valid, please use the format: permission:address', $access);
+            $message = sprintf(
+              'Access "<error>%s</error>" is not valid, please use the format: permission:address',
+              $access
+            );
             throw new \InvalidArgumentException($message);
         }
 
         if (!in_array($parts[0], array('allow', 'deny'))) {
-            $message = sprintf("The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'", $parts[0]);
+            $message = sprintf(
+              "The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'",
+              $parts[0]
+            );
             throw new \InvalidArgumentException($message);
         }
 
@@ -78,8 +95,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
         // current value returned from the API.
         if ($address == 'any') {
             $address = '0.0.0.0/0';
-        }
-        elseif ($address && !strpos($address, '/')) {
+        } elseif ($address && !strpos($address, '/')) {
             $address .= '/32';
         }
 
@@ -163,12 +179,14 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
                 if (!$selectedEnvironment->getLastActivity()) {
                     $this->rebuildWarning($output);
                 }
+
                 return 0;
             }
         }
 
         $output->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
         $output->writeln($selectedEnvironment->getProperty('http_access'));
+
         return 0;
     }
 

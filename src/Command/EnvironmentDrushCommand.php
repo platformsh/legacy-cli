@@ -16,11 +16,12 @@ class EnvironmentDrushCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:drush')
-            ->setAliases(array('drush'))
-            ->setDescription('Run a drush command on the remote environment')
-            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:drush')
+          ->setAliases(array('drush'))
+          ->setDescription('Run a drush command on the remote environment')
+          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
         $this->ignoreValidationErrors();
     }
 
@@ -30,6 +31,7 @@ class EnvironmentDrushCommand extends PlatformCommand
         if ($projectRoot) {
             return Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
         }
+
         return true;
     }
 
@@ -59,15 +61,12 @@ class EnvironmentDrushCommand extends PlatformCommand
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $drushCommand .= " --debug";
             $sshOptions .= ' -vv';
-        }
-        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
             $drushCommand .= " --verbose";
             $sshOptions .= ' -v';
-        }
-        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $drushCommand .= " --verbose";
-        }
-        elseif ($output->getVerbosity() == OutputInterface::VERBOSITY_QUIET) {
+        } elseif ($output->getVerbosity() == OutputInterface::VERBOSITY_QUIET) {
             $drushCommand .= " --quiet";
             $sshOptions .= ' -q';
         }
@@ -76,7 +75,8 @@ class EnvironmentDrushCommand extends PlatformCommand
         $sshUrl = $selectedEnvironment->getLink('ssh');
 
         $appRoot = '/app/public';
-        $dimensions = $this->getApplication()->getTerminalDimensions();
+        $dimensions = $this->getApplication()
+                           ->getTerminalDimensions();
         $columns = $dimensions[0] ?: 80;
         $sshDrushCommand = "COLUMNS=$columns drush -r $appRoot";
         if ($environmentUrl = $selectedEnvironment->getLink('public-url')) {
@@ -92,6 +92,7 @@ class EnvironmentDrushCommand extends PlatformCommand
         }
 
         passthru($command, $return_var);
+
         return $return_var;
     }
 }

@@ -17,13 +17,16 @@ class CompletionCommand extends ParentCompletionCommand
      */
     protected $projects;
 
-    public function isEnabled() {
+    public function isEnabled()
+    {
         // Hide the command in the list.
         global $argv;
+
         return !isset($argv[1]) || $argv[1] != 'list';
     }
 
-    public function isLocal() {
+    public function isLocal()
+    {
         return true;
     }
 
@@ -102,8 +105,7 @@ class CompletionCommand extends ParentCompletionCommand
 
         try {
             return $this->handler->runCompletion();
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             // Suppress exceptions so that they are not displayed during
             // completion.
         }
@@ -120,9 +122,12 @@ class CompletionCommand extends ParentCompletionCommand
     {
         // Check that the user is logged in.
         $client = $this->platformCommand->getClient(false);
-        if (!$client->getConnector()->isLoggedIn()) {
+        if (!$client->getConnector()
+                    ->isLoggedIn()
+        ) {
             return array();
         }
+
         return $this->platformCommand->getProjects();
     }
 
@@ -144,10 +149,14 @@ class CompletionCommand extends ParentCompletionCommand
         }
         $environments = $this->platformCommand->getEnvironments($project, false, false);
         if ($currentEnvironment) {
-            $environments = array_filter($environments, function ($environment) use ($currentEnvironment) {
-                return $environment['id'] != $currentEnvironment['id'];
-            });
+            $environments = array_filter(
+              $environments,
+              function ($environment) use ($currentEnvironment) {
+                  return $environment['id'] != $currentEnvironment['id'];
+              }
+            );
         }
+
         return array_keys($environments);
     }
 
@@ -167,18 +176,18 @@ class CompletionCommand extends ParentCompletionCommand
         if (!$this->projects) {
             return array();
         }
-        $commandLine = $this->handler->getContext()->getCommandLine();
+        $commandLine = $this->handler->getContext()
+                                     ->getCommandLine();
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
         if (!$currentProjectId && ($currentProject = $this->platformCommand->getCurrentProject())) {
             $project = $currentProject;
-        }
-        elseif (isset($this->projects[$currentProjectId])) {
+        } elseif (isset($this->projects[$currentProjectId])) {
             $project = $this->projects[$currentProjectId];
-        }
-        else {
+        } else {
             return array();
         }
         $environments = $this->platformCommand->getEnvironments($project, false, false);
+
         return array_keys($environments);
     }
 
@@ -194,6 +203,7 @@ class CompletionCommand extends ParentCompletionCommand
         if (preg_match('/\W(\-\-project|get) ?=? ?[\'"]?([0-9a-z]+)[\'"]?/', $commandLine, $matches)) {
             return $matches[2];
         }
+
         return false;
     }
 

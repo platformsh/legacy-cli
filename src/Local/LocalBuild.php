@@ -288,8 +288,7 @@ class LocalBuild
 
             // Allow the toolstack to change the build dir.
             $buildDir = $toolstack->getBuildDir();
-        }
-        else {
+        } else {
             $buildDir = $appRoot;
             $this->warnAboutHooks($appConfig);
         }
@@ -369,7 +368,13 @@ class LocalBuild
             $blacklist = $this->getActiveBuilds($projectRoot);
         }
 
-        return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $maxAge, $keepMax, $blacklist, $quiet);
+        return $this->cleanDirectory(
+          $projectRoot . '/' . LocalProject::BUILD_DIR,
+          $maxAge,
+          $keepMax,
+          $blacklist,
+          $quiet
+        );
     }
 
     /**
@@ -416,7 +421,13 @@ class LocalBuild
      */
     public function cleanArchives($projectRoot, $maxAge = 604800, $keepMax = 10, $quiet = true)
     {
-        return $this->cleanDirectory($projectRoot . '/' . LocalProject::ARCHIVE_DIR, $maxAge, $keepMax, array(), $quiet);
+        return $this->cleanDirectory(
+          $projectRoot . '/' . LocalProject::ARCHIVE_DIR,
+          $maxAge,
+          $keepMax,
+          array(),
+          $quiet
+        );
     }
 
     /**
@@ -440,9 +451,12 @@ class LocalBuild
             return array(0, 0);
         }
         // Sort files by modified time (descending).
-        usort($files, function ($a, $b) {
-            return filemtime($a) < filemtime($b);
-        });
+        usort(
+          $files,
+          function ($a, $b) {
+              return filemtime($a) < filemtime($b);
+          }
+        );
         $now = time();
         $numDeleted = 0;
         $numKept = 0;

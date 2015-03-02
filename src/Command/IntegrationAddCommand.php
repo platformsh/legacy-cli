@@ -32,7 +32,8 @@ class IntegrationAddCommand extends IntegrationCommand
             return 1;
         }
 
-        $integration = $this->getSelectedProject()->addIntegration($this->values['type'], $this->values);
+        $integration = $this->getSelectedProject()
+                            ->addIntegration($this->values['type'], $this->values);
         $id = $integration['id'];
         $output->writeln("Integration <info>$id</info> created for <info>{$this->values['type']}</info>");
 

@@ -15,11 +15,12 @@ class EnvironmentActivateCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:activate')
-            ->setDescription('Activate an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
-            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:activate')
+          ->setDescription('Activate an environment')
+          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -30,8 +31,7 @@ class EnvironmentActivateCommand extends PlatformCommand
 
         if ($this->hasSelectedEnvironment()) {
             $toActivate = array($this->getSelectedEnvironment());
-        }
-        else {
+        } else {
             $environments = $this->getEnvironments();
             $environmentIds = $input->getArgument('environment');
             $toActivate = array_intersect_key($environments, array_flip($environmentIds));
@@ -68,7 +68,9 @@ class EnvironmentActivateCommand extends PlatformCommand
                 continue;
             }
             if (!$environment->operationAvailable('activate')) {
-                $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be activated.");
+                $output->writeln(
+                  "Operation not available: The environment <error>$environmentId</error> can't be activated."
+                );
                 continue;
             }
             $question = "Are you sure you want to activate the environment <info>$environmentId</info>?";
@@ -84,8 +86,7 @@ class EnvironmentActivateCommand extends PlatformCommand
                 $activities[] = $environment->activate();
                 $processed++;
                 $output->writeln("Activating environment <info>$environmentId</info>");
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
         }
@@ -95,6 +96,7 @@ class EnvironmentActivateCommand extends PlatformCommand
             }
             $this->getEnvironments(null, true);
         }
+
         return $processed >= $count;
     }
 

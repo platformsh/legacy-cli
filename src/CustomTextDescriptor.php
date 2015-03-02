@@ -8,10 +8,10 @@
 namespace Platformsh\Cli;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;
-use Symfony\Component\Console\Application as ConsoleApplication;
 
 class CustomTextDescriptor extends TextDescriptor
 {
@@ -37,7 +37,7 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText('<comment>Usage:</comment>', $options);
         $this->writeText("\n");
-        $this->writeText(' '.$command->getSynopsis(), $options);
+        $this->writeText(' ' . $command->getSynopsis(), $options);
         $this->writeText("\n");
 
         if ($definition = $command->getNativeDefinition()) {
@@ -49,7 +49,7 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText("\n");
             $this->writeText('<comment>Help:</comment>', $options);
             $this->writeText("\n");
-            $this->writeText(' '.str_replace("\n", "\n ", $help), $options);
+            $this->writeText(' ' . str_replace("\n", "\n ", $help), $options);
             $this->writeText("\n");
         }
     }
@@ -76,7 +76,10 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText("\n\n");
 
             if ($describedNamespace) {
-                $this->writeText(sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace), $options);
+                $this->writeText(
+                  sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace),
+                  $options
+                );
             } else {
                 $this->writeText('<comment>Available commands:</comment>', $options);
             }
@@ -85,13 +88,17 @@ class CustomTextDescriptor extends TextDescriptor
             foreach ($description->getNamespaces() as $namespace) {
                 if (!$describedNamespace && ApplicationDescription::GLOBAL_NAMESPACE !== $namespace['id']) {
                     $this->writeText("\n");
-                    $this->writeText('<comment>'.$namespace['id'].'</comment>', $options);
+                    $this->writeText('<comment>' . $namespace['id'] . '</comment>', $options);
                 }
 
                 foreach ($namespace['commands'] as $name) {
                     $command = $description->getCommand($name);
                     $aliases = $command->getAliases();
-                    if ($aliases && ApplicationDescription::GLOBAL_NAMESPACE === $namespace['id'] && in_array($name, $aliases)) {
+                    if ($aliases && ApplicationDescription::GLOBAL_NAMESPACE === $namespace['id'] && in_array(
+                        $name,
+                        $aliases
+                      )
+                    ) {
                         // If the command has aliases, do not list it in the
                         // 'global' namespace. The aliases will be shown inline
                         // with the full command name.
@@ -103,7 +110,8 @@ class CustomTextDescriptor extends TextDescriptor
                         $commandDescription = "<fg=cyan>$commandDescription</fg=cyan>";
                     }
                     $this->writeText("\n");
-                    $this->writeText(sprintf(
+                    $this->writeText(
+                      sprintf(
                         "  %-${width}s %s",
                         "<info>$name</info>" . $this->formatAliases($aliases),
                         $commandDescription
@@ -119,6 +127,7 @@ class CustomTextDescriptor extends TextDescriptor
 
     /**
      * @param int $default
+     *
      * @return int
      */
     protected function getTerminalWidth($default = 80)
@@ -128,6 +137,7 @@ class CustomTextDescriptor extends TextDescriptor
             $application = new ConsoleApplication();
             $dimensions = $application->getTerminalDimensions();
         }
+
         return $dimensions[0] ?: $default;
     }
 
@@ -144,6 +154,7 @@ class CustomTextDescriptor extends TextDescriptor
 
     /**
      * @param array $aliases
+     *
      * @return string
      */
     protected function formatAliases(array $aliases)

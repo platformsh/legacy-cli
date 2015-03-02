@@ -14,11 +14,12 @@ class EnvironmentRestoreCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:restore')
-            ->setDescription('Restore the most recent environment backup')
-            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one')
-            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:restore')
+          ->setDescription('Restore the most recent environment backup')
+          ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -41,16 +42,17 @@ class EnvironmentRestoreCommand extends PlatformCommand
             }
             if (empty($selectedActivity)) {
                 $output->writeln("Backup not found: <error>$backupName</error>");
+
                 return 1;
             }
-        }
-        else {
+        } else {
             // Find the most recent backup.
             $environmentId = $environment['id'];
             $output->writeln("Finding the most recent backup for the environment <info>$environmentId</info>");
             $backupActivities = $environment->getActivities(1, 'environment.backup');
             if (!$backupActivities) {
                 $output->writeln("No backups found");
+
                 return 1;
             }
             /** @var \Platformsh\Client\Model\Activity $selectedActivity */
@@ -60,10 +62,10 @@ class EnvironmentRestoreCommand extends PlatformCommand
         if (!$selectedActivity->operationAvailable('restore')) {
             if (!$selectedActivity->isComplete()) {
                 $output->writeln("The backup is not complete, so it cannot be restored");
-            }
-            else {
+            } else {
                 $output->writeln("The backup cannot be restored");
             }
+
             return 1;
         }
 
@@ -72,7 +74,12 @@ class EnvironmentRestoreCommand extends PlatformCommand
         $name = $selectedActivity['payload']['backup_name'];
         $environmentId = $environment['id'];
         $date = date('Y-m-d H:i', strtotime($selectedActivity['created_at']));
-        if (!$questionHelper->confirm("Are you sure you want to restore the backup <comment>$name</comment> from <comment>$date</comment>?", $input, $output)) {
+        if (!$questionHelper->confirm(
+          "Are you sure you want to restore the backup <comment>$name</comment> from <comment>$date</comment>?",
+          $input,
+          $output
+        )
+        ) {
             return 1;
         }
 

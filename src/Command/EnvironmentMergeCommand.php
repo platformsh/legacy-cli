@@ -14,12 +14,13 @@ class EnvironmentMergeCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:merge')
-            ->setAliases(array('merge'))
-            ->setDescription('Merge an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge')
-            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:merge')
+          ->setAliases(array('merge'))
+          ->setDescription('Merge an environment')
+          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -33,12 +34,19 @@ class EnvironmentMergeCommand extends PlatformCommand
 
         if (!$selectedEnvironment->operationAvailable('merge')) {
             $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be merged.");
+
             return 1;
         }
 
         $parentId = $selectedEnvironment['parent'];
 
-        if (!$this->getHelper('question')->confirm("Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?", $input, $output)) {
+        if (!$this->getHelper('question')
+                  ->confirm(
+                    "Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?",
+                    $input,
+                    $output
+                  )
+        ) {
             return 0;
         }
 
@@ -51,6 +59,7 @@ class EnvironmentMergeCommand extends PlatformCommand
 
         // Reload the stored environments.
         $this->getEnvironments(null, true);
+
         return 0;
     }
 }

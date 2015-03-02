@@ -12,20 +12,19 @@ class SshKeyListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('ssh-key:list')
-            ->setAliases(array('ssh-keys'))
-            ->setDescription('Get a list of SSH keys in your account');
-        ;
+          ->setName('ssh-key:list')
+          ->setAliases(array('ssh-keys'))
+          ->setDescription('Get a list of SSH keys in your account');;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $keys = $this->getClient()->getSshKeys();
+        $keys = $this->getClient()
+                     ->getSshKeys();
 
         if (empty($keys)) {
             $output->writeln("You do not yet have any SSH public keys in your Platform.sh account");
-        }
-        else {
+        } else {
             $output->writeln("Your SSH keys are:");
             $table = new Table($output);
             $headers = array('ID', 'Title', 'Fingerprint');

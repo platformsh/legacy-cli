@@ -12,8 +12,8 @@ class PlatformLoginCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('login')
-            ->setDescription('Log in to Platform.sh');
+          ->setName('login')
+          ->setDescription('Log in to Platform.sh');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -34,7 +34,8 @@ class PlatformLoginCommand extends PlatformCommand
         if (ini_get('safe_mode')) {
             throw new \Exception('PHP safe_mode must be disabled.');
         }
-        $this->getHelper('git')->ensureInstalled();
+        $this->getHelper('git')
+             ->ensureInstalled();
     }
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)
@@ -42,14 +43,17 @@ class PlatformLoginCommand extends PlatformCommand
         $helper = $this->getHelper('question');
 
         $question = new Question('Your email address: ');
-        $question->setValidator(function ($answer) {
-            if (empty($answer) || !filter_var($answer, FILTER_VALIDATE_EMAIL)) {
-              throw new \RunTimeException(
-                'Please provide a valid email address.'
-              );
-            }
-            return $answer;
-        });
+        $question->setValidator(
+          function ($answer) {
+              if (empty($answer) || !filter_var($answer, FILTER_VALIDATE_EMAIL)) {
+                  throw new \RunTimeException(
+                    'Please provide a valid email address.'
+                  );
+              }
+
+              return $answer;
+          }
+        );
         $question->setMaxAttempts(5);
         $email = $helper->ask($input, $output, $question);
 
@@ -63,6 +67,7 @@ class PlatformLoginCommand extends PlatformCommand
             } else {
                 // Start from the beginning.
                 $this->configureAccount($input, $output);
+
                 return;
             }
         }
@@ -82,12 +87,15 @@ class PlatformLoginCommand extends PlatformCommand
         }
 
         $question = new Question('Your password: ');
-        $question->setValidator(function ($answer) {
-            if (trim($answer) == '') {
-                throw new \RuntimeException('The password cannot be empty');
-            }
-            return $answer;
-        });
+        $question->setValidator(
+          function ($answer) {
+              if (trim($answer) == '') {
+                  throw new \RuntimeException('The password cannot be empty');
+              }
+
+              return $answer;
+          }
+        );
         $question->setHidden(true);
         $question->setMaxAttempts(5);
         $password = $helper->ask($input, $output, $question);

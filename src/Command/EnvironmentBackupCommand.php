@@ -13,11 +13,12 @@ class EnvironmentBackupCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:backup')
-            ->setDescription('Make a backup of an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to back up')
-            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the backup to complete');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:backup')
+          ->setDescription('Make a backup of an environment')
+          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to back up')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the backup to complete');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -29,7 +30,10 @@ class EnvironmentBackupCommand extends PlatformCommand
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment['id'];
         if (!$selectedEnvironment->operationAvailable('backup')) {
-            $output->writeln("Operation not available: the environment <error>$environmentId</error> cannot be backed up");
+            $output->writeln(
+              "Operation not available: the environment <error>$environmentId</error> cannot be backed up"
+            );
+
             return 1;
         }
 
@@ -47,6 +51,7 @@ class EnvironmentBackupCommand extends PlatformCommand
             $name = $activity['payload']['backup_name'];
             $output->writeln("Backup name: <info>$name</info>");
         }
+
         return 0;
     }
 }

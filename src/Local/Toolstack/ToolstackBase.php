@@ -122,10 +122,12 @@ abstract class ToolstackBase implements ToolstackInterface
                 }
                 // Delete existing files, emitting a warning.
                 if (file_exists($destination)) {
-                    $this->output->writeln(sprintf(
+                    $this->output->writeln(
+                      sprintf(
                         "Overriding existing path '%s' in destination",
                         str_replace($this->buildDir . '/', '', $destination)
-                      ));
+                      )
+                    );
                     $this->fsHelper->remove($destination);
                 }
                 $this->fsHelper->symlink($source, $destination);
@@ -150,6 +152,7 @@ abstract class ToolstackBase implements ToolstackInterface
         if (!is_dir($shared)) {
             mkdir($shared);
         }
+
         return $shared;
     }
 

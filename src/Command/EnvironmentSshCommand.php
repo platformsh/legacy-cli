@@ -6,8 +6,8 @@ use Platformsh\Cli\Helper\ArgvHelper;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSshCommand extends PlatformCommand
 {
@@ -17,12 +17,13 @@ class EnvironmentSshCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:ssh')
-            ->setAliases(array('ssh'))
-            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
-            ->addOption('pipe', NULL, InputOption::VALUE_NONE, "Output the SSH URL only.")
-            ->setDescription('SSH to the current environment');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:ssh')
+          ->setAliases(array('ssh'))
+          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
+          ->addOption('pipe', null, InputOption::VALUE_NONE, "Output the SSH URL only.")
+          ->setDescription('SSH to the current environment');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
         $this->ignoreValidationErrors();
     }
 
@@ -32,7 +33,8 @@ class EnvironmentSshCommand extends PlatformCommand
             return 1;
         }
 
-        $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
+        $sshUrl = $this->getSelectedEnvironment()
+                       ->getSshUrl();
 
         $command = $input->getArgument('cmd');
         if ($input instanceof ArgvInput) {
@@ -43,10 +45,12 @@ class EnvironmentSshCommand extends PlatformCommand
         if (!$command) {
             if ($input->getOption('pipe') || !$this->isTerminal($output)) {
                 $output->write($sshUrl);
+
                 return 0;
             }
             $command = "ssh " . escapeshellarg($sshUrl);
             passthru($command, $returnVar);
+
             return $returnVar;
         }
 
@@ -55,8 +59,7 @@ class EnvironmentSshCommand extends PlatformCommand
         // Pass through the verbosity options to SSH.
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
             $sshOptions .= 'vv';
-        }
-        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $sshOptions .= 'v';
         }
 
@@ -67,6 +70,7 @@ class EnvironmentSshCommand extends PlatformCommand
         }
 
         passthru($command, $returnVar);
+
         return $returnVar;
     }
 

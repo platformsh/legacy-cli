@@ -20,34 +20,35 @@ class EnvironmentBranchCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:branch')
-            ->setAliases(array('branch'))
-            ->setDescription('Branch an environment')
-            ->addArgument(
-                'name',
-                InputArgument::OPTIONAL,
-                'The name of the new environment. For example: "Sprint 2"'
-            )
-            ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
-            ->addOption(
-                'force',
-                null,
-                InputOption::VALUE_NONE,
-                "Create the new environment even if the branch cannot be checked out locally"
-            )
-            ->addOption(
-                'no-wait',
-                null,
-                InputOption::VALUE_NONE,
-                'Do not wait for the Platform.sh branch to be created'
-            )
-            ->addOption(
-                'build',
-                null,
-                InputOption::VALUE_NONE,
-                "Build the new environment locally"
-            );
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:branch')
+          ->setAliases(array('branch'))
+          ->setDescription('Branch an environment')
+          ->addArgument(
+            'name',
+            InputArgument::OPTIONAL,
+            'The name of the new environment. For example: "Sprint 2"'
+          )
+          ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
+          ->addOption(
+            'force',
+            null,
+            InputOption::VALUE_NONE,
+            "Create the new environment even if the branch cannot be checked out locally"
+          )
+          ->addOption(
+            'no-wait',
+            null,
+            InputOption::VALUE_NONE,
+            'Do not wait for the Platform.sh branch to be created'
+          )
+          ->addOption(
+            'build',
+            null,
+            InputOption::VALUE_NONE,
+            "Build the new environment locally"
+          );
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -62,14 +63,16 @@ class EnvironmentBranchCommand extends PlatformCommand
             if ($input->isInteractive()) {
                 // List environments.
                 $params = array(
-                    'command' => 'environments',
-                    '--project' => $this->getSelectedProject()['id'],
+                  'command' => 'environments',
+                  '--project' => $this->getSelectedProject()['id'],
                 );
+
                 return $this->getApplication()
-                    ->find('environments')
-                    ->run(new ArrayInput($params), $output);
+                            ->find('environments')
+                            ->run(new ArrayInput($params), $output);
             }
             $output->writeln("<error>You must specify the name of the new branch.</error>");
+
             return 1;
         }
 
@@ -78,24 +81,40 @@ class EnvironmentBranchCommand extends PlatformCommand
 
         if ($machineName == $environmentId) {
             $output->writeln("<comment>Already on $machineName</comment>");
+
             return 1;
         }
 
         if ($environment = $this->getEnvironment($machineName, $this->getSelectedProject())) {
-            $checkout = $this->getHelper('question')->confirm("The environment <comment>$machineName</comment> already exists. Check out?", $input, $output);
+            $checkout = $this->getHelper('question')
+                             ->confirm(
+                               "The environment <comment>$machineName</comment> already exists. Check out?",
+                               $input,
+                               $output
+                             );
             if ($checkout) {
-                $checkoutCommand = $this->getApplication()->find('environment:checkout');
-                $checkoutInput = new ArrayInput(array(
-                      'command' => 'environment:checkout',
-                      'id' => $environment['id'],
-                  ));
+                $checkoutCommand = $this->getApplication()
+                                        ->find('environment:checkout');
+                $checkoutInput = new ArrayInput(
+                  array(
+                    'command' => 'environment:checkout',
+                    'id' => $environment['id'],
+                  )
+                );
+
                 return $checkoutCommand->run($checkoutInput, $output);
             }
+
             return 1;
         }
 
-        if (!$this->getSelectedEnvironment()->operationAvailable('branch')) {
-            $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be branched.");
+        if (!$this->getSelectedEnvironment()
+                  ->operationAvailable('branch')
+        ) {
+            $output->writeln(
+              "Operation not available: The environment <error>$environmentId</error> can't be branched."
+            );
+
             return 1;
         }
 
@@ -113,8 +132,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                 if (!$force) {
                     return 1;
                 }
-            }
-            elseif (!$existsLocally) {
+            } elseif (!$existsLocally) {
                 // Create a new branch, using the current or specified environment as the parent.
                 $parent = $this->getSelectedEnvironment()['id'];
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
@@ -125,20 +143,23 @@ class EnvironmentBranchCommand extends PlatformCommand
                     }
                 }
             }
-        }
-        elseif ($force) {
-            $output->writeln("<comment>Because this command was run from outside your local project root, the new Platform.sh branch could not be checked out in your local Git repository."
-                . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>");
+        } elseif ($force) {
+            $output->writeln(
+              "<comment>Because this command was run from outside your local project root, the new Platform.sh branch could not be checked out in your local Git repository."
+              . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
+            );
             $local_error = true;
-        }
-        else {
+        } else {
             $output->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
+
             return 1;
         }
 
         $selectedEnvironment = $this->getSelectedEnvironment();
 
-        $output->writeln("Creating a new environment <info>$branchName</info>, branched from <info>{$selectedEnvironment['title']}</info>");
+        $output->writeln(
+          "Creating a new environment <info>$branchName</info>, branched from <info>{$selectedEnvironment['title']}</info>"
+        );
 
         $activity = $selectedEnvironment->branch($branchName, $machineName);
 
@@ -154,13 +175,14 @@ class EnvironmentBranchCommand extends PlatformCommand
             try {
                 $buildCommand = $application->find('build');
                 $buildSettings = array(
-                    'environmentId' => $machineName,
-                    'verbosity' => $output->getVerbosity(),
+                  'environmentId' => $machineName,
+                  'verbosity' => $output->getVerbosity(),
                 );
                 $builder = new LocalBuild($buildSettings, $output);
                 $builder->buildProject($projectRoot);
             } catch (\Exception $e) {
                 $output->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
+
                 return 1;
             }
         }

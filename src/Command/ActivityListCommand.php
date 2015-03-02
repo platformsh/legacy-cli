@@ -4,8 +4,8 @@ namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 
 class ActivityListCommand extends PlatformCommand
@@ -16,13 +16,14 @@ class ActivityListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('activity:list')
-            ->setAliases(array('activities'))
-            ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
-            ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of results displayed', 5)
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
-            ->setDescription('Get the most recent activities for an environment');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('activity:list')
+          ->setAliases(array('activities'))
+          ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
+          ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of results displayed', 5)
+          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
+          ->setDescription('Get the most recent activities for an environment');
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -37,6 +38,7 @@ class ActivityListCommand extends PlatformCommand
         $activities = $environment->getActivities($limit, $input->getOption('type'));
         if (!$activities) {
             $output->writeln('No activities found');
+
             return 1;
         }
 
@@ -60,6 +62,7 @@ class ActivityListCommand extends PlatformCommand
             foreach ($rows as $row) {
                 fputcsv($stream, $row, "\t");
             }
+
             return 0;
         }
 

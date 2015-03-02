@@ -31,9 +31,11 @@ class IntegrationUpdateCommand extends IntegrationCommand
         }
 
         $id = $input->getArgument('id');
-        $integration = $this->getSelectedProject()->getIntegration($id);
+        $integration = $this->getSelectedProject()
+                            ->getIntegration($id);
         if (!$integration) {
             $output->writeln("Integration not found: <error>$id</error>");
+
             return 1;
         }
         $this->values = $integration->getProperties();

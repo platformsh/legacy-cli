@@ -15,10 +15,14 @@ class SshKeyAddCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('ssh-key:add')
-            ->setDescription('Add a new SSH key')
-            ->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH key. Leave blank to generate a new key')
-            ->addOption('name', null, InputOption::VALUE_OPTIONAL, 'A name to identify the key');
+          ->setName('ssh-key:add')
+          ->setDescription('Add a new SSH key')
+          ->addArgument(
+            'path',
+            InputArgument::OPTIONAL,
+            'The path to an existing SSH key. Leave blank to generate a new key'
+          )
+          ->addOption('name', null, InputOption::VALUE_OPTIONAL, 'A name to identify the key');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -32,20 +36,27 @@ class SshKeyAddCommand extends PlatformCommand
             $defaultPath = "$default.pub";
 
             // Look for an existing local key.
-            if (file_exists($defaultPath) && $questionHelper->confirm("Use existing local key <info>" . basename($defaultPath). "</info>?", $input, $output)) {
+            if (file_exists($defaultPath) && $questionHelper->confirm(
+                "Use existing local key <info>" . basename($defaultPath) . "</info>?",
+                $input,
+                $output
+              )
+            ) {
                 $path = $defaultPath;
-            }
-            // Offer to generate a key.
-            elseif ($shellHelper->commandExists('ssh-keygen') && $shellHelper->commandExists('ssh-add') && $questionHelper->confirm("Generate a new key?", $input, $output)) {
+            } // Offer to generate a key.
+            elseif ($shellHelper->commandExists('ssh-keygen') && $shellHelper->commandExists(
+                'ssh-add'
+              ) && $questionHelper->confirm("Generate a new key?", $input, $output)
+            ) {
                 $newKey = $this->getNewKeyFilename($default);
                 $args = array('ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', '');
                 $shellHelper->execute($args, null, true);
                 $path = "$newKey.pub";
                 $output->writeln("Generated a new key: $path");
                 passthru('ssh-add ' . escapeshellarg($newKey));
-            }
-            else {
+            } else {
                 $output->writeln("<error>You must specify the path to a public SSH key</error>");
+
                 return 1;
             }
 
@@ -53,6 +64,7 @@ class SshKeyAddCommand extends PlatformCommand
 
         if (!file_exists($path)) {
             $output->writeln("File not found: <error>$path<error>");
+
             return 1;
         }
 
@@ -60,6 +72,7 @@ class SshKeyAddCommand extends PlatformCommand
         $process->run();
         if ($process->getExitCode() == 1) {
             $output->writeln("The file does not contain a valid public key: <error>$path</error>");
+
             return 1;
         }
 
@@ -70,9 +83,13 @@ class SshKeyAddCommand extends PlatformCommand
             $name = $questionHelper->ask($input, $output, new Question('Enter a name for the key: '));
         }
 
-        $this->getClient()->addSshKey($key, $name);
+        $this->getClient()
+             ->addSshKey($key, $name);
 
-        $output->writeln('The SSH key <info>' . basename($path) . '</info> has been successfully added to your Platform.sh account');
+        $output->writeln(
+          'The SSH key <info>' . basename($path) . '</info> has been successfully added to your Platform.sh account'
+        );
+
         return 0;
     }
 
@@ -83,7 +100,9 @@ class SshKeyAddCommand extends PlatformCommand
      */
     protected function getDefaultKeyFilename()
     {
-        $home = $this->getHelper('fs')->getHomeDirectory();
+        $home = $this->getHelper('fs')
+                     ->getHomeDirectory();
+
         return "$home/.ssh/platform_sh.key";
     }
 
@@ -93,7 +112,7 @@ class SshKeyAddCommand extends PlatformCommand
      * If the file already exists, this will recurse to find a new filename.
      *
      * @param string $base
-     * @param int $number
+     * @param int    $number
      *
      * @return string
      */
@@ -107,6 +126,7 @@ class SshKeyAddCommand extends PlatformCommand
         if (file_exists($filename)) {
             return $this->getNewKeyFilename($base, ++$number);
         }
+
         return $filename;
     }
 

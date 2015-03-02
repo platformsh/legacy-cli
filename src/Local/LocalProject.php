@@ -45,7 +45,8 @@ class LocalProject
      *
      * @return string The absolute path to the project.
      */
-    public function initialize($dir) {
+    public function initialize($dir)
+    {
         $realPath = realpath($dir);
         if (!$realPath) {
             throw new \RuntimeException("Directory not readable: $dir");
@@ -96,13 +97,14 @@ class LocalProject
         if (!preg_match('/^([a-z][a-z0-9]{12})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $originUrl, $matches)) {
             throw new \RuntimeException("The Git remote 'origin' is not a Platform.sh URL");
         }
+
         return $matches[1];
     }
 
     /**
      * Get a backup name for a directory.
      *
-     * @param $dir
+     * @param     $dir
      * @param int $inc
      *
      * @return string
@@ -114,6 +116,7 @@ class LocalProject
         if (file_exists($backupDir)) {
             return $this->getBackupDir($dir, ++$inc);
         }
+
         return $backupDir;
     }
 
@@ -166,28 +169,31 @@ class LocalProject
      * @return array|null
      *   The current project's configuration.
      */
-    public static function getCurrentProjectConfig() {
+    public static function getCurrentProjectConfig()
+    {
         $projectConfig = null;
         $projectRoot = self::getProjectRoot();
         if ($projectRoot) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . self::PROJECT_CONFIG));
         }
+
         return $projectConfig;
     }
 
     /**
      * Add a configuration value to a project.
      *
-     * @param string $key The configuration key
-     * @param mixed $value The configuration value
+     * @param string $key   The configuration key
+     * @param mixed  $value The configuration value
      *
      * @throws \Exception On failure
      *
      * @return array
      *   The updated project configuration.
      */
-    public static function writeCurrentProjectConfig($key, $value) {
+    public static function writeCurrentProjectConfig($key, $value)
+    {
         $projectConfig = self::getCurrentProjectConfig();
         if (!$projectConfig) {
             throw new \Exception('Current project configuration not found');
@@ -203,6 +209,7 @@ class LocalProject
         $dumper = new Dumper();
         $projectConfig[$key] = $value;
         file_put_contents($file, $dumper->dump($projectConfig));
+
         return $projectConfig;
     }
 
