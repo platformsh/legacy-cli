@@ -2,6 +2,8 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Helper\GitHelper;
+use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use CommerceGuys\Platform\Cli\Local\LocalBuild;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
@@ -118,8 +120,7 @@ class ProjectGetCommand extends PlatformCommand
         $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
         $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
 
-        $gitHelper = $this->getHelper('git');
-        $gitHelper->setOutput($output);
+        $gitHelper = new GitHelper(new ShellHelper($output));
 
         // First check if the repo actually exists.
         $repoHead = $gitHelper->execute(array('ls-remote', $gitUrl, 'HEAD'), false);

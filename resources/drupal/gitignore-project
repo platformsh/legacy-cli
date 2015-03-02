@@ -1,8 +1,0 @@
-# Ignore OS X metadata.
-.DS_Store
-
-# Ignore PhpStorm project files.
-.idea
-
-# Don't ignore Platform.sh configuration files.
-!.platform*

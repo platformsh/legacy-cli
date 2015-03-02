@@ -20,4 +20,9 @@ class Symfony extends Composer
         return false;
     }
 
+    public function install()
+    {
+        $this->copyGitIgnore('symfony/gitignore-standard');
+    }
+
 }

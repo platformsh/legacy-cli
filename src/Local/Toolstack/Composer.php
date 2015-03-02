@@ -20,7 +20,10 @@ class Composer extends ToolstackBase
 
         $args = array('composer', 'install', '--no-progress', '--no-interaction');
         $this->shellHelper->execute($args, $this->buildDir, true, false);
+    }
 
+    public function install()
+    {
         $this->copyGitIgnore('gitignore-composer');
     }
 

@@ -3,13 +3,14 @@
 namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\ProcessBuilder;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class ShellHelper extends Helper implements ShellHelperInterface {
 
-    /** @var OutputInterface|null */
+    /** @var OutputInterface */
     protected $output;
 
     public function getName()
@@ -19,10 +20,10 @@ class ShellHelper extends Helper implements ShellHelperInterface {
 
     public function __construct(OutputInterface $output = null)
     {
-        $this->output = $output;
+        $this->output = $output ?: new NullOutput();
     }
 
-    public function setOutput(OutputInterface $output = null)
+    public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
     }
@@ -37,9 +38,8 @@ class ShellHelper extends Helper implements ShellHelperInterface {
      */
     public function log($type, $buffer)
     {
-        if ($this->output) {
-            $this->output->write($buffer);
-        }
+        $indent = '  ';
+        $this->output->writeln($indent . str_replace("\n", "\n$indent", trim($buffer)));
     }
 
     /**
@@ -59,6 +59,11 @@ class ShellHelper extends Helper implements ShellHelperInterface {
         if ($dir) {
             $process->setWorkingDirectory($dir);
         }
+
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            $this->output->writeln("Running command: <info>" . $process->getCommandLine() . "</info>");
+        }
+
         try {
             $process->mustRun($quiet ? null : array($this, 'log'));
         } catch (ProcessFailedException $e) {

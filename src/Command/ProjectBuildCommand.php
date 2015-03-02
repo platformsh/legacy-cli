@@ -48,7 +48,7 @@ class ProjectBuildCommand extends PlatformCommand
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'Drush: set the number of concurrent projects that will be processed at the same time.',
-                3
+                8
             )->addOption(
               'no-cache',
               null,

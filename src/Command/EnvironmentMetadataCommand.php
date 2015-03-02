@@ -20,7 +20,30 @@ class EnvironmentMetadataCommand extends EnvironmentCommand
             ->setName('environment:metadata')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->setDescription('Read or set metadata for an environment');
+            ->setDescription('Read or set metadata for an environment')
+            ->setHelp(<<<EOF
+Use this command to read or write an environment's metadata.
+
+<comment>Examples:</comment>
+Read all environment metadata:
+  <info>platform %command.name%</info>
+
+Show the environment status:
+  <info>platform %command.name% status</info>
+
+Show the date the environment was created:
+  <info>platform %command.name% created_at</info>
+
+Enable email sending:
+  <info>platform %command.name% enable_smtp true</info>
+
+Change the environment title:
+  <info>platform %command.name% title "New feature"</info>
+
+Change the environment's parent branch:
+  <info>platform %command.name% parent sprint-2</info>
+EOF
+            );
         $this->addProjectOption()->addEnvironmentOption();
     }
 

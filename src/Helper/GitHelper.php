@@ -3,7 +3,6 @@
 namespace CommerceGuys\Platform\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\OutputInterface;
 
 class GitHelper extends Helper
 {
@@ -14,9 +13,6 @@ class GitHelper extends Helper
     /** @var ShellHelperInterface */
     protected $shellHelper;
 
-    /** @var OutputInterface */
-    protected $output;
-
     /**
      * @inheritdoc
      */
@@ -25,12 +21,9 @@ class GitHelper extends Helper
         return 'git';
     }
 
-    public function setOutput(OutputInterface $output)
+    public function __construct(ShellHelperInterface $shellHelper = null)
     {
-        $this->output = $output;
-        if ($this->shellHelper) {
-            $this->shellHelper->setOutput($output);
-        }
+        $this->shellHelper = $shellHelper ?: new ShellHelper();
     }
 
     /**
@@ -47,17 +40,6 @@ class GitHelper extends Helper
             throw new \Exception('Git must be installed');
         }
         $checked = true;
-    }
-
-    /**
-     * @return ShellHelperInterface
-     */
-    protected function getShellHelper()
-    {
-        if (!$this->shellHelper) {
-            $this->shellHelper = new ShellHelper($this->output);
-        }
-        return $this->shellHelper;
     }
 
     /**
@@ -128,14 +110,13 @@ class GitHelper extends Helper
      */
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
     {
-        $helper = $this->getShellHelper();
         // If enabled, set the working directory to the repository.
         if ($dir !== false) {
             $dir = $dir ?: $this->repositoryDir;
         }
         // Run the command.
         array_unshift($args, 'git');
-        return $helper->execute($args, $dir, $mustRun, $quiet);
+        return $this->shellHelper->execute($args, $dir, $mustRun, $quiet);
     }
 
     /**

@@ -57,8 +57,8 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function __construct($fsHelper = null, ShellHelperInterface $shellHelper = null, $gitHelper = null)
     {
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper();
         $this->shellHelper = $shellHelper ?: new ShellHelper();
+        $this->fsHelper = $fsHelper ?: new FilesystemHelper($shellHelper);
         $this->gitHelper = $gitHelper ?: new GitHelper();
 
         $this->specialDestinations = array(
@@ -163,20 +163,23 @@ abstract class ToolstackBase implements ToolstackInterface
     }
 
     /**
-     * Create a default .gitignore file for the repository.
-     *
-     * This is only practical if the app is the only one in the repository.
+     * Create a default .gitignore file for the app.
      *
      * @param string $source The path to a default .gitignore file, relative to
      *                       the 'resources' directory.
      */
     protected function copyGitIgnore($source)
     {
+        $source = CLI_ROOT . '/resources/' . $source;
+        if (!file_exists($source)) {
+            return;
+        }
         $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        $gitIgnore = "$repositoryDir/.gitignore";
-        if ($this->appRoot == $repositoryDir && !file_exists($gitIgnore)) {
+        $repositoryGitIgnore = "$repositoryDir/.gitignore";
+        $appGitIgnore = $this->appRoot . '/.gitignore';
+        if (!file_exists($appGitIgnore) && !file_exists($repositoryGitIgnore)) {
             $this->output->writeln("Creating a .gitignore file");
-            copy(CLI_ROOT . '/resources/' . $source, $gitIgnore);
+            copy($source, $appGitIgnore);
         }
     }
 

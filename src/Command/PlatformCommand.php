@@ -227,6 +227,8 @@ abstract class PlatformCommand extends Command
     /**
      * Get the current project if the user is in a project directory.
      *
+     * @throws \RuntimeException
+     *
      * @return array|null The current project
      */
     public function getCurrentProject()
@@ -237,7 +239,12 @@ abstract class PlatformCommand extends Command
           $project = $this->getProject($config['id']);
           // There is a chance that the project isn't available.
           if (!$project) {
-              throw new \Exception("Configured project ID not found: " . $config['id']);
+              $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
+              throw new \RuntimeException(
+                "Project ID not found: " . $config['id']
+                . "\nEither you do not have access to the project on Platform.sh, or it no longer exists."
+                . "\nThe project ID was determined from the file: " . $filename
+              );
           }
           $project += $config;
         }
