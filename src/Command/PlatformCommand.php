@@ -30,7 +30,11 @@ abstract class PlatformCommand extends Command
     /** @var array|null */
     private static $cacheAsLoaded;
 
+    /** @var OutputInterface|null */
+    protected $output;
+
     protected $envArgName = 'environment';
+    protected $sessionId = 'default';
 
     protected $projectsTtl;
     protected $environmentsTtl;
@@ -80,8 +84,7 @@ abstract class PlatformCommand extends Command
             $connector = new Connector($connectorOptions);
             $session = $connector->getSession();
 
-            $sessionId = 'cli-' . (getenv('PLATFORM_CLI_SESSION_ID') ?: 'default');
-            $session->setId($sessionId);
+            $session->setId('cli-' . $this->sessionId);
             $session->setStorage(new File());
 
             self::$client = new PlatformClient($connector);
@@ -91,6 +94,17 @@ abstract class PlatformCommand extends Command
             }
         }
         return self::$client;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        $this->output = $output;
+        if ($input->hasOption('session-id') && $input->getOption('session-id')) {
+            $this->sessionId = $input->getOption('session-id');
+        }
     }
 
     /**
@@ -162,7 +176,8 @@ abstract class PlatformCommand extends Command
      */
     protected function getCacheDir()
     {
-        return $this->getHelper('fs')->getHomeDirectory() . '/.platformsh/cache';
+        $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', $this->sessionId);
+        return $this->getHelper('fs')->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
     }
 
     /**
@@ -183,13 +198,13 @@ abstract class PlatformCommand extends Command
      * Log in the user.
      */
     protected function login() {
-        $application = $this->getApplication();
-        if (!$application instanceof Application) {
-            throw new \RuntimeException('Incorrect Application instance');
+        if (!$this->output) {
+            throw new \RuntimeException('Login is required but no output is defined');
         }
+        $application = $this->getApplication();
         $command = $application->find('login');
         $input = new ArrayInput(array('command' => 'login'));
-        $exitCode = $command->run($input, $application->getOutput());
+        $exitCode = $command->run($input, $this->output);
         if ($exitCode) {
             throw new \Exception('Login failed');
         }

@@ -15,12 +15,9 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Shell;
 
 class Application extends ParentApplication {
-
-    protected $output;
 
     /**
      * {@inheritdoc}
@@ -50,6 +47,7 @@ class Application extends ParentApplication {
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
             new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts'),
             new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
+            new InputOption('--session-id', null, InputOption::VALUE_OPTIONAL, 'Specify the session ID'),
             new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell'),
         ));
     }
@@ -169,19 +167,7 @@ class Application extends ParentApplication {
             return 0;
         }
 
-        $this->output = $output;
         return parent::doRun($input, $output);
-    }
-
-    /**
-     * @return OutputInterface
-     */
-    public function getOutput() {
-        if (isset($this->output)) {
-            return $this->output;
-        }
-        $stream = fopen('php://stdout', 'w');
-        return new StreamOutput($stream);
     }
 
     /**
