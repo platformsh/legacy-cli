@@ -41,7 +41,6 @@ abstract class ActivityUtil {
         $bar->setFormat('verbose');
         while ($complete < $count) {
             sleep(1);
-            $percent = 0;
             foreach ($activities as $activity) {
                 if (!$activity->isComplete()) {
                     $activity->refresh();

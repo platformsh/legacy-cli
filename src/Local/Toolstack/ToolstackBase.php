@@ -70,12 +70,18 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->ignoredFiles = array('.*');
     }
 
+    /**
+     * @inheritdoc
+     */
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
         $this->shellHelper->setOutput($output);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function prepare($buildDir, $appRoot, $projectRoot, array $settings)
     {
         $this->appRoot = $appRoot;
@@ -147,16 +153,25 @@ abstract class ToolstackBase implements ToolstackInterface
         return $shared;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getBuildDir()
     {
         return $this->buildDir;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function install()
     {
         // Override to define install steps.
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getKey()
     {
         return false;
