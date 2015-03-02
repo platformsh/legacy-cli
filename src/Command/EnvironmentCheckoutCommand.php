@@ -78,6 +78,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
         }
 
         // Check out the branch.
+        $output->writeln("Checking out <info>$branch</info>");
         return $gitHelper->checkOut($branch) ? 0 : 1;
     }
 

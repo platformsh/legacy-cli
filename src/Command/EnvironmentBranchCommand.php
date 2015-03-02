@@ -82,7 +82,7 @@ class EnvironmentBranchCommand extends PlatformCommand
         }
 
         if ($environment = $this->getEnvironment($machineName, $this->getSelectedProject())) {
-            $checkout = $this->getHelper('question')->confirm("<comment>The environment $machineName already exists.</comment> Check out?", $input, $output);
+            $checkout = $this->getHelper('question')->confirm("The environment <comment>$machineName</comment> already exists. Check out?", $input, $output);
             if ($checkout) {
                 $checkoutCommand = $this->getApplication()->find('environment:checkout');
                 $checkoutInput = new ArrayInput(array(

@@ -22,12 +22,13 @@ class WebCommand extends UrlCommandBase
     {
         if ($this->isLoggedIn()) {
             // If the user is logged in, select the appropriate project and
-            // environment, suppressing any errors.
+            // environment.
             $this->validateInput($input, new NullOutput());
+            $project = $this->getSelectedProject();
         }
 
         $url = 'https://marketplace.commerceguys.com/platform/login';
-        if ($project = $this->getCurrentProject()) {
+        if (!empty($project)) {
             $url = $project['uri'];
             if ($this->hasSelectedEnvironment()) {
                 $environment = $this->getSelectedEnvironment();
