@@ -160,10 +160,9 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
 
                 $output->writeln($selectedEnvironment->getProperty('http_access'));
 
-                // @todo
-//                if (!$environment->hasActivity()) {
-//                    $this->rebuildWarning($output);
-//                }
+                if (!$selectedEnvironment->getLastActivity()) {
+                    $this->rebuildWarning($output);
+                }
                 return 0;
             }
         }

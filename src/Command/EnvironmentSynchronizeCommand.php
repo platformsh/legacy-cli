@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSynchronizeCommand extends PlatformCommand
@@ -20,7 +21,8 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
                 InputArgument::IS_ARRAY,
                 'What to synchronize: code, data or both',
                 null
-            );
+            )
+            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -58,7 +60,10 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
             return 1;
         }
 
-        $selectedEnvironment->synchronize($syncData, $syncCode);
+        $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitAndLog($activity, $output);
+        }
 
         $output->writeln("The environment <info>$environmentId</info> has been synchronized.");
         return 0;

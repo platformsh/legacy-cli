@@ -18,7 +18,8 @@ class EnvironmentDeactivateCommand extends PlatformCommand
           ->setName('environment:deactivate')
           ->setDescription('Deactivate an environment')
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to deactivate')
-          ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments');
+          ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -120,10 +121,11 @@ class EnvironmentDeactivateCommand extends PlatformCommand
             }
             $process[$environmentId] = $environment;
         }
+        $activities = array();
         /** @var Environment $environment */
         foreach ($process as $environmentId =>  $environment) {
             try {
-                $environment->deactivate();
+                $activities[] = $environment->deactivate();
                 $processed++;
                 $output->writeln("Deactivated environment <info>$environmentId</info>");
             }
@@ -132,6 +134,9 @@ class EnvironmentDeactivateCommand extends PlatformCommand
             }
         }
         if ($processed) {
+            if (!$input->getOption('no-wait')) {
+               ActivityUtil::waitMultiple($activities, $output);
+            }
             $this->getEnvironments(null, true);
         }
         return $processed >= $count;

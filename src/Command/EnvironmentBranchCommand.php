@@ -142,13 +142,7 @@ class EnvironmentBranchCommand extends PlatformCommand
         $activity = $selectedEnvironment->branch($branchName, $machineName);
 
         if (!$input->getOption('no-wait')) {
-            $output->writeln("Waiting...");
-            $activity->wait(
-              null,
-              function ($log) use ($output) {
-                  $output->write(preg_replace('/^/m', '    ', $log));
-              }
-            );
+            ActivityUtil::waitAndLog($activity, $output);
             $output->writeln("The environment <info>$branchName</info> has been branched.");
         }
 

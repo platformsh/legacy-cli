@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentActivateCommand extends PlatformCommand
@@ -15,7 +16,8 @@ class EnvironmentActivateCommand extends PlatformCommand
         $this
             ->setName('environment:activate')
             ->setDescription('Activate an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
+            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -74,18 +76,22 @@ class EnvironmentActivateCommand extends PlatformCommand
             }
             $process[$environmentId] = $environment;
         }
+        $activities = array();
         /** @var Environment $environment */
         foreach ($process as $environmentId => $environment) {
             try {
-                $environment->activate();
+                $activities[] = $environment->activate();
                 $processed++;
-                $output->writeln("Activated environment <info>$environmentId</info>");
+                $output->writeln("Activating environment <info>$environmentId</info>");
             }
             catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
         }
         if ($processed) {
+            if (!$input->getOption('no-wait')) {
+                ActivityUtil::waitMultiple($activities, $output);
+            }
             $this->getEnvironments(null, true);
         }
         return $processed >= $count;

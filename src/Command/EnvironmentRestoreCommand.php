@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentRestoreCommand extends PlatformCommand
@@ -14,7 +15,8 @@ class EnvironmentRestoreCommand extends PlatformCommand
         $this
             ->setName('environment:restore')
             ->setDescription('Restore the most recent environment backup')
-            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one');
+            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one')
+            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -72,7 +74,11 @@ class EnvironmentRestoreCommand extends PlatformCommand
             return 1;
         }
 
-        $selectedActivity->restore();
+        $activity = $selectedActivity->restore();
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitAndLog($activity, $output);
+        }
+
         $output->writeln("Backup successfully restored");
         return 0;
     }

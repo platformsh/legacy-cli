@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMergeCommand extends PlatformCommand
@@ -15,7 +16,8 @@ class EnvironmentMergeCommand extends PlatformCommand
             ->setName('environment:merge')
             ->setAliases(array('merge'))
             ->setDescription('Merge an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge')
+            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -39,7 +41,10 @@ class EnvironmentMergeCommand extends PlatformCommand
             return 0;
         }
 
-        $selectedEnvironment->merge();
+        $activity = $selectedEnvironment->merge();
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitAndLog($activity, $output);
+        }
 
         // Reload the stored environments.
         $this->getEnvironments(null, true);
