@@ -131,7 +131,7 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
             return 1;
         }
-        elseif (empty($repoHead)) {
+        elseif (is_bool($repoHead) || !strlen($repoHead)) {
             // The repository doesn't have a HEAD, which means it is empty.
             // We need to create the folder, run git init, and attach the remote.
             mkdir($repositoryDir);
