@@ -7,6 +7,7 @@ use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -117,9 +118,14 @@ class ProjectGetCommand extends PlatformCommand
         $fsHelper = $this->getHelper('fs');
 
         // Prepare to talk to the Platform.sh repository.
-        $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));
-        $cluster = $projectUriParts[0];
-        $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
+        if (isset($project['repository'])) {
+            $gitUrl = $project['repository']['url'];
+        }
+        else {
+            $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));
+            $cluster = $projectUriParts[0];
+            $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
+        }
         $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($output));
@@ -133,7 +139,7 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln('Please check your SSH credentials or contact Platform.sh support');
 
             return 1;
-        } elseif (empty($repoHead)) {
+        } elseif (is_bool($repoHead)) {
             // The repository doesn't have a HEAD, which means it is empty.
             // We need to create the folder, run git init, and attach the remote.
             mkdir($repositoryDir);
@@ -214,7 +220,7 @@ class ProjectGetCommand extends PlatformCommand
     }
 
     /**
-     * @param array           $projects
+     * @param Project[]       $projects
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
@@ -224,8 +230,8 @@ class ProjectGetCommand extends PlatformCommand
     protected function offerProjectChoice(array $projects, InputInterface $input, OutputInterface $output)
     {
         $projectList = array();
-        foreach ($projects as $project) {
-            $projectList[$project['id']] = $project['id'] . ' (' . $project['name'] . ')';
+        foreach ($projects as $id => $project) {
+            $projectList[$id] = $id . ' (' . $project['name'] . ')';
         }
         $text = "Enter a number to choose which project to clone:";
 
