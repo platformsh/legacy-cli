@@ -72,7 +72,7 @@ class EnvironmentDrushCommand extends PlatformCommand
         }
 
         $selectedEnvironment = $this->getSelectedEnvironment();
-        $sshUrl = $selectedEnvironment->getLink('ssh');
+        $sshUrl = $selectedEnvironment->getSshUrl();
 
         $appRoot = '/app/public';
         $dimensions = $this->getApplication()
