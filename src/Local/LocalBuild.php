@@ -101,7 +101,7 @@ class LocalBuild
                ->depth('> 0')
                ->depth('< 5');
         if ($finder->count() == 0) {
-            return array($repositoryRoot);
+            return array('default' => $repositoryRoot);
         }
         $applications = array();
         /** @var \Symfony\Component\Finder\SplFileInfo $file */
