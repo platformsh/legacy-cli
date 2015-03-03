@@ -101,7 +101,7 @@ class LocalBuild
                ->depth('> 0')
                ->depth('< 5');
         if ($finder->count() == 0) {
-            return array($repositoryRoot);
+            return array('default' => $repositoryRoot);
         }
         $applications = array();
         /** @var \Symfony\Component\Finder\SplFileInfo $file */
@@ -180,7 +180,7 @@ class LocalBuild
 
         // Get a hash representing all the files in the application, excluding
         // the .platform folder.
-        $tree = $this->gitHelper->execute(array('ls-tree', 'HEAD'), $appRoot, true);
+        $tree = $this->gitHelper->execute(array('ls-tree', 'HEAD'), $appRoot);
         if ($tree === false) {
             return false;
         }
