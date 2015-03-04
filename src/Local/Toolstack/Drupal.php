@@ -82,15 +82,27 @@ class Drupal extends ToolstackBase
 
             $this->copyGitIgnore('drupal/gitignore-vanilla');
 
-            // Warn if the settings.local.php file is not ignored.
-            $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-            $relative = $this->fsHelper->makePathRelative($this->appRoot . '/sites/default/settings.local.php', $repositoryDir);
-            if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
-                $this->output->writeln("<comment>You must exclude this file using .gitignore:</comment> $relative");
-            }
+            $this->checkIgnored('sites/default/settings.local.php');
+            $this->checkIgnored('sites/default/files');
         }
 
         $this->symLinkSpecialDestinations();
+    }
+
+    /**
+     * Check that an application file is ignored in .gitignore.
+     *
+     * @param string $filename
+     * @param string $suggestion
+     */
+    protected function checkIgnored($filename, $suggestion = null)
+    {
+        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
+        if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
+            $suggestion = $suggestion ?: $relative;
+            $this->output->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
+        }
     }
 
     /**
