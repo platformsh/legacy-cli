@@ -69,35 +69,28 @@ class Drupal extends ToolstackBase
         }
         elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
-            $buildMode = 'profile';
             $this->buildInProfileMode($profileName);
         }
         elseif (file_exists($this->appRoot . '/project.make')) {
-            $buildMode = 'project';
             $this->buildInProjectMode($this->appRoot . '/project.make');
         }
         else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
-            $buildMode = 'vanilla';
             $this->buildDir = $this->appRoot;
             $this->specialDestinations = array();
             $this->preventArchive = true;
-        }
 
-        $this->symLinkSpecialDestinations();
+            $this->copyGitIgnore('drupal/gitignore-vanilla');
 
-        // Copy a default .gitignore file: there is a separate one for each
-        // build mode.
-        $this->copyGitIgnore('drupal/gitignore-' . $buildMode);
-
-        // Warn if the settings.local.php file is not ignored.
-        if ($buildMode == 'vanilla') {
+            // Warn if the settings.local.php file is not ignored.
             $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
             $relative = $this->fsHelper->makePathRelative($this->appRoot . '/sites/default/settings.local.php', $repositoryDir);
             if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
                 $this->output->writeln("<comment>You must exclude this file using .gitignore:</comment> $relative");
             }
         }
+
+        $this->symLinkSpecialDestinations();
     }
 
     /**
@@ -155,7 +148,15 @@ class Drupal extends ToolstackBase
         $this->ignoredFiles[] = 'project.make';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
-        $this->fsHelper->symlinkAll($this->appRoot, $this->buildDir . '/sites/default', true, array_merge($this->ignoredFiles, array_keys($this->specialDestinations)));
+        // Symlink, non-recursively, all files from the app into the
+        // 'sites/default' directory.
+        $this->fsHelper->symlinkAll(
+          $this->appRoot,
+          $this->buildDir . '/sites/default',
+          true,
+          false,
+          array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
+        );
     }
 
     /**
@@ -194,14 +195,18 @@ class Drupal extends ToolstackBase
         );
         $drushHelper->execute($args, null, true, false);
 
-        // Drush will only create the $buildDir if the build succeeds.
         $profileDir = $this->buildDir . '/profiles/' . $profileName;
+        mkdir($profileDir, 0755, true);
+
+        $this->output->writeln("Building the profile: <info>$profileName</info>");
 
         $args = array_merge(
           array('make', '--no-core', '--contrib-destination=.', $projectMake),
           $this->drushFlags
         );
-        $drushHelper->execute($args, $this->appRoot, true, false);
+        $drushHelper->execute($args, $profileDir, true, false);
+
+        $this->output->writeln("Symlinking existing app files to the profile");
 
         $this->ignoredFiles[] = $projectMake;
         $this->ignoredFiles[] = $projectCoreMake;
@@ -211,7 +216,16 @@ class Drupal extends ToolstackBase
 
         $this->processSettingsPhp();
 
-        $this->fsHelper->symlinkAll($this->appRoot, $profileDir, true, array_merge($this->ignoredFiles, array_keys($this->specialDestinations)));
+        // Symlink recursively; skip existing files (built by Drush make) for
+        // example 'modules/contrib', but include files from the app such as
+        // 'modules/custom'.
+        $this->fsHelper->symlinkAll(
+          $this->appRoot,
+          $profileDir,
+          true,
+          true,
+          array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
+        );
     }
 
     /**
