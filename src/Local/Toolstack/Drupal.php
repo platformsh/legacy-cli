@@ -220,8 +220,8 @@ class Drupal extends ToolstackBase
 
         $this->output->writeln("Symlinking existing app files to the profile");
 
-        $this->ignoredFiles[] = $projectMake;
-        $this->ignoredFiles[] = $projectCoreMake;
+        $this->ignoredFiles[] = basename($projectMake);
+        $this->ignoredFiles[] = basename($projectCoreMake);
 
         $this->specialDestinations['settings*.php'] = '{webroot}/sites/default';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
