@@ -170,11 +170,12 @@ class FilesystemHelper extends Helper
      * @param string   $source
      * @param string   $destination
      * @param bool     $skipExisting
+     * @param bool     $recursive
      * @param string[] $blacklist
      *
      * @throws \Exception
      */
-    public function symlinkAll($source, $destination, $skipExisting = true, $blacklist = array())
+    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = array())
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -201,7 +202,11 @@ class FilesystemHelper extends Helper
                 $sourceFile = $source . '/' . $file;
                 $linkFile = $destination . '/' . $file;
 
-                if (file_exists($linkFile)) {
+                if ($recursive && is_dir($linkFile) && is_dir($sourceFile)) {
+                    $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive);
+                    continue;
+                }
+                elseif (file_exists($linkFile)) {
                     if (is_link($linkFile)) {
                         unlink($linkFile);
                     } elseif ($skipExisting) {

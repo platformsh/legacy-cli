@@ -122,7 +122,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
         // Test with a blacklist.
         $testDestination = $this->tempDir();
         touch($testSource . '/test-file2');
-        $this->filesystemHelper->symlinkAll($testSource, $testDestination, true, array('test-file'));
+        $this->filesystemHelper->symlinkAll($testSource, $testDestination, true, false, array('test-file'));
         $this->assertFileNotExists($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
