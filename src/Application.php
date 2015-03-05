@@ -129,6 +129,10 @@ class Application extends ParentApplication
         $commands[] = new Command\SshKeyAddCommand();
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();
+        $commands[] = new Command\UserAddCommand();
+        $commands[] = new Command\UserDeleteCommand();
+        $commands[] = new Command\UserListCommand();
+        $commands[] = new Command\UserUpdateCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
 

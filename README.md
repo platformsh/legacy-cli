@@ -119,6 +119,11 @@ ssh-key
   ssh-key:add                             Add a new SSH key
   ssh-key:delete                          Delete an SSH key
   ssh-key:list (ssh-keys)                 Get a list of SSH keys in your account
+user
+  user:add                                Add a user to the project
+  user:delete                             Delete a user
+  user:list (users)                       List project users
+  user:update                             Update a user
 variable
   variable:delete                         Delete a variable from an environment
   variable:get (variables, vget)          Get a variable for an environment
