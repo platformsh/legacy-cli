@@ -99,6 +99,7 @@ environment
   environment:merge (merge)               Merge an environment
   environment:metadata                    Read or set metadata for an environment
   environment:relationships               List an environment's relationships
+  environment:restore                     Restore the most recent environment backup
   environment:ssh (ssh)                   SSH to the current environment
   environment:synchronize (sync)          Synchronize an environment
   environment:url (url)                   Get the public URL of an environment
