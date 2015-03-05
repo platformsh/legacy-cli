@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,7 +18,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
           ->setName('environment:delete')
           ->setDescription('Delete an environment')
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
-          ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments');
+          ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete the Git branches of all inactive environments');
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -69,27 +70,15 @@ class EnvironmentDeleteCommand extends PlatformCommand
     protected function deleteMultiple(array $environments, InputInterface $input, OutputInterface $output)
     {
         $count = count($environments);
-        $processed = 0;
+
         // Confirm which environments the user wishes to be deleted.
-        $process = array();
+        $delete = array();
+        $deactivate = array();
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
             $environmentId = $environment['id'];
             if ($environmentId == 'master') {
                 $output->writeln("The <error>master</error> environment cannot be deactivated or deleted.");
-                continue;
-            }
-            if ($environment->isActive()) {
-                $output->writeln(
-                  "The environment <error>$environmentId</error> is active and therefore can't be deleted."
-                );
-                $output->writeln("Please deactivate the environment first.");
-                continue;
-            }
-            if (!$environment->operationAvailable('delete')) {
-                $output->writeln(
-                  "Operation not available: The environment <error>$environmentId</error> can't be deleted."
-                );
                 continue;
             }
             // Check that the environment does not have children.
@@ -103,27 +92,60 @@ class EnvironmentDeleteCommand extends PlatformCommand
                     continue 2;
                 }
             }
-            $question = "Are you sure you want to delete the environment <info>$environmentId</info>?";
-            if (!$questionHelper->confirm($question, $input, $output)) {
-                continue;
+            if ($environment->isActive()) {
+                $output->writeln("The environment <error>$environmentId</error> is currently active");
+                $output->writeln("Deleting it will delete all associated data");
+                $question = "Are you sure you want to delete the environment <info>$environmentId</info>?";
+                if ($questionHelper->confirm($question, $input, $output)) {
+                    $deactivate[$environmentId] = $environment;
+                    $question = "Delete the remote Git branch too?";
+                    if ($questionHelper->confirm($question, $input, $output)) {
+                        $delete[$environmentId] = $environment;
+                    }
+                }
             }
-            $process[$environmentId] = $environment;
+            else {
+                $question = "Are you sure you want to delete the remote Git branch <info>$environmentId</info>?";
+                if ($questionHelper->confirm($question, $input, $output)) {
+                    $delete[$environmentId] = $environment;
+                }
+            }
         }
+
+        $deactivateActivities = array();
+        $deactivated = 0;
         /** @var Environment $environment */
-        foreach ($process as $environmentId => $environment) {
+        foreach ($deactivate as $environmentId => $environment) {
             try {
-                $environment->delete();
-                $processed++;
-                $output->writeln("Deleted environment <info>$environmentId</info>");
+                $output->writeln("Deleting environment <info>$environmentId</info>");
+                $deactivateActivities[] = $environment->deactivate();
+                $deactivated++;
             } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
         }
-        if ($processed) {
+
+        ActivityUtil::waitMultiple($deactivateActivities, $output);
+
+        $deleted = 0;
+        foreach ($delete as $environmentId => $environment) {
+            try {
+                if ($environment->isActive()) {
+                    $environment->refresh();
+                }
+                $environment->delete();
+                $output->writeln("Deleted remote Git branch <info>$environmentId</info>");
+                $deleted++;
+            } catch (\Exception $e) {
+                $output->writeln($e->getMessage());
+            }
+        }
+
+        if ($deleted || $deactivated) {
             $this->getEnvironments(null, true);
         }
 
-        return $processed >= $count;
+        return $deleted >= count($delete) && $deactivated >= count($deactivate);
     }
 
 }
