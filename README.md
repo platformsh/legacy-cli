@@ -104,7 +104,6 @@ environment
   environment:backup                        Make a backup of an environment
   environment:branch (branch)               Branch an environment
   environment:checkout (checkout)           Check out an environment
-  environment:deactivate                    Deactivate an environment
   environment:delete                        Delete an environment
   environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
