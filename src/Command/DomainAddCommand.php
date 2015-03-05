@@ -55,7 +55,7 @@ class DomainAddCommand extends PlatformCommand
           );
     }
 
-    protected function validateInput(InputInterface $input, OutputInterface $output)
+    protected function validateInput(InputInterface $input, OutputInterface $output, $envNotRequired = null)
     {
         if (!parent::validateInput($input, $output)) {
             return false;

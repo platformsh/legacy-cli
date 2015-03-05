@@ -623,10 +623,11 @@ abstract class PlatformCommand extends Command
     /**
      * @param InputInterface  $input
      * @param OutputInterface $output
+     * @param bool $envNotRequired
      *
      * @return bool
      */
-    protected function validateInput(InputInterface $input, OutputInterface $output)
+    protected function validateInput(InputInterface $input, OutputInterface $output, $envNotRequired = null)
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         try {
@@ -649,7 +650,7 @@ abstract class PlatformCommand extends Command
                 if (!is_array($argument)) {
                     $this->environment = $this->selectEnvironment($argument);
                 }
-            } elseif ($input->hasOption($envOptionName)) {
+            } elseif ($input->hasOption($envOptionName) && empty($envNotRequired)) {
                 $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
             }
         } catch (\RuntimeException $e) {
