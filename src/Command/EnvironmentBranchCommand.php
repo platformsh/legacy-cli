@@ -126,13 +126,16 @@ class EnvironmentBranchCommand extends PlatformCommand
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
             // If the Git branch already exists locally, check it out.
             $existsLocally = $gitHelper->branchExists($machineName);
-            if ($existsLocally && !$gitHelper->checkOut($machineName)) {
-                $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
-                $local_error = true;
-                if (!$force) {
-                    return 1;
+            if ($existsLocally) {
+                $output->writeln("Checking out <info>$machineName</info>");
+                if (!$gitHelper->checkOut($machineName)) {
+                    $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
+                    $local_error = true;
+                    if (!$force) {
+                        return 1;
+                    }
                 }
-            } elseif (!$existsLocally) {
+            } else {
                 // Create a new branch, using the current or specified environment as the parent.
                 $parent = $this->getSelectedEnvironment()['id'];
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
