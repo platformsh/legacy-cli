@@ -686,8 +686,13 @@ abstract class PlatformCommand extends Command
                 if (!is_array($argument)) {
                     $this->environment = $this->selectEnvironment($argument);
                 }
-            } elseif ($input->hasOption($envOptionName) && empty($envNotRequired)) {
-                $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
+            } elseif ($input->hasOption($envOptionName)) {
+                if ($envNotRequired && !$input->getOption($envOptionName)) {
+                    $this->environment = $this->getCurrentEnvironment($this->project);
+                }
+                else {
+                    $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
+                }
             }
         } catch (\RuntimeException $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
