@@ -75,6 +75,7 @@ abstract class PlatformCommand extends Command
             if (getenv('PLATFORM_CLI_ACCOUNTS_SITE')) {
                 $connectorOptions['accounts'] = getenv('PLATFORM_CLI_ACCOUNTS_SITE');
             }
+            $connectorOptions['verify'] = !getenv('PLATFORM_CLI_SKIP_SSL');
             $connectorOptions['debug'] = (bool) getenv('PLATFORM_CLI_DEBUG');
             $connectorOptions['client_id'] = 'platform-cli';
             $connectorOptions['user_agent'] = $this->getUserAgent();
