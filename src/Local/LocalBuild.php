@@ -280,7 +280,14 @@ class LocalBuild
 
                 $toolstack->build();
 
-                $this->warnAboutHooks($appConfig);
+                // We can only run post-build hooks for apps that actually have
+                // a separate build directory.
+                if (file_exists($buildDir)) {
+                    $this->runPostBuildHooks($appConfig, $buildDir);
+                }
+                else {
+                    $this->warnAboutHooks($appConfig, 'build');
+                }
 
                 if ($archive && empty($toolstack->preventArchive)) {
                     $this->output->writeln("Saving build archive...");
@@ -296,7 +303,7 @@ class LocalBuild
             $webRoot = $toolstack->getWebRoot();
         } else {
             $webRoot = $appRoot . $documentRoot;
-            $this->warnAboutHooks($appConfig);
+            $this->warnAboutHooks($appConfig, 'build');
         }
 
         // Symlink the build into www or www/appIdentifier.
@@ -321,33 +328,50 @@ class LocalBuild
     }
 
     /**
-     * Warn the user that the CLI will not run build/deploy hooks.
+     * Run post-build hooks.
      *
-     * @param array $appConfig
+     * @param array  $appConfig
+     * @param string $buildDir
      *
      * @return bool
      */
-    protected function warnAboutHooks(array $appConfig)
+    protected function runPostBuildHooks(array $appConfig, $buildDir)
     {
-        if (empty($appConfig['hooks']['build'])) {
-            return false;
+        if (!isset($appConfig['hooks']['build'])) {
+            return;
+        }
+        $this->output->writeln("Running post-build hooks");
+        $command = implode(';', (array) $appConfig['hooks']['build']);
+        chdir($buildDir);
+        exec($command, $output, $returnVar);
+        foreach ($output as $line) {
+            $this->output->writeln('  ' . $line);
+        }
+        if ($returnVar > 0) {
+            $this->output->writeln('<error>The build hook failed</error>');
+        }
+    }
+
+    /**
+     * Warn the user that the CLI will not run hooks.
+     *
+     * @param array  $appConfig
+     * @param string $hookType
+     */
+    protected function warnAboutHooks(array $appConfig, $hookType)
+    {
+        if (empty($appConfig['hooks'][$hookType])) {
+            return;
         }
         $indent = '        ';
         $this->output->writeln(
-          "<comment>You have defined the following hook(s). The CLI cannot run them locally.</comment>"
+          "<comment>You have defined the following $hookType hook(s). The CLI will not run them locally.</comment>"
         );
-        foreach (array('build', 'deploy') as $hookType) {
-            if (empty($appConfig['hooks'][$hookType])) {
-                continue;
-            }
-            $this->output->writeln("    $hookType: |");
-            $hooks = (array) $appConfig['hooks'][$hookType];
-            $asString = implode("\n", array_map('trim', $hooks));
-            $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
-            $this->output->writeln($withIndent);
-        }
-
-        return true;
+        $this->output->writeln("    $hookType: |");
+        $hooks = (array) $appConfig['hooks'][$hookType];
+        $asString = implode("\n", array_map('trim', $hooks));
+        $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
+        $this->output->writeln($withIndent);
     }
 
     /**
