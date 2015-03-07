@@ -54,7 +54,15 @@ class EnvironmentMergeCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitAndLog($activity, $output);
+            $success = ActivityUtil::waitAndLog(
+              $activity,
+              $output,
+              'Merge complete',
+              'Merge failed'
+            );
+            if (!$success) {
+                return 1;
+            }
         }
 
         // Reload the stored environments.

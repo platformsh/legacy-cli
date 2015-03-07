@@ -166,9 +166,15 @@ class EnvironmentBranchCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->branch($branchName, $machineName);
 
+        $success = true;
         if (!$input->getOption('no-wait')) {
             ActivityUtil::waitAndLog($activity, $output);
-            $output->writeln("The environment <info>$branchName</info> has been branched.");
+            $success = ActivityUtil::waitAndLog(
+              $activity,
+              $output,
+              "The environment <info>$branchName</info> has been branched.",
+              '<error>Branching failed</error>'
+            );
         }
 
         $build = $input->getOption('build');
@@ -193,6 +199,6 @@ class EnvironmentBranchCommand extends PlatformCommand
         // Refresh the environments cache.
         $this->getEnvironments(null, true);
 
-        return 0;
+        return $success ? 0 : 1;
     }
 }

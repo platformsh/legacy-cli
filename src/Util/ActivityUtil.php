@@ -14,8 +14,13 @@ abstract class ActivityUtil
      *
      * @param Activity        $activity
      * @param OutputInterface $output
+     * @param string          $success
+     * @param string          $failure
+     *
+     * @return bool
+     *   True if the activity succeeded, false otherwise.
      */
-    public static function waitAndLog(Activity $activity, OutputInterface $output)
+    public static function waitAndLog(Activity $activity, OutputInterface $output, $success = null, $failure = null)
     {
         $output->writeln("Waiting...");
         $activity->wait(
@@ -24,6 +29,19 @@ abstract class ActivityUtil
               $output->write(preg_replace('/^/m', '    ', $log));
           }
         );
+        switch ($activity->getState()) {
+            case Activity::SUCCESS:
+                if ($success !== null) {
+                    $output->writeln($success);
+                }
+                return true;
+
+            case Activity::FAILURE:
+                if ($failure !== null) {
+                    $output->writeln($failure);
+                }
+        }
+        return false;
     }
 
     /**

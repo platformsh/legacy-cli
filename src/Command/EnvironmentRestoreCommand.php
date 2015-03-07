@@ -87,7 +87,15 @@ class EnvironmentRestoreCommand extends PlatformCommand
 
         $activity = $selectedActivity->restore();
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitAndLog($activity, $output);
+            $success = ActivityUtil::waitAndLog(
+              $activity,
+              $output,
+              "The backup was successfully restored",
+              "Restoring failed"
+            );
+            if (!$success) {
+                return 1;
+            }
         }
 
         return 0;

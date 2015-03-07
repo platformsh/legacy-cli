@@ -394,12 +394,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "4117281f88aff4163ae422abe89937156f95e717"
+                "reference": "d0688ef7acb4c4008992302e7c306e98b57cbb21"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/4117281f88aff4163ae422abe89937156f95e717",
-                "reference": "4117281f88aff4163ae422abe89937156f95e717",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/d0688ef7acb4c4008992302e7c306e98b57cbb21",
+                "reference": "d0688ef7acb4c4008992302e7c306e98b57cbb21",
                 "shasum": ""
             },
             "require": {
@@ -427,7 +427,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2015-03-02 12:50:35"
+            "time": "2015-03-07 09:45:45"
         },
         {
             "name": "react/promise",

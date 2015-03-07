@@ -85,7 +85,15 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitAndLog($activity, $output);
+            $success = ActivityUtil::waitAndLog(
+              $activity,
+              $output,
+              "Synchronization complete",
+              "Synchronization failed"
+            );
+            if (!$success) {
+                return 1;
+            }
         }
 
         return 0;
