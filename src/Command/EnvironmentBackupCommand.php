@@ -32,10 +32,9 @@ class EnvironmentBackupCommand extends EnvironmentCommand
             return 1;
         }
 
+        $output->writeln("Backing up environment <info>$environmentId</info>");
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $data = $client->backupEnvironment();
-
-        $output->writeln("A backup of environment <info>$environmentId</info> has been created.");
 
         if (!empty($data['_embedded']['activities'][0]['payload']['backup_name'])) {
             $name = $data['_embedded']['activities'][0]['payload']['backup_name'];

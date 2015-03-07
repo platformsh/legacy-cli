@@ -76,9 +76,9 @@ class EnvironmentActivateCommand extends EnvironmentCommand
         foreach ($process as $environmentId =>  $environment) {
             $client = $this->getPlatformClient($environment['endpoint']);
             try {
+                $output->writeln("Activating environment <info>$environmentId</info>");
                 $client->activateEnvironment();
                 $processed++;
-                $output->writeln("Activated environment <info>$environmentId</info>");
             }
             catch (\Exception $e) {
                 $output->writeln($e->getMessage());

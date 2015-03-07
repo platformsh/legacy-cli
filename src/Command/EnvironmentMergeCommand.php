@@ -38,12 +38,13 @@ class EnvironmentMergeCommand extends EnvironmentCommand
             return 0;
         }
 
+        $output->writeln("Merging environment <info>$environmentId</info> with <info>$parentId</info>");
+
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->mergeEnvironment();
         // Reload the stored environments.
         $this->getEnvironments($this->project, true);
 
-        $output->writeln("The environment <info>$environmentId</info> has been merged with <info>$parentId</info>.");
         return 0;
     }
 }

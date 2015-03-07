@@ -128,12 +128,13 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             return 1;
         }
 
+        $parentTitle = $this->environment['title'];
+        $output->writeln("Creating a new environment <info>$branchName</info>, branched from <info>$parentTitle</info>");
+
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
         // Reload the stored environments.
         $this->getEnvironments($this->project, true);
-
-        $output->writeln("The environment <info>$branchName</info> has been branched.");
 
         $build = $input->getOption('build');
         if (empty($local_error) && $build && $projectRoot) {
