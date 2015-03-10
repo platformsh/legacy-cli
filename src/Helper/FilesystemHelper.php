@@ -171,7 +171,7 @@ class FilesystemHelper extends Helper {
      * @param bool     $recursive
      * @param string[] $blacklist
      *
-     * @throws \Exception
+     * @throws \Exception When a conflict is discovered.
      */
     public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = array())
     {
@@ -212,7 +212,7 @@ class FilesystemHelper extends Helper {
                         continue;
                     }
                     else {
-                        throw new \Exception('File exists: ' . $linkFile);
+                        throw new \Exception("Cannot link file '$file' from '$source' to '$destination': file already exists in destination");
                     }
                 }
 

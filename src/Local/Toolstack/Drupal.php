@@ -218,8 +218,6 @@ class Drupal extends ToolstackBase
         );
         $drushHelper->execute($args, $profileDir, true, false);
 
-        $this->output->writeln("Symlinking existing app files to the profile");
-
         $this->ignoredFiles[] = basename($projectMake);
         $this->ignoredFiles[] = basename($projectCoreMake);
 
@@ -227,6 +225,10 @@ class Drupal extends ToolstackBase
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
         $this->processSettingsPhp();
+
+        $this->output->writeln("Symlinking existing app files to the profile");
+
+        $this->profileModeBcWarning($profileDir);
 
         // Symlink recursively; skip existing files (built by Drush make) for
         // example 'modules/contrib', but include files from the app such as
@@ -238,6 +240,76 @@ class Drupal extends ToolstackBase
           true,
           array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
         );
+    }
+
+    /**
+     * Backwards compatibility warning for profile builds.
+     *
+     * Profile builds changed between v1.9.0 and v1.9.1. This provides a warning
+     * to show that users should not have files that are both in their
+     * repository and in Drush Make.
+     *
+     * @param string $profileDir
+     *
+     * @todo remove this in later versions
+     */
+    protected function profileModeBcWarning($profileDir)
+    {
+        $conflicts = $this->findDrushMakeConflicts($profileDir, '', 10, true);
+        if (count($conflicts)) {
+            $this->output->writeln("\n<comment>Profile builds have changed.</comment>");
+            $this->output->writeln('Files are no longer built inside the repository directory.');
+            $this->output->writeln('You should ensure that your repository directory does not contain files that are also built by Drush Make.');
+            $this->output->writeln('Examples:');
+            $this->output->writeln('  ' . implode("\n  ", $conflicts) . "\n");
+        }
+    }
+
+    /**
+     * Find files in the Drush Make output that also exist in the app.
+     *
+     * @param string $dir
+     * @param string $subDir
+     * @param int    $limit
+     * @param bool   $checkIgnored
+     *
+     * @todo remove this
+     *
+     * @return array
+     */
+    protected function findDrushMakeConflicts($dir, $subDir = '', $limit = 0, $checkIgnored = false)
+    {
+        $conflicts = array();
+        $found = 0;
+        $subDirAbsolute = rtrim($dir . '/' . $subDir, '/');
+        $subDirRelative = $subDir ? $subDir . '/' : '';
+        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $handle = opendir($subDirAbsolute);
+        while (false !== ($filename = readdir($handle))) {
+            if ($filename[0] === '.') {
+                continue;
+            }
+            if ($limit && $found >= $limit) {
+                break;
+            }
+            if (is_dir($subDirAbsolute . '/' . $filename)) {
+                $conflicts += $this->findDrushMakeConflicts($dir, $subDirRelative . $filename, $limit >= 0 ? $limit - $found : 0, $checkIgnored);
+                continue;
+            }
+            $appFile = $this->appRoot . '/' . $subDirRelative . $filename;
+            if (file_exists($appFile)) {
+                if ($checkIgnored) {
+                    $relative = $this->fsHelper->makePathRelative($appFile, $repositoryDir);
+                    if (!$this->gitHelper->execute(array('check-ignore', $relative))) {
+                        continue;
+                    }
+                }
+                $conflicts[] = $this->appRoot . '/' . $subDirRelative . $filename;
+                $found++;
+            }
+        }
+        closedir($handle);
+        return $conflicts;
     }
 
     /**
