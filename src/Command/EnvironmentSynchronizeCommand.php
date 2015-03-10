@@ -57,6 +57,8 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             return 1;
         }
 
+        $output->writeln("Synchronizing environment <info>$environmentId</info>");
+
         $params = array(
             'synchronize_code' => $syncCode,
             'synchronize_data' => $syncData,
@@ -64,6 +66,6 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $client->synchronizeEnvironment($params);
 
-        $output->writeln("The environment <info>$environmentId</info> has been synchronized.");
+        return 0;
     }
 }

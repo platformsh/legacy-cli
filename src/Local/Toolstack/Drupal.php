@@ -69,34 +69,39 @@ class Drupal extends ToolstackBase
         }
         elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
-            $buildMode = 'profile';
             $this->buildInProfileMode($profileName);
         }
         elseif (file_exists($this->appRoot . '/project.make')) {
-            $buildMode = 'project';
             $this->buildInProjectMode($this->appRoot . '/project.make');
         }
         else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
-            $buildMode = 'vanilla';
             $this->buildDir = $this->appRoot;
             $this->specialDestinations = array();
             $this->preventArchive = true;
+
+            $this->copyGitIgnore('drupal/gitignore-vanilla');
+
+            $this->checkIgnored('sites/default/settings.local.php');
+            $this->checkIgnored('sites/default/files');
         }
 
         $this->symLinkSpecialDestinations();
+    }
 
-        // Copy a default .gitignore file: there is a separate one for each
-        // build mode.
-        $this->copyGitIgnore('drupal/gitignore-' . $buildMode);
-
-        // Warn if the settings.local.php file is not ignored.
-        if ($buildMode == 'vanilla') {
-            $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-            $relative = $this->fsHelper->makePathRelative($this->appRoot . '/sites/default/settings.local.php', $repositoryDir);
-            if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
-                $this->output->writeln("<comment>You must exclude this file using .gitignore:</comment> $relative");
-            }
+    /**
+     * Check that an application file is ignored in .gitignore.
+     *
+     * @param string $filename
+     * @param string $suggestion
+     */
+    protected function checkIgnored($filename, $suggestion = null)
+    {
+        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
+        if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
+            $suggestion = $suggestion ?: $relative;
+            $this->output->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
         }
     }
 
@@ -155,7 +160,15 @@ class Drupal extends ToolstackBase
         $this->ignoredFiles[] = 'project.make';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
-        $this->fsHelper->symlinkAll($this->appRoot, $this->buildDir . '/sites/default', true, array_merge($this->ignoredFiles, array_keys($this->specialDestinations)));
+        // Symlink, non-recursively, all files from the app into the
+        // 'sites/default' directory.
+        $this->fsHelper->symlinkAll(
+          $this->appRoot,
+          $this->buildDir . '/sites/default',
+          true,
+          false,
+          array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
+        );
     }
 
     /**
@@ -194,24 +207,109 @@ class Drupal extends ToolstackBase
         );
         $drushHelper->execute($args, null, true, false);
 
-        // Drush will only create the $buildDir if the build succeeds.
         $profileDir = $this->buildDir . '/profiles/' . $profileName;
+        mkdir($profileDir, 0755, true);
+
+        $this->output->writeln("Building the profile: <info>$profileName</info>");
 
         $args = array_merge(
           array('make', '--no-core', '--contrib-destination=.', $projectMake),
           $this->drushFlags
         );
-        $drushHelper->execute($args, $this->appRoot, true, false);
+        $drushHelper->execute($args, $profileDir, true, false);
 
-        $this->ignoredFiles[] = $projectMake;
-        $this->ignoredFiles[] = $projectCoreMake;
+        $this->ignoredFiles[] = basename($projectMake);
+        $this->ignoredFiles[] = basename($projectCoreMake);
 
         $this->specialDestinations['settings*.php'] = '{webroot}/sites/default';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
         $this->processSettingsPhp();
 
-        $this->fsHelper->symlinkAll($this->appRoot, $profileDir, true, array_merge($this->ignoredFiles, array_keys($this->specialDestinations)));
+        $this->output->writeln("Symlinking existing app files to the profile");
+
+        $this->profileModeBcWarning($profileDir);
+
+        // Symlink recursively; skip existing files (built by Drush make) for
+        // example 'modules/contrib', but include files from the app such as
+        // 'modules/custom'.
+        $this->fsHelper->symlinkAll(
+          $this->appRoot,
+          $profileDir,
+          true,
+          true,
+          array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
+        );
+    }
+
+    /**
+     * Backwards compatibility warning for profile builds.
+     *
+     * Profile builds changed between v1.9.0 and v1.9.1. This provides a warning
+     * to show that users should not have files that are both in their
+     * repository and in Drush Make.
+     *
+     * @param string $profileDir
+     *
+     * @todo remove this in later versions
+     */
+    protected function profileModeBcWarning($profileDir)
+    {
+        $conflicts = $this->findDrushMakeConflicts($profileDir, '', 10, true);
+        if (count($conflicts)) {
+            $this->output->writeln("\n<comment>Profile builds have changed.</comment>");
+            $this->output->writeln('Files are no longer built inside the repository directory.');
+            $this->output->writeln('You should ensure that your repository directory does not contain files that are also built by Drush Make.');
+            $this->output->writeln('Examples:');
+            $this->output->writeln('  ' . implode("\n  ", $conflicts) . "\n");
+        }
+    }
+
+    /**
+     * Find files in the Drush Make output that also exist in the app.
+     *
+     * @param string $dir
+     * @param string $subDir
+     * @param int    $limit
+     * @param bool   $checkIgnored
+     *
+     * @todo remove this
+     *
+     * @return array
+     */
+    protected function findDrushMakeConflicts($dir, $subDir = '', $limit = 0, $checkIgnored = false)
+    {
+        $conflicts = array();
+        $found = 0;
+        $subDirAbsolute = rtrim($dir . '/' . $subDir, '/');
+        $subDirRelative = $subDir ? $subDir . '/' : '';
+        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $handle = opendir($subDirAbsolute);
+        while (false !== ($filename = readdir($handle))) {
+            if ($filename[0] === '.') {
+                continue;
+            }
+            if ($limit && $found >= $limit) {
+                break;
+            }
+            if (is_dir($subDirAbsolute . '/' . $filename)) {
+                $conflicts += $this->findDrushMakeConflicts($dir, $subDirRelative . $filename, $limit >= 0 ? $limit - $found : 0, $checkIgnored);
+                continue;
+            }
+            $appFile = $this->appRoot . '/' . $subDirRelative . $filename;
+            if (file_exists($appFile)) {
+                if ($checkIgnored) {
+                    $relative = $this->fsHelper->makePathRelative($appFile, $repositoryDir);
+                    if (!$this->gitHelper->execute(array('check-ignore', $relative))) {
+                        continue;
+                    }
+                }
+                $conflicts[] = $this->appRoot . '/' . $subDirRelative . $filename;
+                $found++;
+            }
+        }
+        closedir($handle);
+        return $conflicts;
     }
 
     /**

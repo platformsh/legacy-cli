@@ -76,8 +76,9 @@ class EnvironmentRestoreCommand extends EnvironmentCommand
             return 1;
         }
 
+        $output->writeln("Restoring backup <info>$name</info>");
         $selectedActivity->restore();
-        $output->writeln("Backup successfully restored");
+
         return 0;
     }
 }

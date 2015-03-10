@@ -122,9 +122,9 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
         foreach ($process as $environmentId =>  $environment) {
             $client = $this->getPlatformClient($environment['endpoint']);
             try {
+                $output->writeln("Deactivating environment <info>$environmentId</info>");
                 $client->deactivateEnvironment();
                 $processed++;
-                $output->writeln("Deactivated environment <info>$environmentId</info>");
             }
             catch (\Exception $e) {
                 $output->writeln($e->getMessage());
