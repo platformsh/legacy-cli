@@ -347,7 +347,9 @@ class Drupal extends ToolstackBase
 
         // Create the shared/settings.local.php if it doesn't exist. Everything
         // in shared will be symlinked into sites/default.
-        $this->fsHelper->copy($resources . '/settings.local.php', $shared . '/settings.local.php');
+        if (!file_exists($shared . '/settings.local.php')) {
+            $this->fsHelper->copy($resources . '/settings.local.php', $shared . '/settings.local.php');
+        }
 
         // Create a shared/files directory.
         if (!file_exists($shared . '/files')) {
