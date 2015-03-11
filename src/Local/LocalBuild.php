@@ -238,6 +238,7 @@ class LocalBuild
         $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
+        $toolstack->setOutput($this->output);
 
         if ($toolstack) {
             $buildSettings = $this->settings + array(
@@ -268,8 +269,6 @@ class LocalBuild
                     $message .= " using the toolstack <info>$key</info>";
                 }
                 $this->output->writeln($message);
-
-                $toolstack->setOutput($this->output);
 
                 $toolstack->build();
 
