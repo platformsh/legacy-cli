@@ -30,12 +30,13 @@ class Environment extends HalResource
     /**
      * Get activities for this environment.
      *
-     * @param int $limit
+     * @param int    $limit
      * @param string $type
+     * @param int    $startsAt
      *
      * @return Activity[]
      */
-    public function getActivities($limit = 3, $type = null)
+    public function getActivities($limit = 3, $type = null, $startsAt = 0)
     {
         $options = array();
         // @todo this does not work yet in the API
@@ -44,6 +45,9 @@ class Environment extends HalResource
 //        }
         if ($type) {
             $options['query']['type'] = $type;
+        }
+        if ($startsAt) {
+            $options['query']['starts_at'] = $startsAt;
         }
         $prototype = new Activity(array(), $this->client);
         return self::getCollection('activities', $options, $this->client, $prototype);

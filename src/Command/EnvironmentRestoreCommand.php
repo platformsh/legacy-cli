@@ -29,9 +29,10 @@ class EnvironmentRestoreCommand extends EnvironmentCommand
         $environment = new Environment($this->environment, $client);
 
         $backupName = $input->getArgument('backup');
+        $startsAt = strtotime('1 week ago');
         if (!empty($backupName)) {
             // Find the specified backup.
-            $backupActivities = $environment->getActivities(0, 'environment.backup');
+            $backupActivities = $environment->getActivities(0, 'environment.backup', $startsAt);
             foreach ($backupActivities as $activity) {
                 $payload = $activity->getProperty('payload');
                 if ($payload['backup_name'] == $backupName) {
@@ -48,7 +49,7 @@ class EnvironmentRestoreCommand extends EnvironmentCommand
             // Find the most recent backup.
             $environmentId = $this->environment['id'];
             $output->writeln("Finding the most recent backup for the environment <info>$environmentId</info>");
-            $backupActivities = $environment->getActivities(1, 'environment.backup');
+            $backupActivities = $environment->getActivities(1, 'environment.backup', $startsAt);
             if (!$backupActivities) {
                 $output->writeln("No backups found");
                 return 1;
