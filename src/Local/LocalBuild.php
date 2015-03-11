@@ -290,6 +290,7 @@ class LocalBuild
             $buildDir = $toolstack->getBuildDir();
         }
         else {
+            $this->output->writeln("Leaving application <info>$appIdentifier</info> in place");
             $buildDir = $appRoot;
             $this->warnAboutHooks($appConfig);
         }
@@ -309,7 +310,7 @@ class LocalBuild
             $this->output->writeln("Created symlink: $wwwLink -> $symlinkTarget");
         }
 
-        $message = "Build complete for <info>$appIdentifier</info>";
+        $message = "Build complete for application <info>$appIdentifier</info>";
         $this->output->writeln($message);
 
         return true;
