@@ -115,6 +115,7 @@ project
   project:get (get)                       Clone and build a project locally
   project:init (init)                     Initialize from a plain Git repository
   project:list (projects)                 Get a list of all active projects
+  project:metadata                        Read or set metadata for a project
 ssh-key
   ssh-key:add                             Add a new SSH key
   ssh-key:delete                          Delete an SSH key

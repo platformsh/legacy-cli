@@ -85,7 +85,9 @@ EOF
         $table = new Table($output);
         $table->setHeaders(array("Property", "Value"));
         foreach ($environment->getProperties() as $key => $value) {
-            $table->addRow(array($key, $value));
+            if (is_scalar($value)) {
+                $table->addRow(array($key, $value));
+            }
         }
         $table->render();
 

@@ -126,6 +126,7 @@ class Application extends ParentApplication
         $commands[] = new Command\ProjectDrushAliasesCommand();
         $commands[] = new Command\ProjectGetCommand();
         $commands[] = new Command\ProjectInitCommand();
+        $commands[] = new Command\ProjectMetadataCommand();
         $commands[] = new Command\SshKeyAddCommand();
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();
