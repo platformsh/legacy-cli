@@ -14,8 +14,8 @@ class EnvironmentRestoreCommand extends EnvironmentCommand
     {
         $this
             ->setName('environment:restore')
-            ->setDescription('Restore the most recent environment backup')
-            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one');
+            ->setDescription('Restore an environment backup')
+            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup to restore. Defaults to the most recent one');
         $this->addProjectOption()->addEnvironmentOption();
     }
 
