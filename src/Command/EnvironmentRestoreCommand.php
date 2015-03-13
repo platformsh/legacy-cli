@@ -53,10 +53,11 @@ class EnvironmentRestoreCommand extends EnvironmentCommand
                 $output->writeln("No backups found");
                 return 1;
             }
+            /** @var \CommerceGuys\Platform\Cli\Model\Activity $selectedActivity */
             $selectedActivity = reset($backupActivities);
         }
 
-        if (!$selectedActivity->operationAllowed('restore')) {
+        if (!$selectedActivity->operationAvailable('restore')) {
             if (!$selectedActivity->isComplete()) {
                 $output->writeln("The backup is not complete, so it cannot be restored");
             }

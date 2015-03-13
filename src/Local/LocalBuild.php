@@ -384,7 +384,7 @@ class LocalBuild
             return array();
         }
         $links = array($www);
-        if (is_dir($www)) {
+        if (!is_link($www) && is_dir($www)) {
             $finder = new Finder();
             /** @var \Symfony\Component\Finder\SplFileInfo $file */
             foreach ($finder->in($www)
@@ -395,8 +395,12 @@ class LocalBuild
         }
         $activeBuilds = array();
         foreach ($links as $link) {
-            if (is_link($link) && ($target = readlink($link)) && file_exists($target)) {
-                $activeBuilds[] = $target;
+            if (is_link($link) && ($target = readlink($link))) {
+                // Make the target into an absolute path.
+                $target = $target[0] === DIRECTORY_SEPARATOR ? $target : realpath(dirname($link) . '/' . $target);
+                if ($target) {
+                    $activeBuilds[] = $target;
+                }
             }
         }
 
