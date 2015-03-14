@@ -86,7 +86,7 @@ class HalResource implements HalResourceInterface
      * @param string $method
      * @param mixed $body
      *
-     * @return bool
+     * @return array
      */
     protected function runOperation($op, $method = 'post', $body = null)
     {
@@ -99,11 +99,11 @@ class HalResource implements HalResourceInterface
         $request = $this->client
           ->createRequest($method, $this->getLink('#' . $op), null, $body);
         $response = $request->send();
-        $data = $response->json();
+        $data = (array) $response->json();
         if (!empty($data['_embedded']['entity'])) {
             $this->setData($data['_embedded']['entity']);
         }
-        return true;
+        return $data;
     }
 
     /**

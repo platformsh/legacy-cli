@@ -2,8 +2,10 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentActivateCommand extends EnvironmentCommand
@@ -14,7 +16,13 @@ class EnvironmentActivateCommand extends EnvironmentCommand
         $this
             ->setName('environment:activate')
             ->setDescription('Activate an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
+            ->addOption(
+              'no-wait',
+              null,
+              InputOption::VALUE_NONE,
+              "Do not wait for the operation to complete"
+            );
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -73,16 +81,20 @@ class EnvironmentActivateCommand extends EnvironmentCommand
             }
             $process[$environmentId] = $environment;
         }
+        $responses = array();
         foreach ($process as $environmentId =>  $environment) {
             $client = $this->getPlatformClient($environment['endpoint']);
             try {
                 $output->writeln("Activating environment <info>$environmentId</info>");
-                $client->activateEnvironment();
+                $responses[] = $client->activateEnvironment();
                 $processed++;
             }
             catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
+        }
+        if (isset($client) && !$input->getOption('no-wait')) {
+            Activity::waitMultiple($responses, $client, $output);
         }
         if ($processed) {
             $this->getEnvironments($this->project, true);

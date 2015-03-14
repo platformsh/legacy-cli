@@ -2,8 +2,10 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMergeCommand extends EnvironmentCommand
@@ -15,7 +17,13 @@ class EnvironmentMergeCommand extends EnvironmentCommand
             ->setName('environment:merge')
             ->setAliases(array('merge'))
             ->setDescription('Merge an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge')
+            ->addOption(
+              'no-wait',
+              null,
+              InputOption::VALUE_NONE,
+              "Do not wait for the operation to complete"
+            );
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -41,7 +49,19 @@ class EnvironmentMergeCommand extends EnvironmentCommand
         $output->writeln("Merging environment <info>$environmentId</info> with <info>$parentId</info>");
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->mergeEnvironment();
+        $response = $client->mergeEnvironment();
+        if (!$input->getOption('no-wait')) {
+            $success = Activity::waitAndLog(
+              $response,
+              $client,
+              $output,
+              'Merge complete',
+              'Merge failed'
+            );
+            if ($success === false) {
+                return 1;
+            }
+        }
         // Reload the stored environments.
         $this->getEnvironments($this->project, true);
 

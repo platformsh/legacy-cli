@@ -2,9 +2,11 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Activity;
 use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentRestoreCommand extends EnvironmentCommand
@@ -15,7 +17,13 @@ class EnvironmentRestoreCommand extends EnvironmentCommand
         $this
             ->setName('environment:restore')
             ->setDescription('Restore an environment backup')
-            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup to restore. Defaults to the most recent one');
+            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup to restore. Defaults to the most recent one')
+            ->addOption(
+              'no-wait',
+              null,
+              InputOption::VALUE_NONE,
+              "Do not wait for the operation to complete"
+            );
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -78,7 +86,19 @@ class EnvironmentRestoreCommand extends EnvironmentCommand
         }
 
         $output->writeln("Restoring backup <info>$name</info>");
-        $selectedActivity->restore();
+        $response = $selectedActivity->restore();
+        if (!$input->getOption('no-wait')) {
+            $success = Activity::waitAndLog(
+              $response,
+              $client,
+              $output,
+              "The backup was successfully restored",
+              "Restoring failed"
+            );
+            if ($success === false) {
+                return 1;
+            }
+        }
 
         return 0;
     }

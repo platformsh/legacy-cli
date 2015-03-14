@@ -2,8 +2,10 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSynchronizeCommand extends EnvironmentCommand
@@ -20,6 +22,12 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
                 InputArgument::IS_ARRAY,
                 'What to synchronize: code, data or both',
                 null
+            )
+            ->addOption(
+                'no-wait',
+                null,
+                InputOption::VALUE_NONE,
+                "Do not wait for the operation to complete"
             );
         $this->addProjectOption()->addEnvironmentOption();
     }
@@ -64,7 +72,19 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             'synchronize_data' => $syncData,
         );
         $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->synchronizeEnvironment($params);
+        $response = $client->synchronizeEnvironment($params);
+        if (!$input->getOption('no-wait')) {
+            $success = Activity::waitAndLog(
+              $response,
+              $client,
+              $output,
+              "Synchronization complete",
+              "Synchronization failed"
+            );
+            if ($success === false) {
+                return 1;
+            }
+        }
 
         return 0;
     }

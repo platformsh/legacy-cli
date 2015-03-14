@@ -3,6 +3,7 @@
 namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Local\LocalProject;
+use CommerceGuys\Platform\Cli\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,7 +18,13 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
           ->setName('environment:deactivate')
           ->setDescription('Deactivate an environment')
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to deactivate')
-          ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments');
+          ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments')
+          ->addOption(
+            'no-wait',
+            null,
+            InputOption::VALUE_NONE,
+            "Do not wait for the operation to complete"
+          );
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -119,16 +126,20 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
             }
             $process[$environmentId] = $environment;
         }
+        $responses = array();
         foreach ($process as $environmentId =>  $environment) {
             $client = $this->getPlatformClient($environment['endpoint']);
             try {
                 $output->writeln("Deactivating environment <info>$environmentId</info>");
-                $client->deactivateEnvironment();
+                $responses[] = $client->deactivateEnvironment();
                 $processed++;
             }
             catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
+        }
+        if (isset($client) && !$input->getOption('no-wait')) {
+            Activity::waitMultiple($responses, $client, $output);
         }
         if ($processed) {
             $this->getEnvironments($this->project, true);
