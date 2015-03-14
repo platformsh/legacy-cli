@@ -37,6 +37,12 @@ class ProjectBuildCommand extends PlatformCommand
             null,
             InputOption::VALUE_NONE,
             'Do not create or use a build archive'
+          )
+          ->addOption(
+            'no-cache',
+            null,
+            InputOption::VALUE_NONE,
+            'Disable caching.'
           );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
@@ -46,19 +52,13 @@ class ProjectBuildCommand extends PlatformCommand
               InputOption::VALUE_NONE,
               'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
             )
-                 ->addOption(
-                   'concurrency',
-                   null,
-                   InputOption::VALUE_OPTIONAL,
-                   'Drush: set the number of concurrent projects that will be processed at the same time.',
-                   8
-                 )
-                 ->addOption(
-                   'no-cache',
-                   null,
-                   InputOption::VALUE_NONE,
-                   'Drush: disable pm-download caching.'
-                 );
+            ->addOption(
+              'concurrency',
+              null,
+              InputOption::VALUE_OPTIONAL,
+              'Drush: set the number of concurrent projects that will be processed at the same time.',
+              8
+            );
         }
     }
 

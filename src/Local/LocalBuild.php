@@ -247,7 +247,7 @@ class LocalBuild
             $toolstack->prepare($buildDir, $appRoot, $projectRoot, $buildSettings);
 
             $archive = false;
-            if (empty($this->settings['noArchive'])) {
+            if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
                 $treeId = $this->getTreeId($appRoot);
                 if ($treeId) {
                     if ($verbose) {
