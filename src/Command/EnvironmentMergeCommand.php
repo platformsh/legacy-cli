@@ -17,14 +17,10 @@ class EnvironmentMergeCommand extends EnvironmentCommand
             ->setName('environment:merge')
             ->setAliases(array('merge'))
             ->setDescription('Merge an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge')
-            ->addOption(
-              'no-wait',
-              null,
-              InputOption::VALUE_NONE,
-              "Do not wait for the operation to complete"
-            );
-        $this->addProjectOption()->addEnvironmentOption();
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
+        $this->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

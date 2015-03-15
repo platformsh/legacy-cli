@@ -17,14 +17,10 @@ class EnvironmentRestoreCommand extends EnvironmentCommand
         $this
             ->setName('environment:restore')
             ->setDescription('Restore an environment backup')
-            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup to restore. Defaults to the most recent one')
-            ->addOption(
-              'no-wait',
-              null,
-              InputOption::VALUE_NONE,
-              "Do not wait for the operation to complete"
-            );
-        $this->addProjectOption()->addEnvironmentOption();
+            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup to restore. Defaults to the most recent one');
+        $this->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -39,14 +39,10 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 null,
                 InputOption::VALUE_NONE,
                 "Build the new environment locally"
-            )
-            ->addOption(
-              'no-wait',
-              null,
-              InputOption::VALUE_NONE,
-              "Do not wait for the operation to complete"
             );
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

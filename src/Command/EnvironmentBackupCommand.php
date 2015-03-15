@@ -19,14 +19,10 @@ class EnvironmentBackupCommand extends EnvironmentCommand
             ->setName('environment:backup')
             ->setDescription('Make a backup of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to back up')
-            ->addOption('list', 'l', InputOption::VALUE_NONE, 'List backups')
-            ->addOption(
-              'no-wait',
-              null,
-              InputOption::VALUE_NONE,
-              "Do not wait for the operation to complete"
-            );
-        $this->addProjectOption()->addEnvironmentOption();
+            ->addOption('list', 'l', InputOption::VALUE_NONE, 'List backups');
+        $this->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

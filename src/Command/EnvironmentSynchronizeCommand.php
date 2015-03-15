@@ -22,14 +22,10 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
                 InputArgument::IS_ARRAY,
                 'What to synchronize: code, data or both',
                 null
-            )
-            ->addOption(
-                'no-wait',
-                null,
-                InputOption::VALUE_NONE,
-                "Do not wait for the operation to complete"
             );
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -16,14 +16,10 @@ class EnvironmentActivateCommand extends EnvironmentCommand
         $this
             ->setName('environment:activate')
             ->setDescription('Activate an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
-            ->addOption(
-              'no-wait',
-              null,
-              InputOption::VALUE_NONE,
-              "Do not wait for the operation to complete"
-            );
-        $this->addProjectOption()->addEnvironmentOption();
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
+        $this->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

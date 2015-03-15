@@ -18,14 +18,11 @@ class EnvironmentDeactivateCommand extends EnvironmentCommand
           ->setName('environment:deactivate')
           ->setDescription('Deactivate an environment')
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to deactivate')
-          ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments')
-          ->addOption(
-            'no-wait',
-            null,
-            InputOption::VALUE_NONE,
-            "Do not wait for the operation to complete"
-          );
-        $this->addProjectOption()->addEnvironmentOption();
+          ->addOption('merged', null, InputOption::VALUE_NONE, 'Deactivate all merged environments');
+        $this
+          ->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
