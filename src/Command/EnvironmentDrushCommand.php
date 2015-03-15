@@ -21,7 +21,7 @@ class EnvironmentDrushCommand extends PlatformCommand
             ->setAliases(array('drush'))
             ->setDescription('Run a drush command on the remote environment')
             ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         $this->ignoreValidationErrors();
     }
 
@@ -74,7 +74,7 @@ class EnvironmentDrushCommand extends PlatformCommand
         }
 
         $environment = new Environment($this->environment);
-        $sshUrl = $environment->getSshUrl();
+        $sshUrl = $environment->getSshUrl($input->getOption('app'));
 
         $appRoot = '/app/public';
         $dimensions = $this->getApplication()->getTerminalDimensions();

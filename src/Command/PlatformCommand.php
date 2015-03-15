@@ -550,6 +550,16 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Add the --app option.
+     *
+     * @return self
+     */
+    protected function addAppOption()
+    {
+        return $this->addOption('app', null, InputOption::VALUE_OPTIONAL, 'The remote application name');
+    }
+
+    /**
      * @param string $projectId
      * @return array
      */
