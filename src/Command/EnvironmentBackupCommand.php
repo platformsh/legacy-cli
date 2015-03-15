@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Environment;
+use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -49,9 +49,15 @@ class EnvironmentBackupCommand extends PlatformCommand
         $output->writeln("Backing up <info>$environmentId</info>");
 
         if (!$input->getOption('no-wait')) {
-            $output->writeln("Waiting for the backup to complete...");
-            $activity->wait();
-            $output->writeln("A backup of environment <info>$environmentId</info> has been created");
+            $success = ActivityUtil::waitAndLog(
+              $activity,
+              $output,
+              "A backup of environment <info>$environmentId</info> has been created",
+              "The backup failed"
+            );
+            if (!$success) {
+                return 1;
+            }
         }
 
         if (!empty($activity['payload']['backup_name'])) {
