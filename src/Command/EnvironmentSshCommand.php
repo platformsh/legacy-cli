@@ -23,7 +23,8 @@ class EnvironmentSshCommand extends PlatformCommand
           ->addOption('pipe', null, InputOption::VALUE_NONE, "Output the SSH URL only.")
           ->setDescription('SSH to the current environment');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addAppOption();
         $this->ignoreValidationErrors();
     }
 
@@ -34,7 +35,7 @@ class EnvironmentSshCommand extends PlatformCommand
         }
 
         $sshUrl = $this->getSelectedEnvironment()
-                       ->getSshUrl();
+                       ->getSshUrl($input->getOption('app'));
 
         $command = $input->getArgument('cmd');
         if ($input instanceof ArgvInput) {

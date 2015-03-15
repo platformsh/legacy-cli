@@ -18,7 +18,8 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
           ->setDescription('List an environment\'s relationships')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addAppOption();
         // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
     }
 
@@ -30,7 +31,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
 
         $args = array('ssh',
           $this->getSelectedEnvironment()
-               ->getSshUrl(),
+               ->getSshUrl($input->getOption('app')),
           'echo $PLATFORM_RELATIONSHIPS'
         );
         $relationships = $this->getHelper('shell')
