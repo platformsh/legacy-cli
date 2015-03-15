@@ -27,7 +27,7 @@ class ProjectCleanCommand extends PlatformCommand
             'max-age',
             null,
             InputOption::VALUE_OPTIONAL,
-            'The maximum age of builds, in seconds. Ignored if not set.',
+            'The maximum age of builds, in seconds. Ignored if not set.'
           )
           ->addOption(
             'include-active',
