@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Activity;
 use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,7 +19,13 @@ class EnvironmentBackupCommand extends EnvironmentCommand
             ->setName('environment:backup')
             ->setDescription('Make a backup of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to back up')
-            ->addOption('list', 'l', InputOption::VALUE_NONE, 'List backups');
+            ->addOption('list', 'l', InputOption::VALUE_NONE, 'List backups')
+            ->addOption(
+              'no-wait',
+              null,
+              InputOption::VALUE_NONE,
+              "Do not wait for the operation to complete"
+            );
         $this->addProjectOption()->addEnvironmentOption();
     }
 
@@ -43,6 +50,18 @@ class EnvironmentBackupCommand extends EnvironmentCommand
         $output->writeln("Backing up environment <info>$environmentId</info>");
         $client = $this->getPlatformClient($this->environment['endpoint']);
         $data = $client->backupEnvironment();
+        if (!$input->getOption('no-wait')) {
+            $success = Activity::waitAndLog(
+              $data,
+              $client,
+              $output,
+              "A backup of environment <info>$environmentId</info> has been created",
+              "The backup failed"
+            );
+            if ($success === false) {
+                return 1;
+            }
+        }
 
         if (!empty($data['_embedded']['activities'][0]['payload']['backup_name'])) {
             $name = $data['_embedded']['activities'][0]['payload']['backup_name'];
