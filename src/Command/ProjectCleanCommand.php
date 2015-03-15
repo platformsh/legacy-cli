@@ -20,15 +20,14 @@ class ProjectCleanCommand extends PlatformCommand
               'keep',
               null,
               InputOption::VALUE_OPTIONAL,
-              'The maximum number of builds to keep',
+              'The maximum number of builds to keep.',
               5
             )
             ->addOption(
               'max-age',
               null,
               InputOption::VALUE_OPTIONAL,
-              'The maximum age of builds, in seconds',
-              86400
+              'The maximum age of builds, in seconds. Ignored if not set.'
             )
             ->addOption(
               'include-active',

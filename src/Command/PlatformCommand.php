@@ -550,6 +550,26 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Add the --app option.
+     *
+     * @return self
+     */
+    protected function addAppOption()
+    {
+        return $this->addOption('app', null, InputOption::VALUE_OPTIONAL, 'The remote application name');
+    }
+
+    /**
+     * Add the --no-wait option.
+     *
+     * @return self
+     */
+    protected function addNoWaitOption()
+    {
+        return $this->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+    }
+
+    /**
      * @param string $projectId
      * @return array
      */

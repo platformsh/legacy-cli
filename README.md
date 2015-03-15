@@ -15,7 +15,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 * Install the latest stable version of the CLI:
 
-        composer global require 'platformsh/cli:1.*'
+        composer global require 'platformsh/cli:@stable'
 
 * Make sure Composer's `vendor/bin` directory is in your system's PATH.
 
@@ -45,6 +45,12 @@ locations:
 * `~/.zshrc` (if using ZSH)
 
 Start a new shell or type `source <filename>` to load the new configuration.
+
+### Updating
+
+New releases of the CLI are made regularly. You can update with the same Composer command:
+
+    composer global require 'platformsh/cli:@stable'
 
 ### Usage
 

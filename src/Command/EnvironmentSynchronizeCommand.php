@@ -2,6 +2,7 @@
 
 namespace CommerceGuys\Platform\Cli\Command;
 
+use CommerceGuys\Platform\Cli\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -21,7 +22,9 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
                 'What to synchronize: code, data or both',
                 null
             );
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -42,6 +45,11 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
         $questionHelper = $this->getHelper('question');
 
         if ($synchronize = $input->getArgument('synchronize')) {
+            // The input was invalid.
+            if (array_diff($input->getArgument('synchronize'), array('code', 'data', 'both'))) {
+                $output->writeln("Specify 'code', 'data', or 'both'");
+                return 1;
+            }
             $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
             $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
             if (!$questionHelper->confirm("Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?", $input, $output, false)) {
@@ -64,7 +72,19 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             'synchronize_data' => $syncData,
         );
         $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->synchronizeEnvironment($params);
+        $response = $client->synchronizeEnvironment($params);
+        if (!$input->getOption('no-wait')) {
+            $success = Activity::waitAndLog(
+              $response,
+              $client,
+              $output,
+              "Synchronization complete",
+              "Synchronization failed"
+            );
+            if ($success === false) {
+                return 1;
+            }
+        }
 
         return 0;
     }

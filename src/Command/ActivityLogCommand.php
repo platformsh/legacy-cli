@@ -4,7 +4,6 @@ namespace CommerceGuys\Platform\Cli\Command;
 
 use CommerceGuys\Platform\Cli\Model\Activity;
 use CommerceGuys\Platform\Cli\Model\Environment;
-use Guzzle\Http\Exception\CurlException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -69,37 +68,13 @@ class ActivityLogCommand extends PlatformCommand
      */
     protected function displayLog(Activity $activity, OutputInterface $output, $poll = true, $interval = 1)
     {
-        $log = $activity->getProperty('log');
-        $output->writeln(rtrim($log, "\n"));
-
-        if (!$poll) {
-            return;
-        }
-
-        // The minimum interval is 1s.
-        if ($interval < 1) {
-            $interval = 1;
-        }
-
-        $length = strlen($log);
-        while (!$activity->isComplete()) {
-            usleep(1000000 * $interval);
-            try {
-                $activity->refresh(array('timeout' => $interval));
-            }
-            catch (CurlException $e) {
-                // If the request times out, try again.
-                if ($e->getErrorNo() === 28) {
-                    continue;
-                }
-                // Stop for any other error.
-                throw $e;
-            }
-            if ($new = substr($activity->getProperty('log'), $length)) {
-                $output->writeln(rtrim($new, "\n"));
-                $length += strlen($new);
-            }
-        }
+        $activity->wait(
+          null,
+          function ($log) use ($output) {
+              $output->write(preg_replace('/^/m', '    ', $log));
+          },
+          $interval
+        );
     }
 
 }

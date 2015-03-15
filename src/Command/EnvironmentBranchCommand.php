@@ -5,6 +5,7 @@ namespace CommerceGuys\Platform\Cli\Command;
 use CommerceGuys\Platform\Cli\Helper\GitHelper;
 use CommerceGuys\Platform\Cli\Helper\ShellHelper;
 use CommerceGuys\Platform\Cli\Local\LocalProject;
+use CommerceGuys\Platform\Cli\Model\Activity;
 use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
@@ -39,7 +40,9 @@ class EnvironmentBranchCommand extends EnvironmentCommand
                 InputOption::VALUE_NONE,
                 "Build the new environment locally"
             );
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->addProjectOption()
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -99,16 +102,20 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
             // If the Git branch already exists locally, check it out.
             $existsLocally = $gitHelper->branchExists($machineName);
-            if ($existsLocally && !$gitHelper->checkOut($machineName)) {
-                $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
-                $local_error = true;
-                if (!$force) {
-                    return 1;
+            if ($existsLocally) {
+                $output->writeln("Checking out <info>$machineName</info>");
+                if (!$gitHelper->checkOut($machineName)) {
+                    $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
+                    $local_error = true;
+                    if (!$force) {
+                        return 1;
+                    }
                 }
             }
-            elseif (!$existsLocally) {
+            else {
                 // Create a new branch, using the current or specified environment as the parent.
                 $parent = $this->environment['id'];
+                $output->writeln("Creating local branch <info>$machineName</info>");
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
                     $output->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
                     $local_error = true;
@@ -132,7 +139,18 @@ class EnvironmentBranchCommand extends EnvironmentCommand
         $output->writeln("Creating a new environment <info>$branchName</info>, branched from <info>$parentTitle</info>");
 
         $client = $this->getPlatformClient($this->environment['endpoint']);
-        $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
+        $response = $client->branchEnvironment(array('name' => $machineName, 'title' => $branchName));
+        $success = true;
+        if (!$input->getOption('no-wait')) {
+            $success = Activity::waitAndLog(
+              $response,
+              $client,
+              $output,
+              "The environment <info>$branchName</info> has been branched.",
+              '<error>Branching failed</error>'
+            );
+        }
+
         // Reload the stored environments.
         $this->getEnvironments($this->project, true);
 
@@ -153,6 +171,6 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             }
         }
 
-        return 0;
+        return $success === false ? 0 : 1;
     }
 }
