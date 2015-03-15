@@ -5,7 +5,6 @@ namespace CommerceGuys\Platform\Cli\Command;
 use CommerceGuys\Platform\Cli\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMergeCommand extends EnvironmentCommand
