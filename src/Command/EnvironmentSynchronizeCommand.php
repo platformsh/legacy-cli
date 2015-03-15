@@ -50,6 +50,11 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
         $questionHelper = $this->getHelper('question');
 
         if ($synchronize = $input->getArgument('synchronize')) {
+            // The input was invalid.
+            if (array_diff($input->getArgument('synchronize'), array('code', 'data', 'both'))) {
+                $output->writeln("Specify 'code', 'data', or 'both'");
+                return 1;
+            }
             $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
             $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
             if (!$questionHelper->confirm(
