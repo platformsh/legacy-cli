@@ -208,7 +208,7 @@ class FilesystemHelper extends Helper
                 }
                 elseif (file_exists($linkFile)) {
                     if (is_link($linkFile)) {
-                        unlink($linkFile);
+                        $this->remove($linkFile);
                     } elseif ($skipExisting) {
                         continue;
                     } else {
