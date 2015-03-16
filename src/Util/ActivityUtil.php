@@ -29,14 +29,14 @@ abstract class ActivityUtil
               $output->write(preg_replace('/^/m', '    ', $log));
           }
         );
-        switch ($activity->getState()) {
-            case Activity::SUCCESS:
+        switch ($activity['result']) {
+            case 'success':
                 if ($success !== null) {
                     $output->writeln($success);
                 }
                 return true;
 
-            case Activity::FAILURE:
+            case 'failure':
                 if ($failure !== null) {
                     $output->writeln($failure);
                 }
