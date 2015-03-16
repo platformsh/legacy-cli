@@ -73,7 +73,7 @@ class Activity extends HalResource
               $output->write(preg_replace('/^/m', '    ', $log));
           }
         );
-        switch ($activity->getProperty('state')) {
+        switch ($activity->getProperty('result')) {
             case 'success':
                 if ($success !== null) {
                     $output->writeln($success);

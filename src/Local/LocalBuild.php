@@ -238,9 +238,9 @@ class LocalBuild
         $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
-        $toolstack->setOutput($this->output);
 
         if ($toolstack) {
+            $toolstack->setOutput($this->output);
             $buildSettings = $this->settings + array(
                 'multiApp' => $multiApp,
                 'appName' => $appName,
