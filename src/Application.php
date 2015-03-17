@@ -117,6 +117,7 @@ class Application extends ParentApplication
         $commands[] = new Command\EnvironmentVariableDeleteCommand();
         $commands[] = new Command\EnvironmentVariableGetCommand();
         $commands[] = new Command\EnvironmentVariableSetCommand();
+        $commands[] = new Command\GitCommand();
         $commands[] = new Command\IntegrationAddCommand();
         $commands[] = new Command\IntegrationDeleteCommand();
         $commands[] = new Command\IntegrationGetCommand();
