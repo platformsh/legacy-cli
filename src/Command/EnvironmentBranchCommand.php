@@ -171,6 +171,6 @@ class EnvironmentBranchCommand extends EnvironmentCommand
             }
         }
 
-        return $success === false ? 0 : 1;
+        return $success !== false ? 0 : 1;
     }
 }
