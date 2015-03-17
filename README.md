@@ -121,6 +121,7 @@ local
   local:build (build)                       Build the current project locally
   local:clean (clean)                       Remove old project builds
   local:drush-aliases (drush-aliases)       Find the project's Drush aliases
+  local:git (git)                           Run a Git command in the local repository
   local:init (init)                         Create a local project file structure from a Git repository
 project
   project:get (get)                         Clone and build a project locally
