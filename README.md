@@ -80,6 +80,7 @@ Global options:
 
 Available commands:
   docs                                    Open the Platform.sh online documentation
+  git                                     Run a Git command in the local repository
   help                                    Displays help for a command
   list                                    Lists commands
   login                                   Log in to Platform.sh
