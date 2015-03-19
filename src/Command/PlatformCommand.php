@@ -351,7 +351,7 @@ abstract class PlatformCommand extends Command
             $projects = array();
             $connector = $this->getClient(false)
                               ->getConnector();
-            $client = $connector->getClient()
+            $client = $connector->getClient();
             foreach (self::$cache['projects'] as $id => $data) {
                 $projects[$id] = Project::wrap($data, $data['_endpoint'], $client);
             }
