@@ -158,6 +158,7 @@ class Drupal extends ToolstackBase
         $this->processSettingsPhp();
 
         $this->ignoredFiles[] = 'project.make';
+        $this->ignoredFiles[] = 'settings.local.php';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
         // Symlink, non-recursively, all files from the app into the
@@ -220,6 +221,7 @@ class Drupal extends ToolstackBase
 
         $this->ignoredFiles[] = basename($projectMake);
         $this->ignoredFiles[] = basename($projectCoreMake);
+        $this->ignoredFiles[] = 'settings.local.php';
 
         $this->specialDestinations['settings*.php'] = '{webroot}/sites/default';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
