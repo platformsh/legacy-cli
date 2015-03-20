@@ -168,7 +168,6 @@ class EnvironmentBranchCommand extends PlatformCommand
 
         $success = true;
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitAndLog($activity, $output);
             $success = ActivityUtil::waitAndLog(
               $activity,
               $output,
