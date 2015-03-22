@@ -52,7 +52,7 @@ class ActivityListCommand extends PlatformCommand
               date('Y-m-d H:i:s', strtotime($activity['created_at'])),
               $description,
               $activity->getCompletionPercent(),
-              $activity->getState(),
+              $activity->state,
             );
         }
 
