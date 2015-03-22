@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,7 +21,6 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
-        // $this->ignoreValidationErrors(); @todo: Pass extra stuff to ssh? -i?
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -29,23 +29,20 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
             return 1;
         }
 
-        $args = array('ssh',
-          $this->getSelectedEnvironment()
-               ->getSshUrl($input->getOption('app')),
-          'echo $PLATFORM_RELATIONSHIPS'
-        );
-        $relationships = $this->getHelper('shell')
-                              ->execute($args, null, true);
+        $sshUrl = $this->getSelectedEnvironment()
+          ->getSshUrl($input->getOption('app'));
 
+        $util = new RelationshipsUtil($output);
+        $relationships = $util->getRelationships($sshUrl);
         if (!$relationships) {
-            throw new \Exception('No relationships found');
+            $output->writeln('No relationships found');
+            return 1;
         }
-        $results = json_decode(base64_decode($relationships));
 
-        foreach ($results as $key => $relationship) {
-            foreach ($relationship as $delta => $object) {
+        foreach ($relationships as $key => $relationship) {
+            foreach ($relationship as $delta => $info) {
                 $output->writeln("<comment>$key:$delta:</comment>");
-                foreach ((array) $object as $prop => $value) {
+                foreach ($info as $prop => $value) {
                     if (is_scalar($value)) {
                         $propString = str_pad("$prop", 10, " ");
                         $output->writeln("<info>  $propString: $value</info>");
@@ -56,5 +53,4 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
 
         return 0;
     }
-
 }

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -27,10 +28,18 @@ class EnvironmentSqlCommand extends PlatformCommand
 
         $sshOptions = '';
 
-        $environment = $this->getSelectedEnvironment();
-        $sshUrl = $environment->getSshUrl($input->getOption('app'));
+        $sshUrl = $this->getSelectedEnvironment()
+          ->getSshUrl($input->getOption('app'));
 
-        $sqlCommand = "mysql --database=main --no-auto-rehash --host=database.internal --user= --password=";
+        $util = new RelationshipsUtil($output);
+        $database = $util->chooseDatabase($sshUrl, $input);
+        if (empty($database)) {
+            return 1;
+        }
+
+        $sqlCommand = "mysql --no-auto-rehash --database={$database['path']}"
+          . " --host={$database['host']} --port={$database['port']}"
+          . " --user={$database['username']} --password={$database['password']}";
 
         $query = $input->getArgument('query');
         if ($query) {

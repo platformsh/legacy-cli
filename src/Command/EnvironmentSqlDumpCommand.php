@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -14,7 +15,7 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
         $this
             ->setName('environment:sql-dump')
             ->setAliases(array('sql-dump'))
-            ->setDescription('Create a dump of the remote database')
+            ->setDescription('Create a local dump of the remote database')
             ->addOption('file', 'f', InputOption::VALUE_OPTIONAL, 'A filename where the dump should be saved. Defaults to "dump.sql" in the project root');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
     }
@@ -56,10 +57,20 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
 
         $output->writeln("Creating SQL dump file: <info>$dumpFile</info>");
 
-        $environment = $this->getSelectedEnvironment();
-        $sshUrl = $environment->getSshUrl($input->getOption('app'));
+        $sshUrl = $this->getSelectedEnvironment()
+                       ->getSshUrl($input->getOption('app'));
 
-        $dumpCommand = "mysqldump --no-autocommit --single-transaction --opt -Q main --host=database.internal --user= --password=";
+        $util = new RelationshipsUtil($output);
+        $database = $util->chooseDatabase($sshUrl, $input);
+        if (empty($database)) {
+            return 1;
+        }
+
+        // @todo correct dump command for pgsql and other DBs
+        $dumpCommand = "mysqldump --no-autocommit --single-transaction"
+          . " --opt -Q {$database['path']}"
+          . " --host={$database['host']} --port={$database['port']}"
+          . " --user={$database['username']} --password={$database['password']}";
 
         set_time_limit(0);
 
