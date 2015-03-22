@@ -113,6 +113,7 @@ class Application extends ParentApplication
         $commands[] = new Command\EnvironmentRestoreCommand();
         $commands[] = new Command\EnvironmentSshCommand();
         $commands[] = new Command\EnvironmentSqlCommand();
+        $commands[] = new Command\EnvironmentSqlDumpCommand();
         $commands[] = new Command\EnvironmentSynchronizeCommand();
         $commands[] = new Command\EnvironmentUrlCommand();
         $commands[] = new Command\EnvironmentVariableDeleteCommand();
