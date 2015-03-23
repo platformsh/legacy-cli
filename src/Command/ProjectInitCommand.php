@@ -39,6 +39,11 @@ class ProjectInitCommand extends PlatformCommand
         $local = new LocalProject();
         $projectRoot = $local->initialize($directory);
 
+        // Fetch environments to start caching, and to create Drush aliases,
+        // etc.
+        $this->setProjectRoot($projectRoot);
+        $this->getEnvironments($this->getCurrentProject(), true);
+
         $output->writeln("Project initialized in directory: <info>$projectRoot</info>");
 
         if ($inside) {

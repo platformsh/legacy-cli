@@ -70,15 +70,18 @@ class ProjectGetCommand extends PlatformCommand
 
             return 1;
         }
+
         $directoryName = $input->getArgument('directory-name');
         if (empty($directoryName)) {
             $directoryName = $projectId;
         }
-        if (is_dir($directoryName)) {
+
+        if (file_exists($directoryName)) {
             $output->writeln("<error>The project directory '$directoryName' already exists.</error>");
 
             return 1;
         }
+
         if ($projectRoot = $this->getProjectRoot()) {
             if (strpos(realpath(dirname($directoryName)), $projectRoot) === 0) {
                 $output->writeln("<error>A project cannot be cloned inside another project.</error>");
@@ -86,6 +89,18 @@ class ProjectGetCommand extends PlatformCommand
                 return 1;
             }
         }
+
+        // Create the directory structure.
+        mkdir($directoryName);
+        $projectRoot = realpath($directoryName);
+        if (!$projectRoot) {
+            throw new \Exception("Failed to create project directory: $directoryName");
+        }
+
+        $output->writeln("Created project directory: $directoryName");
+
+        $local = new LocalProject();
+        $local->createProjectFiles($projectRoot, $projectId);
 
         $environments = $this->getEnvironments($project, true);
 
@@ -105,16 +120,7 @@ class ProjectGetCommand extends PlatformCommand
             $environment = 'master';
         }
 
-        // Create the directory structure.
-        mkdir($directoryName);
-        $projectRoot = realpath($directoryName);
-        $local = new LocalProject();
-        if (!$projectRoot) {
-            throw new \Exception('Failed to create project directory: ' . $directoryName);
-        }
-
-        $local->createProjectFiles($projectRoot, $projectId);
-
+        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
         $fsHelper = $this->getHelper('fs');
 
         // Prepare to talk to the Platform.sh repository.
@@ -167,7 +173,11 @@ class ProjectGetCommand extends PlatformCommand
             return 1;
         }
 
-        $output->writeln("Downloaded <info>$projectId</info> to <info>$directoryName</info>");
+        $output->writeln("The project <info>{$project['name']}</info> was successfully downloaded to: <info>$directoryName</info>");
+
+        // Ensure that Drush aliases are created.
+        $this->setProjectRoot($projectRoot);
+        $this->updateDrushAliases($project, $environments);
 
         // Allow the build to be skipped.
         if ($input->getOption('no-build')) {

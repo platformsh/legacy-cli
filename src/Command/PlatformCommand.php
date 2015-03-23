@@ -52,6 +52,14 @@ abstract class PlatformCommand extends Command
      */
     private $environment;
 
+    /**
+     * @see self::getProjectRoot()
+     * @see self::setProjectRoot()
+     *
+     * @var string|false
+     */
+    private $projectRoot = false;
+
     public function __construct($name = null)
     {
         parent::__construct($name);
@@ -266,8 +274,12 @@ abstract class PlatformCommand extends Command
      */
     public function getCurrentProject()
     {
+        if (!$this->getProjectRoot()) {
+            return false;
+        }
+
         $project = false;
-        $config = LocalProject::getCurrentProjectConfig();
+        $config = LocalProject::getProjectConfig($this->getProjectRoot());
         if ($config) {
             $project = $this->getProject($config['id']);
             // There is a chance that the project isn't available.
@@ -293,15 +305,14 @@ abstract class PlatformCommand extends Command
      */
     public function getCurrentEnvironment(Project $project)
     {
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
-            return null;
+        if (!$this->getProjectRoot()) {
+            return false;
         }
 
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
         $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot() . '/' . LocalProject::REPOSITORY_DIR);
         $upstream = $gitHelper->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
@@ -500,6 +511,7 @@ abstract class PlatformCommand extends Command
         if (!$currentProject || $currentProject['id'] != $project['id']) {
             return;
         }
+        /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
         $drushHelper = $this->getHelper('drush');
         $drushHelper->setHomeDir(
           $this->getHelper('fs')
@@ -509,11 +521,22 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * @param string $root
+     */
+    protected function setProjectRoot($root)
+    {
+        if (!is_dir($root)) {
+            throw new \InvalidArgumentException("Invalid project root: $root");
+        }
+        $this->projectRoot = $root;
+    }
+
+    /**
      * @return string|false
      */
     protected function getProjectRoot()
     {
-        return LocalProject::getProjectRoot();
+        return $this->projectRoot ?: LocalProject::getProjectRoot();
     }
 
     /**

@@ -177,7 +177,8 @@ class DrushHelper extends Helper
     public function createAliases(Project $project, $projectRoot, $environments, $merge = true)
     {
         // Ignore the project if it doesn't contain a Drupal application.
-        if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+        $repository = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        if (!is_dir($repository) || !Drupal::isDrupal($repository)) {
             return false;
         }
 
