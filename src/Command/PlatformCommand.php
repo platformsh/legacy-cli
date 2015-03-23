@@ -41,6 +41,14 @@ abstract class PlatformCommand extends Command
     /** @var array */
     protected $environment;
 
+    /**
+     * @see self::getProjectRoot()
+     * @see self::setProjectRoot()
+     *
+     * @var string|false
+     */
+    private $projectRoot = false;
+
     public function __construct($name = null)
     {
         parent::__construct($name);
@@ -233,13 +241,17 @@ abstract class PlatformCommand extends Command
      */
     public function getCurrentProject()
     {
+        if (!$this->getProjectRoot()) {
+            return null;
+        }
+
         $project = null;
-        $config = LocalProject::getCurrentProjectConfig();
+        $config = LocalProject::getProjectConfig($this->getProjectRoot());
         if ($config) {
           $project = $this->getProject($config['id']);
           // There is a chance that the project isn't available.
           if (!$project) {
-              $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
+              $filename = $this->getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
               throw new \RuntimeException(
                 "Project ID not found: " . $config['id']
                 . "\nEither you do not have access to the project on Platform.sh, or it no longer exists."
@@ -260,8 +272,7 @@ abstract class PlatformCommand extends Command
      */
     public function getCurrentEnvironment($project)
     {
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
+        if (!$this->getProjectRoot()) {
             return null;
         }
 
@@ -447,8 +458,7 @@ abstract class PlatformCommand extends Command
      * @param array $environments
      */
     protected function updateDrushAliases(array $project, array $environments) {
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
+        if (!$this->getProjectRoot()) {
             return;
         }
         // Double-check that the passed project is the current one.
@@ -456,9 +466,21 @@ abstract class PlatformCommand extends Command
         if (!$currentProject || $currentProject['id'] != $project['id']) {
             return;
         }
+        /** @var \CommerceGuys\Platform\Cli\Helper\DrushHelper $drushHelper */
         $drushHelper = $this->getHelper('drush');
         $drushHelper->setHomeDir($this->getHelper('fs')->getHomeDirectory());
-        $drushHelper->createAliases($project, $projectRoot, $environments);
+        $drushHelper->createAliases($project, $this->getProjectRoot(), $environments);
+    }
+
+    /**
+     * @param string $root
+     */
+    protected function setProjectRoot($root)
+    {
+        if (!is_dir($root)) {
+            throw new \InvalidArgumentException("Invalid project root: $root");
+        }
+        $this->projectRoot = $root;
     }
 
     /**
@@ -466,7 +488,7 @@ abstract class PlatformCommand extends Command
      */
     protected function getProjectRoot()
     {
-        return LocalProject::getProjectRoot();
+        return $this->projectRoot ?: LocalProject::getProjectRoot();
     }
 
     /**

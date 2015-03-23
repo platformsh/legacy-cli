@@ -163,12 +163,14 @@ class LocalProject
     /**
      * Get the configuration for the current project.
      *
+     * @param string $projectRoot
+     *
      * @return array|null
      *   The current project's configuration.
      */
-    public static function getCurrentProjectConfig() {
+    public static function getProjectConfig($projectRoot = null) {
         $projectConfig = null;
-        $projectRoot = self::getProjectRoot();
+        $projectRoot = $projectRoot ?: self::getProjectRoot();
         if ($projectRoot) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . self::PROJECT_CONFIG));
@@ -180,21 +182,22 @@ class LocalProject
      * Add a configuration value to a project.
      *
      * @param string $key The configuration key
-     * @param mixed $value The configuration value
+     * @param mixed  $value The configuration value
+     * @param string $projectRoot
      *
      * @throws \Exception On failure
      *
      * @return array
      *   The updated project configuration.
      */
-    public static function writeCurrentProjectConfig($key, $value) {
-        $projectConfig = self::getCurrentProjectConfig();
-        if (!$projectConfig) {
-            throw new \Exception('Current project configuration not found');
-        }
-        $projectRoot = self::getProjectRoot();
+    public static function writeCurrentProjectConfig($key, $value, $projectRoot = null) {
+        $projectRoot = $projectRoot ?: self::getProjectRoot();
         if (!$projectRoot) {
             throw new \Exception('Project root not found');
+        }
+        $projectConfig = self::getProjectConfig($projectRoot);
+        if (!$projectConfig) {
+            throw new \Exception('Current project configuration not found');
         }
         $file = $projectRoot . '/' . self::PROJECT_CONFIG;
         if (!is_writable($file)) {
