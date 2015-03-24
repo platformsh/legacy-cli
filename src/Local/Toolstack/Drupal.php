@@ -78,7 +78,7 @@ class Drupal extends ToolstackBase
         elseif (file_exists($this->appRoot . '/project.make')) {
             $this->buildInProjectMode($this->appRoot . '/project.make');
         } else {
-            $this->output->writeln("Building in vanilla mode: you are missing out!");
+            $this->getLogger()->notice("Building in vanilla mode: you are missing out!");
             $this->buildDir = $this->appRoot;
             $this->specialDestinations = array();
             $this->preventArchive = true;
@@ -104,7 +104,7 @@ class Drupal extends ToolstackBase
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
         if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
-            $this->output->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
+            $this->getLogger()->warning("You should exclude this file using .gitignore: $suggestion");
         }
     }
 
@@ -147,7 +147,8 @@ class Drupal extends ToolstackBase
      */
     protected function buildInProjectMode($projectMake)
     {
-        $drushHelper = new DrushHelper($this->output);
+        $drushHelper = new DrushHelper();
+        $drushHelper->setLogger($this->getLogger());
         $drushHelper->ensureInstalled();
         $args = array_merge(
           array('make', $projectMake, $this->buildDir),
@@ -181,7 +182,8 @@ class Drupal extends ToolstackBase
      */
     protected function buildInProfileMode($profileName)
     {
-        $drushHelper = new DrushHelper($this->output);
+        $drushHelper = new DrushHelper();
+        $drushHelper->setLogger($this->getLogger());
         $drushHelper->ensureInstalled();
 
         // Find the contrib make file.
@@ -211,7 +213,7 @@ class Drupal extends ToolstackBase
         $profileDir = $this->buildDir . '/profiles/' . $profileName;
         mkdir($profileDir, 0755, true);
 
-        $this->output->writeln("Building the profile: <info>$profileName</info>");
+        $this->getLogger()->info("Building the profile: <info>$profileName</info>");
 
         $args = array_merge(
           array('make', '--no-core', '--contrib-destination=.', $projectMake),
@@ -219,7 +221,7 @@ class Drupal extends ToolstackBase
         );
         $drushHelper->execute($args, $profileDir, true, false);
 
-        $this->output->writeln("Symlinking existing app files to the profile");
+        $this->getLogger()->info("Symlinking existing app files to the profile");
 
         $this->ignoredFiles[] = basename($projectMake);
         $this->ignoredFiles[] = basename($projectCoreMake);
@@ -256,11 +258,11 @@ class Drupal extends ToolstackBase
     {
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
-            $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
+            $this->getLogger()->notice("Found a custom settings.php file: $settingsPhpFile");
             copy($settingsPhpFile, $this->buildDir . '/sites/default/settings.php');
-            $this->output->writeln(
-              "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
-              . "\nYou will need to rebuild if you edit this file.</comment>"
+            $this->getLogger()->warning(
+              "Your settings.php file has been copied (not symlinked) into the build directory."
+              . "\nYou will need to rebuild if you edit this file."
             );
             $this->ignoredFiles[] = 'settings.php';
         }

@@ -2,31 +2,20 @@
 
 namespace Platformsh\Cli\Helper;
 
+use Platformsh\Cli\Util\HasLoggerTrait;
+use Platformsh\Cli\Util\LoggerAwareInterface;
 use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\ProcessBuilder;
 
-class ShellHelper extends Helper implements ShellHelperInterface
+class ShellHelper extends Helper implements ShellHelperInterface, LoggerAwareInterface
 {
 
-    /** @var OutputInterface */
-    protected $output;
+    use HasLoggerTrait;
 
     public function getName()
     {
         return 'shell';
-    }
-
-    public function __construct(OutputInterface $output = null)
-    {
-        $this->output = $output ?: new NullOutput();
-    }
-
-    public function setOutput(OutputInterface $output)
-    {
-        $this->output = $output;
     }
 
     /**
@@ -34,13 +23,11 @@ class ShellHelper extends Helper implements ShellHelperInterface
      *
      * @param mixed  $type
      * @param string $buffer
-     *
-     * @todo in theory this could use the ConsoleLogger, but the formatting is ugly and impossible to override
      */
-    public function log($type, $buffer)
+    public function shellLog($type, $buffer)
     {
         $indent = '  ';
-        $this->output->writeln($indent . str_replace("\n", "\n$indent", trim($buffer)));
+        $this->getLogger()->info($indent . str_replace("\n", "\n$indent", trim($buffer)));
     }
 
     /**
@@ -61,12 +48,10 @@ class ShellHelper extends Helper implements ShellHelperInterface
             $process->setWorkingDirectory($dir);
         }
 
-        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->output->writeln("Running command: <info>" . $process->getCommandLine() . "</info>");
-        }
+        $this->getLogger()->debug("Running command: <info>" . $process->getCommandLine() . "</info>");
 
         try {
-            $process->mustRun($quiet ? null : array($this, 'log'));
+            $process->mustRun($quiet ? null : array($this, 'shellLog'));
         } catch (ProcessFailedException $e) {
             if (!$mustRun) {
                 return false;
@@ -99,5 +84,4 @@ class ShellHelper extends Helper implements ShellHelperInterface
 
         return (bool) $this->execute($args);
     }
-
 }

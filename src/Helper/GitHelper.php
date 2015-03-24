@@ -21,9 +21,20 @@ class GitHelper extends Helper
         return 'git';
     }
 
+    /**
+     * @param ShellHelperInterface $shellHelper
+     */
     public function __construct(ShellHelperInterface $shellHelper = null)
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
+    }
+
+    /**
+     * @param ShellHelperInterface $shellHelper
+     */
+    public function setShellHelper(ShellHelperInterface $shellHelper)
+    {
+        $this->shellHelper = $shellHelper;
     }
 
     /**
@@ -276,5 +287,4 @@ class GitHelper extends Helper
 
         return $this->execute($args, $dir, $mustRun);
     }
-
 }

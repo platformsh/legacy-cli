@@ -32,7 +32,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
         $sshUrl = $this->getSelectedEnvironment()
           ->getSshUrl($input->getOption('app'));
 
-        $util = new RelationshipsUtil($output);
+        $util = new RelationshipsUtil($this->getHelper('shell'));
         $relationships = $util->getRelationships($sshUrl);
         if (!$relationships) {
             $output->writeln('No relationships found');

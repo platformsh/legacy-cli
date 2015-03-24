@@ -7,10 +7,13 @@ use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Helper\ShellHelperInterface;
 use Platformsh\Cli\Local\LocalProject;
-use Symfony\Component\Console\Output\OutputInterface;
+use Platformsh\Cli\Util\HasLoggerTrait;
+use Psr\Log\LoggerInterface;
 
 abstract class ToolstackBase implements ToolstackInterface
 {
+
+    use HasLoggerTrait;
 
     public $preventArchive = false;
 
@@ -38,9 +41,6 @@ abstract class ToolstackBase implements ToolstackInterface
     protected $buildDir;
     protected $absoluteLinks = false;
 
-    /** @var OutputInterface */
-    protected $output;
-
     /** @var FilesystemHelper */
     protected $fsHelper;
 
@@ -58,8 +58,8 @@ abstract class ToolstackBase implements ToolstackInterface
     public function __construct($fsHelper = null, ShellHelperInterface $shellHelper = null, $gitHelper = null)
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper($shellHelper);
-        $this->gitHelper = $gitHelper ?: new GitHelper();
+        $this->fsHelper = $fsHelper ?: new FilesystemHelper($this->shellHelper);
+        $this->gitHelper = $gitHelper ?: new GitHelper($this->shellHelper);
 
         $this->specialDestinations = array(
           "favicon.ico" => "{webroot}",
@@ -71,12 +71,14 @@ abstract class ToolstackBase implements ToolstackInterface
     }
 
     /**
-     * @inheritdoc
+     * Overrides HasLoggerTrait::setLogger()
+     *
+     * @param LoggerInterface $logger
      */
-    public function setOutput(OutputInterface $output)
+    public function setLogger(LoggerInterface $logger)
     {
-        $this->output = $output;
-        $this->shellHelper->setOutput($output);
+        $this->logger = $logger;
+        $this->shellHelper->setLogger($logger);
     }
 
     /**
@@ -114,7 +116,7 @@ abstract class ToolstackBase implements ToolstackInterface
                 if (in_array($relSource, $this->ignoredFiles)) {
                     continue;
                 }
-                $this->output->writeln("Symlinking $relSource to $relDestination");
+                $this->getLogger()->notice("Symlinking $relSource to $relDestination");
                 $destination = $absDestination;
                 // Do not overwrite directories with files.
                 if (!is_dir($source) && is_dir($destination)) {
@@ -122,7 +124,7 @@ abstract class ToolstackBase implements ToolstackInterface
                 }
                 // Delete existing files, emitting a warning.
                 if (file_exists($destination)) {
-                    $this->output->writeln(
+                    $this->getLogger()->warning(
                       sprintf(
                         "Overriding existing path '%s' in destination",
                         str_replace($this->buildDir . '/', '', $destination)
@@ -196,7 +198,7 @@ abstract class ToolstackBase implements ToolstackInterface
         $repositoryGitIgnore = "$repositoryDir/.gitignore";
         $appGitIgnore = $this->appRoot . '/.gitignore';
         if (!file_exists($appGitIgnore) && !file_exists($repositoryGitIgnore)) {
-            $this->output->writeln("Creating a .gitignore file");
+            $this->getLogger()->notice("Creating a .gitignore file");
             copy($source, $appGitIgnore);
         }
     }

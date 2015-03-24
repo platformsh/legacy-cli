@@ -2,8 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Client\Model\Environment;
@@ -134,7 +132,9 @@ class ProjectGetCommand extends PlatformCommand
         }
         $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
 
-        $gitHelper = new GitHelper(new ShellHelper($output));
+        /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setShellHelper($this->getHelper('shell'));
 
         // First check if the repo actually exists.
         $repoHead = $gitHelper->execute(array('ls-remote', $gitUrl, 'HEAD'), false);

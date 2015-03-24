@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputInterface;
@@ -61,7 +60,8 @@ class ProjectDrushAliasesCommand extends PlatformCommand
         $homeDir = $this->getHelper('fs')
                         ->getHomeDirectory();
 
-        $drushHelper = new DrushHelper($output);
+        /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
+        $drushHelper = $this->getHelper('drush');
         $drushHelper->ensureInstalled();
         $drushHelper->setHomeDir($homeDir);
 

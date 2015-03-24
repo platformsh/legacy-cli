@@ -2,9 +2,9 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
-use Symfony\Component\Console\Output\OutputInterface;
+use Platformsh\Cli\Util\LoggerAwareInterface;
 
-interface ToolstackInterface
+interface ToolstackInterface extends LoggerAwareInterface
 {
 
     /**
@@ -13,13 +13,6 @@ interface ToolstackInterface
      * @return string|false
      */
     public function getKey();
-
-    /**
-     * Set the output stream for the toolstack.
-     *
-     * @param OutputInterface $output
-     */
-    public function setOutput(OutputInterface $output);
 
     /**
      * Detect if the files in a given directory belong to this toolstack.

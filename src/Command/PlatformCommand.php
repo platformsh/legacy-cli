@@ -4,11 +4,14 @@ namespace Platformsh\Cli\Command;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Util\CustomConsoleLogger;
+use Platformsh\Cli\Util\LoggerAwareInterface;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -31,6 +34,8 @@ abstract class PlatformCommand extends Command
 
     /** @var OutputInterface|null */
     protected $output;
+    /** @var LoggerInterface|null */
+    protected $logger;
 
     protected $envArgName = 'environment';
     protected $sessionId = 'default';
@@ -111,6 +116,7 @@ abstract class PlatformCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->output = $output;
+        $this->logger = new CustomConsoleLogger($output);
         if ($input->hasOption('session-id') && $input->getOption('session-id')) {
             $this->sessionId = $input->getOption('session-id');
         }
@@ -294,6 +300,18 @@ abstract class PlatformCommand extends Command
         }
 
         return $project;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getHelper($name)
+    {
+        $helper = parent::getHelper($name);
+        if ($this->logger && $helper instanceof LoggerAwareInterface) {
+            $helper->setLogger($this->logger);
+        }
+        return $helper;
     }
 
     /**

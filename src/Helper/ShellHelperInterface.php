@@ -24,16 +24,6 @@ interface ShellHelperInterface
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = false);
 
     /**
-     * @param OutputInterface $output
-     */
-    public function __construct(OutputInterface $output = null);
-
-    /**
-     * @param OutputInterface $output
-     */
-    public function setOutput(OutputInterface $output);
-
-    /**
      * Check whether a shell command exists.
      *
      * @param string $command

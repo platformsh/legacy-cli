@@ -60,8 +60,8 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($input->getOption('app'));
 
-        $util = new RelationshipsUtil($output);
-        $database = $util->chooseDatabase($sshUrl, $input);
+        $util = new RelationshipsUtil($this->getHelper('shell'));
+        $database = $util->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             return 1;
         }

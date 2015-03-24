@@ -64,7 +64,9 @@ class EnvironmentCheckoutCommand extends PlatformCommand
 
         $projectRoot = $this->getProjectRoot();
 
-        $gitHelper = new GitHelper(new ShellHelper($output));
+        /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setShellHelper($this->getHelper('shell'));
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
 
         $branch = $this->branchExists($specifiedBranch, $project, $gitHelper);

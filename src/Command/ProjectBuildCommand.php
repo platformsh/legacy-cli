@@ -117,7 +117,7 @@ class ProjectBuildCommand extends PlatformCommand
         }
 
         try {
-            $builder = new LocalBuild($settings, $output);
+            $builder = new LocalBuild($settings, $this->logger);
             $success = $builder->buildProject($projectRoot, $apps);
         } catch (\Exception $e) {
             $output->writeln("<error>The build failed with an error</error>");

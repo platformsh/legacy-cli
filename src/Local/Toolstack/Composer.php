@@ -16,7 +16,7 @@ class Composer extends ToolstackBase
         $this->specialDestinations = array();
         $this->preventArchive = true;
 
-        $this->output->writeln("Found a composer.json file; installing dependencies");
+        $this->getLogger()->notice("Found a composer.json file; installing dependencies");
 
         $args = array('composer', 'install', '--no-progress', '--no-interaction');
         $this->shellHelper->execute($args, $this->buildDir, true, false);

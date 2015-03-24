@@ -5,16 +5,19 @@ use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
-use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
+use Platformsh\Cli\Util\HasLoggerTrait;
+use Platformsh\Cli\Util\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Parser;
 
-class LocalBuild
+class LocalBuild implements LoggerAwareInterface
 {
 
+    use HasLoggerTrait;
+
     protected $settings;
-    protected $output;
     protected $fsHelper;
     protected $gitHelper;
 
@@ -32,17 +35,22 @@ class LocalBuild
 
     /**
      * @param array           $settings
-     * @param OutputInterface $output
+     * @param LoggerInterface $logger
      * @param object          $fsHelper
      * @param object          $gitHelper
      */
-    public function __construct(array $settings = array(), OutputInterface $output = null, $fsHelper = null, $gitHelper = null)
+    public function __construct(array $settings = array(), LoggerInterface $logger = null, $fsHelper = null, $gitHelper = null)
     {
         $this->settings = $settings;
-        $this->output = $output ?: new NullOutput();
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper(new ShellHelper($output));
+        $this->logger = $logger ?: new NullLogger();
+
+        $shellHelper = new ShellHelper();
+        $shellHelper->setLogger($this->logger);
+
+        $this->fsHelper = $fsHelper ?: new FilesystemHelper($shellHelper);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
-        $this->gitHelper = $gitHelper ?: new GitHelper();
+
+        $this->gitHelper = $gitHelper ?: new GitHelper($shellHelper);
     }
 
     /**
@@ -71,13 +79,11 @@ class LocalBuild
         $notFounds = array_diff($apps, $identifiers);
         if ($notFounds) {
             foreach ($notFounds as $notFound) {
-                $this->output->writeln("Application not found: <comment>$notFound</comment>");
+                $this->getLogger()->warning("Application not found: <comment>$notFound</comment>");
             }
         }
         if (empty($this->settings['noClean'])) {
-            if ($this->output->isVerbose()) {
-                $this->output->writeln("Cleaning up...");
-            }
+            $this->getLogger()->debug("Cleaning up...");
             $this->cleanBuilds($projectRoot);
             $this->cleanArchives($projectRoot);
         }
@@ -225,8 +231,6 @@ class LocalBuild
      */
     protected function buildApp($appRoot, $projectRoot, array $appConfig = array())
     {
-        $verbose = $this->output->isVerbose();
-
         $multiApp = $appRoot != $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $appName = isset($appConfig['name']) ? $appConfig['name'] : false;
         $appIdentifier = $appName ?: $appConfig['_identifier'];
@@ -250,9 +254,7 @@ class LocalBuild
             if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
                 $treeId = $this->getTreeId($appRoot);
                 if ($treeId) {
-                    if ($verbose) {
-                        $this->output->writeln("Tree ID: $treeId");
-                    }
+                    $this->getLogger()->debug("Tree ID: $treeId");
                     $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
                 }
             }
@@ -260,23 +262,23 @@ class LocalBuild
             if ($archive && file_exists($archive)) {
                 $message = "Extracting archive for application <info>$appIdentifier</info>";
                 $message .= '...';
-                $this->output->writeln($message);
+                $this->getLogger()->info($message);
                 $this->fsHelper->extractArchive($archive, $buildDir);
             } else {
                 $message = "Building application <info>$appIdentifier</info>";
                 if ($key = $toolstack->getKey()) {
                     $message .= " using the toolstack <info>$key</info>";
                 }
-                $this->output->writeln($message);
+                $this->getLogger()->info($message);
 
-                $toolstack->setOutput($this->output);
+                $toolstack->setLogger($this->logger);
 
                 $toolstack->build();
 
                 $this->warnAboutHooks($appConfig);
 
                 if ($archive && empty($toolstack->preventArchive)) {
-                    $this->output->writeln("Saving build archive...");
+                    $this->getLogger()->info("Saving build archive...");
                     if (!is_dir(dirname($archive))) {
                         mkdir(dirname($archive));
                     }
@@ -304,12 +306,10 @@ class LocalBuild
         }
         $symlinkTarget = $this->fsHelper->symlink($buildDir, $wwwLink);
 
-        if ($verbose) {
-            $this->output->writeln("Created symlink: $wwwLink -> $symlinkTarget");
-        }
+        $this->getLogger()->debug("Created symlink: $wwwLink -> $symlinkTarget");
 
         $message = "Build complete for <info>$appIdentifier</info>";
-        $this->output->writeln($message);
+        $this->getLogger()->info($message);
 
         return true;
     }
@@ -327,18 +327,18 @@ class LocalBuild
             return false;
         }
         $indent = '        ';
-        $this->output->writeln(
+        $this->getLogger()->warning(
           "<comment>You have defined the following hook(s). The CLI cannot run them locally.</comment>"
         );
         foreach (array('build', 'deploy') as $hookType) {
             if (empty($appConfig['hooks'][$hookType])) {
                 continue;
             }
-            $this->output->writeln("    $hookType: |");
+            $this->getLogger()->info("    $hookType: |");
             $hooks = (array) $appConfig['hooks'][$hookType];
             $asString = implode("\n", array_map('trim', $hooks));
             $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
-            $this->output->writeln($withIndent);
+            $this->getLogger()->info($withIndent);
         }
 
         return true;
@@ -467,7 +467,7 @@ class LocalBuild
             }
             if ($keepMax !== null && ($numKept >= $keepMax) || ($maxAge !== null && $now - filemtime($filename) > $maxAge)) {
                 if (!$quiet) {
-                    $this->output->writeln("Deleting: " . basename($filename));
+                    $this->getLogger()->info("Deleting: " . basename($filename));
                 }
                 $this->fsHelper->remove($filename);
                 $numDeleted++;

@@ -11,30 +11,28 @@ use Symfony\Component\Console\Output\OutputInterface;
 class RelationshipsUtil
 {
 
-    protected $output;
     protected $shellHelper;
 
     /**
-     * @param OutputInterface $output
      * @param ShellHelperInterface $shellHelper
      */
-    public function __construct(OutputInterface $output, ShellHelperInterface $shellHelper = null)
+    public function __construct(ShellHelperInterface $shellHelper = null)
     {
-        $this->output = $output;
-        $this->shellHelper = $shellHelper ?: new ShellHelper($output);
+        $this->shellHelper = $shellHelper ?: new ShellHelper();
     }
 
     /**
      * @param string          $sshUrl
      * @param InputInterface  $input
+     * @param OutputInterface $output
      *
      * @return array|false
      */
-    public function chooseDatabase($sshUrl, InputInterface $input)
+    public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
     {
         $relationships = $this->getRelationships($sshUrl);
         if (empty($relationships['database'])) {
-            $this->output->writeln("No databases found");
+            $output->writeln("No databases found");
             return false;
         }
         elseif (count($relationships['database']) > 1) {
@@ -43,7 +41,7 @@ class RelationshipsUtil
             foreach ($relationships['database'] as $key => $database) {
                 $choices[$key] = $database['host'] . '/' . $database['path'];
             }
-            $key = $questionHelper->choose($choices, 'Enter a number to choose a database', $input, $this->output);
+            $key = $questionHelper->choose($choices, 'Enter a number to choose a database', $input, $output);
             $database = $relationships['database'][$key];
         }
         else {
