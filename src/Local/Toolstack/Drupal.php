@@ -273,22 +273,52 @@ class Drupal extends ToolstackBase
         $resources = CLI_ROOT . '/resources/drupal';
         $shared = $this->getSharedDir();
 
-        // The build has been done, create a settings.php if it is missing.
-        $this->fsHelper->copy($resources . '/settings.php', $sitesDefault . '/settings.php');
+        $defaultSettingsPhp = 'settings.php';
+        $defaultSettingsLocal = 'settings.local.php';
+
+        // Override settings.php and settings.local.php for Drupal 8.
+        if ($this->isDrupal8($this->buildDir)) {
+            $defaultSettingsPhp = '8/settings.php';
+            $defaultSettingsLocal = '8/settings.local.php';
+        }
+
+        // The build has been done: create a settings.php if it is missing.
+        if (!file_exists($sitesDefault . '/settings.php')) {
+            copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
+        }
 
         // Create the shared/settings.local.php if it doesn't exist. Everything
         // in shared will be symlinked into sites/default.
-        $this->fsHelper->copy($resources . '/settings.local.php', $shared . '/settings.local.php');
+        $settingsLocal = $shared . '/settings.local.php';
+        if (!file_exists($settingsLocal)) {
+            $this->output->writeln("Creating file: <info>$settingsLocal</info>");
+            copy($resources . '/' . $defaultSettingsLocal, $settingsLocal);
+            $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
+        }
 
         // Create a shared/files directory.
-        if (!file_exists($shared . '/files')) {
-            mkdir($shared . '/files');
+        $sharedFiles = "$shared/files";
+        if (!file_exists($sharedFiles)) {
+            $this->output->writeln("Creating directory: <info>$sharedFiles</info>");
+            $this->output->writeln('This is where Drupal can store public files.');
+            mkdir($sharedFiles);
             // Group write access is potentially useful and probably harmless.
-            chmod($shared . '/files', 0775);
+            chmod($sharedFiles, 0775);
         }
 
         // Symlink all files and folders from shared.
         $this->fsHelper->symlinkAll($shared, $sitesDefault);
     }
 
+    /**
+     * Detect whether the site is Drupal 8.
+     *
+     * @param string $drupalRoot
+     *
+     * @return bool
+     */
+    protected function isDrupal8($drupalRoot)
+    {
+        return file_exists($drupalRoot . '/core/includes/bootstrap.inc');
+    }
 }

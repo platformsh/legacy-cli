@@ -240,6 +240,8 @@ class LocalBuild
         $toolstack = $this->getToolstack($appRoot, $appConfig);
 
         if ($toolstack) {
+            $toolstack->setOutput($this->output);
+
             $buildSettings = $this->settings + array(
                 'multiApp' => $multiApp,
                 'appName' => $appName,
