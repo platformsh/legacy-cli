@@ -1,11 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Helper\ShellHelper;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
-use CommerceGuys\Platform\Cli\Model\Environment;
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,14 +17,14 @@ class EnvironmentCheckoutCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('environment:checkout')
-            ->setAliases(array('checkout'))
-            ->setDescription('Check out an environment')
-            ->addArgument(
-                'id',
-                InputArgument::OPTIONAL,
-                'The ID of the environment to check out. For example: "sprint2"'
-            );
+          ->setName('environment:checkout')
+          ->setAliases(array('checkout'))
+          ->setDescription('Check out an environment')
+          ->addArgument(
+            'id',
+            InputArgument::OPTIONAL,
+            'The ID of the environment to check out. For example: "sprint2"'
+          );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -49,14 +50,15 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             }
             if (!count($environmentList)) {
                 $output->writeln("Use <info>platform branch</info> to create an environment.");
+
                 return 1;
             }
             $chooseEnvironmentText = "Enter a number to check out another environment:";
             $helper = $this->getHelper('question');
             $specifiedBranch = $helper->choose($environmentList, $chooseEnvironmentText, $input, $output);
-        }
-        elseif (empty($specifiedBranch)) {
+        } elseif (empty($specifiedBranch)) {
             $output->writeln("<error>No branch specified.</error>");
+
             return 1;
         }
 
@@ -69,6 +71,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
 
         if (!$branch) {
             $output->writeln("<error>Branch not found: $specifiedBranch</error>");
+
             return 1;
         }
 
@@ -78,19 +81,20 @@ class EnvironmentCheckoutCommand extends PlatformCommand
 
         // Check out the branch.
         $output->writeln("Checking out <info>$branch</info>");
+
         return $gitHelper->checkOut($branch) ? 0 : 1;
     }
 
     /**
      * Check whether a branch exists, locally in Git or on the remote.
      *
-     * @param string $branch
-     * @param array $project
+     * @param string    $branch
+     * @param Project   $project
      * @param GitHelper $gitHelper
      *
      * @return string|false
      */
-    protected function branchExists($branch, array $project, GitHelper $gitHelper)
+    protected function branchExists($branch, Project $project, GitHelper $gitHelper)
     {
         // Check if the Git branch exists locally.
         $candidates = array_unique(array(Environment::sanitizeId($branch), $branch));
@@ -107,6 +111,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
                 return $environment['id'];
             }
         }
+
         return false;
     }
 

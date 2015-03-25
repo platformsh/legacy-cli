@@ -1,8 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Tests;
+namespace Platformsh\Cli\Tests;
 
-use CommerceGuys\Platform\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\LocalProject;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 

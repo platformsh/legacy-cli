@@ -1,14 +1,14 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Integration;
+use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationGetCommand extends PlatformCommand
+class IntegrationGetCommand extends IntegrationCommand
 {
     /**
      * {@inheritdoc}
@@ -16,10 +16,10 @@ class IntegrationGetCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('integration:get')
-            ->setAliases(array('integrations'))
-            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
-            ->setDescription('View project integration(s)');
+          ->setName('integration:get')
+          ->setAliases(array('integrations'))
+          ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
+          ->setDescription('View project integration(s)');
         $this->addProjectOption();
     }
 
@@ -29,24 +29,23 @@ class IntegrationGetCommand extends PlatformCommand
             return 1;
         }
 
-        $client = $this->getPlatformClient($this->project['endpoint']);
-
         $id = $input->getArgument('id');
 
         if ($id) {
-            $integration = Integration::get($id, 'integrations', $client);
+            $integration = $this->getSelectedProject()
+                                ->getIntegration($id);
             if (!$integration) {
                 $output->writeln("Integration not found: <error>$id</error>");
+
                 return 1;
             }
             $results = array($integration);
-        }
-        else {
-            $prototype = new Integration(array(), $client);
-            /** @var Integration[] $results */
-            $results = Integration::getCollection('integrations', array(), $client, $prototype);
+        } else {
+            $results = $this->getSelectedProject()
+                            ->getIntegrations();
             if (!$results) {
                 $output->writeln('No integrations found');
+
                 return 1;
             }
         }
@@ -58,7 +57,7 @@ class IntegrationGetCommand extends PlatformCommand
     }
 
     /**
-     * @param Integration[] $integrations
+     * @param Integration[]   $integrations
      * @param OutputInterface $output
      *
      * @return Table
@@ -68,13 +67,16 @@ class IntegrationGetCommand extends PlatformCommand
         $table = new Table($output);
         $table->setHeaders(array("ID", "Type", "Details"));
         foreach ($integrations as $integration) {
-            $data = $integration->formatData();
-            $table->addRow(array(
-                $integration->id(),
+            $data = $this->formatIntegrationData($integration);
+            $table->addRow(
+              array(
+                $integration['id'],
                 $integration->getProperty('type'),
                 $data,
-              ));
+              )
+            );
         }
+
         return $table;
     }
 

@@ -4,9 +4,9 @@
  * Override Symfony Console's HelpCommand to customize the appearance of help.
  */
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\CustomTextDescriptor;
+use Platformsh\Cli\CustomTextDescriptor;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\HelpCommand as ParentHelpCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
@@ -32,7 +32,8 @@ class HelpCommand extends ParentHelpCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (null === $this->command) {
-            $this->command = $this->getApplication()->find($input->getArgument('command_name'));
+            $this->command = $this->getApplication()
+                                  ->find($input->getArgument('command_name'));
         }
 
         if ($input->getOption('xml')) {
@@ -41,10 +42,14 @@ class HelpCommand extends ParentHelpCommand
 
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor());
-        $helper->describe($output, $this->command, array(
-          'format' => $input->getOption('format'),
-          'raw'    => $input->getOption('raw'),
-        ));
+        $helper->describe(
+          $output,
+          $this->command,
+          array(
+            'format' => $input->getOption('format'),
+            'raw' => $input->getOption('raw'),
+          )
+        );
     }
 
 }

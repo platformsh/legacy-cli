@@ -5,7 +5,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 ### Requirements
 
 * Operating system: Linux, OS X, Windows Vista, Windows 7 (any), or Windows 8 Pro (Win8 Standard does not work due to an issue with symlink permissions)
-* PHP 5.3.3 or higher, with cURL support
+* PHP 5.4.0 or higher, with cURL support
 * [Composer](https://getcomposer.org/)
 * [Drush](https://github.com/drush-ops/drush) (only needed for Drupal projects)
 
@@ -105,7 +105,9 @@ environment
   environment:merge (merge)               Merge an environment
   environment:metadata                    Read or set metadata for an environment
   environment:relationships               List an environment's relationships
-  environment:restore                     Restore the most recent environment backup
+  environment:restore                     Restore an environment backup
+  environment:sql (sql)                   Run SQL on the remote database
+  environment:sql-dump (sql-dump)         Create a local dump of the remote database
   environment:ssh (ssh)                   SSH to the current environment
   environment:synchronize (sync)          Synchronize an environment
   environment:url (url)                   Get the public URL of an environment
@@ -121,6 +123,7 @@ project
   project:get (get)                       Clone and build a project locally
   project:init (init)                     Initialize from a plain Git repository
   project:list (projects)                 Get a list of all active projects
+  project:metadata                        Read or set metadata for a project
 ssh-key
   ssh-key:add                             Add a new SSH key
   ssh-key:delete                          Delete an SSH key

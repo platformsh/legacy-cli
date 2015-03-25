@@ -1,7 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
+use Platformsh\Client\Model\Domain;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -15,53 +16,62 @@ class DomainListCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('domain:list')
-            ->setAliases(array('domains'))
-            ->setDescription('Get a list of all domains')
-            ->addOption(
-                'project',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'The project ID'
-            );
+          ->setName('domain:list')
+          ->setAliases(array('domains'))
+          ->setDescription('Get a list of all domains')
+          ->addOption(
+            'project',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The project ID'
+          );
     }
 
     /**
      * Build a table of domains.
+     *
+     * @param Domain[] $tree
      * @param OutputInterface $output
+     *
+     * @return Table
      */
-    protected function buildDomainTable($tree, $output)
+    protected function buildDomainTable(array $tree, $output)
     {
         $table = new Table($output);
         $table
-            ->setHeaders(array('Name', 'Wildcard', 'SSL enabled', 'Creation date'))
-            ->addRows($this->buildDomainRows($tree));
+          ->setHeaders(array('Name', 'Wildcard', 'SSL enabled', 'Creation date'))
+          ->addRows($this->buildDomainRows($tree));
 
         return $table;
     }
 
     /**
      * Recursively build rows of the domain table.
+     *
+     * @param Domain[] $tree
+     *
+     * @return array
      */
-    protected function buildDomainRows($tree)
+    protected function buildDomainRows(array $tree)
     {
         $rows = array();
 
         foreach ($tree as $domain) {
 
             // Indicate that the domain is a wildcard.
-            $domain['wildcard'] = ($domain['wildcard'] == TRUE) ? "Yes" : "No";
+            $wildcard = ($domain['wildcard'] == true) ? "Yes" : "No";
 
             // Indicate that the domain had a SSL certificate.
-            $domain['ssl']['has_certificate'] = ($domain['ssl']['has_certificate'] == TRUE) ? "Yes" : "No";
+            $hasCert = ($domain['ssl']['has_certificate'] == true) ? "Yes" : "No";
 
             $rows[] = array(
-                $domain['id'],
-                $domain['wildcard'],
-                $domain['ssl']['has_certificate'],
-                $domain['created_at'],
+              $domain['id'],
+              $wildcard,
+              $hasCert,
+              $domain['created_at'],
             );
         }
+
         return $rows;
     }
 
@@ -74,8 +84,9 @@ class DomainListCommand extends PlatformCommand
             return;
         }
 
-        $domains = $this->getDomains($this->project);
-        $project_name = !empty($this->project['name']) ? $this->project['name'] : $this->project['id'];
+        $project = $this->getSelectedProject();
+        $domains = $project->getDomains();
+        $project_name = !empty($project['name']) ? $project['name'] : $project['id'];
 
         if (empty($domains)) {
             $output->writeln("\nNo domains found for " . $project_name);
@@ -87,7 +98,9 @@ class DomainListCommand extends PlatformCommand
 
         $output->writeln("\nAdd a domain to your project by running <info>platform domain:add [domain-name]</info>");
         if (!empty($domains)) {
-            $output->writeln("Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n");
+            $output->writeln(
+              "Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n"
+            );
         }
 
         // Output a newline after the current block of commands.

@@ -1,12 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\Toolstack;
 
-use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
-use CommerceGuys\Platform\Cli\Helper\ShellHelper;
-use CommerceGuys\Platform\Cli\Helper\ShellHelperInterface;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
+use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Helper\ShellHelperInterface;
+use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class ToolstackBase implements ToolstackInterface
@@ -70,12 +70,18 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->ignoredFiles = array('.*');
     }
 
+    /**
+     * @inheritdoc
+     */
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
         $this->shellHelper->setOutput($output);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function prepare($buildDir, $appRoot, $projectRoot, array $settings)
     {
         $this->appRoot = $appRoot;
@@ -116,10 +122,12 @@ abstract class ToolstackBase implements ToolstackInterface
                 }
                 // Delete existing files, emitting a warning.
                 if (file_exists($destination)) {
-                    $this->output->writeln(sprintf(
+                    $this->output->writeln(
+                      sprintf(
                         "Overriding existing path '%s' in destination",
                         str_replace($this->buildDir . '/', '', $destination)
-                      ));
+                      )
+                    );
                     $this->fsHelper->remove($destination);
                 }
                 $this->fsHelper->symlink($source, $destination);
@@ -144,19 +152,29 @@ abstract class ToolstackBase implements ToolstackInterface
         if (!is_dir($shared)) {
             mkdir($shared);
         }
+
         return $shared;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getBuildDir()
     {
         return $this->buildDir;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function install()
     {
         // Override to define install steps.
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getKey()
     {
         return false;

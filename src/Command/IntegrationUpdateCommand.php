@@ -1,8 +1,7 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Integration;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -31,12 +30,12 @@ class IntegrationUpdateCommand extends IntegrationCommand
             return 1;
         }
 
-        $client = $this->getPlatformClient($this->project['endpoint']);
-
         $id = $input->getArgument('id');
-        $integration = Integration::get($id, 'integrations', $client);
+        $integration = $this->getSelectedProject()
+                            ->getIntegration($id);
         if (!$integration) {
             $output->writeln("Integration not found: <error>$id</error>");
+
             return 1;
         }
         $this->values = $integration->getProperties();
@@ -46,8 +45,7 @@ class IntegrationUpdateCommand extends IntegrationCommand
         $integration->update($this->values);
         $output->writeln("Integration <info>$id</info> (<info>{$this->values['type']}</info>) updated");
 
-        /** @var Integration $integration */
-        $output->writeln($integration->formatData());
+        $output->writeln($this->formatIntegrationData($integration));
 
         return 0;
     }

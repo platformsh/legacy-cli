@@ -1,8 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Local;
+namespace Platformsh\Cli\Local;
 
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\GitHelper;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
@@ -45,7 +45,8 @@ class LocalProject
      *
      * @return string The absolute path to the project.
      */
-    public function initialize($dir) {
+    public function initialize($dir)
+    {
         $realPath = realpath($dir);
         if (!$realPath) {
             throw new \RuntimeException("Directory not readable: $dir");
@@ -96,13 +97,14 @@ class LocalProject
         if (!preg_match('/^([a-z][a-z0-9]{12})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $originUrl, $matches)) {
             throw new \RuntimeException("The Git remote 'origin' is not a Platform.sh URL");
         }
+
         return $matches[1];
     }
 
     /**
      * Get a backup name for a directory.
      *
-     * @param $dir
+     * @param     $dir
      * @param int $inc
      *
      * @return string
@@ -114,6 +116,7 @@ class LocalProject
         if (file_exists($backupDir)) {
             return $this->getBackupDir($dir, ++$inc);
         }
+
         return $backupDir;
     }
 
@@ -168,20 +171,22 @@ class LocalProject
      * @return array|null
      *   The current project's configuration.
      */
-    public static function getProjectConfig($projectRoot = null) {
+    public static function getProjectConfig($projectRoot = null)
+    {
         $projectConfig = null;
         $projectRoot = $projectRoot ?: self::getProjectRoot();
         if ($projectRoot) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . self::PROJECT_CONFIG));
         }
+
         return $projectConfig;
     }
 
     /**
      * Add a configuration value to a project.
      *
-     * @param string $key The configuration key
+     * @param string $key   The configuration key
      * @param mixed  $value The configuration value
      * @param string $projectRoot
      *
@@ -190,7 +195,8 @@ class LocalProject
      * @return array
      *   The updated project configuration.
      */
-    public static function writeCurrentProjectConfig($key, $value, $projectRoot = null) {
+    public static function writeCurrentProjectConfig($key, $value, $projectRoot = null)
+    {
         $projectRoot = $projectRoot ?: self::getProjectRoot();
         if (!$projectRoot) {
             throw new \Exception('Project root not found');
@@ -206,7 +212,7 @@ class LocalProject
         $dumper = new Dumper();
         $projectConfig[$key] = $value;
         file_put_contents($file, $dumper->dump($projectConfig));
+
         return $projectConfig;
     }
-
 }

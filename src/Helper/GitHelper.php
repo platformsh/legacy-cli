@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Helper;
+namespace Platformsh\Cli\Helper;
 
 use Symfony\Component\Console\Helper\Helper;
 
@@ -33,7 +33,7 @@ class GitHelper extends Helper
     {
         static $checked;
         if ($checked) {
-            return true;
+            return;
         }
         $version = $this->execute(array('--version'), false);
         if (!is_string($version)) {
@@ -85,9 +85,13 @@ class GitHelper extends Helper
     {
         $args = array('branch', '--list', '--merged', $ref);
         $mergedBranches = $this->execute($args, $dir, $mustRun);
-        $array = array_map(function($element) {
+        $array = array_map(
+          function ($element) {
               return trim($element, ' *');
-          }, explode("\n", $mergedBranches));
+          },
+          explode("\n", $mergedBranches)
+        );
+
         return $array;
     }
 
@@ -101,7 +105,7 @@ class GitHelper extends Helper
      *   run inside a repository.
      * @param bool         $mustRun
      *   Enable exceptions if the Git command fails.
-     * @param bool $quiet
+     * @param bool         $quiet
      *   Suppress command output.
      *
      * @throws \RuntimeException If the repository directory is invalid.
@@ -116,6 +120,7 @@ class GitHelper extends Helper
         }
         // Run the command.
         array_unshift($args, 'git');
+
         return $this->shellHelper->execute($args, $dir, $mustRun, $quiet);
     }
 

@@ -1,30 +1,31 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Activity;
+use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentSynchronizeCommand extends EnvironmentCommand
+class EnvironmentSynchronizeCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:synchronize')
-            ->setAliases(array('sync'))
-            ->setDescription('Synchronize an environment')
-            ->addArgument(
-                'synchronize',
-                InputArgument::IS_ARRAY,
-                'What to synchronize: code, data or both',
-                null
-            );
+          ->setName('environment:synchronize')
+          ->setAliases(array('sync'))
+          ->setDescription('Synchronize an environment')
+          ->addArgument(
+            'synchronize',
+            InputArgument::IS_ARRAY,
+            'What to synchronize: code, data or both',
+            null
+          )
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()
-          ->addEnvironmentOption()
-          ->addNoWaitOption();
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -33,14 +34,18 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environmentId = $this->environment['id'];
+        $selectedEnvironment = $this->getSelectedEnvironment();
+        $environmentId = $selectedEnvironment['id'];
 
-        if (!$this->operationAvailable('synchronize')) {
-            $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be synchronized.");
+        if (!$selectedEnvironment->operationAvailable('synchronize')) {
+            $output->writeln(
+              "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
+            );
+
             return 1;
         }
 
-        $parentId = $this->environment['parent'];
+        $parentId = $selectedEnvironment['parent'];
 
         $questionHelper = $this->getHelper('question');
 
@@ -52,36 +57,46 @@ class EnvironmentSynchronizeCommand extends EnvironmentCommand
             }
             $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
             $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
-            if (!$questionHelper->confirm("Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?", $input, $output, false)) {
+            if (!$questionHelper->confirm(
+              "Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?",
+              $input,
+              $output,
+              false
+            )
+            ) {
                 return 0;
             }
-        }
-        else {
-            $syncCode = $questionHelper->confirm("Synchronize code from <info>$parentId</info> to <info>$environmentId</info>?", $input, $output, false);
-            $syncData = $questionHelper->confirm("Synchronize data from <info>$parentId</info> to <info>$environmentId</info>?", $input, $output, false);
+        } else {
+            $syncCode = $questionHelper->confirm(
+              "Synchronize code from <info>$parentId</info> to <info>$environmentId</info>?",
+              $input,
+              $output,
+              false
+            );
+            $syncData = $questionHelper->confirm(
+              "Synchronize data from <info>$parentId</info> to <info>$environmentId</info>?",
+              $input,
+              $output,
+              false
+            );
         }
         if (!$syncCode && !$syncData) {
             $output->writeln("<error>You must synchronize at least code or data.</error>");
+
             return 1;
         }
 
         $output->writeln("Synchronizing environment <info>$environmentId</info>");
 
-        $params = array(
-            'synchronize_code' => $syncCode,
-            'synchronize_data' => $syncData,
-        );
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $response = $client->synchronizeEnvironment($params);
+        $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
         if (!$input->getOption('no-wait')) {
-            $success = Activity::waitAndLog(
-              $response,
-              $client,
+            $success = ActivityUtil::waitAndLog(
+              $activity,
               $output,
               "Synchronization complete",
               "Synchronization failed"
             );
-            if ($success === false) {
+            if (!$success) {
                 return 1;
             }
         }

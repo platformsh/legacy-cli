@@ -1,15 +1,18 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Helper;
+namespace Platformsh\Cli\Helper;
 
-use CommerceGuys\Platform\Cli\Local\LocalProject;
-use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
-class DrushHelper extends Helper {
+class DrushHelper extends Helper
+{
 
     const AUTO_REMOVE_KEY = 'platformsh-cli-auto-remove';
 
@@ -44,7 +47,7 @@ class DrushHelper extends Helper {
 
     /**
      * @param string $minVersion
-     * @param bool $attemptInstall
+     * @param bool   $attemptInstall
      *
      * @throws \Exception
      */
@@ -54,11 +57,11 @@ class DrushHelper extends Helper {
         if ($returnCode && $returnCode === 127) {
             if ($attemptInstall && $this->install()) {
                 $this->ensureInstalled($minVersion, false);
+
                 return;
             }
             throw new \Exception('Drush must be installed');
-        }
-        elseif ($returnCode) {
+        } elseif ($returnCode) {
             throw new \Exception('A Drush error occurred');
         }
         if (!$minVersion) {
@@ -67,7 +70,9 @@ class DrushHelper extends Helper {
         $versionParts = explode(':', $drushVersion[0]);
         $versionNumber = trim($versionParts[1]);
         if (version_compare($versionNumber, $minVersion, '<')) {
-            throw new \Exception(sprintf('Drush version %s found, but %s (or later) is required', $versionNumber, $minVersion));
+            throw new \Exception(
+              sprintf('Drush version %s found, but %s (or later) is required', $versionNumber, $minVersion)
+            );
         }
     }
 
@@ -82,6 +87,7 @@ class DrushHelper extends Helper {
     protected function install($version = '6.4.0')
     {
         $args = array('composer', 'global', 'require', 'drush/drush:' . $version);
+
         return (bool) $this->shellHelper->execute($args, null, false, false);
     }
 
@@ -98,13 +104,13 @@ class DrushHelper extends Helper {
     /**
      * Execute a Drush command.
      *
-     * @param string[]     $args
+     * @param string[] $args
      *   Command arguments (everything after 'drush').
-     * @param string $dir
+     * @param string   $dir
      *   The working directory.
-     * @param bool         $mustRun
+     * @param bool     $mustRun
      *   Enable exceptions if the command fails.
-     * @param bool         $quiet
+     * @param bool     $quiet
      *   Suppress command output.
      *
      * @return string|bool
@@ -112,6 +118,7 @@ class DrushHelper extends Helper {
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
     {
         array_unshift($args, $this->getDrushExecutable());
+
         return $this->shellHelper->execute($args, $dir, $mustRun, $quiet);
     }
 
@@ -126,6 +133,7 @@ class DrushHelper extends Helper {
         if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = exec('where drush'))) {
             $executable = $fullPath;
         }
+
         return $executable;
     }
 
@@ -144,27 +152,29 @@ class DrushHelper extends Helper {
      */
     public function getAliases($groupName)
     {
-        return $this->execute(array(
+        return $this->execute(
+          array(
             'site-alias',
             '--pipe',
             '--format=list',
             '@' . $groupName,
-          ));
+          )
+        );
     }
 
     /**
      * Create Drush aliases for the provided project and environments.
      *
-     * @param array $project The project
-     * @param string $projectRoot The project root
-     * @param array $environments The environments
-     * @param bool $merge Whether to merge existing alias settings.
+     * @param Project       $project      The project
+     * @param string        $projectRoot  The project root
+     * @param Environment[] $environments The environments
+     * @param bool          $merge        Whether to merge existing alias settings.
      *
      * @throws \Exception
      *
      * @return bool Whether any aliases have been created.
      */
-    public function createAliases($project, $projectRoot, $environments, $merge = true)
+    public function createAliases(Project $project, $projectRoot, $environments, $merge = true)
     {
         // Ignore the project if it doesn't contain a Drupal application.
         $repository = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
@@ -243,7 +253,7 @@ class DrushHelper extends Helper {
 
         $header = "<?php\n"
           . "/**\n * @file"
-          . "\n * Drush aliases for the Platform.sh project \"{$project['name']}\"."
+          . "\n * Drush aliases for the Platform.sh project \"{$project['title']}\"."
           . "\n *"
           . "\n * This file is auto-generated by the Platform.sh CLI."
           . "\n *"
@@ -258,6 +268,7 @@ class DrushHelper extends Helper {
         $export = $header . $userDefined . $localAlias . $autoGenerated;
 
         $this->writeAliasFile($filename, $export);
+
         return true;
     }
 
@@ -278,7 +289,7 @@ class DrushHelper extends Helper {
 
     /**
      * @param string $name
-     * @param array $alias
+     * @param array  $alias
      *
      * @return string
      */
@@ -288,20 +299,22 @@ class DrushHelper extends Helper {
     }
 
     /**
-     * @param $environment
+     * @param Environment $environment
+     *
      * @return array|false
      */
     protected function generateRemoteAlias($environment)
     {
-        if (!isset($environment['_links']['ssh'])) {
+        if (!$environment->hasLink('ssh')) {
             return false;
         }
-        $sshUrl = parse_url($environment['_links']['ssh']['href']);
+        $sshUrl = parse_url($environment->getLink('ssh'));
         if (!$sshUrl) {
             return false;
         }
+
         return array(
-          'uri' => $environment['_links']['public-url']['href'],
+          'uri' => $environment->getLink('public-url'),
           'remote-host' => $sshUrl['host'],
           'remote-user' => $sshUrl['user'],
           'root' => '/app/public',

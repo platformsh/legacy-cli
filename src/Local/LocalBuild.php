@@ -1,10 +1,10 @@
 <?php
-namespace CommerceGuys\Platform\Cli\Local;
+namespace Platformsh\Cli\Local;
 
-use CommerceGuys\Platform\Cli\Helper\FilesystemHelper;
-use CommerceGuys\Platform\Cli\Helper\GitHelper;
-use CommerceGuys\Platform\Cli\Helper\ShellHelper;
-use CommerceGuys\Platform\Cli\Local\Toolstack\ToolstackInterface;
+use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
@@ -241,6 +241,7 @@ class LocalBuild
 
         if ($toolstack) {
             $toolstack->setOutput($this->output);
+
             $buildSettings = $this->settings + array(
                 'multiApp' => $multiApp,
                 'appName' => $appName,
@@ -248,7 +249,7 @@ class LocalBuild
             $toolstack->prepare($buildDir, $appRoot, $projectRoot, $buildSettings);
 
             $archive = false;
-            if (empty($this->settings['noArchive'])) {
+            if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
                 $treeId = $this->getTreeId($appRoot);
                 if ($treeId) {
                     if ($verbose) {
@@ -287,9 +288,7 @@ class LocalBuild
 
             // Allow the toolstack to change the build dir.
             $buildDir = $toolstack->getBuildDir();
-        }
-        else {
-            $this->output->writeln("Leaving application <info>$appIdentifier</info> in place");
+        } else {
             $buildDir = $appRoot;
             $this->warnAboutHooks($appConfig);
         }
@@ -369,7 +368,13 @@ class LocalBuild
             $blacklist = $this->getActiveBuilds($projectRoot);
         }
 
-        return $this->cleanDirectory($projectRoot . '/' . LocalProject::BUILD_DIR, $maxAge, $keepMax, $blacklist, $quiet);
+        return $this->cleanDirectory(
+          $projectRoot . '/' . LocalProject::BUILD_DIR,
+          $maxAge,
+          $keepMax,
+          $blacklist,
+          $quiet
+        );
     }
 
     /**
@@ -420,7 +425,13 @@ class LocalBuild
      */
     public function cleanArchives($projectRoot, $maxAge = null, $keepMax = 10, $quiet = true)
     {
-        return $this->cleanDirectory($projectRoot . '/' . LocalProject::ARCHIVE_DIR, $maxAge, $keepMax, array(), $quiet);
+        return $this->cleanDirectory(
+          $projectRoot . '/' . LocalProject::ARCHIVE_DIR,
+          $maxAge,
+          $keepMax,
+          array(),
+          $quiet
+        );
     }
 
     /**
@@ -444,9 +455,12 @@ class LocalBuild
             return array(0, 0);
         }
         // Sort files by modified time (descending).
-        usort($files, function ($a, $b) {
-            return filemtime($a) < filemtime($b);
-        });
+        usort(
+          $files,
+          function ($a, $b) {
+              return filemtime($a) < filemtime($b);
+          }
+        );
         $now = time();
         $numDeleted = 0;
         $numKept = 0;

@@ -1,11 +1,12 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\Toolstack;
 
 class Symfony extends Composer
 {
 
-    public function getKey() {
+    public function getKey()
+    {
         return 'php:symfony';
     }
 
@@ -14,6 +15,7 @@ class Symfony extends Composer
         $composerJsonFile = "$appRoot/composer.json";
         if (file_exists($composerJsonFile)) {
             $composerJson = json_decode(file_get_contents($composerJsonFile), true);
+
             return isset($composerJson['require']['symfony/symfony']);
         }
 

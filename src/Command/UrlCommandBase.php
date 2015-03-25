@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -12,23 +12,23 @@ abstract class UrlCommandBase extends PlatformCommand
     protected function configure()
     {
         $this->addOption(
-            'browser',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'The browser to use to open the URL. Set 0 for none.'
-          )
-          ->addOption(
-            'pipe',
-            null,
-            InputOption::VALUE_NONE,
-            'Output the raw URL, suitable for piping to another command.'
-          );
+          'browser',
+          null,
+          InputOption::VALUE_OPTIONAL,
+          'The browser to use to open the URL. Set 0 for none.'
+        )
+             ->addOption(
+               'pipe',
+               null,
+               InputOption::VALUE_NONE,
+               'Output the raw URL, suitable for piping to another command.'
+             );
     }
 
     /**
      * Open a URL in the browser, or print it.
      *
-     * @param string $url
+     * @param string          $url
      * @param InputInterface  $input
      * @param OutputInterface $output
      */
@@ -38,6 +38,7 @@ abstract class UrlCommandBase extends PlatformCommand
 
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->write($url);
+
             return;
         }
 
@@ -46,12 +47,10 @@ abstract class UrlCommandBase extends PlatformCommand
         if ($browser === '0') {
             // The user has requested not to use a browser.
             $browser = false;
-        }
-        elseif (empty($browser)) {
+        } elseif (empty($browser)) {
             // Find a default browser to use.
             $browser = $this->getDefaultBrowser();
-        }
-        elseif (!$shellHelper->commandExists($browser)) {
+        } elseif (!$shellHelper->commandExists($browser)) {
             // The user has specified a browser, but it can't be found.
             $output->writeln("<error>Browser not found: $browser</error>");
             $browser = false;
@@ -61,6 +60,7 @@ abstract class UrlCommandBase extends PlatformCommand
             $opened = $shellHelper->execute(array($browser, $url));
             if ($opened) {
                 $output->writeln("Opened: $url");
+
                 return;
             }
         }
@@ -82,6 +82,7 @@ abstract class UrlCommandBase extends PlatformCommand
                 return $browser;
             }
         }
+
         return false;
     }
 

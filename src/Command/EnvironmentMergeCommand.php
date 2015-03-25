@@ -1,25 +1,26 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Activity;
+use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentMergeCommand extends EnvironmentCommand
+class EnvironmentMergeCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:merge')
-            ->setAliases(array('merge'))
-            ->setDescription('Merge an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
+          ->setName('environment:merge')
+          ->setAliases(array('merge'))
+          ->setDescription('Merge an environment')
+          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()
-          ->addEnvironmentOption()
-          ->addNoWaitOption();
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -28,37 +29,44 @@ class EnvironmentMergeCommand extends EnvironmentCommand
             return 1;
         }
 
-        $environmentId = $this->environment['id'];
+        $selectedEnvironment = $this->getSelectedEnvironment();
+        $environmentId = $selectedEnvironment['id'];
 
-        if (!$this->operationAvailable('merge')) {
+        if (!$selectedEnvironment->operationAvailable('merge')) {
             $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be merged.");
+
             return 1;
         }
 
-        $parentId = $this->environment['parent'];
+        $parentId = $selectedEnvironment['parent'];
 
-        if (!$this->getHelper('question')->confirm("Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?", $input, $output)) {
+        if (!$this->getHelper('question')
+                  ->confirm(
+                    "Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?",
+                    $input,
+                    $output
+                  )
+        ) {
             return 0;
         }
 
-        $output->writeln("Merging environment <info>$environmentId</info> with <info>$parentId</info>");
+        $output->writeln("Merging <info>$environmentId</info> with <info>$parentId</info>");
 
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $response = $client->mergeEnvironment();
+        $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
-            $success = Activity::waitAndLog(
-              $response,
-              $client,
+            $success = ActivityUtil::waitAndLog(
+              $activity,
               $output,
               'Merge complete',
               'Merge failed'
             );
-            if ($success === false) {
+            if (!$success) {
                 return 1;
             }
         }
+
         // Reload the stored environments.
-        $this->getEnvironments($this->project, true);
+        $this->getEnvironments(null, true);
 
         return 0;
     }

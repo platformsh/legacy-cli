@@ -1,10 +1,10 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Local\LocalBuild;
-use CommerceGuys\Platform\Cli\Local\LocalProject;
-use CommerceGuys\Platform\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -16,51 +16,55 @@ class ProjectBuildCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('project:build')
-            ->setAliases(array('build'))
-            ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
-            ->setDescription('Build the current project locally')
-            ->addOption(
-                'abslinks',
-                'a',
-                InputOption::VALUE_NONE,
-                'Use absolute links'
-            )->addOption(
-                'no-clean',
-                null,
-                InputOption::VALUE_NONE,
-                'Do not remove old builds'
-            )->addOption(
-                'no-archive',
-                null,
-                InputOption::VALUE_NONE,
-                'Do not create or use a build archive'
-            );
+          ->setName('project:build')
+          ->setAliases(array('build'))
+          ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
+          ->setDescription('Build the current project locally')
+          ->addOption(
+            'abslinks',
+            'a',
+            InputOption::VALUE_NONE,
+            'Use absolute links'
+          )
+          ->addOption(
+            'no-clean',
+            null,
+            InputOption::VALUE_NONE,
+            'Do not remove old builds'
+          )
+          ->addOption(
+            'no-archive',
+            null,
+            InputOption::VALUE_NONE,
+            'Do not create or use a build archive'
+          )
+          ->addOption(
+            'no-cache',
+            null,
+            InputOption::VALUE_NONE,
+            'Disable caching.'
+          );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             $this->addOption(
-                'working-copy',
-                null,
-                InputOption::VALUE_NONE,
-                'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
-            )->addOption(
-                'concurrency',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'Drush: set the number of concurrent projects that will be processed at the same time.',
-                8
-            )->addOption(
-              'no-cache',
+              'working-copy',
               null,
               InputOption::VALUE_NONE,
-              'Drush: disable pm-download caching.'
+              'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
+            )
+            ->addOption(
+              'concurrency',
+              null,
+              InputOption::VALUE_OPTIONAL,
+              'Drush: set the number of concurrent projects that will be processed at the same time.',
+              8
             );
         }
     }
 
     public function isLocal()
     {
-        return TRUE;
+        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -68,9 +72,10 @@ class ProjectBuildCommand extends PlatformCommand
         $projectRoot = $this->getProjectRoot();
         if (empty($projectRoot)) {
             $output->writeln("<error>You must run this command from a project folder.</error>");
+
             return 1;
         }
-        if ($this->config) {
+        if ($this->isLoggedIn()) {
             $project = $this->getCurrentProject();
             if (!$project) {
                 throw new \RuntimeException("Could not determine the current project");
@@ -80,12 +85,11 @@ class ProjectBuildCommand extends PlatformCommand
                 throw new \RuntimeException("Could not determine the current environment");
             }
             $envId = $environment['id'];
-        }
-        else {
+        } else {
             // Login was skipped so we figure out the environment ID from git.
             $head = file($projectRoot . '/' . LocalProject::REPOSITORY_DIR . '/.git/HEAD');
             $branchRef = $head[0];
-            $branch = trim(substr($branchRef,16));
+            $branch = trim(substr($branchRef, 16));
             $envId = $branch;
         }
 
@@ -117,8 +121,10 @@ class ProjectBuildCommand extends PlatformCommand
             $success = $builder->buildProject($projectRoot, $apps);
         } catch (\Exception $e) {
             $output->writeln("<error>The build failed with an error</error>");
-            $formattedMessage = $this->getHelper('formatter')->formatBlock($e->getMessage(), 'error');
+            $formattedMessage = $this->getHelper('formatter')
+                                     ->formatBlock($e->getMessage(), 'error');
             $output->writeln($formattedMessage);
+
             return 1;
         }
 
