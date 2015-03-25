@@ -66,11 +66,18 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
             return 1;
         }
 
-        // @todo correct dump command for pgsql and other DBs
-        $dumpCommand = "mysqldump --no-autocommit --single-transaction"
-          . " --opt -Q {$database['path']}"
-          . " --host={$database['host']} --port={$database['port']}"
-          . " --user={$database['username']} --password={$database['password']}";
+        switch ($database['scheme']) {
+            case 'pgsql':
+                $dumpCommand = "pg_dump postgresql://://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
+                break;
+
+            default:
+                $dumpCommand = "mysqldump --no-autocommit --single-transaction"
+                  . " --opt -Q {$database['path']}"
+                  . " --host={$database['host']} --port={$database['port']}"
+                  . " --user={$database['username']} --password={$database['password']}";
+                break;
+        }
 
         set_time_limit(0);
 

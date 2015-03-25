@@ -37,9 +37,17 @@ class EnvironmentSqlCommand extends PlatformCommand
             return 1;
         }
 
-        $sqlCommand = "mysql --no-auto-rehash --database={$database['path']}"
-          . " --host={$database['host']} --port={$database['port']}"
-          . " --user={$database['username']} --password={$database['password']}";
+        switch ($database['scheme']) {
+            case 'pgsql':
+                $sqlCommand = "pgsql postgresql://://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
+                break;
+
+            default:
+                $sqlCommand = "mysql --no-auto-rehash --database={$database['path']}"
+                  . " --host={$database['host']} --port={$database['port']}"
+                  . " --user={$database['username']} --password={$database['password']}";
+                break;
+        }
 
         $query = $input->getArgument('query');
         if ($query) {
