@@ -44,9 +44,24 @@ class EnvironmentSqlCommand extends PlatformCommand
         $query = $input->getArgument('query');
         if ($query) {
             $sqlCommand .= ' --execute ' . escapeshellarg($query) . ' 2>&1';
+            if ($this->isTerminal($output)) {
+                // Switch on pseudo-tty allocation when there is a local tty.
+                $sshOptions .= ' -t';
+            }
         }
         else {
-            $sshOptions .= ' -qt';
+            // Force pseudo-tty allocation when an SQL shell is requested.
+            $sshOptions .= ' -tt';
+        }
+
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $sshOptions .= ' -vv';
+        }
+        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            $sshOptions .= ' -v';
+        }
+        elseif ($output->getVerbosity() <= OutputInterface::VERBOSITY_VERBOSE) {
+            $sshOptions .= ' -q';
         }
 
         $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
