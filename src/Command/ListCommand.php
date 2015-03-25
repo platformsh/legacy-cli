@@ -4,9 +4,9 @@
  * Override Symfony Console's ListCommand to customize the list's appearance.
  */
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\CustomTextDescriptor;
+use Platformsh\Cli\CustomTextDescriptor;
 use Symfony\Component\Console\Command\ListCommand as ParentListCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -23,11 +23,15 @@ class ListCommand extends ParentListCommand
 
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor());
-        $helper->describe($output, $this->getApplication(), array(
+        $helper->describe(
+          $output,
+          $this->getApplication(),
+          array(
             'format' => $input->getOption('format'),
             'raw_text' => $input->getOption('raw'),
             'namespace' => $input->getArgument('namespace'),
-          ));
+          )
+        );
     }
 
 }

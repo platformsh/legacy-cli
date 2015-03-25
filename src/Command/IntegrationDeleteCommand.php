@@ -1,8 +1,7 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Integration;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -29,28 +28,32 @@ class IntegrationDeleteCommand extends PlatformCommand
 
         $id = $input->getArgument('id');
 
-        $client = $this->getPlatformClient($this->project['endpoint']);
-        $integration = Integration::get($id, 'integrations', $client);
-
+        $integration = $this->getSelectedProject()
+                            ->getIntegration($id);
         if (!$integration) {
             $output->writeln("Integration not found: <error>$id</error>");
+
             return 1;
         }
 
         if (!$integration->operationAvailable('delete')) {
             $output->writeln("The integration <error>$id</error> cannot be deleted");
+
             return 1;
         }
 
         $type = $integration->getProperty('type');
         $confirmText = "Delete the integration <info>$id</info> (type: $type)?";
-        if (!$this->getHelper('question')->confirm($confirmText, $input, $output)) {
+        if (!$this->getHelper('question')
+                  ->confirm($confirmText, $input, $output)
+        ) {
             return 1;
         }
 
         $integration->delete();
 
         $output->writeln("Deleted integration <info>$id</info>");
+
         return 0;
     }
 

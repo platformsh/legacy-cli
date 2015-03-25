@@ -1,8 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -13,10 +13,10 @@ class ProjectInitCommand extends PlatformCommand
     protected function configure()
     {
         $this
-            ->setName('project:init')
-            ->setAliases(array('init'))
-            ->addArgument('directory', InputArgument::OPTIONAL, 'The path to the repository.')
-            ->setDescription('Initialize from a plain Git repository');
+          ->setName('project:init')
+          ->setAliases(array('init'))
+          ->addArgument('directory', InputArgument::OPTIONAL, 'The path to the repository.')
+          ->setDescription('Initialize from a plain Git repository');
     }
 
     public function isLocal()
@@ -30,6 +30,7 @@ class ProjectInitCommand extends PlatformCommand
         $realPath = realpath($directory);
         if (!$realPath) {
             $output->writeln("<error>Directory not found: $directory</error>");
+
             return 1;
         }
 

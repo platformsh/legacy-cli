@@ -1,19 +1,20 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Helper;
+namespace Platformsh\Cli\Helper;
 
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
-interface ShellHelperInterface {
+interface ShellHelperInterface
+{
 
     /**
      * Run a shell command, suppressing errors.
      *
-     * @param string[] $args
+     * @param string[]     $args
      * @param string|false $dir
-     * @param bool $mustRun
-     * @param bool $quiet
+     * @param bool         $mustRun
+     * @param bool         $quiet
      *
      * @throws ProcessFailedException If $mustRun is enabled and the command fails.
      *

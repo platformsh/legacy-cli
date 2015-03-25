@@ -1,25 +1,35 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentHttpAccessCommand extends EnvironmentCommand
+class EnvironmentHttpAccessCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         parent::configure();
         $this
-            ->setName('environment:http-access')
-            ->setAliases(array('httpaccess'))
-            ->setDescription('Update HTTP access settings for an environment')
-            ->addOption('access', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Access restriction in the format "permission:address"')
-            ->addOption('auth', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Authentication details in the format "username:password"');
-        $this->addProjectOption()->addEnvironmentOption();
+          ->setName('environment:http-access')
+          ->setAliases(array('httpaccess'))
+          ->setDescription('Update HTTP access settings for an environment')
+          ->addOption(
+            'access',
+            null,
+            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+            'Access restriction in the format "permission:address"'
+          )
+          ->addOption(
+            'auth',
+            null,
+            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+            'Authentication details in the format "username:password"'
+          );
+        $this->addProjectOption()
+             ->addEnvironmentOption();
     }
 
     /**
@@ -62,12 +72,18 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
     {
         $parts = explode(':', $access, 2);
         if (count($parts) != 2) {
-            $message = sprintf('Access "<error>%s</error>" is not valid, please use the format: permission:address', $access);
+            $message = sprintf(
+              'Access "<error>%s</error>" is not valid, please use the format: permission:address',
+              $access
+            );
             throw new \InvalidArgumentException($message);
         }
 
         if (!in_array($parts[0], array('allow', 'deny'))) {
-            $message = sprintf("The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'", $parts[0]);
+            $message = sprintf(
+              "The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'",
+              $parts[0]
+            );
             throw new \InvalidArgumentException($message);
         }
 
@@ -79,8 +95,7 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         // current value returned from the API.
         if ($address == 'any') {
             $address = '0.0.0.0/0';
-        }
-        elseif ($address && !strpos($address, '/')) {
+        } elseif ($address && !strpos($address, '/')) {
             $address .= '/32';
         }
 
@@ -131,14 +146,12 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
         }
 
         // Ensure the environment is refreshed.
-        $environmentId = $this->environment['id'];
-        $this->getEnvironment($environmentId, $this->project, true);
-
-        $client = $this->getPlatformClient($this->environment['endpoint']);
-        $environment = new Environment($this->environment, $client);
+        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment->ensureFull();
+        $environmentId = $selectedEnvironment['id'];
 
         if ($auth || $access) {
-            $current = (array) $environment->getProperty('http_access');
+            $current = (array) $selectedEnvironment->getProperty('http_access');
 
             // Merge existing settings. Not using a reference here, as that
             // would affect the comparison with $current later.
@@ -157,21 +170,23 @@ class EnvironmentHttpAccessCommand extends EnvironmentCommand
                 }
 
                 // Patch the environment with the changes.
-                $environment->update(array('http_access' => $accessOpts));
+                $selectedEnvironment->update(array('http_access' => $accessOpts));
 
                 $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
-                $output->writeln($environment->getPropertyFormatted('http_access'));
+                $output->writeln($selectedEnvironment->getProperty('http_access'));
 
-                if (!$environment->hasActivity()) {
+                if (!$selectedEnvironment->getLastActivity()) {
                     $this->rebuildWarning($output);
                 }
+
                 return 0;
             }
         }
 
         $output->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
-        $output->writeln($environment->getPropertyFormatted('http_access'));
+        $output->writeln($selectedEnvironment->getProperty('http_access'));
+
         return 0;
     }
 

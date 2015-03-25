@@ -4,7 +4,7 @@
  * Overrides Symfony's QuestionHelper to provide --yes and --no options.
  */
 
-namespace CommerceGuys\Platform\Cli\Helper;
+namespace Platformsh\Cli\Helper;
 
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,10 +18,10 @@ class PlatformQuestionHelper extends QuestionHelper
     /**
      * Ask the user to confirm an action.
      *
-     * @param string $questionText
-     * @param InputInterface $input
+     * @param string          $questionText
+     * @param InputInterface  $input
      * @param OutputInterface $output
-     * @param bool $default
+     * @param bool            $default
      *
      * @return bool
      */
@@ -31,12 +31,12 @@ class PlatformQuestionHelper extends QuestionHelper
         $no = $input->hasOption('no') && $input->getOption('no');
         if ($yes && !$no) {
             return true;
-        }
-        elseif ($no && !$yes) {
+        } elseif ($no && !$yes) {
             return false;
         }
         $questionText .= ' <question>' . ($default ? '[Y/n]' : '[y/N]') . '</question> ';
         $question = new ConfirmationQuestion($questionText, $default);
+
         return $this->ask($input, $output, $question);
     }
 
@@ -63,6 +63,7 @@ class PlatformQuestionHelper extends QuestionHelper
         if ($choiceKey === false) {
             throw new \RuntimeException("Invalid value: $choice");
         }
+
         return $choiceKey;
     }
 

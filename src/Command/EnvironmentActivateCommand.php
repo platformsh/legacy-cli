@@ -1,24 +1,26 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
-use CommerceGuys\Platform\Cli\Model\Activity;
+use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentActivateCommand extends EnvironmentCommand
+class EnvironmentActivateCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:activate')
-            ->setDescription('Activate an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
+          ->setName('environment:activate')
+          ->setDescription('Activate an environment')
+          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()
-          ->addEnvironmentOption()
-          ->addNoWaitOption();
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -27,11 +29,10 @@ class EnvironmentActivateCommand extends EnvironmentCommand
             return 1;
         }
 
-        if ($this->environment) {
-            $toActivate = array($this->environment);
-        }
-        else {
-            $environments = $this->getEnvironments($this->project);
+        if ($this->hasSelectedEnvironment()) {
+            $toActivate = array($this->getSelectedEnvironment());
+        } else {
+            $environments = $this->getEnvironments();
             $environmentIds = $input->getArgument('environment');
             $toActivate = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
@@ -46,7 +47,7 @@ class EnvironmentActivateCommand extends EnvironmentCommand
     }
 
     /**
-     * @param array           $environments
+     * @param Environment[]   $environments
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
@@ -61,13 +62,15 @@ class EnvironmentActivateCommand extends EnvironmentCommand
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
             $environmentId = $environment['id'];
-            if (!empty($environment['_links']['public-url'])) {
+            if ($environment->isActive()) {
                 $output->writeln("The environment <info>$environmentId</info> is already active.");
                 $count--;
                 continue;
             }
-            if (!$this->operationAvailable('activate', $environment)) {
-                $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be activated.");
+            if (!$environment->operationAvailable('activate')) {
+                $output->writeln(
+                  "Operation not available: The environment <error>$environmentId</error> can't be activated."
+                );
                 continue;
             }
             $question = "Are you sure you want to activate the environment <info>$environmentId</info>?";
@@ -76,24 +79,24 @@ class EnvironmentActivateCommand extends EnvironmentCommand
             }
             $process[$environmentId] = $environment;
         }
-        $responses = array();
-        foreach ($process as $environmentId =>  $environment) {
-            $client = $this->getPlatformClient($environment['endpoint']);
+        $activities = array();
+        /** @var Environment $environment */
+        foreach ($process as $environmentId => $environment) {
             try {
-                $output->writeln("Activating environment <info>$environmentId</info>");
-                $responses[] = $client->activateEnvironment();
+                $activities[] = $environment->activate();
                 $processed++;
-            }
-            catch (\Exception $e) {
+                $output->writeln("Activating environment <info>$environmentId</info>");
+            } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
         }
-        if (isset($client) && !$input->getOption('no-wait')) {
-            Activity::waitMultiple($responses, $client, $output);
-        }
         if ($processed) {
-            $this->getEnvironments($this->project, true);
+            if (!$input->getOption('no-wait')) {
+                ActivityUtil::waitMultiple($activities, $output);
+            }
+            $this->getEnvironments(null, true);
         }
+
         return $processed >= $count;
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Helper;
+namespace Platformsh\Cli\Helper;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Helper;
@@ -16,9 +16,9 @@ class ArgvHelper extends Helper
     }
 
     /**
-     * @param Command $command
+     * @param Command   $command
      * @param ArgvInput $input
-     * @param array $args
+     * @param array     $args
      *
      * @return string
      */
@@ -36,11 +36,13 @@ class ArgvHelper extends Helper
             $args = array_map(array($this, 'escapeArg'), $args);
         }
         $command = implode(' ', $args);
+
         return $command;
     }
 
     /**
      * @param string $arg
+     *
      * @return string
      */
     protected function escapeArg($arg)
@@ -50,16 +52,18 @@ class ArgvHelper extends Helper
         // If the string looks like an option=value pair, split them up.
         if ($arg[0] === '-' && strpos($arg, '=')) {
             list($option, $value) = explode('=', $arg, 2);
+
             return $option . '=' . $argv->escapeToken($value);
         }
         if (strpos($arg, '-') === 0) {
             return $arg;
         }
+
         return $argv->escapeToken($arg);
     }
 
     /**
-     * @param string[] $args
+     * @param string[]       $args
      * @param InputInterface $input
      *
      * @return string[]
@@ -72,6 +76,7 @@ class ArgvHelper extends Helper
         if (($key = array_search($input->getFirstArgument(), $args)) !== false) {
             unset($args[$key]);
         }
+
         return $args;
     }
 
@@ -79,7 +84,7 @@ class ArgvHelper extends Helper
      * Strip a command's options from an argv array.
      *
      * @param string[] $args
-     * @param Command $command
+     * @param Command  $command
      *
      * @return string[]
      */
@@ -96,12 +101,10 @@ class ArgvHelper extends Helper
             $argAsOption = preg_replace('/^\-+([^=]+).*/', '$1', $arg);
             if ($definition->hasOption($argAsOption)) {
                 $option = $definition->getOption($argAsOption);
-            }
-            else {
+            } else {
                 try {
                     $option = $definition->getOptionForShortcut($argAsOption);
-                }
-                catch (\InvalidArgumentException $e) {
+                } catch (\InvalidArgumentException $e) {
                     continue;
                 }
             }
@@ -111,10 +114,12 @@ class ArgvHelper extends Helper
             if ($option->acceptValue()
               && isset($args[$key + 1])
               && !strpos($arg, '=')
-              && $args[$key + 1][0] !== '-') {
+              && $args[$key + 1][0] !== '-'
+            ) {
                 unset($args[$key + 1]);
             }
         }
+
         return $args;
     }
 

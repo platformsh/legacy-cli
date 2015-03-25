@@ -1,8 +1,8 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Tests;
+namespace Platformsh\Cli\Tests;
 
-use CommerceGuys\Platform\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Helper\ShellHelper;
 
 class ShellHelperTest extends \PHPUnit_Framework_TestCase
 {

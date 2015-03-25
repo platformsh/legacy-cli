@@ -1,6 +1,6 @@
 <?php
 
-namespace CommerceGuys\Platform\Cli\Command;
+namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,9 +13,9 @@ class DocsCommand extends UrlCommandBase
     {
         parent::configure();
         $this
-            ->setName('docs')
-            ->setDescription('Open the Platform.sh online documentation')
-            ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
+          ->setName('docs')
+          ->setDescription('Open the Platform.sh online documentation')
+          ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -45,6 +45,7 @@ class DocsCommand extends UrlCommandBase
     protected function getSearchQuery(array $args)
     {
         $quoted = array_map(array($this, 'quoteTerm'), $args);
+
         return implode(' ', $quoted);
     }
 
