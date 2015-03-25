@@ -68,7 +68,7 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = "pg_dump postgresql://://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
+                $dumpCommand = "pg_dump postgresql://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
                 break;
 
             default:

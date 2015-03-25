@@ -39,7 +39,7 @@ class EnvironmentSqlCommand extends PlatformCommand
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $sqlCommand = "pgsql postgresql://://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
+                $sqlCommand = "pgsql postgresql://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
                 break;
 
             default:
