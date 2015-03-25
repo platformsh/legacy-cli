@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "2f41e1412e8a9ac083982e2022440719",
+    "hash": "5ddc1a0f5ef790332acb317f65e5f541",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -395,22 +395,22 @@
         },
         {
             "name": "platformsh/client",
-            "version": "dev-master",
+            "version": "v0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "baeea2ee47a2c43f3f5861a523890c2fe6d1a2b2"
+                "reference": "026ab99f2ac47098f6934f203f11ec4adb39c623"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/baeea2ee47a2c43f3f5861a523890c2fe6d1a2b2",
-                "reference": "baeea2ee47a2c43f3f5861a523890c2fe6d1a2b2",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/026ab99f2ac47098f6934f203f11ec4adb39c623",
+                "reference": "026ab99f2ac47098f6934f203f11ec4adb39c623",
                 "shasum": ""
             },
             "require": {
                 "cocur/slugify": "~1.0",
-                "commerceguys/guzzle-oauth2-plugin": ">=2.0.0-beta2",
-                "guzzlehttp/cache-subscriber": "0.1.*",
+                "commerceguys/guzzle-oauth2-plugin": "~2.0",
+                "guzzlehttp/cache-subscriber": "~0.1",
                 "guzzlehttp/guzzle": "~5.2"
             },
             "require-dev": {
@@ -432,7 +432,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2015-03-19 09:02:22"
+            "time": "2015-03-25 17:56:20"
         },
         {
             "name": "react/promise",
@@ -1620,9 +1620,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "platformsh/client": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
