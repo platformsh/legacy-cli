@@ -307,6 +307,7 @@ class Drupal extends ToolstackBase
         }
 
         // Symlink all files and folders from shared.
+        $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
         $this->fsHelper->symlinkAll($shared, $sitesDefault);
     }
 
