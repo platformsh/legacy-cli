@@ -16,6 +16,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
     {
         $this
           ->setName('environment:relationships')
+          ->setAliases(array('relationships'))
           ->setDescription('List an environment\'s relationships')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
