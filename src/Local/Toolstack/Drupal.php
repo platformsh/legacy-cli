@@ -280,9 +280,14 @@ class Drupal extends ToolstackBase
         if ($this->isDrupal8($this->buildDir)) {
             $defaultSettingsPhp = '8/settings.php';
             $defaultSettingsLocal = '8/settings.local.php';
+
+            if (!file_exists($shared . '/config')) {
+                mkdir($shared . '/config/active', 0775, true);
+                mkdir($shared . '/config/staging', 0775, true);
+            }
         }
 
-        // The build has been done: create a settings.php if it is missing.
+        // Create a settings.php if it is missing.
         if (!file_exists($sitesDefault . '/settings.php')) {
             copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
         }
