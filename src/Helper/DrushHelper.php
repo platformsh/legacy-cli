@@ -182,7 +182,8 @@ class DrushHelper extends Helper
             return false;
         }
 
-        $group = !empty($project['alias-group']) ? $project['alias-group'] : $project['id'];
+        $config = LocalProject::getProjectConfig($projectRoot);
+        $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
 
         // Ensure the existence of the .drush directory.
         $drushDir = $this->homeDir . '/.drush';
