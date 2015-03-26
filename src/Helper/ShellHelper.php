@@ -30,20 +30,6 @@ class ShellHelper extends Helper implements ShellHelperInterface
     }
 
     /**
-     * Log output messages.
-     *
-     * @param mixed  $type
-     * @param string $buffer
-     *
-     * @todo in theory this could use the ConsoleLogger, but the formatting is ugly and impossible to override
-     */
-    public function log($type, $buffer)
-    {
-        $indent = '  ';
-        $this->output->writeln($indent . str_replace("\n", "\n$indent", trim($buffer)));
-    }
-
-    /**
      * @inheritdoc
      *
      * @throws \Exception
@@ -66,7 +52,10 @@ class ShellHelper extends Helper implements ShellHelperInterface
         }
 
         try {
-            $process->mustRun($quiet ? null : array($this, 'log'));
+            $process->mustRun($quiet ? null : function ($type, $buffer) {
+                $indent = '  ';
+                $this->output->writeln($indent . str_replace("\n", "\n$indent", trim($buffer)));
+            });
         } catch (ProcessFailedException $e) {
             if (!$mustRun) {
                 return false;
