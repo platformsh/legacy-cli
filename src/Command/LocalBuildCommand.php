@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectBuildCommand extends PlatformCommand
+class LocalBuildCommand extends PlatformCommand
 {
 
     protected $defaultDrushConcurrency = 1;
@@ -18,7 +18,7 @@ class ProjectBuildCommand extends PlatformCommand
     protected function configure()
     {
         $this
-          ->setName('project:build')
+          ->setName('local:build')
           ->setAliases(array('build'))
           ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
           ->setDescription('Build the current project locally')
