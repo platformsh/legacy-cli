@@ -79,7 +79,12 @@ class Drupal extends ToolstackBase
             $this->buildInProjectMode($this->appRoot . '/project.make');
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
+
             $this->buildDir = $this->appRoot;
+            if ($this->documentRoot === '/public') {
+                $this->documentRoot = '/';
+            }
+
             $this->specialDestinations = array();
             $this->preventArchive = true;
 
@@ -150,7 +155,7 @@ class Drupal extends ToolstackBase
         $drushHelper = new DrushHelper($this->output);
         $drushHelper->ensureInstalled();
         $args = array_merge(
-          array('make', $projectMake, $this->buildDir),
+          array('make', $projectMake, $this->getWebRoot()),
           $this->drushFlags
         );
         $drushHelper->execute($args, null, true, false);
@@ -165,7 +170,7 @@ class Drupal extends ToolstackBase
         // 'sites/default' directory.
         $this->fsHelper->symlinkAll(
           $this->appRoot,
-          $this->buildDir . '/sites/default',
+          $this->getWebRoot() . '/sites/default',
           true,
           false,
           array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
@@ -203,12 +208,12 @@ class Drupal extends ToolstackBase
         }
 
         $args = array_merge(
-          array('make', $projectCoreMake, $this->buildDir),
+          array('make', $projectCoreMake, $this->getWebRoot()),
           $this->drushFlags
         );
         $drushHelper->execute($args, null, true, false);
 
-        $profileDir = $this->buildDir . '/profiles/' . $profileName;
+        $profileDir = $this->getWebRoot() . '/profiles/' . $profileName;
         mkdir($profileDir, 0755, true);
 
         $this->output->writeln("Building the profile: <info>$profileName</info>");
@@ -257,7 +262,7 @@ class Drupal extends ToolstackBase
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
-            copy($settingsPhpFile, $this->buildDir . '/sites/default/settings.php');
+            copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->output->writeln(
               "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
               . "\nYou will need to rebuild if you edit this file.</comment>"
@@ -268,8 +273,8 @@ class Drupal extends ToolstackBase
 
     public function install()
     {
-        $buildDir = $this->buildDir;
-        $sitesDefault = $buildDir . '/sites/default';
+        $webRoot = $this->getWebRoot();
+        $sitesDefault = $webRoot . '/sites/default';
         $resources = CLI_ROOT . '/resources/drupal';
         $shared = $this->getSharedDir();
 
@@ -277,7 +282,7 @@ class Drupal extends ToolstackBase
         $defaultSettingsLocal = 'settings.local.php';
 
         // Override settings.php and settings.local.php for Drupal 8.
-        if ($this->isDrupal8($this->buildDir)) {
+        if ($this->isDrupal8($webRoot)) {
             $defaultSettingsPhp = '8/settings.php';
             $defaultSettingsLocal = '8/settings.local.php';
 

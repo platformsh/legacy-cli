@@ -237,6 +237,13 @@ class LocalBuild
         }
         $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
+        // Get the configured document root.
+        $documentRoot = isset($appConfig['web']['document_root']) ? $appConfig['web']['document_root'] : '/';
+        // Platform treats '/'  as '/public'.
+        if ($documentRoot === '/') {
+            $documentRoot = '/public';
+        }
+
         $toolstack = $this->getToolstack($appRoot, $appConfig);
 
         if ($toolstack) {
@@ -246,7 +253,7 @@ class LocalBuild
                 'multiApp' => $multiApp,
                 'appName' => $appName,
               );
-            $toolstack->prepare($buildDir, $appRoot, $projectRoot, $buildSettings);
+            $toolstack->prepare($buildDir, $documentRoot, $appRoot, $projectRoot, $buildSettings);
 
             $archive = false;
             if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
@@ -286,10 +293,9 @@ class LocalBuild
 
             $toolstack->install();
 
-            // Allow the toolstack to change the build dir.
-            $buildDir = $toolstack->getBuildDir();
+            $webRoot = $toolstack->getWebRoot();
         } else {
-            $buildDir = $appRoot;
+            $webRoot = $appRoot . $documentRoot;
             $this->warnAboutHooks($appConfig);
         }
 
@@ -302,7 +308,7 @@ class LocalBuild
             }
             $wwwLink .= "/$appDir";
         }
-        $symlinkTarget = $this->fsHelper->symlink($buildDir, $wwwLink);
+        $symlinkTarget = $this->fsHelper->symlink($webRoot, $wwwLink);
 
         if ($verbose) {
             $this->output->writeln("Created symlink: $wwwLink -> $symlinkTarget");

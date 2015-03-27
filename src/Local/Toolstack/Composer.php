@@ -13,6 +13,10 @@ class Composer extends ToolstackBase
     public function build()
     {
         $this->buildDir = $this->appRoot;
+        if ($this->documentRoot === '/public') {
+            $this->documentRoot = '/';
+        }
+
         $this->specialDestinations = array();
         $this->preventArchive = true;
 

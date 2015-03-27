@@ -35,6 +35,7 @@ abstract class ToolstackBase implements ToolstackInterface
     protected $settings = array();
     protected $appRoot;
     protected $projectRoot;
+    protected $documentRoot;
     protected $buildDir;
     protected $absoluteLinks = false;
 
@@ -82,13 +83,14 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, $appRoot, $projectRoot, array $settings)
+    public function prepare($buildDir, $documentRoot, $appRoot, $projectRoot, array $settings)
     {
         $this->appRoot = $appRoot;
         $this->projectRoot = $projectRoot;
         $this->settings = $settings;
 
         $this->buildDir = $buildDir;
+        $this->documentRoot = $documentRoot;
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
         $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
@@ -106,7 +108,7 @@ abstract class ToolstackBase implements ToolstackInterface
             }
 
             // On Platform these replacements would be a bit different.
-            $absDestination = str_replace(array('{webroot}', '{approot}'), $this->buildDir, $relDestination);
+            $absDestination = str_replace(array('{webroot}', '{approot}'), array($this->getWebRoot(), $this->buildDir), $relDestination);
 
             foreach ($matched as $source) {
                 // Ignore the source if it's in ignoredFiles.
@@ -159,9 +161,9 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function getBuildDir()
+    public function getWebRoot()
     {
-        return $this->buildDir;
+        return str_replace('//', '/', $this->buildDir . '/' . $this->documentRoot);
     }
 
     /**
