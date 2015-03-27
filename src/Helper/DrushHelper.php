@@ -319,8 +319,12 @@ class DrushHelper extends Helper
           'remote-host' => $sshUrl['host'],
           'remote-user' => $sshUrl['user'],
           'root' => '/app/public',
+          'source-command-specific' => array(
+              'sql-sync' => array(
+                  'source-dump' => '/tmp/dump.sql',
+              ),
+          ),
           self::AUTO_REMOVE_KEY => true,
         );
     }
-
 }
