@@ -162,7 +162,7 @@ abstract class PlatformCommand extends Command
         $yaml = new Yaml();
         if (file_put_contents($filename, $yaml->dump(self::$cache, 0, 4, true))) {
             chmod($filename, 0600);
-            $lastSaved = self::$cache;
+            self::$cacheAsLoaded = self::$cache;
 
             return true;
         }
