@@ -455,13 +455,23 @@ class LocalBuild
             }
         }
         $activeBuilds = array();
+        $buildsDir = $projectRoot . '/' . LocalProject::BUILD_DIR;
         foreach ($links as $link) {
             if (is_link($link) && ($target = readlink($link))) {
                 // Make the target into an absolute path.
                 $target = $target[0] === DIRECTORY_SEPARATOR ? $target : realpath(dirname($link) . '/' . $target);
-                if ($target) {
-                    $activeBuilds[] = $target;
+                if (!$target) {
+                    continue;
                 }
+                // The target should just be one level below the 'builds'
+                // directory, not more.
+                while (dirname($target) != $buildsDir) {
+                    $target = dirname($target);
+                    if (strpos($target, $buildsDir) === false) {
+                        throw new \Exception('Error resolving active build directory');
+                    }
+                }
+                $activeBuilds[] = $target;
             }
         }
 
