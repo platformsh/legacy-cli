@@ -464,6 +464,10 @@ class LocalBuild
                 if (!$target) {
                     continue;
                 }
+                // Ignore the target if it doesn't point to a build in 'builds'.
+                if (strpos($target, $buildsDir) === false) {
+                    continue;
+                }
                 // The target should just be one level below the 'builds'
                 // directory, not more.
                 while (dirname($target) != $buildsDir) {
