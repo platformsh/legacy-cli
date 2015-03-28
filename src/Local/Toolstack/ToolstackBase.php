@@ -167,7 +167,10 @@ abstract class ToolstackBase implements ToolstackInterface
     public function getWebRoot()
     {
         if ($this->leaveInPlace) {
-            return $this->appRoot;
+            if ($this->documentRoot === 'public') {
+                return $this->appRoot;
+            }
+            return $this->appRoot . '/' . $this->documentRoot;
         }
         return $this->buildDir . '/' . $this->documentRoot;
     }
