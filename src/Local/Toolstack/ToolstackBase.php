@@ -12,8 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 abstract class ToolstackBase implements ToolstackInterface
 {
 
-    public $preventArchive = false;
-
     /**
      * Files from the app root to ignore during install.
      *
@@ -27,8 +25,8 @@ abstract class ToolstackBase implements ToolstackInterface
      * @var array
      *   An array of filenames in the app root, mapped to destinations. The
      *   destinations are filenames supporting the replacements:
-     *     "{webroot}" - www for the CLI, usually /app/public on Platform.sh
-     *     "{approot}" - ignored by the CLI, /app on Platform.sh
+     *     "{webroot}" - see getWebRoot() (usually /app/public on Platform.sh)
+     *     "{approot}" - the $buildDir (usually /app on Platform.sh)
      */
     protected $specialDestinations = array();
 
@@ -38,6 +36,7 @@ abstract class ToolstackBase implements ToolstackInterface
     protected $documentRoot;
     protected $buildDir;
     protected $absoluteLinks = false;
+    protected $leaveInPlace = false;
 
     /** @var OutputInterface */
     protected $output;
@@ -101,6 +100,10 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     protected function symLinkSpecialDestinations()
     {
+        if ($this->leaveInPlace) {
+            return;
+        }
+
         foreach ($this->specialDestinations as $sourcePattern => $relDestination) {
             $matched = glob($this->appRoot . '/' . $sourcePattern, GLOB_NOSORT);
             if (!$matched) {
@@ -163,7 +166,10 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function getWebRoot()
     {
-        return str_replace('//', '/', $this->buildDir . '/' . $this->documentRoot);
+        if ($this->leaveInPlace) {
+            return $this->appRoot;
+        }
+        return $this->buildDir . '/' . $this->documentRoot;
     }
 
     /**
@@ -180,6 +186,14 @@ abstract class ToolstackBase implements ToolstackInterface
     public function getKey()
     {
         return false;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function canArchive()
+    {
+        return !$this->leaveInPlace;
     }
 
     /**

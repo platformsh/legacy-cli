@@ -80,13 +80,7 @@ class Drupal extends ToolstackBase
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
 
-            $this->buildDir = $this->appRoot;
-            if ($this->documentRoot === '/public') {
-                $this->documentRoot = '/';
-            }
-
-            $this->specialDestinations = array();
-            $this->preventArchive = true;
+            $this->leaveInPlace = true;
 
             $this->copyGitIgnore('drupal/gitignore-vanilla');
 

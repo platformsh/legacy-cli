@@ -238,11 +238,7 @@ class LocalBuild
         $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
         // Get the configured document root.
-        $documentRoot = isset($appConfig['web']['document_root']) ? $appConfig['web']['document_root'] : '/';
-        // Platform treats '/'  as '/public'.
-        if ($documentRoot === '/') {
-            $documentRoot = '/public';
-        }
+        $documentRoot = $this->getDocumentRoot($appConfig);
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
 
@@ -289,7 +285,7 @@ class LocalBuild
                     $this->warnAboutHooks($appConfig, 'build');
                 }
 
-                if ($archive && empty($toolstack->preventArchive)) {
+                if ($archive && $toolstack->canArchive()) {
                     $this->output->writeln("Saving build archive...");
                     if (!is_dir(dirname($archive))) {
                         mkdir(dirname($archive));
@@ -302,11 +298,16 @@ class LocalBuild
 
             $webRoot = $toolstack->getWebRoot();
         } else {
-            $webRoot = $appRoot . $documentRoot;
+            $webRoot = "$appRoot/$documentRoot";
             $this->warnAboutHooks($appConfig, 'build');
         }
 
-        // Symlink the build into www or www/appIdentifier.
+        // Symlink the built web root ($webRoot) into www or www/appIdentifier.
+        if (!is_dir($webRoot)) {
+            $this->output->writeln("Web root not found: <error>$webRoot</error>");
+
+            return false;
+        }
         $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;
         if ($multiApp) {
             $appDir = str_replace('/', '-', $appIdentifier);
@@ -325,6 +326,25 @@ class LocalBuild
         $this->output->writeln($message);
 
         return true;
+    }
+
+    /**
+     * Get the configured document root for the application.
+     *
+     * @link https://docs.platform.sh/reference/configuration-files
+     *
+     * @param array $appConfig
+     *
+     * @return string
+     */
+    protected function getDocumentRoot(array $appConfig)
+    {
+        $documentRoot = isset($appConfig['web']['document_root']) ? $appConfig['web']['document_root'] : '/';
+        // Platform treats '/'  as '/public'.
+        if ($documentRoot === '/') {
+            $documentRoot = '/public';
+        }
+        return ltrim($documentRoot, '/');
     }
 
     /**

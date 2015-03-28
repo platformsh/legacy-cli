@@ -62,4 +62,11 @@ interface ToolstackInterface
      * @return string
      */
     public function getWebRoot();
+
+    /**
+     * Find whether the build may be archived.
+     *
+     * @return bool
+     */
+    public function canArchive();
 }
