@@ -13,6 +13,10 @@ use Symfony\Component\Yaml\Parser;
 class LocalBuild
 {
 
+    // Some changes may not be backwards-compatible with previous build
+    // archives. Increment this number as breaking changes are released.
+    const BUILD_VERSION = 1;
+
     protected $settings;
     protected $output;
     protected $fsHelper;
@@ -211,6 +215,8 @@ class LocalBuild
         $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency');
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
+
+        $hashes[] = self::BUILD_VERSION;
 
         // Combine them all.
         return sha1(implode(' ', $hashes));
