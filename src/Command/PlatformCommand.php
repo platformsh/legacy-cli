@@ -353,6 +353,7 @@ abstract class PlatformCommand extends Command
             $projects = $this->getClient()
                              ->getProjects();
 
+            self::$cache['projects'] = array();
             foreach ($projects as $id => $project) {
                 self::$cache['projects'][$id] = $project->getData();
                 self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
