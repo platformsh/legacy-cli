@@ -24,7 +24,7 @@ interface ToolstackInterface
     /**
      * Detect if the files in a given directory belong to this toolstack.
      *
-     * @param   string  $appRoot The absolute path to the application folder
+     * @param   string $appRoot The absolute path to the application folder
      *
      * @return  bool    Whether this toolstack is a valid choice or not
      */
@@ -35,12 +35,16 @@ interface ToolstackInterface
      *
      * This function should be isometric and not affect the file system.
      *
-     * @param string $buildDir
-     * @param string $appRoot
-     * @param string $projectRoot
-     * @param array $settings
+     * @param string $buildDir     The directory in which the app should be
+     *                             built.
+     * @param string $documentRoot The document root for the app - a file path
+     *                             relative to the build directory.
+     * @param string $appRoot      The root of the application's source code
+     *                             (in the repository).
+     * @param string $projectRoot  The CLI project root.
+     * @param array  $settings     Additional settings for the build.
      */
-    public function prepare($buildDir, $appRoot, $projectRoot, array $settings);
+    public function prepare($buildDir, $documentRoot, $appRoot, $projectRoot, array $settings);
 
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and
@@ -57,6 +61,12 @@ interface ToolstackInterface
     /**
      * @return string
      */
-    public function getBuildDir();
+    public function getWebRoot();
 
+    /**
+     * Find whether the build may be archived.
+     *
+     * @return bool
+     */
+    public function canArchive();
 }

@@ -12,7 +12,8 @@ class Drupal extends ToolstackBase
 
     protected $drushFlags = array();
 
-    public function getKey() {
+    public function getKey()
+    {
         return 'php:drupal';
     }
 
@@ -20,28 +21,32 @@ class Drupal extends ToolstackBase
      * Detect if there are any Drupal applications in a folder.
      *
      * @param string $directory
-     * @param mixed $depth
+     * @param mixed  $depth
      *
      * @return bool
      */
-    public static function isDrupal($directory, $depth = '< 2') {
+    public static function isDrupal($directory, $depth = '< 2')
+    {
         $finder = new Finder();
 
         // Look for at least one Drush make file.
         $finder->in($directory)
-            ->files()
-            ->depth($depth)
-            ->name('project.make')
-            ->name('project-core.make')
-            ->name('drupal-org.make')
-            ->name('drupal-org-core.make');
+               ->files()
+               ->depth($depth)
+               ->name('project.make')
+               ->name('project-core.make')
+               ->name('drupal-org.make')
+               ->name('drupal-org-core.make');
         foreach ($finder as $file) {
             return true;
         }
 
         // Check whether there is an index.php file whose first few lines
         // contain the word "Drupal".
-        $finder->in($directory)->files()->depth($depth)->name('index.php');
+        $finder->in($directory)
+               ->files()
+               ->depth($depth)
+               ->name('index.php');
         foreach ($finder as $file) {
             $f = fopen($file, 'r');
             $beginning = fread($f, 3178);
@@ -66,19 +71,16 @@ class Drupal extends ToolstackBase
         $profiles = glob($this->appRoot . '/*.profile');
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
-        }
-        elseif (count($profiles) == 1) {
+        } elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
             $this->buildInProfileMode($profileName);
         }
         elseif (file_exists($this->appRoot . '/project.make')) {
             $this->buildInProjectMode($this->appRoot . '/project.make');
-        }
-        else {
+        } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
-            $this->buildDir = $this->appRoot;
-            $this->specialDestinations = array();
-            $this->preventArchive = true;
+
+            $this->leaveInPlace = true;
 
             $this->copyGitIgnore('drupal/gitignore-vanilla');
 
@@ -116,11 +118,9 @@ class Drupal extends ToolstackBase
             $verbosity = $this->settings['verbosity'];
             if ($verbosity === OutputInterface::VERBOSITY_QUIET) {
                 $this->drushFlags[] = '--quiet';
-            }
-            elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
+            } elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
                 $this->drushFlags[] = '--debug';
-            }
-            elseif ($verbosity >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            } elseif ($verbosity >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                 $this->drushFlags[] = '--verbose';
             }
         }
@@ -131,8 +131,7 @@ class Drupal extends ToolstackBase
 
         if (!empty($this->settings['noCache'])) {
             $this->drushFlags[] = '--no-cache';
-        }
-        else {
+        } else {
             $this->drushFlags[] = '--cache-duration-releasexml=300';
         }
 
@@ -150,7 +149,7 @@ class Drupal extends ToolstackBase
         $drushHelper = new DrushHelper($this->output);
         $drushHelper->ensureInstalled();
         $args = array_merge(
-          array('make', $projectMake, $this->buildDir),
+          array('make', $projectMake, $this->getWebRoot()),
           $this->drushFlags
         );
         $drushHelper->execute($args, null, true, false);
@@ -165,7 +164,7 @@ class Drupal extends ToolstackBase
         // 'sites/default' directory.
         $this->fsHelper->symlinkAll(
           $this->appRoot,
-          $this->buildDir . '/sites/default',
+          $this->getWebRoot() . '/sites/default',
           true,
           false,
           array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
@@ -203,12 +202,12 @@ class Drupal extends ToolstackBase
         }
 
         $args = array_merge(
-          array('make', $projectCoreMake, $this->buildDir),
+          array('make', $projectCoreMake, $this->getWebRoot()),
           $this->drushFlags
         );
         $drushHelper->execute($args, null, true, false);
 
-        $profileDir = $this->buildDir . '/profiles/' . $profileName;
+        $profileDir = $this->getWebRoot() . '/profiles/' . $profileName;
         mkdir($profileDir, 0755, true);
 
         $this->output->writeln("Building the profile: <info>$profileName</info>");
@@ -219,6 +218,8 @@ class Drupal extends ToolstackBase
         );
         $drushHelper->execute($args, $profileDir, true, false);
 
+        $this->output->writeln("Symlinking existing app files to the profile");
+
         $this->ignoredFiles[] = basename($projectMake);
         $this->ignoredFiles[] = basename($projectCoreMake);
         $this->ignoredFiles[] = 'settings.local.php';
@@ -227,10 +228,6 @@ class Drupal extends ToolstackBase
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
         $this->processSettingsPhp();
-
-        $this->output->writeln("Symlinking existing app files to the profile");
-
-        $this->profileModeBcWarning($profileDir);
 
         // Symlink recursively; skip existing files (built by Drush make) for
         // example 'modules/contrib', but include files from the app such as
@@ -242,76 +239,6 @@ class Drupal extends ToolstackBase
           true,
           array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
         );
-    }
-
-    /**
-     * Backwards compatibility warning for profile builds.
-     *
-     * Profile builds changed between v1.9.0 and v1.9.1. This provides a warning
-     * to show that users should not have files that are both in their
-     * repository and in Drush Make.
-     *
-     * @param string $profileDir
-     *
-     * @todo remove this in later versions
-     */
-    protected function profileModeBcWarning($profileDir)
-    {
-        $conflicts = $this->findDrushMakeConflicts($profileDir, '', 10, true);
-        if (count($conflicts)) {
-            $this->output->writeln("\n<comment>Profile builds have changed.</comment>");
-            $this->output->writeln('Files are no longer built inside the repository directory.');
-            $this->output->writeln('You should ensure that your repository directory does not contain files that are also built by Drush Make.');
-            $this->output->writeln('Examples:');
-            $this->output->writeln('  ' . implode("\n  ", $conflicts) . "\n");
-        }
-    }
-
-    /**
-     * Find files in the Drush Make output that also exist in the app.
-     *
-     * @param string $dir
-     * @param string $subDir
-     * @param int    $limit
-     * @param bool   $checkIgnored
-     *
-     * @todo remove this
-     *
-     * @return array
-     */
-    protected function findDrushMakeConflicts($dir, $subDir = '', $limit = 0, $checkIgnored = false)
-    {
-        $conflicts = array();
-        $found = 0;
-        $subDirAbsolute = rtrim($dir . '/' . $subDir, '/');
-        $subDirRelative = $subDir ? $subDir . '/' : '';
-        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        $handle = opendir($subDirAbsolute);
-        while (false !== ($filename = readdir($handle))) {
-            if ($filename[0] === '.') {
-                continue;
-            }
-            if ($limit && $found >= $limit) {
-                break;
-            }
-            if (is_dir($subDirAbsolute . '/' . $filename)) {
-                $conflicts += $this->findDrushMakeConflicts($dir, $subDirRelative . $filename, $limit >= 0 ? $limit - $found : 0, $checkIgnored);
-                continue;
-            }
-            $appFile = $this->appRoot . '/' . $subDirRelative . $filename;
-            if (file_exists($appFile)) {
-                if ($checkIgnored) {
-                    $relative = $this->fsHelper->makePathRelative($appFile, $repositoryDir);
-                    if (!$this->gitHelper->execute(array('check-ignore', $relative))) {
-                        continue;
-                    }
-                }
-                $conflicts[] = $this->appRoot . '/' . $subDirRelative . $filename;
-                $found++;
-            }
-        }
-        closedir($handle);
-        return $conflicts;
     }
 
     /**
@@ -329,24 +256,39 @@ class Drupal extends ToolstackBase
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
-            copy($settingsPhpFile, $this->buildDir . '/sites/default/settings.php');
+            copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->output->writeln(
               "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
-              . "\nYou will need to rebuild if you edit this file.</comment>");
+              . "\nYou will need to rebuild if you edit this file.</comment>"
+            );
             $this->ignoredFiles[] = 'settings.php';
         }
     }
 
     public function install()
     {
-        $buildDir = $this->buildDir;
-        $sitesDefault = $buildDir . '/sites/default';
+        $webRoot = $this->getWebRoot();
+        $sitesDefault = $webRoot . '/sites/default';
         $resources = CLI_ROOT . '/resources/drupal';
         $shared = $this->getSharedDir();
 
-        // The build has been done: create a settings.php if it is missing.
+        $defaultSettingsPhp = 'settings.php';
+        $defaultSettingsLocal = 'settings.local.php';
+
+        // Override settings.php and settings.local.php for Drupal 8.
+        if ($this->isDrupal8($webRoot)) {
+            $defaultSettingsPhp = '8/settings.php';
+            $defaultSettingsLocal = '8/settings.local.php';
+
+            if (!file_exists($shared . '/config')) {
+                mkdir($shared . '/config/active', 0775, true);
+                mkdir($shared . '/config/staging', 0775, true);
+            }
+        }
+
+        // Create a settings.php if it is missing.
         if (!file_exists($sitesDefault . '/settings.php')) {
-            copy($resources . '/settings.php', $sitesDefault . '/settings.php');
+            copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
         }
 
         // Create the shared/settings.local.php if it doesn't exist. Everything
@@ -354,7 +296,7 @@ class Drupal extends ToolstackBase
         $settingsLocal = $shared . '/settings.local.php';
         if (!file_exists($settingsLocal)) {
             $this->output->writeln("Creating file: <info>$settingsLocal</info>");
-            copy($resources . '/settings.local.php', $settingsLocal);
+            copy($resources . '/' . $defaultSettingsLocal, $settingsLocal);
             $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
         }
 
@@ -373,4 +315,15 @@ class Drupal extends ToolstackBase
         $this->fsHelper->symlinkAll($shared, $sitesDefault);
     }
 
+    /**
+     * Detect whether the site is Drupal 8.
+     *
+     * @param string $drupalRoot
+     *
+     * @return bool
+     */
+    protected function isDrupal8($drupalRoot)
+    {
+        return file_exists($drupalRoot . '/core/includes/bootstrap.inc');
+    }
 }
