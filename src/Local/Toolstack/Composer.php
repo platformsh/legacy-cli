@@ -12,9 +12,7 @@ class Composer extends ToolstackBase
 
     public function build()
     {
-        $this->buildDir = $this->appRoot;
-        $this->specialDestinations = array();
-        $this->preventArchive = true;
+        $this->leaveInPlace = true;
 
         $this->output->writeln("Found a composer.json file; installing dependencies");
 
