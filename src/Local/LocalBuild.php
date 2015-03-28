@@ -345,10 +345,11 @@ class LocalBuild
      */
     protected function getDocumentRoot(array $appConfig)
     {
-        $documentRoot = isset($appConfig['web']['document_root']) ? $appConfig['web']['document_root'] : '/';
-        // Platform treats '/'  as '/public'.
-        if ($documentRoot === '/') {
-            $documentRoot = '/public';
+        // The default document root is '/public'. This is used if the root is
+        // not set, if it is empty, or if it is set to '/'.
+        $documentRoot = '/public';
+        if (!empty($appConfig['web']['document_root']) && $appConfig['web']['document_root'] !== '/') {
+            $documentRoot = $appConfig['web']['document_root'];
         }
         return ltrim($documentRoot, '/');
     }
