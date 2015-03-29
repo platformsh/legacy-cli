@@ -184,7 +184,7 @@ class LocalBuild
 
         // Get a hash representing all the files in the application, excluding
         // the .platform folder.
-        $tree = $this->gitHelper->execute(array('ls-tree', 'HEAD'), $appRoot);
+        $tree = $this->gitHelper->execute(array('ls-files', '-s'), $appRoot);
         if ($tree === false) {
             return false;
         }
