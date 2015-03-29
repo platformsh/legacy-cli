@@ -367,6 +367,10 @@ class LocalBuild
         if (!isset($appConfig['hooks']['build'])) {
             return;
         }
+        if (!empty($this->settings['noBuildHooks'])) {
+            $this->output->writeln("Skipping post-build hooks");
+            return;
+        }
         $this->output->writeln("Running post-build hooks");
         $command = implode(';', (array) $appConfig['hooks']['build']);
         chdir($buildDir);

@@ -43,6 +43,12 @@ class ProjectBuildCommand extends PlatformCommand
             null,
             InputOption::VALUE_NONE,
             'Disable caching.'
+          )
+          ->addOption(
+            'no-build-hooks',
+            null,
+            InputOption::VALUE_NONE,
+            'Do not run post-build hooks.'
           );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
@@ -111,6 +117,7 @@ class ProjectBuildCommand extends PlatformCommand
           'noArchive' => 'no-archive',
           'noCache' => 'no-cache',
           'noClean' => 'no-clean',
+          'noBuildHooks' => 'no-build-hooks',
         );
         foreach ($settingsMap as $setting => $option) {
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
