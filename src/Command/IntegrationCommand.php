@@ -113,27 +113,40 @@ abstract class IntegrationCommand extends PlatformCommand
             return !in_array($value, array('false', '0', 0), true);
         };
         $boolOptions = array(true, false, '1', '0', 'true', 'false');
+        $tokenValidator = function ($string) {
+            return base64_decode($string, true) !== false;
+        };
 
         return array(
           'type' => array(
             'required' => true,
-            'description' => "The integration type ('github', 'hipchat', or 'webhook')",
+            'description' => "The integration type ('bitbucket', 'github', 'hipchat', or 'webhook')",
             'validator' => function ($value) {
-                return in_array($value, array('github', 'hipchat', 'webhook'));
+                return in_array($value, array('bitbucket', 'github', 'hipchat', 'webhook'));
             },
           ),
           'token' => array(
             'for types' => array('github', 'hipchat'),
             'required' => true,
-            'description' => 'An OAuth token for the integration',
-            'validator' => function ($string) {
-                return base64_decode($string, true) !== false;
-            },
+            'description' => 'GitHub or HipChat: An OAuth token for the integration',
+            'validator' => $tokenValidator,
+          ),
+          'consumer_key' => array(
+            'for types' => array('bitbucket'),
+            'required' => true,
+            'description' => 'BitBucket: The OAuth consumer key',
+            'validator' => $tokenValidator,
+          ),
+          'consumer_secret' => array(
+            'for types' => array('bitbucket'),
+            'required' => true,
+            'description' => 'BitBucket: The OAuth consumer secret',
+            'validator' => $tokenValidator,
           ),
           'repository' => array(
-            'for types' => array('github'),
+            'for types' => array('bitbucket', 'github'),
             'required' => true,
-            'description' => 'GitHub: the repository to track',
+            'description' => 'GitHub or BitBucket: the repository to track (in the form \'user/repo\')',
             'validator' => function ($string) {
                 return (bool) preg_match('#^[\w\-_]+/[\w\-_]+$#', $string);
             },
@@ -146,10 +159,10 @@ abstract class IntegrationCommand extends PlatformCommand
             'options' => $boolOptions,
           ),
           'fetch_branches' => array(
-            'for types' => array('github'),
+            'for types' => array('bitbucket', 'github'),
             'default' => true,
             'normalizer' => $boolNormalizer,
-            'description' => 'GitHub: track branches',
+            'description' => 'GitHub or BitBucket: track branches',
             'options' => $boolOptions,
           ),
           'room' => array(
@@ -193,6 +206,11 @@ abstract class IntegrationCommand extends PlatformCommand
             $payloadUrl = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
             $output = "Repository: " . $properties['repository']
               . "\nBuild PRs: " . ($properties['build_pull_requests'] ? 'yes' : 'no')
+              . "\nFetch branches: " . ($properties['fetch_branches'] ? 'yes' : 'no')
+              . "\nPayload URL: " . $payloadUrl;
+        } elseif ($properties['type'] == 'bitbucket') {
+            $payloadUrl = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
+            $output = "Repository: " . $properties['repository']
               . "\nFetch branches: " . ($properties['fetch_branches'] ? 'yes' : 'no')
               . "\nPayload URL: " . $payloadUrl;
         } elseif ($properties['type'] == 'hipchat') {
