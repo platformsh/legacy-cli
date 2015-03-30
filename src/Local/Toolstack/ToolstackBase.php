@@ -12,8 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 abstract class ToolstackBase implements ToolstackInterface
 {
 
-    public $preventArchive = false;
-
     /**
      * Files from the app root to ignore during install.
      *
@@ -27,16 +25,18 @@ abstract class ToolstackBase implements ToolstackInterface
      * @var array
      *   An array of filenames in the app root, mapped to destinations. The
      *   destinations are filenames supporting the replacements:
-     *     "{webroot}" - www for the CLI, usually /app/public on Platform.sh
-     *     "{approot}" - ignored by the CLI, /app on Platform.sh
+     *     "{webroot}" - see getWebRoot() (usually /app/public on Platform.sh)
+     *     "{approot}" - the $buildDir (usually /app on Platform.sh)
      */
     protected $specialDestinations = array();
 
     protected $settings = array();
     protected $appRoot;
     protected $projectRoot;
+    protected $documentRoot;
     protected $buildDir;
     protected $absoluteLinks = false;
+    protected $leaveInPlace = false;
 
     /** @var OutputInterface */
     protected $output;
@@ -82,13 +82,14 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, $appRoot, $projectRoot, array $settings)
+    public function prepare($buildDir, $documentRoot, $appRoot, $projectRoot, array $settings)
     {
         $this->appRoot = $appRoot;
         $this->projectRoot = $projectRoot;
         $this->settings = $settings;
 
         $this->buildDir = $buildDir;
+        $this->documentRoot = $documentRoot;
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
         $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
@@ -99,6 +100,10 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     protected function symLinkSpecialDestinations()
     {
+        if ($this->leaveInPlace) {
+            return;
+        }
+
         foreach ($this->specialDestinations as $sourcePattern => $relDestination) {
             $matched = glob($this->appRoot . '/' . $sourcePattern, GLOB_NOSORT);
             if (!$matched) {
@@ -106,7 +111,7 @@ abstract class ToolstackBase implements ToolstackInterface
             }
 
             // On Platform these replacements would be a bit different.
-            $absDestination = str_replace(array('{webroot}', '{approot}'), $this->buildDir, $relDestination);
+            $absDestination = str_replace(array('{webroot}', '{approot}'), array($this->getWebRoot(), $this->buildDir), $relDestination);
 
             foreach ($matched as $source) {
                 // Ignore the source if it's in ignoredFiles.
@@ -159,9 +164,15 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function getBuildDir()
+    public function getWebRoot()
     {
-        return $this->buildDir;
+        if ($this->leaveInPlace) {
+            if ($this->documentRoot === 'public') {
+                return $this->appRoot;
+            }
+            return $this->appRoot . '/' . $this->documentRoot;
+        }
+        return $this->buildDir . '/' . $this->documentRoot;
     }
 
     /**
@@ -178,6 +189,14 @@ abstract class ToolstackBase implements ToolstackInterface
     public function getKey()
     {
         return false;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function canArchive()
+    {
+        return !$this->leaveInPlace;
     }
 
     /**

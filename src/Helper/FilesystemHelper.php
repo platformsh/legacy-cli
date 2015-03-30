@@ -202,7 +202,7 @@ class FilesystemHelper extends Helper
                 $sourceFile = $source . '/' . $file;
                 $linkFile = $destination . '/' . $file;
 
-                if ($recursive && is_dir($linkFile) && is_dir($sourceFile)) {
+                if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
                     $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive);
                     continue;
                 }
@@ -212,6 +212,10 @@ class FilesystemHelper extends Helper
                     } else {
                         throw new \Exception('File exists: ' . $linkFile);
                     }
+                }
+                elseif (is_link($linkFile)) {
+                    // This is a broken link. Remove it.
+                    $this->remove($linkFile);
                 }
 
                 if (!function_exists('symlink') && $this->copyIfSymlinkUnavailable) {

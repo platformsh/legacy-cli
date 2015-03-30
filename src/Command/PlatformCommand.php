@@ -162,7 +162,7 @@ abstract class PlatformCommand extends Command
         $yaml = new Yaml();
         if (file_put_contents($filename, $yaml->dump(self::$cache, 0, 4, true))) {
             chmod($filename, 0600);
-            $lastSaved = self::$cache;
+            self::$cacheAsLoaded = self::$cache;
 
             return true;
         }
@@ -353,6 +353,7 @@ abstract class PlatformCommand extends Command
             $projects = $this->getClient()
                              ->getProjects();
 
+            self::$cache['projects'] = array();
             foreach ($projects as $id => $project) {
                 self::$cache['projects'][$id] = $project->getData();
                 self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);

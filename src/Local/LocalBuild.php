@@ -13,6 +13,10 @@ use Symfony\Component\Yaml\Parser;
 class LocalBuild
 {
 
+    // Some changes may not be backwards-compatible with previous build
+    // archives. Increment this number as breaking changes are released.
+    const BUILD_VERSION = 1;
+
     protected $settings;
     protected $output;
     protected $fsHelper;
@@ -180,7 +184,7 @@ class LocalBuild
 
         // Get a hash representing all the files in the application, excluding
         // the .platform folder.
-        $tree = $this->gitHelper->execute(array('ls-tree', 'HEAD'), $appRoot);
+        $tree = $this->gitHelper->execute(array('ls-files', '-s'), $appRoot);
         if ($tree === false) {
             return false;
         }
@@ -212,6 +216,8 @@ class LocalBuild
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 
+        $hashes[] = self::BUILD_VERSION;
+
         // Combine them all.
         return sha1(implode(' ', $hashes));
     }
@@ -237,6 +243,9 @@ class LocalBuild
         }
         $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
+        // Get the configured document root.
+        $documentRoot = $this->getDocumentRoot($appConfig);
+
         $toolstack = $this->getToolstack($appRoot, $appConfig);
 
         if ($toolstack) {
@@ -246,7 +255,7 @@ class LocalBuild
                 'multiApp' => $multiApp,
                 'appName' => $appName,
               );
-            $toolstack->prepare($buildDir, $appRoot, $projectRoot, $buildSettings);
+            $toolstack->prepare($buildDir, $documentRoot, $appRoot, $projectRoot, $buildSettings);
 
             $archive = false;
             if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
@@ -273,9 +282,16 @@ class LocalBuild
 
                 $toolstack->build();
 
-                $this->warnAboutHooks($appConfig);
+                // We can only run post-build hooks for apps that actually have
+                // a separate build directory.
+                if (file_exists($buildDir)) {
+                    $this->runPostBuildHooks($appConfig, $buildDir);
+                }
+                else {
+                    $this->warnAboutHooks($appConfig, 'build');
+                }
 
-                if ($archive && empty($toolstack->preventArchive)) {
+                if ($archive && $toolstack->canArchive()) {
                     $this->output->writeln("Saving build archive...");
                     if (!is_dir(dirname($archive))) {
                         mkdir(dirname($archive));
@@ -286,14 +302,18 @@ class LocalBuild
 
             $toolstack->install();
 
-            // Allow the toolstack to change the build dir.
-            $buildDir = $toolstack->getBuildDir();
+            $webRoot = $toolstack->getWebRoot();
         } else {
-            $buildDir = $appRoot;
-            $this->warnAboutHooks($appConfig);
+            $webRoot = "$appRoot/$documentRoot";
+            $this->warnAboutHooks($appConfig, 'build');
         }
 
-        // Symlink the build into www or www/appIdentifier.
+        // Symlink the built web root ($webRoot) into www or www/appIdentifier.
+        if (!is_dir($webRoot)) {
+            $this->output->writeln("Web root not found: <error>$webRoot</error>");
+
+            return false;
+        }
         $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;
         if ($multiApp) {
             $appDir = str_replace('/', '-', $appIdentifier);
@@ -302,7 +322,7 @@ class LocalBuild
             }
             $wwwLink .= "/$appDir";
         }
-        $symlinkTarget = $this->fsHelper->symlink($buildDir, $wwwLink);
+        $symlinkTarget = $this->fsHelper->symlink($webRoot, $wwwLink);
 
         if ($verbose) {
             $this->output->writeln("Created symlink: $wwwLink -> $symlinkTarget");
@@ -315,33 +335,74 @@ class LocalBuild
     }
 
     /**
-     * Warn the user that the CLI will not run build/deploy hooks.
+     * Get the configured document root for the application.
+     *
+     * @link https://docs.platform.sh/reference/configuration-files
      *
      * @param array $appConfig
      *
+     * @return string
+     */
+    protected function getDocumentRoot(array $appConfig)
+    {
+        // The default document root is '/public'. This is used if the root is
+        // not set, if it is empty, or if it is set to '/'.
+        $documentRoot = '/public';
+        if (!empty($appConfig['web']['document_root']) && $appConfig['web']['document_root'] !== '/') {
+            $documentRoot = $appConfig['web']['document_root'];
+        }
+        return ltrim($documentRoot, '/');
+    }
+
+    /**
+     * Run post-build hooks.
+     *
+     * @param array  $appConfig
+     * @param string $buildDir
+     *
      * @return bool
      */
-    protected function warnAboutHooks(array $appConfig)
+    protected function runPostBuildHooks(array $appConfig, $buildDir)
     {
-        if (empty($appConfig['hooks']['build'])) {
-            return false;
+        if (!isset($appConfig['hooks']['build'])) {
+            return;
+        }
+        if (!empty($this->settings['noBuildHooks'])) {
+            $this->output->writeln("Skipping post-build hooks");
+            return;
+        }
+        $this->output->writeln("Running post-build hooks");
+        $command = implode(';', (array) $appConfig['hooks']['build']);
+        chdir($buildDir);
+        exec($command, $output, $returnVar);
+        foreach ($output as $line) {
+            $this->output->writeln('  ' . $line);
+        }
+        if ($returnVar > 0) {
+            $this->output->writeln('<error>The build hook failed</error>');
+        }
+    }
+
+    /**
+     * Warn the user that the CLI will not run hooks.
+     *
+     * @param array  $appConfig
+     * @param string $hookType
+     */
+    protected function warnAboutHooks(array $appConfig, $hookType)
+    {
+        if (empty($appConfig['hooks'][$hookType])) {
+            return;
         }
         $indent = '        ';
         $this->output->writeln(
-          "<comment>You have defined the following hook(s). The CLI cannot run them locally.</comment>"
+          "<comment>You have defined the following $hookType hook(s). The CLI will not run them locally.</comment>"
         );
-        foreach (array('build', 'deploy') as $hookType) {
-            if (empty($appConfig['hooks'][$hookType])) {
-                continue;
-            }
-            $this->output->writeln("    $hookType: |");
-            $hooks = (array) $appConfig['hooks'][$hookType];
-            $asString = implode("\n", array_map('trim', $hooks));
-            $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
-            $this->output->writeln($withIndent);
-        }
-
-        return true;
+        $this->output->writeln("    $hookType: |");
+        $hooks = (array) $appConfig['hooks'][$hookType];
+        $asString = implode("\n", array_map('trim', $hooks));
+        $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
+        $this->output->writeln($withIndent);
     }
 
     /**
@@ -399,13 +460,27 @@ class LocalBuild
             }
         }
         $activeBuilds = array();
+        $buildsDir = $projectRoot . '/' . LocalProject::BUILD_DIR;
         foreach ($links as $link) {
             if (is_link($link) && ($target = readlink($link))) {
                 // Make the target into an absolute path.
                 $target = $target[0] === DIRECTORY_SEPARATOR ? $target : realpath(dirname($link) . '/' . $target);
-                if ($target) {
-                    $activeBuilds[] = $target;
+                if (!$target) {
+                    continue;
                 }
+                // Ignore the target if it doesn't point to a build in 'builds'.
+                if (strpos($target, $buildsDir) === false) {
+                    continue;
+                }
+                // The target should just be one level below the 'builds'
+                // directory, not more.
+                while (dirname($target) != $buildsDir) {
+                    $target = dirname($target);
+                    if (strpos($target, $buildsDir) === false) {
+                        throw new \Exception('Error resolving active build directory');
+                    }
+                }
+                $activeBuilds[] = $target;
             }
         }
 

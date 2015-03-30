@@ -43,6 +43,12 @@ class ProjectBuildCommand extends PlatformCommand
             null,
             InputOption::VALUE_NONE,
             'Disable caching.'
+          )
+          ->addOption(
+            'no-build-hooks',
+            null,
+            InputOption::VALUE_NONE,
+            'Do not run post-build hooks.'
           );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
@@ -75,22 +81,22 @@ class ProjectBuildCommand extends PlatformCommand
 
             return 1;
         }
+
+        // Find out the real environment ID, if possible.
         if ($this->isLoggedIn()) {
             $project = $this->getCurrentProject();
-            if (!$project) {
-                throw new \RuntimeException("Could not determine the current project");
+            if ($project) {
+                $environment = $this->getCurrentEnvironment($project);
+                if ($environment) {
+                    $envId = $environment['id'];
+                }
             }
-            $environment = $this->getCurrentEnvironment($project);
-            if (!$environment) {
-                throw new \RuntimeException("Could not determine the current environment");
-            }
-            $envId = $environment['id'];
-        } else {
-            // Login was skipped so we figure out the environment ID from git.
-            $head = file($projectRoot . '/' . LocalProject::REPOSITORY_DIR . '/.git/HEAD');
-            $branchRef = $head[0];
-            $branch = trim(substr($branchRef, 16));
-            $envId = $branch;
+        }
+
+        // Otherwise, use the Git branch name.
+        if (!isset($envId)) {
+            $gitHelper = $this->getHelper('git');
+            $envId = $gitHelper->getCurrentBranch($projectRoot . '/' . LocalProject::REPOSITORY_DIR, true);
         }
 
         $apps = $input->getArgument('app');
@@ -111,6 +117,7 @@ class ProjectBuildCommand extends PlatformCommand
           'noArchive' => 'no-archive',
           'noCache' => 'no-cache',
           'noClean' => 'no-clean',
+          'noBuildHooks' => 'no-build-hooks',
         );
         foreach ($settingsMap as $setting => $option) {
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);

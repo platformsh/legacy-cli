@@ -177,7 +177,10 @@ class DomainAddCommand extends PlatformCommand
         // @todo: We want to split up each cert in the chain, if a file has multiple individual certs.
         // Unfortunately doing this is inconvenient so we'll skip it for now.
         foreach ($chainPaths as $chainPath) {
-            $chainFiles[] = (file_exists($chainPath) ? trim(file_get_contents($chainPath)) : '');
+            if (!is_readable($chainPath)) {
+                throw new \Exception("The chain file could not be read: $chainPath");
+            }
+            $chainFiles[] = trim(file_get_contents($chainPath));
         }
 
         // Yay we're done.
