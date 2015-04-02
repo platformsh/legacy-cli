@@ -13,6 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectBuildCommand extends PlatformCommand
 {
 
+    protected $defaultDrushConcurrency = 1;
+
     protected function configure()
     {
         $this
@@ -63,7 +65,7 @@ class ProjectBuildCommand extends PlatformCommand
               null,
               InputOption::VALUE_OPTIONAL,
               'Drush: set the number of concurrent projects that will be processed at the same time.',
-              8
+              $this->defaultDrushConcurrency
             );
         }
     }
@@ -108,7 +110,7 @@ class ProjectBuildCommand extends PlatformCommand
 
         $settings['verbosity'] = $output->getVerbosity();
 
-        $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : 3;
+        $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : $this->defaultDrushConcurrency;
 
         // Some simple settings flags.
         $settingsMap = array(
