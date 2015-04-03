@@ -79,7 +79,6 @@ class ProjectDrushAliasesCommand extends PlatformCommand
                     return 1;
                 }
             }
-            $project['alias-group'] = $new_group;
             LocalProject::writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
             $output->write("Creating Drush aliases in the group <info>@$new_group</info>...");
             $environments = $this->getEnvironments($project, true, false);
