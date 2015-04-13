@@ -9,13 +9,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectDrushAliasesCommand extends PlatformCommand
+class LocalDrushAliasesCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-          ->setName('project:drush-aliases')
+          ->setName('local:drush-aliases')
           ->setAliases(array('drush-aliases'))
           ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
           ->addOption('group', 'g', InputOption::VALUE_OPTIONAL, 'Recreate the aliases with a new group name.')

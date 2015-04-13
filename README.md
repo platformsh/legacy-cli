@@ -117,12 +117,13 @@ integration
   integration:delete                        Delete an integration from a project
   integration:get (integrations)            View project integration(s)
   integration:update                        Update an integration
+local
+  local:build (build)                       Build the current project locally
+  local:clean (clean)                       Remove old project builds
+  local:drush-aliases (drush-aliases)       Find the project's Drush aliases
+  local:init (init)                         Create a local project file structure from a Git repository
 project
-  project:build (build)                     Build the current project locally
-  project:clean (clean)                     Remove old project builds
-  project:drush-aliases (drush-aliases)     Find the project's Drush aliases
   project:get (get)                         Clone and build a project locally
-  project:init (init)                       Initialize from a plain Git repository
   project:list (projects)                   Get a list of all active projects
   project:metadata                          Read or set metadata for a project
 ssh-key

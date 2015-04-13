@@ -124,11 +124,11 @@ class Application extends ParentApplication
         $commands[] = new Command\IntegrationDeleteCommand();
         $commands[] = new Command\IntegrationGetCommand();
         $commands[] = new Command\IntegrationUpdateCommand();
-        $commands[] = new Command\ProjectBuildCommand();
-        $commands[] = new Command\ProjectCleanCommand();
-        $commands[] = new Command\ProjectDrushAliasesCommand();
+        $commands[] = new Command\LocalBuildCommand();
+        $commands[] = new Command\LocalCleanCommand();
+        $commands[] = new Command\LocalDrushAliasesCommand();
         $commands[] = new Command\ProjectGetCommand();
-        $commands[] = new Command\ProjectInitCommand();
+        $commands[] = new Command\LocalInitCommand();
         $commands[] = new Command\ProjectMetadataCommand();
         $commands[] = new Command\SshKeyAddCommand();
         $commands[] = new Command\SshKeyDeleteCommand();

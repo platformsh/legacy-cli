@@ -7,16 +7,16 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectInitCommand extends PlatformCommand
+class LocalInitCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-          ->setName('project:init')
+          ->setName('local:init')
           ->setAliases(array('init'))
           ->addArgument('directory', InputArgument::OPTIONAL, 'The path to the repository.')
-          ->setDescription('Initialize from a plain Git repository');
+          ->setDescription('Create a local project file structure from a Git repository');
     }
 
     public function isLocal()
