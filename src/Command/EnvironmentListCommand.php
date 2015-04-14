@@ -135,7 +135,7 @@ class EnvironmentListCommand extends PlatformCommand
             }
 
             if ($this->showStatus) {
-                $row[] = $url ? 'Active' : 'Inactive';
+                $row[] = $this->formatEnvironmentStatus($environment->status);
             }
 
             if ($this->showUrls) {
@@ -247,5 +247,18 @@ class EnvironmentListCommand extends PlatformCommand
         } catch (\InvalidArgumentException $e) {
             // Ignore 'command not found' errors.
         }
+    }
+
+    /**
+     * @param string $status
+     *
+     * @return string
+     */
+    protected function formatEnvironmentStatus($status) {
+        if ($status == 'dirty') {
+            $status = 'Rebuilding';
+        }
+
+        return ucfirst($status);
     }
 }
