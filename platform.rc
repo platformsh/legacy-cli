@@ -31,4 +31,4 @@ function platform_git {
     cd - 1>/dev/null
     return "$GIT_CODE"
 }
-alias pgit='platform_git'
+alias plgit='platform_git'
