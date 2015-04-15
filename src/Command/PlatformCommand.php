@@ -29,11 +29,13 @@ abstract class PlatformCommand extends Command
     /** @var array|null */
     private static $cacheAsLoaded;
 
+    /** @var string */
+    protected static $sessionId = 'default';
+
     /** @var OutputInterface|null */
     protected $output;
 
     protected $envArgName = 'environment';
-    protected $sessionId = 'default';
 
     protected $projectsTtl;
     protected $environmentsTtl;
@@ -120,7 +122,7 @@ abstract class PlatformCommand extends Command
             $connector = new Connector($connectorOptions);
             $session = $connector->getSession();
 
-            $session->setId('cli-' . $this->sessionId);
+            $session->setId('cli-' . self::$sessionId);
             $session->setStorage(new File());
 
             self::$client = new PlatformClient($connector);
@@ -139,8 +141,8 @@ abstract class PlatformCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->output = $output;
-        if ($input->hasOption('session-id') && $input->getOption('session-id')) {
-            $this->sessionId = $input->getOption('session-id');
+        if ($input->getOption('session-id')) {
+            self::$sessionId = $input->getOption('session-id');
         }
     }
 
@@ -216,7 +218,7 @@ abstract class PlatformCommand extends Command
      */
     protected function getCacheDir()
     {
-        $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', $this->sessionId);
+        $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', self::$sessionId);
 
         return $this->getHelper('fs')
                     ->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
@@ -247,7 +249,10 @@ abstract class PlatformCommand extends Command
         }
         $application = $this->getApplication();
         $command = $application->find('login');
-        $input = new ArrayInput(array('command' => 'login'));
+        $input = new ArrayInput(array(
+          'command' => 'login',
+          '--session-id' => self::$sessionId,
+        ));
         $exitCode = $command->run($input, $this->output);
         if ($exitCode) {
             throw new \Exception('Login failed');

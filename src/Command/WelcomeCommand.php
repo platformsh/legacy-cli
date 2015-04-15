@@ -26,10 +26,6 @@ class WelcomeCommand extends PlatformCommand
     {
         $output->writeln("Welcome to Platform.sh!\n");
 
-        if (!$this->isLoggedIn()) {
-            $this->login();
-        }
-
         $application = $this->getApplication();
 
         if ($currentProject = $this->getCurrentProject()) {
@@ -43,6 +39,7 @@ class WelcomeCommand extends PlatformCommand
             $envInput = new ArrayInput(
               array(
                 'command' => 'environments',
+                '--session-id' => self::$sessionId,
                 '--refresh' => 0,
               )
             );
@@ -55,6 +52,7 @@ class WelcomeCommand extends PlatformCommand
             $projectsInput = new ArrayInput(
               array(
                 'command' => 'projects',
+                '--session-id' => self::$sessionId,
                 '--refresh' => 0,
               )
             );

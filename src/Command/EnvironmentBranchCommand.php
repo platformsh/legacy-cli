@@ -64,6 +64,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                 // List environments.
                 $params = array(
                   'command' => 'environments',
+                  '--session-id' => self::$sessionId,
                   '--project' => $this->getSelectedProject()['id'],
                 );
 
@@ -98,6 +99,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                 $checkoutInput = new ArrayInput(
                   array(
                     'command' => 'environment:checkout',
+                    'session-id' => self::$sessionId,
                     'id' => $environment['id'],
                   )
                 );
@@ -179,9 +181,7 @@ class EnvironmentBranchCommand extends PlatformCommand
         $build = $input->getOption('build');
         if (empty($local_error) && $build && $projectRoot) {
             // Build the new branch.
-            $application = $this->getApplication();
             try {
-                $buildCommand = $application->find('build');
                 $buildSettings = array(
                   'environmentId' => $machineName,
                   'verbosity' => $output->getVerbosity(),
