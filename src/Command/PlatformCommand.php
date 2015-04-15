@@ -38,6 +38,8 @@ abstract class PlatformCommand extends Command
     protected $projectsTtl;
     protected $environmentsTtl;
 
+    private $hiddenInList = false;
+
     /**
      * The project, selected either by an option or the CWD.
      *
@@ -66,6 +68,32 @@ abstract class PlatformCommand extends Command
 
         $this->projectsTtl = getenv('PLATFORM_CLI_PROJECTS_TTL') ?: 3600;
         $this->environmentsTtl = getenv('PLATFORM_CLI_ENVIRONMENTS_TTL') ?: 600;
+    }
+
+    /**
+     * Make the command hidden in the list.
+     *
+     * @return $this
+     */
+    public function setHiddenInList()
+    {
+        $this->hiddenInList = true;
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isEnabled() {
+        $enabled = parent::isEnabled();
+
+        // Hide the command in the list, if necessary.
+        if ($enabled && $this->hiddenInList) {
+            global $argv;
+            $enabled = !isset($argv[1]) || $argv[1] != 'list';
+        }
+
+        return $enabled;
     }
 
     /**

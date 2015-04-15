@@ -127,6 +127,7 @@ class Application extends ParentApplication
         $commands[] = new Command\LocalBuildCommand();
         $commands[] = new Command\LocalCleanCommand();
         $commands[] = new Command\LocalDrushAliasesCommand();
+        $commands[] = new Command\LocalDirCommand();
         $commands[] = new Command\ProjectGetCommand();
         $commands[] = new Command\LocalInitCommand();
         $commands[] = new Command\ProjectMetadataCommand();

@@ -14,14 +14,7 @@ class WelcomeCommand extends PlatformCommand
         $this
           ->setName('welcome')
           ->setDescription('Welcome to Platform.sh');
-    }
-
-    public function isEnabled()
-    {
-        // Hide the command in the list.
-        global $argv;
-
-        return !isset($argv[1]) || $argv[1] != 'list';
+        $this->setHiddenInList();
     }
 
     public function isLocal()
