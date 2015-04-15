@@ -124,14 +124,7 @@ class ProjectGetCommand extends PlatformCommand
         $fsHelper = $this->getHelper('fs');
 
         // Prepare to talk to the Platform.sh repository.
-        if (isset($project['repository'])) {
-            $gitUrl = $project['repository']['url'];
-        }
-        else {
-            $projectUriParts = explode('/', str_replace(array('http://', 'https://'), '', $project['uri']));
-            $cluster = $projectUriParts[0];
-            $gitUrl = "{$projectId}@git.{$cluster}:{$projectId}.git";
-        }
+        $gitUrl = $project->getGitUrl();
         $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($output));
