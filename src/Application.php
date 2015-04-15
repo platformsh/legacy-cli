@@ -111,6 +111,7 @@ class Application extends ParentApplication
         $commands[] = new Command\EnvironmentMergeCommand();
         $commands[] = new Command\EnvironmentRelationshipsCommand();
         $commands[] = new Command\EnvironmentRestoreCommand();
+        $commands[] = new Command\EnvironmentRoutesCommand();
         $commands[] = new Command\EnvironmentSshCommand();
         $commands[] = new Command\EnvironmentSqlCommand();
         $commands[] = new Command\EnvironmentSqlDumpCommand();
@@ -123,15 +124,20 @@ class Application extends ParentApplication
         $commands[] = new Command\IntegrationDeleteCommand();
         $commands[] = new Command\IntegrationGetCommand();
         $commands[] = new Command\IntegrationUpdateCommand();
-        $commands[] = new Command\ProjectBuildCommand();
-        $commands[] = new Command\ProjectCleanCommand();
-        $commands[] = new Command\ProjectDrushAliasesCommand();
+        $commands[] = new Command\LocalBuildCommand();
+        $commands[] = new Command\LocalCleanCommand();
+        $commands[] = new Command\LocalDrushAliasesCommand();
+        $commands[] = new Command\LocalDirCommand();
         $commands[] = new Command\ProjectGetCommand();
-        $commands[] = new Command\ProjectInitCommand();
+        $commands[] = new Command\LocalInitCommand();
         $commands[] = new Command\ProjectMetadataCommand();
         $commands[] = new Command\SshKeyAddCommand();
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();
+        $commands[] = new Command\UserAddCommand();
+        $commands[] = new Command\UserDeleteCommand();
+        $commands[] = new Command\UserListCommand();
+        $commands[] = new Command\UserRoleCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
 

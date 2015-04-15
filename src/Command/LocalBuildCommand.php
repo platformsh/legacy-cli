@@ -10,13 +10,15 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectBuildCommand extends PlatformCommand
+class LocalBuildCommand extends PlatformCommand
 {
+
+    protected $defaultDrushConcurrency = 1;
 
     protected function configure()
     {
         $this
-          ->setName('project:build')
+          ->setName('local:build')
           ->setAliases(array('build'))
           ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
           ->setDescription('Build the current project locally')
@@ -63,7 +65,7 @@ class ProjectBuildCommand extends PlatformCommand
               null,
               InputOption::VALUE_OPTIONAL,
               'Drush: set the number of concurrent projects that will be processed at the same time.',
-              8
+              $this->defaultDrushConcurrency
             );
         }
     }
@@ -108,7 +110,7 @@ class ProjectBuildCommand extends PlatformCommand
 
         $settings['verbosity'] = $output->getVerbosity();
 
-        $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : 3;
+        $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : $this->defaultDrushConcurrency;
 
         // Some simple settings flags.
         $settingsMap = array(

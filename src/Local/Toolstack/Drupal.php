@@ -27,6 +27,10 @@ class Drupal extends ToolstackBase
      */
     public static function isDrupal($directory, $depth = '< 2')
     {
+        if (!is_dir($directory)) {
+            return false;
+        }
+
         $finder = new Finder();
 
         // Look for at least one Drush make file.

@@ -14,14 +14,7 @@ class WelcomeCommand extends PlatformCommand
         $this
           ->setName('welcome')
           ->setDescription('Welcome to Platform.sh');
-    }
-
-    public function isEnabled()
-    {
-        // Hide the command in the list.
-        global $argv;
-
-        return !isset($argv[1]) || $argv[1] != 'list';
+        $this->setHiddenInList();
     }
 
     public function isLocal()
@@ -32,10 +25,6 @@ class WelcomeCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $output->writeln("Welcome to Platform.sh!\n");
-
-        if (!$this->isLoggedIn()) {
-            $this->login();
-        }
 
         $application = $this->getApplication();
 
@@ -50,6 +39,7 @@ class WelcomeCommand extends PlatformCommand
             $envInput = new ArrayInput(
               array(
                 'command' => 'environments',
+                '--session-id' => self::$sessionId,
                 '--refresh' => 0,
               )
             );
@@ -62,6 +52,7 @@ class WelcomeCommand extends PlatformCommand
             $projectsInput = new ArrayInput(
               array(
                 'command' => 'projects',
+                '--session-id' => self::$sessionId,
                 '--refresh' => 0,
               )
             );

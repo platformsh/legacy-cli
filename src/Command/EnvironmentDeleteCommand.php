@@ -35,7 +35,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
               $environments,
               function ($environment) {
                   /** @var Environment $environment */
-                  return !$environment->isActive();
+                  return $environment->status == 'inactive';
               }
             );
             if (!$toDelete) {

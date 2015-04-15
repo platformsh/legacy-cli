@@ -2,8 +2,33 @@
 # Platform.sh CLI shell configuration.
 
 # Enable auto-completion.
-HOOK=$(platform _completion -g -p platform)
-# Try two commands.
-# See https://github.com/stecman/symfony-console-completion/issues/12
-echo "$HOOK" | source /dev/stdin
-source <(echo "$HOOK") 2>/dev/null
+if HOOK=$(platform _completion -g -p platform); then
+    # Try two commands.
+    # See https://github.com/stecman/symfony-console-completion/issues/12
+    echo "$HOOK" | source /dev/stdin
+    source <(echo "$HOOK") 2>/dev/null
+fi
+
+# Run Git commands in the project repository, from any working directory.
+function platform_git {
+    local ROOT
+    ROOT="$(platform dir repo)"
+    # Test the return code of 'platform dir' (it may have written an error
+    # message to STDOUT).
+    if [ ! $? = 0 ] || [ ! -d "$ROOT" ]; then
+        echo $0': Repository not found' >&2
+        return 1;
+    fi
+    cd "$ROOT"
+    # Run Git with 'status' as the default command.
+    if [ -z $1 ]; then
+        git status
+    else
+        git $@
+    fi
+    local GIT_CODE=$?
+    # Change back to the previous working directory.
+    cd - 1>/dev/null
+    return "$GIT_CODE"
+}
+alias plgit='platform_git'

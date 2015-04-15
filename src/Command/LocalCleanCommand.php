@@ -7,13 +7,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectCleanCommand extends PlatformCommand
+class LocalCleanCommand extends PlatformCommand
 {
 
     protected function configure()
     {
         $this
-          ->setName('project:clean')
+          ->setName('local:clean')
           ->setAliases(array('clean'))
           ->setDescription('Remove old project builds')
           ->addOption(

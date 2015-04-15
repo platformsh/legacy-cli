@@ -9,8 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 class PlatformLogoutCommand extends PlatformCommand
 {
 
-    protected $removeConfigFile;
-
     protected function configure()
     {
         $this
