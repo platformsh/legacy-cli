@@ -184,6 +184,24 @@ class GitHelper extends Helper
     }
 
     /**
+     * Check whether a branch exists on a remote.
+     *
+     * @param string $remote
+     * @param string $branchName
+     * @param null   $dir
+     * @param bool   $mustRun
+     *
+     * @return bool
+     */
+    public function remoteBranchExists($remote, $branchName, $dir = null, $mustRun = false)
+    {
+        $args = array('ls-remote', $remote, $branchName);
+        $result = $this->execute($args, $dir, $mustRun);
+
+        return is_string($result) && strlen(trim($result));
+    }
+
+    /**
      * Create a new branch and check it out.
      *
      * @param string $name

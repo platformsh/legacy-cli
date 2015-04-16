@@ -63,9 +63,10 @@ class EnvironmentCheckoutCommand extends PlatformCommand
         }
 
         $projectRoot = $this->getProjectRoot();
+        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($output));
-        $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $gitHelper->setDefaultRepositoryDir($repositoryDir);
 
         $branch = $this->branchExists($specifiedBranch, $project, $gitHelper);
 
@@ -75,29 +76,81 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$gitHelper->branchExists($branch)) {
-            // Fetch from platform.
-            $localProject = new LocalProject();
-            $gitUrl = $project->getGitUrl();
-            $localProject->ensureGitRemote($projectRoot . '/repository', $gitUrl);
-            // Two remotes with the same content can cause trouble with tracking.
-            if ($gitHelper->getConfig("remote.origin.url") == $gitHelper->getConfig("remote.platform.url")) {
-                $gitHelper->execute(array('remote', 'rm', 'origin'));
-                $mustRestoreOrigin = true;
-            }
-            $gitHelper->execute(array('fetch', 'platform'));
-            $success = $gitHelper->checkoutNew($branch, 'platform/' . $branch);
-            if (!empty($mustRestoreOrigin)) {
-                $gitHelper->execute(array('remote', 'add', 'origin', $gitUrl));
-            }
-        }
-        else {
-            // Check out the existing branch.
+        // If the branch exists locally, check it out directly.
+        if ($gitHelper->branchExists($branch)) {
             $output->writeln("Checking out <info>$branch</info>");
-            $success = $gitHelper->checkOut($branch);
+
+            return $gitHelper->checkOut($branch) ? 0 : 1;
+        }
+
+        $verbose = $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE;
+
+        // Make sure that remotes are set up correctly.
+        $localProject = new LocalProject();
+        $localProject->ensureGitRemote($repositoryDir, $project->getGitUrl());
+
+        $originUrl = $gitHelper->getConfig('remote.origin.url');
+        $platformUrl = $gitHelper->getConfig('remote.platform.url');
+
+        // Determine the correct upstream for the new branch. The origin has
+        // priority, if the branch exists there.
+        $upstreamRemote = 'platform';
+        $upstreamRemoteUrl = $platformUrl;
+        $inOrigin = $originUrl && $gitHelper->remoteBranchExists('origin', $branch);
+        if ($inOrigin) {
+            $upstreamRemote = 'origin';
+            $upstreamRemoteUrl = $originUrl;
+        }
+
+        $output->writeln("Creating branch $branch based on upstream $upstreamRemote/$branch");
+
+        // More than one remote with the same content can cause trouble with
+        // tracking.
+        $duplicateRemotes = $this->getDuplicateRemotes($upstreamRemote, $upstreamRemoteUrl, $gitHelper);
+        foreach (array_keys($duplicateRemotes) as $duplicateRemote) {
+            $gitHelper->execute(array('remote', 'rm', $duplicateRemote));
+        }
+
+        // Fetch the branch from the upstream remote.
+        $gitHelper->execute(array('fetch', $upstreamRemote, $branch));
+
+        // Create the new branch, and set the correct upstream.
+        $success = $gitHelper->checkoutNew($branch, $upstreamRemote . '/' . $branch);
+
+        // Restore the temporarily deleted duplicate remotes, if any.
+        foreach ($duplicateRemotes as $duplicateRemote => $duplicateRemoteUrl) {
+            $gitHelper->execute(array('remote', 'add', $duplicateRemote, $duplicateRemoteUrl));
         }
 
         return $success ? 0 : 1;
+    }
+
+    /**
+     * Get a list of remotes matching the URL of the given remote.
+     *
+     * @param string    $givenRemote
+     * @param string    $givenRemoteUrl
+     * @param GitHelper $gitHelper
+     *
+     * @return array
+     *   An array of duplicate remotes. The keys are the remote names, and the
+     *   values are the remote URLs.
+     */
+    protected function getDuplicateRemotes($givenRemote, $givenRemoteUrl, GitHelper $gitHelper)
+    {
+        $matching = array();
+        $remotes = explode("\n", $gitHelper->execute(array('remote')));
+        foreach ($remotes as $remote) {
+            if ($remote == $givenRemote) {
+                continue;
+            }
+            $url = $gitHelper->getConfig("remote.$remote.url");
+            if ($url === $givenRemoteUrl) {
+                $matching[$remote] = $url;
+            }
+        }
+
+        return $matching;
     }
 
     /**
