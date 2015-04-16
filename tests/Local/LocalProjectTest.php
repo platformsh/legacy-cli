@@ -17,7 +17,7 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-      $this->root = vfsStream::setup(__CLASS__);
+        $this->root = vfsStream::setup(__CLASS__);
     }
 
     public function testGetProjectRoot()

@@ -129,6 +129,10 @@ class DrushHelper extends Helper
      */
     public function getDrushExecutable()
     {
+        if (isset($_ENV['PLATFORM_CLI_DRUSH'])) {
+            return $_ENV['PLATFORM_CLI_DRUSH'];
+        }
+
         $executable = 'drush';
         if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = exec('where drush'))) {
             $executable = $fullPath;
