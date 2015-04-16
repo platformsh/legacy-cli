@@ -146,7 +146,7 @@ class ProjectGetCommand extends PlatformCommand
             $output->writeln("<info>Initializing empty project repository...</info>");
             $gitHelper->execute(array('init'), $repositoryDir, true);
             $output->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
-            $gitHelper->execute(array('remote', 'add', '-m', 'master', 'origin', $gitUrl), $repositoryDir, true);
+            $local->ensureGitRemote($repositoryDir, $gitUrl);
             $output->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
             $output->writeln(
               "<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>"
@@ -156,7 +156,9 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         // We have a repo! Yay. Clone it.
-        if (!$gitHelper->cloneRepo($gitUrl, $repositoryDir, $environment)) {
+        $cloneArgs = array('--branch', $environment, '--origin', 'platform');
+        $cloned = $gitHelper->cloneRepo($gitUrl, $repositoryDir, $cloneArgs);
+        if (!$cloned) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $fsHelper->rmdir($projectRoot);
@@ -166,6 +168,7 @@ class ProjectGetCommand extends PlatformCommand
             return 1;
         }
 
+        $local->ensureGitRemote($repositoryDir, $gitUrl);
         $output->writeln("The project <info>{$project['name']}</info> was successfully downloaded to: <info>$directoryName</info>");
 
         // Ensure that Drush aliases are created.
