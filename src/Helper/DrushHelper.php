@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Helper;
 
 use Platformsh\Cli\Local\LocalProject;
-use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Helper;
@@ -129,6 +128,10 @@ class DrushHelper extends Helper
      */
     public function getDrushExecutable()
     {
+        if (isset($_ENV['PLATFORM_CLI_DRUSH'])) {
+            return $_ENV['PLATFORM_CLI_DRUSH'];
+        }
+
         $executable = 'drush';
         if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = exec('where drush'))) {
             $executable = $fullPath;
@@ -176,12 +179,6 @@ class DrushHelper extends Helper
      */
     public function createAliases(Project $project, $projectRoot, $environments, $merge = true)
     {
-        // Ignore the project if it doesn't contain a Drupal application.
-        $repository = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        if (!is_dir($repository) || !Drupal::isDrupal($repository)) {
-            return false;
-        }
-
         $config = LocalProject::getProjectConfig($projectRoot);
         $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
 

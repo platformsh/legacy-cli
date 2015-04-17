@@ -214,7 +214,7 @@ class LocalProject
     {
         $projectConfig = null;
         $projectRoot = $projectRoot ?: self::getProjectRoot();
-        if ($projectRoot) {
+        if ($projectRoot && file_exists($projectRoot . '/' . self::PROJECT_CONFIG)) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . self::PROJECT_CONFIG));
         }
