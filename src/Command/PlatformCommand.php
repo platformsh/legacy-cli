@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -543,6 +544,10 @@ abstract class PlatformCommand extends Command
         // Double-check that the passed project is the current one.
         $currentProject = $this->getCurrentProject();
         if (!$currentProject || $currentProject['id'] != $project['id']) {
+            return;
+        }
+        // Ignore the project if it doesn't contain a Drupal application.
+        if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             return;
         }
         /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
