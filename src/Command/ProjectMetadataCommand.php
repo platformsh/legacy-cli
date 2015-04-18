@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -10,6 +11,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectMetadataCommand extends PlatformCommand
 {
+    /** @var PropertyFormatter */
+    protected $formatter;
+
     /**
      * {@inheritdoc}
      */
@@ -30,6 +34,7 @@ class ProjectMetadataCommand extends PlatformCommand
         }
 
         $project = $this->getSelectedProject();
+        $this->formatter = new PropertyFormatter($project);
 
         $property = $input->getArgument('property');
 
@@ -60,9 +65,7 @@ class ProjectMetadataCommand extends PlatformCommand
         $table = new Table($output);
         $table->setHeaders(array("Property", "Value"));
         foreach ($project->getProperties() as $key => $value) {
-            if (is_scalar($value)) {
-                $table->addRow(array($key, $value));
-            }
+            $table->addRow(array($key, $this->formatter->format($value, $key)));
         }
         $table->render();
 
@@ -87,16 +90,16 @@ class ProjectMetadataCommand extends PlatformCommand
             $value = false;
         }
         settype($value, $type);
-        $currentValue = $project->getProperty($property, false);
+        $currentValue = $project->getProperty($property);
         if ($currentValue === $value) {
             $output->writeln(
-              "Property <info>$property</info> already set as: " . $project->getProperty($property, false)
+              "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
             );
 
             return 0;
         }
         $project->update(array($property => $value));
-        $output->writeln("Property <info>$property</info> set to: " . $project[$property]);
+        $output->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
 
         return 0;
     }

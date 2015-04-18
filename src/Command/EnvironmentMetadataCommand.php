@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -81,13 +82,12 @@ EOF
     protected function listProperties(Environment $environment, OutputInterface $output)
     {
         $output->writeln("Metadata for the environment <info>" . $environment['id'] . "</info>:");
+        $formatter = new PropertyFormatter();
 
         $table = new Table($output);
         $table->setHeaders(array("Property", "Value"));
         foreach ($environment->getProperties() as $key => $value) {
-            if (is_scalar($value)) {
-                $table->addRow(array($key, $value));
-            }
+            $table->addRow(array($key, $formatter->format($value, $key)));
         }
         $table->render();
 
