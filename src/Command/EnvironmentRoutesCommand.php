@@ -32,6 +32,11 @@ class EnvironmentRoutesCommand extends PlatformCommand
         $environment = $this->getSelectedEnvironment();
 
         $routes = $environment->getRoutes();
+        if (empty($routes)) {
+            $output->writeln("No routes found");
+
+            return 0;
+        }
 
         $header = array('Route', 'Type', 'To', 'Cache', 'SSI');
 
