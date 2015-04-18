@@ -30,7 +30,7 @@ class WebCommand extends UrlCommandBase
 
         $url = 'https://marketplace.commerceguys.com/platform/login';
         if (!empty($project)) {
-            $url = $project['uri'];
+            $url = $project->getLink('#ui');
             if ($this->hasSelectedEnvironment()) {
                 $environment = $this->getSelectedEnvironment();
                 $url .= '/environments/' . $environment['id'];

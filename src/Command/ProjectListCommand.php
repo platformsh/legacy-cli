@@ -44,12 +44,13 @@ class ProjectListCommand extends PlatformCommand
         }
 
         $rows = array();
-        foreach ($projects as $projectId => $project) {
+        foreach ($projects as $project) {
             $row = array();
-            $row[] = $projectId;
-            $row[] = $project['name'];
-            $row[] = $project['uri'];
-            $rows[] = $row;
+            $rows[] = array(
+              $project->id,
+              $project->title,
+              $project->getLink('#ui'),
+            );
         }
 
         $output->writeln("Your projects are: ");

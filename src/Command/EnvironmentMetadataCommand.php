@@ -7,6 +7,7 @@ use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMetadataCommand extends PlatformCommand
@@ -20,6 +21,7 @@ class EnvironmentMetadataCommand extends PlatformCommand
           ->setName('environment:metadata')
           ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
           ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
+          ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
           ->setDescription('Read or set metadata for an environment')
           ->setHelp(
             <<<EOF
@@ -56,6 +58,9 @@ EOF
         }
 
         $environment = $this->getSelectedEnvironment();
+        if ($input->getOption('refresh')) {
+            $this->getEnvironments($this->getSelectedProject(), true);
+        }
 
         $property = $input->getArgument('property');
 

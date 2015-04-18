@@ -169,7 +169,7 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         $local->ensureGitRemote($repositoryDir, $gitUrl);
-        $output->writeln("The project <info>{$project['name']}</info> was successfully downloaded to: <info>$directoryName</info>");
+        $output->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directoryName</info>");
 
         // Ensure that Drush aliases are created.
         $this->setProjectRoot($projectRoot);
@@ -214,7 +214,8 @@ class ProjectGetCommand extends PlatformCommand
         // Create a list starting with "master".
         $default = 'master';
         $environmentList = array($default => $environments[$default]['title']);
-        foreach ($environments as $id => $environment) {
+        foreach ($environments as $environment) {
+            $id = $environment->id;
             if ($id != $default && (!$environment->operationAvailable('activate') || $includeInactive)) {
                 $environmentList[$id] = $environment['title'];
             }
@@ -236,8 +237,8 @@ class ProjectGetCommand extends PlatformCommand
     protected function offerProjectChoice(array $projects, InputInterface $input, OutputInterface $output)
     {
         $projectList = array();
-        foreach ($projects as $id => $project) {
-            $projectList[$id] = $id . ' (' . $project['name'] . ')';
+        foreach ($projects as $project) {
+            $projectList[$project->id] = $project->id . ' (' . $project->title . ')';
         }
         $text = "Enter a number to choose which project to clone:";
 

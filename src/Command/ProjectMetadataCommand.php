@@ -7,6 +7,7 @@ use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectMetadataCommand extends PlatformCommand
@@ -23,6 +24,7 @@ class ProjectMetadataCommand extends PlatformCommand
           ->setName('project:metadata')
           ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
           ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
+          ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
           ->setDescription('Read or set metadata for a project');
         $this->addProjectOption();
     }
@@ -34,7 +36,11 @@ class ProjectMetadataCommand extends PlatformCommand
         }
 
         $project = $this->getSelectedProject();
-        $this->formatter = new PropertyFormatter($project);
+        $this->formatter = new PropertyFormatter();
+
+        if ($input->getOption('refresh')) {
+            $this->getProjects(true);
+        }
 
         $property = $input->getArgument('property');
 
@@ -62,10 +68,26 @@ class ProjectMetadataCommand extends PlatformCommand
     {
         $output->writeln("Metadata for the project <info>" . $project['id'] . "</info>:");
 
+        // Properties not to display, as they are internal, deprecated, or
+        // otherwise confusing.
+        $blacklist = array(
+          'name',
+          'cluster',
+          'cluster_label',
+          'license_id',
+          'plan',
+          '_endpoint',
+          'subscription',
+        );
+
         $table = new Table($output);
         $table->setHeaders(array("Property", "Value"));
         foreach ($project->getProperties() as $key => $value) {
-            $table->addRow(array($key, $this->formatter->format($value, $key)));
+            if (!in_array($key, $blacklist)) {
+                $value = $this->formatter->format($value, $key);
+                $value = wordwrap($value, 50, "\n", true);
+                $table->addRow(array($key, $value));
+            }
         }
         $table->render();
 
@@ -98,8 +120,11 @@ class ProjectMetadataCommand extends PlatformCommand
 
             return 0;
         }
+
+        $project->ensureFull();
         $project->update(array($property => $value));
         $output->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
+        $this->getProjects(true);
 
         return 0;
     }
@@ -113,7 +138,7 @@ class ProjectMetadataCommand extends PlatformCommand
      */
     protected function getType($property)
     {
-        $writableProperties = array();
+        $writableProperties = array('title' => 'string');
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }

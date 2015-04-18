@@ -410,10 +410,11 @@ abstract class PlatformCommand extends Command
      * Return the user's project with the given id.
      *
      * @param string $id
+     * @param bool   $refresh
      *
      * @return Project|false
      */
-    protected function getProject($id)
+    protected function getProject($id, $refresh = false)
     {
         $projects = $this->getProjects();
         if (!isset($projects[$id])) {
@@ -423,7 +424,7 @@ abstract class PlatformCommand extends Command
         $project = $projects[$id];
 
         $this->loadCache();
-        if (!isset($project['title'])) {
+        if ($refresh || !isset($project['title'])) {
             try {
                 $project->ensureFull();
             } catch (BadResponseException $e) {
@@ -436,12 +437,9 @@ abstract class PlatformCommand extends Command
                 }
                 throw $e;
             }
+
             self::$cache['projects'][$id] = $project->getData();
             self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
-
-            // There are inconsistencies between the collection and the single
-            // projects resource.
-            self::$cache['projects'][$id]['name'] = $project['title'];
             self::$cache['projects'][$id]['uri'] = $project->getLink('#ui');
         }
 
