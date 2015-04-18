@@ -20,8 +20,7 @@ class EnvironmentRoutesCommand extends PlatformCommand
           ->setDescription('List an environment\'s routes')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addAppOption();
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
