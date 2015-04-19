@@ -38,7 +38,7 @@ class PropertyFormatter
      */
     protected function formatDate($value)
     {
-        return date('Y-m-d H:i:s T', strtotime($value));
+        return date('r', strtotime($value));
     }
 
     /**

@@ -48,12 +48,16 @@ class ProjectMetadataCommand extends PlatformCommand
             return $this->listProperties($project, $output);
         }
 
+        if (!$project->hasProperty($property)) {
+            $project->ensureFull();
+        }
+
         $value = $input->getArgument('value');
         if ($value !== null) {
             return $this->setProperty($property, $value, $project, $output);
         }
 
-        $output->writeln($project->getProperty($property));
+        $output->writeln($this->formatter->format($project->getProperty($property), $property));
 
         return 0;
     }

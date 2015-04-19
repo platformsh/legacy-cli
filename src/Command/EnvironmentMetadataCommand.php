@@ -12,6 +12,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMetadataCommand extends PlatformCommand
 {
+    protected $formatter;
+
     /**
      * {@inheritdoc}
      */
@@ -64,6 +66,8 @@ EOF
 
         $property = $input->getArgument('property');
 
+        $this->formatter = new PropertyFormatter();
+
         if (!$property) {
             return $this->listProperties($environment, $output);
         }
@@ -73,7 +77,7 @@ EOF
             return $this->setProperty($property, $value, $environment, $output);
         }
 
-        $output->writeln($environment->getProperty($property));
+        $output->writeln($this->formatter->format($environment->getProperty($property), $property));
 
         return 0;
     }
@@ -87,12 +91,11 @@ EOF
     protected function listProperties(Environment $environment, OutputInterface $output)
     {
         $output->writeln("Metadata for the environment <info>" . $environment['id'] . "</info>:");
-        $formatter = new PropertyFormatter();
 
         $table = new Table($output);
         $table->setHeaders(array("Property", "Value"));
         foreach ($environment->getProperties() as $key => $value) {
-            $table->addRow(array($key, $formatter->format($value, $key)));
+            $table->addRow(array($key, $this->formatter->format($value, $key)));
         }
         $table->render();
 
