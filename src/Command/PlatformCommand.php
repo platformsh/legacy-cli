@@ -391,6 +391,7 @@ abstract class PlatformCommand extends Command
             foreach ($projects as $id => $project) {
                 self::$cache['projects'][$id] = $project->getData();
                 self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
+                self::$cache['projects'][$id]['git'] = $project->getGitUrl();
             }
             self::$cache['projectsRefreshed'] = time();
         } else {
@@ -441,6 +442,7 @@ abstract class PlatformCommand extends Command
             self::$cache['projects'][$id] = $project->getData();
             self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
             self::$cache['projects'][$id]['uri'] = $project->getLink('#ui');
+            self::$cache['projects'][$id]['git'] = $project->getGitUrl();
         }
 
         return $project;

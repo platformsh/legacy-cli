@@ -48,10 +48,6 @@ class ProjectMetadataCommand extends PlatformCommand
             return $this->listProperties($project, $output);
         }
 
-        if (!$project->hasProperty($property)) {
-            $project->ensureFull();
-        }
-
         $value = $input->getArgument('value');
         if ($value !== null) {
             return $this->setProperty($property, $value, $project, $output);
@@ -81,6 +77,7 @@ class ProjectMetadataCommand extends PlatformCommand
           'license_id',
           'plan',
           '_endpoint',
+          'repository',
           'subscription',
         );
 
