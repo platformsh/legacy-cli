@@ -137,6 +137,8 @@ ssh-key
   ssh-key:add                               Add a new SSH key
   ssh-key:delete                            Delete an SSH key
   ssh-key:list (ssh-keys)                   Get a list of SSH keys in your account
+subscription
+  subscription:metadata                     Read metadata for a subscription
 user
   user:add                                  Add a user to the project
   user:delete                               Delete a user
