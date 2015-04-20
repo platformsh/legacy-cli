@@ -112,7 +112,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
 
         $aliases = $drushHelper->getAliases($current_group);
         if ($aliases) {
-            $output->writeln("Aliases for <info>{$project['name']}</info> ({$project['id']}):");
+            $output->writeln("Aliases for <info>{$project->title}</info> ({$project->id}):");
             foreach (explode("\n", $aliases) as $alias) {
                 $output->writeln('    @' . $alias);
             }

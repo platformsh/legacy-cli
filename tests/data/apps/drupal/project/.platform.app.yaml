@@ -1,0 +1,8 @@
+toolstack: "php:drupal"
+
+# Test build hook
+hooks:
+    build: |
+        cd public
+        rm robots.txt
+        touch test.txt

@@ -63,9 +63,10 @@ class EnvironmentCheckoutCommand extends PlatformCommand
         }
 
         $projectRoot = $this->getProjectRoot();
+        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($output));
-        $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $gitHelper->setDefaultRepositoryDir($repositoryDir);
 
         $branch = $this->branchExists($specifiedBranch, $project, $gitHelper);
 
@@ -75,14 +76,33 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$gitHelper->branchExists($branch)) {
-            $gitHelper->execute(array('fetch', 'origin'));
+        // If the branch exists locally, check it out directly.
+        if ($gitHelper->branchExists($branch)) {
+            $output->writeln("Checking out <info>$branch</info>");
+
+            return $gitHelper->checkOut($branch) ? 0 : 1;
         }
 
-        // Check out the branch.
-        $output->writeln("Checking out <info>$branch</info>");
+        // Make sure that remotes are set up correctly.
+        $localProject = new LocalProject();
+        $localProject->ensureGitRemote($repositoryDir, $project->getGitUrl());
 
-        return $gitHelper->checkOut($branch) ? 0 : 1;
+        // Determine the correct upstream for the new branch. If there is an
+        // 'origin' remote, then it has priority.
+        $upstreamRemote = 'platform';
+        if ($gitHelper->getConfig('remote.origin.url') && $gitHelper->remoteBranchExists('origin', $branch)) {
+            $upstreamRemote = 'origin';
+        }
+
+        $output->writeln("Creating branch $branch based on upstream $upstreamRemote/$branch");
+
+        // Fetch the branch from the upstream remote.
+        $gitHelper->execute(array('fetch', $upstreamRemote, $branch));
+
+        // Create the new branch, and set the correct upstream.
+        $success = $gitHelper->checkoutNew($branch, $upstreamRemote . '/' . $branch);
+
+        return $success ? 0 : 1;
     }
 
     /**

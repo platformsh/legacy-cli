@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Util\PropertyFormatter;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -150,6 +151,8 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
         $selectedEnvironment->ensureFull();
         $environmentId = $selectedEnvironment['id'];
 
+        $formatter = new PropertyFormatter($selectedEnvironment);
+
         if ($auth || $access) {
             $current = (array) $selectedEnvironment->getProperty('http_access');
 
@@ -174,7 +177,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
 
                 $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
-                $output->writeln($selectedEnvironment->getProperty('http_access'));
+                $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
 
                 if (!$selectedEnvironment->getLastActivity()) {
                     $this->rebuildWarning($output);
@@ -185,9 +188,8 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
         }
 
         $output->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
-        $output->writeln($selectedEnvironment->getProperty('http_access'));
+        $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
 
         return 0;
     }
-
 }

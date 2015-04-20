@@ -2,6 +2,8 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 [![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli)
 
+Alternative README versions: [`master`](https://github.com/platformsh/platformsh-cli/blob/master/README.md),   [`1.x`](https://github.com/platformsh/platformsh-cli/blob/1.x/README.md)
+
 ### Requirements
 
 * Operating system: Linux, OS X, Windows Vista, Windows 7 (any), or Windows 8 Pro (Win8 Standard does not work due to an issue with symlink permissions)
@@ -102,7 +104,6 @@ environment
   environment:backup                        Make a backup of an environment
   environment:branch (branch)               Branch an environment
   environment:checkout (checkout)           Check out an environment
-  environment:deactivate                    Deactivate an environment
   environment:delete                        Delete an environment
   environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
@@ -135,6 +136,8 @@ ssh-key
   ssh-key:add                               Add a new SSH key
   ssh-key:delete                            Delete an SSH key
   ssh-key:list (ssh-keys)                   Get a list of SSH keys in your account
+subscription
+  subscription:metadata                     Read metadata for a subscription
 user
   user:add                                  Add a user to the project
   user:delete                               Delete a user

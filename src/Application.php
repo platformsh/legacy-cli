@@ -102,7 +102,6 @@ class Application extends ParentApplication
         $commands[] = new Command\EnvironmentBackupCommand();
         $commands[] = new Command\EnvironmentBranchCommand();
         $commands[] = new Command\EnvironmentCheckoutCommand();
-        $commands[] = new Command\EnvironmentDeactivateCommand();
         $commands[] = new Command\EnvironmentDeleteCommand();
         $commands[] = new Command\EnvironmentDrushCommand();
         $commands[] = new Command\EnvironmentHttpAccessCommand();
@@ -134,6 +133,7 @@ class Application extends ParentApplication
         $commands[] = new Command\SshKeyAddCommand();
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();
+        $commands[] = new Command\SubscriptionMetadataCommand();
         $commands[] = new Command\UserAddCommand();
         $commands[] = new Command\UserDeleteCommand();
         $commands[] = new Command\UserListCommand();

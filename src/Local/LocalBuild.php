@@ -178,7 +178,7 @@ class LocalBuild
      *
      * @return string|false
      */
-    protected function getTreeId($appRoot)
+    public function getTreeId($appRoot)
     {
         $hashes = array();
 
@@ -237,7 +237,10 @@ class LocalBuild
         $appName = isset($appConfig['name']) ? $appConfig['name'] : false;
         $appIdentifier = $appName ?: $appConfig['_identifier'];
 
-        $buildName = date('Y-m-d--H-i-s') . '--' . $this->settings['environmentId'];
+        $buildName = date('Y-m-d--H-i-s');
+        if (!empty($this->settings['environmentId'])) {
+            $buildName .= '--' . $this->settings['environmentId'];
+        }
         if ($multiApp) {
             $buildName .= '--' . str_replace('/', '-', $appIdentifier);
         }
@@ -305,6 +308,9 @@ class LocalBuild
             $webRoot = $toolstack->getWebRoot();
         } else {
             $webRoot = "$appRoot/$documentRoot";
+            if ($documentRoot === 'public' && !is_dir($webRoot)) {
+                $webRoot = $appRoot;
+            }
             $this->warnAboutHooks($appConfig, 'build');
         }
 

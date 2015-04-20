@@ -3,7 +3,7 @@
     "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
-        "platformsh/client": "0.1.8",
+        "platformsh/client": "0.1.9",
         "symfony/console": "~2.5",
         "symfony/yaml": "~2.5",
         "symfony/finder": "~2.5",
@@ -20,9 +20,15 @@
             "Platformsh\\Cli\\": "src"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Platformsh\\Cli\\Tests\\": "tests"
+        }
+    },
     "require-dev": {
         "phpunit/phpunit": "4.3.*",
-        "mikey179/vfsStream": "~1.4"
+        "mikey179/vfsStream": "~1.4",
+        "drush/drush": "~6.4.0"
     },
     "authors": [
         {

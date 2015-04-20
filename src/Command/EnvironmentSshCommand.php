@@ -37,34 +37,33 @@ class EnvironmentSshCommand extends PlatformCommand
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($input->getOption('app'));
 
-        $command = $input->getArgument('cmd');
+        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+            $output->write($sshUrl);
+
+            return 0;
+        }
+
+        $remoteCommand = $input->getArgument('cmd');
         if ($input instanceof ArgvInput) {
             $helper = new ArgvHelper();
-            $command = $helper->getPassedCommand($this, $input);
+            $remoteCommand = $helper->getPassedCommand($this, $input);
         }
 
-        if (!$command) {
-            if ($input->getOption('pipe') || !$this->isTerminal($output)) {
-                $output->write($sshUrl);
-
-                return 0;
-            }
-            $command = "ssh " . escapeshellarg($sshUrl);
-            passthru($command, $returnVar);
-
-            return $returnVar;
-        }
-
-        $sshOptions = 'qt';
+        $sshOptions = 't';
 
         // Pass through the verbosity options to SSH.
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $sshOptions .= 'vv';
-        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
             $sshOptions .= 'v';
+        } elseif ($output->getVerbosity() <= OutputInterface::VERBOSITY_NORMAL) {
+            $sshOptions .= 'q';
         }
 
-        $command = "ssh -$sshOptions " . escapeshellarg($sshUrl) . ' ' . escapeshellarg($command);
+        $command = "ssh -$sshOptions " . escapeshellarg($sshUrl);
+        if ($remoteCommand) {
+            $command .= ' ' . escapeshellarg($remoteCommand);
+        }
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $output->writeln("Running command: <info>$command</info>");

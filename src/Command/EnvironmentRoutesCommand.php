@@ -20,8 +20,7 @@ class EnvironmentRoutesCommand extends PlatformCommand
           ->setDescription('List an environment\'s routes')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addAppOption();
+             ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -33,6 +32,11 @@ class EnvironmentRoutesCommand extends PlatformCommand
         $environment = $this->getSelectedEnvironment();
 
         $routes = $environment->getRoutes();
+        if (empty($routes)) {
+            $output->writeln("No routes found");
+
+            return 0;
+        }
 
         $header = array('Route', 'Type', 'To', 'Cache', 'SSI');
 

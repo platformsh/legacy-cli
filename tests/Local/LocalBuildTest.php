@@ -12,7 +12,7 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
     public function testToolstackDetectionDrupal()
     {
         $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'Drupal';
-        $appRoot = 'tests/data/apps/drupal';
+        $appRoot = 'tests/data/apps/drupal/project';
         $appConfig = array('toolstack' => 'php:drupal');
 
         $builder = new LocalBuild();
@@ -73,5 +73,4 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
         $config = $builder->getAppConfig($fakeAppRoot);
         $this->assertEquals(array('name' => 'nested1'), $config);
     }
-
 }

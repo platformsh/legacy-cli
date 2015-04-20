@@ -4,14 +4,13 @@ namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\Helper\FilesystemHelper;
 use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamDirectory;
 
 class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
 
     /** @var FilesystemHelper */
     protected $filesystemHelper;
 
-    /** @var vfsStreamDirectory */
+    /** @var string */
     protected $root;
 
     /**
@@ -20,7 +19,8 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
     public function setUp()
     {
         $this->filesystemHelper = new FilesystemHelper();
-        $this->root = vfsStream::setup(__CLASS__);
+        $root = vfsStream::setup(__CLASS__);
+        $this->root = vfsStream::url(__CLASS__);
     }
 
     /**
@@ -137,8 +137,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
      */
     protected function tempDir($fill = false)
     {
-        $tempDir = $this->root->getName();
-        $testDir = tempnam($tempDir, '');
+        $testDir = tempnam($this->root, '');
         unlink($testDir);
         mkdir($testDir);
         if ($fill) {

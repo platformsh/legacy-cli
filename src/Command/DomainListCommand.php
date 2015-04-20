@@ -86,10 +86,9 @@ class DomainListCommand extends PlatformCommand
 
         $project = $this->getSelectedProject();
         $domains = $project->getDomains();
-        $project_name = !empty($project['name']) ? $project['name'] : $project['id'];
 
         if (empty($domains)) {
-            $output->writeln("\nNo domains found for " . $project_name);
+            $output->writeln("\nNo domains found for " . $project->title);
         } else {
             $output->writeln("\nYour domains are: ");
             $table = $this->buildDomainTable($domains, $output);

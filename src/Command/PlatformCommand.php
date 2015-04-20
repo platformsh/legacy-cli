@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -390,6 +391,7 @@ abstract class PlatformCommand extends Command
             foreach ($projects as $id => $project) {
                 self::$cache['projects'][$id] = $project->getData();
                 self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
+                self::$cache['projects'][$id]['git'] = $project->getGitUrl();
             }
             self::$cache['projectsRefreshed'] = time();
         } else {
@@ -409,10 +411,11 @@ abstract class PlatformCommand extends Command
      * Return the user's project with the given id.
      *
      * @param string $id
+     * @param bool   $refresh
      *
      * @return Project|false
      */
-    protected function getProject($id)
+    protected function getProject($id, $refresh = false)
     {
         $projects = $this->getProjects();
         if (!isset($projects[$id])) {
@@ -422,7 +425,7 @@ abstract class PlatformCommand extends Command
         $project = $projects[$id];
 
         $this->loadCache();
-        if (!isset($project['title'])) {
+        if ($refresh || !isset($project['title'])) {
             try {
                 $project->ensureFull();
             } catch (BadResponseException $e) {
@@ -435,13 +438,11 @@ abstract class PlatformCommand extends Command
                 }
                 throw $e;
             }
+
             self::$cache['projects'][$id] = $project->getData();
             self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
-
-            // There are inconsistencies between the collection and the single
-            // projects resource.
-            self::$cache['projects'][$id]['name'] = $project['title'];
             self::$cache['projects'][$id]['uri'] = $project->getLink('#ui');
+            self::$cache['projects'][$id]['git'] = $project->getGitUrl();
         }
 
         return $project;
@@ -543,6 +544,10 @@ abstract class PlatformCommand extends Command
         // Double-check that the passed project is the current one.
         $currentProject = $this->getCurrentProject();
         if (!$currentProject || $currentProject['id'] != $project['id']) {
+            return;
+        }
+        // Ignore the project if it doesn't contain a Drupal application.
+        if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             return;
         }
         /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
