@@ -375,7 +375,7 @@ abstract class PlatformCommand extends Command
      *
      * @param boolean $refresh Whether to refresh the list of projects.
      *
-     * @return Project[] The user's projects.
+     * @return Project[] The user's projects, keyed by project ID.
      */
     public function getProjects($refresh = false)
     {
@@ -388,7 +388,8 @@ abstract class PlatformCommand extends Command
                              ->getProjects();
 
             self::$cache['projects'] = array();
-            foreach ($projects as $id => $project) {
+            foreach ($projects as $project) {
+                $id = $project->id;
                 self::$cache['projects'][$id] = $project->getData();
                 self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
                 self::$cache['projects'][$id]['git'] = $project->getGitUrl();
