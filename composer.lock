@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "d8b68c1572bd4c512c8af232d047afc0",
+    "hash": "0d09141a192ba744a2ff20192336fb15",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -395,16 +395,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.1.9",
+            "version": "0.1.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "c03b793dcf73a2444eed5ea1c402595e363d2126"
+                "reference": "34a42a43a05a3802840e01538a384b38a9e911f6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/c03b793dcf73a2444eed5ea1c402595e363d2126",
-                "reference": "c03b793dcf73a2444eed5ea1c402595e363d2126",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/34a42a43a05a3802840e01538a384b38a9e911f6",
+                "reference": "34a42a43a05a3802840e01538a384b38a9e911f6",
                 "shasum": ""
             },
             "require": {
@@ -432,7 +432,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2015-04-16 18:28:35"
+            "time": "2015-04-27 15:53:49"
         },
         {
             "name": "react/promise",
