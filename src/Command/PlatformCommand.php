@@ -383,20 +383,23 @@ abstract class PlatformCommand extends Command
         $cached = isset(self::$cache['projects']);
         $stale = isset(self::$cache['projectsRefreshed']) && time(
           ) - self::$cache['projectsRefreshed'] > $this->projectsTtl;
+
+        /** @var Project[] $projects */
+        $projects = array();
+
         if ($refresh || !$cached || $stale) {
-            $projects = $this->getClient()
-                             ->getProjects();
+            foreach ($this->getClient()->getProjects() as $project) {
+                $projects[$project->id] = $project;
+            }
 
             self::$cache['projects'] = array();
-            foreach ($projects as $project) {
-                $id = $project->id;
+            foreach ($projects as $id => $project) {
                 self::$cache['projects'][$id] = $project->getData();
                 self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
                 self::$cache['projects'][$id]['git'] = $project->getGitUrl();
             }
             self::$cache['projectsRefreshed'] = time();
         } else {
-            $projects = array();
             $connector = $this->getClient(false)
                               ->getConnector();
             $client = $connector->getClient();
