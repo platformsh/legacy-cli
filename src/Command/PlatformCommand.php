@@ -375,7 +375,7 @@ abstract class PlatformCommand extends Command
      *
      * @param boolean $refresh Whether to refresh the list of projects.
      *
-     * @return Project[] The user's projects.
+     * @return Project[] The user's projects, keyed by project ID.
      */
     public function getProjects($refresh = false)
     {
@@ -383,9 +383,14 @@ abstract class PlatformCommand extends Command
         $cached = isset(self::$cache['projects']);
         $stale = isset(self::$cache['projectsRefreshed']) && time(
           ) - self::$cache['projectsRefreshed'] > $this->projectsTtl;
+
+        /** @var Project[] $projects */
+        $projects = array();
+
         if ($refresh || !$cached || $stale) {
-            $projects = $this->getClient()
-                             ->getProjects();
+            foreach ($this->getClient()->getProjects() as $project) {
+                $projects[$project->id] = $project;
+            }
 
             self::$cache['projects'] = array();
             foreach ($projects as $id => $project) {
@@ -395,7 +400,6 @@ abstract class PlatformCommand extends Command
             }
             self::$cache['projectsRefreshed'] = time();
         } else {
-            $projects = array();
             $connector = $this->getClient(false)
                               ->getConnector();
             $client = $connector->getClient();

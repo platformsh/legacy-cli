@@ -113,22 +113,30 @@ class DomainAddCommand extends PlatformCommand
     protected function validateSslOptions()
     {
         // Get the contents.
-        $sslCertFile = (file_exists($this->certPath) ? trim(file_get_contents($this->certPath)) : '');
-        $sslKeyFile = (file_exists($this->keyPath) ? trim(file_get_contents($this->keyPath)) : '');
-        $sslChainFiles = $this->assembleChainFiles($this->chainPaths);
+        if (!is_readable($this->certPath)) {
+            throw new \Exception(
+              "The certificate file could not be read: " . $this->certPath
+            );
+        }
+        $sslCert = trim(file_get_contents($this->certPath));
         // Do a bit of validation.
-        // @todo: Cert first.
-        $certResource = openssl_x509_read($sslCertFile);
+        $certResource = openssl_x509_read($sslCert);
         if (!$certResource) {
             throw new \Exception(
-              "The provided certificate is either not a valid X509 certificate or could not be read."
+              "The certificate file is not a valid X509 certificate."
             );
         }
         // Then the key. Does it match?
-        $keyResource = openssl_pkey_get_private($sslKeyFile);
+        if (!is_readable($this->keyPath)) {
+            throw new \Exception(
+              "The private key file could not be read: " . $this->keyPath
+            );
+        }
+        $sslPrivateKey = trim(file_get_contents($this->keyPath));
+        $keyResource = openssl_pkey_get_private($sslPrivateKey);
         if (!$keyResource) {
             throw new \Exception(
-              "The provided private key is either not a valid RSA private key or could not be read."
+              "The provided private key is not valid, or it is passphrase-protected."
             );
         }
         $keyMatch = openssl_x509_check_private_key($certResource, $keyResource);
@@ -136,8 +144,9 @@ class DomainAddCommand extends PlatformCommand
             throw new \Exception("The provided certificate does not match the provided private key.");
         }
         // Each chain needs to be a valid cert.
-        foreach ($sslChainFiles as $chainFile) {
-            $chainResource = openssl_x509_read($chainFile);
+        $sslChainCerts = $this->readChainFiles($this->chainPaths);
+        foreach ($sslChainCerts as $chainCertData) {
+            $chainResource = openssl_x509_read($chainCertData);
             if (!$chainResource) {
                 throw new \Exception("One of the provided certificates in the chain is not a valid X509 certificate.");
             } else {
@@ -146,9 +155,9 @@ class DomainAddCommand extends PlatformCommand
         }
         // Yay we win.
         $this->sslOptions = array(
-          'certificate' => $sslCertFile,
-          'key' => $sslKeyFile,
-          'chain' => $sslChainFiles,
+          'certificate' => $sslCert,
+          'key' => $sslPrivateKey,
+          'chain' => $sslChainCerts,
         );
 
         return true;
@@ -167,7 +176,7 @@ class DomainAddCommand extends PlatformCommand
         return (bool) preg_match('/^([^\.]{1,63}\.)+[^\.]{2,63}$/', $domain);
     }
 
-    protected function assembleChainFiles($chainPaths)
+    protected function readChainFiles($chainPaths)
     {
         if (!is_array($chainPaths)) {
             // Skip out if we somehow ended up with crap here.

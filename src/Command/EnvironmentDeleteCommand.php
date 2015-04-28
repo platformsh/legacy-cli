@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,7 +19,8 @@ class EnvironmentDeleteCommand extends PlatformCommand
           ->setName('environment:delete')
           ->setDescription('Delete an environment')
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
-          ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete the Git branches of all inactive environments');
+          ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
+          ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -44,6 +46,20 @@ class EnvironmentDeleteCommand extends PlatformCommand
 
                 return 0;
             }
+        } elseif ($input->getOption('merged')) {
+            if (!$this->hasSelectedEnvironment()) {
+                $output->writeln("No base environment specified");
+
+                return 1;
+            }
+            $base = $this->getSelectedEnvironment()->id;
+            $output->writeln("Finding environments merged with <info>$base</info>");
+            $toDelete = $this->getMergedEnvironments($base);
+            if (!$toDelete) {
+                $output->writeln("No merged environments found");
+
+                return 0;
+            }
         } elseif ($this->hasSelectedEnvironment()) {
             $toDelete = array($this->getSelectedEnvironment());
         } else {
@@ -58,6 +74,32 @@ class EnvironmentDeleteCommand extends PlatformCommand
         $success = $this->deleteMultiple($toDelete, $input, $output);
 
         return $success ? 0 : 1;
+    }
+
+    /**
+     * @param string $base
+     *
+     * @return array
+     */
+    protected function getMergedEnvironments($base)
+    {
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot) {
+            throw new \RuntimeException("This can only be run from inside a project directory");
+        }
+        $environments = $this->getEnvironments($this->getSelectedProject(), true);
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $gitHelper->execute(array('fetch', 'origin'));
+        $mergedBranches = $gitHelper->getMergedBranches($base);
+        $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
+        unset($mergedEnvironments[$base], $mergedEnvironments['master']);
+        $parent = $environments[$base]['parent'];
+        if ($parent) {
+            unset($mergedEnvironments[$parent]);
+        }
+
+        return $mergedEnvironments;
     }
 
     /**
