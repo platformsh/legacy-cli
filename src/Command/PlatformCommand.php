@@ -688,6 +688,7 @@ abstract class PlatformCommand extends Command
             if ($this->oauth2Plugin) {
                 // Save the access token for future requests.
                 $this->config['access_token'] = $this->oauth2Plugin->getAccessToken();
+                $this->config['refresh_token'] = $this->oauth2Plugin->getRefreshToken();
             }
 
             $configPath = $this->getHelper('fs')->getHomeDirectory() . '/.platform';
