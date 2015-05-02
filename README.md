@@ -17,7 +17,7 @@ Alternative README versions: [`master`](https://github.com/platformsh/platformsh
 
 * Install the latest stable version of the CLI:
 
-        composer global require 'platformsh/cli:@stable'
+        composer global require platformsh/cli:@stable
 
 * Make sure Composer's `vendor/bin` directory is in your system's PATH.
 
@@ -55,9 +55,9 @@ Start a new shell or type `source <filename>` to load the new configuration.
 
 ### Updating
 
-New releases of the CLI are made regularly. You can update with the same Composer command:
+New releases of the CLI are made regularly. You can update with this command:
 
-    composer global require 'platformsh/cli:@stable'
+    composer global update platformsh/cli
 
 ### Usage
 
