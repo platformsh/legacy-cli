@@ -102,10 +102,7 @@ class DomainAddCommand extends PlatformCommand
              ->addDomain($this->domainName, $wildcard, $this->sslOptions);
 
         // @todo: Add proper exception/error handling here...seriously.
-        $message = '<info>';
-        $message .= "\nThe given domain has been successfully added to the project. \n";
-        $message .= "</info>";
-        $output->writeln($message);
+        $output->writeln("The domain <info>{$this->domainName}</info> was successfully added to the project");
 
         return 0;
     }

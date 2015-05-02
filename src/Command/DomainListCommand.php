@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Domain;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -56,19 +57,14 @@ class DomainListCommand extends PlatformCommand
     {
         $rows = array();
 
+        $formatter = new PropertyFormatter();
+
         foreach ($tree as $domain) {
-
-            // Indicate that the domain is a wildcard.
-            $wildcard = ($domain['wildcard'] == true) ? "Yes" : "No";
-
-            // Indicate that the domain had a SSL certificate.
-            $hasCert = ($domain['ssl']['has_certificate'] == true) ? "Yes" : "No";
-
             $rows[] = array(
               $domain['id'],
-              $wildcard,
-              $hasCert,
-              $domain['created_at'],
+              $formatter->format($domain['wildcard']),
+              $formatter->format((bool) $domain['has_certificate']),
+              $formatter->format($domain['created_at'], 'created_at'),
             );
         }
 
@@ -88,21 +84,18 @@ class DomainListCommand extends PlatformCommand
         $domains = $project->getDomains();
 
         if (empty($domains)) {
-            $output->writeln("\nNo domains found for " . $project->title);
+            $output->writeln("No domains found for <info>{$project->title}</info>");
         } else {
-            $output->writeln("\nYour domains are: ");
+            $output->writeln("Your domains are: ");
             $table = $this->buildDomainTable($domains, $output);
             $table->render();
         }
 
-        $output->writeln("\nAdd a domain to your project by running <info>platform domain:add [domain-name]</info>");
+        $output->writeln("\nAdd a domain to the project by running <info>platform domain:add [domain-name]</info>");
         if (!empty($domains)) {
             $output->writeln(
-              "Delete a domain from your project by running <info>platform domain:delete [domain-name]</info>\n"
+              "Delete domains by running <info>platform domain:delete [domain-name]</info>"
             );
         }
-
-        // Output a newline after the current block of commands.
-        $output->writeln("");
     }
 }
