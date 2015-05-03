@@ -24,6 +24,7 @@ class SubscriptionMetadataCommand extends PlatformCommand
           ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
           ->setDescription('Read metadata for a subscription');
         $this->addProjectOption();
+        $this->setHiddenInList();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
