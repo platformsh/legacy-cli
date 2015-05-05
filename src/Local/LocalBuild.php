@@ -288,7 +288,11 @@ class LocalBuild
                 // We can only run post-build hooks for apps that actually have
                 // a separate build directory.
                 if (file_exists($buildDir)) {
-                    $this->runPostBuildHooks($appConfig, $buildDir);
+                    if ($this->runPostBuildHooks($appConfig, $buildDir) === false) {
+                        // The user may not care if build hooks fail, but we should
+                        // not archive the result.
+                        $archive = false;
+                    }
                 }
                 else {
                     $this->warnAboutHooks($appConfig, 'build');
@@ -366,16 +370,18 @@ class LocalBuild
      * @param array  $appConfig
      * @param string $buildDir
      *
-     * @return bool
+     * @return bool|null
+     *   False if the build hooks fail, true if they succeed, null if not
+     *   applicable.
      */
     protected function runPostBuildHooks(array $appConfig, $buildDir)
     {
         if (!isset($appConfig['hooks']['build'])) {
-            return;
+            return null;
         }
         if (!empty($this->settings['noBuildHooks'])) {
             $this->output->writeln("Skipping post-build hooks");
-            return;
+            return null;
         }
         $this->output->writeln("Running post-build hooks");
         $command = implode(';', (array) $appConfig['hooks']['build']);
@@ -386,7 +392,10 @@ class LocalBuild
         }
         if ($returnVar > 0) {
             $this->output->writeln('<error>The build hook failed</error>');
+            return false;
         }
+
+        return true;
     }
 
     /**

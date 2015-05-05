@@ -17,7 +17,7 @@ Alternative README versions: [`master`](https://github.com/platformsh/platformsh
 
 * Install the latest stable version of the CLI:
 
-        composer global require 'platformsh/cli:@stable'
+        composer global require platformsh/cli:@stable
 
 * Make sure Composer's `vendor/bin` directory is in your system's PATH.
 
@@ -55,9 +55,17 @@ Start a new shell or type `source <filename>` to load the new configuration.
 
 ### Updating
 
-New releases of the CLI are made regularly. You can update with the same Composer command:
+New releases of the CLI are made regularly. You can update with this command:
 
-    composer global require 'platformsh/cli:@stable'
+    composer global update platformsh/cli
+
+If you want to change the version that you are using - for example to upgrade
+between major versions (such as `1.x.x` to `2.x.x`) - it may be more effective
+to remove and re-install:
+
+    composer global remove platformsh/cli
+    composer global update
+    composer global require platformsh/cli:@stable
 
 ### Usage
 
@@ -136,8 +144,6 @@ ssh-key
   ssh-key:add                               Add a new SSH key
   ssh-key:delete                            Delete an SSH key
   ssh-key:list (ssh-keys)                   Get a list of SSH keys in your account
-subscription
-  subscription:metadata                     Read metadata for a subscription
 user
   user:add                                  Add a user to the project
   user:delete                               Delete a user
