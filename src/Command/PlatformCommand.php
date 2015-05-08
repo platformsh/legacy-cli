@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Doctrine\Common\Cache\FilesystemCache;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
@@ -24,11 +25,8 @@ abstract class PlatformCommand extends Command
     /** @var PlatformClient|null */
     private static $client;
 
-    /** @var array|null */
+    /** @var \Doctrine\Common\Cache\CacheProvider|null */
     private static $cache;
-
-    /** @var array|null */
-    private static $cacheAsLoaded;
 
     /** @var string */
     protected static $sessionId = 'default';
@@ -118,7 +116,6 @@ abstract class PlatformCommand extends Command
             $connectorOptions['debug'] = (bool) getenv('PLATFORM_CLI_DEBUG');
             $connectorOptions['client_id'] = 'platform-cli';
             $connectorOptions['user_agent'] = $this->getUserAgent();
-            $connectorOptions['cache'] = true;
 
             $connector = new Connector($connectorOptions);
             $session = $connector->getSession();
@@ -145,65 +142,10 @@ abstract class PlatformCommand extends Command
         if ($input->getOption('session-id')) {
             self::$sessionId = $input->getOption('session-id');
         }
-    }
-
-    /**
-     * Load the persistent file cache.
-     */
-    protected function loadCache()
-    {
         if (!isset(self::$cache)) {
-            $cacheDir = $this->getCacheDir();
-            $filename = "$cacheDir/cache.yml";
-
-            if (file_exists($filename) && ($raw = file_get_contents($filename))) {
-                $yaml = new Yaml();
-                self::$cache = $yaml->parse($raw);
-                self::$cacheAsLoaded = self::$cache;
-            }
+            // Note: the cache directory is based on self::$sessionId.
+            self::$cache = new FilesystemCache($this->getCacheDir());
         }
-    }
-
-    /**
-     * Save the persistent file cache, if possible.
-     *
-     * @return bool
-     */
-    protected function saveCache()
-    {
-        if (!isset(self::$cache) || self::$cache === self::$cacheAsLoaded) {
-            return true;
-        }
-        $cacheDir = $this->getCacheDir();
-        $filename = "$cacheDir/cache.yml";
-        if (self::$cache === array()) {
-            if (file_exists($filename)) {
-                return unlink($filename);
-            }
-
-            return true;
-        }
-        if (!file_exists($cacheDir)) {
-            mkdir($cacheDir, 0700, true);
-            chmod($cacheDir, 0700);
-        }
-        if (!is_dir($cacheDir)) {
-            return false;
-        }
-        $yaml = new Yaml();
-        if (file_put_contents($filename, $yaml->dump(self::$cache, 0, 4, true))) {
-            chmod($filename, 0600);
-            self::$cacheAsLoaded = self::$cache;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public function __destruct()
-    {
-        $this->saveCache();
     }
 
     /**
@@ -211,7 +153,7 @@ abstract class PlatformCommand extends Command
      */
     protected function clearCache()
     {
-        self::$cache = array();
+        self::$cache->flushAll();
     }
 
     /**
@@ -379,31 +321,29 @@ abstract class PlatformCommand extends Command
      */
     public function getProjects($refresh = false)
     {
-        $this->loadCache();
-        $cached = isset(self::$cache['projects']);
-        $stale = isset(self::$cache['projectsRefreshed']) && time(
-          ) - self::$cache['projectsRefreshed'] > $this->projectsTtl;
+        $cached = self::$cache->contains('projects');
 
         /** @var Project[] $projects */
         $projects = array();
 
-        if ($refresh || !$cached || $stale) {
+        if ($refresh || !$cached) {
             foreach ($this->getClient()->getProjects() as $project) {
                 $projects[$project->id] = $project;
             }
 
-            self::$cache['projects'] = array();
+            $cachedProjects = array();
             foreach ($projects as $id => $project) {
-                self::$cache['projects'][$id] = $project->getData();
-                self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
-                self::$cache['projects'][$id]['git'] = $project->getGitUrl();
+                $cachedProjects[$id] = $project->getData();
+                $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
+                $cachedProjects[$id]['git'] = $project->getGitUrl();
             }
-            self::$cache['projectsRefreshed'] = time();
+
+            self::$cache->save('projects', $cachedProjects, $this->projectsTtl);
         } else {
             $connector = $this->getClient(false)
                               ->getConnector();
             $client = $connector->getClient();
-            foreach (self::$cache['projects'] as $id => $data) {
+            foreach (self::$cache->fetch('projects') as $id => $data) {
                 $projects[$id] = Project::wrap($data, $data['_endpoint'], $client);
             }
         }
@@ -428,7 +368,6 @@ abstract class PlatformCommand extends Command
 
         $project = $projects[$id];
 
-        $this->loadCache();
         if ($refresh || !isset($project['title'])) {
             try {
                 $project->ensureFull();
@@ -436,17 +375,20 @@ abstract class PlatformCommand extends Command
                 $response = $e->getResponse();
                 // Platform.sh can return 502 errors for deleted projects.
                 if ($response->getStatusCode() === 502) {
-                    unset(self::$cache['projects'][$id]);
+                    self::$cache->delete($id);
 
                     return false;
                 }
                 throw $e;
             }
 
-            self::$cache['projects'][$id] = $project->getData();
-            self::$cache['projects'][$id]['_endpoint'] = $project->getUri(true);
-            self::$cache['projects'][$id]['uri'] = $project->getLink('#ui');
-            self::$cache['projects'][$id]['git'] = $project->getGitUrl();
+            $cachedProjects = self::$cache->fetch('projects');
+            $cachedProjects[$id] = $project->getData();
+            $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
+            $cachedProjects[$id]['uri'] = $project->getLink('#ui');
+            $cachedProjects[$id]['git'] = $project->getGitUrl();
+
+            self::$cache->save('projects', $cachedProjects, $this->projectsTtl);
         }
 
         return $project;
@@ -466,13 +408,11 @@ abstract class PlatformCommand extends Command
         $project = $project ?: $this->getSelectedProject();
         $projectId = $project->getProperty('id');
 
-        $this->loadCache();
-        $cached = !empty(self::$cache['environments'][$projectId]);
-        $stale = isset(self::$cache['environmentsRefreshed'][$projectId]) && time(
-          ) - self::$cache['environmentsRefreshed'][$projectId] > $this->environmentsTtl;
+        $cacheKey = 'environments:' . $projectId;
+        $cached = self::$cache->contains($cacheKey);
 
-        if ($refresh || !$cached || $stale) {
-            self::$cache['environments'][$projectId] = array();
+        if ($refresh || !$cached) {
+            $cachedEnvironments = array();
 
             $environments = array();
             $toCache = array();
@@ -482,19 +422,18 @@ abstract class PlatformCommand extends Command
             }
 
             // Recreate the aliases if the list of environments has changed.
-            if ($updateAliases && array_diff_key($environments, self::$cache['environments'])) {
+            if ($updateAliases && (!$cached || array_diff_key($environments, self::$cache->fetch($cacheKey)))) {
                 $this->updateDrushAliases($project, $environments);
             }
 
-            self::$cache['environments'][$projectId] = $toCache;
-            self::$cache['environmentsRefreshed'][$projectId] = time();
+            self::$cache->save($cacheKey, $toCache, $this->environmentsTtl);
         } else {
             $environments = array();
             $connector = $this->getClient(false)
                               ->getConnector();
             $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project['endpoint'];
             $client = $connector->getClient();
-            foreach (self::$cache['environments'][$projectId] as $id => $data) {
+            foreach (self::$cache->fetch($cacheKey) as $id => $data) {
                 $environments[$id] = Environment::wrap($data, $endpoint, $client);
             }
         }
