@@ -93,6 +93,7 @@ class PlatformLoginCommand extends PlatformCommand
             $this->authenticateUser($email, $password);
         } catch (\InvalidArgumentException $e) {
             $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
+            $output->writeln("Forgot your password? Visit: <comment>https://marketplace.commerceguys.com/user/password</comment>\n");
             $this->configureAccount($input, $output);
         }
     }
