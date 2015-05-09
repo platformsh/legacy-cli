@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "0bea19863d33a69c408d0f3fce655aec",
+    "hash": "63a8144fa54384fa3810a82f3d728467",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -480,25 +480,31 @@
         },
         {
             "name": "stecman/symfony-console-completion",
-            "version": "0.4.4",
+            "version": "0.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stecman/symfony-console-completion.git",
-                "reference": "2bf3ddcaf31db1f0622a7db29bfc85fbc776bdaf"
+                "reference": "1a9fc7ab4820cd1aabbdc584c6b25d221e7b6cb5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stecman/symfony-console-completion/zipball/2bf3ddcaf31db1f0622a7db29bfc85fbc776bdaf",
-                "reference": "2bf3ddcaf31db1f0622a7db29bfc85fbc776bdaf",
+                "url": "https://api.github.com/repos/stecman/symfony-console-completion/zipball/1a9fc7ab4820cd1aabbdc584c6b25d221e7b6cb5",
+                "reference": "1a9fc7ab4820cd1aabbdc584c6b25d221e7b6cb5",
                 "shasum": ""
             },
             "require": {
+                "php": ">=5.3.2",
                 "symfony/console": "~2.2"
             },
             "require-dev": {
-                "phpunit/phpunit": "~3.7"
+                "phpunit/phpunit": "~4.1"
             },
             "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "0.5.x-dev"
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Stecman\\Component\\Symfony\\Console\\BashCompletion\\": "src/"
@@ -515,7 +521,7 @@
                 }
             ],
             "description": "Automatic BASH completion for Symfony Console Component based applications.",
-            "time": "2014-11-18 03:19:13"
+            "time": "2015-05-07 12:21:50"
         },
         {
             "name": "symfony/console",
