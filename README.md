@@ -57,7 +57,7 @@ Start a new shell or type `source <filename>` to load the new configuration.
 
 New releases of the CLI are made regularly. You can update with this command:
 
-    composer global update platformsh/cli
+    composer global update
 
 If you want to change the version that you are using - for example to upgrade
 between major versions (such as `1.x.x` to `2.x.x`) - it may be more effective
