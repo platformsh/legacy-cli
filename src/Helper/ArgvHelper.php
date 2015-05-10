@@ -25,7 +25,10 @@ class ArgvHelper extends Helper
     public function getPassedCommand(Command $command, ArgvInput $input, array $args = null)
     {
         if ($args === null) {
-            $args = $_SERVER['argv'];
+            if (empty($GLOBALS['argv'])) {
+                return '';
+            }
+            $args = $GLOBALS['argv'];
         }
         $args = $this->stripArguments($args, $input);
         $args = $this->stripOptions($args, $command);

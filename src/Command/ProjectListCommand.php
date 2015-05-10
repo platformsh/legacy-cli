@@ -45,7 +45,6 @@ class ProjectListCommand extends PlatformCommand
 
         $rows = array();
         foreach ($projects as $project) {
-            $row = array();
             $rows[] = array(
               $project->id,
               $project->title,

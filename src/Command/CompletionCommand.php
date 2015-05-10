@@ -110,7 +110,7 @@ class CompletionCommand extends ParentCompletionCommand
             // completion.
         }
 
-        return '';
+        return [];
     }
 
     /**
