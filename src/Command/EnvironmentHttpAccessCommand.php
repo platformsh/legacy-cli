@@ -151,7 +151,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
         $selectedEnvironment->ensureFull();
         $environmentId = $selectedEnvironment['id'];
 
-        $formatter = new PropertyFormatter($selectedEnvironment);
+        $formatter = new PropertyFormatter();
 
         if ($auth || $access) {
             $current = (array) $selectedEnvironment->getProperty('http_access');

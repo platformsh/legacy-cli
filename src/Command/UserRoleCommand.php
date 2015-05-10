@@ -51,9 +51,6 @@ class UserRoleCommand extends UserCommand
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
-
         $currentRole = null;
         $validRoles = array('admin', 'viewer');
         if ($level == 'project') {

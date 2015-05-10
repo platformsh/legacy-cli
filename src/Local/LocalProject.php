@@ -79,7 +79,7 @@ class LocalProject
     /**
      * @throws \RuntimeException If the URL is not a Platform.sh Git URL.
      *
-     * @param $gitUrl
+     * @param string $gitUrl
      */
     protected function getProjectId($gitUrl)
     {
@@ -106,11 +106,12 @@ class LocalProject
         }
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
-        $remoteUrl = $gitHelper->getConfig("remote.origin.url", $dir) || $gitHelper->getConfig("remote.platform.url", $dir);
-        if (!$remoteUrl) {
-            throw new \RuntimeException("Git remote not found");
+        foreach (['origin', 'platform'] as $remote) {
+            if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
+                return $url;
+            }
         }
-        return $remoteUrl;
+        throw new \RuntimeException("Git remote not found");
     }
 
     /**

@@ -385,8 +385,6 @@ abstract class PlatformCommand extends Command
         $cached = self::$cache->contains($cacheKey);
 
         if ($refresh || !$cached) {
-            $cachedEnvironments = array();
-
             $environments = array();
             $toCache = array();
             foreach ($project->getEnvironments() as $environment) {

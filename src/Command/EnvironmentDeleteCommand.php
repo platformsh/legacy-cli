@@ -111,8 +111,6 @@ class EnvironmentDeleteCommand extends PlatformCommand
      */
     protected function deleteMultiple(array $environments, InputInterface $input, OutputInterface $output)
     {
-        $count = count($environments);
-
         // Confirm which environments the user wishes to be deleted.
         $delete = array();
         $deactivate = array();
