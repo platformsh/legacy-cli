@@ -137,7 +137,7 @@ abstract class PlatformCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->output = $output;
-        if ($input->getOption('session-id')) {
+        if ($input->hasOption('session-id') && $input->getOption('session-id')) {
             self::$sessionId = $input->getOption('session-id');
         }
         if (!isset(self::$cache)) {
