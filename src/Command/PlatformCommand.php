@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Command;
 
 use Doctrine\Common\Cache\FilesystemCache;
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Connection\Connector;
@@ -320,12 +319,12 @@ abstract class PlatformCommand extends Command
      */
     public function getProjects($refresh = false)
     {
-        $cached = self::$cache->contains('projects');
+        $cacheKey = 'projects';
 
         /** @var Project[] $projects */
         $projects = array();
 
-        if ($refresh || !$cached) {
+        if ($refresh || !self::$cache->contains($cacheKey)) {
             foreach ($this->getClient()->getProjects() as $project) {
                 $projects[$project->id] = $project;
             }
@@ -337,12 +336,12 @@ abstract class PlatformCommand extends Command
                 $cachedProjects[$id]['git'] = $project->getGitUrl();
             }
 
-            self::$cache->save('projects', $cachedProjects, $this->projectsTtl);
+            self::$cache->save($cacheKey, $cachedProjects, $this->projectsTtl);
         } else {
             $connector = $this->getClient(false)
                               ->getConnector();
             $client = $connector->getClient();
-            foreach (self::$cache->fetch('projects') as $id => $data) {
+            foreach (self::$cache->fetch($cacheKey) as $id => $data) {
                 $projects[$id] = Project::wrap($data, $data['_endpoint'], $client);
             }
         }
@@ -360,37 +359,12 @@ abstract class PlatformCommand extends Command
      */
     protected function getProject($id, $refresh = false)
     {
-        $projects = $this->getProjects();
+        $projects = $this->getProjects($refresh);
         if (!isset($projects[$id])) {
             return false;
         }
 
-        $project = $projects[$id];
-
-        if ($refresh || !isset($project['title'])) {
-            try {
-                $project->ensureFull();
-            } catch (BadResponseException $e) {
-                $response = $e->getResponse();
-                // Platform.sh can return 502 errors for deleted projects.
-                if ($response->getStatusCode() === 502) {
-                    self::$cache->delete($id);
-
-                    return false;
-                }
-                throw $e;
-            }
-
-            $cachedProjects = self::$cache->fetch('projects');
-            $cachedProjects[$id] = $project->getData();
-            $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
-            $cachedProjects[$id]['uri'] = $project->getLink('#ui');
-            $cachedProjects[$id]['git'] = $project->getGitUrl();
-
-            self::$cache->save('projects', $cachedProjects, $this->projectsTtl);
-        }
-
-        return $project;
+        return $projects[$id];
     }
 
     /**
