@@ -36,7 +36,7 @@ alias plgit=platform_local_git
 # Run Drush commands on the local environment, from any working directory.
 function platform_local_drush {
     local GROUP
-    GROUP="$(platform drush-aliases --pipe)"
+    GROUP="$(platform drush-aliases --pipe 2>/dev/null)"
     if [ ! $? = 0 ]; then
         echo $0': Drush alias group not found' >&2
         return 1
