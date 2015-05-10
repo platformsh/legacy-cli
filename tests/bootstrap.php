@@ -8,4 +8,4 @@ require __DIR__ . '/../vendor/autoload.php';
 
 define('CLI_ROOT', dirname(__DIR__));
 
-$_ENV['PLATFORM_CLI_DRUSH'] = CLI_ROOT . '/vendor/bin/drush';
+putenv('PLATFORM_CLI_DRUSH=' . CLI_ROOT . '/vendor/bin/drush');
