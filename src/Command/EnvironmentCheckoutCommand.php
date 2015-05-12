@@ -48,6 +48,16 @@ class EnvironmentCheckoutCommand extends PlatformCommand
                 }
                 $environmentList[$id] = $environment['title'];
             }
+            $config = $this->getProjectConfig($this->getProjectRoot());
+            if (!empty($config['mapping'])) {
+                foreach ($config['mapping'] as $branch => $id) {
+                    unset($environmentList[$id]);
+                    if ($currentEnvironment && $id == $currentEnvironment['id']) {
+                        continue;
+                    }
+                    $environmentList[$branch] = $environments[$id]->title . " ($branch)";
+                }
+            }
             if (!count($environmentList)) {
                 $output->writeln("Use <info>platform branch</info> to create an environment.");
 
