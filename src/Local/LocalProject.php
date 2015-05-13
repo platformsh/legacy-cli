@@ -22,16 +22,18 @@ class LocalProject
      *
      * @param string $projectRoot
      * @param string $projectId
+     * @param string $host
      */
-    public function createProjectFiles($projectRoot, $projectId)
+    public function createProjectFiles($projectRoot, $projectId, $host = null)
     {
         mkdir($projectRoot . '/' . self::BUILD_DIR);
         mkdir($projectRoot . '/' . self::SHARED_DIR);
 
         // Create the .platform-project file.
-        $projectConfig = array(
-          'id' => $projectId,
-        );
+        $projectConfig = ['id' => $projectId];
+        if ($host !== null) {
+            $projectConfig['host'] = $host;
+        }
         $dumper = new Dumper();
         file_put_contents($projectRoot . '/' . self::PROJECT_CONFIG, $dumper->dump($projectConfig));
     }

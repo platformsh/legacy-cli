@@ -255,7 +255,7 @@ abstract class PlatformCommand extends Command
         $project = false;
         $config = LocalProject::getProjectConfig($this->getProjectRoot());
         if ($config) {
-            $project = $this->getProject($config['id']);
+            $project = $this->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
             if (!$project) {
                 $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
@@ -353,18 +353,29 @@ abstract class PlatformCommand extends Command
      * Return the user's project with the given id.
      *
      * @param string $id
+     * @param string $host
      * @param bool   $refresh
      *
      * @return Project|false
      */
-    protected function getProject($id, $refresh = false)
+    protected function getProject($id, $host = null, $refresh = false)
     {
         $projects = $this->getProjects($refresh);
-        if (!isset($projects[$id])) {
-            return false;
+        if (isset($projects[$id])) {
+            return $projects[$id];
         }
 
-        return $projects[$id];
+        // Get the project directly if a hostname is specified.
+        if ($host !== null) {
+            $scheme = 'https';
+            if (($pos = strpos($host, '//')) !== false) {
+                $scheme = parse_url($host, PHP_URL_SCHEME);
+                $host = substr($host, $pos + 2);
+            }
+            return $this->getClient()->getProjectDirect($id, $host, $scheme != 'http');
+        }
+
+        return false;
     }
 
     /**
@@ -529,13 +540,16 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * Add the --project option.
+     * Add the --project and --host options.
      *
      * @return self
      */
     protected function addProjectOption()
     {
-        return $this->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID');
+        $this->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID');
+        $this->addOption('host', null, InputOption::VALUE_OPTIONAL, 'The project host');
+
+        return $this;
     }
 
     /**
@@ -560,13 +574,14 @@ abstract class PlatformCommand extends Command
 
     /**
      * @param string $projectId
+     * @param string $host
      *
      * @return Project
      */
-    protected function selectProject($projectId = null)
+    protected function selectProject($projectId = null, $host = null)
     {
         if (!empty($projectId)) {
-            $project = $this->getProject($projectId);
+            $project = $this->getProject($projectId, $host);
             if (!$project) {
                 throw new \RuntimeException('Specified project not found: ' . $projectId);
             }
@@ -618,8 +633,9 @@ abstract class PlatformCommand extends Command
     protected function validateInput(InputInterface $input, OutputInterface $output, $envNotRequired = null)
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
+        $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
         try {
-            $this->project = $this->selectProject($projectId);
+            $this->project = $this->selectProject($projectId, $projectHost);
             $envOptionName = 'environment';
             if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
                 if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
