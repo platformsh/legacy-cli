@@ -366,7 +366,7 @@ abstract class PlatformCommand extends Command
         }
 
         // Get the project directly if a hostname is specified.
-        if ($host !== null) {
+        if (!empty($host)) {
             $scheme = 'https';
             if (($pos = strpos($host, '//')) !== false) {
                 $scheme = parse_url($host, PHP_URL_SCHEME);
@@ -547,7 +547,7 @@ abstract class PlatformCommand extends Command
     protected function addProjectOption()
     {
         $this->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID');
-        $this->addOption('host', null, InputOption::VALUE_OPTIONAL, 'The project host');
+        $this->addOption('host', null, InputOption::VALUE_OPTIONAL, "The project's API hostname");
 
         return $this;
     }
