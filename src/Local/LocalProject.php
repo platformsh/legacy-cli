@@ -40,12 +40,14 @@ class LocalProject
      * Initialize a project in a directory.
      *
      * @param string $dir
+     * @param string $projectId
+     * @param string $gitUrl
      *
      * @throws \RuntimeException
      *
      * @return string The absolute path to the project.
      */
-    public function initialize($dir)
+    public function initialize($dir, $projectId = null, $gitUrl = null)
     {
         $realPath = realpath($dir);
         if (!$realPath) {
@@ -59,8 +61,10 @@ class LocalProject
         }
 
         // Get the project ID from the Git repository.
-        $remoteUrl = $this->getGitRemote($dir);
-        $projectId = $this->getProjectId($remoteUrl);
+        if ($projectId === null) {
+            $gitUrl = $this->getGitRemote($dir);
+            $projectId = $this->getProjectId($gitUrl);
+        }
 
         // Move the directory into a 'repository' subdirectory.
         $backupDir = $this->getBackupDir($dir);
