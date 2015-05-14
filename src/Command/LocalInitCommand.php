@@ -35,18 +35,33 @@ class LocalInitCommand extends PlatformCommand
             return 1;
         }
 
-        $projectId = null;
+        if (!is_dir($realPath . '/.git')) {
+            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
+            $question = "The directory is not a Git repository: <comment>$realPath</comment>\nInitialize a Git repository?";
+            if ($questionHelper->confirm($question, $input, $output)) {
+                /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
+                $gitHelper = $this->getHelper('git');
+                $gitHelper->ensureInstalled();
+                $gitHelper->init($realPath, true);
+            }
+        }
+
         $gitUrl = null;
-        if ($input->getOption('project')) {
-            $project = $this->selectProject($input->getOption('project'));
-            $projectId = $project->id;
+        $projectId = $input->getOption('project') ?: null;
+        if ($projectId !== null) {
+            $project = $this->getProject($projectId, $input->getOption('host'));
+            if (!$project) {
+                $output->writeln("Project not found: <error>$projectId</error>");
+                return 1;
+            }
             $gitUrl = $project->getGitUrl();
         }
 
         $inside = strpos(getcwd(), $realPath) === 0;
 
         $local = new LocalProject();
-        $projectRoot = $local->initialize($directory, $projectId, $gitUrl);
+        $projectRoot = $local->initialize($realPath, $projectId, $gitUrl);
 
         // Fetch environments to start caching, and to create Drush aliases,
         // etc.

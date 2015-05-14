@@ -42,8 +42,12 @@ class LocalProject
      * Initialize a project in a directory.
      *
      * @param string $dir
+     *   The existing repository directory.
      * @param string $projectId
+     *   The project ID (optional). If no project is specified, the project ID
+     *   and git URL will be automatically detected from the repository.
      * @param string $gitUrl
+     *   The project's git URL (optional).
      *
      * @throws \RuntimeException
      *
@@ -57,27 +61,31 @@ class LocalProject
         }
 
         $dir = $realPath;
+        if (!file_exists("$dir/.git")) {
+            throw new \RuntimeException('The directory is not a Git repository');
+        }
 
         if (file_exists($dir . '/../' . self::PROJECT_CONFIG)) {
             throw new \RuntimeException("The project is already initialized");
         }
 
         // Get the project ID from the Git repository.
-        if ($projectId === null) {
-            $gitUrl = $this->getGitRemote($dir);
+        if ($projectId === null || $gitUrl === null) {
+            $gitUrl = $this->getGitRemoteUrl($dir);
             $projectId = $this->getProjectId($gitUrl);
         }
 
         // Move the directory into a 'repository' subdirectory.
         $backupDir = $this->getBackupDir($dir);
-
+        $repositoryDir = $dir . '/' . LocalProject::REPOSITORY_DIR;
         $fs = new Filesystem();
         $fs->rename($dir, $backupDir);
         $fs->mkdir($dir, 0755);
-        $fs->rename($backupDir, $dir . '/' . LocalProject::REPOSITORY_DIR);
+        $fs->rename($backupDir, $repositoryDir);
 
+        // Set up the project.
         $this->createProjectFiles($dir, $projectId);
-        $this->ensureGitRemote($dir . '/' . LocalProject::REPOSITORY_DIR, $gitUrl);
+        $this->ensureGitRemote($repositoryDir, $gitUrl);
 
         return $dir;
     }
@@ -105,11 +113,8 @@ class LocalProject
      * @return string
      *   The Git remote URL.
      */
-    protected function getGitRemote($dir)
+    protected function getGitRemoteUrl($dir)
     {
-        if (!file_exists("$dir/.git")) {
-            throw new \RuntimeException('The directory is not a Git repository');
-        }
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
         foreach (['origin', 'platform'] as $remote) {
@@ -117,7 +122,7 @@ class LocalProject
                 return $url;
             }
         }
-        throw new \RuntimeException("Git remote not found");
+        throw new \RuntimeException("Git remote URL not found");
     }
 
     /**
