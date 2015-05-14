@@ -71,7 +71,7 @@ class LocalProject
         $fs->rename($backupDir, $dir . '/' . LocalProject::REPOSITORY_DIR);
 
         $this->createProjectFiles($dir, $projectId);
-        $this->ensureGitRemote($dir, $remoteUrl);
+        $this->ensureGitRemote($dir . '/' . LocalProject::REPOSITORY_DIR, $gitUrl);
 
         return $dir;
     }
