@@ -116,6 +116,7 @@ class Application extends ParentApplication
         $commands[] = new Command\EnvironmentSqlDumpCommand();
         $commands[] = new Command\EnvironmentSynchronizeCommand();
         $commands[] = new Command\EnvironmentUrlCommand();
+        $commands[] = new Command\EnvironmentSetRemoteCommand();
         $commands[] = new Command\EnvironmentVariableDeleteCommand();
         $commands[] = new Command\EnvironmentVariableGetCommand();
         $commands[] = new Command\EnvironmentVariableSetCommand();
@@ -127,8 +128,8 @@ class Application extends ParentApplication
         $commands[] = new Command\LocalCleanCommand();
         $commands[] = new Command\LocalDrushAliasesCommand();
         $commands[] = new Command\LocalDirCommand();
-        $commands[] = new Command\ProjectGetCommand();
         $commands[] = new Command\LocalInitCommand();
+        $commands[] = new Command\ProjectGetCommand();
         $commands[] = new Command\ProjectMetadataCommand();
         $commands[] = new Command\SshKeyAddCommand();
         $commands[] = new Command\SshKeyDeleteCommand();

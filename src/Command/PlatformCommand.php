@@ -61,6 +61,13 @@ abstract class PlatformCommand extends Command
      */
     private $projectRoot = false;
 
+    /**
+     * The local project configuration.
+     *
+     * @var array
+     */
+    private $projectConfig = [];
+
     public function __construct($name = null)
     {
         parent::__construct($name);
@@ -248,12 +255,12 @@ abstract class PlatformCommand extends Command
      */
     public function getCurrentProject()
     {
-        if (!$this->getProjectRoot()) {
+        if (!$projectRoot = $this->getProjectRoot()) {
             return false;
         }
 
         $project = false;
-        $config = LocalProject::getProjectConfig($this->getProjectRoot());
+        $config = $this->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
@@ -271,6 +278,35 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Get the project configuration.
+     *
+     * @param string $projectRoot
+     *
+     * @return array
+     */
+    protected function getProjectConfig($projectRoot)
+    {
+        if (!isset($this->projectConfig[$projectRoot])) {
+            $this->projectConfig[$projectRoot] = LocalProject::getProjectConfig($projectRoot) ?: [];
+        }
+
+        return $this->projectConfig[$projectRoot];
+    }
+
+    /**
+     * Set a value in the project configuration.
+     *
+     * @param string $key
+     * @param mixed $value
+     * @param string $projectRoot
+     */
+    protected function setProjectConfig($key, $value, $projectRoot)
+    {
+        unset($this->projectConfig[$projectRoot]);
+        LocalProject::writeCurrentProjectConfig($key, $value, $projectRoot);
+    }
+
+    /**
      * Get the current environment if the user is in a project directory.
      *
      * @param Project $project The current project.
@@ -279,14 +315,31 @@ abstract class PlatformCommand extends Command
      */
     public function getCurrentEnvironment(Project $project)
     {
-        if (!$this->getProjectRoot()) {
+        if (!$projectRoot = $this->getProjectRoot()) {
             return false;
+        }
+
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot() . '/' . LocalProject::REPOSITORY_DIR);
+        $currentBranch = $gitHelper->getCurrentBranch();
+
+        // Check if there is a manual mapping set for the current branch.
+        if ($currentBranch) {
+            $config = $this->getProjectConfig($projectRoot);
+            if (!empty($config['mapping'][$currentBranch])) {
+                $environment = $this->getEnvironment($config['mapping'][$currentBranch], $project);
+                if ($environment) {
+                    return $environment;
+                }
+                else {
+                    unset($config['mapping'][$currentBranch]);
+                    $this->setProjectConfig('mapping', $config['mapping'], $projectRoot);
+                }
+            }
         }
 
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
-        $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot() . '/' . LocalProject::REPOSITORY_DIR);
         $upstream = $gitHelper->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
@@ -298,7 +351,6 @@ abstract class PlatformCommand extends Command
 
         // There is no Git remote set, or it's set to a non-Platform URL.
         // Fall back to trying the current branch name.
-        $currentBranch = $gitHelper->getCurrentBranch();
         if ($currentBranch) {
             $currentBranchSanitized = Environment::sanitizeId($currentBranch);
             $environment = $this->getEnvironment($currentBranchSanitized, $project);

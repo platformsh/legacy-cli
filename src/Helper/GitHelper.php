@@ -240,20 +240,60 @@ class GitHelper extends Helper
     }
 
     /**
-     * Get the upstream for the current branch.
+     * Get the upstream for a branch.
      *
+     * @param string $branch
+     *   The name of the branch to get the upstream for. Defaults to the current
+     *   branch.
      * @param string $dir
      *   The path to a Git repository.
      * @param bool   $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return string|false
+     *   The upstream, in the form remote/branch, or false if no upstream is
+     *   found.
      */
-    public function getUpstream($dir = null, $mustRun = false)
+    public function getUpstream($branch = null, $dir = null, $mustRun = false)
     {
-        $args = array('rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}');
+        if ($branch === null) {
+            $args = array('rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}');
 
-        return $this->execute($args, $dir, $mustRun);
+            return $this->execute($args, $dir, $mustRun);
+        }
+
+        $remoteName = $this->getConfig("branch.$branch.remote", $dir, $mustRun);
+        $remoteBranch = $this->getConfig("branch.$branch.merge", $dir, $mustRun);
+        if (empty($remoteName) || empty($remoteBranch)) {
+            return false;
+        }
+
+        return $remoteName . '/' . str_replace('refs/heads/', '', $remoteBranch);
+    }
+
+    /**
+     * Set the upstream for the current branch.
+     *
+     * @param string|false $upstream
+     *   The upstream name, or false to unset the upstream.
+     * @param string $dir
+     *   The path to a Git repository.
+     * @param bool $mustRun
+     *   Enable exceptions if the Git command fails.
+     *
+     * @return bool
+     */
+    public function setUpstream($upstream, $dir = null, $mustRun = false)
+    {
+        $args = array('branch');
+        if ($upstream !== false) {
+            $args[] = '--set-upstream-to=' . $upstream;
+        }
+        else {
+            $args[] = '--unset-upstream';
+        }
+
+        return (bool) $this->execute($args, $dir, $mustRun);
     }
 
     /**
