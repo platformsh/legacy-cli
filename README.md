@@ -121,6 +121,7 @@ environment
   environment:relationships (relationships) List an environment's relationships
   environment:restore                       Restore an environment backup
   environment:routes (routes)               List an environment's routes
+  environment:set-remote                    Set the remote environment to track for a branch
   environment:sql (sql)                     Run SQL on the remote database
   environment:sql-dump (sql-dump)           Create a local dump of the remote database
   environment:ssh (ssh)                     SSH to the current environment

@@ -35,9 +35,7 @@ class DomainDeleteCommand extends PlatformCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         $name = $input->getArgument('name');
         if (empty($name)) {

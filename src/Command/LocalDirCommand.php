@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -31,9 +32,7 @@ class LocalDirCommand extends PlatformCommand
 
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
-            $output->writeln("Project root not found");
-
-            return 1;
+            throw new RootNotFoundException();
         }
 
         $dir = $projectRoot;

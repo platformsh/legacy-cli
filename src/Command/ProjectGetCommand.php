@@ -49,6 +49,12 @@ class ProjectGetCommand extends PlatformCommand
             null,
             InputOption::VALUE_NONE,
             "List inactive environments too"
+          )
+          ->addOption(
+            'host',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            "The project's API hostname"
           );
     }
 
@@ -64,7 +70,7 @@ class ProjectGetCommand extends PlatformCommand
                 return 1;
             }
         }
-        $project = $this->getProject($projectId);
+        $project = $this->getProject($projectId, $input->getOption('host'));
         if (!$project) {
             $output->writeln("<error>Project not found: $projectId</error>");
 
@@ -100,7 +106,8 @@ class ProjectGetCommand extends PlatformCommand
         $output->writeln("Created project directory: $directoryName");
 
         $local = new LocalProject();
-        $local->createProjectFiles($projectRoot, $projectId);
+        $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
+        $local->createProjectFiles($projectRoot, $projectId, $hostname);
 
         $environments = $this->getEnvironments($project, true);
 

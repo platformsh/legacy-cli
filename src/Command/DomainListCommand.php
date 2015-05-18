@@ -76,9 +76,7 @@ class DomainListCommand extends PlatformCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return;
-        }
+        $this->validateInput($input, $output);
 
         $project = $this->getSelectedProject();
         $domains = $project->getDomains();

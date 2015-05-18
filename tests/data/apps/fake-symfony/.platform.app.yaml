@@ -1,0 +1,5 @@
+# This app pretends to be a Symfony application, but it doesn't even contain a
+# composer.json file.
+
+name: fake-symfony
+toolstack: "php:symfony"

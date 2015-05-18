@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalProject;
@@ -31,7 +32,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
     {
         $project = $this->getCurrentProject();
         if (!$project) {
-            throw new \Exception('This can only be run from inside a project directory');
+            throw new RootNotFoundException();
         }
 
         $specifiedBranch = $input->getArgument('id');
@@ -47,6 +48,19 @@ class EnvironmentCheckoutCommand extends PlatformCommand
                     continue;
                 }
                 $environmentList[$id] = $environment['title'];
+            }
+            $config = $this->getProjectConfig($this->getProjectRoot());
+            if (!empty($config['mapping'])) {
+                foreach ($config['mapping'] as $branch => $id) {
+                    unset($environmentList[$id]);
+                    if ($currentEnvironment && $id == $currentEnvironment['id']) {
+                        continue;
+                    }
+                    if (!isset($environments[$id])) {
+                        continue;
+                    }
+                    $environmentList[$branch] = sprintf('%s (%s)', $environments[$id]->title, $branch);
+                }
             }
             if (!count($environmentList)) {
                 $output->writeln("Use <info>platform branch</info> to create an environment.");

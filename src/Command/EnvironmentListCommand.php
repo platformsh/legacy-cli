@@ -19,6 +19,7 @@ class EnvironmentListCommand extends PlatformCommand
 
     /** @var Environment */
     protected $currentEnvironment;
+    protected $mapping = array();
 
     /**
      * {@inheritdoc}
@@ -125,7 +126,13 @@ class EnvironmentListCommand extends PlatformCommand
             $row[] = $id;
 
             if ($this->showNames) {
-                $row[] = $environment['title'];
+                $title = $environment['title'];
+                if ($branch = array_search($environment['id'], $this->mapping)) {
+                    $row[] = sprintf('%s (%s)', $environment['title'], $branch);
+                }
+                else {
+                    $row[] = $environment['title'];
+                }
             }
 
             // Inactive environments have no public url.
@@ -154,9 +161,7 @@ class EnvironmentListCommand extends PlatformCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return;
-        }
+        $this->validateInput($input, $output);
 
         $show = explode(',', $input->getOption('show'));
 
@@ -181,6 +186,13 @@ class EnvironmentListCommand extends PlatformCommand
         }
 
         $this->currentEnvironment = $this->getCurrentEnvironment($this->getSelectedProject());
+
+        if (($currentProject = $this->getCurrentProject()) && $currentProject == $this->getSelectedProject()) {
+            $config = $this->getProjectConfig($this->getProjectRoot());
+            if (isset($config['mapping'])) {
+                $this->mapping = $config['mapping'];
+            }
+        }
 
         $tree = $this->buildEnvironmentTree($environments);
 

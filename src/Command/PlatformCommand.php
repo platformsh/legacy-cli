@@ -3,6 +3,8 @@
 namespace Platformsh\Cli\Command;
 
 use Doctrine\Common\Cache\FilesystemCache;
+use Platformsh\Cli\Exception\LoginRequiredException;
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Connection\Connector;
@@ -28,6 +30,9 @@ abstract class PlatformCommand extends Command
 
     /** @var string */
     protected static $sessionId = 'default';
+
+    /** @var bool */
+    protected static $interactive = false;
 
     /** @var OutputInterface|null */
     protected $output;
@@ -60,6 +65,13 @@ abstract class PlatformCommand extends Command
      * @var string|false
      */
     private $projectRoot = false;
+
+    /**
+     * The local project configuration.
+     *
+     * @var array
+     */
+    private $projectConfig = [];
 
     public function __construct($name = null)
     {
@@ -137,6 +149,7 @@ abstract class PlatformCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->output = $output;
+        self::$interactive = $input->isInteractive();
         if ($input->hasOption('session-id') && $input->getOption('session-id')) {
             self::$sessionId = $input->getOption('session-id');
         }
@@ -185,8 +198,8 @@ abstract class PlatformCommand extends Command
      */
     protected function login()
     {
-        if (!$this->output) {
-            throw new \RuntimeException('Login is required but no output is defined');
+        if (!$this->output || !self::$interactive) {
+            throw new LoginRequiredException();
         }
         $application = $this->getApplication();
         $command = $application->find('login');
@@ -248,14 +261,14 @@ abstract class PlatformCommand extends Command
      */
     public function getCurrentProject()
     {
-        if (!$this->getProjectRoot()) {
+        if (!$projectRoot = $this->getProjectRoot()) {
             return false;
         }
 
         $project = false;
-        $config = LocalProject::getProjectConfig($this->getProjectRoot());
+        $config = $this->getProjectConfig($projectRoot);
         if ($config) {
-            $project = $this->getProject($config['id']);
+            $project = $this->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
             if (!$project) {
                 $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
@@ -271,6 +284,35 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Get the project configuration.
+     *
+     * @param string $projectRoot
+     *
+     * @return array
+     */
+    protected function getProjectConfig($projectRoot)
+    {
+        if (!isset($this->projectConfig[$projectRoot])) {
+            $this->projectConfig[$projectRoot] = LocalProject::getProjectConfig($projectRoot) ?: [];
+        }
+
+        return $this->projectConfig[$projectRoot];
+    }
+
+    /**
+     * Set a value in the project configuration.
+     *
+     * @param string $key
+     * @param mixed $value
+     * @param string $projectRoot
+     */
+    protected function setProjectConfig($key, $value, $projectRoot)
+    {
+        unset($this->projectConfig[$projectRoot]);
+        LocalProject::writeCurrentProjectConfig($key, $value, $projectRoot);
+    }
+
+    /**
      * Get the current environment if the user is in a project directory.
      *
      * @param Project $project The current project.
@@ -279,14 +321,31 @@ abstract class PlatformCommand extends Command
      */
     public function getCurrentEnvironment(Project $project)
     {
-        if (!$this->getProjectRoot()) {
+        if (!$projectRoot = $this->getProjectRoot()) {
             return false;
+        }
+
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot() . '/' . LocalProject::REPOSITORY_DIR);
+        $currentBranch = $gitHelper->getCurrentBranch();
+
+        // Check if there is a manual mapping set for the current branch.
+        if ($currentBranch) {
+            $config = $this->getProjectConfig($projectRoot);
+            if (!empty($config['mapping'][$currentBranch])) {
+                $environment = $this->getEnvironment($config['mapping'][$currentBranch], $project);
+                if ($environment) {
+                    return $environment;
+                }
+                else {
+                    unset($config['mapping'][$currentBranch]);
+                    $this->setProjectConfig('mapping', $config['mapping'], $projectRoot);
+                }
+            }
         }
 
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.
-        $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot() . '/' . LocalProject::REPOSITORY_DIR);
         $upstream = $gitHelper->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
@@ -298,7 +357,6 @@ abstract class PlatformCommand extends Command
 
         // There is no Git remote set, or it's set to a non-Platform URL.
         // Fall back to trying the current branch name.
-        $currentBranch = $gitHelper->getCurrentBranch();
         if ($currentBranch) {
             $currentBranchSanitized = Environment::sanitizeId($currentBranch);
             $environment = $this->getEnvironment($currentBranchSanitized, $project);
@@ -353,18 +411,29 @@ abstract class PlatformCommand extends Command
      * Return the user's project with the given id.
      *
      * @param string $id
+     * @param string $host
      * @param bool   $refresh
      *
      * @return Project|false
      */
-    protected function getProject($id, $refresh = false)
+    protected function getProject($id, $host = null, $refresh = false)
     {
         $projects = $this->getProjects($refresh);
-        if (!isset($projects[$id])) {
-            return false;
+        if (isset($projects[$id])) {
+            return $projects[$id];
         }
 
-        return $projects[$id];
+        // Get the project directly if a hostname is specified.
+        if (!empty($host)) {
+            $scheme = 'https';
+            if (($pos = strpos($host, '//')) !== false) {
+                $scheme = parse_url($host, PHP_URL_SCHEME);
+                $host = substr($host, $pos + 2);
+            }
+            return $this->getClient()->getProjectDirect($id, $host, $scheme != 'http');
+        }
+
+        return false;
     }
 
     /**
@@ -529,13 +598,16 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * Add the --project option.
+     * Add the --project and --host options.
      *
      * @return self
      */
     protected function addProjectOption()
     {
-        return $this->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID');
+        $this->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID');
+        $this->addOption('host', null, InputOption::VALUE_OPTIONAL, "The project's API hostname");
+
+        return $this;
     }
 
     /**
@@ -560,20 +632,21 @@ abstract class PlatformCommand extends Command
 
     /**
      * @param string $projectId
+     * @param string $host
      *
      * @return Project
      */
-    protected function selectProject($projectId = null)
+    protected function selectProject($projectId = null, $host = null)
     {
         if (!empty($projectId)) {
-            $project = $this->getProject($projectId);
+            $project = $this->getProject($projectId, $host);
             if (!$project) {
                 throw new \RuntimeException('Specified project not found: ' . $projectId);
             }
         } else {
             $project = $this->getCurrentProject();
             if (!$project) {
-                throw new \RuntimeException(
+                throw new RootNotFoundException(
                   "Could not determine the current project."
                   . "\nSpecify it manually using --project or go to a project directory."
                 );
@@ -598,10 +671,17 @@ abstract class PlatformCommand extends Command
         } else {
             $environment = $this->getCurrentEnvironment($this->project);
             if (!$environment) {
-                throw new \RuntimeException(
-                  "Could not determine the current environment."
-                  . "\nSpecify it manually using --environment or go to a project directory."
-                );
+                $message = "Could not determine the current environment.";
+                if ($this->getProjectRoot()) {
+                    throw new \RuntimeException(
+                      $message . "\nSpecify it manually using --environment."
+                    );
+                }
+                else {
+                    throw new RootNotFoundException(
+                      $message . "\nSpecify it manually using --environment or go to a project directory."
+                    );
+                }
             }
         }
 
@@ -612,52 +692,57 @@ abstract class PlatformCommand extends Command
      * @param InputInterface  $input
      * @param OutputInterface $output
      * @param bool $envNotRequired
-     *
-     * @return bool
      */
     protected function validateInput(InputInterface $input, OutputInterface $output, $envNotRequired = null)
     {
+        // Select the project.
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
-        try {
-            $this->project = $this->selectProject($projectId);
-            $envOptionName = 'environment';
-            if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
-                if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
-                    throw new \InvalidArgumentException(
-                      sprintf(
-                        "You cannot use both the '%s' argument and the '--%s' option",
-                        $this->envArgName,
-                        $envOptionName
-                      )
-                    );
-                }
-                $argument = $input->getArgument($this->envArgName);
-                if (is_array($argument) && count($argument) == 1) {
-                    $argument = $argument[0];
-                }
-                if (!is_array($argument)) {
-                    $this->environment = $this->selectEnvironment($argument);
-                }
-            } elseif ($input->hasOption($envOptionName)) {
-                if ($envNotRequired && !$input->getOption($envOptionName)) {
-                    $this->environment = $this->getCurrentEnvironment($this->project);
-                }
-                else {
-                    $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
-                }
-            }
-        } catch (\RuntimeException $e) {
-            $output->writeln('<error>' . $e->getMessage() . '</error>');
+        $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
+        $this->project = $this->selectProject($projectId, $projectHost);
 
-            return false;
+        // Select the environment.
+        $envOptionName = 'environment';
+        if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
+            if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
+                throw new \InvalidArgumentException(
+                  sprintf(
+                    "You cannot use both the '%s' argument and the '--%s' option",
+                    $this->envArgName,
+                    $envOptionName
+                  )
+                );
+            }
+            $argument = $input->getArgument($this->envArgName);
+            if (is_array($argument) && count($argument) == 1) {
+                $argument = $argument[0];
+            }
+            if (!is_array($argument)) {
+                $this->environment = $this->selectEnvironment($argument);
+            }
+        } elseif ($input->hasOption($envOptionName)) {
+            if ($envNotRequired && !$input->getOption($envOptionName)) {
+                $this->environment = $this->getCurrentEnvironment($this->project);
+            }
+            else {
+                $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
+            }
         }
+
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $output->writeln("Selected project: " . $this->project['id']);
             $environmentId = $this->environment ? $this->environment['id'] : '[none]';
             $output->writeln("Selected environment: $environmentId");
         }
+    }
 
-        return true;
+    /**
+     * Check whether a project is selected.
+     *
+     * @return bool
+     */
+    protected function hasSelectedProject()
+    {
+        return !empty($this->project);
     }
 
     /**
