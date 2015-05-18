@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalProject;
@@ -31,7 +32,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
     {
         $project = $this->getCurrentProject();
         if (!$project) {
-            throw new \Exception('This can only be run from inside a project directory');
+            throw new RootNotFoundException();
         }
 
         $specifiedBranch = $input->getArgument('id');

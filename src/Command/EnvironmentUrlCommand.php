@@ -27,9 +27,7 @@ class EnvironmentUrlCommand extends UrlCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return;
-        }
+        $this->validateInput($input, $output);
 
         $selectedEnvironment = $this->getSelectedEnvironment();
 

@@ -57,9 +57,8 @@ class DomainAddCommand extends PlatformCommand
 
     protected function validateInput(InputInterface $input, OutputInterface $output, $envNotRequired = null)
     {
-        if (!parent::validateInput($input, $output)) {
-            return false;
-        }
+        parent::validateInput($input, $output);
+
         $this->domainName = $input->getArgument('name');
         if (empty($this->domainName)) {
             $output->writeln("<error>You must specify the name of the domain.</error>");

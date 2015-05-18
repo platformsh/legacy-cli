@@ -38,9 +38,7 @@ class EnvironmentDrushCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         if ($input instanceof ArgvInput) {
             $helper = new ArgvHelper();

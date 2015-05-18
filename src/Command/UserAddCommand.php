@@ -23,9 +23,7 @@ class UserAddCommand extends UserCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');

@@ -30,9 +30,7 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment['id'];

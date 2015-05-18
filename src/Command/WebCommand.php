@@ -21,15 +21,18 @@ class WebCommand extends UrlCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($this->isLoggedIn()) {
-            // If the user is logged in, select the appropriate project and
-            // environment.
+        // Attempt to select the appropriate project and environment.
+        try {
             $this->validateInput($input, new NullOutput());
-            $project = $this->getSelectedProject();
+        }
+        catch (\Exception $e) {
+            // Ignore errors.
         }
 
+        $project = $this->hasSelectedProject() ? $this->getSelectedProject() : false;
+
         $url = 'https://marketplace.commerceguys.com/platform/login';
-        if (!empty($project)) {
+        if ($project) {
             $url = $project->getLink('#ui');
             if ($this->hasSelectedEnvironment()) {
                 $environment = $this->getSelectedEnvironment();

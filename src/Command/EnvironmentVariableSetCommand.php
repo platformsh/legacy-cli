@@ -27,9 +27,7 @@ class EnvironmentVariableSetCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         $variableName = $input->getArgument('name');
         $variableValue = $input->getArgument('value');

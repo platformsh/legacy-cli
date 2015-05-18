@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
@@ -27,9 +28,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         $environments = $this->getEnvironments();
 
@@ -85,7 +84,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
     {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
-            throw new \RuntimeException("This can only be run from inside a project directory");
+            throw new RootNotFoundException();
         }
         $environments = $this->getEnvironments($this->getSelectedProject(), true);
         $gitHelper = $this->getHelper('git');
