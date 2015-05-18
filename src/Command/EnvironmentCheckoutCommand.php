@@ -59,7 +59,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
                     if (!isset($environments[$id])) {
                         continue;
                     }
-                    $environmentList[$branch] = $environments[$id]->title . " ($branch)";
+                    $environmentList[$branch] = sprintf('%s (%s)', $environments[$id]->title, $branch);
                 }
             }
             if (!count($environmentList)) {
