@@ -154,9 +154,7 @@ class EnvironmentListCommand extends PlatformCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return;
-        }
+        $this->validateInput($input, $output);
 
         $show = explode(',', $input->getOption('show'));
 

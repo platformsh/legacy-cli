@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Doctrine\Common\Cache\FilesystemCache;
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Connection\Connector;
@@ -640,7 +641,7 @@ abstract class PlatformCommand extends Command
         } else {
             $project = $this->getCurrentProject();
             if (!$project) {
-                throw new \RuntimeException(
+                throw new RootNotFoundException(
                   "Could not determine the current project."
                   . "\nSpecify it manually using --project or go to a project directory."
                 );
@@ -665,10 +666,17 @@ abstract class PlatformCommand extends Command
         } else {
             $environment = $this->getCurrentEnvironment($this->project);
             if (!$environment) {
-                throw new \RuntimeException(
-                  "Could not determine the current environment."
-                  . "\nSpecify it manually using --environment or go to a project directory."
-                );
+                $message = "Could not determine the current environment.";
+                if ($this->getProjectRoot()) {
+                    throw new \RuntimeException(
+                      $message . "\nSpecify it manually using --environment."
+                    );
+                }
+                else {
+                    throw new RootNotFoundException(
+                      $message . "\nSpecify it manually using --environment or go to a project directory."
+                    );
+                }
             }
         }
 
@@ -679,53 +687,57 @@ abstract class PlatformCommand extends Command
      * @param InputInterface  $input
      * @param OutputInterface $output
      * @param bool $envNotRequired
-     *
-     * @return bool
      */
     protected function validateInput(InputInterface $input, OutputInterface $output, $envNotRequired = null)
     {
+        // Select the project.
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
-        try {
-            $this->project = $this->selectProject($projectId, $projectHost);
-            $envOptionName = 'environment';
-            if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
-                if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
-                    throw new \InvalidArgumentException(
-                      sprintf(
-                        "You cannot use both the '%s' argument and the '--%s' option",
-                        $this->envArgName,
-                        $envOptionName
-                      )
-                    );
-                }
-                $argument = $input->getArgument($this->envArgName);
-                if (is_array($argument) && count($argument) == 1) {
-                    $argument = $argument[0];
-                }
-                if (!is_array($argument)) {
-                    $this->environment = $this->selectEnvironment($argument);
-                }
-            } elseif ($input->hasOption($envOptionName)) {
-                if ($envNotRequired && !$input->getOption($envOptionName)) {
-                    $this->environment = $this->getCurrentEnvironment($this->project);
-                }
-                else {
-                    $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
-                }
-            }
-        } catch (\RuntimeException $e) {
-            $output->writeln('<error>' . $e->getMessage() . '</error>');
+        $this->project = $this->selectProject($projectId, $projectHost);
 
-            return false;
+        // Select the environment.
+        $envOptionName = 'environment';
+        if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
+            if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
+                throw new \InvalidArgumentException(
+                  sprintf(
+                    "You cannot use both the '%s' argument and the '--%s' option",
+                    $this->envArgName,
+                    $envOptionName
+                  )
+                );
+            }
+            $argument = $input->getArgument($this->envArgName);
+            if (is_array($argument) && count($argument) == 1) {
+                $argument = $argument[0];
+            }
+            if (!is_array($argument)) {
+                $this->environment = $this->selectEnvironment($argument);
+            }
+        } elseif ($input->hasOption($envOptionName)) {
+            if ($envNotRequired && !$input->getOption($envOptionName)) {
+                $this->environment = $this->getCurrentEnvironment($this->project);
+            }
+            else {
+                $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
+            }
         }
+
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $output->writeln("Selected project: " . $this->project['id']);
             $environmentId = $this->environment ? $this->environment['id'] : '[none]';
             $output->writeln("Selected environment: $environmentId");
         }
+    }
 
-        return true;
+    /**
+     * Check whether a project is selected.
+     *
+     * @return bool
+     */
+    protected function hasSelectedProject()
+    {
+        return !empty($this->project);
     }
 
     /**

@@ -26,9 +26,7 @@ class IntegrationUpdateCommand extends IntegrationCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         $id = $input->getArgument('id');
         $integration = $this->getSelectedProject()

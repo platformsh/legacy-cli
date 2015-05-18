@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
@@ -42,7 +43,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
     {
         $project = $this->getCurrentProject();
         if (!$project) {
-            throw new \Exception('This can only be run from inside a project directory');
+            throw new RootNotFoundException();
         }
 
         $projectRoot = $this->getProjectRoot();

@@ -29,9 +29,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         // @todo This --ssh option is only here as a temporary workaround.
         if ($input->getOption('ssh')) {

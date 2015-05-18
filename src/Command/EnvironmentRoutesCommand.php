@@ -25,9 +25,7 @@ class EnvironmentRoutesCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
-            return 1;
-        }
+        $this->validateInput($input, $output);
 
         $environment = $this->getSelectedEnvironment();
 
