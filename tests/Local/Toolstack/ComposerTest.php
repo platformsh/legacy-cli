@@ -16,4 +16,14 @@ class ComposerTest extends BaseToolstackTest
         $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         $this->assertFileExists($repositoryDir . '/.gitignore');
     }
+
+    /**
+     * Test the case where a user has specified "php:symfony" as the toolstack,
+     * for an application which does not contain a composer.json file. The build
+     * may not do much, but at least it should not throw an exception.
+     */
+    public function testBuildFakeSymfony()
+    {
+        $this->assertBuildSucceeds('tests/data/apps/fake-symfony');
+    }
 }
