@@ -40,7 +40,7 @@ alias plgit=platform_local_git
 # Run Drush commands on the local environment, from any working directory.
 function platform_local_drush {
     local GROUP
-    GROUP="$(platform drush-aliases --pipe 2>/dev/null)"
+    GROUP="$(platform drush-aliases --no --pipe 2>/dev/null)"
     CODE=$?
     if [ "$CODE" = 2 ]; then
         echo $0': This can only be run from inside a project directory' >&2

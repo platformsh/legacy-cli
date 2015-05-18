@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Doctrine\Common\Cache\FilesystemCache;
+use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
@@ -29,6 +30,9 @@ abstract class PlatformCommand extends Command
 
     /** @var string */
     protected static $sessionId = 'default';
+
+    /** @var bool */
+    protected static $interactive = false;
 
     /** @var OutputInterface|null */
     protected $output;
@@ -145,6 +149,7 @@ abstract class PlatformCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->output = $output;
+        self::$interactive = $input->isInteractive();
         if ($input->hasOption('session-id') && $input->getOption('session-id')) {
             self::$sessionId = $input->getOption('session-id');
         }
@@ -193,8 +198,8 @@ abstract class PlatformCommand extends Command
      */
     protected function login()
     {
-        if (!$this->output) {
-            throw new \RuntimeException('Login is required but no output is defined');
+        if (!$this->output || !self::$interactive) {
+            throw new LoginRequiredException();
         }
         $application = $this->getApplication();
         $command = $application->find('login');

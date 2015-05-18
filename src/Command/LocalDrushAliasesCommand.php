@@ -41,21 +41,21 @@ class LocalDrushAliasesCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $project = $this->getCurrentProject();
-        if (!$project) {
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot) {
             throw new RootNotFoundException();
         }
 
-        $projectRoot = $this->getProjectRoot();
-
         $projectConfig = LocalProject::getProjectConfig($projectRoot);
-        $current_group = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $project['id'];
+        $current_group = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $projectConfig['id'];
 
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->writeln($current_group);
 
             return 0;
         }
+
+        $project = $this->getCurrentProject();
 
         $new_group = ltrim($input->getOption('group'), '@');
 
