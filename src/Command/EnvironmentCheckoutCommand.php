@@ -56,6 +56,9 @@ class EnvironmentCheckoutCommand extends PlatformCommand
                     if ($currentEnvironment && $id == $currentEnvironment['id']) {
                         continue;
                     }
+                    if (!isset($environments[$id])) {
+                        continue;
+                    }
                     $environmentList[$branch] = $environments[$id]->title . " ($branch)";
                 }
             }
