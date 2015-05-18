@@ -28,8 +28,6 @@ class EnvironmentSetRemoteCommand extends PlatformCommand
             InputArgument::OPTIONAL,
             'The Git branch to track (defaults to the current branch)'
           );
-
-        $this->setHiddenInList();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
