@@ -40,7 +40,11 @@ class Drupal extends ToolstackBase
                ->name('project.make')
                ->name('project-core.make')
                ->name('drupal-org.make')
-               ->name('drupal-org-core.make');
+               ->name('drupal-org-core.make')
+               ->name('project.make.yml')
+               ->name('project-core.make.yml')
+               ->name('drupal-org.make.yml')
+               ->name('drupal-org-core.make.yml');
         foreach ($finder as $file) {
             return true;
         }
@@ -78,9 +82,10 @@ class Drupal extends ToolstackBase
         } elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
             $this->buildInProfileMode($profileName);
-        }
-        elseif (file_exists($this->appRoot . '/project.make')) {
+        } elseif (file_exists($this->appRoot . '/project.make')) {
             $this->buildInProjectMode($this->appRoot . '/project.make');
+        } elseif (file_exists($this->appRoot . '/project.make.yml')) {
+            $this->buildInProjectMode($this->appRoot . '/project.make.yml');
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
 
@@ -169,6 +174,7 @@ class Drupal extends ToolstackBase
         $this->processSettingsPhp();
 
         $this->ignoredFiles[] = 'project.make';
+        $this->ignoredFiles[] = 'project.make.yml';
         $this->ignoredFiles[] = 'settings.local.php';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
@@ -197,21 +203,27 @@ class Drupal extends ToolstackBase
         $drushHelper->ensureInstalled();
 
         // Find the contrib make file.
-        if (file_exists($this->appRoot . '/project.make')) {
-            $projectMake = $this->appRoot . '/project.make';
-        } elseif (file_exists($this->appRoot . '/drupal-org.make')) {
-            $projectMake = $this->appRoot . '/drupal-org.make';
-        } else {
-            throw new \Exception("Couldn't find a project.make or drupal-org.make in the directory.");
+        $candidates = array('project.make', 'project.make.yml', 'drupal-org.make', 'drupal-org.make.yml');
+        foreach ($candidates as $candidate) {
+            if (file_exists($this->appRoot . '/' . $candidate)) {
+                $projectMake = $this->appRoot . '/' . $candidate;
+                break;
+            }
+        }
+        if (empty($projectMake)) {
+            throw new \Exception("Couldn't find a make file in the directory. Possible filenames: " . implode(',', $candidates));
         }
 
         // Find the core make file.
-        if (file_exists($this->appRoot . '/project-core.make')) {
-            $projectCoreMake = $this->appRoot . '/project-core.make';
-        } elseif (file_exists($this->appRoot . '/drupal-org-core.make')) {
-            $projectCoreMake = $this->appRoot . '/drupal-org-core.make';
-        } else {
-            throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the directory.");
+        $candidates = array('project-core.make', 'project-core.make.yml', 'drupal-org-core.make', 'drupal-org-core.make.yml');
+        foreach ($candidates as $candidate) {
+            if (file_exists($this->appRoot . '/' . $candidate)) {
+                $projectCoreMake = $this->appRoot . '/' . $candidate;
+                break;
+            }
+        }
+        if (empty($projectCoreMake)) {
+            throw new \Exception("Couldn't find a core make file in the directory. Possible filenames: " . implode(',', $candidates));
         }
 
         $args = array_merge(

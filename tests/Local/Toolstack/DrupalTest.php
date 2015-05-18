@@ -37,6 +37,11 @@ class DrupalTest extends BaseToolstackTest
         $this->assertFileExists($webRoot . '/profiles/test/test.profile');
     }
 
+    public function testBuildDrupalWithYamlMakeFile()
+    {
+        $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/project-yaml');
+    }
+
     /**
      * Test the process of creating an archive of the build.
      *
