@@ -128,8 +128,8 @@ class DrushHelper extends Helper
      */
     public function getDrushExecutable()
     {
-        if (getenv('PLATFORM_CLI_DRUSH')) {
-            return getenv('PLATFORM_CLI_DRUSH');
+        if (getenv('PLATFORMSH_CLI_DRUSH')) {
+            return getenv('PLATFORMSH_CLI_DRUSH');
         }
 
         $executable = 'drush';

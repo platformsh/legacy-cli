@@ -80,8 +80,8 @@ abstract class PlatformCommand extends Command
     {
         parent::__construct($name);
 
-        $this->projectsTtl = getenv('PLATFORM_CLI_PROJECTS_TTL') ?: 3600;
-        $this->environmentsTtl = getenv('PLATFORM_CLI_ENVIRONMENTS_TTL') ?: 600;
+        $this->projectsTtl = getenv('PLATFORMSH_CLI_PROJECTS_TTL') ?: 3600;
+        $this->environmentsTtl = getenv('PLATFORMSH_CLI_ENVIRONMENTS_TTL') ?: 600;
     }
 
     /**
@@ -122,11 +122,11 @@ abstract class PlatformCommand extends Command
     {
         if (!isset(self::$client)) {
             $connectorOptions = [];
-            if (getenv('PLATFORM_CLI_ACCOUNTS_SITE')) {
-                $connectorOptions['accounts'] = getenv('PLATFORM_CLI_ACCOUNTS_SITE');
+            if (getenv('PLATFORMSH_CLI_ACCOUNTS_SITE')) {
+                $connectorOptions['accounts'] = getenv('PLATFORMSH_CLI_ACCOUNTS_SITE');
             }
-            $connectorOptions['verify'] = !getenv('PLATFORM_CLI_SKIP_SSL');
-            $connectorOptions['debug'] = (bool) getenv('PLATFORM_CLI_DEBUG');
+            $connectorOptions['verify'] = !getenv('PLATFORMSH_CLI_SKIP_SSL');
+            $connectorOptions['debug'] = (bool) getenv('PLATFORMSH_CLI_DEBUG');
             $connectorOptions['client_id'] = 'platform-cli';
             $connectorOptions['user_agent'] = $this->getUserAgent();
 
@@ -162,17 +162,17 @@ abstract class PlatformCommand extends Command
     {
         $this->output = $output;
         self::$interactive = $input->isInteractive();
-        if ($input->hasOption('session-id') && $input->getOption('session-id')) {
-            self::$sessionId = $input->getOption('session-id');
+        if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
+            self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
         }
-        if ($input->hasOption('api-token') && $input->getOption('api-token')) {
-            $filename = $input->getOption('api-token');
+        if (getenv('PLATFORMSH_CLI_API_TOKEN')) {
+            $filename = getenv('PLATFORMSH_CLI_API_TOKEN');
             if (!is_readable($filename)) {
-                throw new \InvalidArgumentException('API token file not readable');
+                throw new \InvalidArgumentException('API token file not readable: ' . $filename);
             }
             self::$apiToken = trim(file_get_contents($filename));
         }
-        if (!isset(self::$cache)) {
+        if (!isset(self::$cache) && !getenv('PLATFORMSH_CLI_DISABLE_CACHE')) {
             // Note: the cache directory is based on self::$sessionId.
             self::$cache = new FilesystemCache($this->getCacheDir());
         }
@@ -224,7 +224,6 @@ abstract class PlatformCommand extends Command
         $command = $application->find('login');
         $input = new ArrayInput(array(
           'command' => 'login',
-          '--session-id' => self::$sessionId,
         ));
         $exitCode = $command->run($input, $this->output);
         if ($exitCode) {

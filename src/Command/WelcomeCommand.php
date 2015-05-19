@@ -43,7 +43,6 @@ class WelcomeCommand extends PlatformCommand
             $envInput = new ArrayInput(
               array(
                 'command' => 'environments',
-                '--session-id' => self::$sessionId,
                 '--refresh' => 0,
               )
             );
@@ -56,7 +55,6 @@ class WelcomeCommand extends PlatformCommand
             $projectsInput = new ArrayInput(
               array(
                 'command' => 'projects',
-                '--session-id' => self::$sessionId,
                 '--refresh' => 0,
               )
             );

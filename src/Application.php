@@ -49,8 +49,6 @@ class Application extends ParentApplication
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
             new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts'),
             new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
-            new InputOption('--session-id', null, InputOption::VALUE_OPTIONAL, 'Specify the session ID'),
-            new InputOption('--api-token', null, InputOption::VALUE_OPTIONAL, 'Specify an API token file'),
             new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell'),
           )
         );
