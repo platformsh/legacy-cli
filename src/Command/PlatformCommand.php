@@ -31,6 +31,9 @@ abstract class PlatformCommand extends Command
     /** @var string */
     protected static $sessionId = 'default';
 
+    /** @var string|null */
+    protected static $apiToken;
+
     /** @var bool */
     protected static $interactive = false;
 
@@ -128,10 +131,19 @@ abstract class PlatformCommand extends Command
             $connectorOptions['user_agent'] = $this->getUserAgent();
 
             $connector = new Connector($connectorOptions);
-            $session = $connector->getSession();
 
-            $session->setId('cli-' . self::$sessionId);
-            $session->setStorage(new File());
+            // If an API token is set, that's all we need to authenticate.
+            if (isset(self::$apiToken)) {
+                $connector->setApiToken(self::$apiToken);
+            }
+            // Otherwise, set up a persistent session to store OAuth2 tokens. By
+            // default, this will be stored in a JSON file:
+            // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
+            else {
+                $session = $connector->getSession();
+                $session->setId('cli-' . self::$sessionId);
+                $session->setStorage(new File());
+            }
 
             self::$client = new PlatformClient($connector);
 
@@ -152,6 +164,13 @@ abstract class PlatformCommand extends Command
         self::$interactive = $input->isInteractive();
         if ($input->hasOption('session-id') && $input->getOption('session-id')) {
             self::$sessionId = $input->getOption('session-id');
+        }
+        if ($input->hasOption('api-token') && $input->getOption('api-token')) {
+            $filename = $input->getOption('api-token');
+            if (!is_readable($filename)) {
+                throw new \InvalidArgumentException('API token file not readable');
+            }
+            self::$apiToken = trim(file_get_contents($filename));
         }
         if (!isset(self::$cache)) {
             // Note: the cache directory is based on self::$sessionId.

@@ -91,6 +91,8 @@ Global options:
   --version        -V Display this application version
   --yes            -y Answer "yes" to all prompts
   --no             -n Answer "no" to all prompts
+  --session-id        Specify the session ID
+  --api-token         Specify an API token file
   --shell          -s Launch the shell
 
 Available commands:
