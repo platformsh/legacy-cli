@@ -26,6 +26,10 @@ class WelcomeCommand extends PlatformCommand
     {
         $output->writeln("Welcome to Platform.sh!\n");
 
+        // Ensure the user is logged in in this parent command, because the
+        // delegated commands below will not have interactive input.
+        $this->getClient();
+
         $application = $this->getApplication();
 
         if ($currentProject = $this->getCurrentProject()) {
