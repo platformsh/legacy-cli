@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use Doctrine\Common\Cache\FilesystemCache;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Connection\Connector;
@@ -82,6 +83,21 @@ abstract class PlatformCommand extends Command
 
         $this->projectsTtl = getenv('PLATFORMSH_CLI_PROJECTS_TTL') ?: 3600;
         $this->environmentsTtl = getenv('PLATFORMSH_CLI_ENVIRONMENTS_TTL') ?: 600;
+
+        if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
+            self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
+        }
+        if (!isset(self::$apiToken) && getenv('PLATFORMSH_CLI_API_TOKEN')) {
+            $filename = getenv('PLATFORMSH_CLI_API_TOKEN');
+            if (!is_readable($filename)) {
+                throw new \InvalidArgumentException('API token file not readable: ' . $filename);
+            }
+            self::$apiToken = trim(file_get_contents($filename));
+        }
+        if (!isset(self::$cache) && !getenv('PLATFORMSH_CLI_DISABLE_CACHE')) {
+            // Note: the cache directory is based on self::$sessionId.
+            self::$cache = new FilesystemCache($this->getCacheDir());
+        }
     }
 
     /**
@@ -162,20 +178,6 @@ abstract class PlatformCommand extends Command
     {
         $this->output = $output;
         self::$interactive = $input->isInteractive();
-        if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
-            self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
-        }
-        if (getenv('PLATFORMSH_CLI_API_TOKEN')) {
-            $filename = getenv('PLATFORMSH_CLI_API_TOKEN');
-            if (!is_readable($filename)) {
-                throw new \InvalidArgumentException('API token file not readable: ' . $filename);
-            }
-            self::$apiToken = trim(file_get_contents($filename));
-        }
-        if (!isset(self::$cache) && !getenv('PLATFORMSH_CLI_DISABLE_CACHE')) {
-            // Note: the cache directory is based on self::$sessionId.
-            self::$cache = new FilesystemCache($this->getCacheDir());
-        }
     }
 
     /**
@@ -193,8 +195,8 @@ abstract class PlatformCommand extends Command
     {
         $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', self::$sessionId);
 
-        return $this->getHelper('fs')
-                    ->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
+        $fs = new FilesystemHelper();
+        return $fs->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
     }
 
     /**
