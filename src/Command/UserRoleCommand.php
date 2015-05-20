@@ -32,9 +32,7 @@ class UserRoleCommand extends UserCommand
             return 1;
         }
 
-        if (!$this->validateInput($input, $output, true)) {
-            return 1;
-        }
+        $this->validateInput($input, $output, true);
 
         $project = $this->getSelectedProject();
 

@@ -4,8 +4,6 @@ namespace Platformsh\Cli\Command;
 
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\NullOutput;
 
 class CompletionCommand extends ParentCompletionCommand
 {
@@ -36,10 +34,6 @@ class CompletionCommand extends ParentCompletionCommand
     {
         $this->platformCommand = new WelcomeCommand();
         $this->platformCommand->setApplication($this->getApplication());
-        $this->platformCommand->initialize(
-          new ArrayInput(['command' => 'welcome']),
-          new NullOutput()
-        );
         $this->projects = $this->getProjects();
     }
 

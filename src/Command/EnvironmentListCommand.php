@@ -126,7 +126,6 @@ class EnvironmentListCommand extends PlatformCommand
             $row[] = $id;
 
             if ($this->showNames) {
-                $title = $environment['title'];
                 if ($branch = array_search($environment['id'], $this->mapping)) {
                     $row[] = sprintf('%s (%s)', $environment['title'], $branch);
                 }

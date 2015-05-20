@@ -66,7 +66,7 @@ class EnvironmentSetRemoteCommand extends PlatformCommand
         if ($specifiedEnvironmentId != '0' && !$mappedByDefault) {
             $upstream = $gitHelper->getUpstream($specifiedBranch);
             if (strpos($upstream, '/')) {
-                list($remote, $upstream) = explode('/', $upstream, 2);
+                list(, $upstream) = explode('/', $upstream, 2);
             }
             if ($upstream === $specifiedEnvironmentId) {
                 $mappedByDefault = true;

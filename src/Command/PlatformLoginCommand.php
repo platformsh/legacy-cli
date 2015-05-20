@@ -18,6 +18,11 @@ class PlatformLoginCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Disable the API token for this command.
+        if (isset(self::$apiToken)) {
+            throw new \Exception('Cannot log in: an API token is set');
+        }
+        // Login can only happen during interactive use.
         if (!$input->isInteractive()) {
             throw new \Exception('Non-interactive login not supported');
         }

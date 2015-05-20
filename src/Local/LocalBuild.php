@@ -456,6 +456,9 @@ class LocalBuild
     /**
      * @param string $projectRoot
      *
+     * @throws \Exception If it cannot be determined whether or not a symlink
+     *                    points to a genuine active build.
+     *
      * @return array The absolute paths to any active builds in the project.
      */
     protected function getActiveBuilds($projectRoot)
