@@ -54,7 +54,8 @@ class DrushHelper extends Helper
     {
         exec($this->getDrushExecutable() . ' --version', $drushVersion, $returnCode);
         if ($returnCode && $returnCode === 127) {
-            if ($attemptInstall && $this->install()) {
+            // Retry installing, if the default Drush does not exist.
+            if ($attemptInstall && !getenv('PLATFORMSH_CLI_DRUSH') && $this->install()) {
                 $this->ensureInstalled($minVersion, false);
 
                 return;
