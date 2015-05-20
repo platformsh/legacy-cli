@@ -88,11 +88,7 @@ abstract class PlatformCommand extends Command
             self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
         }
         if (!isset(self::$apiToken) && getenv('PLATFORMSH_CLI_API_TOKEN')) {
-            $filename = getenv('PLATFORMSH_CLI_API_TOKEN');
-            if (!is_readable($filename)) {
-                throw new \InvalidArgumentException('API token file not readable: ' . $filename);
-            }
-            self::$apiToken = trim(file_get_contents($filename));
+            self::$apiToken = getenv('PLATFORMSH_CLI_API_TOKEN');
         }
         if (!isset(self::$cache) && !getenv('PLATFORMSH_CLI_DISABLE_CACHE')) {
             // Note: the cache directory is based on self::$sessionId.
