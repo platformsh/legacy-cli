@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Doctrine\Common\Cache\FilesystemCache;
+use Doctrine\Common\Cache\VoidCache;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\FilesystemHelper;
@@ -90,9 +91,9 @@ abstract class PlatformCommand extends Command
         if (!isset(self::$apiToken) && getenv('PLATFORMSH_CLI_API_TOKEN')) {
             self::$apiToken = getenv('PLATFORMSH_CLI_API_TOKEN');
         }
-        if (!isset(self::$cache) && !getenv('PLATFORMSH_CLI_DISABLE_CACHE')) {
+        if (!isset(self::$cache)) {
             // Note: the cache directory is based on self::$sessionId.
-            self::$cache = new FilesystemCache($this->getCacheDir());
+            self::$cache = getenv('PLATFORMSH_CLI_DISABLE_CACHE') ? new VoidCache() : new FilesystemCache($this->getCacheDir());
         }
     }
 
