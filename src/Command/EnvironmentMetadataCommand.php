@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMetadataCommand extends PlatformCommand
 {
+    /** @var PropertyFormatter */
     protected $formatter;
 
     /**

@@ -54,9 +54,7 @@ class EnvironmentBranchCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->envArgName = 'parent';
-        if (!$this->validateInput($input, $output, true)) {
-            return 1;
-        }
+        $this->validateInput($input, $output, true);
 
         $branchName = $input->getArgument('name');
         if (empty($branchName)) {
