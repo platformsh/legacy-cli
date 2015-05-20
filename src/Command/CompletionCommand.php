@@ -36,10 +36,6 @@ class CompletionCommand extends ParentCompletionCommand
     {
         $this->platformCommand = new WelcomeCommand();
         $this->platformCommand->setApplication($this->getApplication());
-        $this->platformCommand->initialize(
-          new ArrayInput(['command' => 'welcome']),
-          new NullOutput()
-        );
         $this->projects = $this->getProjects();
     }
 
