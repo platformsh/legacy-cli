@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use Doctrine\Common\Cache\FilesystemCache;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Connection\Connector;
@@ -30,6 +31,9 @@ abstract class PlatformCommand extends Command
 
     /** @var string */
     protected static $sessionId = 'default';
+
+    /** @var string|null */
+    protected static $apiToken;
 
     /** @var bool */
     protected static $interactive = false;
@@ -77,8 +81,23 @@ abstract class PlatformCommand extends Command
     {
         parent::__construct($name);
 
-        $this->projectsTtl = getenv('PLATFORM_CLI_PROJECTS_TTL') ?: 3600;
-        $this->environmentsTtl = getenv('PLATFORM_CLI_ENVIRONMENTS_TTL') ?: 600;
+        $this->projectsTtl = getenv('PLATFORMSH_CLI_PROJECTS_TTL') ?: 3600;
+        $this->environmentsTtl = getenv('PLATFORMSH_CLI_ENVIRONMENTS_TTL') ?: 600;
+
+        if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
+            self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
+        }
+        if (!isset(self::$apiToken) && getenv('PLATFORMSH_CLI_API_TOKEN')) {
+            $filename = getenv('PLATFORMSH_CLI_API_TOKEN');
+            if (!is_readable($filename)) {
+                throw new \InvalidArgumentException('API token file not readable: ' . $filename);
+            }
+            self::$apiToken = trim(file_get_contents($filename));
+        }
+        if (!isset(self::$cache) && !getenv('PLATFORMSH_CLI_DISABLE_CACHE')) {
+            // Note: the cache directory is based on self::$sessionId.
+            self::$cache = new FilesystemCache($this->getCacheDir());
+        }
     }
 
     /**
@@ -119,19 +138,28 @@ abstract class PlatformCommand extends Command
     {
         if (!isset(self::$client)) {
             $connectorOptions = [];
-            if (getenv('PLATFORM_CLI_ACCOUNTS_SITE')) {
-                $connectorOptions['accounts'] = getenv('PLATFORM_CLI_ACCOUNTS_SITE');
+            if (getenv('PLATFORMSH_CLI_ACCOUNTS_SITE')) {
+                $connectorOptions['accounts'] = getenv('PLATFORMSH_CLI_ACCOUNTS_SITE');
             }
-            $connectorOptions['verify'] = !getenv('PLATFORM_CLI_SKIP_SSL');
-            $connectorOptions['debug'] = (bool) getenv('PLATFORM_CLI_DEBUG');
+            $connectorOptions['verify'] = !getenv('PLATFORMSH_CLI_SKIP_SSL');
+            $connectorOptions['debug'] = (bool) getenv('PLATFORMSH_CLI_DEBUG');
             $connectorOptions['client_id'] = 'platform-cli';
             $connectorOptions['user_agent'] = $this->getUserAgent();
 
             $connector = new Connector($connectorOptions);
-            $session = $connector->getSession();
 
-            $session->setId('cli-' . self::$sessionId);
-            $session->setStorage(new File());
+            // If an API token is set, that's all we need to authenticate.
+            if (isset(self::$apiToken)) {
+                $connector->setApiToken(self::$apiToken);
+            }
+            // Otherwise, set up a persistent session to store OAuth2 tokens. By
+            // default, this will be stored in a JSON file:
+            // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
+            else {
+                $session = $connector->getSession();
+                $session->setId('cli-' . self::$sessionId);
+                $session->setStorage(new File());
+            }
 
             self::$client = new PlatformClient($connector);
 
@@ -150,13 +178,6 @@ abstract class PlatformCommand extends Command
     {
         $this->output = $output;
         self::$interactive = $input->isInteractive();
-        if ($input->hasOption('session-id') && $input->getOption('session-id')) {
-            self::$sessionId = $input->getOption('session-id');
-        }
-        if (!isset(self::$cache)) {
-            // Note: the cache directory is based on self::$sessionId.
-            self::$cache = new FilesystemCache($this->getCacheDir());
-        }
     }
 
     /**
@@ -174,8 +195,8 @@ abstract class PlatformCommand extends Command
     {
         $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', self::$sessionId);
 
-        return $this->getHelper('fs')
-                    ->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
+        $fs = new FilesystemHelper();
+        return $fs->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
     }
 
     /**
@@ -205,7 +226,6 @@ abstract class PlatformCommand extends Command
         $command = $application->find('login');
         $input = new ArrayInput(array(
           'command' => 'login',
-          '--session-id' => self::$sessionId,
         ));
         $exitCode = $command->run($input, $this->output);
         if ($exitCode) {

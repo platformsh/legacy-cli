@@ -64,7 +64,6 @@ class EnvironmentBranchCommand extends PlatformCommand
                 // List environments.
                 $params = array(
                   'command' => 'environments',
-                  '--session-id' => self::$sessionId,
                   '--project' => $this->getSelectedProject()['id'],
                 );
 

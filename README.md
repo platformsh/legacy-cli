@@ -163,6 +163,18 @@ The CLI caches details of your projects and their environments. These caches
 could become out-of-date. You can get a fresh list of projects or environments
 with the `platform projects` and `platform environments` commands.
 
+### Customization
+
+You can configure the CLI via these environment variables:
+
+* `PLATFORMSH_CLI_API_TOKEN`: a filename containing an API token (default 0)
+* `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging (default 0)
+* `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching (default 0)
+* `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')
+* `PLATFORMSH_CLI_ENVIRONMENTS_TTL`: the cache TTL for environments, in seconds (default 600)
+* `PLATFORMSH_CLI_PROJECTS_TTL`: the cache TTL for projects, in seconds (default 3600)
+* `PLATFORMSH_CLI_SESSION_ID`: change user (default 'default')
+
 ### Credits
 
 * Maintained by [Commerce Guys](https://commerceguys.com).
