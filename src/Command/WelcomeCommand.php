@@ -32,7 +32,8 @@ class WelcomeCommand extends PlatformCommand
 
         $application = $this->getApplication();
 
-        if ($currentProject = $this->getCurrentProject()) {
+        $currentProject = $this->hasSelectedProject() ? $this->getSelectedProject() : $this->getCurrentProject();
+        if ($currentProject) {
             // The project is known. Show the environments.
             $projectName = $currentProject->title;
             $projectURI = $currentProject->getLink('#ui');

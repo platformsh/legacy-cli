@@ -1,13 +1,14 @@
 <?php
 
-namespace Platformsh\Cli;
+namespace Platformsh\Cli\Console;
 
+use Platformsh\Cli\Command;
 use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\PlatformQuestionHelper;
 use Platformsh\Cli\Helper\ShellHelper;
-use Symfony\Component\Console\Application as ParentApplication;
+use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputArgument;
@@ -17,8 +18,10 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Shell;
 
-class Application extends ParentApplication
+class Application extends BaseApplication
 {
+
+    public $shortcut;
 
     /**
      * {@inheritdoc}
@@ -127,6 +130,7 @@ class Application extends ParentApplication
         $commands[] = new Command\IntegrationDeleteCommand();
         $commands[] = new Command\IntegrationGetCommand();
         $commands[] = new Command\IntegrationUpdateCommand();
+        $commands[] = new Command\LocalShortcutCommand();
         $commands[] = new Command\LocalBuildCommand();
         $commands[] = new Command\LocalCleanCommand();
         $commands[] = new Command\LocalDrushAliasesCommand();
@@ -188,6 +192,11 @@ class Application extends ParentApplication
             $shell->run();
 
             return 0;
+        }
+
+        // Process shortcuts.
+        if ($input instanceof ArgvInput) {
+            $this->shortcut = $input->getShortcut() ?: null;
         }
 
         return parent::doRun($input, $output);

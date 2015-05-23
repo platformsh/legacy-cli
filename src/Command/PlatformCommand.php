@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Doctrine\Common\Cache\FilesystemCache;
 use Doctrine\Common\Cache\VoidCache;
+use Platformsh\Cli\Console\Application;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\FilesystemHelper;
@@ -21,6 +22,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
+use Symfony\Component\Yaml\Yaml;
 
 abstract class PlatformCommand extends Command
 {
@@ -40,6 +42,9 @@ abstract class PlatformCommand extends Command
 
     /** @var bool */
     protected static $interactive = false;
+
+    /** @var string */
+    protected $homeDir;
 
     /** @var OutputInterface|null */
     protected $output;
@@ -90,6 +95,10 @@ abstract class PlatformCommand extends Command
         $this->projectsTtl = getenv('PLATFORMSH_CLI_PROJECTS_TTL') ?: 3600;
         $this->environmentsTtl = getenv('PLATFORMSH_CLI_ENVIRONMENTS_TTL') ?: 600;
 
+        if (!isset($this->homeDir)) {
+            $fs = new FilesystemHelper();
+            $this->homeDir = $fs->getHomeDirectory();
+        }
         if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
             self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
         }
@@ -192,6 +201,38 @@ abstract class PlatformCommand extends Command
         $this->output = $output;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         self::$interactive = $input->isInteractive();
+
+        $app = $this->getApplication();
+        if ($app instanceof Application && $app->shortcut) {
+            $this->loadShortcut($app->shortcut);
+        }
+    }
+
+    /**
+     * Load the shortcut definition.
+     *
+     * @param string $shortcut
+     */
+    public function loadShortcut($shortcut)
+    {
+        if (strpos($shortcut, '.')) {
+            list($shortcut, $environmentId) = explode('.', $shortcut, 2);
+        }
+        $file = $this->homeDir . '/.platformsh/shortcuts/' . $shortcut . '.yaml';
+        if (!file_exists($file)) {
+            throw new \InvalidArgumentException("Shortcut not found: @$shortcut");
+        }
+        $yaml = new Yaml();
+        $shortcut = (array) $yaml->parse(file_get_contents($file));
+        if (isset($shortcut['id'])) {
+            $this->project = $this->selectProject($shortcut['id'], isset($shortcut['host']) ? $shortcut['host'] : null);
+        }
+        if (isset($shortcut['root'])) {
+            $this->setProjectRoot($shortcut['root']);
+        }
+        if (isset($environmentId)) {
+            $this->environment = $this->selectEnvironment($environmentId);
+        }
     }
 
     /**
@@ -209,8 +250,7 @@ abstract class PlatformCommand extends Command
     {
         $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', self::$sessionId);
 
-        $fs = new FilesystemHelper();
-        return $fs->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
+        return $this->homeDir . '/.platformsh/.session/sess-' . $sessionId;
     }
 
     /**
@@ -569,10 +609,7 @@ abstract class PlatformCommand extends Command
         }
         /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
         $drushHelper = $this->getHelper('drush');
-        $drushHelper->setHomeDir(
-          $this->getHelper('fs')
-               ->getHomeDirectory()
-        );
+        $drushHelper->setHomeDir($this->homeDir);
         $drushHelper->createAliases($project, $projectRoot, $environments);
     }
 
@@ -729,11 +766,13 @@ abstract class PlatformCommand extends Command
         // Select the project.
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
-        $this->project = $this->selectProject($projectId, $projectHost);
+        if (!$this->project) {
+            $this->project = $this->selectProject($projectId, $projectHost);
+        }
 
         // Select the environment.
         $envOptionName = 'environment';
-        if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
+        if (!$this->environment && $input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
                 throw new \InvalidArgumentException(
                   sprintf(
@@ -750,7 +789,7 @@ abstract class PlatformCommand extends Command
             if (!is_array($argument)) {
                 $this->environment = $this->selectEnvironment($argument);
             }
-        } elseif ($input->hasOption($envOptionName)) {
+        } elseif (!$this->environment && $input->hasOption($envOptionName)) {
             if ($envNotRequired && !$input->getOption($envOptionName)) {
                 $this->environment = $this->getCurrentEnvironment($this->project);
             }
@@ -771,7 +810,7 @@ abstract class PlatformCommand extends Command
      *
      * @return bool
      */
-    protected function hasSelectedProject()
+    public function hasSelectedProject()
     {
         return !empty($this->project);
     }
@@ -786,7 +825,7 @@ abstract class PlatformCommand extends Command
      *
      * @return Project
      */
-    protected function getSelectedProject()
+    public function getSelectedProject()
     {
         if (!$this->project) {
             throw new \BadMethodCallException('No project selected');
