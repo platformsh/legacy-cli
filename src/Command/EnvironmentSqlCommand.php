@@ -50,14 +50,11 @@ class EnvironmentSqlCommand extends PlatformCommand
         $query = $input->getArgument('query');
         if ($query) {
             $sqlCommand .= ' --execute ' . escapeshellarg($query) . ' 2>&1';
-            if ($this->isTerminal($output)) {
-                // Switch on pseudo-tty allocation when there is a local tty.
-                $sshOptions .= ' -t';
-            }
         }
-        else {
-            // Force pseudo-tty allocation when an SQL shell is requested.
-            $sshOptions .= ' -tt';
+
+        // Switch on pseudo-tty allocation when there is a local tty.
+        if ($this->isTerminal($output)) {
+            $sshOptions .= ' -t';
         }
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
