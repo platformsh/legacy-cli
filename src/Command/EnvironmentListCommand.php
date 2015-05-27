@@ -160,7 +160,7 @@ class EnvironmentListCommand extends PlatformCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $show = explode(',', $input->getOption('show'));
 
@@ -202,48 +202,48 @@ class EnvironmentListCommand extends PlatformCommand
             $this->children['master'] = array();
         }
 
-        $output->writeln("Your environments are: ");
-        $table = $this->buildEnvironmentTable($tree, $output);
+        $this->stdErr->writeln("Your environments are: ");
+        $table = $this->buildEnvironmentTable($tree, $this->stdErr);
         $table->render();
 
         if (!$this->currentEnvironment) {
             return;
         }
 
-        $output->writeln("<info>*</info> - Indicates the current environment.\n");
+        $this->stdErr->writeln("<info>*</info> - Indicates the current environment.\n");
 
         $currentEnvironment = $this->currentEnvironment;
 
-        $output->writeln("Check out a different environment by running <info>platform checkout [id]</info>.");
+        $this->stdErr->writeln("Check out a different environment by running <info>platform checkout [id]</info>.");
 
         if ($currentEnvironment->operationAvailable('branch')) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Branch a new environment by running <info>platform environment:branch [new-name]</info>."
             );
         }
         if ($currentEnvironment->operationAvailable('activate')) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Activate the current environment by running <info>platform environment:activate</info>."
             );
         }
         if ($currentEnvironment->operationAvailable('deactivate')) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Deactivate the current environment by running <info>platform environment:deactivate</info>."
             );
         }
         if ($currentEnvironment->operationAvailable('delete')) {
-            $output->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
+            $this->stdErr->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
         }
         if ($currentEnvironment->operationAvailable('backup')) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Back up the current environment by running <info>platform environment:backup</info>."
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {
-            $output->writeln("Merge the current environment by running <info>platform environment:merge</info>.");
+            $this->stdErr->writeln("Merge the current environment by running <info>platform environment:merge</info>.");
         }
         if ($currentEnvironment->operationAvailable('synchronize')) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Sync the current environment by running <info>platform environment:synchronize</info>."
             );
         }
@@ -252,7 +252,7 @@ class EnvironmentListCommand extends PlatformCommand
         try {
             $this->getApplication()
                  ->get('drush');
-            $output->writeln(
+            $this->stdErr->writeln(
               "Execute Drush commands against the current environment by running <info>platform drush</info>."
             );
         } catch (\InvalidArgumentException $e) {

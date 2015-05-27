@@ -25,13 +25,13 @@ class EnvironmentMergeCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment['id'];
 
         if (!$selectedEnvironment->operationAvailable('merge')) {
-            $output->writeln("Operation not available: The environment <error>$environmentId</error> can't be merged.");
+            $this->stdErr->writeln("Operation not available: The environment <error>$environmentId</error> can't be merged.");
 
             return 1;
         }
@@ -42,19 +42,19 @@ class EnvironmentMergeCommand extends PlatformCommand
                   ->confirm(
                     "Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?",
                     $input,
-                    $output
+                    $this->stdErr
                   )
         ) {
             return 0;
         }
 
-        $output->writeln("Merging <info>$environmentId</info> with <info>$parentId</info>");
+        $this->stdErr->writeln("Merging <info>$environmentId</info> with <info>$parentId</info>");
 
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
             $success = ActivityUtil::waitAndLog(
               $activity,
-              $output,
+              $this->stdErr,
               'Merge complete',
               'Merge failed'
             );

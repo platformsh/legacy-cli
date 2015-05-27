@@ -122,7 +122,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $auth = $input->getOption('auth');
         $access = $input->getOption('access');
@@ -173,19 +173,19 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
                 // Patch the environment with the changes.
                 $selectedEnvironment->update(array('http_access' => $accessOpts));
 
-                $output->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
+                $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
                 $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
 
                 if (!$selectedEnvironment->getLastActivity()) {
-                    $this->rebuildWarning($output);
+                    $this->rebuildWarning();
                 }
 
                 return 0;
             }
         }
 
-        $output->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
+        $this->stdErr->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
         $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
 
         return 0;

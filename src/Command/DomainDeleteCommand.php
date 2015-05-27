@@ -35,11 +35,11 @@ class DomainDeleteCommand extends PlatformCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $name = $input->getArgument('name');
         if (empty($name)) {
-            $output->writeln("<error>You must specify the name of the domain.</error>");
+            $this->stdErr->writeln("<error>You must specify the name of the domain.</error>");
 
             return 1;
         }
@@ -47,20 +47,20 @@ class DomainDeleteCommand extends PlatformCommand
         $domain = $this->getSelectedProject()
                        ->getDomain($name);
         if (!$domain) {
-            $output->writeln("Domain not found: <error>$name</error>");
+            $this->stdErr->writeln("Domain not found: <error>$name</error>");
 
             return 1;
         }
 
         if (!$this->getHelper('question')
-                  ->confirm("Are you sure you want to delete the domain <info>$name</info>?", $input, $output)
+                  ->confirm("Are you sure you want to delete the domain <info>$name</info>?", $input, $this->stdErr)
         ) {
             return 0;
         }
 
         $domain->delete();
 
-        $output->writeln("The domain <info>$name</info> has been deleted.");
+        $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
         return 0;
     }

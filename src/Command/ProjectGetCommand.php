@@ -65,14 +65,14 @@ class ProjectGetCommand extends PlatformCommand
             if ($input->isInteractive() && ($projects = $this->getProjects(true))) {
                 $projectId = $this->offerProjectChoice($projects, $input, $output);
             } else {
-                $output->writeln("<error>You must specify a project.</error>");
+                $this->stdErr->writeln("<error>You must specify a project.</error>");
 
                 return 1;
             }
         }
         $project = $this->getProject($projectId, $input->getOption('host'));
         if (!$project) {
-            $output->writeln("<error>Project not found: $projectId</error>");
+            $this->stdErr->writeln("<error>Project not found: $projectId</error>");
 
             return 1;
         }
@@ -83,14 +83,14 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         if (file_exists($directoryName)) {
-            $output->writeln("<error>The project directory '$directoryName' already exists.</error>");
+            $this->stdErr->writeln("<error>The project directory '$directoryName' already exists.</error>");
 
             return 1;
         }
 
         if ($projectRoot = $this->getProjectRoot()) {
             if (strpos(realpath(dirname($directoryName)), $projectRoot) === 0) {
-                $output->writeln("<error>A project cannot be cloned inside another project.</error>");
+                $this->stdErr->writeln("<error>A project cannot be cloned inside another project.</error>");
 
                 return 1;
             }
@@ -103,7 +103,7 @@ class ProjectGetCommand extends PlatformCommand
             throw new \Exception("Failed to create project directory: $directoryName");
         }
 
-        $output->writeln("Created project directory: $directoryName");
+        $this->stdErr->writeln("Created project directory: $directoryName");
 
         $local = new LocalProject();
         $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
@@ -114,7 +114,7 @@ class ProjectGetCommand extends PlatformCommand
         $environmentOption = $input->getOption('environment');
         if ($environmentOption) {
             if (!isset($environments[$environmentOption])) {
-                $output->writeln("<error>Environment not found: $environmentOption</error>");
+                $this->stdErr->writeln("<error>Environment not found: $environmentOption</error>");
 
                 return 1;
             }
@@ -122,7 +122,7 @@ class ProjectGetCommand extends PlatformCommand
         } elseif (count($environments) === 1) {
             $environment = key($environments);
         } elseif ($environments && $input->isInteractive()) {
-            $environment = $this->offerEnvironmentChoice($environments, $input, $output);
+            $environment = $this->offerEnvironmentChoice($environments, $input, $this->stdErr);
         } else {
             $environment = 'master';
         }
@@ -134,7 +134,7 @@ class ProjectGetCommand extends PlatformCommand
         $gitUrl = $project->getGitUrl();
         $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
 
-        $gitHelper = new GitHelper(new ShellHelper($output));
+        $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
         $gitHelper->ensureInstalled();
 
         // First check if the repo actually exists.
@@ -142,8 +142,8 @@ class ProjectGetCommand extends PlatformCommand
         if ($repoHead === false) {
             // The ls-remote command failed.
             $fsHelper->rmdir($projectRoot);
-            $output->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
-            $output->writeln('Please check your SSH credentials or contact Platform.sh support');
+            $this->stdErr->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
+            $this->stdErr->writeln('Please check your SSH credentials or contact Platform.sh support');
 
             return 1;
         } elseif (is_bool($repoHead)) {
@@ -151,12 +151,12 @@ class ProjectGetCommand extends PlatformCommand
             // We need to create the folder, run git init, and attach the remote.
             mkdir($repositoryDir);
             // Initialize the repo and attach our remotes.
-            $output->writeln("<info>Initializing empty project repository...</info>");
+            $this->stdErr->writeln("<info>Initializing empty project repository...</info>");
             $gitHelper->execute(array('init'), $repositoryDir, true);
-            $output->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
+            $this->stdErr->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
             $local->ensureGitRemote($repositoryDir, $gitUrl);
-            $output->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
-            $output->writeln(
+            $this->stdErr->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
+            $this->stdErr->writeln(
               "<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>"
             );
 
@@ -170,14 +170,14 @@ class ProjectGetCommand extends PlatformCommand
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $fsHelper->rmdir($projectRoot);
-            $output->writeln('<error>Failed to clone Git repository</error>');
-            $output->writeln('Please check your SSH credentials or contact Platform.sh support');
+            $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
+            $this->stdErr->writeln('Please check your SSH credentials or contact Platform.sh support');
 
             return 1;
         }
 
         $local->ensureGitRemote($repositoryDir, $gitUrl);
-        $output->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directoryName</info>");
+        $this->stdErr->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directoryName</info>");
 
         // Ensure that Drush aliases are created.
         $this->setProjectRoot($projectRoot);
@@ -199,10 +199,10 @@ class ProjectGetCommand extends PlatformCommand
             $builder = new LocalBuild(array('environmentId' => $environment), $output);
             $builder->buildProject($projectRoot);
         } catch (\Exception $e) {
-            $output->writeln("<comment>The build failed with an error</comment>");
+            $this->stdErr->writeln("<comment>The build failed with an error</comment>");
             $formattedMessage = $this->getHelper('formatter')
                                      ->formatBlock($e->getMessage(), 'comment');
-            $output->writeln($formattedMessage);
+            $this->stdErr->writeln($formattedMessage);
         }
 
         return 0;

@@ -28,8 +28,6 @@ class LocalDirCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // @todo split output into stderr and stdout
-
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
@@ -48,7 +46,7 @@ class LocalDirCommand extends PlatformCommand
         $subDir = $input->getArgument('subdir');
         if ($subDir) {
             if (!isset($subDirs[$subDir])) {
-                $output->writeln("Unknown subdirectory: <error>$subDir</error>");
+                $this->stdErr->writeln("Unknown subdirectory: <error>$subDir</error>");
 
                 return 1;
             }
@@ -56,7 +54,7 @@ class LocalDirCommand extends PlatformCommand
         }
 
         if (!is_dir($dir)) {
-            $output->writeln("Directory not found: <error>$dir</error>");
+            $this->stdErr->writeln("Directory not found: <error>$dir</error>");
 
             return 1;
         }

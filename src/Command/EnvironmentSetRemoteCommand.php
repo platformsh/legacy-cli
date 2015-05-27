@@ -45,14 +45,14 @@ class EnvironmentSetRemoteCommand extends PlatformCommand
 
         $specifiedEnvironmentId = $input->getArgument('environment');
         if ($specifiedEnvironmentId != '0' && !$specifiedEnvironment = $this->getEnvironment($specifiedEnvironmentId, $project)) {
-            $output->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
+            $this->stdErr->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
             return 1;
         }
 
         $specifiedBranch = $input->getArgument('branch');
         if ($specifiedBranch) {
             if (!$gitHelper->branchExists($specifiedBranch)) {
-                $output->writeln("Branch not found: <error>$specifiedBranch</error>");
+                $this->stdErr->writeln("Branch not found: <error>$specifiedBranch</error>");
                 return 1;
             }
         }
@@ -72,7 +72,7 @@ class EnvironmentSetRemoteCommand extends PlatformCommand
                 $mappedByDefault = true;
             }
             if (!$mappedByDefault && $gitHelper->branchExists($specifiedEnvironmentId)) {
-                $output->writeln("A local branch already exists named <comment>$specifiedEnvironmentId</comment>");
+                $this->stdErr->writeln("A local branch already exists named <comment>$specifiedEnvironmentId</comment>");
             }
         }
 
@@ -94,14 +94,14 @@ class EnvironmentSetRemoteCommand extends PlatformCommand
         // Check the success of the operation.
         if (isset($config['mapping'][$specifiedBranch])) {
             $actualRemoteEnvironment = $config['mapping'][$specifiedBranch];
-            $output->writeln("The local branch <info>$specifiedBranch</info> is tracking the remote environment <info>$actualRemoteEnvironment</info>");
+            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is tracking the remote environment <info>$actualRemoteEnvironment</info>");
         }
         elseif ($mappedByDefault || $this->getEnvironment($specifiedBranch)) {
             $actualRemoteEnvironment = $specifiedBranch;
-            $output->writeln("The local branch <info>$specifiedBranch</info> is tracking the default remote environment, <info>$specifiedBranch</info>");
+            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is tracking the default remote environment, <info>$specifiedBranch</info>");
         }
         else {
-            $output->writeln("The local branch <info>$specifiedBranch</info> is not tracking a remote environment");
+            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is not tracking a remote environment");
         }
 
         $success = !empty($actualRemoteEnvironment)

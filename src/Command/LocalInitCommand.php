@@ -30,7 +30,7 @@ class LocalInitCommand extends PlatformCommand
         $directory = $input->getArgument('directory') ?: getcwd();
         $realPath = realpath($directory);
         if (!$realPath) {
-            $output->writeln("<error>Directory not found: $directory</error>");
+            $this->stdErr->writeln("<error>Directory not found: $directory</error>");
 
             return 1;
         }
@@ -39,7 +39,7 @@ class LocalInitCommand extends PlatformCommand
             /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
             $question = "The directory is not a Git repository: <comment>$realPath</comment>\nInitialize a Git repository?";
-            if ($questionHelper->confirm($question, $input, $output)) {
+            if ($questionHelper->confirm($question, $input, $this->stdErr)) {
                 /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
                 $gitHelper = $this->getHelper('git');
                 $gitHelper->ensureInstalled();
@@ -52,7 +52,7 @@ class LocalInitCommand extends PlatformCommand
         if ($projectId !== null) {
             $project = $this->getProject($projectId, $input->getOption('host'));
             if (!$project) {
-                $output->writeln("Project not found: <error>$projectId</error>");
+                $this->stdErr->writeln("Project not found: <error>$projectId</error>");
                 return 1;
             }
             $gitUrl = $project->getGitUrl();
@@ -68,10 +68,10 @@ class LocalInitCommand extends PlatformCommand
         $this->setProjectRoot($projectRoot);
         $this->getEnvironments($this->getCurrentProject(), true);
 
-        $output->writeln("Project initialized in directory: <info>$projectRoot</info>");
+        $this->stdErr->writeln("Project initialized in directory: <info>$projectRoot</info>");
 
         if ($inside) {
-            $output->writeln("<comment>Type 'cd .' to refresh your shell</comment>");
+            $this->stdErr->writeln("<comment>Type 'cd .' to refresh your shell</comment>");
         }
 
         return 0;

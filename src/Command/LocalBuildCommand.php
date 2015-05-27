@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
@@ -78,10 +79,8 @@ class LocalBuildCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectRoot = $this->getProjectRoot();
-        if (empty($projectRoot)) {
-            $output->writeln("<error>You must run this command from a project folder.</error>");
-
-            return 1;
+        if (!$projectRoot) {
+            throw new RootNotFoundException();
         }
 
         // Find out the real environment ID, if possible.
@@ -129,10 +128,10 @@ class LocalBuildCommand extends PlatformCommand
             $builder = new LocalBuild($settings, $output);
             $success = $builder->buildProject($projectRoot, $apps);
         } catch (\Exception $e) {
-            $output->writeln("<error>The build failed with an error</error>");
+            $this->stdErr->writeln("<error>The build failed with an error</error>");
             $formattedMessage = $this->getHelper('formatter')
                                      ->formatBlock($e->getMessage(), 'error');
-            $output->writeln($formattedMessage);
+            $this->stdErr->writeln($formattedMessage);
 
             return 1;
         }

@@ -26,15 +26,15 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $sshUrl = $this->getSelectedEnvironment()
           ->getSshUrl($input->getOption('app'));
 
-        $util = new RelationshipsUtil($output);
+        $util = new RelationshipsUtil($this->stdErr);
         $relationships = $util->getRelationships($sshUrl);
         if (!$relationships) {
-            $output->writeln('No relationships found');
+            $this->stdErr->writeln('No relationships found');
             return 1;
         }
 

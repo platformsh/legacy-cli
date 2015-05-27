@@ -33,14 +33,14 @@ class ActivityLogCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $id = $input->getArgument('id');
         if ($id) {
             $activity = $this->getSelectedEnvironment()
                              ->getActivity($id);
             if (!$activity) {
-                $output->writeln("Activity not found: <error>$id</error>");
+                $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
                 return 1;
             }
@@ -50,13 +50,13 @@ class ActivityLogCommand extends PlatformCommand
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
-                $output->writeln('No activities found');
+                $this->stdErr->writeln('No activities found');
 
                 return 1;
             }
         }
 
-        $output->writeln(
+        $this->stdErr->writeln(
           "Log for activity <info>" . $activity['id'] . "</info> (" . $activity->getDescription() . "):"
         );
 

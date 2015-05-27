@@ -24,16 +24,16 @@ class IntegrationAddCommand extends IntegrationCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
-        if (!$this->validateOptions($input, $output)) {
+        if (!$this->validateOptions($input)) {
             return 1;
         }
 
         $integration = $this->getSelectedProject()
                             ->addIntegration($this->values['type'], $this->values);
         $id = $integration['id'];
-        $output->writeln("Integration <info>$id</info> created for <info>{$this->values['type']}</info>");
+        $this->stdErr->writeln("Integration <info>$id</info> created for <info>{$this->values['type']}</info>");
 
         $output->writeln($this->formatIntegrationData($integration));
 

@@ -40,7 +40,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             $environments = $this->getEnvironments($project);
             $currentEnvironment = $this->getCurrentEnvironment($project);
             if ($currentEnvironment) {
-                $output->writeln("The current environment is <info>{$currentEnvironment['title']}</info>.");
+                $this->stdErr->writeln("The current environment is <info>{$currentEnvironment['title']}</info>.");
             }
             $environmentList = array();
             foreach ($environments as $id => $environment) {
@@ -63,7 +63,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
                 }
             }
             if (!count($environmentList)) {
-                $output->writeln("Use <info>platform branch</info> to create an environment.");
+                $this->stdErr->writeln("Use <info>platform branch</info> to create an environment.");
 
                 return 1;
             }
@@ -71,7 +71,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             $helper = $this->getHelper('question');
             $specifiedBranch = $helper->choose($environmentList, $chooseEnvironmentText, $input, $output);
         } elseif (empty($specifiedBranch)) {
-            $output->writeln("<error>No branch specified.</error>");
+            $this->stdErr->writeln("<error>No branch specified.</error>");
 
             return 1;
         }
@@ -79,20 +79,20 @@ class EnvironmentCheckoutCommand extends PlatformCommand
         $projectRoot = $this->getProjectRoot();
         $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
 
-        $gitHelper = new GitHelper(new ShellHelper($output));
+        $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
         $gitHelper->setDefaultRepositoryDir($repositoryDir);
 
         $branch = $this->branchExists($specifiedBranch, $project, $gitHelper);
 
         if (!$branch) {
-            $output->writeln("<error>Branch not found: $specifiedBranch</error>");
+            $this->stdErr->writeln("<error>Branch not found: $specifiedBranch</error>");
 
             return 1;
         }
 
         // If the branch exists locally, check it out directly.
         if ($gitHelper->branchExists($branch)) {
-            $output->writeln("Checking out <info>$branch</info>");
+            $this->stdErr->writeln("Checking out <info>$branch</info>");
 
             return $gitHelper->checkOut($branch) ? 0 : 1;
         }
@@ -108,7 +108,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             $upstreamRemote = 'origin';
         }
 
-        $output->writeln("Creating branch $branch based on upstream $upstreamRemote/$branch");
+        $this->stdErr->writeln("Creating branch $branch based on upstream $upstreamRemote/$branch");
 
         // Fetch the branch from the upstream remote.
         $gitHelper->execute(array('fetch', $upstreamRemote, $branch));

@@ -29,7 +29,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         // @todo This --ssh option is only here as a temporary workaround.
         if ($input->getOption('ssh')) {
@@ -60,7 +60,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
             $variable = $this->getSelectedEnvironment()
                              ->getVariable($name);
             if (!$variable) {
-                $output->writeln("Variable not found: <error>$name</error>");
+                $this->stdErr->writeln("Variable not found: <error>$name</error>");
 
                 return 1;
             }
@@ -69,7 +69,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
             $results = $this->getSelectedEnvironment()
                             ->getVariables();
             if (!$results) {
-                $output->writeln('No variables found');
+                $this->stdErr->writeln('No variables found');
 
                 return 1;
             }

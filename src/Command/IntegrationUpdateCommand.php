@@ -26,22 +26,22 @@ class IntegrationUpdateCommand extends IntegrationCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $id = $input->getArgument('id');
         $integration = $this->getSelectedProject()
                             ->getIntegration($id);
         if (!$integration) {
-            $output->writeln("Integration not found: <error>$id</error>");
+            $this->stdErr->writeln("Integration not found: <error>$id</error>");
 
             return 1;
         }
         $this->values = $integration->getProperties();
-        if (!$this->validateOptions($input, $output)) {
+        if (!$this->validateOptions($input)) {
             return 1;
         }
         $integration->update($this->values);
-        $output->writeln("Integration <info>$id</info> (<info>{$this->values['type']}</info>) updated");
+        $this->stdErr->writeln("Integration <info>$id</info> (<info>{$this->values['type']}</info>) updated");
 
         $output->writeln($this->formatIntegrationData($integration));
 

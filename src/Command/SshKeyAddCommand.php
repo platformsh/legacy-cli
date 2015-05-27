@@ -52,10 +52,10 @@ class SshKeyAddCommand extends PlatformCommand
                 $args = array('ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', '');
                 $shellHelper->execute($args, null, true);
                 $path = "$newKey.pub";
-                $output->writeln("Generated a new key: $path");
+                $this->stdErr->writeln("Generated a new key: $path");
                 passthru('ssh-add ' . escapeshellarg($newKey));
             } else {
-                $output->writeln("<error>You must specify the path to a public SSH key</error>");
+                $this->stdErr->writeln("<error>You must specify the path to a public SSH key</error>");
 
                 return 1;
             }
@@ -63,7 +63,7 @@ class SshKeyAddCommand extends PlatformCommand
         }
 
         if (!file_exists($path)) {
-            $output->writeln("File not found: <error>$path<error>");
+            $this->stdErr->writeln("File not found: <error>$path<error>");
 
             return 1;
         }
@@ -71,7 +71,7 @@ class SshKeyAddCommand extends PlatformCommand
         $process = new Process('ssh-keygen -l -f ' . escapeshellarg($path));
         $process->run();
         if ($process->getExitCode() == 1) {
-            $output->writeln("The file does not contain a valid public key: <error>$path</error>");
+            $this->stdErr->writeln("The file does not contain a valid public key: <error>$path</error>");
 
             return 1;
         }
@@ -80,13 +80,13 @@ class SshKeyAddCommand extends PlatformCommand
 
         $name = $input->getOption('name');
         if (!$name) {
-            $name = $questionHelper->ask($input, $output, new Question('Enter a name for the key: '));
+            $name = $questionHelper->ask($input, $this->stdErr, new Question('Enter a name for the key: '));
         }
 
         $this->getClient()
              ->addSshKey($key, $name);
 
-        $output->writeln(
+        $this->stdErr->writeln(
           'The SSH key <info>' . basename($path) . '</info> has been successfully added to your Platform.sh account'
         );
 

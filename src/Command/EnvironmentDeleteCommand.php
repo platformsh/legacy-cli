@@ -28,7 +28,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output, true);
+        $this->validateInput($input, true);
 
         $environments = $this->getEnvironments();
 
@@ -41,21 +41,21 @@ class EnvironmentDeleteCommand extends PlatformCommand
               }
             );
             if (!$toDelete) {
-                $output->writeln("No inactive environments found");
+                $this->stdErr->writeln("No inactive environments found");
 
                 return 0;
             }
         } elseif ($input->getOption('merged')) {
             if (!$this->hasSelectedEnvironment()) {
-                $output->writeln("No base environment specified");
+                $this->stdErr->writeln("No base environment specified");
 
                 return 1;
             }
             $base = $this->getSelectedEnvironment()->id;
-            $output->writeln("Finding environments merged with <info>$base</info>");
+            $this->stdErr->writeln("Finding environments merged with <info>$base</info>");
             $toDelete = $this->getMergedEnvironments($base);
             if (!$toDelete) {
-                $output->writeln("No merged environments found");
+                $this->stdErr->writeln("No merged environments found");
 
                 return 0;
             }
@@ -65,17 +65,17 @@ class EnvironmentDeleteCommand extends PlatformCommand
             $toDelete = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
             foreach ($notFound as $notFoundId) {
-                $output->writeln("Environment not found: <error>$notFoundId</error>");
+                $this->stdErr->writeln("Environment not found: <error>$notFoundId</error>");
             }
         }
 
         if (empty($toDelete)) {
-            $output->writeln("No environment(s) specified.");
+            $this->stdErr->writeln("No environment(s) specified.");
 
             return 1;
         }
 
-        $success = $this->deleteMultiple($toDelete, $input, $output);
+        $success = $this->deleteMultiple($toDelete, $input, $this->stdErr);
 
         return $success ? 0 : 1;
     }
