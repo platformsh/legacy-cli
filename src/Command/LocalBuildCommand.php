@@ -30,6 +30,12 @@ class LocalBuildCommand extends PlatformCommand
             'Use absolute links'
           )
           ->addOption(
+            'copy',
+            null,
+            InputOption::VALUE_NONE,
+            'Copy instead of symlinking'
+          )
+          ->addOption(
             'no-clean',
             null,
             InputOption::VALUE_NONE,
@@ -114,6 +120,7 @@ class LocalBuildCommand extends PlatformCommand
         // Some simple settings flags.
         $settingsMap = array(
           'absoluteLinks' => 'abslinks',
+          'copy' => 'copy',
           'drushWorkingCopy' => 'working-copy',
           'noArchive' => 'no-archive',
           'noCache' => 'no-cache',

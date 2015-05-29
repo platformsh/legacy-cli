@@ -36,7 +36,7 @@ class FilesystemHelper extends Helper
      *
      * @param bool $relative
      */
-    public function setRelativeLinks($relative)
+    public function setRelativeLinks($relative = true)
     {
         // This is not possible on Windows.
         if ($this->isWindows()) {
@@ -120,25 +120,27 @@ class FilesystemHelper extends Helper
      */
     public function copyAll($source, $destination)
     {
-        if (!is_dir($source)) {
-            throw new \InvalidArgumentException("Not a directory: $source");
-        }
-        if (!is_dir($destination)) {
-            mkdir($destination);
+        if (is_dir($source) && !is_dir($destination)) {
+            mkdir($destination, 0755, true);
         }
 
         $skip = array('.', '..', '.git');
-        $sourceDirectory = opendir($source);
-        while ($file = readdir($sourceDirectory)) {
-            if (!in_array($file, $skip)) {
-                if (is_dir($source . '/' . $file)) {
-                    $this->copyAll($source . '/' . $file, $destination . '/' . $file);
-                } else {
-                    $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
+        if (is_dir($source)) {
+            $sourceDirectory = opendir($source);
+            while ($file = readdir($sourceDirectory)) {
+                if (!in_array($file, $skip)) {
+                    if (is_dir($source . '/' . $file)) {
+                        $this->copyAll($source . '/' . $file, $destination . '/' . $file);
+                    } else {
+                        $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
+                    }
                 }
             }
+            closedir($sourceDirectory);
         }
-        closedir($sourceDirectory);
+        else {
+            $this->fs->copy($source, $destination);
+        }
     }
 
     /**
@@ -165,17 +167,18 @@ class FilesystemHelper extends Helper
     }
 
     /**
-     * Symlink all files and folders between two directories.
+     * Symlink or copy all files and folders between two directories.
      *
      * @param string   $source
      * @param string   $destination
      * @param bool     $skipExisting
      * @param bool     $recursive
      * @param string[] $blacklist
+     * @param bool     $copy
      *
      * @throws \Exception When a conflict is discovered.
      */
-    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = array())
+    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = array(), $copy = false)
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -203,7 +206,8 @@ class FilesystemHelper extends Helper
                 $linkFile = $destination . '/' . $file;
 
                 if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
-                    $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive);
+                    // Note: the blacklist is not used recursively.
+                    $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, array(), $copy);
                     continue;
                 }
                 elseif (file_exists($linkFile)) {
@@ -218,17 +222,17 @@ class FilesystemHelper extends Helper
                     $this->remove($linkFile);
                 }
 
-                if (!function_exists('symlink') && $this->copyIfSymlinkUnavailable) {
-                    copy($sourceFile, $linkFile);
-                    continue;
-                }
-
                 if ($this->relative) {
                     $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
                     chdir($destination);
                 }
 
-                symlink($sourceFile, $linkFile);
+                if ($copy) {
+                    $this->copyAll($sourceFile, $linkFile);
+                }
+                else {
+                    $this->fs->symlink($sourceFile, $linkFile, $this->copyIfSymlinkUnavailable);
+                }
             }
         }
         closedir($sourceDirectory);
