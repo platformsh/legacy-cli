@@ -135,6 +135,7 @@ class ProjectGetCommand extends PlatformCommand
         $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($output));
+        $gitHelper->ensureInstalled();
 
         // First check if the repo actually exists.
         $repoHead = $gitHelper->execute(array('ls-remote', $gitUrl, 'HEAD'), false);

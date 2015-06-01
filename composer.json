@@ -3,8 +3,9 @@
     "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
-        "platformsh/client": "0.1.15",
-        "symfony/console": "~2.5",
+        "doctrine/cache": "~1.4.1",
+        "platformsh/client": "0.1.17",
+        "symfony/console": "^2.5.2",
         "symfony/yaml": "~2.5",
         "symfony/finder": "~2.5",
         "symfony/filesystem": "~2.5",

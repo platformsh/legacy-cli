@@ -7,4 +7,5 @@ php:
 install:
   - composer install
 script:
+  - composer update --prefer-lowest
   - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text
