@@ -75,10 +75,15 @@ class EnvironmentDrushCommand extends PlatformCommand
         $selectedEnvironment = $this->getSelectedEnvironment();
         $sshUrl = $selectedEnvironment->getSshUrl($input->getOption('app'));
 
+        // The PLATFORM_DOCUMENT_ROOT environment variable is new. Default to
+        // /app/public for backwards compatibility.
+        $appRoot = '${PLATFORM_DOCUMENT_ROOT:-/app/public}';
+
         $dimensions = $this->getApplication()
                            ->getTerminalDimensions();
         $columns = $dimensions[0] ?: 80;
-        $sshDrushCommand = "COLUMNS=$columns drush --root=\"\$PLATFORM_DOCUMENT_ROOT\"";
+
+        $sshDrushCommand = "COLUMNS=$columns drush --root=\"$appRoot\"";
         if ($environmentUrl = $selectedEnvironment->getLink('public-url')) {
             $sshDrushCommand .= " --uri=" . escapeshellarg($environmentUrl);
         }
