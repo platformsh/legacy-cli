@@ -37,14 +37,7 @@ class Drupal extends ToolstackBase
         $finder->in($directory)
                ->files()
                ->depth($depth)
-               ->name('project.make')
-               ->name('project-core.make')
-               ->name('drupal-org.make')
-               ->name('drupal-org-core.make')
-               ->name('project.make.yml')
-               ->name('project-core.make.yml')
-               ->name('drupal-org.make.yml')
-               ->name('drupal-org-core.make.yml');
+               ->name('/(project|drupal\-org)\.make(\.yml)?(\.lock)?/');
         foreach ($finder as $file) {
             return true;
         }
@@ -82,10 +75,8 @@ class Drupal extends ToolstackBase
         } elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
             $this->buildInProfileMode($profileName);
-        } elseif (file_exists($this->appRoot . '/project.make')) {
-            $this->buildInProjectMode($this->appRoot . '/project.make');
-        } elseif (file_exists($this->appRoot . '/project.make.yml')) {
-            $this->buildInProjectMode($this->appRoot . '/project.make.yml');
+        } elseif ($projectMake = $this->findDrushMakeFile()) {
+            $this->buildInProjectMode($projectMake);
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
 
@@ -157,6 +148,47 @@ class Drupal extends ToolstackBase
     }
 
     /**
+     * Find the preferred Drush Make file in the app root.
+     *
+     * @param bool $required
+     * @param bool $core
+     *
+     * @throws \Exception
+     *
+     * @return string|false
+     *   The absolute filename of the make file.
+     */
+    protected function findDrushMakeFile($required = false, $core = false) {
+        $candidates = array(
+          'project.make.yml.lock',
+          'project.make.yml',
+          'project.make.lock',
+          'project.make',
+          'drupal-org.make.yml.lock',
+          'drupal-org.make.yml',
+          'drupal-org.make.lock',
+          'drupal-org.make',
+        );
+        foreach ($candidates as &$candidate) {
+            if ($core) {
+                $candidate = str_replace('.make', '-core.make', $candidate);
+            }
+            if (file_exists($this->appRoot . '/' . $candidate)) {
+                return $this->appRoot . '/' . $candidate;
+            }
+        }
+
+        if ($required) {
+            throw new \Exception(
+              ($core ? "Couldn't find a core make file in the directory." : "Couldn't find a make file in the directory.")
+              . " Possible filenames: " . implode(',', $candidates)
+            );
+        }
+
+        return false;
+    }
+
+    /**
      * Build in 'project' mode, i.e. just using a Drush make file.
      *
      * @param string $projectMake
@@ -194,37 +226,14 @@ class Drupal extends ToolstackBase
      * Build in 'profile' mode: the application contains a site profile.
      *
      * @param string $profileName
-     *
-     * @throws \Exception
      */
     protected function buildInProfileMode($profileName)
     {
         $drushHelper = new DrushHelper($this->output);
         $drushHelper->ensureInstalled();
 
-        // Find the contrib make file.
-        $candidates = array('project.make', 'project.make.yml', 'drupal-org.make', 'drupal-org.make.yml');
-        foreach ($candidates as $candidate) {
-            if (file_exists($this->appRoot . '/' . $candidate)) {
-                $projectMake = $this->appRoot . '/' . $candidate;
-                break;
-            }
-        }
-        if (empty($projectMake)) {
-            throw new \Exception("Couldn't find a make file in the directory. Possible filenames: " . implode(',', $candidates));
-        }
-
-        // Find the core make file.
-        $candidates = array('project-core.make', 'project-core.make.yml', 'drupal-org-core.make', 'drupal-org-core.make.yml');
-        foreach ($candidates as $candidate) {
-            if (file_exists($this->appRoot . '/' . $candidate)) {
-                $projectCoreMake = $this->appRoot . '/' . $candidate;
-                break;
-            }
-        }
-        if (empty($projectCoreMake)) {
-            throw new \Exception("Couldn't find a core make file in the directory. Possible filenames: " . implode(',', $candidates));
-        }
+        $projectMake = $this->findDrushMakeFile(true);
+        $projectCoreMake = $this->findDrushMakeFile(true, true);
 
         $args = array_merge(
           array('make', $projectCoreMake, $this->getWebRoot()),
