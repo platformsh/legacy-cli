@@ -205,8 +205,10 @@ class Drupal extends ToolstackBase
 
         $this->processSettingsPhp();
 
-        $this->ignoredFiles[] = 'project.make';
-        $this->ignoredFiles[] = 'project.make.yml';
+        $this->ignoredFiles[] = '*.make';
+        $this->ignoredFiles[] = '*.make.lock';
+        $this->ignoredFiles[] = '*.make.yml';
+        $this->ignoredFiles[] = '*.make.yml.lock';
         $this->ignoredFiles[] = 'settings.local.php';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
@@ -259,8 +261,10 @@ class Drupal extends ToolstackBase
             $this->output->writeln("Symlinking existing app files to the profile");
         }
 
-        $this->ignoredFiles[] = basename($projectMake);
-        $this->ignoredFiles[] = basename($projectCoreMake);
+        $this->ignoredFiles[] = '*.make';
+        $this->ignoredFiles[] = '*.make.lock';
+        $this->ignoredFiles[] = '*.make.yml';
+        $this->ignoredFiles[] = '*.make.yml.lock';
         $this->ignoredFiles[] = 'settings.local.php';
 
         $this->specialDestinations['settings*.php'] = '{webroot}/sites/default';
