@@ -37,7 +37,8 @@ class Drupal extends ToolstackBase
         $finder->in($directory)
                ->files()
                ->depth($depth)
-               ->name('/(project|drupal\-org)\.make(\.yml)?(\.lock)?/');
+               ->name('project.make*')
+               ->name('drupal-org.make*');
         foreach ($finder as $file) {
             return true;
         }
@@ -67,15 +68,15 @@ class Drupal extends ToolstackBase
 
     public function build()
     {
-        $this->setUpDrushFlags();
 
         $profiles = glob($this->appRoot . '/*.profile');
+        $projectMake = $this->findDrushMakeFile();
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
         } elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
             $this->buildInProfileMode($profileName);
-        } elseif ($projectMake = $this->findDrushMakeFile()) {
+        } elseif ($projectMake) {
             $this->buildInProjectMode($projectMake);
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
@@ -160,15 +161,19 @@ class Drupal extends ToolstackBase
      */
     protected function findDrushMakeFile($required = false, $core = false) {
         $candidates = array(
-          'project.make.yml.lock',
           'project.make.yml',
-          'project.make.lock',
           'project.make',
-          'drupal-org.make.yml.lock',
           'drupal-org.make.yml',
-          'drupal-org.make.lock',
           'drupal-org.make',
         );
+        if (empty($this->settings['drushUpdateLock'])) {
+            $candidates = array_merge(array(
+              'project.make.lock',
+              'project.make.yml.lock',
+              'drupal-org.make.yml.lock',
+              'drupal-org.make.lock',
+            ), $candidates);
+        }
         foreach ($candidates as &$candidate) {
             if ($core) {
                 $candidate = str_replace('.make', '-core.make', $candidate);
@@ -189,18 +194,39 @@ class Drupal extends ToolstackBase
     }
 
     /**
+     * @return DrushHelper
+     */
+    protected function getDrushHelper()
+    {
+        static $drushHelper;
+        if (!isset($drushHelper)) {
+            $drushHelper = new DrushHelper($this->output);
+        }
+
+        return $drushHelper;
+    }
+
+    /**
      * Build in 'project' mode, i.e. just using a Drush make file.
      *
      * @param string $projectMake
      */
     protected function buildInProjectMode($projectMake)
     {
-        $drushHelper = new DrushHelper($this->output);
+        $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
+        $this->setUpDrushFlags();
+
         $args = array_merge(
           array('make', $projectMake, $this->getWebRoot()),
           $this->drushFlags
         );
+
+        // Create a lock file automatically.
+        if (!strpos($projectMake, '.lock') && version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['drushUpdateLock'])) {
+            $args[] = "--lock=$projectMake.lock";
+        }
+
         $drushHelper->execute($args, null, true, false);
 
         $this->processSettingsPhp();
@@ -231,8 +257,9 @@ class Drupal extends ToolstackBase
      */
     protected function buildInProfileMode($profileName)
     {
-        $drushHelper = new DrushHelper($this->output);
+        $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
+        $this->setUpDrushFlags();
 
         $projectMake = $this->findDrushMakeFile(true);
         $projectCoreMake = $this->findDrushMakeFile(true, true);
@@ -241,6 +268,13 @@ class Drupal extends ToolstackBase
           array('make', $projectCoreMake, $this->getWebRoot()),
           $this->drushFlags
         );
+
+        // Create a lock file automatically.
+        $updateLock = version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['drushUpdateLock']);
+        if (!strpos($projectCoreMake, '.lock') && $updateLock) {
+            $args[] = "--lock=$projectCoreMake.lock";
+        }
+
         $drushHelper->execute($args, null, true, false);
 
         $profileDir = $this->getWebRoot() . '/profiles/' . $profileName;
@@ -252,6 +286,12 @@ class Drupal extends ToolstackBase
           array('make', '--no-core', '--contrib-destination=.', $projectMake),
           $this->drushFlags
         );
+
+        // Create a lock file automatically.
+        if (!strpos($projectMake, '.lock') && $updateLock) {
+            $args[] = "--lock=$projectMake.lock";
+        }
+
         $drushHelper->execute($args, $profileDir, true, false);
 
         if ($this->copy) {
