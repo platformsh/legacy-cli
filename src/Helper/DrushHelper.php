@@ -316,6 +316,7 @@ class DrushHelper extends Helper
           'uri' => $environment->getLink('public-url'),
           'remote-host' => $sshUrl['host'],
           'remote-user' => $sshUrl['user'],
+          // @todo can this be dynamic, based on an env var? see https://github.com/drush-ops/drush/issues/1370
           'root' => '/app/public',
           self::AUTO_REMOVE_KEY => true,
         );
