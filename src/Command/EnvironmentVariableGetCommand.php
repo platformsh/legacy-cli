@@ -96,7 +96,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
     protected function buildVariablesTable(array $variables, OutputInterface $output)
     {
         $table = new Table($output);
-        $table->setHeaders(array("ID", "Value", "Inherited", "JSON"));
+        $table->setHeaders(array("ID", "Value", "JSON", "Inherited", "Enabled"));
         foreach ($variables as $variable) {
             $value = $variable['value'];
             // Truncate long values.
@@ -105,12 +105,14 @@ class EnvironmentVariableGetCommand extends PlatformCommand
             }
             // Wrap long values.
             $value = wordwrap($value, 30, "\n", true);
+
             $table->addRow(
               array(
                 $variable['id'],
                 $value,
-                $variable['inherited'] ? 'Yes' : 'No',
                 $variable['is_json'] ? 'Yes' : 'No',
+                $variable['inherited'] ? 'Yes' : 'No',
+                isset($variable['is_enabled']) ? ($variable['is_enabled'] ? 'Yes' : 'No') : 'Unknown',
               )
             );
         }

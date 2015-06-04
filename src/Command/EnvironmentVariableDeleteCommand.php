@@ -6,7 +6,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-
 class EnvironmentVariableDeleteCommand extends PlatformCommand
 {
     /**
@@ -36,39 +35,40 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$variable->operationAvailable('delete')) {
-            if ($variable->getProperty('inherited')) {
-                $output->writeln(
-                  "The variable <error>$variableName</error> is inherited,"
-                  . " so it cannot be deleted from this environment."
-                  . "\nYou could override it with the <comment>variable:set</comment> command."
-                );
-            } else {
-                $output->writeln("The variable <error>$variableName</error> cannot be deleted");
+        $environmentId = $this->getSelectedEnvironment()['id'];
+        $confirmQuestionText = "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?";
+
+        // Inherited variables cannot be deleted, but they can be disabled.
+        if ($variable->getProperty('inherited') && isset($variable['is_enabled'])) {
+            if (!$variable['is_enabled']) {
+                $output->writeln("The variable <info>$variableName</info> is already disabled.");
+
+                return 0;
             }
+            $confirmQuestionText = "Disable the variable <info>$variableName</info> for the environment <info>$environmentId</info>?";
+        } elseif (!$variable->operationAvailable('delete')) {
+            $output->writeln("The variable <error>$variableName</error> cannot be deleted");
 
             return 1;
         }
 
-        $environmentId = $this->getSelectedEnvironment()['id'];
         $confirm = $this->getHelper('question')
-                        ->confirm(
-                          "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
-                          $input,
-                          $output,
-                          false
-                        );
+                        ->confirm($confirmQuestionText, $input, $output);
 
         if (!$confirm) {
             return 1;
         }
 
-        $variable->delete();
+        if ($variable->getProperty('inherited')) {
+            $variable->disable();
+            $output->writeln("Disabled variable <info>$variableName</info>");
+        }
+        else {
+            $variable->delete();
+            $output->writeln("Deleted variable <info>$variableName</info>");
+        }
 
-        $output->writeln("Deleted variable <info>$variableName</info>");
-        if (!$this->getSelectedEnvironment()
-                  ->getLastActivity()
-        ) {
+        if (!$this->getSelectedEnvironment()->getLastActivity()) {
             $this->rebuildWarning($output);
         }
 
