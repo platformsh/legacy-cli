@@ -119,38 +119,13 @@ class EnvironmentBranchCommand extends PlatformCommand
         $force = $input->getOption('force');
 
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot) {
-            $gitHelper = new GitHelper(new ShellHelper($output));
-            $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
-            // If the Git branch already exists locally, check it out.
-            $existsLocally = $gitHelper->branchExists($machineName);
-            if ($existsLocally) {
-                $output->writeln("Checking out <info>$machineName</info>");
-                if (!$gitHelper->checkOut($machineName)) {
-                    $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
-                    $local_error = true;
-                    if (!$force) {
-                        return 1;
-                    }
-                }
-            } else {
-                // Create a new branch, using the current or specified environment as the parent.
-                $parent = $this->getSelectedEnvironment()['id'];
-                if (!$gitHelper->checkOutNew($machineName, $parent)) {
-                    $output->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
-                    $local_error = true;
-                    if (!$force) {
-                        return 1;
-                    }
-                }
-            }
-        } elseif ($force) {
+        if (!$projectRoot && $force) {
             $output->writeln(
-              "<comment>Because this command was run from outside your local project root, the new Platform.sh branch could not be checked out in your local Git repository."
+              "<comment>This command was run from outside your local project root, the new Platform.sh branch cannot be checked out in your local Git repository."
               . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
             );
             $local_error = true;
-        } else {
+        } elseif (!$projectRoot) {
             $output->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
 
             return 1;
@@ -164,9 +139,42 @@ class EnvironmentBranchCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->branch($branchName, $machineName);
 
-        $success = true;
+        if ($projectRoot) {
+            $gitHelper = new GitHelper(new ShellHelper($output));
+            $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+
+            $output->writeln("Checking out <info>$machineName</info> locally");
+
+            // If the Git branch already exists locally, just check it out.
+            $existsLocally = $gitHelper->branchExists($machineName);
+            if ($existsLocally) {
+                if (!$gitHelper->checkOut($machineName)) {
+                    $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
+                    $local_error = true;
+                    if (!$force) {
+                        return 1;
+                    }
+                }
+            } else {
+                // Create a new branch, using the current or specified environment as the parent if it exists locally.
+                $parent = $this->getSelectedEnvironment()['id'];
+                if (!$gitHelper->branchExists($parent)) {
+                    $parent = null;
+                }
+                $output->writeln("Creating local branch out <info>$machineName</info>");
+                if (!$gitHelper->checkOutNew($machineName, $parent)) {
+                    $output->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
+                    $local_error = true;
+                    if (!$force) {
+                        return 1;
+                    }
+                }
+            }
+        }
+
+        $remoteSuccess = true;
         if (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitAndLog(
+            $remoteSuccess = ActivityUtil::waitAndLog(
               $activity,
               $output,
               "The environment <info>$branchName</info> has been branched.",
@@ -194,6 +202,6 @@ class EnvironmentBranchCommand extends PlatformCommand
         // Refresh the environments cache.
         $this->getEnvironments(null, true);
 
-        return $success ? 0 : 1;
+        return $remoteSuccess ? 0 : 1;
     }
 }

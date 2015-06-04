@@ -22,7 +22,7 @@ abstract class ActivityUtil
      */
     public static function waitAndLog(Activity $activity, OutputInterface $output, $success = null, $failure = null)
     {
-        $output->writeln('Waiting for the operation to complete...');
+        $output->writeln('Waiting for the remote operation to complete...');
         $activity->wait(
           null,
           function ($log) use ($output) {
