@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
@@ -119,13 +120,43 @@ class EnvironmentBranchCommand extends PlatformCommand
         $force = $input->getOption('force');
 
         $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot && $force) {
+            $output->writeln(
+              "<comment>This command was run from outside your local project root, the new Platform.sh branch cannot be checked out in your local Git repository."
+              . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
+            );
+            $local_error = true;
+        } elseif (!$projectRoot) {
+            $output->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
+
+            return 1;
+        }
+
+        $selectedEnvironment = $this->getSelectedEnvironment();
+
+        $output->writeln(
+          "Creating a new environment <info>$branchName</info>, branched from <info>{$selectedEnvironment['title']}</info>"
+        );
+
+        $activity = $selectedEnvironment->branch($branchName, $machineName);
+
+        $remoteSuccess = true;
+        if (!$input->getOption('no-wait')) {
+            $remoteSuccess = ActivityUtil::waitAndLog(
+              $activity,
+              $output,
+              "The environment <info>$branchName</info> has been branched.",
+              '<error>Branching failed</error>'
+            );
+        }
+
         if ($projectRoot) {
             $gitHelper = new GitHelper(new ShellHelper($output));
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
             // If the Git branch already exists locally, check it out.
             $existsLocally = $gitHelper->branchExists($machineName);
             if ($existsLocally) {
-                $output->writeln("Checking out <info>$machineName</info>");
+                $output->writeln("Checking out <info>$machineName</info> locally");
                 if (!$gitHelper->checkOut($machineName)) {
                     $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
                     $local_error = true;
@@ -144,34 +175,6 @@ class EnvironmentBranchCommand extends PlatformCommand
                     }
                 }
             }
-        } elseif ($force) {
-            $output->writeln(
-              "<comment>Because this command was run from outside your local project root, the new Platform.sh branch could not be checked out in your local Git repository."
-              . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
-            );
-            $local_error = true;
-        } else {
-            $output->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
-
-            return 1;
-        }
-
-        $selectedEnvironment = $this->getSelectedEnvironment();
-
-        $output->writeln(
-          "Creating a new environment <info>$branchName</info>, branched from <info>{$selectedEnvironment['title']}</info>"
-        );
-
-        $activity = $selectedEnvironment->branch($branchName, $machineName);
-
-        $success = true;
-        if (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitAndLog(
-              $activity,
-              $output,
-              "The environment <info>$branchName</info> has been branched.",
-              '<error>Branching failed</error>'
-            );
         }
 
         $build = $input->getOption('build');
@@ -194,6 +197,6 @@ class EnvironmentBranchCommand extends PlatformCommand
         // Refresh the environments cache.
         $this->getEnvironments(null, true);
 
-        return $success ? 0 : 1;
+        return $remoteSuccess ? 0 : 1;
     }
 }
