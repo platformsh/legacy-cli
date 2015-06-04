@@ -96,7 +96,6 @@ class EnvironmentBranchCommand extends PlatformCommand
                 $checkoutInput = new ArrayInput(
                   array(
                     'command' => 'environment:checkout',
-                    'session-id' => self::$sessionId,
                     'id' => $environment['id'],
                   )
                 );
