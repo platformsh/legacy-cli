@@ -143,10 +143,15 @@ abstract class PlatformCommand extends Command
             $connectorOptions['client_id'] = 'platform-cli';
             $connectorOptions['user_agent'] = $this->getUserAgent();
 
-            // Proxy support with the HTTP_PROXY or HTTPS_PROXY environment
+            // Proxy support with the http_proxy or https_proxy environment
             // variables.
-            if ($proxy = getenv('HTTPS_PROXY') ?: getenv('HTTP_PROXY')) {
-                $connectorOptions['proxy'] = str_replace('http://', 'tcp://', $proxy);
+            $proxies = array();
+            foreach (array('https', 'http') as $scheme) {
+                $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
+            }
+            $proxies = array_filter($proxies);
+            if (count($proxies)) {
+                $connectorOptions['proxy'] = count($proxies) == 1 ? reset($proxies) : $proxies;
             }
 
             $connector = new Connector($connectorOptions);

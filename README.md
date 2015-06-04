@@ -174,7 +174,7 @@ You can configure the CLI via these environment variables:
 * `PLATFORMSH_CLI_ENVIRONMENTS_TTL`: the cache TTL for environments, in seconds (default 600)
 * `PLATFORMSH_CLI_PROJECTS_TTL`: the cache TTL for projects, in seconds (default 3600)
 * `PLATFORMSH_CLI_SESSION_ID`: change user (default 'default')
-* `HTTP_PROXY` or `HTTPS_PROXY`: specify a proxy for connecting to Platform.sh
+* `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 
 ### Credits
 
