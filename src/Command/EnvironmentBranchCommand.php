@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
@@ -140,23 +139,15 @@ class EnvironmentBranchCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->branch($branchName, $machineName);
 
-        $remoteSuccess = true;
-        if (!$input->getOption('no-wait')) {
-            $remoteSuccess = ActivityUtil::waitAndLog(
-              $activity,
-              $output,
-              "The environment <info>$branchName</info> has been branched.",
-              '<error>Branching failed</error>'
-            );
-        }
-
         if ($projectRoot) {
             $gitHelper = new GitHelper(new ShellHelper($output));
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
-            // If the Git branch already exists locally, check it out.
+
+            $output->writeln("Checking out <info>$machineName</info> locally");
+
+            // If the Git branch already exists locally, just check it out.
             $existsLocally = $gitHelper->branchExists($machineName);
             if ($existsLocally) {
-                $output->writeln("Checking out <info>$machineName</info> locally");
                 if (!$gitHelper->checkOut($machineName)) {
                     $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
                     $local_error = true;
@@ -165,8 +156,12 @@ class EnvironmentBranchCommand extends PlatformCommand
                     }
                 }
             } else {
-                // Create a new branch, using the current or specified environment as the parent.
+                // Create a new branch, using the current or specified environment as the parent if it exists locally.
                 $parent = $this->getSelectedEnvironment()['id'];
+                if (!$gitHelper->branchExists($parent)) {
+                    $parent = null;
+                }
+                $output->writeln("Creating local branch out <info>$machineName</info>");
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
                     $output->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
                     $local_error = true;
@@ -175,6 +170,16 @@ class EnvironmentBranchCommand extends PlatformCommand
                     }
                 }
             }
+        }
+
+        $remoteSuccess = true;
+        if (!$input->getOption('no-wait')) {
+            $remoteSuccess = ActivityUtil::waitAndLog(
+              $activity,
+              $output,
+              "The environment <info>$branchName</info> has been branched.",
+              '<error>Branching failed</error>'
+            );
         }
 
         $build = $input->getOption('build');
