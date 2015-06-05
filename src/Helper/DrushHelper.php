@@ -134,7 +134,7 @@ class DrushHelper extends Helper
         }
 
         $executable = 'drush';
-        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = exec('where drush'))) {
+        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = shell_exec('where drush'))) {
             $executable = $fullPath;
         }
 

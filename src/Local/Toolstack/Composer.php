@@ -42,7 +42,7 @@ class Composer extends ToolstackBase
     protected function getComposerExecutable()
     {
         $executable = 'composer';
-        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = exec('where composer'))) {
+        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = shell_exec('where composer'))) {
             $executable = $fullPath;
         }
 
