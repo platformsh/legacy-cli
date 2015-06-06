@@ -267,7 +267,7 @@ class EnvironmentListCommand extends PlatformCommand
      */
     protected function formatEnvironmentStatus($status) {
         if ($status == 'dirty') {
-            $status = 'Rebuilding';
+            $status = 'Building';
         }
 
         return ucfirst($status);

@@ -19,7 +19,12 @@ class Composer extends ToolstackBase
         if (file_exists($this->appRoot . '/composer.json')) {
             $this->output->writeln("Found a composer.json file; installing dependencies");
 
-            $args = array('composer', 'install', '--no-progress', '--no-interaction');
+            $args = array(
+              $this->getComposerExecutable(),
+              'install',
+              '--no-progress',
+              '--no-interaction',
+            );
             $this->shellHelper->execute($args, $this->appRoot, true, false);
         }
     }
@@ -29,4 +34,18 @@ class Composer extends ToolstackBase
         $this->copyGitIgnore('gitignore-composer');
     }
 
+    /**
+     * Get the name of the Composer executable.
+     *
+     * @return string
+     */
+    protected function getComposerExecutable()
+    {
+        $executable = 'composer';
+        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = shell_exec('where composer'))) {
+            $executable = $fullPath;
+        }
+
+        return $executable;
+    }
 }

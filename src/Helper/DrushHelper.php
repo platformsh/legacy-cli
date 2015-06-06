@@ -134,7 +134,7 @@ class DrushHelper extends Helper
         }
 
         $executable = 'drush';
-        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = exec('where drush'))) {
+        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = shell_exec('where drush'))) {
             $executable = $fullPath;
         }
 
@@ -316,6 +316,7 @@ class DrushHelper extends Helper
           'uri' => $environment->getLink('public-url'),
           'remote-host' => $sshUrl['host'],
           'remote-user' => $sshUrl['user'],
+          // @todo can this be dynamic, based on an env var? see https://github.com/drush-ops/drush/issues/1370
           'root' => '/app/public',
           self::AUTO_REMOVE_KEY => true,
         );
