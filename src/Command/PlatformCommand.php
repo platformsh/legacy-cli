@@ -143,6 +143,17 @@ abstract class PlatformCommand extends Command
             $connectorOptions['client_id'] = 'platform-cli';
             $connectorOptions['user_agent'] = $this->getUserAgent();
 
+            // Proxy support with the http_proxy or https_proxy environment
+            // variables.
+            $proxies = array();
+            foreach (array('https', 'http') as $scheme) {
+                $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
+            }
+            $proxies = array_filter($proxies);
+            if (count($proxies)) {
+                $connectorOptions['proxy'] = count($proxies) == 1 ? reset($proxies) : $proxies;
+            }
+
             $connector = new Connector($connectorOptions);
 
             // If an API token is set, that's all we need to authenticate.
