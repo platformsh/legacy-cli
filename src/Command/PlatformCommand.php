@@ -632,7 +632,7 @@ abstract class PlatformCommand extends Command
      */
     protected function addProjectOption()
     {
-        $this->addOption('project', null, InputOption::VALUE_OPTIONAL, 'The project ID');
+        $this->addOption('project', 'p', InputOption::VALUE_OPTIONAL, 'The project ID');
         $this->addOption('host', null, InputOption::VALUE_OPTIONAL, "The project's API hostname");
 
         return $this;
@@ -645,7 +645,7 @@ abstract class PlatformCommand extends Command
      */
     protected function addEnvironmentOption()
     {
-        return $this->addOption('environment', null, InputOption::VALUE_OPTIONAL, 'The environment ID');
+        return $this->addOption('environment', 'e', InputOption::VALUE_OPTIONAL, 'The environment ID');
     }
 
     /**
