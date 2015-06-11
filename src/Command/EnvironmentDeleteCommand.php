@@ -28,7 +28,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input, $output, true);
 
         $environments = $this->getEnvironments();
 
@@ -61,13 +61,18 @@ class EnvironmentDeleteCommand extends PlatformCommand
             }
         } elseif ($this->hasSelectedEnvironment()) {
             $toDelete = array($this->getSelectedEnvironment());
-        } else {
-            $environmentIds = $input->getArgument('environment');
+        } elseif ($environmentIds = $input->getArgument('environment')) {
             $toDelete = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
             foreach ($notFound as $notFoundId) {
                 $output->writeln("Environment not found: <error>$notFoundId</error>");
             }
+        }
+
+        if (empty($toDelete)) {
+            $output->writeln("No environment(s) specified.");
+
+            return 1;
         }
 
         $success = $this->deleteMultiple($toDelete, $input, $output);
