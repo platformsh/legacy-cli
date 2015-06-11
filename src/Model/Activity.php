@@ -112,7 +112,7 @@ class Activity extends HalResource
         while (!$this->isComplete() && $this->getProperty('state') !== 'failure') {
             usleep($pollInterval * 1000000);
             try {
-                $this->refresh(['timeout' => $pollInterval]);
+                $this->refresh(array('timeout' => $pollInterval));
                 if ($onPoll !== null) {
                     $onPoll($this);
                 }
