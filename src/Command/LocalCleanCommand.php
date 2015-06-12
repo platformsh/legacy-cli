@@ -50,7 +50,7 @@ class LocalCleanCommand extends PlatformCommand
             throw new RootNotFoundException();
         }
 
-        $builder = new LocalBuild(array(), $output);
+        $builder = new LocalBuild(array(), $this->stdErr);
         $result = $builder->cleanBuilds(
           $projectRoot,
           $input->getOption('max-age'),
