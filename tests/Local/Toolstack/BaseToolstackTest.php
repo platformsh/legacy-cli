@@ -7,7 +7,7 @@ use org\bovigo\vfs\vfsStreamDirectory;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
-use Symfony\Component\Console\Output\StreamOutput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
 {
@@ -18,7 +18,8 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     /** @var LocalBuild */
     protected $builder;
 
-    protected $showBuildOutput = false;
+    /** @var \Symfony\Component\Console\Output\OutputInterface */
+    protected $output;
 
     protected $buildSettings = array('noClean' => true);
 
@@ -28,9 +29,10 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->root = vfsStream::setup(__CLASS__);
+        $this->output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
         $this->builder = new LocalBuild(
           $this->buildSettings,
-          $this->showBuildOutput ? new StreamOutput(fopen("php://output", 'w')) : null
+          $this->output
         );
     }
 
@@ -47,6 +49,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     protected function assertBuildSucceeds($sourceDir)
     {
         $projectRoot = $this->createDummyProject($sourceDir);
+        $this->output->writeln("\nTesting build for directory: " . $sourceDir);
         $success = $this->builder->buildProject($projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
 
