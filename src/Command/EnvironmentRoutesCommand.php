@@ -25,13 +25,13 @@ class EnvironmentRoutesCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();
 
         $routes = $environment->getRoutes();
         if (empty($routes)) {
-            $output->writeln("No routes found");
+            $this->stdErr->writeln("No routes found");
 
             return 0;
         }
@@ -49,7 +49,7 @@ class EnvironmentRoutesCommand extends PlatformCommand
             );
         }
 
-        $output->writeln("Routes for the environment <info>{$environment->id}</info>:");
+        $this->stdErr->writeln("Routes for the environment <info>{$environment->id}</info>:");
 
         $table = new Table($output);
         $table->setHeaders($header);

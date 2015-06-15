@@ -7,6 +7,7 @@ use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentBackupCommand extends PlatformCommand
@@ -26,7 +27,7 @@ class EnvironmentBackupCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         if ($input->getOption('list')) {
             return $this->listBackups($output);
@@ -35,7 +36,7 @@ class EnvironmentBackupCommand extends PlatformCommand
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment['id'];
         if (!$selectedEnvironment->operationAvailable('backup')) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Operation not available: the environment <error>$environmentId</error> cannot be backed up"
             );
 
@@ -44,12 +45,12 @@ class EnvironmentBackupCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->backup();
 
-        $output->writeln("Backing up <info>$environmentId</info>");
+        $this->stdErr->writeln("Backing up <info>$environmentId</info>");
 
         if (!$input->getOption('no-wait')) {
             $success = ActivityUtil::waitAndLog(
               $activity,
-              $output,
+              $this->stdErr,
               "A backup of environment <info>$environmentId</info> has been created",
               "The backup failed"
             );
@@ -75,10 +76,12 @@ class EnvironmentBackupCommand extends PlatformCommand
     {
         $environment = $this->getSelectedEnvironment();
 
-        $output->writeln("Finding backups for the environment <info>{$environment['id']}</info>");
+        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+
+        $stdErr->writeln("Finding backups for the environment <info>{$environment['id']}</info>");
         $results = $environment->getActivities(10, 'environment.backup');
         if (!$results) {
-            $output->writeln('No backups found');
+            $stdErr->writeln('No backups found');
             return 1;
         }
 

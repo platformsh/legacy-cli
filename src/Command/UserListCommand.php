@@ -20,7 +20,7 @@ class UserListCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $project = $this->getSelectedProject();
 

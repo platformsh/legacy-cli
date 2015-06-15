@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalBuild;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -45,13 +46,11 @@ class LocalCleanCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectRoot = $this->getProjectRoot();
-        if (empty($projectRoot)) {
-            $output->writeln("<error>You must run this command from a project folder.</error>");
-
-            return;
+        if (!$projectRoot) {
+            throw new RootNotFoundException();
         }
 
-        $builder = new LocalBuild(array(), $output);
+        $builder = new LocalBuild(array(), $this->stdErr);
         $result = $builder->cleanBuilds(
           $projectRoot,
           $input->getOption('max-age'),
@@ -61,19 +60,19 @@ class LocalCleanCommand extends PlatformCommand
         );
 
         if (!$result[0] && !$result[1]) {
-            $output->writeln("There are no builds to delete");
+            $this->stdErr->writeln("There are no builds to delete");
         } else {
             if ($result[0]) {
-                $output->writeln("Deleted <info>{$result[0]}</info> build(s)");
+                $this->stdErr->writeln("Deleted <info>{$result[0]}</info> build(s)");
             }
             if ($result[1]) {
-                $output->writeln("Kept <info>{$result[1]}</info> build(s)");
+                $this->stdErr->writeln("Kept <info>{$result[1]}</info> build(s)");
             }
         }
 
         $archivesResult = $builder->cleanArchives($projectRoot);
         if ($archivesResult[0]) {
-            $output->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
+            $this->stdErr->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
         }
     }
 

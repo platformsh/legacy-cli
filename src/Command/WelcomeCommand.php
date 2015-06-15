@@ -24,7 +24,7 @@ class WelcomeCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln("Welcome to Platform.sh!\n");
+        $this->stdErr->writeln("Welcome to Platform.sh!\n");
 
         // Ensure the user is logged in in this parent command, because the
         // delegated commands below will not have interactive input.
@@ -37,9 +37,9 @@ class WelcomeCommand extends PlatformCommand
             $projectName = $currentProject->title;
             $projectURI = $currentProject->getLink('#ui');
             $projectId = $currentProject['id'];
-            $output->writeln("Project Name: <info>$projectName</info>");
-            $output->writeln("Project ID: <info>$projectId</info>");
-            $output->writeln("Project Dashboard: <info>$projectURI</info>\n");
+            $this->stdErr->writeln("Project Name: <info>$projectName</info>");
+            $this->stdErr->writeln("Project ID: <info>$projectId</info>");
+            $this->stdErr->writeln("Project Dashboard: <info>$projectURI</info>\n");
             $envInput = new ArrayInput(
               array(
                 'command' => 'environments',
@@ -48,8 +48,8 @@ class WelcomeCommand extends PlatformCommand
             );
             $application->find('environments')
                         ->run($envInput, $output);
-            $output->writeln("\nYou can list other projects by running <info>platform projects</info>.\n");
-            $output->writeln("Manage your domains by running <info>platform domains</info>.");
+            $this->stdErr->writeln("\nYou can list other projects by running <info>platform projects</info>.\n");
+            $this->stdErr->writeln("Manage your domains by running <info>platform domains</info>.");
         } else {
             // The project is not known. Show all projects.
             $projectsInput = new ArrayInput(
@@ -62,9 +62,9 @@ class WelcomeCommand extends PlatformCommand
                         ->run($projectsInput, $output);
         }
 
-        $output->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>\n");
+        $this->stdErr->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>\n");
 
-        $output->writeln("Type <info>platform list</info> to see all available commands.");
+        $this->stdErr->writeln("Type <info>platform list</info> to see all available commands.");
     }
 
 }

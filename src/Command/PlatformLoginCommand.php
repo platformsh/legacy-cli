@@ -27,9 +27,9 @@ class PlatformLoginCommand extends PlatformCommand
             throw new \Exception('Non-interactive login not supported');
         }
 
-        $output->writeln("Please log in using your <info>Platform.sh</info> account\n");
-        $this->configureAccount($input, $output);
-        $output->writeln("\n<info>Thank you, you are all set.</info>\n");
+        $this->stdErr->writeln("Please log in using your <info>Platform.sh</info> account\n");
+        $this->configureAccount($input, $this->stdErr);
+        $this->stdErr->writeln("\n<info>Thank you, you are all set.</info>\n");
     }
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)

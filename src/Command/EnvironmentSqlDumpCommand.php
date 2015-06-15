@@ -22,24 +22,24 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $projectRoot = $this->getProjectRoot();
         $dumpFile = $input->getOption('file');
         if ($dumpFile !== null) {
             if (file_exists($dumpFile)) {
-                $output->writeln("File exists: <error>$dumpFile</error>");
+                $this->stdErr->writeln("File exists: <error>$dumpFile</error>");
                 return 1;
             }
 
             $dir = dirname($dumpFile);
 
             if (!is_dir($dir)) {
-                $output->writeln("Directory not found: <error>$dir</error>");
+                $this->stdErr->writeln("Directory not found: <error>$dir</error>");
                 return 1;
             }
             elseif (!is_writable($dir)) {
-                $output->writeln("Directory not writable: <error>$dir</error>");
+                $this->stdErr->writeln("Directory not writable: <error>$dir</error>");
                 return 1;
             }
 
@@ -48,17 +48,17 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
         else {
             $dumpFile = $projectRoot . '/dump.sql';
             if (file_exists($dumpFile)) {
-                $output->writeln("File exists: <error>$dumpFile</error>");
+                $this->stdErr->writeln("File exists: <error>$dumpFile</error>");
                 return 1;
             }
         }
 
-        $output->writeln("Creating SQL dump file: <info>$dumpFile</info>");
+        $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
 
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($input->getOption('app'));
 
-        $util = new RelationshipsUtil($output);
+        $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
@@ -85,7 +85,7 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
           . ' > ' . escapeshellarg($dumpFile);
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $output->writeln("Running command: <info>$command</info>");
+            $this->stdErr->writeln("Running command: <info>$command</info>");
         }
 
         passthru($command, $return_var);

@@ -22,14 +22,14 @@ class EnvironmentSqlCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $sshOptions = '';
 
         $sshUrl = $this->getSelectedEnvironment()
           ->getSshUrl($input->getOption('app'));
 
-        $util = new RelationshipsUtil($output);
+        $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
@@ -71,7 +71,7 @@ class EnvironmentSqlCommand extends PlatformCommand
           . ' ' . escapeshellarg($sqlCommand);
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $output->writeln("Running command: <info>$command</info>");
+            $this->stdErr->writeln("Running command: <info>$command</info>");
         }
 
         passthru($command, $return_var);

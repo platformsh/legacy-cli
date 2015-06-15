@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 abstract class IntegrationCommand extends PlatformCommand
@@ -16,7 +15,7 @@ abstract class IntegrationCommand extends PlatformCommand
     /**
      * @inheritdoc
      */
-    protected function validateOptions(InputInterface $input, OutputInterface $output)
+    protected function validateOptions(InputInterface $input)
     {
         $valid = true;
         try {
@@ -34,7 +33,7 @@ abstract class IntegrationCommand extends PlatformCommand
             $this->setUpResolver($resolver, $options['type']);
             $this->values = $resolver->resolve($options);
         } catch (\LogicException $e) {
-            $output->writeln('<error>' . $e->getMessage() . '</error>');
+            $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
             $valid = false;
         }
 

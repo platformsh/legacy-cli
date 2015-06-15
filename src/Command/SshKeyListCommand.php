@@ -23,9 +23,9 @@ class SshKeyListCommand extends PlatformCommand
                      ->getSshKeys();
 
         if (empty($keys)) {
-            $output->writeln("You do not yet have any SSH public keys in your Platform.sh account");
+            $this->stdErr->writeln("You do not yet have any SSH public keys in your Platform.sh account");
         } else {
-            $output->writeln("Your SSH keys are:");
+            $this->stdErr->writeln("Your SSH keys are:");
             $table = new Table($output);
             $headers = array('ID', 'Title', 'Fingerprint');
             $rows = array();
@@ -37,9 +37,9 @@ class SshKeyListCommand extends PlatformCommand
             $table->render();
         }
 
-        $output->writeln('');
+        $this->stdErr->writeln('');
 
-        $output->writeln("Add a new SSH key by running <info>platform ssh-key:add [path]</info>");
-        $output->writeln("Delete an SSH key by running <info>platform ssh-key:delete [id]</info>");
+        $this->stdErr->writeln("Add a new SSH key by running <info>platform ssh-key:add [path]</info>");
+        $this->stdErr->writeln("Delete an SSH key by running <info>platform ssh-key:delete [id]</info>");
     }
 }

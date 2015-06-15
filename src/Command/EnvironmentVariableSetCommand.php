@@ -27,7 +27,7 @@ class EnvironmentVariableSetCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $variableName = $input->getArgument('name');
         $variableValue = $input->getArgument('value');
@@ -45,7 +45,7 @@ class EnvironmentVariableSetCommand extends PlatformCommand
             'is_json'
           ) == $json
         ) {
-            $output->writeln("Variable <info>$variableName</info> already set as: $variableValue");
+            $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
 
             return 0;
         }
@@ -54,17 +54,17 @@ class EnvironmentVariableSetCommand extends PlatformCommand
         $variable = $this->getSelectedEnvironment()
                          ->setVariable($variableName, $variableValue, $json);
         if (!$variable) {
-            $output->writeln("Failed to set variable <error>$variableName</error>");
+            $this->stdErr->writeln("Failed to set variable <error>$variableName</error>");
 
             return 1;
         }
 
-        $output->writeln("Variable <info>$variableName</info> set to: $variableValue");
+        $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
         if (!$this->getSelectedEnvironment()
                   ->getLastActivity()
         ) {
-            $this->rebuildWarning($output);
+            $this->rebuildWarning();
         }
 
         return 0;

@@ -56,7 +56,7 @@ EOF
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();
         if ($input->getOption('refresh')) {
@@ -73,7 +73,7 @@ EOF
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $environment, $output);
+            return $this->setProperty($property, $value, $environment);
         }
 
         $output->writeln($this->formatter->format($environment->getProperty($property), $property));
@@ -89,7 +89,7 @@ EOF
      */
     protected function listProperties(Environment $environment, OutputInterface $output)
     {
-        $output->writeln("Metadata for the environment <info>" . $environment['id'] . "</info>:");
+        $this->stdErr->writeln("Metadata for the environment <info>" . $environment['id'] . "</info>:");
 
         $table = new Table($output);
         $table->setHeaders(array("Property", "Value"));
@@ -105,13 +105,12 @@ EOF
      * @param string          $property
      * @param string          $value
      * @param Environment     $environment
-     * @param OutputInterface $output
      *
      * @return int
      */
-    protected function setProperty($property, $value, Environment $environment, OutputInterface $output)
+    protected function setProperty($property, $value, Environment $environment)
     {
-        if (!$this->validateValue($property, $value, $output)) {
+        if (!$this->validateValue($property, $value)) {
             return 1;
         }
         $type = $this->getType($property);
@@ -121,16 +120,16 @@ EOF
         settype($value, $type);
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Property <info>$property</info> already set as: " . $environment->getProperty($property, false)
             );
 
             return 0;
         }
         $environment->update(array($property => $value));
-        $output->writeln("Property <info>$property</info> set to: " . $environment[$property]);
+        $this->stdErr->writeln("Property <info>$property</info> set to: " . $environment[$property]);
         if ($property === 'enable_smtp' && !$environment->getLastActivity()) {
-            $this->rebuildWarning($output);
+            $this->rebuildWarning();
         }
 
         return 0;
@@ -157,15 +156,14 @@ EOF
     /**
      * @param string          $property
      * @param string          $value
-     * @param OutputInterface $output
      *
      * @return bool
      */
-    protected function validateValue($property, $value, OutputInterface $output)
+    protected function validateValue($property, $value)
     {
         $type = $this->getType($property);
         if (!$type) {
-            $output->writeln("Property not writable: <error>$property</error>");
+            $this->stdErr->writeln("Property not writable: <error>$property</error>");
 
             return false;
         }
@@ -198,9 +196,9 @@ EOF
         }
         if (!$valid) {
             if ($message) {
-                $output->writeln($message);
+                $this->stdErr->writeln($message);
             } else {
-                $output->writeln("Invalid value for <error>$property</error>: $value");
+                $this->stdErr->writeln("Invalid value for <error>$property</error>: $value");
             }
 
             return false;

@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class WebCommand extends UrlCommandBase
@@ -23,7 +22,7 @@ class WebCommand extends UrlCommandBase
     {
         // Attempt to select the appropriate project and environment.
         try {
-            $this->validateInput($input, new NullOutput());
+            $this->validateInput($input);
         }
         catch (\Exception $e) {
             // Ignore errors.

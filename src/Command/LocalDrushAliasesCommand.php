@@ -81,15 +81,15 @@ class LocalDrushAliasesCommand extends PlatformCommand
                 }
             }
             LocalProject::writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
-            $output->write("Creating Drush aliases in the group <info>@$new_group</info>...");
+            $this->stdErr->write("Creating Drush aliases in the group <info>@$new_group</info>...");
             $environments = $this->getEnvironments($project, true, false);
             $drushHelper->createAliases($project, $projectRoot, $environments);
-            $output->writeln(" done");
+            $this->stdErr->writeln(" done");
 
             $drushDir = $homeDir . '/.drush';
             $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
             if (file_exists($oldFile)) {
-                if ($questionHelper->confirm("Delete old alias group <info>@$current_group</info>?", $input, $output)) {
+                if ($questionHelper->confirm("Delete old alias group <info>@$current_group</info>?", $input, $this->stdErr)) {
                     unlink($oldFile);
                 }
             }
@@ -99,11 +99,11 @@ class LocalDrushAliasesCommand extends PlatformCommand
 
             $current_group = $new_group;
         } elseif ($input->getOption('recreate')) {
-            $output->write("Recreating Drush aliases...");
+            $this->stdErr->write("Recreating Drush aliases...");
             $environments = $this->getEnvironments($project, true, false);
             $drushHelper->createAliases($project, $projectRoot, $environments);
             $drushHelper->clearCache();
-            $output->writeln(' done');
+            $this->stdErr->writeln(' done');
         }
 
         // Don't run expensive drush calls if they are not needed.
@@ -113,7 +113,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
 
         $aliases = $drushHelper->getAliases($current_group);
         if ($aliases) {
-            $output->writeln("Aliases for <info>{$project->title}</info> ({$project->id}):");
+            $this->stdErr->writeln("Aliases for <info>{$project->title}</info> ({$project->id}):");
             foreach (explode("\n", $aliases) as $alias) {
                 $output->writeln('    @' . $alias);
             }

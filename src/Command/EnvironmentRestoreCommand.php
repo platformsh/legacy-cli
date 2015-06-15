@@ -24,7 +24,7 @@ class EnvironmentRestoreCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();
 
@@ -39,17 +39,17 @@ class EnvironmentRestoreCommand extends PlatformCommand
                 }
             }
             if (empty($selectedActivity)) {
-                $output->writeln("Backup not found: <error>$backupName</error>");
+                $this->stdErr->writeln("Backup not found: <error>$backupName</error>");
 
                 return 1;
             }
         } else {
             // Find the most recent backup.
             $environmentId = $environment['id'];
-            $output->writeln("Finding the most recent backup for the environment <info>$environmentId</info>");
+            $this->stdErr->writeln("Finding the most recent backup for the environment <info>$environmentId</info>");
             $backupActivities = $environment->getActivities(1, 'environment.backup');
             if (!$backupActivities) {
-                $output->writeln("No backups found");
+                $this->stdErr->writeln("No backups found");
 
                 return 1;
             }
@@ -59,9 +59,9 @@ class EnvironmentRestoreCommand extends PlatformCommand
 
         if (!$selectedActivity->operationAvailable('restore')) {
             if (!$selectedActivity->isComplete()) {
-                $output->writeln("The backup is not complete, so it cannot be restored");
+                $this->stdErr->writeln("The backup is not complete, so it cannot be restored");
             } else {
-                $output->writeln("The backup cannot be restored");
+                $this->stdErr->writeln("The backup cannot be restored");
             }
 
             return 1;
@@ -74,19 +74,19 @@ class EnvironmentRestoreCommand extends PlatformCommand
         if (!$questionHelper->confirm(
           "Are you sure you want to restore the backup <comment>$name</comment> from <comment>$date</comment>?",
           $input,
-          $output
+          $this->stdErr
         )
         ) {
             return 1;
         }
 
-        $output->writeln("Restoring backup <info>$name</info>");
+        $this->stdErr->writeln("Restoring backup <info>$name</info>");
 
         $activity = $selectedActivity->restore();
         if (!$input->getOption('no-wait')) {
             $success = ActivityUtil::waitAndLog(
               $activity,
-              $output,
+              $this->stdErr,
               "The backup was successfully restored",
               "Restoring failed"
             );

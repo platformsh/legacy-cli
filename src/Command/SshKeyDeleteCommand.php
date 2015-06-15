@@ -25,7 +25,7 @@ class SshKeyDeleteCommand extends PlatformCommand
     {
         $id = $input->getArgument('id');
         if (empty($id) || !is_numeric($id)) {
-            $output->writeln("<error>You must specify the ID of the key to delete</error>");
+            $this->stdErr->writeln("<error>You must specify the ID of the key to delete</error>");
 
             return 1;
         }
@@ -33,12 +33,12 @@ class SshKeyDeleteCommand extends PlatformCommand
         $key = $this->getClient()
                     ->getSshKey($id);
         if (!$key) {
-            $output->writeln("SSH key not found: <error>$id</error>");
+            $this->stdErr->writeln("SSH key not found: <error>$id</error>");
         }
 
         $key->delete();
 
-        $output->writeln("The SSH key <info>#$id</info> has been deleted from your Platform.sh account");
+        $this->stdErr->writeln("The SSH key <info>#$id</info> has been deleted from your Platform.sh account");
 
         return 0;
     }

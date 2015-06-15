@@ -25,7 +25,7 @@ class EnvironmentActivateCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         if ($this->hasSelectedEnvironment()) {
             $toActivate = array($this->getSelectedEnvironment());
@@ -35,11 +35,11 @@ class EnvironmentActivateCommand extends PlatformCommand
             $toActivate = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
             foreach ($notFound as $notFoundId) {
-                $output->writeln("Environment not found: <error>$notFoundId</error>");
+                $this->stdErr->writeln("Environment not found: <error>$notFoundId</error>");
             }
         }
 
-        $success = $this->activateMultiple($toActivate, $input, $output);
+        $success = $this->activateMultiple($toActivate, $input, $this->stdErr);
 
         return $success ? 0 : 1;
     }

@@ -18,6 +18,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 
@@ -41,6 +42,9 @@ abstract class PlatformCommand extends Command
 
     /** @var OutputInterface|null */
     protected $output;
+
+    /** @var OutputInterface|null */
+    protected $stdErr;
 
     protected $envArgName = 'environment';
 
@@ -185,6 +189,7 @@ abstract class PlatformCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->output = $output;
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         self::$interactive = $input->isInteractive();
     }
 
@@ -591,13 +596,11 @@ abstract class PlatformCommand extends Command
 
     /**
      * Warn the user that the remote environment needs rebuilding.
-     *
-     * @param OutputInterface $output
      */
-    protected function rebuildWarning(OutputInterface $output)
+    protected function rebuildWarning()
     {
-        $output->writeln('<comment>The remote environment must be rebuilt for the change to take effect.</comment>');
-        $output->writeln("Use 'git push' with new commit(s) to trigger a rebuild.");
+        $this->stdErr->writeln('<comment>The remote environment must be rebuilt for the change to take effect.</comment>');
+        $this->stdErr->writeln("Use 'git push' with new commit(s) to trigger a rebuild.");
     }
 
     /**
@@ -718,10 +721,9 @@ abstract class PlatformCommand extends Command
 
     /**
      * @param InputInterface  $input
-     * @param OutputInterface $output
      * @param bool $envNotRequired
      */
-    protected function validateInput(InputInterface $input, OutputInterface $output, $envNotRequired = null)
+    protected function validateInput(InputInterface $input, $envNotRequired = null)
     {
         // Select the project.
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
@@ -756,10 +758,10 @@ abstract class PlatformCommand extends Command
             }
         }
 
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $output->writeln("Selected project: " . $this->project['id']);
+        if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $this->stdErr->writeln("Selected project: " . $this->project['id']);
             $environmentId = $this->environment ? $this->environment['id'] : '[none]';
-            $output->writeln("Selected environment: $environmentId");
+            $this->stdErr->writeln("Selected environment: $environmentId");
         }
     }
 

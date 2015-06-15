@@ -20,7 +20,7 @@ class UserDeleteCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $project = $this->getSelectedProject();
 
@@ -33,20 +33,20 @@ class UserDeleteCommand extends PlatformCommand
             }
         }
         if (empty($selectedUser)) {
-            $output->writeln("User not found: <error>$email</error>");
+            $this->stdErr->writeln("User not found: <error>$email</error>");
             return 1;
         }
 
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
-        if (!$questionHelper->confirm("Are you sure you want to delete the user <info>$email</info>?", $input, $output)) {
+        if (!$questionHelper->confirm("Are you sure you want to delete the user <info>$email</info>?", $input, $this->stdErr)) {
             return 1;
         }
 
         $selectedUser->delete();
 
-        $output->writeln("User <info>$email</info> deleted");
+        $this->stdErr->writeln("User <info>$email</info> deleted");
         return 0;
     }
 

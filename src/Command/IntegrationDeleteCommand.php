@@ -22,20 +22,20 @@ class IntegrationDeleteCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $id = $input->getArgument('id');
 
         $integration = $this->getSelectedProject()
                             ->getIntegration($id);
         if (!$integration) {
-            $output->writeln("Integration not found: <error>$id</error>");
+            $this->stdErr->writeln("Integration not found: <error>$id</error>");
 
             return 1;
         }
 
         if (!$integration->operationAvailable('delete')) {
-            $output->writeln("The integration <error>$id</error> cannot be deleted");
+            $this->stdErr->writeln("The integration <error>$id</error> cannot be deleted");
 
             return 1;
         }
@@ -43,14 +43,14 @@ class IntegrationDeleteCommand extends PlatformCommand
         $type = $integration->getProperty('type');
         $confirmText = "Delete the integration <info>$id</info> (type: $type)?";
         if (!$this->getHelper('question')
-                  ->confirm($confirmText, $input, $output)
+                  ->confirm($confirmText, $input, $this->stdErr)
         ) {
             return 1;
         }
 
         $integration->delete();
 
-        $output->writeln("Deleted integration <info>$id</info>");
+        $this->stdErr->writeln("Deleted integration <info>$id</info>");
 
         return 0;
     }
