@@ -51,19 +51,36 @@ class LocalBuild
     }
 
     /**
-     * @param string $projectRoot The absolute path to the project root.
+     * @param string $projectRoot The project root.
+     *
+     * @return bool
+     */
+    public function buildProject($projectRoot)
+    {
+        $this->settings['projectRoot'] = $projectRoot;
+
+        return $this->build($projectRoot . '/' . LocalProject::REPOSITORY_DIR, $projectRoot . '/' . LocalProject::WEB_ROOT);
+    }
+
+    /**
+     * @param string $sourceDir   The absolute path to the source directory.
+     * @param string $destination Where the build will be linked (absolute
+     *                            path).
      * @param array  $apps        An array of application names to build.
      *
      * @throws \Exception on failure
      *
      * @return bool
      */
-    public function buildProject($projectRoot, array $apps = array())
+    public function build($sourceDir, $destination, array $apps = array())
     {
-        $repositoryRoot = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        // Make absolute.
+        if (strpos($sourceDir, $destination) === 0) {
+            throw new \InvalidArgumentException("The destination '$destination' conflicts with the source: $sourceDir");
+        }
         $success = true;
         $identifiers = array();
-        foreach ($this->getApplications($repositoryRoot) as $identifier => $appRoot) {
+        foreach ($this->getApplications($sourceDir) as $identifier => $appRoot) {
             $appConfig = $this->getAppConfig($appRoot);
             $appIdentifier = isset($appConfig['name']) ? $appConfig['name'] : $identifier;
             $appConfig['_identifier'] = $appIdentifier;
@@ -71,7 +88,7 @@ class LocalBuild
             if ($apps && !in_array($appIdentifier, $apps)) {
                 continue;
             }
-            $success = $this->buildApp($appRoot, $projectRoot, $appConfig) && $success;
+            $success = $this->buildApp($appRoot, $sourceDir, $destination, $appConfig) && $success;
         }
         $notFounds = array_diff($apps, $identifiers);
         if ($notFounds) {
@@ -83,8 +100,14 @@ class LocalBuild
             if ($this->output->isVerbose()) {
                 $this->output->writeln("Cleaning up...");
             }
-            $this->cleanBuilds($projectRoot);
-            $this->cleanArchives($projectRoot);
+            if (!empty($this->settings['projectRoot'])) {
+                $this->cleanBuilds($this->settings['projectRoot']);
+                $this->cleanArchives($this->settings['projectRoot']);
+            }
+            else {
+                $buildsDir = $sourceDir . '/' . LocalProject::BUILD_DIR;
+                $this->cleanDirectory($buildsDir);
+            }
         }
 
         return $success;
@@ -213,7 +236,7 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency');
+        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency', 'projectRoot');
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 
@@ -225,16 +248,17 @@ class LocalBuild
 
     /**
      * @param string $appRoot
-     * @param string $projectRoot
+     * @param string $sourceDir
+     * @param string $destination
      * @param array  $appConfig
      *
      * @return bool
      */
-    protected function buildApp($appRoot, $projectRoot, array $appConfig = array())
+    protected function buildApp($appRoot, $sourceDir, $destination, array $appConfig = array())
     {
         $verbose = $this->output->isVerbose();
 
-        $multiApp = $appRoot != $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $multiApp = $appRoot != $sourceDir;
         $appName = isset($appConfig['name']) ? $appConfig['name'] : false;
         $appIdentifier = $appName ?: $appConfig['_identifier'];
 
@@ -245,7 +269,13 @@ class LocalBuild
         if ($multiApp) {
             $buildName .= '--' . str_replace('/', '-', $appIdentifier);
         }
-        $buildDir = $projectRoot . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+
+        if (!empty($this->settings['projectRoot'])) {
+            $buildDir = $this->settings['projectRoot'] . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+        }
+        else {
+            $buildDir = $sourceDir . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+        }
 
         // Get the configured document root.
         $documentRoot = $this->getDocumentRoot($appConfig);
@@ -264,16 +294,16 @@ class LocalBuild
             'multiApp' => $multiApp,
             'appName' => $appName,
           );
-        $toolstack->prepare($buildDir, $documentRoot, $appRoot, $projectRoot, $buildSettings);
+        $toolstack->prepare($buildDir, $documentRoot, $appRoot, $sourceDir, $buildSettings);
 
         $archive = false;
-        if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
+        if (empty($this->settings['noArchive']) && empty($this->settings['noCache']) && !empty($this->settings['projectRoot'])) {
             $treeId = $this->getTreeId($appRoot);
             if ($treeId) {
                 if ($verbose) {
                     $this->output->writeln("Tree ID: $treeId");
                 }
-                $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
+                $archive = $this->settings['projectRoot'] . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -309,6 +339,9 @@ class LocalBuild
                 if (!is_dir(dirname($archive))) {
                     mkdir(dirname($archive));
                 }
+                if ($verbose) {
+                    $this->output->writeln("Archive filename: $archive");
+                }
                 $this->fsHelper->archiveDir($buildDir, $archive);
             }
         }
@@ -323,21 +356,20 @@ class LocalBuild
 
             return false;
         }
-        $wwwLink = $projectRoot . '/' . LocalProject::WEB_ROOT;
         if ($multiApp) {
             $appDir = str_replace('/', '-', $appIdentifier);
-            if (is_link($wwwLink)) {
-                $this->fsHelper->remove($wwwLink);
+            if (is_link($destination)) {
+                $this->fsHelper->remove($destination);
             }
-            $wwwLink .= "/$appDir";
+            $destination .= "/$appDir";
         }
         if (empty($this->settings['copy'])) {
-            $symlinkTarget = $this->fsHelper->symlink($webRoot, $wwwLink);
+            $symlinkTarget = $this->fsHelper->symlink($webRoot, $destination);
         }
         else {
-            $this->output->writeln("Copying the build to: " . $wwwLink);
-            $this->fsHelper->remove($wwwLink);
-            $this->fsHelper->copyAll($webRoot, $wwwLink);
+            $this->output->writeln("Copying the build to: " . $destination);
+            $this->fsHelper->remove($destination);
+            $this->fsHelper->copyAll($webRoot, $destination);
         }
 
         $message = "Build complete for application <info>$appIdentifier</info>";

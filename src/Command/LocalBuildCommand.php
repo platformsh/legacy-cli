@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalBuildCommand extends PlatformCommand
 {
 
-    protected $defaultDrushConcurrency = 1;
+    protected $defaultDrushConcurrency = 4;
 
     protected function configure()
     {
@@ -28,6 +28,18 @@ class LocalBuildCommand extends PlatformCommand
             'a',
             InputOption::VALUE_NONE,
             'Use absolute links'
+          )
+          ->addOption(
+            'source',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The source directory. Defaults to the project repository'
+          )
+          ->addOption(
+            'destination',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The destination. Defaults to "www" in the project root'
           )
           ->addOption(
             'copy',
@@ -85,33 +97,61 @@ class LocalBuildCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
-            throw new RootNotFoundException();
+
+        $sourceDirOption = $input->getOption('source');
+        if (!$sourceDirOption) {
+            if (!$projectRoot) {
+                throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
+            }
+            $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        }
+        elseif (!is_dir($sourceDir = realpath($sourceDirOption))) {
+            throw new \InvalidArgumentException('Invalid source: ' . $sourceDirOption);
         }
 
+        $destination = $input->getOption('destination');
+        if ($destination) {
+            // Make the destination absolute. We can't use realpath() because
+            // the destination may not exist yet, and it may be a symbolic link.
+            $destinationParent = dirname($destination);
+            if (!realpath($destinationParent)) {
+                throw new \InvalidArgumentException("File not found: $destinationParent");
+            }
+            $destination = rtrim(realpath($destinationParent) . '/' . basename($destination), './');
+            if (file_exists($destination)) {
+                $questionHelper = $this->getHelper('question');
+                if (!$questionHelper->confirm("The destination exists: $destination. Overwrite?", $input, $output, false)) {
+                    return 1;
+                }
+            }
+        }
+        elseif (!$destination) {
+            if (!$projectRoot) {
+                throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
+            }
+            $destination = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        }
+
+        $settings = array();
+
         // Find out the real environment ID, if possible.
-        if ($this->isLoggedIn()) {
+        if ($projectRoot && $this->isLoggedIn()) {
             $project = $this->getCurrentProject();
             if ($project) {
                 $environment = $this->getCurrentEnvironment($project);
                 if ($environment) {
-                    $envId = $environment['id'];
+                    $settings['environmentId'] = $environment['id'];
                 }
             }
         }
 
         // Otherwise, use the Git branch name.
-        if (!isset($envId)) {
+        if (!isset($settings['environmentId']) && is_dir($sourceDir . '/.git')) {
             $gitHelper = $this->getHelper('git');
-            $envId = $gitHelper->getCurrentBranch($projectRoot . '/' . LocalProject::REPOSITORY_DIR, true);
+            $settings['environmentId'] = $gitHelper->getCurrentBranch($sourceDir, true);
         }
 
-        $apps = $input->getArgument('app');
-
-        $settings = array();
-
-        // The environment ID is used in making the build directory name.
-        $settings['environmentId'] = $envId;
+        $settings['projectRoot'] = $projectRoot;
 
         $settings['verbosity'] = $output->getVerbosity();
 
@@ -133,7 +173,8 @@ class LocalBuildCommand extends PlatformCommand
 
         try {
             $builder = new LocalBuild($settings, $this->stdErr);
-            $success = $builder->buildProject($projectRoot, $apps);
+            $apps = $input->getArgument('app');
+            $builder->build($sourceDir, $destination, $apps);
         } catch (\Exception $e) {
             $this->stdErr->writeln("<error>The build failed with an error</error>");
             $formattedMessage = $this->getHelper('formatter')
@@ -143,7 +184,9 @@ class LocalBuildCommand extends PlatformCommand
             return 1;
         }
 
-        return $success ? 0 : 2;
+        $this->output->writeln("Build destination: <info>$destination</info>");
+
+        return 0;
     }
 
 }

@@ -107,7 +107,10 @@ class Drupal extends ToolstackBase
      */
     protected function checkIgnored($filename, $suggestion = null)
     {
-        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        if (empty($this->settings['projectRoot'])) {
+            return;
+        }
+        $repositoryDir = $this->settings['projectRoot'] . '/' . LocalProject::REPOSITORY_DIR;
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
         if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
@@ -287,7 +290,7 @@ class Drupal extends ToolstackBase
         $defaultSettingsLocal = 'settings.local.php';
 
         // Override settings.php and settings.local.php for Drupal 8.
-        if ($this->isDrupal8($webRoot)) {
+        if ($shared && $this->isDrupal8($webRoot)) {
             $defaultSettingsPhp = '8/settings.php';
             $defaultSettingsLocal = '8/settings.local.php';
 
@@ -305,7 +308,7 @@ class Drupal extends ToolstackBase
         // Create the shared/settings.local.php if it doesn't exist. Everything
         // in shared will be symlinked into sites/default.
         $settingsLocal = $shared . '/settings.local.php';
-        if (!file_exists($settingsLocal)) {
+        if ($shared && !file_exists($settingsLocal)) {
             $this->output->writeln("Creating file: <info>$settingsLocal</info>");
             $this->fsHelper->copy($resources . '/' . $defaultSettingsLocal, $settingsLocal);
             $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
@@ -313,7 +316,7 @@ class Drupal extends ToolstackBase
 
         // Create a shared/files directory.
         $sharedFiles = "$shared/files";
-        if (!file_exists($sharedFiles)) {
+        if ($shared && !file_exists($sharedFiles)) {
             $this->output->writeln("Creating directory: <info>$sharedFiles</info>");
             $this->output->writeln('This is where Drupal can store public files.');
             mkdir($sharedFiles);
@@ -324,8 +327,10 @@ class Drupal extends ToolstackBase
         // Symlink all files and folders from shared. The "copy" option is
         // ignored, to avoid copying a huge sites/default/files directory every
         // time.
-        $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
-        $this->fsHelper->symlinkAll($shared, $sitesDefault);
+        if ($shared) {
+            $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
+            $this->fsHelper->symlinkAll($shared, $sitesDefault);
+        }
     }
 
     /**

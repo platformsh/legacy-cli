@@ -121,19 +121,31 @@ class FilesystemHelper extends Helper
     public function copyAll($source, $destination)
     {
         if (is_dir($source) && !is_dir($destination)) {
-            mkdir($destination, 0755, true);
+            if (!mkdir($destination, 0755, true)) {
+                throw new \RuntimeException("Failed to create directory: " . $destination);
+            }
         }
 
-        $skip = array('.', '..', '.git');
         if (is_dir($source)) {
+            $skip = array('.', '..', '.git');
+
+            // Prevent infinite recursion when the destination is inside the
+            // source.
+            if (strpos($destination, $source) === 0) {
+                $relative = str_replace($source, '', $destination);
+                $parts = explode('/', ltrim($relative, '/'), 2);
+                $skip[] = $parts[0];
+            }
+
             $sourceDirectory = opendir($source);
             while ($file = readdir($sourceDirectory)) {
-                if (!in_array($file, $skip)) {
-                    if (is_dir($source . '/' . $file)) {
-                        $this->copyAll($source . '/' . $file, $destination . '/' . $file);
-                    } else {
-                        $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
-                    }
+                if (in_array($file, $skip)) {
+                    continue;
+                }
+                if (is_dir($source . '/' . $file)) {
+                    $this->copyAll($source . '/' . $file, $destination . '/' . $file);
+                } else {
+                    $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }
             closedir($sourceDirectory);
@@ -222,15 +234,15 @@ class FilesystemHelper extends Helper
                     $this->remove($linkFile);
                 }
 
-                if ($this->relative) {
-                    $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
-                    chdir($destination);
-                }
-
                 if ($copy) {
                     $this->copyAll($sourceFile, $linkFile);
                 }
                 else {
+                    if ($this->relative) {
+                        $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
+                        chdir($destination);
+                    }
+
                     $this->fs->symlink($sourceFile, $linkFile, $this->copyIfSymlinkUnavailable);
                 }
             }
@@ -249,7 +261,10 @@ class FilesystemHelper extends Helper
     public function makePathRelative($path1, $path2)
     {
         if (!is_dir($path2)) {
-            $path2 = dirname($path2);
+            $path2 = realpath(dirname($path2));
+            if (!$path2) {
+                return $path1;
+            }
         }
         $result = rtrim($this->fs->makePathRelative($path1, $path2), DIRECTORY_SEPARATOR);
 
