@@ -14,7 +14,7 @@ class NoToolstack extends ToolstackBase
     {
         $this->buildInPlace = true;
         if ($this->copy) {
-            $this->fsHelper->copyAll($this->appRoot, $this->buildDir);
+            $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
         }
     }
 }
