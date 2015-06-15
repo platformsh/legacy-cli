@@ -321,7 +321,9 @@ class Drupal extends ToolstackBase
             chmod($sharedFiles, 0775);
         }
 
-        // Symlink all files and folders from shared.
+        // Symlink all files and folders from shared. The "copy" option is
+        // ignored, to avoid copying a huge sites/default/files directory every
+        // time.
         $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
         $this->fsHelper->symlinkAll($shared, $sitesDefault);
     }
