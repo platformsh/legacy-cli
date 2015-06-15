@@ -35,8 +35,9 @@ abstract class ToolstackBase implements ToolstackInterface
     protected $projectRoot;
     protected $documentRoot;
     protected $buildDir;
+    protected $copy = false;
     protected $absoluteLinks = false;
-    protected $leaveInPlace = false;
+    protected $buildInPlace = false;
 
     /** @var OutputInterface */
     protected $output;
@@ -92,6 +93,7 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->documentRoot = $documentRoot;
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
+        $this->copy = !empty($settings['copy']);
         $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
     }
 
@@ -100,7 +102,7 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     protected function symLinkSpecialDestinations()
     {
-        if ($this->leaveInPlace) {
+        if ($this->buildInPlace) {
             return;
         }
 
@@ -119,7 +121,12 @@ abstract class ToolstackBase implements ToolstackInterface
                 if (in_array($relSource, $this->ignoredFiles)) {
                     continue;
                 }
-                $this->output->writeln("Symlinking $relSource to $relDestination");
+                if ($this->copy) {
+                    $this->output->writeln("Copying $relSource to $relDestination");
+                }
+                else {
+                    $this->output->writeln("Symlinking $relSource to $relDestination");
+                }
                 $destination = $absDestination;
                 // Do not overwrite directories with files.
                 if (!is_dir($source) && is_dir($destination)) {
@@ -135,7 +142,12 @@ abstract class ToolstackBase implements ToolstackInterface
                     );
                     $this->fsHelper->remove($destination);
                 }
-                $this->fsHelper->symlink($source, $destination);
+                if ($this->copy) {
+                    $this->fsHelper->copy($source, $destination);
+                }
+                else {
+                    $this->fsHelper->symlink($source, $destination);
+                }
             }
         }
     }
@@ -166,7 +178,7 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function getWebRoot()
     {
-        if ($this->leaveInPlace) {
+        if ($this->buildInPlace && !$this->copy) {
             if ($this->documentRoot === 'public') {
                 return $this->appRoot;
             }
@@ -196,7 +208,7 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function canArchive()
     {
-        return !$this->leaveInPlace;
+        return !$this->buildInPlace || $this->copy;
     }
 
     /**

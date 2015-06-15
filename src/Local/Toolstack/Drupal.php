@@ -84,12 +84,16 @@ class Drupal extends ToolstackBase
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
 
-            $this->leaveInPlace = true;
+            $this->buildInPlace = true;
 
-            $this->copyGitIgnore('drupal/gitignore-vanilla');
-
-            $this->checkIgnored('sites/default/settings.local.php');
-            $this->checkIgnored('sites/default/files');
+            if ($this->copy) {
+                $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
+            }
+            else {
+                $this->copyGitIgnore('drupal/gitignore-vanilla');
+                $this->checkIgnored('sites/default/settings.local.php');
+                $this->checkIgnored('sites/default/files');
+            }
         }
 
         $this->symLinkSpecialDestinations();
@@ -172,7 +176,8 @@ class Drupal extends ToolstackBase
           $this->getWebRoot() . '/sites/default',
           true,
           false,
-          array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
+          array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
+          $this->copy
         );
     }
 
@@ -242,7 +247,8 @@ class Drupal extends ToolstackBase
           $profileDir,
           true,
           true,
-          array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
+          array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
+          $this->copy
         );
     }
 
@@ -261,7 +267,7 @@ class Drupal extends ToolstackBase
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
-            copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
+            $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->output->writeln(
               "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
               . "\nYou will need to rebuild if you edit this file.</comment>"
@@ -293,7 +299,7 @@ class Drupal extends ToolstackBase
 
         // Create a settings.php if it is missing.
         if (!file_exists($sitesDefault . '/settings.php')) {
-            copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
+            $this->fsHelper->copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
         }
 
         // Create the shared/settings.local.php if it doesn't exist. Everything
@@ -301,7 +307,7 @@ class Drupal extends ToolstackBase
         $settingsLocal = $shared . '/settings.local.php';
         if (!file_exists($settingsLocal)) {
             $this->output->writeln("Creating file: <info>$settingsLocal</info>");
-            copy($resources . '/' . $defaultSettingsLocal, $settingsLocal);
+            $this->fsHelper->copy($resources . '/' . $defaultSettingsLocal, $settingsLocal);
             $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
         }
 
@@ -315,7 +321,9 @@ class Drupal extends ToolstackBase
             chmod($sharedFiles, 0775);
         }
 
-        // Symlink all files and folders from shared.
+        // Symlink all files and folders from shared. The "copy" option is
+        // ignored, to avoid copying a huge sites/default/files directory every
+        // time.
         $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
         $this->fsHelper->symlinkAll($shared, $sitesDefault);
     }

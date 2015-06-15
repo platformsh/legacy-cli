@@ -31,6 +31,7 @@ class LocalBuild
           new Toolstack\Drupal(),
           new Toolstack\Symfony(),
           new Toolstack\Composer(),
+          new Toolstack\NoToolstack(),
         );
     }
 
@@ -251,72 +252,70 @@ class LocalBuild
 
         $toolstack = $this->getToolstack($appRoot, $appConfig);
 
-        if ($toolstack) {
-            $toolstack->setOutput($this->output);
+        if (!$toolstack) {
+            $this->output->writeln("Toolstack not found for application <error>$appIdentifier</error>");
 
-            $buildSettings = $this->settings + array(
-                'multiApp' => $multiApp,
-                'appName' => $appName,
-              );
-            $toolstack->prepare($buildDir, $documentRoot, $appRoot, $projectRoot, $buildSettings);
-
-            $archive = false;
-            if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
-                $treeId = $this->getTreeId($appRoot);
-                if ($treeId) {
-                    if ($verbose) {
-                        $this->output->writeln("Tree ID: $treeId");
-                    }
-                    $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
-                }
-            }
-
-            if ($archive && file_exists($archive)) {
-                $message = "Extracting archive for application <info>$appIdentifier</info>";
-                $message .= '...';
-                $this->output->writeln($message);
-                $this->fsHelper->extractArchive($archive, $buildDir);
-            } else {
-                $message = "Building application <info>$appIdentifier</info>";
-                if ($key = $toolstack->getKey()) {
-                    $message .= " using the toolstack <info>$key</info>";
-                }
-                $this->output->writeln($message);
-
-                $toolstack->build();
-
-                // We can only run post-build hooks for apps that actually have
-                // a separate build directory.
-                if (file_exists($buildDir)) {
-                    if ($this->runPostBuildHooks($appConfig, $buildDir) === false) {
-                        // The user may not care if build hooks fail, but we should
-                        // not archive the result.
-                        $archive = false;
-                    }
-                }
-                else {
-                    $this->warnAboutHooks($appConfig, 'build');
-                }
-
-                if ($archive && $toolstack->canArchive()) {
-                    $this->output->writeln("Saving build archive...");
-                    if (!is_dir(dirname($archive))) {
-                        mkdir(dirname($archive));
-                    }
-                    $this->fsHelper->archiveDir($buildDir, $archive);
-                }
-            }
-
-            $toolstack->install();
-
-            $webRoot = $toolstack->getWebRoot();
-        } else {
-            $webRoot = "$appRoot/$documentRoot";
-            if ($documentRoot === 'public' && !is_dir($webRoot)) {
-                $webRoot = $appRoot;
-            }
-            $this->warnAboutHooks($appConfig, 'build');
+            return false;
         }
+
+        $toolstack->setOutput($this->output);
+
+        $buildSettings = $this->settings + array(
+            'multiApp' => $multiApp,
+            'appName' => $appName,
+          );
+        $toolstack->prepare($buildDir, $documentRoot, $appRoot, $projectRoot, $buildSettings);
+
+        $archive = false;
+        if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
+            $treeId = $this->getTreeId($appRoot);
+            if ($treeId) {
+                if ($verbose) {
+                    $this->output->writeln("Tree ID: $treeId");
+                }
+                $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
+            }
+        }
+
+        if ($archive && file_exists($archive)) {
+            $message = "Extracting archive for application <info>$appIdentifier</info>";
+            $message .= '...';
+            $this->output->writeln($message);
+            $this->fsHelper->extractArchive($archive, $buildDir);
+        } else {
+            $message = "Building application <info>$appIdentifier</info>";
+            if ($key = $toolstack->getKey()) {
+                $message .= " using the toolstack <info>$key</info>";
+            }
+            $this->output->writeln($message);
+
+            $toolstack->build();
+
+            // We can only run post-build hooks for apps that actually have
+            // a separate build directory.
+            if (file_exists($buildDir)) {
+                if ($this->runPostBuildHooks($appConfig, $buildDir) === false) {
+                    // The user may not care if build hooks fail, but we should
+                    // not archive the result.
+                    $archive = false;
+                }
+            }
+            else {
+                $this->warnAboutHooks($appConfig, 'build');
+            }
+
+            if ($archive && $toolstack->canArchive()) {
+                $this->output->writeln("Saving build archive...");
+                if (!is_dir(dirname($archive))) {
+                    mkdir(dirname($archive));
+                }
+                $this->fsHelper->archiveDir($buildDir, $archive);
+            }
+        }
+
+        $toolstack->install();
+
+        $webRoot = $toolstack->getWebRoot();
 
         // Symlink the built web root ($webRoot) into www or www/appIdentifier.
         if (!is_dir($webRoot)) {
@@ -332,10 +331,13 @@ class LocalBuild
             }
             $wwwLink .= "/$appDir";
         }
-        $symlinkTarget = $this->fsHelper->symlink($webRoot, $wwwLink);
-
-        if ($verbose) {
-            $this->output->writeln("Created symlink: $wwwLink -> $symlinkTarget");
+        if (empty($this->settings['copy'])) {
+            $symlinkTarget = $this->fsHelper->symlink($webRoot, $wwwLink);
+        }
+        else {
+            $this->output->writeln("Copying the build to: " . $wwwLink);
+            $this->fsHelper->remove($wwwLink);
+            $this->fsHelper->copyAll($webRoot, $wwwLink);
         }
 
         $message = "Build complete for application <info>$appIdentifier</info>";
