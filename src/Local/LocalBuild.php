@@ -331,10 +331,13 @@ class LocalBuild
             }
             $wwwLink .= "/$appDir";
         }
-        $symlinkTarget = $this->fsHelper->symlink($webRoot, $wwwLink);
-
-        if ($verbose) {
-            $this->output->writeln("Created symlink: $wwwLink -> $symlinkTarget");
+        if (empty($this->settings['copy'])) {
+            $symlinkTarget = $this->fsHelper->symlink($webRoot, $wwwLink);
+        }
+        else {
+            $this->output->writeln("Copying the build to: " . $wwwLink);
+            $this->fsHelper->remove($wwwLink);
+            $this->fsHelper->copyAll($webRoot, $wwwLink);
         }
 
         $message = "Build complete for application <info>$appIdentifier</info>";

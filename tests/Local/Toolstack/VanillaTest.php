@@ -26,7 +26,8 @@ class VanillaTest extends BaseToolstackTest
         $projectRoot = $this->createDummyProject($sourceDir);
         $success = $builder->buildProject($projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
-        $filename = readlink($projectRoot . '/' . LocalProject::WEB_ROOT);
-        $this->assertNotFalse(strpos($filename, LocalProject::BUILD_DIR), 'Web root symlinks to actual build');
+        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $this->assertFileExists($webRoot . '/index.html');
+        $this->assertTrue(is_dir($webRoot), 'Web root is an actual directory');
     }
 }
