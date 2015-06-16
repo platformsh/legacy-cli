@@ -106,7 +106,7 @@ class LocalBuildCommand extends PlatformCommand
             $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         }
         elseif (!is_dir($sourceDir = realpath($sourceDirOption))) {
-            throw new \InvalidArgumentException('Invalid source: ' . $sourceDirOption);
+            throw new \InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
         }
 
         $destination = $input->getOption('destination');
@@ -117,7 +117,10 @@ class LocalBuildCommand extends PlatformCommand
             if (!realpath($destinationParent)) {
                 throw new \InvalidArgumentException("File not found: $destinationParent");
             }
-            $destination = rtrim(realpath($destinationParent) . '/' . basename($destination), './');
+            $originalDir = getcwd();
+            chdir($destinationParent);
+            $destination = $destination == '..' ? dirname(getcwd()) : getcwd() . rtrim('/' . basename($destination), './');
+            chdir($originalDir);
             if (file_exists($destination)) {
                 $questionHelper = $this->getHelper('question');
                 if (!$questionHelper->confirm("The destination exists: $destination. Overwrite?", $input, $output, false)) {
@@ -130,6 +133,11 @@ class LocalBuildCommand extends PlatformCommand
                 throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
             }
             $destination = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        }
+
+        // Ensure no conflicts between source and destination.
+        if (strpos($sourceDir, $destination) === 0) {
+            throw new \InvalidArgumentException("The destination '$destination' conflicts with the source '$sourceDir'");
         }
 
         $settings = array();

@@ -74,10 +74,6 @@ class LocalBuild
      */
     public function build($sourceDir, $destination, array $apps = array())
     {
-        // Make absolute.
-        if (strpos($sourceDir, $destination) === 0) {
-            throw new \InvalidArgumentException("The destination '$destination' conflicts with the source: $sourceDir");
-        }
         $success = true;
         $identifiers = array();
         foreach ($this->getApplications($sourceDir) as $identifier => $appRoot) {
