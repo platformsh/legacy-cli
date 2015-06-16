@@ -31,7 +31,10 @@ class Composer extends ToolstackBase
               $this->getComposerExecutable(),
               'install',
               '--no-progress',
+              '--prefer-dist',
+              '--optimize-autoloader',
               '--no-interaction',
+              '--no-ansi',
             );
             $this->shellHelper->execute($args, $buildDir, true, false);
         }

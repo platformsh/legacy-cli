@@ -6,6 +6,6 @@ php:
   - hhvm
 install:
   - composer install
-script:
   - composer update --prefer-lowest
+script:
   - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text
