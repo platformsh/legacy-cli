@@ -115,10 +115,6 @@ class LocalBuild
             }
         }
 
-        if ($success) {
-            $this->output->writeln("Project build destination: $destination");
-        }
-
         return $success;
     }
 
@@ -368,13 +364,9 @@ class LocalBuild
             }
             $destination .= "/$appDir";
         }
-        if (empty($this->settings['copy'])) {
-            $symlinkTarget = $this->fsHelper->symlink($webRoot, $destination);
-        }
-        else {
-            $this->fsHelper->remove($destination);
-            $this->fsHelper->copyAll($webRoot, $destination);
-        }
+
+        $symlinkTarget = $this->fsHelper->symlink($webRoot, $destination);
+        $this->output->writeln("Web root: $destination");
 
         $message = "Build complete for application <info>$appIdentifier</info>";
         $this->output->writeln($message);
