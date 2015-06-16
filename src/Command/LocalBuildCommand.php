@@ -33,19 +33,19 @@ class LocalBuildCommand extends PlatformCommand
             'source',
             null,
             InputOption::VALUE_OPTIONAL,
-            'The source directory. Defaults to the project repository'
+            'The source directory. Default: ' . LocalProject::REPOSITORY_DIR
           )
           ->addOption(
             'destination',
             null,
             InputOption::VALUE_OPTIONAL,
-            'The destination. Defaults to "www" in the project root'
+            'The destination, to which the web root of each app will be symlinked. Default: ' . LocalProject::WEB_ROOT
           )
           ->addOption(
             'copy',
             null,
             InputOption::VALUE_NONE,
-            'Copy instead of symlinking'
+            'Copy to a build directory, instead of symlinking from the source'
           )
           ->addOption(
             'no-clean',
@@ -63,13 +63,13 @@ class LocalBuildCommand extends PlatformCommand
             'no-cache',
             null,
             InputOption::VALUE_NONE,
-            'Disable caching.'
+            'Disable caching'
           )
           ->addOption(
             'no-build-hooks',
             null,
             InputOption::VALUE_NONE,
-            'Do not run post-build hooks.'
+            'Do not run post-build hooks'
           );
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
@@ -77,13 +77,13 @@ class LocalBuildCommand extends PlatformCommand
               'working-copy',
               null,
               InputOption::VALUE_NONE,
-              'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
+              'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version'
             )
             ->addOption(
               'concurrency',
               null,
               InputOption::VALUE_OPTIONAL,
-              'Drush: set the number of concurrent projects that will be processed at the same time.',
+              'Drush: set the number of concurrent projects that will be processed at the same time',
               $this->defaultDrushConcurrency
             );
         }

@@ -55,7 +55,7 @@ class LocalBuild
      *
      * @param string $projectRoot The absolute path to the project root.
      * @param string $sourceDir   The absolute path to the source directory.
-     * @param string $destination Where the build will be linked (absolute
+     * @param string $destination Where the web root(s) will be linked (absolute
      *                            path).
      *
      * @return bool
@@ -73,7 +73,7 @@ class LocalBuild
      * Build a project from any source directory, targeting any destination.
      *
      * @param string $sourceDir   The absolute path to the source directory.
-     * @param string $destination Where the build will be linked (absolute
+     * @param string $destination Where the web root(s) will be linked (absolute
      *                            path).
      * @param array  $apps        An array of application names to build.
      *
