@@ -115,6 +115,10 @@ class LocalBuild
             }
         }
 
+        if ($success) {
+            $this->output->writeln("Project build destination: $destination");
+        }
+
         return $success;
     }
 
@@ -314,7 +318,6 @@ class LocalBuild
 
         if ($archive && file_exists($archive)) {
             $message = "Extracting archive for application <info>$appIdentifier</info>";
-            $message .= '...';
             $this->output->writeln($message);
             $this->fsHelper->extractArchive($archive, $buildDir);
         } else {
@@ -340,12 +343,9 @@ class LocalBuild
             }
 
             if ($archive && $toolstack->canArchive()) {
-                $this->output->writeln("Saving build archive...");
+                $this->output->writeln("Saving build archive");
                 if (!is_dir(dirname($archive))) {
                     mkdir(dirname($archive));
-                }
-                if ($verbose) {
-                    $this->output->writeln("Archive filename: $archive");
                 }
                 $this->fsHelper->archiveDir($buildDir, $archive);
             }
@@ -372,7 +372,6 @@ class LocalBuild
             $symlinkTarget = $this->fsHelper->symlink($webRoot, $destination);
         }
         else {
-            $this->output->writeln("Copying the build to: " . $destination);
             $this->fsHelper->remove($destination);
             $this->fsHelper->copyAll($webRoot, $destination);
         }

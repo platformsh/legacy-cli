@@ -178,22 +178,12 @@ class LocalBuildCommand extends PlatformCommand
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
         }
 
-        try {
-            $builder = new LocalBuild($settings, $this->stdErr);
-            $apps = $input->getArgument('app');
-            $builder->build($sourceDir, $destination, $apps);
-        } catch (\Exception $e) {
-            $this->stdErr->writeln("<error>The build failed with an error</error>");
-            $formattedMessage = $this->getHelper('formatter')
-                                     ->formatBlock($e->getMessage(), 'error');
-            $this->stdErr->writeln($formattedMessage);
+        $apps = $input->getArgument('app');
 
-            return 1;
-        }
+        $builder = new LocalBuild($settings, $this->stdErr);
+        $success = $builder->build($sourceDir, $destination, $apps);
 
-        $this->output->writeln("Build destination: <info>$destination</info>");
-
-        return 0;
+        return $success ? 0 : 1;
     }
 
 }
