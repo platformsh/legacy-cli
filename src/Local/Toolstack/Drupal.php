@@ -231,7 +231,12 @@ class Drupal extends ToolstackBase
         );
         $drushHelper->execute($args, $profileDir, true, false);
 
-        $this->output->writeln("Symlinking existing app files to the profile");
+        if ($this->copy) {
+            $this->output->writeln("Copying existing app files to the profile");
+        }
+        else {
+            $this->output->writeln("Symlinking existing app files to the profile");
+        }
 
         $this->ignoredFiles[] = basename($projectMake);
         $this->ignoredFiles[] = basename($projectCoreMake);
@@ -267,6 +272,10 @@ class Drupal extends ToolstackBase
      */
     protected function processSettingsPhp()
     {
+        if ($this->copy) {
+            // This behaviour only relates to symlinking.
+            return;
+        }
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
