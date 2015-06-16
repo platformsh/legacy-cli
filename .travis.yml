@@ -5,7 +5,7 @@ php:
   - 5.4
   - hhvm
 install:
-  - composer install
-  - composer update --prefer-lowest
+  - composer install --prefer-source --no-interaction
+  - composer update --prefer-lowest --no-interaction
 script:
   - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text
