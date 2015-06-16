@@ -114,11 +114,10 @@ class LocalBuildCommand extends PlatformCommand
             // Make the destination absolute. We can't use realpath() because
             // the destination may not exist yet, and it may be a symbolic link.
             $destinationParent = dirname($destination);
-            if (!realpath($destinationParent)) {
-                throw new \InvalidArgumentException("File not found: $destinationParent");
-            }
             $originalDir = getcwd();
-            chdir($destinationParent);
+            if (!chdir($destinationParent)) {
+                throw new \InvalidArgumentException("Directory not found: $destinationParent");
+            }
             $destination = $destination == '..' ? dirname(getcwd()) : getcwd() . rtrim('/' . basename($destination), './');
             chdir($originalDir);
             if (file_exists($destination)) {

@@ -52,5 +52,22 @@ class VanillaTest extends BaseToolstackTest
         $builder = new LocalBuild(array('copy' => true), self::$output);
         $builder->build($sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
+
+        // Remove the builds directory.
+        exec('rm -R ' . escapeshellarg($sourceDir . '/' . LocalProject::BUILD_DIR));
+    }
+
+    /**
+     * Test with a custom destination.
+     */
+    public function testBuildCustomDestination()
+    {
+        $projectRoot = $this->createDummyProject('tests/data/apps/vanilla');
+
+        $destination = $projectRoot . '/web';
+
+        $builder = new LocalBuild(array(), self::$output);
+        $builder->buildProject($projectRoot, null, $destination);
+        $this->assertFileExists($destination . '/index.html');
     }
 }

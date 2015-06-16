@@ -51,18 +51,27 @@ class LocalBuild
     }
 
     /**
-     * @param string $projectRoot The project root.
+     * Build a normal Platform.sh project.
+     *
+     * @param string $projectRoot The absolute path to the project root.
+     * @param string $sourceDir   The absolute path to the source directory.
+     * @param string $destination Where the build will be linked (absolute
+     *                            path).
      *
      * @return bool
      */
-    public function buildProject($projectRoot)
+    public function buildProject($projectRoot, $sourceDir = null, $destination = null)
     {
         $this->settings['projectRoot'] = $projectRoot;
+        $sourceDir = $sourceDir ?: $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $destination = $destination ?: $projectRoot . '/' . LocalProject::WEB_ROOT;
 
-        return $this->build($projectRoot . '/' . LocalProject::REPOSITORY_DIR, $projectRoot . '/' . LocalProject::WEB_ROOT);
+        return $this->build($sourceDir, $destination);
     }
 
     /**
+     * Build a project from any source directory, targeting any destination.
+     *
      * @param string $sourceDir   The absolute path to the source directory.
      * @param string $destination Where the build will be linked (absolute
      *                            path).
