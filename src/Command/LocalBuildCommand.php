@@ -115,8 +115,8 @@ class LocalBuildCommand extends PlatformCommand
             // the destination may not exist yet, and it may be a symbolic link.
             $destinationParent = dirname($destination);
             $originalDir = getcwd();
-            if (!chdir($destinationParent)) {
-                throw new \InvalidArgumentException("Directory not found: $destinationParent");
+            if (!is_dir($destinationParent) || !chdir($destinationParent)) {
+                throw new \InvalidArgumentException("Destination parent directory not found: $destinationParent");
             }
             $destination = $destination == '..' ? dirname(getcwd()) : getcwd() . rtrim('/' . basename($destination), './');
             chdir($originalDir);
