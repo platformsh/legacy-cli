@@ -30,4 +30,44 @@ class VanillaTest extends BaseToolstackTest
         $this->assertFileExists($webRoot . '/index.html');
         $this->assertTrue(is_dir($webRoot), 'Web root is an actual directory');
     }
+
+    /**
+     * Test with a custom source and destination.
+     */
+    public function testBuildCustomSourceDestination()
+    {
+        // N.B. the source directory and destination must be absolute for this
+        // to work.
+        $sourceDir = realpath('tests/data/apps/vanilla');
+
+        $tempDir = self::$root->getName();
+        $destination = tempnam($tempDir, '');
+
+        // Test with symlinking.
+        $builder = new LocalBuild(array(), self::$output);
+        $builder->build($sourceDir, $destination);
+        $this->assertFileExists($destination . '/index.html');
+
+        // Test with copying.
+        $builder = new LocalBuild(array('copy' => true), self::$output);
+        $builder->build($sourceDir, $destination);
+        $this->assertFileExists($destination . '/index.html');
+
+        // Remove the builds directory.
+        exec('rm -R ' . escapeshellarg($sourceDir . '/' . LocalProject::BUILD_DIR));
+    }
+
+    /**
+     * Test with a custom destination.
+     */
+    public function testBuildCustomDestination()
+    {
+        $projectRoot = $this->createDummyProject('tests/data/apps/vanilla');
+
+        $destination = $projectRoot . '/web';
+
+        $builder = new LocalBuild(array(), self::$output);
+        $builder->buildProject($projectRoot, null, $destination);
+        $this->assertFileExists($destination . '/index.html');
+    }
 }

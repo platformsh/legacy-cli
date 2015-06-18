@@ -195,17 +195,10 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         // Launch the first build.
-        try {
-            $builder = new LocalBuild(array('environmentId' => $environment), $output);
-            $builder->buildProject($projectRoot);
-        } catch (\Exception $e) {
-            $this->stdErr->writeln("<comment>The build failed with an error</comment>");
-            $formattedMessage = $this->getHelper('formatter')
-                                     ->formatBlock($e->getMessage(), 'comment');
-            $this->stdErr->writeln($formattedMessage);
-        }
+        $builder = new LocalBuild(array('environmentId' => $environment), $output);
+        $success = $builder->buildProject($projectRoot);
 
-        return 0;
+        return $success ? 0 : 1;
     }
 
     /**

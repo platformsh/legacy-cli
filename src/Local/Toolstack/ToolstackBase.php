@@ -32,7 +32,7 @@ abstract class ToolstackBase implements ToolstackInterface
 
     protected $settings = array();
     protected $appRoot;
-    protected $projectRoot;
+    protected $sourceDir;
     protected $documentRoot;
     protected $buildDir;
     protected $copy = false;
@@ -83,10 +83,10 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, $documentRoot, $appRoot, $projectRoot, array $settings)
+    public function prepare($buildDir, $documentRoot, $appRoot, $sourceDir, array $settings)
     {
         $this->appRoot = $appRoot;
-        $this->projectRoot = $projectRoot;
+        $this->sourceDir = $sourceDir;
         $this->settings = $settings;
 
         $this->buildDir = $buildDir;
@@ -158,11 +158,14 @@ abstract class ToolstackBase implements ToolstackInterface
      * This will be 'shared' for a single-application project, or
      * 'shared/<appName>' when there are multiple applications.
      *
-     * @return string
+     * @return string|false
      */
     protected function getSharedDir()
     {
-        $shared = $this->projectRoot . '/' . LocalProject::SHARED_DIR;
+        if (empty($this->settings['projectRoot'])) {
+            return false;
+        }
+        $shared = $this->settings['projectRoot'] . '/' . LocalProject::SHARED_DIR;
         if (!empty($this->settings['multiApp']) && !empty($this->settings['appName'])) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->settings['appName']);
         }
@@ -220,10 +223,10 @@ abstract class ToolstackBase implements ToolstackInterface
     protected function copyGitIgnore($source)
     {
         $source = CLI_ROOT . '/resources/' . $source;
-        if (!file_exists($source)) {
+        if (!file_exists($source) || empty($this->settings['projectRoot'])) {
             return;
         }
-        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $this->settings['projectRoot'] . '/' . LocalProject::REPOSITORY_DIR;
         $repositoryGitIgnore = "$repositoryDir/.gitignore";
         $appGitIgnore = $this->appRoot . '/.gitignore';
         if (!file_exists($appGitIgnore) && !file_exists($repositoryGitIgnore)) {
