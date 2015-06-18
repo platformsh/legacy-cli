@@ -34,7 +34,7 @@ class ProjectGetCommand extends PlatformCommand
           )
           ->addOption(
             'environment',
-            null,
+            'e',
             InputOption::VALUE_OPTIONAL,
             "The environment ID to clone. Defaults to 'master'"
           )
