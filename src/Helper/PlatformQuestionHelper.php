@@ -11,6 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Symfony\Component\Console\Question\Question;
 
 class PlatformQuestionHelper extends QuestionHelper
 {
@@ -67,4 +68,25 @@ class PlatformQuestionHelper extends QuestionHelper
         return $choiceKey;
     }
 
+    /**
+     * Ask a simple question which requires input.
+     *
+     * @param string          $questionText
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     * @param mixed           $default
+     *
+     * @return string
+     *   The user's answer.
+     */
+    public function askInput($questionText, InputInterface $input, OutputInterface $output, $default = null)
+    {
+        if ($default !== null) {
+            $questionText .= ' <question>[' . $default . ']</question>';
+        }
+        $questionText .= ': ';
+        $question = new Question($questionText, $default);
+
+        return $this->ask($input, $output, $question);
+    }
 }

@@ -98,7 +98,14 @@ class LocalBuildCommand extends PlatformCommand
     {
         $projectRoot = $this->getProjectRoot();
 
+        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+
         $sourceDirOption = $input->getOption('source');
+        if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
+            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr, '.');
+        }
+
         if ($sourceDirOption) {
             $sourceDir = realpath($sourceDirOption);
             if (!is_dir($sourceDir)) {
@@ -112,16 +119,21 @@ class LocalBuildCommand extends PlatformCommand
             $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         }
 
+        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+        $fsHelper = $this->getHelper('fs');
+
         $destination = $input->getOption('destination');
+
+        if (!$projectRoot && !$destination && $input->isInteractive()) {
+            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr, 'www');
+        }
+
         if ($destination) {
-            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-            $fsHelper = $this->getHelper('fs');
             $destination = $fsHelper->makePathAbsolute($destination);
 
             if (file_exists($destination)) {
-                /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
-                $questionHelper = $this->getHelper('question');
-                if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $input, $this->stdErr, false)) {
+                $default = is_link($destination);
+                if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $input, $this->stdErr, $default)) {
                     return 1;
                 }
             }

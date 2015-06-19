@@ -6,7 +6,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Process\Process;
 
 class SshKeyAddCommand extends PlatformCommand
@@ -27,6 +26,7 @@ class SshKeyAddCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
         $path = $input->getArgument('path');
@@ -80,7 +80,7 @@ class SshKeyAddCommand extends PlatformCommand
 
         $name = $input->getOption('name');
         if (!$name) {
-            $name = $questionHelper->ask($input, $this->stdErr, new Question('Enter a name for the key: '));
+            $name = $questionHelper->askInput('Enter a name for the key', $input, $this->stdErr);
         }
 
         $this->getClient()
