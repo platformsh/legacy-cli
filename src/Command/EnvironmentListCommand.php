@@ -203,7 +203,7 @@ class EnvironmentListCommand extends PlatformCommand
         }
 
         $this->stdErr->writeln("Your environments are: ");
-        $table = $this->buildEnvironmentTable($tree, $this->stdErr);
+        $table = $this->buildEnvironmentTable($tree, $output);
         $table->render();
 
         if (!$this->currentEnvironment) {
