@@ -26,26 +26,26 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
         $this->validateInput($input);
 
         $dumpFile = $input->getOption('file');
-        if ($dumpFile === null) {
-            if (!$projectRoot = $this->getProjectRoot()) {
-                throw new RootNotFoundException(
-                  'Project root not found. Specify --file or go to a project directory.'
-                );
+        if ($dumpFile) {
+            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+            $fsHelper = $this->getHelper('fs');
+            $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
+            if (is_dir($dumpFile)) {
+                $dumpFile .= '/' . 'dump.sql';
             }
+        }
+        elseif (!$projectRoot = $this->getProjectRoot()) {
+            throw new RootNotFoundException(
+              'Project root not found. Specify --file or go to a project directory.'
+            );
+        }
+        else {
             $dumpFile = $projectRoot . '/dump.sql';
         }
 
-        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-        $fsHelper = $this->getHelper('fs');
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
-
-        $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
-        if (is_dir($dumpFile)) {
-            $dumpFile .= '/' . 'dump.sql';
-        }
-
         if (file_exists($dumpFile)) {
+            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
             if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", $input, $this->stdErr, false)) {
                 return 1;
             }

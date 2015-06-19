@@ -99,22 +99,25 @@ class LocalBuildCommand extends PlatformCommand
         $projectRoot = $this->getProjectRoot();
 
         $sourceDirOption = $input->getOption('source');
-        if (!$sourceDirOption) {
-            if (!$projectRoot) {
-                throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
+        if ($sourceDirOption) {
+            $sourceDir = realpath($sourceDirOption);
+            if (!is_dir($sourceDir)) {
+                throw new \InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
             }
-            $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         }
-        elseif (!is_dir($sourceDir = realpath($sourceDirOption))) {
-            throw new \InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
+        elseif (!$projectRoot) {
+            throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
+        }
+        else {
+            $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         }
 
         $destination = $input->getOption('destination');
         if ($destination) {
             /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
             $fsHelper = $this->getHelper('fs');
-
             $destination = $fsHelper->makePathAbsolute($destination);
+
             if (file_exists($destination)) {
                 /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
                 $questionHelper = $this->getHelper('question');
@@ -123,10 +126,10 @@ class LocalBuildCommand extends PlatformCommand
                 }
             }
         }
-        elseif (!$destination) {
-            if (!$projectRoot) {
-                throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
-            }
+        elseif (!$projectRoot) {
+            throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
+        }
+        else {
             $destination = $projectRoot . '/' . LocalProject::WEB_ROOT;
         }
 
