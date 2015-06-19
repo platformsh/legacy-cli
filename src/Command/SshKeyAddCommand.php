@@ -46,7 +46,7 @@ class SshKeyAddCommand extends PlatformCommand
             } // Offer to generate a key.
             elseif ($shellHelper->commandExists('ssh-keygen') && $shellHelper->commandExists(
                 'ssh-add'
-              ) && $questionHelper->confirm("Generate a new key?", $input, $output)
+              ) && $questionHelper->confirm("Generate a new key?", $input, $this->stdErr)
             ) {
                 $newKey = $this->getNewKeyFilename($default);
                 $args = array('ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', '');

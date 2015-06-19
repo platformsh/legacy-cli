@@ -36,7 +36,7 @@ class UserAddCommand extends UserCommand
             $question = new Question('Email address: ');
             $question->setValidator(array($this, 'validateEmail'));
             $question->setMaxAttempts(5);
-            $email = $questionHelper->ask($input, $output, $question);
+            $email = $questionHelper->ask($input, $this->stdErr, $question);
         }
 
         $project = $this->getSelectedProject();

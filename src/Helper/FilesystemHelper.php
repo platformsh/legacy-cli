@@ -272,6 +272,37 @@ class FilesystemHelper extends Helper
     }
 
     /**
+     * Make a relative path into an absolute one.
+     *
+     * The realpath() function will only work for existing files, and not for
+     * symlinks. This is a more flexible solution.
+     *
+     * @param string $relativePath
+     *
+     * @throws \InvalidArgumentException If the parent directory is not found.
+     *
+     * @return string
+     */
+    public function makePathAbsolute($relativePath)
+    {
+        if (file_exists($relativePath) && !is_link($relativePath) && ($realPath = realpath($relativePath))) {
+            $absolute = $realPath;
+        }
+        else {
+            $parent = dirname($relativePath);
+            if (!is_dir($parent) || !($parentRealPath = realpath($parent))) {
+                throw new \InvalidArgumentException('Directory not found: ' . $parent);
+            }
+            $basename = basename($relativePath);
+            $absolute = $basename == '..'
+              ? dirname($parentRealPath)
+              : rtrim($parentRealPath . '/' . $basename, './');
+        }
+
+        return $absolute;
+    }
+
+    /**
      * Create a gzipped tar archive of a directory's contents.
      *
      * @param string $dir

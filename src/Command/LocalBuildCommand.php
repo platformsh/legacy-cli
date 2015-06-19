@@ -111,18 +111,14 @@ class LocalBuildCommand extends PlatformCommand
 
         $destination = $input->getOption('destination');
         if ($destination) {
-            // Make the destination absolute. We can't use realpath() because
-            // the destination may not exist yet, and it may be a symbolic link.
-            $destinationParent = dirname($destination);
-            $originalDir = getcwd();
-            if (!is_dir($destinationParent) || !chdir($destinationParent)) {
-                throw new \InvalidArgumentException("Destination parent directory not found: $destinationParent");
-            }
-            $destination = $destination == '..' ? dirname(getcwd()) : getcwd() . rtrim('/' . basename($destination), './');
-            chdir($originalDir);
+            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+            $fsHelper = $this->getHelper('fs');
+
+            $destination = $fsHelper->makePathAbsolute($destination);
             if (file_exists($destination)) {
+                /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
                 $questionHelper = $this->getHelper('question');
-                if (!$questionHelper->confirm("The destination exists: $destination. Overwrite?", $input, $output, false)) {
+                if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $input, $this->stdErr, false)) {
                     return 1;
                 }
             }

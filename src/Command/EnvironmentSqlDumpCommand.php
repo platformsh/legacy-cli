@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -24,31 +25,28 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
     {
         $this->validateInput($input);
 
-        $projectRoot = $this->getProjectRoot();
         $dumpFile = $input->getOption('file');
-        if ($dumpFile !== null) {
-            if (file_exists($dumpFile)) {
-                $this->stdErr->writeln("File exists: <error>$dumpFile</error>");
-                return 1;
+        if ($dumpFile === null) {
+            if (!$projectRoot = $this->getProjectRoot()) {
+                throw new RootNotFoundException(
+                  'Project root not found. Specify --file or go to a project directory.'
+                );
             }
-
-            $dir = dirname($dumpFile);
-
-            if (!is_dir($dir)) {
-                $this->stdErr->writeln("Directory not found: <error>$dir</error>");
-                return 1;
-            }
-            elseif (!is_writable($dir)) {
-                $this->stdErr->writeln("Directory not writable: <error>$dir</error>");
-                return 1;
-            }
-
-            $dumpFile = realpath($dir) . '/' . basename($dumpFile);
-        }
-        else {
             $dumpFile = $projectRoot . '/dump.sql';
-            if (file_exists($dumpFile)) {
-                $this->stdErr->writeln("File exists: <error>$dumpFile</error>");
+        }
+
+        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+        $fsHelper = $this->getHelper('fs');
+        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+
+        $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
+        if (is_dir($dumpFile)) {
+            $dumpFile .= '/' . 'dump.sql';
+        }
+
+        if (file_exists($dumpFile)) {
+            if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", $input, $this->stdErr, false)) {
                 return 1;
             }
         }

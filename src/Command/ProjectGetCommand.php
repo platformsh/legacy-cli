@@ -63,7 +63,7 @@ class ProjectGetCommand extends PlatformCommand
         $projectId = $input->getArgument('id');
         if (empty($projectId)) {
             if ($input->isInteractive() && ($projects = $this->getProjects(true))) {
-                $projectId = $this->offerProjectChoice($projects, $input, $output);
+                $projectId = $this->offerProjectChoice($projects, $input);
             } else {
                 $this->stdErr->writeln("<error>You must specify a project.</error>");
 
@@ -122,7 +122,7 @@ class ProjectGetCommand extends PlatformCommand
         } elseif (count($environments) === 1) {
             $environment = key($environments);
         } elseif ($environments && $input->isInteractive()) {
-            $environment = $this->offerEnvironmentChoice($environments, $input, $this->stdErr);
+            $environment = $this->offerEnvironmentChoice($environments, $input);
         } else {
             $environment = 'master';
         }
@@ -204,12 +204,11 @@ class ProjectGetCommand extends PlatformCommand
     /**
      * @param Environment[]   $environments
      * @param InputInterface  $input
-     * @param OutputInterface $output
      *
      * @return string
      *   The chosen environment ID.
      */
-    protected function offerEnvironmentChoice(array $environments, InputInterface $input, OutputInterface $output)
+    protected function offerEnvironmentChoice(array $environments, InputInterface $input)
     {
         $includeInactive = $input->hasOption('include-inactive') && $input->getOption('include-inactive');
         // Create a list starting with "master".
@@ -224,18 +223,17 @@ class ProjectGetCommand extends PlatformCommand
         $text = "Enter a number to choose which environment to check out:";
 
         return $this->getHelper('question')
-                    ->choose($environmentList, $text, $input, $output, $default);
+                    ->choose($environmentList, $text, $input, $this->stdErr, $default);
     }
 
     /**
      * @param Project[]       $projects
      * @param InputInterface  $input
-     * @param OutputInterface $output
      *
      * @return string
      *   The chosen project ID.
      */
-    protected function offerProjectChoice(array $projects, InputInterface $input, OutputInterface $output)
+    protected function offerProjectChoice(array $projects, InputInterface $input)
     {
         $projectList = array();
         foreach ($projects as $project) {
@@ -244,7 +242,7 @@ class ProjectGetCommand extends PlatformCommand
         $text = "Enter a number to choose which project to clone:";
 
         return $this->getHelper('question')
-                    ->choose($projectList, $text, $input, $output);
+                    ->choose($projectList, $text, $input, $this->stdErr);
     }
 
 }
