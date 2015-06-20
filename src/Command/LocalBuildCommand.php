@@ -159,13 +159,18 @@ class LocalBuildCommand extends PlatformCommand
         $settings = array();
 
         // Find out the real environment ID, if possible.
-        if ($projectRoot && $this->isLoggedIn()) {
-            $project = $this->getCurrentProject();
-            if ($project) {
-                $environment = $this->getCurrentEnvironment($project);
-                if ($environment) {
-                    $settings['environmentId'] = $environment['id'];
-                }
+        if ($projectRoot) {
+            try {
+                $project = $this->getCurrentProject();
+            }
+            catch (\RuntimeException $e) {
+                // An exception may be thrown if the user no longer has access
+                // to the project. We can still let the user build the project
+                // locally.
+                $project = false;
+            }
+            if ($project && ($environment = $this->getCurrentEnvironment($project))) {
+                $settings['environmentId'] = $environment['id'];
             }
         }
 
