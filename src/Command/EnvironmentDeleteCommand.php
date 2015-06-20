@@ -136,6 +136,9 @@ class EnvironmentDeleteCommand extends PlatformCommand
                     continue 2;
                 }
             }
+            if ($environment->status === 'dirty') {
+                $environment->refresh();
+            }
             if ($environment->isActive()) {
                 $output->writeln("The environment <comment>$environmentId</comment> is currently active: deleting it will delete all associated data.");
                 $question = "Are you sure you want to delete the environment <comment>$environmentId</comment>?";
@@ -147,11 +150,15 @@ class EnvironmentDeleteCommand extends PlatformCommand
                     }
                 }
             }
-            else {
+            elseif ($environment->status === 'inactive') {
                 $question = "Are you sure you want to delete the remote Git branch <comment>$environmentId</comment>?";
                 if ($questionHelper->confirm($question, $input, $output)) {
                     $delete[$environmentId] = $environment;
                 }
+            }
+            elseif ($environment->status === 'dirty') {
+                $output->writeln("The environment <error>$environmentId</error> is currently building, and therefore can't be deleted. Please wait");
+                continue;
             }
         }
 
@@ -173,8 +180,12 @@ class EnvironmentDeleteCommand extends PlatformCommand
         $deleted = 0;
         foreach ($delete as $environmentId => $environment) {
             try {
-                if ($environment->isActive()) {
+                if ($environment->status !== 'inactive') {
                     $environment->refresh();
+                    if ($environment->status !== 'inactive') {
+                        $output->writeln("Cannot delete environment <error>$environmentId</error>: it is not (yet) inactive.");
+                        continue;
+                    }
                 }
                 $environment->delete();
                 $output->writeln("Deleted remote Git branch <info>$environmentId</info>");
