@@ -158,29 +158,9 @@ class LocalBuildCommand extends PlatformCommand
 
         $settings = array();
 
-        // Find out the real environment ID, if possible.
-        if ($projectRoot) {
-            try {
-                $project = $this->getCurrentProject();
-            }
-            catch (\RuntimeException $e) {
-                // An exception may be thrown if the user no longer has access
-                // to the project. We can still let the user build the project
-                // locally.
-                $project = false;
-            }
-            if ($project && ($environment = $this->getCurrentEnvironment($project))) {
-                $settings['environmentId'] = $environment['id'];
-            }
-        }
-
-        // Otherwise, use the Git branch name.
-        if (!isset($settings['environmentId']) && is_dir($sourceDir . '/.git')) {
-            $gitHelper = $this->getHelper('git');
-            $settings['environmentId'] = $gitHelper->getCurrentBranch($sourceDir, true);
-        }
-
         $settings['projectRoot'] = $projectRoot;
+
+        $settings['environmentId'] = $this->determineEnvironmentId($sourceDir, $projectRoot);
 
         $settings['verbosity'] = $output->getVerbosity();
 
@@ -208,4 +188,41 @@ class LocalBuildCommand extends PlatformCommand
         return $success ? 0 : 1;
     }
 
+    /**
+     * Find out the environment ID, if possible.
+     *
+     * This is appended to the build directory name.
+     *
+     * @param string $sourceDir
+     * @param string|false $projectRoot
+     *
+     * @return string|false
+     */
+    protected function determineEnvironmentId($sourceDir, $projectRoot = null)
+    {
+        // Find out the real environment ID, if possible.
+        if ($projectRoot && $this->isLoggedIn()) {
+            try {
+                $project = $this->getCurrentProject();
+            }
+            catch (\RuntimeException $e) {
+                // An exception may be thrown if the user no longer has access
+                // to the project. We can still let the user build the project
+                // locally.
+                $project = false;
+            }
+            if ($project && ($environment = $this->getCurrentEnvironment($project))) {
+                return $environment['id'];
+            }
+        }
+
+        // Fall back to the Git branch name.
+        if (is_dir($sourceDir . '/.git')) {
+            /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
+            $gitHelper = $this->getHelper('git');
+            return $gitHelper->getCurrentBranch($sourceDir);
+        }
+
+        return false;
+    }
 }
