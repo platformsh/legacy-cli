@@ -102,8 +102,10 @@ class LocalBuildCommand extends PlatformCommand
         $questionHelper = $this->getHelper('question');
 
         $sourceDirOption = $input->getOption('source');
+
+        // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
-            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr, '.');
+            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr);
         }
 
         if ($sourceDirOption) {
@@ -119,19 +121,23 @@ class LocalBuildCommand extends PlatformCommand
             $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
         }
 
-        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-        $fsHelper = $this->getHelper('fs');
-
         $destination = $input->getOption('destination');
 
+        // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
-            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr, 'www');
+            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr);
         }
 
         if ($destination) {
+            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+            $fsHelper = $this->getHelper('fs');
             $destination = $fsHelper->makePathAbsolute($destination);
 
             if (file_exists($destination)) {
+                if (!is_writable($destination)) {
+                    $this->stdErr->writeln("The destination exists and is not writable: <error>$destination</error>");
+                    return 1;
+                }
                 $default = is_link($destination);
                 if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $input, $this->stdErr, $default)) {
                     return 1;
