@@ -147,7 +147,7 @@ abstract class IntegrationCommand extends PlatformCommand
             'required' => true,
             'description' => 'GitHub or BitBucket: the repository to track (in the form \'user/repo\')',
             'validator' => function ($string) {
-                return (bool) preg_match('#^[\w\-_]+/[\w\-_]+$#', $string);
+                return substr_count($string, '/', 1) === 1;
             },
           ),
           'build_pull_requests' => array(
