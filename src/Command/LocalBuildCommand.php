@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
-use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -70,23 +69,20 @@ class LocalBuildCommand extends PlatformCommand
             null,
             InputOption::VALUE_NONE,
             'Do not run post-build hooks'
+          )
+          ->addOption(
+            'working-copy',
+            null,
+            InputOption::VALUE_NONE,
+            'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version'
+          )
+          ->addOption(
+            'concurrency',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Drush: set the number of concurrent projects that will be processed at the same time',
+            $this->defaultDrushConcurrency
           );
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
-            $this->addOption(
-              'working-copy',
-              null,
-              InputOption::VALUE_NONE,
-              'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version'
-            )
-            ->addOption(
-              'concurrency',
-              null,
-              InputOption::VALUE_OPTIONAL,
-              'Drush: set the number of concurrent projects that will be processed at the same time',
-              $this->defaultDrushConcurrency
-            );
-        }
     }
 
     public function isLocal()

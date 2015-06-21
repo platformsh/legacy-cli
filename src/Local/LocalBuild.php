@@ -102,9 +102,7 @@ class LocalBuild
             }
         }
         if (empty($this->settings['noClean'])) {
-            if ($this->output->isVerbose()) {
-                $this->output->writeln("Cleaning up...");
-            }
+            $this->output->writeln("Cleaning up...");
             if (!empty($this->settings['projectRoot'])) {
                 $this->cleanBuilds($this->settings['projectRoot']);
                 $this->cleanArchives($this->settings['projectRoot']);
