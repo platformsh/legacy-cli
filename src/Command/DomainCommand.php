@@ -123,11 +123,25 @@ abstract class DomainCommand extends PlatformCommand
             openssl_x509_free($chainResource);
         }
 
+        // Split up the chain file contents.
+        $chain = array();
+        $begin = '-----BEGIN CERTIFICATE-----';
+        foreach ($chainFileContents as $data) {
+            if (substr_count($data, $begin) > 1) {
+                foreach (explode($begin, $data) as $cert) {
+                    $chain[] = $begin . $cert;
+                }
+            }
+            else {
+                $chain[] = $data;
+            }
+        }
+
         // Yay we win.
         $this->sslOptions = array(
           'certificate' => $sslCert,
           'key' => $sslPrivateKey,
-          'chain' => array_values($chainFileContents),
+          'chain' => $chain,
         );
 
         return true;
