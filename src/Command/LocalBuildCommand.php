@@ -128,17 +128,6 @@ class LocalBuildCommand extends PlatformCommand
             /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
             $fsHelper = $this->getHelper('fs');
             $destination = $fsHelper->makePathAbsolute($destination);
-
-            if (file_exists($destination)) {
-                if (!is_writable($destination)) {
-                    $this->stdErr->writeln("The destination exists and is not writable: <error>$destination</error>");
-                    return 1;
-                }
-                $default = is_link($destination);
-                if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $input, $this->stdErr, $default)) {
-                    return 1;
-                }
-            }
         }
         elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
@@ -150,6 +139,19 @@ class LocalBuildCommand extends PlatformCommand
         // Ensure no conflicts between source and destination.
         if (strpos($sourceDir, $destination) === 0) {
             throw new \InvalidArgumentException("The destination '$destination' conflicts with the source '$sourceDir'");
+        }
+
+        // Ask the user about overwriting the destination, if a project root was
+        // not found.
+        if (!$projectRoot && file_exists($destination)) {
+            if (!is_writable($destination)) {
+                $this->stdErr->writeln("The destination exists and is not writable: <error>$destination</error>");
+                return 1;
+            }
+            $default = is_link($destination);
+            if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $input, $this->stdErr, $default)) {
+                return 1;
+            }
         }
 
         $settings = array();

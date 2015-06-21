@@ -102,14 +102,17 @@ class LocalBuild
             }
         }
         if (empty($this->settings['noClean'])) {
-            $this->output->writeln("Cleaning up...");
             if (!empty($this->settings['projectRoot'])) {
+                $this->output->writeln("Cleaning up...");
                 $this->cleanBuilds($this->settings['projectRoot']);
                 $this->cleanArchives($this->settings['projectRoot']);
             }
             else {
                 $buildsDir = $sourceDir . '/' . LocalProject::BUILD_DIR;
-                $this->cleanDirectory($buildsDir);
+                if (is_dir($buildsDir)) {
+                    $this->output->writeln("Cleaning up...");
+                    $this->cleanDirectory($buildsDir);
+                }
             }
         }
 
@@ -566,7 +569,7 @@ class LocalBuild
      *
      * @return int[]
      */
-    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $blacklist = array(), $quiet = false)
+    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $blacklist = array(), $quiet = true)
     {
         if (!is_dir($directory)) {
             return array(0, 0);
