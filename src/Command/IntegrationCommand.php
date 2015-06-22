@@ -72,12 +72,13 @@ abstract class IntegrationCommand extends PlatformCommand
         $resolver->setDefined($defined);
         $resolver->setDefaults($defaults);
         $required = array();
+        $normalizers = array();
         foreach ($options as $name => $option) {
             if (!empty($option['required']) && (empty($option['for types']) || $integrationType)) {
                 $required[] = $name;
             }
             if (!empty($option['normalizer'])) {
-                $resolver->setNormalizer($name, $option['normalizer']);
+                $normalizers[$name] = $option['normalizer'];
             }
             if (!empty($option['type'])) {
                 $resolver->setAllowedTypes($name, $option['type']);
@@ -89,6 +90,8 @@ abstract class IntegrationCommand extends PlatformCommand
             }
         }
         $resolver->setRequired($required);
+        /** @noinspection PhpDeprecationInspection */
+        $resolver->setNormalizers($normalizers);
     }
 
     /**
