@@ -28,11 +28,11 @@ class PlatformLogoutCommand extends PlatformCommand
         if (isset(self::$apiToken)) {
             self::$apiToken = null;
             $this->getClient(false)->getConnector()->setApiToken('');
-            $output->writeln('<comment>Warning: an API token is set</comment>');
+            $this->stdErr->writeln('<comment>Warning: an API token is set</comment>');
         }
 
         if (!$this->isLoggedIn() && !$input->getOption('all')) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "You are not currently logged in to the Platform.sh CLI"
             );
 
@@ -41,10 +41,10 @@ class PlatformLogoutCommand extends PlatformCommand
 
         // Ask for a confirmation.
         $confirm = $this->getHelper('question')
-          ->confirm("Are you sure you wish to log out?", $input, $output);
+          ->confirm("Are you sure you wish to log out?", $input, $this->stdErr);
 
         if (!$confirm) {
-            $output->writeln("You remain logged in to the Platform.sh CLI.");
+            $this->stdErr->writeln("You remain logged in to the Platform.sh CLI.");
 
             return 1;
         }
@@ -53,13 +53,13 @@ class PlatformLogoutCommand extends PlatformCommand
              ->getConnector()
              ->logOut();
         $this->clearCache();
-        $output->writeln("You have been logged out of the Platform.sh CLI.");
+        $this->stdErr->writeln("You have been logged out of the Platform.sh CLI.");
 
         if ($input->getOption('all')) {
             /** @var \Platformsh\Cli\Helper\FilesystemHelper $fs */
             $fs = $this->getHelper('fs');
             $fs->remove(dirname($this->getCacheDir()));
-            $output->writeln("All known session files have been deleted.");
+            $this->stdErr->writeln("All known session files have been deleted.");
         }
 
         return 0;

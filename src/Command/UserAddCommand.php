@@ -23,7 +23,7 @@ class UserAddCommand extends UserCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
@@ -36,7 +36,7 @@ class UserAddCommand extends UserCommand
             $question = new Question('Email address: ');
             $question->setValidator(array($this, 'validateEmail'));
             $question->setMaxAttempts(5);
-            $email = $questionHelper->ask($input, $output, $question);
+            $email = $questionHelper->ask($input, $this->stdErr, $question);
         }
 
         $project = $this->getSelectedProject();
@@ -44,26 +44,26 @@ class UserAddCommand extends UserCommand
         $users = $project->getUsers();
         foreach ($users as $user) {
             if ($user->getAccount()['email'] === $email) {
-                $output->writeln("The user already exists: <comment>$email</comment>");
+                $this->stdErr->writeln("The user already exists: <comment>$email</comment>");
                 return 1;
             }
         }
 
         $projectRole = $input->getOption('role');
         if ($projectRole && !in_array($projectRole, array('admin', 'viewer'))) {
-            $output->writeln("Valid project-level roles are 'admin' or 'viewer'");
+            $this->stdErr->writeln("Valid project-level roles are 'admin' or 'viewer'");
             return 1;
         }
         elseif (!$projectRole) {
             if (!$input->isInteractive()) {
-                $output->writeln('You must specify a project role for the user.');
+                $this->stdErr->writeln('You must specify a project role for the user.');
                 return 1;
             }
-            $output->writeln("The user's project role can be 'viewer' ('v') or 'admin' ('a').");
+            $this->stdErr->writeln("The user's project role can be 'viewer' ('v') or 'admin' ('a').");
             $question = new Question('Project role <question>[V/a]</question>: ', 'viewer');
             $question->setValidator(array($this, 'validateRole'));
             $question->setMaxAttempts(5);
-            $projectRole = $this->standardizeRole($questionHelper->ask($input, $output, $question));
+            $projectRole = $this->standardizeRole($questionHelper->ask($input, $this->stdErr, $question));
         }
 
         $environmentRoles = [];
@@ -71,13 +71,13 @@ class UserAddCommand extends UserCommand
         if ($projectRole !== 'admin') {
             $environments = $this->getEnvironments($project);
             if ($input->isInteractive()) {
-                $output->writeln("The user's environment-level roles can be 'viewer', 'contributor', or 'admin'.");
+                $this->stdErr->writeln("The user's environment-level roles can be 'viewer', 'contributor', or 'admin'.");
             }
             foreach ($environments as $environment) {
                 $question = new Question('<info>' . $environment->id . '</info> environment role <question>[V/c/a]</question>: ', 'viewer');
                 $question->setValidator(array($this, 'validateRole'));
                 $question->setMaxAttempts(5);
-                $environmentRoles[$environment->id] = $this->standardizeRole($questionHelper->ask($input, $output, $question));
+                $environmentRoles[$environment->id] = $this->standardizeRole($questionHelper->ask($input, $this->stdErr, $question));
             }
         }
 
@@ -93,22 +93,22 @@ class UserAddCommand extends UserCommand
             }
         }
 
-        $output->writeln('Summary:');
+        $this->stdErr->writeln('Summary:');
         foreach ($summaryFields as $field => $value) {
-            $output->writeln("    $field: <info>$value</info>");
+            $this->stdErr->writeln("    $field: <info>$value</info>");
         }
 
-        $output->writeln("<comment>Adding users can result in additional charges.</comment>");
+        $this->stdErr->writeln("<comment>Adding users can result in additional charges.</comment>");
 
         if ($input->isInteractive()) {
-            if (!$questionHelper->confirm("Are you sure you want to add this user?", $input, $output)) {
+            if (!$questionHelper->confirm("Are you sure you want to add this user?", $input, $this->stdErr)) {
                 return 1;
             }
         }
 
         $project->addUser($email, $projectRole);
 
-        $this->output->writeln("User <info>$email</info> created");
+        $this->stdErr->writeln("User <info>$email</info> created");
         return 0;
     }
 

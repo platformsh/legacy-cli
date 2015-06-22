@@ -76,22 +76,22 @@ class DomainListCommand extends PlatformCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $project = $this->getSelectedProject();
         $domains = $project->getDomains();
 
         if (empty($domains)) {
-            $output->writeln("No domains found for <info>{$project->title}</info>");
+            $this->stdErr->writeln("No domains found for <info>{$project->title}</info>");
         } else {
-            $output->writeln("Your domains are: ");
+            $this->stdErr->writeln("Your domains are: ");
             $table = $this->buildDomainTable($domains, $output);
             $table->render();
         }
 
-        $output->writeln("\nAdd a domain to the project by running <info>platform domain:add [domain-name]</info>");
+        $this->stdErr->writeln("\nAdd a domain to the project by running <info>platform domain:add [domain-name]</info>");
         if (!empty($domains)) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Delete domains by running <info>platform domain:delete [domain-name]</info>"
             );
         }

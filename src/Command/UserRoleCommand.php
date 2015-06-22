@@ -28,11 +28,11 @@ class UserRoleCommand extends UserCommand
         $level = $input->getOption('level');
         $validLevels = array('project', 'environment');
         if (!in_array($level, $validLevels)) {
-            $output->writeln("Invalid level: <error>$level</error>");
+            $this->stdErr->writeln("Invalid level: <error>$level</error>");
             return 1;
         }
 
-        $this->validateInput($input, $output, true);
+        $this->validateInput($input, true);
 
         $project = $this->getSelectedProject();
 
@@ -45,7 +45,7 @@ class UserRoleCommand extends UserCommand
             }
         }
         if (empty($selectedUser)) {
-            $output->writeln("User not found: <error>$email</error>");
+            $this->stdErr->writeln("User not found: <error>$email</error>");
             return 1;
         }
 
@@ -56,7 +56,7 @@ class UserRoleCommand extends UserCommand
         }
         elseif ($level == 'environment') {
             if (!$this->hasSelectedEnvironment()) {
-                $output->writeln('You must specify an environment');
+                $this->stdErr->writeln('You must specify an environment');
                 return 1;
             }
             $currentRole = $selectedUser->getEnvironmentRole($this->getSelectedEnvironment());
@@ -65,20 +65,20 @@ class UserRoleCommand extends UserCommand
 
         $role = $input->getOption('role');
         if ($role && !in_array($role, $validRoles)) {
-            $output->writeln("Invalid role: $role");
+            $this->stdErr->writeln("Invalid role: $role");
             return 1;
         }
 
         if ($role === $currentRole) {
-            $output->writeln("There is nothing to change");
+            $this->stdErr->writeln("There is nothing to change");
         }
         elseif ($role && $level == 'project') {
             $selectedUser->update(array('role' => $role));
-            $output->writeln("User <info>$email</info> updated");
+            $this->stdErr->writeln("User <info>$email</info> updated");
         }
         elseif ($role && $level == 'environment') {
             $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
-            $output->writeln("User <info>$email</info> updated");
+            $this->stdErr->writeln("User <info>$email</info> updated");
         }
 
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {

@@ -99,6 +99,26 @@ class CompletionCommand extends ParentCompletionCommand
               'domain:add',
               'chain',
               Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+              'local:build',
+              'source',
+              Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+              'local:build',
+              'destination',
+              Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+              'environment:sql-dump',
+              'file',
+              Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+              'local:init',
+              'directory',
+              Completion::TYPE_ARGUMENT
             )
           )
         );

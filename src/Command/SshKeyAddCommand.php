@@ -6,7 +6,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Process\Process;
 
 class SshKeyAddCommand extends PlatformCommand
@@ -27,6 +26,7 @@ class SshKeyAddCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
         $path = $input->getArgument('path');
@@ -46,16 +46,16 @@ class SshKeyAddCommand extends PlatformCommand
             } // Offer to generate a key.
             elseif ($shellHelper->commandExists('ssh-keygen') && $shellHelper->commandExists(
                 'ssh-add'
-              ) && $questionHelper->confirm("Generate a new key?", $input, $output)
+              ) && $questionHelper->confirm("Generate a new key?", $input, $this->stdErr)
             ) {
                 $newKey = $this->getNewKeyFilename($default);
                 $args = array('ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', '');
                 $shellHelper->execute($args, null, true);
                 $path = "$newKey.pub";
-                $output->writeln("Generated a new key: $path");
+                $this->stdErr->writeln("Generated a new key: $path");
                 passthru('ssh-add ' . escapeshellarg($newKey));
             } else {
-                $output->writeln("<error>You must specify the path to a public SSH key</error>");
+                $this->stdErr->writeln("<error>You must specify the path to a public SSH key</error>");
 
                 return 1;
             }
@@ -63,7 +63,7 @@ class SshKeyAddCommand extends PlatformCommand
         }
 
         if (!file_exists($path)) {
-            $output->writeln("File not found: <error>$path<error>");
+            $this->stdErr->writeln("File not found: <error>$path<error>");
 
             return 1;
         }
@@ -71,7 +71,7 @@ class SshKeyAddCommand extends PlatformCommand
         $process = new Process('ssh-keygen -l -f ' . escapeshellarg($path));
         $process->run();
         if ($process->getExitCode() == 1) {
-            $output->writeln("The file does not contain a valid public key: <error>$path</error>");
+            $this->stdErr->writeln("The file does not contain a valid public key: <error>$path</error>");
 
             return 1;
         }
@@ -80,13 +80,13 @@ class SshKeyAddCommand extends PlatformCommand
 
         $name = $input->getOption('name');
         if (!$name) {
-            $name = $questionHelper->ask($input, $output, new Question('Enter a name for the key: '));
+            $name = $questionHelper->askInput('Enter a name for the key', $input, $this->stdErr);
         }
 
         $this->getClient()
              ->addSshKey($key, $name);
 
-        $output->writeln(
+        $this->stdErr->writeln(
           'The SSH key <info>' . basename($path) . '</info> has been successfully added to your Platform.sh account'
         );
 

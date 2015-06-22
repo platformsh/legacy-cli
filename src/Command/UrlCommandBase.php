@@ -52,14 +52,14 @@ abstract class UrlCommandBase extends PlatformCommand
             $browser = $this->getDefaultBrowser();
         } elseif (!$shellHelper->commandExists($browser)) {
             // The user has specified a browser, but it can't be found.
-            $output->writeln("<error>Browser not found: $browser</error>");
+            $this->stdErr->writeln("<error>Browser not found: $browser</error>");
             $browser = false;
         }
 
         if ($browser) {
             $opened = $shellHelper->execute(array($browser, $url));
             if ($opened) {
-                $output->writeln("Opened: $url");
+                $this->stdErr->writeln("Opened: $url");
 
                 return;
             }

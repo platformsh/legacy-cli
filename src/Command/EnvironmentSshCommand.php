@@ -30,7 +30,7 @@ class EnvironmentSshCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($input->getOption('app'));
@@ -64,7 +64,7 @@ class EnvironmentSshCommand extends PlatformCommand
         }
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $output->writeln("Running command: <info>$command</info>");
+            $this->stdErr->writeln("Running command: <info>$command</info>");
         }
 
         passthru($command, $returnVar);

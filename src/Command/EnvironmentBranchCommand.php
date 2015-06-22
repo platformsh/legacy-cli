@@ -54,7 +54,7 @@ class EnvironmentBranchCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->envArgName = 'parent';
-        $this->validateInput($input, $output, true);
+        $this->validateInput($input, true);
 
         $branchName = $input->getArgument('name');
         if (empty($branchName)) {
@@ -69,7 +69,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                             ->find('environments')
                             ->run(new ArrayInput($params), $output);
             }
-            $output->writeln("<error>You must specify the name of the new branch.</error>");
+            $this->stdErr->writeln("<error>You must specify the name of the new branch.</error>");
 
             return 1;
         }
@@ -78,7 +78,7 @@ class EnvironmentBranchCommand extends PlatformCommand
         $environmentId = $this->getSelectedEnvironment()['id'];
 
         if ($machineName == $environmentId) {
-            $output->writeln("<comment>Already on $machineName</comment>");
+            $this->stdErr->writeln("<comment>Already on $machineName</comment>");
 
             return 1;
         }
@@ -88,7 +88,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                              ->confirm(
                                "The environment <comment>$machineName</comment> already exists. Check out?",
                                $input,
-                               $output
+                               $this->stdErr
                              );
             if ($checkout) {
                 $checkoutCommand = $this->getApplication()
@@ -109,7 +109,7 @@ class EnvironmentBranchCommand extends PlatformCommand
         if (!$this->getSelectedEnvironment()
                   ->operationAvailable('branch')
         ) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Operation not available: The environment <error>$environmentId</error> can't be branched."
             );
 
@@ -120,36 +120,36 @@ class EnvironmentBranchCommand extends PlatformCommand
 
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot && $force) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "<comment>This command was run from outside your local project root, the new Platform.sh branch cannot be checked out in your local Git repository."
               . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
             );
             $local_error = true;
         } elseif (!$projectRoot) {
-            $output->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
+            $this->stdErr->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
 
             return 1;
         }
 
         $selectedEnvironment = $this->getSelectedEnvironment();
 
-        $output->writeln(
+        $this->stdErr->writeln(
           "Creating a new environment <info>$branchName</info>, branched from <info>{$selectedEnvironment['title']}</info>"
         );
 
         $activity = $selectedEnvironment->branch($branchName, $machineName);
 
         if ($projectRoot) {
-            $gitHelper = new GitHelper(new ShellHelper($output));
+            $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
 
-            $output->writeln("Checking out <info>$machineName</info> locally");
+            $this->stdErr->writeln("Checking out <info>$machineName</info> locally");
 
             // If the Git branch already exists locally, just check it out.
             $existsLocally = $gitHelper->branchExists($machineName);
             if ($existsLocally) {
                 if (!$gitHelper->checkOut($machineName)) {
-                    $output->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
+                    $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
                     $local_error = true;
                     if (!$force) {
                         return 1;
@@ -161,9 +161,9 @@ class EnvironmentBranchCommand extends PlatformCommand
                 if (!$gitHelper->branchExists($parent)) {
                     $parent = null;
                 }
-                $output->writeln("Creating local branch out <info>$machineName</info>");
+                $this->stdErr->writeln("Creating local branch out <info>$machineName</info>");
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
-                    $output->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
+                    $this->stdErr->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
                     $local_error = true;
                     if (!$force) {
                         return 1;
@@ -176,7 +176,7 @@ class EnvironmentBranchCommand extends PlatformCommand
         if (!$input->getOption('no-wait')) {
             $remoteSuccess = ActivityUtil::waitAndLog(
               $activity,
-              $output,
+              $this->stdErr,
               "The environment <info>$branchName</info> has been branched.",
               '<error>Branching failed</error>'
             );
@@ -193,7 +193,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                 $builder = new LocalBuild($buildSettings, $output);
                 $builder->buildProject($projectRoot);
             } catch (\Exception $e) {
-                $output->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
+                $this->stdErr->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
 
                 return 1;
             }

@@ -55,18 +55,18 @@ class DomainAddCommand extends PlatformCommand
           );
     }
 
-    protected function validateInput(InputInterface $input, OutputInterface $output, $envNotRequired = null)
+    protected function validateInput(InputInterface $input, $envNotRequired = null)
     {
-        parent::validateInput($input, $output);
+        parent::validateInput($input);
 
         $this->domainName = $input->getArgument('name');
         if (empty($this->domainName)) {
-            $output->writeln("<error>You must specify the name of the domain.</error>");
+            $this->stdErr->writeln("<error>You must specify the name of the domain.</error>");
 
             return false;
         } else {
             if (!$this->validDomain($this->domainName)) {
-                $output->writeln("<error>You must specify a valid domain name.</error>");
+                $this->stdErr->writeln("<error>You must specify a valid domain name.</error>");
 
                 return false;
             }
@@ -87,12 +87,12 @@ class DomainAddCommand extends PlatformCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->validateInput($input, $output)) {
+        if (!$this->validateInput($input)) {
             return 1;
         }
 
         $wildcard = $this->getHelper('question')
-                         ->confirm("Is your domain a wildcard?", $input, $output, false);
+                         ->confirm("Is your domain a wildcard?", $input, $this->stdErr, false);
 
         // @todo: Ask about SSL uploads if option --ssl is specified instead of inline filenames
 
@@ -101,7 +101,7 @@ class DomainAddCommand extends PlatformCommand
              ->addDomain($this->domainName, $wildcard, $this->sslOptions);
 
         // @todo: Add proper exception/error handling here...seriously.
-        $output->writeln("The domain <info>{$this->domainName}</info> was successfully added to the project");
+        $this->stdErr->writeln("The domain <info>{$this->domainName}</info> was successfully added to the project");
 
         return 0;
     }

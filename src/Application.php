@@ -86,7 +86,11 @@ class Application extends ParentApplication
      */
     protected function getCommands()
     {
-        $commands = array();
+        static $commands = array();
+        if (count($commands)) {
+            return $commands;
+        }
+
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\PlatformLogoutCommand();
         $commands[] = new Command\PlatformLoginCommand();

@@ -89,6 +89,31 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * Test FilesystemHelper::makePathAbsolute().
+     */
+    public function testMakePathAbsolute()
+    {
+        $testDir = $this->tempDir();
+        chdir($testDir);
+
+        $path = $this->filesystemHelper->makePathAbsolute('test.txt');
+        $this->assertEquals($testDir . '/' . 'test.txt', $path);
+
+        $childDir = $testDir . '/test';
+        mkdir($childDir);
+        chdir($childDir);
+
+        $path = $this->filesystemHelper->makePathAbsolute('../test.txt');
+        $this->assertEquals($testDir . '/' . 'test.txt', $path);
+
+        $path = $this->filesystemHelper->makePathAbsolute('..');
+        $this->assertEquals($testDir, $path);
+
+        $this->setExpectedException('InvalidArgumentException');
+        $path = $this->filesystemHelper->makePathAbsolute('nonexistent/test.txt');
+    }
+
+    /**
      * Test FilesystemHelper::symlinkAll().
      */
     public function testSymlinkAll()

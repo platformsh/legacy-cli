@@ -32,11 +32,12 @@ abstract class ToolstackBase implements ToolstackInterface
 
     protected $settings = array();
     protected $appRoot;
-    protected $projectRoot;
+    protected $sourceDir;
     protected $documentRoot;
     protected $buildDir;
+    protected $copy = false;
     protected $absoluteLinks = false;
-    protected $leaveInPlace = false;
+    protected $buildInPlace = false;
 
     /** @var OutputInterface */
     protected $output;
@@ -82,16 +83,17 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, $documentRoot, $appRoot, $projectRoot, array $settings)
+    public function prepare($buildDir, $documentRoot, $appRoot, $sourceDir, array $settings)
     {
         $this->appRoot = $appRoot;
-        $this->projectRoot = $projectRoot;
+        $this->sourceDir = $sourceDir;
         $this->settings = $settings;
 
         $this->buildDir = $buildDir;
         $this->documentRoot = $documentRoot;
 
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
+        $this->copy = !empty($settings['copy']);
         $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
     }
 
@@ -100,7 +102,7 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     protected function symLinkSpecialDestinations()
     {
-        if ($this->leaveInPlace) {
+        if ($this->buildInPlace) {
             return;
         }
 
@@ -119,7 +121,12 @@ abstract class ToolstackBase implements ToolstackInterface
                 if (in_array($relSource, $this->ignoredFiles)) {
                     continue;
                 }
-                $this->output->writeln("Symlinking $relSource to $relDestination");
+                if ($this->copy) {
+                    $this->output->writeln("Copying $relSource to $relDestination");
+                }
+                else {
+                    $this->output->writeln("Symlinking $relSource to $relDestination");
+                }
                 $destination = $absDestination;
                 // Do not overwrite directories with files.
                 if (!is_dir($source) && is_dir($destination)) {
@@ -135,7 +142,12 @@ abstract class ToolstackBase implements ToolstackInterface
                     );
                     $this->fsHelper->remove($destination);
                 }
-                $this->fsHelper->symlink($source, $destination);
+                if ($this->copy) {
+                    $this->fsHelper->copy($source, $destination);
+                }
+                else {
+                    $this->fsHelper->symlink($source, $destination);
+                }
             }
         }
     }
@@ -146,11 +158,14 @@ abstract class ToolstackBase implements ToolstackInterface
      * This will be 'shared' for a single-application project, or
      * 'shared/<appName>' when there are multiple applications.
      *
-     * @return string
+     * @return string|false
      */
     protected function getSharedDir()
     {
-        $shared = $this->projectRoot . '/' . LocalProject::SHARED_DIR;
+        if (empty($this->settings['projectRoot'])) {
+            return false;
+        }
+        $shared = $this->settings['projectRoot'] . '/' . LocalProject::SHARED_DIR;
         if (!empty($this->settings['multiApp']) && !empty($this->settings['appName'])) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->settings['appName']);
         }
@@ -166,7 +181,7 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function getWebRoot()
     {
-        if ($this->leaveInPlace) {
+        if ($this->buildInPlace && !$this->copy) {
             if ($this->documentRoot === 'public') {
                 return $this->appRoot;
             }
@@ -196,7 +211,7 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function canArchive()
     {
-        return !$this->leaveInPlace;
+        return !$this->buildInPlace || $this->copy;
     }
 
     /**
@@ -208,10 +223,10 @@ abstract class ToolstackBase implements ToolstackInterface
     protected function copyGitIgnore($source)
     {
         $source = CLI_ROOT . '/resources/' . $source;
-        if (!file_exists($source)) {
+        if (!file_exists($source) || empty($this->settings['projectRoot'])) {
             return;
         }
-        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $this->settings['projectRoot'] . '/' . LocalProject::REPOSITORY_DIR;
         $repositoryGitIgnore = "$repositoryDir/.gitignore";
         $appGitIgnore = $this->appRoot . '/.gitignore';
         if (!file_exists($appGitIgnore) && !file_exists($repositoryGitIgnore)) {

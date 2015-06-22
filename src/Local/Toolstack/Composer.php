@@ -12,20 +12,31 @@ class Composer extends ToolstackBase
 
     public function build()
     {
-        $this->leaveInPlace = true;
+        $this->buildInPlace = true;
+
+        if ($this->copy) {
+            $buildDir = $this->buildDir;
+            $this->fsHelper->copyAll($this->appRoot, $this->buildDir);
+        }
+        else {
+            $buildDir = $this->appRoot;
+        }
 
         // The composer.json file may not exist at this stage, if the user has
         // manually specified a Composer toolstack (e.g. php:symfony).
-        if (file_exists($this->appRoot . '/composer.json')) {
+        if (file_exists($buildDir . '/composer.json')) {
             $this->output->writeln("Found a composer.json file; installing dependencies");
 
             $args = array(
               $this->getComposerExecutable(),
               'install',
               '--no-progress',
+              '--prefer-dist',
+              '--optimize-autoloader',
               '--no-interaction',
+              '--no-ansi',
             );
-            $this->shellHelper->execute($args, $this->appRoot, true, false);
+            $this->shellHelper->execute($args, $buildDir, true, false);
         }
     }
 

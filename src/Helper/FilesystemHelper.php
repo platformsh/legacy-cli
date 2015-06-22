@@ -36,7 +36,7 @@ class FilesystemHelper extends Helper
      *
      * @param bool $relative
      */
-    public function setRelativeLinks($relative)
+    public function setRelativeLinks($relative = true)
     {
         // This is not possible on Windows.
         if ($this->isWindows()) {
@@ -120,25 +120,39 @@ class FilesystemHelper extends Helper
      */
     public function copyAll($source, $destination)
     {
-        if (!is_dir($source)) {
-            throw new \InvalidArgumentException("Not a directory: $source");
-        }
-        if (!is_dir($destination)) {
-            mkdir($destination);
+        if (is_dir($source) && !is_dir($destination)) {
+            if (!mkdir($destination, 0755, true)) {
+                throw new \RuntimeException("Failed to create directory: " . $destination);
+            }
         }
 
-        $skip = array('.', '..', '.git');
-        $sourceDirectory = opendir($source);
-        while ($file = readdir($sourceDirectory)) {
-            if (!in_array($file, $skip)) {
+        if (is_dir($source)) {
+            $skip = array('.', '..', '.git');
+
+            // Prevent infinite recursion when the destination is inside the
+            // source.
+            if (strpos($destination, $source) === 0) {
+                $relative = str_replace($source, '', $destination);
+                $parts = explode('/', ltrim($relative, '/'), 2);
+                $skip[] = $parts[0];
+            }
+
+            $sourceDirectory = opendir($source);
+            while ($file = readdir($sourceDirectory)) {
+                if (in_array($file, $skip)) {
+                    continue;
+                }
                 if (is_dir($source . '/' . $file)) {
                     $this->copyAll($source . '/' . $file, $destination . '/' . $file);
                 } else {
                     $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }
+            closedir($sourceDirectory);
         }
-        closedir($sourceDirectory);
+        else {
+            $this->fs->copy($source, $destination);
+        }
     }
 
     /**
@@ -165,17 +179,18 @@ class FilesystemHelper extends Helper
     }
 
     /**
-     * Symlink all files and folders between two directories.
+     * Symlink or copy all files and folders between two directories.
      *
      * @param string   $source
      * @param string   $destination
      * @param bool     $skipExisting
      * @param bool     $recursive
      * @param string[] $blacklist
+     * @param bool     $copy
      *
      * @throws \Exception When a conflict is discovered.
      */
-    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = array())
+    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = array(), $copy = false)
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -203,7 +218,8 @@ class FilesystemHelper extends Helper
                 $linkFile = $destination . '/' . $file;
 
                 if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
-                    $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive);
+                    // Note: the blacklist is not used recursively.
+                    $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, array(), $copy);
                     continue;
                 }
                 elseif (file_exists($linkFile)) {
@@ -218,17 +234,17 @@ class FilesystemHelper extends Helper
                     $this->remove($linkFile);
                 }
 
-                if (!function_exists('symlink') && $this->copyIfSymlinkUnavailable) {
-                    copy($sourceFile, $linkFile);
-                    continue;
+                if ($copy) {
+                    $this->copyAll($sourceFile, $linkFile);
                 }
+                else {
+                    if ($this->relative) {
+                        $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
+                        chdir($destination);
+                    }
 
-                if ($this->relative) {
-                    $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
-                    chdir($destination);
+                    $this->fs->symlink($sourceFile, $linkFile, $this->copyIfSymlinkUnavailable);
                 }
-
-                symlink($sourceFile, $linkFile);
             }
         }
         closedir($sourceDirectory);
@@ -245,11 +261,45 @@ class FilesystemHelper extends Helper
     public function makePathRelative($path1, $path2)
     {
         if (!is_dir($path2)) {
-            $path2 = dirname($path2);
+            $path2 = realpath(dirname($path2));
+            if (!$path2) {
+                return $path1;
+            }
         }
         $result = rtrim($this->fs->makePathRelative($path1, $path2), DIRECTORY_SEPARATOR);
 
         return $result;
+    }
+
+    /**
+     * Make a relative path into an absolute one.
+     *
+     * The realpath() function will only work for existing files, and not for
+     * symlinks. This is a more flexible solution.
+     *
+     * @param string $relativePath
+     *
+     * @throws \InvalidArgumentException If the parent directory is not found.
+     *
+     * @return string
+     */
+    public function makePathAbsolute($relativePath)
+    {
+        if (file_exists($relativePath) && !is_link($relativePath) && ($realPath = realpath($relativePath))) {
+            $absolute = $realPath;
+        }
+        else {
+            $parent = dirname($relativePath);
+            if (!is_dir($parent) || !($parentRealPath = realpath($parent))) {
+                throw new \InvalidArgumentException('Directory not found: ' . $parent);
+            }
+            $basename = basename($relativePath);
+            $absolute = $basename == '..'
+              ? dirname($parentRealPath)
+              : rtrim($parentRealPath . '/' . $basename, './');
+        }
+
+        return $absolute;
     }
 
     /**

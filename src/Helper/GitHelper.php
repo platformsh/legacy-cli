@@ -348,5 +348,4 @@ class GitHelper extends Helper
 
         return $this->execute($args, $dir, $mustRun);
     }
-
 }

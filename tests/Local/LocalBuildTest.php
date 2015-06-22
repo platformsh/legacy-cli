@@ -50,10 +50,11 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
 
     public function testToolstackDetectionNone()
     {
+        $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'NoToolstack';
         $fakeAppRoot = 'tests/data/apps';
 
         $builder = new LocalBuild();
-        $this->assertFalse($builder->getToolstack($fakeAppRoot));
+        $this->assertInstanceOf($toolstackClassName, $builder->getToolstack($fakeAppRoot), 'File structure does not indicate a specific toolstack');
     }
 
     public function testGetAppConfig()

@@ -28,14 +28,14 @@ class ActivityListCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();
 
         $limit = (int) $input->getOption('limit');
         $activities = $environment->getActivities($limit, $input->getOption('type'));
         if (!$activities) {
-            $output->writeln('No activities found');
+            $this->stdErr->writeln('No activities found');
 
             return 1;
         }
@@ -64,7 +64,7 @@ class ActivityListCommand extends PlatformCommand
             return 0;
         }
 
-        $output->writeln("Recent activities for the environment <info>" . $environment['id'] . "</info>");
+        $this->stdErr->writeln("Recent activities for the environment <info>" . $environment['id'] . "</info>");
         $table = new Table($output);
         $table->setHeaders($headers);
         $table->addRows($rows);

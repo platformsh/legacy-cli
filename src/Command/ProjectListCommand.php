@@ -52,14 +52,14 @@ class ProjectListCommand extends PlatformCommand
             );
         }
 
-        $output->writeln("Your projects are: ");
+        $this->stdErr->writeln("Your projects are: ");
         $table = new Table($output);
         $table->setHeaders(array('ID', 'Name', "URL"))
               ->addRows($rows);
         $table->render();
 
-        $output->writeln("\nGet a project by running <info>platform get [id]</info>");
-        $output->writeln("List a project's environments by running <info>platform environments</info>");
+        $this->stdErr->writeln("\nGet a project by running <info>platform get [id]</info>");
+        $this->stdErr->writeln("List a project's environments by running <info>platform environments</info>");
 
         return 0;
     }

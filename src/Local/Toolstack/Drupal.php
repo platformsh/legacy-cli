@@ -84,12 +84,16 @@ class Drupal extends ToolstackBase
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
 
-            $this->leaveInPlace = true;
+            $this->buildInPlace = true;
 
-            $this->copyGitIgnore('drupal/gitignore-vanilla');
-
-            $this->checkIgnored('sites/default/settings.local.php');
-            $this->checkIgnored('sites/default/files');
+            if ($this->copy) {
+                $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
+            }
+            else {
+                $this->copyGitIgnore('drupal/gitignore-vanilla');
+                $this->checkIgnored('sites/default/settings.local.php');
+                $this->checkIgnored('sites/default/files');
+            }
         }
 
         $this->symLinkSpecialDestinations();
@@ -103,7 +107,10 @@ class Drupal extends ToolstackBase
      */
     protected function checkIgnored($filename, $suggestion = null)
     {
-        $repositoryDir = $this->projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        if (empty($this->settings['projectRoot'])) {
+            return;
+        }
+        $repositoryDir = $this->settings['projectRoot'] . '/' . LocalProject::REPOSITORY_DIR;
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
         if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
@@ -172,7 +179,8 @@ class Drupal extends ToolstackBase
           $this->getWebRoot() . '/sites/default',
           true,
           false,
-          array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
+          array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
+          $this->copy
         );
     }
 
@@ -223,7 +231,12 @@ class Drupal extends ToolstackBase
         );
         $drushHelper->execute($args, $profileDir, true, false);
 
-        $this->output->writeln("Symlinking existing app files to the profile");
+        if ($this->copy) {
+            $this->output->writeln("Copying existing app files to the profile");
+        }
+        else {
+            $this->output->writeln("Symlinking existing app files to the profile");
+        }
 
         $this->ignoredFiles[] = basename($projectMake);
         $this->ignoredFiles[] = basename($projectCoreMake);
@@ -242,7 +255,8 @@ class Drupal extends ToolstackBase
           $profileDir,
           true,
           true,
-          array_merge($this->ignoredFiles, array_keys($this->specialDestinations))
+          array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
+          $this->copy
         );
     }
 
@@ -258,10 +272,14 @@ class Drupal extends ToolstackBase
      */
     protected function processSettingsPhp()
     {
+        if ($this->copy) {
+            // This behaviour only relates to symlinking.
+            return;
+        }
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
-            copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
+            $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->output->writeln(
               "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
               . "\nYou will need to rebuild if you edit this file.</comment>"
@@ -285,7 +303,7 @@ class Drupal extends ToolstackBase
             $defaultSettingsPhp = '8/settings.php';
             $defaultSettingsLocal = '8/settings.local.php';
 
-            if (!file_exists($shared . '/config')) {
+            if ($shared && !file_exists($shared . '/config')) {
                 mkdir($shared . '/config/active', 0775, true);
                 mkdir($shared . '/config/staging', 0775, true);
             }
@@ -293,21 +311,21 @@ class Drupal extends ToolstackBase
 
         // Create a settings.php if it is missing.
         if (!file_exists($sitesDefault . '/settings.php')) {
-            copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
+            $this->fsHelper->copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
         }
 
         // Create the shared/settings.local.php if it doesn't exist. Everything
         // in shared will be symlinked into sites/default.
         $settingsLocal = $shared . '/settings.local.php';
-        if (!file_exists($settingsLocal)) {
+        if ($shared && !file_exists($settingsLocal)) {
             $this->output->writeln("Creating file: <info>$settingsLocal</info>");
-            copy($resources . '/' . $defaultSettingsLocal, $settingsLocal);
+            $this->fsHelper->copy($resources . '/' . $defaultSettingsLocal, $settingsLocal);
             $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
         }
 
         // Create a shared/files directory.
         $sharedFiles = "$shared/files";
-        if (!file_exists($sharedFiles)) {
+        if ($shared && !file_exists($sharedFiles)) {
             $this->output->writeln("Creating directory: <info>$sharedFiles</info>");
             $this->output->writeln('This is where Drupal can store public files.');
             mkdir($sharedFiles);
@@ -315,9 +333,13 @@ class Drupal extends ToolstackBase
             chmod($sharedFiles, 0775);
         }
 
-        // Symlink all files and folders from shared.
-        $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
-        $this->fsHelper->symlinkAll($shared, $sitesDefault);
+        // Symlink all files and folders from shared. The "copy" option is
+        // ignored, to avoid copying a huge sites/default/files directory every
+        // time.
+        if ($shared) {
+            $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
+            $this->fsHelper->symlinkAll($shared, $sitesDefault);
+        }
     }
 
     /**

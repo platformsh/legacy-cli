@@ -31,7 +31,7 @@ class ProjectMetadataCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $project = $this->getSelectedProject();
         $this->formatter = new PropertyFormatter();
@@ -48,7 +48,7 @@ class ProjectMetadataCommand extends PlatformCommand
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $project, $output);
+            return $this->setProperty($property, $value, $project);
         }
 
         $output->writeln($this->formatter->format($project->getProperty($property), $property));
@@ -64,7 +64,7 @@ class ProjectMetadataCommand extends PlatformCommand
      */
     protected function listProperties(Project $project, OutputInterface $output)
     {
-        $output->writeln("Metadata for the project <info>" . $project['id'] . "</info>:");
+        $this->stdErr->writeln("Metadata for the project <info>" . $project['id'] . "</info>:");
 
         // Properties not to display, as they are internal, deprecated, or
         // otherwise confusing.
@@ -97,13 +97,12 @@ class ProjectMetadataCommand extends PlatformCommand
      * @param string          $property
      * @param string          $value
      * @param Project         $project
-     * @param OutputInterface $output
      *
      * @return int
      */
-    protected function setProperty($property, $value, Project $project, OutputInterface $output)
+    protected function setProperty($property, $value, Project $project)
     {
-        if (!$this->validateValue($property, $value, $output)) {
+        if (!$this->validateValue($property, $value)) {
             return 1;
         }
         $type = $this->getType($property);
@@ -113,7 +112,7 @@ class ProjectMetadataCommand extends PlatformCommand
         settype($value, $type);
         $currentValue = $project->getProperty($property);
         if ($currentValue === $value) {
-            $output->writeln(
+            $this->stdErr->writeln(
               "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
             );
 
@@ -122,7 +121,7 @@ class ProjectMetadataCommand extends PlatformCommand
 
         $project->ensureFull();
         $project->update(array($property => $value));
-        $output->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
+        $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
         $this->getProjects(true);
 
         return 0;
@@ -145,15 +144,14 @@ class ProjectMetadataCommand extends PlatformCommand
     /**
      * @param string          $property
      * @param string          $value
-     * @param OutputInterface $output
      *
      * @return bool
      */
-    protected function validateValue($property, $value, OutputInterface $output)
+    protected function validateValue($property, $value)
     {
         $type = $this->getType($property);
         if (!$type) {
-            $output->writeln("Property not writable: <error>$property</error>");
+            $this->stdErr->writeln("Property not writable: <error>$property</error>");
 
             return false;
         }

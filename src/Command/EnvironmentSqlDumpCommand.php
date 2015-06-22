@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,43 +23,40 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
-        $projectRoot = $this->getProjectRoot();
         $dumpFile = $input->getOption('file');
-        if ($dumpFile !== null) {
-            if (file_exists($dumpFile)) {
-                $output->writeln("File exists: <error>$dumpFile</error>");
-                return 1;
+        if ($dumpFile) {
+            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+            $fsHelper = $this->getHelper('fs');
+            $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
+            if (is_dir($dumpFile)) {
+                $dumpFile .= '/' . 'dump.sql';
             }
-
-            $dir = dirname($dumpFile);
-
-            if (!is_dir($dir)) {
-                $output->writeln("Directory not found: <error>$dir</error>");
-                return 1;
-            }
-            elseif (!is_writable($dir)) {
-                $output->writeln("Directory not writable: <error>$dir</error>");
-                return 1;
-            }
-
-            $dumpFile = realpath($dir) . '/' . basename($dumpFile);
+        }
+        elseif (!$projectRoot = $this->getProjectRoot()) {
+            throw new RootNotFoundException(
+              'Project root not found. Specify --file or go to a project directory.'
+            );
         }
         else {
             $dumpFile = $projectRoot . '/dump.sql';
-            if (file_exists($dumpFile)) {
-                $output->writeln("File exists: <error>$dumpFile</error>");
+        }
+
+        if (file_exists($dumpFile)) {
+            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
+            if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", $input, $this->stdErr, false)) {
                 return 1;
             }
         }
 
-        $output->writeln("Creating SQL dump file: <info>$dumpFile</info>");
+        $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
 
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($input->getOption('app'));
 
-        $util = new RelationshipsUtil($output);
+        $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
@@ -85,7 +83,7 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
           . ' > ' . escapeshellarg($dumpFile);
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $output->writeln("Running command: <info>$command</info>");
+            $this->stdErr->writeln("Running command: <info>$command</info>");
         }
 
         passthru($command, $return_var);

@@ -2,9 +2,9 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
-use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalBuildCommand extends PlatformCommand
 {
 
-    protected $defaultDrushConcurrency = 1;
+    protected $defaultDrushConcurrency = 4;
 
     protected function configure()
     {
@@ -27,6 +27,24 @@ class LocalBuildCommand extends PlatformCommand
             'a',
             InputOption::VALUE_NONE,
             'Use absolute links'
+          )
+          ->addOption(
+            'source',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The source directory. Default: ' . LocalProject::REPOSITORY_DIR
+          )
+          ->addOption(
+            'destination',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The destination, to which the web root of each app will be symlinked. Default: ' . LocalProject::WEB_ROOT
+          )
+          ->addOption(
+            'copy',
+            null,
+            InputOption::VALUE_NONE,
+            'Copy to a build directory, instead of symlinking from the source'
           )
           ->addOption(
             'no-clean',
@@ -44,30 +62,27 @@ class LocalBuildCommand extends PlatformCommand
             'no-cache',
             null,
             InputOption::VALUE_NONE,
-            'Disable caching.'
+            'Disable caching'
           )
           ->addOption(
             'no-build-hooks',
             null,
             InputOption::VALUE_NONE,
-            'Do not run post-build hooks.'
+            'Do not run post-build hooks'
+          )
+          ->addOption(
+            'working-copy',
+            null,
+            InputOption::VALUE_NONE,
+            'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version'
+          )
+          ->addOption(
+            'concurrency',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Drush: set the number of concurrent projects that will be processed at the same time',
+            $this->defaultDrushConcurrency
           );
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot || Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
-            $this->addOption(
-              'working-copy',
-              null,
-              InputOption::VALUE_NONE,
-              'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version.'
-            )
-            ->addOption(
-              'concurrency',
-              null,
-              InputOption::VALUE_OPTIONAL,
-              'Drush: set the number of concurrent projects that will be processed at the same time.',
-              $this->defaultDrushConcurrency
-            );
-        }
     }
 
     public function isLocal()
@@ -78,35 +93,72 @@ class LocalBuildCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectRoot = $this->getProjectRoot();
-        if (empty($projectRoot)) {
-            $output->writeln("<error>You must run this command from a project folder.</error>");
 
-            return 1;
+        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+
+        $sourceDirOption = $input->getOption('source');
+
+        // If no project root is found, ask the user for a source directory.
+        if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
+            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr);
         }
 
-        // Find out the real environment ID, if possible.
-        if ($this->isLoggedIn()) {
-            $project = $this->getCurrentProject();
-            if ($project) {
-                $environment = $this->getCurrentEnvironment($project);
-                if ($environment) {
-                    $envId = $environment['id'];
-                }
+        if ($sourceDirOption) {
+            $sourceDir = realpath($sourceDirOption);
+            if (!is_dir($sourceDir)) {
+                throw new \InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
+            }
+        }
+        elseif (!$projectRoot) {
+            throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
+        }
+        else {
+            $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        }
+
+        $destination = $input->getOption('destination');
+
+        // If no project root is found, ask the user for a destination path.
+        if (!$projectRoot && !$destination && $input->isInteractive()) {
+            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr);
+        }
+
+        if ($destination) {
+            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+            $fsHelper = $this->getHelper('fs');
+            $destination = $fsHelper->makePathAbsolute($destination);
+        }
+        elseif (!$projectRoot) {
+            throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
+        }
+        else {
+            $destination = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        }
+
+        // Ensure no conflicts between source and destination.
+        if (strpos($sourceDir, $destination) === 0) {
+            throw new \InvalidArgumentException("The destination '$destination' conflicts with the source '$sourceDir'");
+        }
+
+        // Ask the user about overwriting the destination, if a project root was
+        // not found.
+        if (!$projectRoot && file_exists($destination)) {
+            if (!is_writable($destination)) {
+                $this->stdErr->writeln("The destination exists and is not writable: <error>$destination</error>");
+                return 1;
+            }
+            $default = is_link($destination);
+            if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $input, $this->stdErr, $default)) {
+                return 1;
             }
         }
 
-        // Otherwise, use the Git branch name.
-        if (!isset($envId)) {
-            $gitHelper = $this->getHelper('git');
-            $envId = $gitHelper->getCurrentBranch($projectRoot . '/' . LocalProject::REPOSITORY_DIR, true);
-        }
-
-        $apps = $input->getArgument('app');
-
         $settings = array();
 
-        // The environment ID is used in making the build directory name.
-        $settings['environmentId'] = $envId;
+        $settings['projectRoot'] = $projectRoot;
+
+        $settings['environmentId'] = $this->determineEnvironmentId($sourceDir, $projectRoot);
 
         $settings['verbosity'] = $output->getVerbosity();
 
@@ -115,6 +167,7 @@ class LocalBuildCommand extends PlatformCommand
         // Some simple settings flags.
         $settingsMap = array(
           'absoluteLinks' => 'abslinks',
+          'copy' => 'copy',
           'drushWorkingCopy' => 'working-copy',
           'noArchive' => 'no-archive',
           'noCache' => 'no-cache',
@@ -125,19 +178,49 @@ class LocalBuildCommand extends PlatformCommand
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
         }
 
-        try {
-            $builder = new LocalBuild($settings, $output);
-            $success = $builder->buildProject($projectRoot, $apps);
-        } catch (\Exception $e) {
-            $output->writeln("<error>The build failed with an error</error>");
-            $formattedMessage = $this->getHelper('formatter')
-                                     ->formatBlock($e->getMessage(), 'error');
-            $output->writeln($formattedMessage);
+        $apps = $input->getArgument('app');
 
-            return 1;
-        }
+        $builder = new LocalBuild($settings, $this->stdErr);
+        $success = $builder->build($sourceDir, $destination, $apps);
 
-        return $success ? 0 : 2;
+        return $success ? 0 : 1;
     }
 
+    /**
+     * Find out the environment ID, if possible.
+     *
+     * This is appended to the build directory name.
+     *
+     * @param string $sourceDir
+     * @param string|false $projectRoot
+     *
+     * @return string|false
+     */
+    protected function determineEnvironmentId($sourceDir, $projectRoot = null)
+    {
+        // Find out the real environment ID, if possible.
+        if ($projectRoot && $this->isLoggedIn()) {
+            try {
+                $project = $this->getCurrentProject();
+            }
+            catch (\RuntimeException $e) {
+                // An exception may be thrown if the user no longer has access
+                // to the project. We can still let the user build the project
+                // locally.
+                $project = false;
+            }
+            if ($project && ($environment = $this->getCurrentEnvironment($project))) {
+                return $environment['id'];
+            }
+        }
+
+        // Fall back to the Git branch name.
+        if (is_dir($sourceDir . '/.git')) {
+            /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
+            $gitHelper = $this->getHelper('git');
+            return $gitHelper->getCurrentBranch($sourceDir);
+        }
+
+        return false;
+    }
 }

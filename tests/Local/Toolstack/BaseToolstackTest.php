@@ -7,31 +7,48 @@ use org\bovigo\vfs\vfsStreamDirectory;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
-use Symfony\Component\Console\Output\StreamOutput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
 {
 
     /** @var vfsStreamDirectory */
-    protected $root;
+    protected static $root;
+
+    /** @var \Symfony\Component\Console\Output\OutputInterface */
+    protected static $output;
 
     /** @var LocalBuild */
     protected $builder;
 
-    protected $showBuildOutput = false;
-
     protected $buildSettings = array('noClean' => true);
 
     /**
-     * @{inheritdoc}
+     * {@inheritdoc}
+     */
+    public static function setUpBeforeClass()
+    {
+        self::$root = vfsStream::setup(__CLASS__);
+        self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function setUp()
     {
-        $this->root = vfsStream::setup(__CLASS__);
         $this->builder = new LocalBuild(
           $this->buildSettings,
-          $this->showBuildOutput ? new StreamOutput(fopen("php://output", 'w')) : null
+          self::$output
         );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function tearDownAfterClass()
+    {
+        exec('rm -Rf ' . escapeshellarg(self::$root->getName()));
     }
 
     /**
@@ -47,6 +64,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     protected function assertBuildSucceeds($sourceDir)
     {
         $projectRoot = $this->createDummyProject($sourceDir);
+        self::$output->writeln("\nTesting build for directory: " . $sourceDir);
         $success = $this->builder->buildProject($projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
 
@@ -64,7 +82,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
             throw new \InvalidArgumentException("Not a directory: $sourceDir");
         }
 
-        $tempDir = $this->root->getName();
+        $tempDir = self::$root->getName();
         $projectRoot = tempnam($tempDir, '');
         unlink($projectRoot);
         mkdir($projectRoot);

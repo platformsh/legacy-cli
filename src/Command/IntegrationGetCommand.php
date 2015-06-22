@@ -25,7 +25,7 @@ class IntegrationGetCommand extends IntegrationCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $output);
+        $this->validateInput($input);
 
         $id = $input->getArgument('id');
 
@@ -33,7 +33,7 @@ class IntegrationGetCommand extends IntegrationCommand
             $integration = $this->getSelectedProject()
                                 ->getIntegration($id);
             if (!$integration) {
-                $output->writeln("Integration not found: <error>$id</error>");
+                $this->stdErr->writeln("Integration not found: <error>$id</error>");
 
                 return 1;
             }
@@ -42,7 +42,7 @@ class IntegrationGetCommand extends IntegrationCommand
             $results = $this->getSelectedProject()
                             ->getIntegrations();
             if (!$results) {
-                $output->writeln('No integrations found');
+                $this->stdErr->writeln('No integrations found');
 
                 return 1;
             }
