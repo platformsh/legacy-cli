@@ -1,0 +1,26 @@
+{
+  "chmod": "0755",
+  "directories": [
+    "resources",
+    "src"
+  ],
+  "files": [
+    "platform",
+    "vendor/autoload.php",
+    "vendor/herrera-io/phar-update/res/schema.json"
+  ],
+  "finder": [
+    {
+      "in": "vendor",
+      "name": "*.php",
+      "exclude": [
+        "phpunit",
+        "Tests",
+        "tests"
+      ]
+    }
+  ],
+  "main": "platform",
+  "output": "platform.phar",
+  "stub": true
+}
