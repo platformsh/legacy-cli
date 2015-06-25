@@ -88,13 +88,12 @@ class EnvironmentBackupCommand extends PlatformCommand
             return 1;
         }
 
-        $headers = array("Activity ID", "Created", "% Complete", "Backup name");
+        $headers = array("Created", "% Complete", "Backup name");
         $rows = array();
         foreach ($results as $result) {
             $payload = $result->getProperty('payload');
             $backup_name = !empty($payload['backup_name']) ? $payload['backup_name'] : 'N/A';
             $rows[] = array(
-              $result->getProperty('id'),
               date('Y-m-d H:i:s', strtotime($result->getProperty('created_at'))),
               $result->getCompletionPercent(),
               $backup_name,
