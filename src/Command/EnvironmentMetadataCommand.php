@@ -25,33 +25,15 @@ class EnvironmentMetadataCommand extends PlatformCommand
           ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
           ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
           ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-          ->setDescription('Read or set metadata for an environment')
-          ->setHelp(
-            <<<EOF
-            Use this command to read or write an environment's metadata.
-
-<comment>Examples:</comment>
-Read all environment metadata:
-  <info>platform %command.name%</info>
-
-Show the environment status:
-  <info>platform %command.name% status</info>
-
-Show the date the environment was created:
-  <info>platform %command.name% created_at</info>
-
-Enable email sending:
-  <info>platform %command.name% enable_smtp true</info>
-
-Change the environment title:
-  <info>platform %command.name% title "New feature"</info>
-
-Change the environment's parent branch:
-  <info>platform %command.name% parent sprint-2</info>
-EOF
-          );
+          ->setDescription('Read or set metadata for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Read all environment metadata')
+          ->addExample("Show the environment's status", 'status')
+          ->addExample('Show the date the environment was created', 'created_at')
+          ->addExample('Enable email sending', 'enable_smtp true')
+          ->addExample('Change the environment title', 'title "New feature"')
+          ->addExample("Change the environment's parent branch", 'parent sprint-2');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

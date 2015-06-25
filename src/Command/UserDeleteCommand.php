@@ -16,6 +16,7 @@ class UserDeleteCommand extends PlatformCommand
           ->setDescription('Delete a user')
           ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
         $this->addProjectOption();
+        $this->addExample('Delete Alice from the project', 'alice@example.com');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

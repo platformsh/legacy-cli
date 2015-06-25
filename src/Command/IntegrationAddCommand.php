@@ -20,6 +20,10 @@ class IntegrationAddCommand extends IntegrationCommand
           ->setDescription('Add an integration to the project');
         $this->setUpOptions();
         $this->addProjectOption();
+        $this->addExample(
+          'Add an integration with a GitHub repository',
+          '--type github --repository myuser/example-repo --token UFpYS1MzQktjNw --fetch-branches 0'
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
