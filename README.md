@@ -109,7 +109,7 @@ domain
   domain:list (domains)                     Get a list of all domains
 environment
   environment:activate                      Activate an environment
-  environment:backup                        Make a backup of an environment
+  environment:backup                        Make a backup (snapshot) of an environment
   environment:branch (branch)               Branch an environment
   environment:checkout (checkout)           Check out an environment
   environment:delete                        Delete an environment
