@@ -19,6 +19,7 @@ class UserAddCommand extends UserCommand
           ->addArgument('email', InputArgument::OPTIONAL, "The new user's email address")
           ->addOption('role', null, InputOption::VALUE_OPTIONAL, "The new user's role: 'admin' or 'viewer'");
         $this->addProjectOption();
+        $this->addExample('Add Alice as a new administrator', 'alice@example.com --role admin');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

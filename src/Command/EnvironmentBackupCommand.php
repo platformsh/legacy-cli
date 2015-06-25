@@ -23,12 +23,9 @@ class EnvironmentBackupCommand extends PlatformCommand
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the backup to complete');
         $this->addProjectOption()
              ->addEnvironmentOption();
-        $this->setHelp(
-          "See https://docs.platform.sh/use-platform/backup-and-restore.html\n\n"
-          . "<comment>Examples:</comment>\n"
-          . "\nBack up the current environment:\n  <info>platform %command.name%</info>"
-          . "\nList available backups:\n  <info>platform %command.name% --list</info>"
-        );
+        $this->setHelp('See https://docs.platform.sh/use-platform/backup-and-restore.html');
+        $this->addExample('Make a backup of the current environment');
+        $this->addExample('List available backups', '--list');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

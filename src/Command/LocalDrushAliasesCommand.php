@@ -22,6 +22,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
           ->addOption('group', 'g', InputOption::VALUE_OPTIONAL, 'Recreate the aliases with a new group name.')
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
           ->setDescription('Find the project\'s Drush aliases');
+        $this->addExample('Change the alias group to @example', '-g example');
     }
 
     public function isLocal()

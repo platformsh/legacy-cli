@@ -18,6 +18,7 @@ class DomainDeleteCommand extends PlatformCommand
           ->setDescription('Delete a domain from the project')
           ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->addProjectOption();
+        $this->addExample('Delete the domain example.com', 'example.com');
     }
 
     /**

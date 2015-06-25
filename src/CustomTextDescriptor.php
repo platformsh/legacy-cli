@@ -52,6 +52,14 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText(' ' . str_replace("\n", "\n ", $help), $options);
             $this->writeText("\n");
         }
+
+        if ($command instanceof PlatformCommand && ($examples = $command->getProcessedExamples())) {
+            $this->writeText("\n");
+            $this->writeText('<comment>Examples:</comment>', $options);
+            $this->writeText("\n");
+            $this->writeText(' ' . str_replace("\n", "\n ", $examples), $options);
+            $this->writeText("\n");
+        }
     }
 
     /**

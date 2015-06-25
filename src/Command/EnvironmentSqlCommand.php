@@ -18,6 +18,7 @@ class EnvironmentSqlCommand extends PlatformCommand
             ->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        $this->addExample('View tables on the remote database', "'SHOW TABLES'");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
