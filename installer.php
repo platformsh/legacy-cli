@@ -1,11 +1,15 @@
 <?php
+/**
+ * @file
+ * Platform.sh CLI installer.
+ */
 
 define('MANIFEST_URL', 'https://platform.sh/cli/manifest.json');
 
 $n = PHP_EOL;
 
 set_error_handler(
-  function ($code, $message, $file, $line) use ($n) {
+  function ($code, $message) use ($n) {
       if ($code & error_reporting()) {
           echo "$n{$n}Error: $message$n$n";
           exit(1);
@@ -27,8 +31,8 @@ if (in_array('--no-ansi', $argv)) {
     );
 }
 
-out(PHP_EOL . "Platform.sh CLI installer",'info');
-out(PHP_EOL . "[-] Environment check", 'info');
+out("Platform.sh CLI installer", 'info');
+out(PHP_EOL . "Environment check", 'info');
 
 // check version
 check(
@@ -45,6 +49,16 @@ check(
   'Notice: The "openssl" extension will be needed.',
   function () {
       return extension_loaded('openssl');
+  },
+  false
+);
+
+// check curl extension
+check(
+  'You have the "curl" extension installed.',
+  'Notice: The "curl" extension will be needed to use the Platform.sh API.',
+  function () {
+      return extension_loaded('curl');
   },
   false
 );
@@ -87,26 +101,19 @@ check(
   false
 );
 
-// check curl extension
-check(
-  'You have the "curl" extension installed.',
-  'Notice: The "curl" extension will be needed to use the Platform.sh API.',
-  function () {
-      return extension_loaded('curl');
-  },
-  false
-);
+out(PHP_EOL . "Download", 'info');
 
-out(PHP_EOL . "[-] Download", 'info');
+out("  Finding the latest version...");
+
 $manifest = file_get_contents(MANIFEST_URL);
 if ($manifest === false) {
-    out(PHP_EOL . "[ ] Failed to download manifest file: " . MANIFEST_URL . $n, 'error');
+    out(PHP_EOL . "Failed to download manifest file: " . MANIFEST_URL . $n, 'error');
     exit(1);
 }
 
 $manifest = json_decode($manifest);
 if ($manifest === null) {
-    out(PHP_EOL . "[ ] Failed to decode manifest file: " . MANIFEST_URL . $n, 'error');
+    out(PHP_EOL . "Failed to decode manifest file: " . MANIFEST_URL . $n, 'error');
     exit(1);
 }
 
@@ -121,42 +128,42 @@ foreach ($manifest as $item) {
 }
 
 if (!$item) {
-    out(PHP_EOL . "[ ] No download was found.$n", 'error');
+    out(PHP_EOL . "No download was found.$n", 'error');
     exit(1);
 }
 
-out(" [*] Downloading the Platform.sh CLI v" . $item->version, 'success');
+out("  Downloading version {$item->version}...");
 
 file_put_contents($item->name, file_get_contents($item->url));
 
-out(" [*] Checking file checksum...", 'success');
+out("  Checking file checksum...");
 
 if ($item->sha1 !== sha1_file($item->name)) {
     unlink($item->name);
-    out(" [ ] The download was corrupted.$n", 'error');
+    out("  The download was corrupted.$n", 'error');
     exit(1);
 }
 
-out(" [*] Checking if valid Phar...", 'success');
+out("  Validating Phar...");
 
 try {
     new Phar($item->name);
 } catch (Exception $e) {
-    out(" [ ] The Phar is not valid.\n\n", 'error');
+    out("  The Phar is not valid.$n$n", 'error');
 
     throw $e;
 }
 
-out(" [*] Making the Platform.sh CLI executable...$n", 'success');
+out("  Making the file executable...");
 
 @chmod($item->name, 0755);
 
-out("{$n}The Platform.sh CLI was installed!", 'success');
-out(PHP_EOL."Use it as local file:", 'info');
-out("$ php platform.phar", 'info');
-out(PHP_EOL."Accessing the CLI from anywhere on your system:", 'info');
-out("  mv platform.phar /usr/local/bin/platform", 'info');
-out("$ platform", 'info');
+out(PHP_EOL . "The Platform.sh CLI v{$item->version} was installed successfully!", 'success');
+out(PHP_EOL . "Use it as local file:", 'info');
+out("  php platform.phar");
+out(PHP_EOL . "Or install it globally on your system:", 'info');
+out("  mv platform.phar /usr/local/bin/platform");
+out("  platform");
 
 /**
  * Checks a condition, outputs a message, and exits if failed.
@@ -171,9 +178,9 @@ function check($success, $failure, $condition, $exit = true)
     global $n;
 
     if ($condition()) {
-        out (' [*] ' . $success, 'success');
+        out ('  [*] ' . $success, 'success');
     } else {
-        out(' [ ] ' . $failure . $n, 'error');
+        out('  [ ] ' . $failure . $n, 'error');
 
         if ($exit) {
             exit(1);
