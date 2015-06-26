@@ -83,6 +83,9 @@ class LocalBuildCommand extends PlatformCommand
             'Drush: set the number of concurrent projects that will be processed at the same time',
             $this->defaultDrushConcurrency
           );
+        $this->addExample('Build the current project');
+        $this->addExample('Build the app "example" without symlinking the source files', 'example --copy');
+        $this->addExample('Rebuild the current project without using an archive', '--no-archive');
     }
 
     public function isLocal()
@@ -203,10 +206,10 @@ class LocalBuildCommand extends PlatformCommand
             try {
                 $project = $this->getCurrentProject();
             }
-            catch (\RuntimeException $e) {
+            catch (\Exception $e) {
                 // An exception may be thrown if the user no longer has access
-                // to the project. We can still let the user build the project
-                // locally.
+                // to the project, or perhaps if there is no network access. We
+                // can still let the user build the project locally.
                 $project = false;
             }
             if ($project && ($environment = $this->getCurrentEnvironment($project))) {

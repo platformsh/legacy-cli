@@ -26,6 +26,7 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             InputArgument::OPTIONAL,
             'The ID of the environment to check out. For example: "sprint2"'
           );
+        $this->addExample('Check out the environment "develop"', 'master');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

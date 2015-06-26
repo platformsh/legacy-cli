@@ -20,6 +20,7 @@ class EnvironmentVariableDeleteCommand extends PlatformCommand
           ->setDescription('Delete a variable from an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Delete the variable "example"', 'example');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

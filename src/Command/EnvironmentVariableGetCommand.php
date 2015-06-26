@@ -25,6 +25,7 @@ class EnvironmentVariableGetCommand extends PlatformCommand
           ->setDescription('Get a variable for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Get the variable "example"', 'example');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

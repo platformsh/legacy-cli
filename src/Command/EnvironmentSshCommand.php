@@ -27,6 +27,7 @@ class EnvironmentSshCommand extends PlatformCommand
              ->addAppOption();
         $this->ignoreValidationErrors();
         $this->addExample('Read recent messages in the deploy log', "'tail /var/log/deploy.log'");
+        $this->addExample('Open a shell over SSH');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

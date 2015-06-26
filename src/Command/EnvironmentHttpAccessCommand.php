@@ -32,7 +32,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('Require a username and password', '--auth myname:mypassword');
-        $this->addExample('Restrict access to an IP range', '--access allow:69.208.0.0/8');
+        $this->addExample('Restrict access to only one IP address', '--access deny:any --access allow:69.208.1.192');
         $this->addExample('Remove all restrictions', '--auth 0 --access 0');
     }
 

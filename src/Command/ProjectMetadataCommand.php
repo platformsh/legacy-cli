@@ -27,6 +27,9 @@ class ProjectMetadataCommand extends PlatformCommand
           ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
           ->setDescription('Read or set metadata for a project');
         $this->addProjectOption();
+        $this->addExample('Read all project metadata')
+             ->addExample("Show the project's Git URL", 'git')
+             ->addExample("Change the project's title", 'title "My project"');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

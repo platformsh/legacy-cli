@@ -24,6 +24,8 @@ class EnvironmentDrushCommand extends PlatformCommand
              ->addEnvironmentOption()
              ->addAppOption();
         $this->ignoreValidationErrors();
+        $this->addExample('Run "drush status" on the remote environment');
+        $this->addExample('Enable the Overlay module on the remote environment', "'en overlay'");
     }
 
     public function isEnabled()

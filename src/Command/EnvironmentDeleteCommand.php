@@ -24,6 +24,9 @@ class EnvironmentDeleteCommand extends PlatformCommand
           ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
+        $this->addExample('Delete all inactive environments', '--inactive');
+        $this->addExample('Delete all environments merged with "master"', '--merged master');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

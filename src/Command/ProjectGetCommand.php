@@ -56,6 +56,7 @@ class ProjectGetCommand extends PlatformCommand
             InputOption::VALUE_OPTIONAL,
             "The project's API hostname"
           );
+        $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

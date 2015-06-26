@@ -23,6 +23,7 @@ class UserRoleCommand extends UserCommand
           ->addEnvironmentOption();
         $this->addExample("View Alice's role on the project", 'alice@example.com');
         $this->addExample("View Alice's role on the environment", 'alice@example.com --level environment');
+        $this->addExample("Give Alice the 'contributor' role on the environment 'test'", 'alice@example.com --level environment --environment test --role contributor');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
