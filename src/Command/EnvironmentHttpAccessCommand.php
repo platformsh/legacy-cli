@@ -28,12 +28,19 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
             null,
             InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
             'Authentication details in the format "username:password"'
+          )
+          ->addOption(
+            'enabled',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Whether access control should be enabled: 1 to enable, 0 to disable'
           );
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('Require a username and password', '--auth myname:mypassword');
         $this->addExample('Restrict access to only one IP address', '--access deny:any --access allow:69.208.1.192');
-        $this->addExample('Remove all restrictions', '--auth 0 --access 0');
+        $this->addExample('Remove the password requirement, keeping IP restrictions', '--auth 0');
+        $this->addExample('Disable all HTTP access control', '--enabled 0');
     }
 
     /**
@@ -132,6 +139,11 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
 
         $accessOpts = array();
 
+        $enabled = $input->getOption('enabled');
+        if ($enabled !== null) {
+            $accessOpts['is_enabled'] = !in_array($enabled, array('0', 'false'));
+        }
+
         if ($access) {
             $accessOpts['addresses'] = array();
             foreach (array_filter($access) as $access) {
@@ -154,7 +166,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
 
         $formatter = new PropertyFormatter();
 
-        if ($auth || $access) {
+        if (!empty($accessOpts)) {
             $current = (array) $selectedEnvironment->getProperty('http_access');
 
             // Merge existing settings. Not using a reference here, as that
