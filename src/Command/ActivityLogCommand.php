@@ -29,6 +29,7 @@ class ActivityLogCommand extends PlatformCommand
           ->setDescription('Display the log for an environment activity');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Display the log for the last push', '--type environment.push');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

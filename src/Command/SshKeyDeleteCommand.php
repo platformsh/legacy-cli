@@ -19,6 +19,7 @@ class SshKeyDeleteCommand extends PlatformCommand
             InputArgument::OPTIONAL,
             'The ID of the SSH key to delete'
           );
+        $this->addExample('Delete the key 123', '123');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

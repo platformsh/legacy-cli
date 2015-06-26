@@ -17,12 +17,15 @@ class EnvironmentBackupCommand extends PlatformCommand
     {
         $this
           ->setName('environment:backup')
-          ->setDescription('Make a backup of an environment')
+          ->setDescription('Make a backup (snapshot) of an environment')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to back up')
           ->addOption('list', 'l', InputOption::VALUE_NONE, 'List backups')
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the backup to complete');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->setHelp('See https://docs.platform.sh/use-platform/backup-and-restore.html');
+        $this->addExample('Make a backup of the current environment');
+        $this->addExample('List available backups', '--list');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -85,13 +88,12 @@ class EnvironmentBackupCommand extends PlatformCommand
             return 1;
         }
 
-        $headers = array("Activity ID", "Created", "% Complete", "Backup name");
+        $headers = array("Created", "% Complete", "Backup name");
         $rows = array();
         foreach ($results as $result) {
             $payload = $result->getProperty('payload');
             $backup_name = !empty($payload['backup_name']) ? $payload['backup_name'] : 'N/A';
             $rows[] = array(
-              $result->getProperty('id'),
               date('Y-m-d H:i:s', strtotime($result->getProperty('created_at'))),
               $result->getCompletionPercent(),
               $backup_name,

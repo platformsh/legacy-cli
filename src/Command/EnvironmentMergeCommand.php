@@ -21,6 +21,7 @@ class EnvironmentMergeCommand extends PlatformCommand
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

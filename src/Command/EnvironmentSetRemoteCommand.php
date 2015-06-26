@@ -28,6 +28,7 @@ class EnvironmentSetRemoteCommand extends PlatformCommand
             InputArgument::OPTIONAL,
             'The Git branch to track (defaults to the current branch)'
           );
+        $this->addExample('Set the remote environment for this branch to "pr-655"', 'pr-655');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -21,6 +21,7 @@ class EnvironmentActivateCommand extends PlatformCommand
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

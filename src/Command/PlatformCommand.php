@@ -24,6 +24,7 @@ use Symfony\Component\Console\Output\StreamOutput;
 
 abstract class PlatformCommand extends Command
 {
+    use HasExamplesTrait;
 
     /** @var PlatformClient|null */
     private static $client;
@@ -819,5 +820,19 @@ abstract class PlatformCommand extends Command
         }
 
         return $this->environment;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getProcessedExamples()
+    {
+        $output = '';
+        $name = $this->getName();
+        foreach ($this->examples as $arguments => $description) {
+            $output .= "\n$description:\n  <info>platform $name $arguments</info>\n";
+        }
+
+        return trim($output);
     }
 }

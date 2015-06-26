@@ -22,6 +22,7 @@ class IntegrationUpdateCommand extends IntegrationCommand
           ->setDescription('Update an integration');
         $this->setUpOptions();
         $this->addProjectOption();
+        $this->addExample('Switch on the "fetch branches" option for a specific integration', 'ZXhhbXBsZSB --fetch-branches 1');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -25,6 +25,9 @@ class SubscriptionMetadataCommand extends PlatformCommand
           ->setDescription('Read metadata for a subscription');
         $this->addProjectOption();
         $this->setHiddenInList();
+        $this->addExample('View all subscription metadata')
+          ->addExample('View the subscription status', 'status')
+          ->addExample('View the storage limit (in MiB)', 'storage');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

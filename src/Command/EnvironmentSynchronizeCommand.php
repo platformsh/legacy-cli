@@ -26,6 +26,7 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Synchronize data from the parent environment', 'data');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

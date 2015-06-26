@@ -23,6 +23,9 @@ class EnvironmentVariableSetCommand extends PlatformCommand
           ->setDescription('Set a variable for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Set the variable "example" to the string "123"', 'example 123');
+        $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
+        $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

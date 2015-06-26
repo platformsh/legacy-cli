@@ -49,6 +49,7 @@ class EnvironmentBranchCommand extends PlatformCommand
           );
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

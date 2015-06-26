@@ -16,6 +16,7 @@ class DocsCommand extends UrlCommandBase
           ->setName('docs')
           ->setDescription('Open the Platform.sh online documentation')
           ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
+        $this->addExample('Search for information about the CLI', 'CLI');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

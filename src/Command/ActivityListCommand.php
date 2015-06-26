@@ -24,6 +24,8 @@ class ActivityListCommand extends PlatformCommand
           ->setDescription('Get the most recent activities for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('List recent activities on the current environment')
+          ->addExample('List recent pushes', '--type environment.push');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
