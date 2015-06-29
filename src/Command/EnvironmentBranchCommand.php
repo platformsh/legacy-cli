@@ -144,11 +144,10 @@ class EnvironmentBranchCommand extends PlatformCommand
             $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
 
-            $this->stdErr->writeln("Checking out <info>$machineName</info> locally");
-
             // If the Git branch already exists locally, just check it out.
             $existsLocally = $gitHelper->branchExists($machineName);
             if ($existsLocally) {
+                $this->stdErr->writeln("Checking out <info>$machineName</info> locally");
                 if (!$gitHelper->checkOut($machineName)) {
                     $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
                     $local_error = true;
@@ -162,7 +161,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                 if (!$gitHelper->branchExists($parent)) {
                     $parent = null;
                 }
-                $this->stdErr->writeln("Creating local branch out <info>$machineName</info>");
+                $this->stdErr->writeln("Creating local branch <info>$machineName</info>");
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
                     $local_error = true;
