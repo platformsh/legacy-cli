@@ -125,7 +125,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
         foreach ($environments as $environment) {
             $environmentId = $environment['id'];
             if ($environmentId == 'master') {
-                $output->writeln("The <error>master</error> environment cannot be deactivated or deleted.");
+                $output->writeln("The <error>master</error> environment cannot be deleted.");
                 continue;
             }
             // Check that the environment does not have children.

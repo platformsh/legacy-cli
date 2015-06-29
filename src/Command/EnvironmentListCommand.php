@@ -226,11 +226,6 @@ class EnvironmentListCommand extends PlatformCommand
               "Activate the current environment by running <info>platform environment:activate</info>."
             );
         }
-        if ($currentEnvironment->operationAvailable('deactivate')) {
-            $this->stdErr->writeln(
-              "Deactivate the current environment by running <info>platform environment:deactivate</info>."
-            );
-        }
         if ($currentEnvironment->operationAvailable('delete')) {
             $this->stdErr->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
         }
