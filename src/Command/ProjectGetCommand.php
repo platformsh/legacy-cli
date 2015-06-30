@@ -132,7 +132,7 @@ class ProjectGetCommand extends PlatformCommand
         $fsHelper = $this->getHelper('fs');
 
         // Prepare to talk to the Platform.sh repository.
-        $gitUrl = $project->getGitUrl();
+        $gitUrl = $this->customizeHost($project->getGitUrl());
         $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));

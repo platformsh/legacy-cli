@@ -56,6 +56,7 @@ class LocalInitCommand extends PlatformCommand
                 return 1;
             }
             $gitUrl = $project->getGitUrl();
+            $gitUrl = $this->customizeHost($gitUrl);
         }
 
         $inside = strpos(getcwd(), $realPath) === 0;
