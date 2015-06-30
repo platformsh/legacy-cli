@@ -13,6 +13,14 @@ Alternative README versions: [`master`](https://github.com/platformsh/platformsh
 
 ### Installation
 
+#### Using the installer
+
+Simply run this command:
+
+    curl -sS https://platform.sh/cli/installer | php
+
+#### Using Composer
+
 * [Install Composer globally](https://getcomposer.org/doc/00-intro.md#globally).
 
 * Install the latest stable version of the CLI:
@@ -55,17 +63,17 @@ Start a new shell or type `source <filename>` to load the new configuration.
 
 ### Updating
 
-New releases of the CLI are made regularly. You can update with this command:
+New releases of the CLI are made regularly.
+
+If you installed the CLI using the installer (as a Phar archive), you can update
+it using:
+
+    platform self-update
+
+Or, if you installed the CLI with Composer globally, you can update with this
+command:
 
     composer global update
-
-If you want to change the version that you are using - for example to upgrade
-between major versions (such as `1.x.x` to `2.x.x`) - it may be more effective
-to remove and re-install:
-
-    composer global remove platformsh/cli
-    composer global update
-    composer global require platformsh/cli:@stable
 
 ### Usage
 
