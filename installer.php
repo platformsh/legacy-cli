@@ -159,7 +159,7 @@ out("  Making the file executable...");
 @chmod($item->name, 0755);
 
 out(PHP_EOL . "The Platform.sh CLI v{$item->version} was installed successfully!", 'success');
-out(PHP_EOL . "Use it as local file:", 'info');
+out(PHP_EOL . "Use it as a local file:", 'info');
 out("  php platform.phar");
 out(PHP_EOL . "Or install it globally on your system:", 'info');
 out("  mv platform.phar /usr/local/bin/platform");
