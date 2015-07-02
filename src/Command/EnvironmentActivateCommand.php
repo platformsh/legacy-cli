@@ -56,7 +56,7 @@ class EnvironmentActivateCommand extends PlatformCommand
     {
         $count = count($environments);
         $processed = 0;
-        // Confirm which environments the user wishes to be deactivated.
+        // Confirm which environments the user wishes to be activated.
         $process = array();
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {

@@ -134,6 +134,8 @@ class Application extends ParentApplication
         $commands[] = new Command\LocalInitCommand();
         $commands[] = new Command\ProjectGetCommand();
         $commands[] = new Command\ProjectMetadataCommand();
+        $commands[] = new Command\SelfBuildCommand();
+        $commands[] = new Command\SelfUpdateCommand();
         $commands[] = new Command\SshKeyAddCommand();
         $commands[] = new Command\SshKeyDeleteCommand();
         $commands[] = new Command\SshKeyListCommand();

@@ -187,8 +187,6 @@ class CompletionCommand extends ParentCompletionCommand
      * the command (via the 'id' argument of 'get', or the '--project' option),
      * or it is determined from the current path.
      *
-     * @todo filter to show only active environments for deactivate, etc.
-     *
      * @return string[]
      */
     public function getEnvironments()

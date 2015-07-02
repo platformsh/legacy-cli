@@ -48,8 +48,8 @@ class WelcomeCommand extends PlatformCommand
             );
             $application->find('environments')
                         ->run($envInput, $output);
-            $this->stdErr->writeln("\nYou can list other projects by running <info>platform projects</info>.\n");
-            $this->stdErr->writeln("Manage your domains by running <info>platform domains</info>.");
+            $this->stdErr->writeln("\nYou can list other projects by running <info>platform projects</info>\n");
+            $this->stdErr->writeln("Manage your domains by running <info>platform domains</info>");
         } else {
             // The project is not known. Show all projects.
             $projectsInput = new ArrayInput(

@@ -210,41 +210,36 @@ class EnvironmentListCommand extends PlatformCommand
             return;
         }
 
-        $this->stdErr->writeln("<info>*</info> - Indicates the current environment.\n");
+        $this->stdErr->writeln("<info>*</info> - Indicates the current environment\n");
 
         $currentEnvironment = $this->currentEnvironment;
 
-        $this->stdErr->writeln("Check out a different environment by running <info>platform checkout [id]</info>.");
+        $this->stdErr->writeln("Check out a different environment by running <info>platform checkout [id]</info>");
 
         if ($currentEnvironment->operationAvailable('branch')) {
             $this->stdErr->writeln(
-              "Branch a new environment by running <info>platform environment:branch [new-name]</info>."
+              "Branch a new environment by running <info>platform environment:branch [new-name]</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('activate')) {
             $this->stdErr->writeln(
-              "Activate the current environment by running <info>platform environment:activate</info>."
-            );
-        }
-        if ($currentEnvironment->operationAvailable('deactivate')) {
-            $this->stdErr->writeln(
-              "Deactivate the current environment by running <info>platform environment:deactivate</info>."
+              "Activate the current environment by running <info>platform environment:activate</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('delete')) {
-            $this->stdErr->writeln("Delete the current environment by running <info>platform environment:delete</info>.");
+            $this->stdErr->writeln("Delete the current environment by running <info>platform environment:delete</info>");
         }
         if ($currentEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-              "Back up the current environment by running <info>platform environment:backup</info>."
+              "Back up the current environment by running <info>platform environment:backup</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {
-            $this->stdErr->writeln("Merge the current environment by running <info>platform environment:merge</info>.");
+            $this->stdErr->writeln("Merge the current environment by running <info>platform environment:merge</info>");
         }
         if ($currentEnvironment->operationAvailable('synchronize')) {
             $this->stdErr->writeln(
-              "Sync the current environment by running <info>platform environment:synchronize</info>."
+              "Sync the current environment by running <info>platform environment:synchronize</info>"
             );
         }
 
@@ -253,7 +248,7 @@ class EnvironmentListCommand extends PlatformCommand
             $this->getApplication()
                  ->get('drush');
             $this->stdErr->writeln(
-              "Execute Drush commands against the current environment by running <info>platform drush</info>."
+              "Execute Drush commands against the current environment by running <info>platform drush</info>"
             );
         } catch (\InvalidArgumentException $e) {
             // Ignore 'command not found' errors.
