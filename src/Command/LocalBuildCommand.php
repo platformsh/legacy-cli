@@ -82,6 +82,12 @@ class LocalBuildCommand extends PlatformCommand
             InputOption::VALUE_OPTIONAL,
             'Drush: set the number of concurrent projects that will be processed at the same time',
             $this->defaultDrushConcurrency
+          )
+          ->addOption(
+            'lock',
+            null,
+            InputOption::VALUE_NONE,
+            'Drush: create or update a lock file (only available with Drush version 7+)'
           );
         $this->addExample('Build the current project');
         $this->addExample('Build the app "example" without symlinking the source files', 'example --copy');
@@ -172,6 +178,7 @@ class LocalBuildCommand extends PlatformCommand
           'absoluteLinks' => 'abslinks',
           'copy' => 'copy',
           'drushWorkingCopy' => 'working-copy',
+          'drushUpdateLock' => 'lock',
           'noArchive' => 'no-archive',
           'noCache' => 'no-cache',
           'noClean' => 'no-clean',

@@ -45,6 +45,30 @@ class DrushHelper extends Helper
     }
 
     /**
+     * Get the installed Drush version.
+     *
+     * @return string
+     *
+     * @throws \Exception
+     */
+    public function getVersion()
+    {
+        static $version;
+        if (isset($version)) {
+            return $version;
+        }
+        exec($this->getDrushExecutable() . ' --version', $drushVersion, $returnCode);
+        if ($returnCode > 0) {
+            $message = $returnCode == 127 ? 'Error finding Drush version' : 'Drush is not installed';
+            throw new \Exception($message, $returnCode);
+        }
+        $versionParts = explode(':', $drushVersion[0], 2);
+        $version = trim($versionParts[1]);
+
+        return $version;
+    }
+
+    /**
      * @param string $minVersion
      * @param bool   $attemptInstall
      *
@@ -52,26 +76,27 @@ class DrushHelper extends Helper
      */
     public function ensureInstalled($minVersion = '6', $attemptInstall = true)
     {
-        exec($this->getDrushExecutable() . ' --version', $drushVersion, $returnCode);
-        if ($returnCode && $returnCode === 127) {
-            // Retry installing, if the default Drush does not exist.
-            if ($attemptInstall && !getenv('PLATFORMSH_CLI_DRUSH') && $this->install()) {
-                $this->ensureInstalled($minVersion, false);
+        try {
+            $version = $this->getVersion();
+        }
+        catch (\Exception $e) {
+            if ($e->getCode() === 127) {
+                // Retry installing, if the default Drush does not exist.
+                if ($attemptInstall && !getenv('PLATFORMSH_CLI_DRUSH') && $this->install()) {
+                    $this->ensureInstalled($minVersion, false);
 
-                return;
+                    return;
+                }
             }
-            throw new \Exception('Drush must be installed');
-        } elseif ($returnCode) {
-            throw new \Exception('A Drush error occurred');
+
+            throw $e;
         }
         if (!$minVersion) {
             return;
         }
-        $versionParts = explode(':', $drushVersion[0]);
-        $versionNumber = trim($versionParts[1]);
-        if (version_compare($versionNumber, $minVersion, '<')) {
+        if (version_compare($version, $minVersion, '<')) {
             throw new \Exception(
-              sprintf('Drush version %s found, but %s (or later) is required', $versionNumber, $minVersion)
+              sprintf('Drush version %s found, but %s (or later) is required', $version, $minVersion)
             );
         }
     }

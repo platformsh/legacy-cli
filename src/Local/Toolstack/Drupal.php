@@ -37,10 +37,8 @@ class Drupal extends ToolstackBase
         $finder->in($directory)
                ->files()
                ->depth($depth)
-               ->name('project.make')
-               ->name('project-core.make')
-               ->name('drupal-org.make')
-               ->name('drupal-org-core.make');
+               ->name('project.make*')
+               ->name('drupal-org.make*');
         foreach ($finder as $file) {
             return true;
         }
@@ -70,17 +68,16 @@ class Drupal extends ToolstackBase
 
     public function build()
     {
-        $this->setUpDrushFlags();
 
         $profiles = glob($this->appRoot . '/*.profile');
+        $projectMake = $this->findDrushMakeFile();
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
         } elseif (count($profiles) == 1) {
             $profileName = strtok(basename($profiles[0]), '.');
             $this->buildInProfileMode($profileName);
-        }
-        elseif (file_exists($this->appRoot . '/project.make')) {
-            $this->buildInProjectMode($this->appRoot . '/project.make');
+        } elseif ($projectMake) {
+            $this->buildInProjectMode($projectMake);
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
 
@@ -152,23 +149,92 @@ class Drupal extends ToolstackBase
     }
 
     /**
+     * Find the preferred Drush Make file in the app root.
+     *
+     * @param bool $required
+     * @param bool $core
+     *
+     * @throws \Exception
+     *
+     * @return string|false
+     *   The absolute filename of the make file.
+     */
+    protected function findDrushMakeFile($required = false, $core = false) {
+        $candidates = array(
+          'project.make.yml',
+          'project.make',
+          'drupal-org.make.yml',
+          'drupal-org.make',
+        );
+        if (empty($this->settings['drushUpdateLock'])) {
+            $candidates = array_merge(array(
+              'project.make.lock',
+              'project.make.yml.lock',
+              'drupal-org.make.yml.lock',
+              'drupal-org.make.lock',
+            ), $candidates);
+        }
+        foreach ($candidates as &$candidate) {
+            if ($core) {
+                $candidate = str_replace('.make', '-core.make', $candidate);
+            }
+            if (file_exists($this->appRoot . '/' . $candidate)) {
+                return $this->appRoot . '/' . $candidate;
+            }
+        }
+
+        if ($required) {
+            throw new \Exception(
+              ($core ? "Couldn't find a core make file in the directory." : "Couldn't find a make file in the directory.")
+              . " Possible filenames: " . implode(',', $candidates)
+            );
+        }
+
+        return false;
+    }
+
+    /**
+     * @return DrushHelper
+     */
+    protected function getDrushHelper()
+    {
+        static $drushHelper;
+        if (!isset($drushHelper)) {
+            $drushHelper = new DrushHelper($this->output);
+        }
+
+        return $drushHelper;
+    }
+
+    /**
      * Build in 'project' mode, i.e. just using a Drush make file.
      *
      * @param string $projectMake
      */
     protected function buildInProjectMode($projectMake)
     {
-        $drushHelper = new DrushHelper($this->output);
+        $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
+        $this->setUpDrushFlags();
+
         $args = array_merge(
           array('make', $projectMake, $this->getWebRoot()),
           $this->drushFlags
         );
+
+        // Create a lock file automatically.
+        if (!strpos($projectMake, '.lock') && version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['drushUpdateLock'])) {
+            $args[] = "--lock=$projectMake.lock";
+        }
+
         $drushHelper->execute($args, null, true, false);
 
         $this->processSettingsPhp();
 
-        $this->ignoredFiles[] = 'project.make';
+        $this->ignoredFiles[] = '*.make';
+        $this->ignoredFiles[] = '*.make.lock';
+        $this->ignoredFiles[] = '*.make.yml';
+        $this->ignoredFiles[] = '*.make.yml.lock';
         $this->ignoredFiles[] = 'settings.local.php';
         $this->specialDestinations['sites.php'] = '{webroot}/sites';
 
@@ -188,36 +254,27 @@ class Drupal extends ToolstackBase
      * Build in 'profile' mode: the application contains a site profile.
      *
      * @param string $profileName
-     *
-     * @throws \Exception
      */
     protected function buildInProfileMode($profileName)
     {
-        $drushHelper = new DrushHelper($this->output);
+        $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
+        $this->setUpDrushFlags();
 
-        // Find the contrib make file.
-        if (file_exists($this->appRoot . '/project.make')) {
-            $projectMake = $this->appRoot . '/project.make';
-        } elseif (file_exists($this->appRoot . '/drupal-org.make')) {
-            $projectMake = $this->appRoot . '/drupal-org.make';
-        } else {
-            throw new \Exception("Couldn't find a project.make or drupal-org.make in the directory.");
-        }
-
-        // Find the core make file.
-        if (file_exists($this->appRoot . '/project-core.make')) {
-            $projectCoreMake = $this->appRoot . '/project-core.make';
-        } elseif (file_exists($this->appRoot . '/drupal-org-core.make')) {
-            $projectCoreMake = $this->appRoot . '/drupal-org-core.make';
-        } else {
-            throw new \Exception("Couldn't find a project-core.make or drupal-org-core.make in the directory.");
-        }
+        $projectMake = $this->findDrushMakeFile(true);
+        $projectCoreMake = $this->findDrushMakeFile(true, true);
 
         $args = array_merge(
           array('make', $projectCoreMake, $this->getWebRoot()),
           $this->drushFlags
         );
+
+        // Create a lock file automatically.
+        $updateLock = version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['drushUpdateLock']);
+        if (!strpos($projectCoreMake, '.lock') && $updateLock) {
+            $args[] = "--lock=$projectCoreMake.lock";
+        }
+
         $drushHelper->execute($args, null, true, false);
 
         $profileDir = $this->getWebRoot() . '/profiles/' . $profileName;
@@ -229,6 +286,12 @@ class Drupal extends ToolstackBase
           array('make', '--no-core', '--contrib-destination=.', $projectMake),
           $this->drushFlags
         );
+
+        // Create a lock file automatically.
+        if (!strpos($projectMake, '.lock') && $updateLock) {
+            $args[] = "--lock=$projectMake.lock";
+        }
+
         $drushHelper->execute($args, $profileDir, true, false);
 
         if ($this->copy) {
@@ -238,8 +301,10 @@ class Drupal extends ToolstackBase
             $this->output->writeln("Symlinking existing app files to the profile");
         }
 
-        $this->ignoredFiles[] = basename($projectMake);
-        $this->ignoredFiles[] = basename($projectCoreMake);
+        $this->ignoredFiles[] = '*.make';
+        $this->ignoredFiles[] = '*.make.lock';
+        $this->ignoredFiles[] = '*.make.yml';
+        $this->ignoredFiles[] = '*.make.yml.lock';
         $this->ignoredFiles[] = 'settings.local.php';
 
         $this->specialDestinations['settings*.php'] = '{webroot}/sites/default';
