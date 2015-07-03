@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
+use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 
 class DrupalTest extends BaseToolstackTest
@@ -40,6 +41,21 @@ class DrupalTest extends BaseToolstackTest
     public function testBuildDrupalWithYamlMakeFile()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/project-yaml');
+    }
+
+    public function testBuildUpdateLock()
+    {
+        $sourceDir = 'tests/data/apps/drupal/project-yaml';
+        $projectRoot = $this->createDummyProject($sourceDir);
+        self::$output->writeln("\nTesting build (with --lock) for directory: " . $sourceDir);
+        $builder = new LocalBuild(
+          $this->buildSettings + array('drushUpdateLock' => true),
+          self::$output
+        );
+        $success = $builder->buildProject($projectRoot);
+        $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
+        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $this->assertFileExists("$repositoryDir/project.make.yml.lock");
     }
 
     /**
