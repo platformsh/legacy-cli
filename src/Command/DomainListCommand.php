@@ -40,7 +40,7 @@ class DomainListCommand extends PlatformCommand
     {
         $table = new Table($output);
         $table
-          ->setHeaders(array('Name', 'Wildcard', 'SSL enabled', 'Creation date'))
+          ->setHeaders(array('Name', 'SSL enabled', 'Creation date'))
           ->addRows($this->buildDomainRows($tree));
 
         return $table;
@@ -62,7 +62,6 @@ class DomainListCommand extends PlatformCommand
         foreach ($tree as $domain) {
             $rows[] = array(
               $domain['id'],
-              $formatter->format($domain['wildcard']),
               $formatter->format((bool) $domain['has_certificate']),
               $formatter->format($domain['created_at'], 'created_at'),
             );
