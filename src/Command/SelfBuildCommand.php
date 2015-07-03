@@ -96,21 +96,17 @@ class SelfBuildCommand extends PlatformCommand
 
         $this->stdErr->writeln("Building Phar package using Box");
         $shellHelper->setOutput($output);
-        try {
-            $shellHelper->execute($boxArgs, CLI_ROOT, true, true);
-            // Clean up the temporary file.
-            if (!empty($tmpJson)) {
-                unlink($tmpJson);
-            }
-        }
-        catch (\Exception $e) {
-            // @todo replace with a 'finally' block for PHP 5.5
-            if (!empty($tmpJson) && file_exists($tmpJson)) {
-                unlink($tmpJson);
-            }
-            throw $e;
+
+        $result = $shellHelper->execute($boxArgs, CLI_ROOT, false, true);
+
+        // Clean up the temporary file, regardless of errors.
+        if (!empty($tmpJson)) {
+            unlink($tmpJson);
         }
 
+        if ($result === false) {
+            return 1;
+        }
 
         if (!file_exists($phar)) {
             $this->stdErr->writeln("File not found: <error>$phar</error>");
