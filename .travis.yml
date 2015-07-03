@@ -13,7 +13,7 @@ cache:
   directories:
     - $HOME/.composer/cache
 install:
-  - composer install --prefer-source --no-interaction
+  - composer install --no-interaction
   - travis_wait composer update --prefer-lowest --no-interaction
 script:
   - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text
