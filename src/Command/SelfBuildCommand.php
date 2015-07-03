@@ -29,6 +29,11 @@ class SelfBuildCommand extends PlatformCommand
             $this->stdErr->writeln('Cannot build a Phar from another Phar');
             return 1;
         }
+        elseif (!file_exists(CLI_ROOT . '/vendor')) {
+            $this->stdErr->writeln('Directory not found: <error>' . CLI_ROOT . '/vendor</error>');
+            $this->stdErr->writeln('Cannot build from a global install');
+            return 1;
+        }
 
         $outputFilename = $input->getOption('output');
         if ($outputFilename && !is_writable(dirname($outputFilename))) {
@@ -91,12 +96,21 @@ class SelfBuildCommand extends PlatformCommand
 
         $this->stdErr->writeln("Building Phar package using Box");
         $shellHelper->setOutput($output);
-        $shellHelper->execute($boxArgs, CLI_ROOT, true, true);
-
-        // Clean up the temporary file.
-        if (!empty($tmpJson)) {
-            unlink($tmpJson);
+        try {
+            $shellHelper->execute($boxArgs, CLI_ROOT, true, true);
+            // Clean up the temporary file.
+            if (!empty($tmpJson)) {
+                unlink($tmpJson);
+            }
         }
+        catch (\Exception $e) {
+            // @todo replace with a 'finally' block for PHP 5.5
+            if (!empty($tmpJson) && file_exists($tmpJson)) {
+                unlink($tmpJson);
+            }
+            throw $e;
+        }
+
 
         if (!file_exists($phar)) {
             $this->stdErr->writeln("File not found: <error>$phar</error>");
