@@ -425,7 +425,7 @@ abstract class PlatformCommand extends Command
             foreach ($projects as $id => $project) {
                 $cachedProjects[$id] = $project->getData();
                 $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
-                $cachedProjects[$id]['git'] = $project->getGitUrl();
+                $cachedProjects[$id]['git'] = $this->customizeHost($project->getGitUrl());
             }
 
             self::$cache->save($cacheKey, $cachedProjects, $this->projectsTtl);
@@ -834,5 +834,31 @@ abstract class PlatformCommand extends Command
         }
 
         return trim($output);
+    }
+
+    /**
+     * Replace an SSH or Git hostname if the user has defined a custom host.
+     *
+     * @param string $url
+     *
+     * @return string
+     */
+    protected function customizeHost($url)
+    {
+        $host = getenv('PLATFORMSH_CLI_SSH_HOST');
+        if (!$host) {
+            return $url;
+        }
+
+        if (!strpos($url, '//')) {
+            $url = 'dummy://' . $url;
+        }
+
+        $parts = parse_url($url);
+        $parts['host'] = $host;
+        $url = http_build_url($parts);
+        $url = str_replace('dummy://', '', $url);
+
+        return $url;
     }
 }

@@ -30,6 +30,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
 
         $sshUrl = $this->getSelectedEnvironment()
           ->getSshUrl($input->getOption('app'));
+        $sshUrl = $this->customizeHost($sshUrl);
 
         $util = new RelationshipsUtil($this->stdErr);
         $relationships = $util->getRelationships($sshUrl);

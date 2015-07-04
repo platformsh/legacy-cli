@@ -74,6 +74,7 @@ class EnvironmentDrushCommand extends PlatformCommand
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $sshUrl = $selectedEnvironment->getSshUrl($input->getOption('app'));
+        $sshUrl = $this->customizeHost($sshUrl);
 
         // The PLATFORM_DOCUMENT_ROOT environment variable is new. Default to
         // /app/public for backwards compatibility.
