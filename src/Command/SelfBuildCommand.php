@@ -82,6 +82,16 @@ class SelfBuildCommand extends PlatformCommand
             }
         }
 
+        $shellHelper->setOutput($output);
+
+        $this->stdErr->writeln('Ensuring correct composer dependencies');
+        $shellHelper->execute(array(
+          'composer',
+          'install',
+          '--no-dev',
+          '--no-interaction',
+        ), CLI_ROOT, true, false);
+
         $boxArgs = array('box', 'build', '--no-interaction');
 
         // Create a temporary box.json file for this build.
@@ -95,8 +105,6 @@ class SelfBuildCommand extends PlatformCommand
         }
 
         $this->stdErr->writeln("Building Phar package using Box");
-        $shellHelper->setOutput($output);
-
         $result = $shellHelper->execute($boxArgs, CLI_ROOT, false, true);
 
         // Clean up the temporary file, regardless of errors.
