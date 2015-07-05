@@ -16,5 +16,7 @@ class NoToolstack extends ToolstackBase
         if ($this->copy) {
             $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
         }
+
+        $this->processSpecialDestinations();
     }
 }

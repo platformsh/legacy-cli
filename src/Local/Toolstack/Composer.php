@@ -15,8 +15,8 @@ class Composer extends ToolstackBase
         $this->buildInPlace = true;
 
         if ($this->copy) {
-            $buildDir = $this->buildDir;
-            $this->fsHelper->copyAll($this->appRoot, $this->buildDir);
+            $buildDir = $this->getWebRoot();
+            $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
         }
         else {
             $buildDir = $this->appRoot;
@@ -38,6 +38,8 @@ class Composer extends ToolstackBase
             );
             $this->shellHelper->execute($args, $buildDir, true, false);
         }
+
+        $this->processSpecialDestinations();
     }
 
     public function install()
