@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentRelationshipsCommand extends PlatformCommand
@@ -18,7 +19,8 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
           ->setName('environment:relationships')
           ->setAliases(array('relationships'))
           ->setDescription('List an environment\'s relationships')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, "Do not wait for the environment to become active first");
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
@@ -28,8 +30,11 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
     {
         $this->validateInput($input);
 
-        $sshUrl = $this->getSelectedEnvironment()
-          ->getSshUrl($input->getOption('app'));
+        $selectedEnvironment = $this->getSelectedEnvironment();
+
+        $this->waitUntilEnvironmentActive($selectedEnvironment, $this->getSelectedProject(), $input);
+
+        $sshUrl = $selectedEnvironment->getSshUrl($input->getOption('app'));
 
         $util = new RelationshipsUtil($this->stdErr);
         $relationships = $util->getRelationships($sshUrl);

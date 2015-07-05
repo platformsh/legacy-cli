@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSqlCommand extends PlatformCommand
@@ -16,7 +17,8 @@ class EnvironmentSqlCommand extends PlatformCommand
             ->setName('environment:sql')
             ->setAliases(array('sql'))
             ->setDescription('Run SQL on the remote database')
-            ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute');
+            ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
+            ->addOption('no-wait', null, InputOption::VALUE_NONE, "Do not wait for the environment to become active first");
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         $this->addExample('Open an SQL console on the remote database');
         $this->addExample('View tables on the remote database', "'SHOW TABLES'");
@@ -28,8 +30,11 @@ class EnvironmentSqlCommand extends PlatformCommand
 
         $sshOptions = '';
 
-        $sshUrl = $this->getSelectedEnvironment()
-          ->getSshUrl($input->getOption('app'));
+        $selectedEnvironment = $this->getSelectedEnvironment();
+
+        $this->waitUntilEnvironmentActive($selectedEnvironment, $this->getSelectedProject(), $input);
+
+        $sshUrl = $selectedEnvironment->getSshUrl($input->getOption('app'));
 
         $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);

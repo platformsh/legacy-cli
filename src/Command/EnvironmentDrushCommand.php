@@ -8,6 +8,7 @@ use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentDrushCommand extends PlatformCommand
@@ -19,7 +20,8 @@ class EnvironmentDrushCommand extends PlatformCommand
           ->setName('environment:drush')
           ->setAliases(array('drush'))
           ->setDescription('Run a drush command on the remote environment')
-          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
+          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, "Do not wait for the environment to become active first");
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
@@ -73,6 +75,9 @@ class EnvironmentDrushCommand extends PlatformCommand
         }
 
         $selectedEnvironment = $this->getSelectedEnvironment();
+
+        $this->waitUntilEnvironmentActive($selectedEnvironment, $this->getSelectedProject(), $input);
+
         $sshUrl = $selectedEnvironment->getSshUrl($input->getOption('app'));
 
         // The PLATFORM_DOCUMENT_ROOT environment variable is new. Default to

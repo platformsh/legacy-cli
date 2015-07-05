@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentUrlCommand extends UrlCommandBase
@@ -20,7 +21,8 @@ class EnvironmentUrlCommand extends UrlCommandBase
             'path',
             InputArgument::OPTIONAL,
             'A path to append to the URL.'
-          );
+          )
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, "Do not wait for the environment to become active first");
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -31,8 +33,11 @@ class EnvironmentUrlCommand extends UrlCommandBase
 
         $selectedEnvironment = $this->getSelectedEnvironment();
 
+        $this->waitUntilEnvironmentActive($selectedEnvironment, $this->getSelectedProject(), $input);
+
         if (!$selectedEnvironment->hasLink('public-url')) {
-            throw new \Exception('No URL available');
+            $this->stdErr->writeln('No URL available. The environment may be inactive.');
+            return 1;
         }
 
         $url = $selectedEnvironment->getLink('public-url', true);
@@ -43,5 +48,6 @@ class EnvironmentUrlCommand extends UrlCommandBase
         }
 
         $this->openUrl($url, $input, $output);
+        return 0;
     }
 }
