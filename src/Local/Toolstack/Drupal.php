@@ -68,7 +68,6 @@ class Drupal extends ToolstackBase
 
     public function build()
     {
-
         $profiles = glob($this->appRoot . '/*.profile');
         $projectMake = $this->findDrushMakeFile();
         if (count($profiles) > 1) {
@@ -93,7 +92,7 @@ class Drupal extends ToolstackBase
             }
         }
 
-        $this->symLinkSpecialDestinations();
+        $this->processSpecialDestinations();
     }
 
     /**
