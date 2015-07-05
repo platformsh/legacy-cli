@@ -17,7 +17,8 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
             ->setName('environment:sql-dump')
             ->setAliases(array('sql-dump'))
             ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_OPTIONAL, 'A filename where the dump should be saved. Defaults to "dump.sql" in the project root');
+            ->addOption('file', 'f', InputOption::VALUE_OPTIONAL, 'A filename where the dump should be saved. Defaults to "dump.sql" in the project root')
+            ->addOption('no-wait', null, InputOption::VALUE_NONE, "Do not wait for the environment to become active first");
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
     }
 
@@ -53,8 +54,11 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
 
         $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
 
-        $sshUrl = $this->getSelectedEnvironment()
-                       ->getSshUrl($input->getOption('app'));
+        $selectedEnvironment = $this->getSelectedEnvironment();
+
+        $this->waitUntilEnvironmentActive($selectedEnvironment, $this->getSelectedProject(), $input);
+
+        $sshUrl = $selectedEnvironment->getSshUrl($input->getOption('app'));
 
         $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);

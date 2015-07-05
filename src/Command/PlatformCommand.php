@@ -835,4 +835,41 @@ abstract class PlatformCommand extends Command
 
         return trim($output);
     }
+
+    /**
+     * Wait until an environment is active.
+     *
+     * @param Environment &$environment
+     * @param Project     $project
+     * @param InputInterface $input
+     */
+    public function waitUntilEnvironmentActive(Environment &$environment, Project $project, InputInterface $input)
+    {
+        if (($input->hasOption('no-wait') && $input->getOption('no-wait')) || $environment->isActive()) {
+            return;
+        }
+
+        // Refresh the environment to check its real status.
+        $environment = $this->getEnvironment($environment->id, $project, true);
+        if ($environment->status != 'dirty') {
+            return;
+        }
+
+        $this->stdErr->write('Waiting for the environment to finish building...');
+        $timeLimit = 600;
+        $start = time();
+        for ($count = 0; $environment->status === 'dirty'; $count++) {
+            if (time() - $start > $timeLimit) {
+                $this->stdErr->writeln("\nWaited too long (limit: $timeLimit seconds)");
+                break;
+            }
+            sleep(2);
+            $environment->refresh();
+            $this->stdErr->write('.');
+        }
+        $this->stdErr->write("\n");
+
+        // Refresh the local cache one last time.
+        $environment = $this->getEnvironment($environment->id, $project, true);
+    }
 }

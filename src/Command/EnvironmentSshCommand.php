@@ -19,8 +19,9 @@ class EnvironmentSshCommand extends PlatformCommand
         $this
           ->setName('environment:ssh')
           ->setAliases(array('ssh'))
-          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
-          ->addOption('pipe', null, InputOption::VALUE_NONE, "Output the SSH URL only.")
+          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment')
+          ->addOption('pipe', null, InputOption::VALUE_NONE, "Output the SSH URL only")
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, "Do not wait for the environment to become active first")
           ->setDescription('SSH to the current environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -34,8 +35,11 @@ class EnvironmentSshCommand extends PlatformCommand
     {
         $this->validateInput($input);
 
-        $sshUrl = $this->getSelectedEnvironment()
-                       ->getSshUrl($input->getOption('app'));
+        $environment = $this->getSelectedEnvironment();
+
+        $this->waitUntilEnvironmentActive($environment, $this->getSelectedProject(), $input);
+
+        $sshUrl = $environment->getSshUrl($input->getOption('app'));
 
         if ($input->getOption('pipe') || !$this->isTerminal($output)) {
             $output->write($sshUrl);
