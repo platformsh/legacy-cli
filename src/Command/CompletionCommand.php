@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Console\ArgvInput;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
 
@@ -34,7 +35,18 @@ class CompletionCommand extends ParentCompletionCommand
     {
         $this->platformCommand = new WelcomeCommand();
         $this->platformCommand->setApplication($this->getApplication());
+        $this->setUpShortcut();
         $this->projects = $this->getProjects();
+    }
+
+    protected function setUpShortcut()
+    {
+        $cmd = $this->handler->getContext()->getCommandLine();
+        $input = new ArgvInput(explode(' ', $cmd));
+        if ($input->getShortcut()) {
+            $this->handler->getContext()->setCommandLine('platform ' . $input->__toString());
+            $this->platformCommand->loadShortcut($input->getShortcut());
+        }
     }
 
     /**
@@ -151,6 +163,18 @@ class CompletionCommand extends ParentCompletionCommand
         return $this->platformCommand->getProjects();
     }
 
+    protected function getProject()
+    {
+        if ($this->platformCommand->hasSelectedProject()) {
+            return $this->platformCommand->getSelectedProject();
+        }
+        elseif ($project = $this->platformCommand->getCurrentProject()) {
+            return $project;
+        }
+
+        return false;
+    }
+
     /**
      * Get a list of environments IDs that can be checked out.
      *
@@ -158,8 +182,7 @@ class CompletionCommand extends ParentCompletionCommand
      */
     public function getEnvironmentsForCheckout()
     {
-        $project = $this->platformCommand->getCurrentProject();
-        if (!$project) {
+        if (!$project = $this->getProject()) {
             return array();
         }
         try {
@@ -197,7 +220,7 @@ class CompletionCommand extends ParentCompletionCommand
         $commandLine = $this->handler->getContext()
                                      ->getCommandLine();
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
-        if (!$currentProjectId && ($currentProject = $this->platformCommand->getCurrentProject())) {
+        if (!$currentProjectId && ($currentProject = $this->getProject())) {
             $project = $currentProject;
         } elseif (isset($this->projects[$currentProjectId])) {
             $project = $this->projects[$currentProjectId];

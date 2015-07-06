@@ -6,7 +6,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\CustomTextDescriptor;
+use Platformsh\Cli\Console\TextDescriptor;
 use Symfony\Component\Console\Command\ListCommand as ParentListCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,7 +22,7 @@ class ListCommand extends ParentListCommand
         }
 
         $helper = new DescriptorHelper();
-        $helper->register('txt', new CustomTextDescriptor());
+        $helper->register('txt', new TextDescriptor());
         $helper->describe(
           $output,
           $this->getApplication(),

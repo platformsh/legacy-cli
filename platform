@@ -16,8 +16,8 @@ if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
     exit(1);
 }
 
-use Platformsh\Cli\Application;
-use Symfony\Component\Console\Input\ArgvInput;
+use Platformsh\Cli\Console\Application;
+use Platformsh\Cli\Console\ArgvInput;
 
 $input = new ArgvInput();
 $application = new Application();

@@ -5,15 +5,15 @@
  * command list and each command's help.
  */
 
-namespace Platformsh\Cli;
+namespace Platformsh\Cli\Console;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
-use Symfony\Component\Console\Descriptor\TextDescriptor;
+use Symfony\Component\Console\Descriptor\TextDescriptor as BaseTextDescriptor;
 
-class CustomTextDescriptor extends TextDescriptor
+class TextDescriptor extends BaseTextDescriptor
 {
 
     /**

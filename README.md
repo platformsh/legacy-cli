@@ -130,6 +130,7 @@ local
   local:clean (clean)                       Remove old project builds
   local:drush-aliases (drush-aliases)       Find the project's Drush aliases
   local:init (init)                         Create a local project file structure from a Git repository
+  local:shortcut (shortcut)                 Create a shortcut for the current project
 project
   project:get (get)                         Clone and build a project locally
   project:list (projects)                   Get a list of all active projects
