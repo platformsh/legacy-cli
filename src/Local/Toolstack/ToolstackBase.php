@@ -100,12 +100,8 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * Process the defined special destinations.
      */
-    protected function symLinkSpecialDestinations()
+    protected function processSpecialDestinations()
     {
-        if ($this->buildInPlace) {
-            return;
-        }
-
         foreach ($this->specialDestinations as $sourcePattern => $relDestination) {
             $matched = glob($this->appRoot . '/' . $sourcePattern, GLOB_NOSORT);
             if (!$matched) {

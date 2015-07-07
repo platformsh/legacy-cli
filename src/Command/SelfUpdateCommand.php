@@ -17,15 +17,13 @@ class SelfUpdateCommand extends PlatformCommand
           ->setAliases(array('up'))
           ->setDescription('Update the CLI to the latest version')
           ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
-          ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to an unstable (pre-release) version, if available')
-          ->addOption('manifest', null, InputOption::VALUE_OPTIONAL, 'The manifest file location')
+          ->addOption('manifest', null, InputOption::VALUE_OPTIONAL, 'Override the manifest file location')
           ->addOption('current-version', null, InputOption::VALUE_OPTIONAL, 'Override the current version');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $manifest = $input->getOption('manifest') ?: 'https://platform.sh/cli/manifest.json';
-
         $currentVersion = $input->getOption('current-version') ?: $this->getApplication()->getVersion();
 
         if (extension_loaded('Phar') && !($localPhar = \Phar::running(false))) {
@@ -43,7 +41,7 @@ class SelfUpdateCommand extends PlatformCommand
 
         $onlyMinor = !$input->getOption('major');
 
-        $updated = $manager->update($currentVersion, $onlyMinor, $input->getOption('unstable'));
+        $updated = $manager->update($currentVersion, $onlyMinor);
         if ($updated) {
             $this->stdErr->writeln("Successfully updated");
             $localPhar = $manager->getRunningFile();

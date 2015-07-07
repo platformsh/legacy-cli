@@ -39,8 +39,9 @@ class DomainAddCommand extends DomainCommand
         }
 
         try {
+            // @todo the wildcard argument has no effect: update it upstream
             $domain = $this->getSelectedProject()
-                           ->addDomain($this->domainName, $this->wildcard, $this->sslOptions);
+                           ->addDomain($this->domainName, false, $this->sslOptions);
         }
         catch (ClientException $e) {
             // Catch 409 Conflict errors.

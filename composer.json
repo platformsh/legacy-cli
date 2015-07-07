@@ -30,11 +30,14 @@
     "require-dev": {
         "phpunit/phpunit": "4.3.*",
         "mikey179/vfsStream": "~1.4",
-        "drush/drush": "~6.4.0"
+        "drush/drush": "~7.0.0"
     },
     "authors": [
         {
             "name": "Bojan Zivanovic"
+        },
+        {
+            "name": "Patrick Dawkins"
         }
     ],
     "bin": [

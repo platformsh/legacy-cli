@@ -29,6 +29,11 @@ class SelfBuildCommand extends PlatformCommand
             $this->stdErr->writeln('Cannot build a Phar from another Phar');
             return 1;
         }
+        elseif (!file_exists(CLI_ROOT . '/vendor')) {
+            $this->stdErr->writeln('Directory not found: <error>' . CLI_ROOT . '/vendor</error>');
+            $this->stdErr->writeln('Cannot build from a global install');
+            return 1;
+        }
 
         $outputFilename = $input->getOption('output');
         if ($outputFilename && !is_writable(dirname($outputFilename))) {
@@ -77,6 +82,16 @@ class SelfBuildCommand extends PlatformCommand
             }
         }
 
+        $shellHelper->setOutput($output);
+
+        $this->stdErr->writeln('Ensuring correct composer dependencies');
+        $shellHelper->execute(array(
+          'composer',
+          'install',
+          '--no-dev',
+          '--no-interaction',
+        ), CLI_ROOT, true, false);
+
         $boxArgs = array('box', 'build', '--no-interaction');
 
         // Create a temporary box.json file for this build.
@@ -90,12 +105,15 @@ class SelfBuildCommand extends PlatformCommand
         }
 
         $this->stdErr->writeln("Building Phar package using Box");
-        $shellHelper->setOutput($output);
-        $shellHelper->execute($boxArgs, CLI_ROOT, true, true);
+        $result = $shellHelper->execute($boxArgs, CLI_ROOT, false, true);
 
-        // Clean up the temporary file.
+        // Clean up the temporary file, regardless of errors.
         if (!empty($tmpJson)) {
             unlink($tmpJson);
+        }
+
+        if ($result === false) {
+            return 1;
         }
 
         if (!file_exists($phar)) {

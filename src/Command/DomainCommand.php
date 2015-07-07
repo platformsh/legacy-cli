@@ -20,7 +20,6 @@ abstract class DomainCommand extends PlatformCommand
     protected $certPath;
     protected $keyPath;
     protected $chainPaths;
-    protected $wildcard;
 
     /**
      * @param InputInterface $input
@@ -35,8 +34,6 @@ abstract class DomainCommand extends PlatformCommand
 
             return false;
         }
-
-        $this->wildcard = $input->getOption('wildcard');
 
         $this->certPath = $input->getOption('cert');
         $this->keyPath = $input->getOption('key');
@@ -64,7 +61,6 @@ abstract class DomainCommand extends PlatformCommand
         $formatter = new PropertyFormatter();
         $indent = str_repeat(' ', $indent);
         $output->writeln($indent . "Name: $domain->name");
-        $output->writeln($indent . "Wildcard: " . $formatter->format($domain->wildcard));
         $output->writeln($indent . "Has SSL certificate: " . $formatter->format(!empty($domain->ssl['has_certificate'])));
         $output->writeln($indent . "Added: " . $formatter->format($domain->created_at, 'created_at'));
     }
@@ -72,7 +68,6 @@ abstract class DomainCommand extends PlatformCommand
     protected function addDomainOptions()
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The domain name')
-          ->addOption('wildcard', null, InputOption::VALUE_NONE, 'If the domain is a wildcard')
           ->addOption('cert', null, InputOption::VALUE_OPTIONAL, 'The path to the certificate file for this domain')
           ->addOption('key', null, InputOption::VALUE_OPTIONAL, 'The path to the private key file for the provided certificate.')
           ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file or files for the provided certificate');
