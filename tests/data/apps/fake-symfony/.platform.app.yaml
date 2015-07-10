@@ -2,4 +2,6 @@
 # composer.json file.
 
 name: fake-symfony
-toolstack: "php:symfony"
+type: php
+build:
+  flavor: symfony

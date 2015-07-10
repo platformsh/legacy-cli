@@ -26,4 +26,12 @@ class ComposerTest extends BaseToolstackTest
     {
         $this->assertBuildSucceeds('tests/data/apps/fake-symfony');
     }
+
+    /**
+     * Test the deprecated config file format still works.
+     */
+    public function testBuildDeprecatedConfig()
+    {
+        $this->assertBuildSucceeds('tests/data/apps/deprecated-config');
+    }
 }
