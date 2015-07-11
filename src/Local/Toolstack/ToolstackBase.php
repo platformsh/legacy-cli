@@ -107,6 +107,9 @@ abstract class ToolstackBase implements ToolstackInterface
             if (!$matched) {
                 continue;
             }
+            if ($relDestination === '{webroot}' && $this->buildInPlace) {
+                continue;
+            }
 
             // On Platform these replacements would be a bit different.
             $absDestination = str_replace(array('{webroot}', '{approot}'), array($this->getWebRoot(), $this->buildDir), $relDestination);
@@ -117,16 +120,20 @@ abstract class ToolstackBase implements ToolstackInterface
                 if (in_array($relSource, $this->ignoredFiles)) {
                     continue;
                 }
+                $destination = $absDestination;
+                // Do not overwrite directories with files.
+                if (!is_dir($source) && is_dir($destination)) {
+                    $destination = $destination . '/' . basename($source);
+                }
+                // Ignore if source and destination are the same.
+                if ($destination === $source) {
+                    continue;
+                }
                 if ($this->copy) {
                     $this->output->writeln("Copying $relSource to $relDestination");
                 }
                 else {
                     $this->output->writeln("Symlinking $relSource to $relDestination");
-                }
-                $destination = $absDestination;
-                // Do not overwrite directories with files.
-                if (!is_dir($source) && is_dir($destination)) {
-                    $destination = $destination . '/' . basename($source);
                 }
                 // Delete existing files, emitting a warning.
                 if (file_exists($destination)) {
