@@ -374,15 +374,8 @@ class LocalBuild
             $this->fsHelper->extractArchive($archive, $buildDir);
         } else {
             $message = "Building application <info>$appIdentifier</info>";
-            $info = array();
             if (isset($appConfig['type'])) {
-                $info[] = 'runtime type: ' . $appConfig['type'];
-            }
-            if (!empty($treeId)) {
-                $info[] = "tree: " . substr($treeId, 0, 7);
-            }
-            if (!empty($info)) {
-                $message .= ' (' . implode(', ', $info) . ')';
+                $message .= ' (runtime type: ' . $appConfig['type'] . ')';
             }
             $this->output->writeln($message);
 
