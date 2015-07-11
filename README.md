@@ -96,6 +96,8 @@ Available commands:
 activity
   activity:list (activities)                Get the most recent activities for an environment
   activity:log                              Display the log for an environment activity
+config
+  config:check (check)                      Check the project configuration
 domain
   domain:add                                Add a new domain to the project
   domain:delete                             Delete a domain from the project

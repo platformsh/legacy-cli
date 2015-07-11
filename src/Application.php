@@ -94,6 +94,7 @@ class Application extends ParentApplication
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\PlatformLogoutCommand();
         $commands[] = new Command\PlatformLoginCommand();
+        $commands[] = new Command\ConfigCheckCommand();
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\ProjectListCommand();
         $commands[] = new Command\DomainAddCommand();
