@@ -1,1 +1,3 @@
-toolstack: "php:drupal"
+type: php
+build:
+  flavor: drupal

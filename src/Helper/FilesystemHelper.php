@@ -167,6 +167,9 @@ class FilesystemHelper extends Helper
      */
     public function symLink($target, $link)
     {
+        if ($target === $link) {
+            throw new \InvalidArgumentException("Cannot symlink $link to itself");
+        }
         if (file_exists($link)) {
             $this->fs->remove($link);
         }
