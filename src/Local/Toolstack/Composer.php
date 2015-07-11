@@ -4,6 +4,10 @@ namespace Platformsh\Cli\Local\Toolstack;
 
 class Composer extends ToolstackBase
 {
+    public function getKey()
+    {
+        return 'php:composer';
+    }
 
     public function detect($appRoot)
     {

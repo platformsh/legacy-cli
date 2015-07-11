@@ -1,4 +1,6 @@
-toolstack: "php:drupal"
+type: php
+build:
+  flavor: drupal
 
 # Test build hook
 hooks:

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
@@ -8,6 +9,7 @@ use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Parser;
 
 class LocalBuild
@@ -160,11 +162,51 @@ class LocalBuild
     {
         $config = array();
         if (file_exists($appRoot . '/.platform.app.yaml')) {
-            $parser = new Parser();
-            $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
+            try {
+                $parser = new Parser();
+                $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
+            }
+            catch (ParseException $e) {
+                throw new InvalidConfigException(
+                  "Parse error in file '$appRoot/.platform.app.yaml'. \n" . $e->getMessage()
+                );
+            }
+        }
+
+        return $this->normalizeConfig($config);
+    }
+
+    /**
+     * Normalize an application's configuration.
+     *
+     * @param array $config
+     *
+     * @return array
+     */
+    public function normalizeConfig(array $config)
+    {
+        if (isset($config['toolstack'])) {
+            $this->deprecationWarning('2015.7');
+            if (!strpos($config['toolstack'], ':')) {
+                throw new InvalidConfigException("Invalid value for 'toolstack'");
+            }
+            list($config['type'], $config['build']['flavor']) = explode(':', $config['toolstack'], 2);
         }
 
         return $config;
+    }
+
+    /**
+     * Show a warning about deprecated configuration.
+     *
+     * @param string $version
+     * @param string $file
+     */
+    public function deprecationWarning($version, $file = '.platform.app.yaml')
+    {
+        $this->output->writeln("The format of your <comment>$file</comment> configuration file is deprecated.");
+        $this->output->writeln(sprintf("See how to upgrade at: https://docs.platform.sh/reference/upgrade/#changes-in-%s", $version));
+        $this->output->writeln("");
     }
 
     /**
@@ -180,9 +222,22 @@ class LocalBuild
     public function getToolstack($appRoot, array $appConfig = array())
     {
         $toolstackChoice = false;
-        if (isset($appConfig['toolstack'])) {
-            $toolstackChoice = $appConfig['toolstack'];
+
+        // For now, we reconstruct a toolstack string based on the 'type' and
+        // 'build.flavor' config keys.
+        if (isset($appConfig['type'])) {
+            $toolstackChoice = sprintf(
+              '%s:%s',
+              $appConfig['type'],
+              !empty($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default'
+            );
+
+            // Alias php:default to php:composer.
+            if ($toolstackChoice === 'php:default') {
+                $toolstackChoice = 'php:composer';
+            }
         }
+
         foreach (self::getToolstacks() as $toolstack) {
             $key = $toolstack->getKey();
             if ((!$toolstackChoice && $toolstack->detect($appRoot))
@@ -319,8 +374,15 @@ class LocalBuild
             $this->fsHelper->extractArchive($archive, $buildDir);
         } else {
             $message = "Building application <info>$appIdentifier</info>";
-            if ($key = $toolstack->getKey()) {
-                $message .= " using the toolstack <info>$key</info>";
+            $info = array();
+            if (isset($appConfig['type'])) {
+                $info[] = 'runtime type: ' . $appConfig['type'];
+            }
+            if (!empty($treeId)) {
+                $info[] = "tree: " . substr($treeId, 0, 7);
+            }
+            if (!empty($info)) {
+                $message .= ' (' . implode(', ', $info) . ')';
             }
             $this->output->writeln($message);
 
