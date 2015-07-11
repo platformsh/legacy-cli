@@ -9,6 +9,7 @@ use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Parser;
 
 class LocalBuild
@@ -161,8 +162,15 @@ class LocalBuild
     {
         $config = array();
         if (file_exists($appRoot . '/.platform.app.yaml')) {
-            $parser = new Parser();
-            $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
+            try {
+                $parser = new Parser();
+                $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
+            }
+            catch (ParseException $e) {
+                throw new InvalidConfigException(
+                  "Parse error in file '$appRoot/.platform.app.yaml'. \n" . $e->getMessage()
+                );
+            }
         }
 
         return $this->normalizeConfig($config);
