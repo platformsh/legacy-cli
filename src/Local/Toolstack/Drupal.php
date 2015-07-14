@@ -83,7 +83,7 @@ class Drupal extends ToolstackBase
             $this->buildInPlace = true;
 
             if ($this->copy) {
-                $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
+                $this->fsHelper->copyAll($this->appRoot, $this->getBuildDir());
             }
             else {
                 $this->copyGitIgnore('drupal/gitignore-vanilla');
@@ -217,7 +217,7 @@ class Drupal extends ToolstackBase
         $this->setUpDrushFlags();
 
         $args = array_merge(
-          array('make', $projectMake, $this->getWebRoot()),
+          array('make', $projectMake, $this->getBuildDir()),
           $this->drushFlags
         );
 
@@ -241,7 +241,7 @@ class Drupal extends ToolstackBase
         // 'sites/default' directory.
         $this->fsHelper->symlinkAll(
           $this->appRoot,
-          $this->getWebRoot() . '/sites/default',
+          $this->getBuildDir() . '/sites/default',
           true,
           false,
           array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
@@ -264,7 +264,7 @@ class Drupal extends ToolstackBase
         $projectCoreMake = $this->findDrushMakeFile(true, true);
 
         $args = array_merge(
-          array('make', $projectCoreMake, $this->getWebRoot()),
+          array('make', $projectCoreMake, $this->getBuildDir()),
           $this->drushFlags
         );
 
@@ -276,7 +276,7 @@ class Drupal extends ToolstackBase
 
         $drushHelper->execute($args, null, true, false);
 
-        $profileDir = $this->getWebRoot() . '/profiles/' . $profileName;
+        $profileDir = $this->getBuildDir() . '/profiles/' . $profileName;
         mkdir($profileDir, 0755, true);
 
         $this->output->writeln("Building the profile: <info>$profileName</info>");
@@ -343,7 +343,7 @@ class Drupal extends ToolstackBase
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
-            $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
+            $this->fsHelper->copy($settingsPhpFile, $this->getBuildDir() . '/sites/default/settings.php');
             $this->output->writeln(
               "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
               . "\nYou will need to rebuild if you edit this file.</comment>"

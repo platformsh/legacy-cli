@@ -190,7 +190,24 @@ abstract class ToolstackBase implements ToolstackInterface
             }
             return $this->appRoot . '/' . $this->documentRoot;
         }
+
         return $this->buildDir . '/' . $this->documentRoot;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getBuildDir()
+    {
+        if ($this->buildInPlace && !$this->copy) {
+            return $this->appRoot;
+        }
+        $buildDir = $this->buildDir;
+        if ($this->documentRoot === 'public') {
+            $buildDir .= '/public';
+        }
+
+        return $buildDir;
     }
 
     /**

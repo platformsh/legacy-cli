@@ -18,12 +18,10 @@ class Composer extends ToolstackBase
     {
         $this->buildInPlace = true;
 
+        $buildDir = $this->getBuildDir();
+
         if ($this->copy) {
-            $buildDir = $this->getWebRoot();
-            $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
-        }
-        else {
-            $buildDir = $this->appRoot;
+            $this->fsHelper->copyAll($this->appRoot, $buildDir);
         }
 
         // The composer.json file may not exist at this stage, if the user has
