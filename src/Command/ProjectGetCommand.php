@@ -221,6 +221,10 @@ class ProjectGetCommand extends PlatformCommand
                 $environmentList[$id] = $environment['title'];
             }
         }
+        if (count($environmentList) === 1) {
+            return key($environmentList);
+        }
+
         $text = "Enter a number to choose which environment to check out:";
 
         return $this->getHelper('question')

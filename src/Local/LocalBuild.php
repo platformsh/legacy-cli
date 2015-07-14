@@ -185,8 +185,9 @@ class LocalBuild
      */
     public function normalizeConfig(array $config)
     {
+        // Backwards compatibility with old config format: toolstack is changed
+        // to application type and build['flavor'].
         if (isset($config['toolstack'])) {
-            $this->deprecationWarning('2015.7');
             if (!strpos($config['toolstack'], ':')) {
                 throw new InvalidConfigException("Invalid value for 'toolstack'");
             }
@@ -194,19 +195,6 @@ class LocalBuild
         }
 
         return $config;
-    }
-
-    /**
-     * Show a warning about deprecated configuration.
-     *
-     * @param string $version
-     * @param string $file
-     */
-    public function deprecationWarning($version, $file = '.platform.app.yaml')
-    {
-        $this->output->writeln("The format of your <comment>$file</comment> configuration file is deprecated.");
-        $this->output->writeln(sprintf("See how to upgrade at: https://docs.platform.sh/reference/upgrade/#changes-in-%s", $version));
-        $this->output->writeln("");
     }
 
     /**
@@ -374,15 +362,8 @@ class LocalBuild
             $this->fsHelper->extractArchive($archive, $buildDir);
         } else {
             $message = "Building application <info>$appIdentifier</info>";
-            $info = array();
             if (isset($appConfig['type'])) {
-                $info[] = 'runtime type: ' . $appConfig['type'];
-            }
-            if (!empty($treeId)) {
-                $info[] = "tree: " . substr($treeId, 0, 7);
-            }
-            if (!empty($info)) {
-                $message .= ' (' . implode(', ', $info) . ')';
+                $message .= ' (runtime type: ' . $appConfig['type'] . ')';
             }
             $this->output->writeln($message);
 

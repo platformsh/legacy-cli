@@ -20,6 +20,7 @@ class EnvironmentSqlCommand extends PlatformCommand
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         $this->addExample('Open an SQL console on the remote database');
         $this->addExample('View tables on the remote database', "'SHOW TABLES'");
+        $this->addExample('Import a dump file into the remote database', '< dump.sql');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -13,8 +13,11 @@ class NoToolstack extends ToolstackBase
     public function build()
     {
         $this->buildInPlace = true;
+
         if ($this->copy) {
-            $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
+            $buildDir = $this->getBuildDir();
+            $this->output->writeln("Copying");
+            $this->fsHelper->copyAll($this->appRoot, $buildDir);
         }
 
         $this->processSpecialDestinations();

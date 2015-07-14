@@ -55,6 +55,9 @@ class PlatformQuestionHelper extends QuestionHelper
      */
     public function choose(array $items, $text = 'Enter a number to choose an item:', InputInterface $input, OutputInterface $output, $default = null)
     {
+        if (count($items) === 1) {
+            return key($items);
+        }
         $itemList = array_values($items);
         $defaultKey = $default !== null ? array_search($default, $itemList) : null;
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
