@@ -344,6 +344,11 @@ class DrushHelper extends Helper
           // @todo can this be dynamic, based on an env var? see https://github.com/drush-ops/drush/issues/1370
           'root' => '/app/public',
           self::AUTO_REMOVE_KEY => true,
+          'command-specific' => array(
+              'site-install' => array(
+                  'sites-subdir' => 'default',
+              ),
+          ),
         );
     }
 
