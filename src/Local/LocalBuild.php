@@ -214,9 +214,10 @@ class LocalBuild
         // For now, we reconstruct a toolstack string based on the 'type' and
         // 'build.flavor' config keys.
         if (isset($appConfig['type'])) {
+            list($language, ) = explode(':', $appConfig['type'], 2);
             $toolstackChoice = sprintf(
               '%s:%s',
-              $appConfig['type'],
+              $language,
               !empty($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default'
             );
 
