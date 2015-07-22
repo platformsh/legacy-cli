@@ -47,12 +47,6 @@ class ProjectGetCommand extends PlatformCommand
             "Do not build the retrieved project"
           )
           ->addOption(
-            'include-inactive',
-            null,
-            InputOption::VALUE_NONE,
-            "List inactive environments too"
-          )
-          ->addOption(
             'host',
             null,
             InputOption::VALUE_OPTIONAL,
@@ -230,13 +224,12 @@ class ProjectGetCommand extends PlatformCommand
      */
     protected function offerEnvironmentChoice(array $environments, InputInterface $input)
     {
-        $includeInactive = $input->hasOption('include-inactive') && $input->getOption('include-inactive');
         // Create a list starting with "master".
         $default = 'master';
         $environmentList = array($default => $environments[$default]['title']);
         foreach ($environments as $environment) {
             $id = $environment->id;
-            if ($id != $default && (!$environment->operationAvailable('activate') || $includeInactive)) {
+            if ($id != $default) {
                 $environmentList[$id] = $environment['title'];
             }
         }
