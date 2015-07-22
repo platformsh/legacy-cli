@@ -486,7 +486,7 @@ class LocalBuild
         }
         $indent = '        ';
         $this->output->writeln(
-          "<comment>You have defined the following $hookType hook(s). The CLI will not run them locally.</comment>"
+          "<comment>You have defined the following $hookType hook(s). The CLI will not run them locally, unless you use the --copy option.</comment>"
         );
         $this->output->writeln("    $hookType: |");
         $hooks = (array) $appConfig['hooks'][$hookType];
