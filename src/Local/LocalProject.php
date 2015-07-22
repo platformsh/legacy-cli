@@ -35,7 +35,7 @@ class LocalProject
             $projectConfig['host'] = $host;
         }
         $dumper = new Dumper();
-        file_put_contents($projectRoot . '/' . self::PROJECT_CONFIG, $dumper->dump($projectConfig));
+        file_put_contents($projectRoot . '/' . self::PROJECT_CONFIG, $dumper->dump($projectConfig, 2));
     }
 
     /**
@@ -262,7 +262,7 @@ class LocalProject
         }
         $dumper = new Dumper();
         $projectConfig[$key] = $value;
-        file_put_contents($file, $dumper->dump($projectConfig));
+        file_put_contents($file, $dumper->dump($projectConfig, 2));
 
         return $projectConfig;
     }
