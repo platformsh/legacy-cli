@@ -67,7 +67,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
         $drushHelper->ensureInstalled();
         $drushHelper->setHomeDir($homeDir);
 
-        if ($new_group && $new_group != $current_group) {
+        if ($new_group && ($new_group != $current_group || !$drushHelper->getAliases($current_group))) {
             $questionHelper = $this->getHelper('question');
             $existing = $drushHelper->getAliases($new_group);
             if ($existing) {
