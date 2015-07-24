@@ -16,6 +16,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Shell;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
 {
@@ -32,6 +33,10 @@ class Application extends ParentApplication
         $this->addCommands($this->getCommands());
 
         $this->setDefaultCommand('welcome');
+
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addSubscriber(new EventSubscriber());
+        $this->setDispatcher($dispatcher);
     }
 
     /**
