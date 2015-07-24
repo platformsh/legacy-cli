@@ -25,7 +25,9 @@ class EventSubscriber implements EventSubscriberInterface
     {
         $exception = $event->getException();
 
-        // Catch Guzzle connection exceptions.
+        // Replace Guzzle connect exceptions with a friendlier message. This
+        // also prevents the user from seeing two exceptions (one direct from
+        // Guzzle, one from RingPHP).
         if ($exception instanceof ConnectException && strpos($exception->getMessage(), 'cURL error 6') !== false) {
             $request = $exception->getRequest();
             $event->setException(new ConnectionFailedException(
