@@ -43,6 +43,7 @@ class EventSubscriber implements EventSubscriberInterface
 
         // Handle Guzzle client exceptions, i.e. HTTP 4xx errors.
         if ($exception instanceof ClientException && ($response = $exception->getResponse())) {
+            $request = $exception->getRequest();
             try {
                 $response->getBody()->seek(0);
                 $json = $response->json();
@@ -56,12 +57,14 @@ class EventSubscriber implements EventSubscriberInterface
             if ($response->getStatusCode() === 400 && isset($json['error_description']) && $json['error_description'] === 'Invalid refresh token') {
                 $event->setException(new LoginRequiredException(
                     "Invalid refresh token: please log in again."
+                    . " \nRequest URL: " . $request->getUrl()
                 ));
                 $event->stopPropagation();
             }
             elseif ($response->getStatusCode() === 401) {
                 $event->setException(new LoginRequiredException(
                     "Unauthorized: please log in again."
+                    . " \nRequest URL: " . $request->getUrl()
                 ));
                 $event->stopPropagation();
             }
