@@ -103,16 +103,21 @@ class EnvironmentMetadataCommand extends PlatformCommand
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-              "Property <info>$property</info> already set as: " . $environment->getProperty($property, false)
+              "Property <info>$property</info> already set as: " . $this->formatter->format($environment->getProperty($property, false), $property)
             );
 
             return 0;
         }
         $environment->update(array($property => $value));
-        $this->stdErr->writeln("Property <info>$property</info> set to: " . $environment[$property]);
-        if ($property === 'enable_smtp' && !$environment->getLastActivity()) {
+        $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment[$property], $property));
+
+        $rebuildProperties = array('enable_smtp', 'restrict_robots');
+        if (in_array($property, $rebuildProperties) && !$environment->getLastActivity()) {
             $this->rebuildWarning();
         }
+
+        // Refresh the stored environments.
+        $this->getEnvironments($this->getSelectedProject(), true);
 
         return 0;
     }
@@ -130,6 +135,7 @@ class EnvironmentMetadataCommand extends PlatformCommand
           'enable_smtp' => 'boolean',
           'parent' => 'string',
           'title' => 'string',
+          'restrict_robots' => 'boolean',
         );
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;

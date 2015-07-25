@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -40,26 +39,12 @@ class WelcomeCommand extends PlatformCommand
             $this->stdErr->writeln("Project Name: <info>$projectName</info>");
             $this->stdErr->writeln("Project ID: <info>$projectId</info>");
             $this->stdErr->writeln("Project Dashboard: <info>$projectURI</info>\n");
-            $envInput = new ArrayInput(
-              array(
-                'command' => 'environments',
-                '--refresh' => 0,
-              )
-            );
-            $application->find('environments')
-                        ->run($envInput, $output);
+            $this->runOtherCommand('environments', array('--refresh' => 0));
             $this->stdErr->writeln("\nYou can list other projects by running <info>platform projects</info>\n");
             $this->stdErr->writeln("Manage your domains by running <info>platform domains</info>");
         } else {
             // The project is not known. Show all projects.
-            $projectsInput = new ArrayInput(
-              array(
-                'command' => 'projects',
-                '--refresh' => 0,
-              )
-            );
-            $application->find('projects')
-                        ->run($projectsInput, $output);
+            $this->runOtherCommand('projects', array('--refresh' => 0));
         }
 
         $this->stdErr->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>\n");

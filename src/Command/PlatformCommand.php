@@ -236,12 +236,7 @@ abstract class PlatformCommand extends Command
         if (!$this->output || !self::$interactive) {
             throw new LoginRequiredException();
         }
-        $application = $this->getApplication();
-        $command = $application->find('login');
-        $input = new ArrayInput(array(
-          'command' => 'login',
-        ));
-        $exitCode = $command->run($input, $this->output);
+        $exitCode = $this->runOtherCommand('login');
         if ($exitCode) {
             throw new \Exception('Login failed');
         }
@@ -590,7 +585,7 @@ abstract class PlatformCommand extends Command
     /**
      * @return string|false
      */
-    protected function getProjectRoot()
+    public function getProjectRoot()
     {
         return $this->projectRoot ?: LocalProject::getProjectRoot();
     }
@@ -834,5 +829,39 @@ abstract class PlatformCommand extends Command
         }
 
         return trim($output);
+    }
+
+    /**
+     * Run another CLI command.
+     *
+     * @param string         $name
+     *   The name of the other command.
+     * @param array          $arguments
+     *   Arguments for the other command.
+     * @param InputInterface $input
+     *   The input to the current command.
+     *
+     * @return int
+     */
+    protected function runOtherCommand($name, array $arguments = array(), InputInterface $input = null)
+    {
+        /** @var PlatformCommand $command */
+        $command = $this->getApplication()->find($name);
+        // Pass on the project root to the other command.
+        if ($root = $this->getProjectRoot()) {
+            $command->setProjectRoot($root);
+        }
+
+        // Pass on interactivity arguments to the other command.
+        if ($input) {
+            $arguments += array(
+              '--yes' => $input->getOption('yes'),
+              '--no' => $input->getOption('no'),
+            );
+        }
+
+        $cmdInput = new ArrayInput(array('command' => $name) + $arguments);
+
+        return $command->run($cmdInput, $this->output);
     }
 }

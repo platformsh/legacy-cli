@@ -118,6 +118,12 @@ class LocalBuildCommand extends PlatformCommand
             if (!is_dir($sourceDir)) {
                 throw new \InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
             }
+            // Sensible handling if the user provides a project root as the
+            // source directory.
+            elseif (file_exists($sourceDir . '/.platform-project')) {
+                $projectRoot = $sourceDir;
+                $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+            }
         }
         elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');

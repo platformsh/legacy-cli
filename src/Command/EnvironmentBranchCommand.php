@@ -8,7 +8,6 @@ use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -61,14 +60,10 @@ class EnvironmentBranchCommand extends PlatformCommand
         if (empty($branchName)) {
             if ($input->isInteractive()) {
                 // List environments.
-                $params = array(
-                  'command' => 'environments',
-                  '--project' => $this->getSelectedProject()['id'],
+                return $this->runOtherCommand(
+                  'environments',
+                  array('--project' => $this->getSelectedProject()->id)
                 );
-
-                return $this->getApplication()
-                            ->find('environments')
-                            ->run(new ArrayInput($params), $output);
             }
             $this->stdErr->writeln("<error>You must specify the name of the new branch.</error>");
 
@@ -92,16 +87,10 @@ class EnvironmentBranchCommand extends PlatformCommand
                                $this->stdErr
                              );
             if ($checkout) {
-                $checkoutCommand = $this->getApplication()
-                                        ->find('environment:checkout');
-                $checkoutInput = new ArrayInput(
-                  array(
-                    'command' => 'environment:checkout',
-                    'id' => $environment['id'],
-                  )
+                return $this->runOtherCommand(
+                  'environment:checkout',
+                  array('id' => $environment->id)
                 );
-
-                return $checkoutCommand->run($checkoutInput, $output);
             }
 
             return 1;

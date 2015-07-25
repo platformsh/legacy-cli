@@ -2,10 +2,12 @@
 
 namespace Platformsh\Cli\Command;
 
+use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
@@ -30,7 +32,7 @@ class ProjectGetCommand extends PlatformCommand
           ->addArgument(
             'directory-name',
             InputArgument::OPTIONAL,
-            'The directory name. Defaults to the project ID'
+            'The directory name. Defaults to the project title'
           )
           ->addOption(
             'environment',
@@ -43,12 +45,6 @@ class ProjectGetCommand extends PlatformCommand
             null,
             InputOption::VALUE_NONE,
             "Do not build the retrieved project"
-          )
-          ->addOption(
-            'include-inactive',
-            null,
-            InputOption::VALUE_NONE,
-            "List inactive environments too"
           )
           ->addOption(
             'host',
@@ -78,15 +74,14 @@ class ProjectGetCommand extends PlatformCommand
             return 1;
         }
 
+        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+
         $directoryName = $input->getArgument('directory-name');
         if (empty($directoryName)) {
-            $directoryName = $projectId;
-        }
-
-        if (file_exists($directoryName)) {
-            $this->stdErr->writeln("<error>The project directory '$directoryName' already exists.</error>");
-
-            return 1;
+            $slugify = new Slugify();
+            $directoryName = $project->title ? $slugify->slugify($project->title) : $project->id;
+            $directoryName = $questionHelper->askInput('Directory name', $input, $this->stdErr, $directoryName);
         }
 
         if ($projectRoot = $this->getProjectRoot()) {
@@ -97,14 +92,33 @@ class ProjectGetCommand extends PlatformCommand
             }
         }
 
+        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+        $fsHelper = $this->getHelper('fs');
+
         // Create the directory structure.
+        $existed = false;
+        if (file_exists($directoryName)) {
+            $existed = true;
+            $this->stdErr->writeln("The directory <error>$directoryName</error> already exists");
+            if ($questionHelper->confirm("Overwrite?", $input, $this->stdErr, false)) {
+                $fsHelper->remove($directoryName);
+            }
+            else {
+                return 1;
+            }
+        }
         mkdir($directoryName);
         $projectRoot = realpath($directoryName);
         if (!$projectRoot) {
             throw new \Exception("Failed to create project directory: $directoryName");
         }
 
-        $this->stdErr->writeln("Created project directory: $directoryName");
+        if ($existed) {
+            $this->stdErr->writeln("Re-created project directory: <info>$directoryName</info>");
+        }
+        else {
+            $this->stdErr->writeln("Created new project directory: <info>$directoryName</info>");
+        }
 
         $local = new LocalProject();
         $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
@@ -115,7 +129,7 @@ class ProjectGetCommand extends PlatformCommand
         $environmentOption = $input->getOption('environment');
         if ($environmentOption) {
             if (!isset($environments[$environmentOption])) {
-                $this->stdErr->writeln("<error>Environment not found: $environmentOption</error>");
+                $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
 
                 return 1;
             }
@@ -127,9 +141,6 @@ class ProjectGetCommand extends PlatformCommand
         } else {
             $environment = 'master';
         }
-
-        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-        $fsHelper = $this->getHelper('fs');
 
         // Prepare to talk to the Platform.sh repository.
         $gitUrl = $project->getGitUrl();
@@ -178,11 +189,16 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         $local->ensureGitRemote($repositoryDir, $gitUrl);
+        $this->setProjectRoot($projectRoot);
+
+        $this->stdErr->writeln('');
         $this->stdErr->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directoryName</info>");
 
         // Ensure that Drush aliases are created.
-        $this->setProjectRoot($projectRoot);
-        $this->updateDrushAliases($project, $environments);
+        if (Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+            $this->stdErr->writeln('');
+            $this->runOtherCommand('local:drush-aliases', array('--group' => $directoryName), $input);
+        }
 
         // Allow the build to be skipped.
         if ($input->getOption('no-build')) {
@@ -196,6 +212,8 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         // Launch the first build.
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Building the project locally for the first time. Run <info>platform build</info> to repeat this.');
         $builder = new LocalBuild(array('environmentId' => $environment), $output);
         $success = $builder->buildProject($projectRoot);
 
@@ -211,13 +229,12 @@ class ProjectGetCommand extends PlatformCommand
      */
     protected function offerEnvironmentChoice(array $environments, InputInterface $input)
     {
-        $includeInactive = $input->hasOption('include-inactive') && $input->getOption('include-inactive');
         // Create a list starting with "master".
         $default = 'master';
         $environmentList = array($default => $environments[$default]['title']);
         foreach ($environments as $environment) {
             $id = $environment->id;
-            if ($id != $default && (!$environment->operationAvailable('activate') || $includeInactive)) {
+            if ($id != $default) {
                 $environmentList[$id] = $environment['title'];
             }
         }

@@ -197,13 +197,14 @@ class DrushHelper extends Helper
      * @param Project       $project      The project
      * @param string        $projectRoot  The project root
      * @param Environment[] $environments The environments
-     * @param bool          $merge        Whether to merge existing alias settings.
+     * @param string        $original     The original group name
+     * @param bool          $merge        Whether to merge existing alias settings
      *
      * @throws \Exception
      *
      * @return bool Whether any aliases have been created.
      */
-    public function createAliases(Project $project, $projectRoot, $environments, $merge = true)
+    public function createAliases(Project $project, $projectRoot, $environments, $original = null, $merge = true)
     {
         $config = LocalProject::getProjectConfig($projectRoot);
         $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
@@ -222,10 +223,11 @@ class DrushHelper extends Helper
         // Include the alias file so that the user's own modifications can be
         // merged.
         $aliases = array();
-        if (file_exists($filename) && $merge) {
+        $originalFile = $original ? $drushDir . '/' . $original . '.aliases.drushrc.php' : $filename;
+        if (file_exists($originalFile) && $merge) {
             // This may create a PHP parse error for invalid syntax, but in
             // that case the user could not run Drush anyway.
-            include $filename;
+            include $originalFile;
         }
 
         // Generate aliases for the remote environments.
@@ -344,6 +346,11 @@ class DrushHelper extends Helper
           // @todo can this be dynamic, based on an env var? see https://github.com/drush-ops/drush/issues/1370
           'root' => '/app/public',
           self::AUTO_REMOVE_KEY => true,
+          'command-specific' => array(
+              'site-install' => array(
+                  'sites-subdir' => 'default',
+              ),
+          ),
         );
     }
 

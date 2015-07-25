@@ -214,9 +214,10 @@ class LocalBuild
         // For now, we reconstruct a toolstack string based on the 'type' and
         // 'build.flavor' config keys.
         if (isset($appConfig['type'])) {
+            list($language, ) = explode(':', $appConfig['type'], 2);
             $toolstackChoice = sprintf(
               '%s:%s',
-              $appConfig['type'],
+              $language,
               !empty($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default'
             );
 
@@ -485,7 +486,7 @@ class LocalBuild
         }
         $indent = '        ';
         $this->output->writeln(
-          "<comment>You have defined the following $hookType hook(s). The CLI will not run them locally.</comment>"
+          "<comment>You have defined the following $hookType hook(s). The CLI will not run them locally, unless you use the --copy option.</comment>"
         );
         $this->output->writeln("    $hookType: |");
         $hooks = (array) $appConfig['hooks'][$hookType];
