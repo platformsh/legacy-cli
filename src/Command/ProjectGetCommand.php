@@ -189,11 +189,14 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         $local->ensureGitRemote($repositoryDir, $gitUrl);
-        $this->stdErr->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directoryName</info>");
         $this->setProjectRoot($projectRoot);
+
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directoryName</info>");
 
         // Ensure that Drush aliases are created.
         if (Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+            $this->stdErr->writeln('');
             $this->runOtherCommand('local:drush-aliases', array('--group' => $directoryName), $input);
         }
 
@@ -209,6 +212,8 @@ class ProjectGetCommand extends PlatformCommand
         }
 
         // Launch the first build.
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Building the project locally for the first time. Run <info>platform build</info> to repeat this.');
         $builder = new LocalBuild(array('environmentId' => $environment), $output);
         $success = $builder->buildProject($projectRoot);
 

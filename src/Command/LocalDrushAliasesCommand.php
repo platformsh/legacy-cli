@@ -67,54 +67,47 @@ class LocalDrushAliasesCommand extends PlatformCommand
         $drushHelper->ensureInstalled();
         $drushHelper->setHomeDir($homeDir);
 
-        if ($new_group && ($new_group != $current_group || !$drushHelper->getAliases($current_group))) {
+        $aliases = $drushHelper->getAliases($current_group);
+
+        if (($new_group && $new_group != $current_group) || !$aliases || $input->getOption('recreate')) {
+            $new_group = $new_group ?: $current_group;
+
+            $this->stdErr->writeln("Creating Drush aliases in the group <info>@$new_group</info>");
+
             $questionHelper = $this->getHelper('question');
-            $existing = $drushHelper->getAliases($new_group);
-            if ($existing) {
-                if (!$questionHelper->confirm(
-                  "The alias group <info>@$new_group</info> already exists. Overwrite?",
-                  $input,
-                  $output,
-                  false
-                )
-                ) {
-                    return 1;
+            if ($new_group != $current_group) {
+                $existing = $drushHelper->getAliases($new_group);
+                if ($existing && $new_group != $current_group) {
+                    $question = "The Drush alias group <info>@$new_group</info> already exists. Overwrite?";
+                    if (!$questionHelper->confirm($question, $input, $output, false)) {
+                        return 1;
+                    }
                 }
+                LocalProject::writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
             }
-            LocalProject::writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
-            $this->stdErr->write("Creating Drush aliases in the group <info>@$new_group</info>...");
+
             $environments = $this->getEnvironments($project, true, false);
             $drushHelper->createAliases($project, $projectRoot, $environments, $current_group);
-            $this->stdErr->writeln(" done");
 
-            $drushDir = $homeDir . '/.drush';
-            $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
-            if (file_exists($oldFile)) {
-                if ($questionHelper->confirm("Delete old alias group <info>@$current_group</info>?", $input, $this->stdErr)) {
-                    unlink($oldFile);
+            if ($new_group != $current_group) {
+                $drushDir = $homeDir . '/.drush';
+                $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
+                if (file_exists($oldFile)) {
+                    if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?", $input, $this->stdErr)) {
+                        unlink($oldFile);
+                    }
                 }
             }
 
             // Clear the Drush cache now that the aliases have been updated.
             $drushHelper->clearCache();
 
-            $current_group = $new_group;
-        } elseif ($input->getOption('recreate')) {
-            $this->stdErr->write("Recreating Drush aliases...");
-            $environments = $this->getEnvironments($project, true, false);
-            $drushHelper->createAliases($project, $projectRoot, $environments, $current_group);
-            $drushHelper->clearCache();
-            $this->stdErr->writeln(' done');
+            // Read the new aliases.
+            $aliases = $drushHelper->getAliases($new_group);
         }
 
-        // Don't run expensive drush calls if they are not needed.
-        if ($input->getOption('quiet')) {
-            return 0;
-        }
-
-        $aliases = $drushHelper->getAliases($current_group);
         if ($aliases) {
-            $this->stdErr->writeln("Aliases for <info>{$project->title}</info> ({$project->id}):");
+            $this->stdErr->writeln("Drush aliases for <info>{$project->title}</info> ({$project->id}):");
             foreach (explode("\n", $aliases) as $alias) {
                 $output->writeln('    @' . $alias);
             }
@@ -122,5 +115,4 @@ class LocalDrushAliasesCommand extends PlatformCommand
 
         return 0;
     }
-
 }
