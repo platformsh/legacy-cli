@@ -220,14 +220,20 @@ class DrushHelper extends Helper
             throw new \Exception("Drush alias file not writable: $filename");
         }
 
-        // Include the alias file so that the user's own modifications can be
-        // merged.
+        // Include the previous alias file(s) so that the user's own
+        // modifications can be merged. This may create a PHP parse error for
+        // invalid syntax, but in that case the user could not run Drush anyway.
         $aliases = array();
-        $originalFile = $original ? $drushDir . '/' . $original . '.aliases.drushrc.php' : $filename;
-        if (file_exists($originalFile) && $merge) {
-            // This may create a PHP parse error for invalid syntax, but in
-            // that case the user could not run Drush anyway.
-            include $originalFile;
+        $originalFiles = array($filename);
+        if ($original) {
+            array_unshift($originalFiles, $drushDir . '/' . $original . '.aliases.drushrc.php');
+        }
+        if ($merge) {
+            foreach ($originalFiles as $originalFile) {
+                if (file_exists($originalFile)) {
+                    include_once $originalFile;
+                }
+            }
         }
 
         // Generate aliases for the remote environments.
