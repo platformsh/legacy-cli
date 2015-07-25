@@ -84,7 +84,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
             LocalProject::writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
             $this->stdErr->write("Creating Drush aliases in the group <info>@$new_group</info>...");
             $environments = $this->getEnvironments($project, true, false);
-            $drushHelper->createAliases($project, $projectRoot, $environments);
+            $drushHelper->createAliases($project, $projectRoot, $environments, $current_group);
             $this->stdErr->writeln(" done");
 
             $drushDir = $homeDir . '/.drush';
@@ -102,7 +102,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
         } elseif ($input->getOption('recreate')) {
             $this->stdErr->write("Recreating Drush aliases...");
             $environments = $this->getEnvironments($project, true, false);
-            $drushHelper->createAliases($project, $projectRoot, $environments);
+            $drushHelper->createAliases($project, $projectRoot, $environments, $current_group);
             $drushHelper->clearCache();
             $this->stdErr->writeln(' done');
         }
