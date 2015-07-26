@@ -123,9 +123,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
         $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();
-        $commands[] = new Command\Environment\EnvironmentVariableDeleteCommand();
-        $commands[] = new Command\Environment\EnvironmentVariableGetCommand();
-        $commands[] = new Command\Environment\EnvironmentVariableSetCommand();
         $commands[] = new Command\Integration\IntegrationAddCommand();
         $commands[] = new Command\Integration\IntegrationDeleteCommand();
         $commands[] = new Command\Integration\IntegrationGetCommand();
@@ -148,6 +145,9 @@ class Application extends ParentApplication
         $commands[] = new Command\User\UserDeleteCommand();
         $commands[] = new Command\User\UserListCommand();
         $commands[] = new Command\User\UserRoleCommand();
+        $commands[] = new Command\Variable\VariableDeleteCommand();
+        $commands[] = new Command\Variable\VariableGetCommand();
+        $commands[] = new Command\Variable\VariableSetCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
 

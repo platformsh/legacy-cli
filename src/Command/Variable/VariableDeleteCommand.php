@@ -1,13 +1,12 @@
 <?php
-namespace Platformsh\Cli\Command\Environment;
+namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-
-class EnvironmentVariableDeleteCommand extends PlatformCommand
+class VariableDeleteCommand extends PlatformCommand
 {
     /**
      * {@inheritdoc}

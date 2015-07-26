@@ -1,5 +1,5 @@
 <?php
-namespace Platformsh\Cli\Command\Environment;
+namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Client\Model\Variable;
@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentVariableGetCommand extends PlatformCommand
+class VariableGetCommand extends PlatformCommand
 {
     /**
      * {@inheritdoc}
