@@ -231,7 +231,7 @@ class DrushHelper extends Helper
         if ($merge) {
             foreach ($originalFiles as $originalFile) {
                 if (file_exists($originalFile)) {
-                    include_once $originalFile;
+                    include $originalFile;
                 }
             }
         }
