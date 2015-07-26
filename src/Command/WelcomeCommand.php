@@ -29,8 +29,6 @@ class WelcomeCommand extends PlatformCommand
         // delegated commands below will not have interactive input.
         $this->getClient();
 
-        $application = $this->getApplication();
-
         if ($currentProject = $this->getCurrentProject()) {
             // The project is known. Show the environments.
             $projectName = $currentProject->title;
