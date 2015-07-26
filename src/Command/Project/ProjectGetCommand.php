@@ -163,13 +163,13 @@ class ProjectGetCommand extends PlatformCommand
             // We need to create the folder, run git init, and attach the remote.
             mkdir($repositoryDir);
             // Initialize the repo and attach our remotes.
-            $this->stdErr->writeln("<info>Initializing empty project repository...</info>");
+            $this->stdErr->writeln("Initializing empty project repository");
             $gitHelper->execute(array('init'), $repositoryDir, true);
-            $this->stdErr->writeln("<info>Adding Platform.sh remote endpoint to Git...</info>");
+            $this->stdErr->writeln("Adding Platform.sh Git remote");
             $local->ensureGitRemote($repositoryDir, $gitUrl);
-            $this->stdErr->writeln("<info>Your repository has been initialized and connected to Platform.sh!</info>");
+            $this->stdErr->writeln("Your repository has been initialized and connected to <info>Platform.sh</info>!");
             $this->stdErr->writeln(
-              "<info>Commit and push to the $environment branch and Platform.sh will build your project automatically.</info>"
+              "Commit and push to the <info>$environment</info> branch and Platform.sh will build your project automatically"
             );
 
             return 0;
