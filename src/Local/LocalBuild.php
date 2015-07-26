@@ -410,7 +410,7 @@ class LocalBuild
             $destination .= "/$appDir";
         }
 
-        $symlinkTarget = $this->fsHelper->symlink($webRoot, $destination);
+        $this->fsHelper->symlink($webRoot, $destination);
         $this->output->writeln("Web root: $destination");
 
         $message = "Build complete for application <info>$appIdentifier</info>";
