@@ -214,12 +214,15 @@ class LocalBuild
         // For now, we reconstruct a toolstack string based on the 'type' and
         // 'build.flavor' config keys.
         if (isset($appConfig['type'])) {
-            list($language, ) = explode(':', $appConfig['type'], 2);
-            $toolstackChoice = sprintf(
-              '%s:%s',
-              $language,
-              !empty($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default'
-            );
+            list($stack, ) = explode(':', $appConfig['type'], 2);
+            $flavor = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
+
+            // Toolstack classes for HHVM are the same as PHP.
+            if ($stack === 'hhvm') {
+                $stack = 'php';
+            }
+
+            $toolstackChoice = "$stack:$flavor";
 
             // Alias php:default to php:composer.
             if ($toolstackChoice === 'php:default') {
