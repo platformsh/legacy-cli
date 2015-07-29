@@ -133,6 +133,7 @@ class LocalBuild
         $finder = new Finder();
         $finder->in($repositoryRoot)
                ->ignoreDotFiles(false)
+               ->notPath('builds')
                ->name('.platform.app.yaml')
                ->depth('> 0')
                ->depth('< 5');
