@@ -13,10 +13,10 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
     {
         $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'Drupal';
         $appRoot = 'tests/data/apps/drupal/project';
-        $appConfig = array('toolstack' => 'php:drupal');
 
         $builder = new LocalBuild();
 
+        $appConfig = array('type' => 'php', 'build' => array('flavor' => 'drupal'));
         $toolstackWithConfig = $builder->getToolstack($appRoot, $appConfig);
         $this->assertInstanceOf($toolstackClassName, $toolstackWithConfig, 'Detect Drupal app from config');
 
@@ -28,15 +28,30 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
     {
         $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'Symfony';
         $appRoot = 'tests/data/apps/symfony';
-        $appConfig = array('toolstack' => 'php:symfony');
 
         $builder = new LocalBuild();
 
+        $appConfig = array('type' => 'php', 'build' => array('flavor' => 'symfony'));
         $toolstackWithConfig = $builder->getToolstack($appRoot, $appConfig);
         $this->assertInstanceOf($toolstackClassName, $toolstackWithConfig, 'Detect Symfony app from config');
 
         $toolstackNoConfig = $builder->getToolstack($appRoot);
         $this->assertInstanceOf($toolstackClassName, $toolstackNoConfig, 'Detect Symfony app from file structure');
+    }
+
+    /**
+     * Test the special case of HHVM toolstack types being the same as PHP.
+     */
+    public function testToolstackAliasHhvm()
+    {
+        $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'Symfony';
+        $appRoot = 'tests/data/apps/vanilla';
+        $appConfig = array('type' => 'hhvm:3.7', 'build' => array('flavor' => 'symfony'));
+
+        $builder = new LocalBuild();
+
+        $toolstack = $builder->getToolstack($appRoot, $appConfig);
+        $this->assertInstanceOf($toolstackClassName, $toolstack, 'Detect HHVM Symfony app from config');
     }
 
     public function testToolstackDetectionMultiple()

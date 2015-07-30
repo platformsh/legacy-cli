@@ -133,6 +133,7 @@ class LocalBuild
         $finder = new Finder();
         $finder->in($repositoryRoot)
                ->ignoreDotFiles(false)
+               ->notPath('builds')
                ->name('.platform.app.yaml')
                ->depth('> 0')
                ->depth('< 5');
@@ -214,12 +215,15 @@ class LocalBuild
         // For now, we reconstruct a toolstack string based on the 'type' and
         // 'build.flavor' config keys.
         if (isset($appConfig['type'])) {
-            list($language, ) = explode(':', $appConfig['type'], 2);
-            $toolstackChoice = sprintf(
-              '%s:%s',
-              $language,
-              !empty($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default'
-            );
+            list($stack, ) = explode(':', $appConfig['type'], 2);
+            $flavor = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
+
+            // Toolstack classes for HHVM are the same as PHP.
+            if ($stack === 'hhvm') {
+                $stack = 'php';
+            }
+
+            $toolstackChoice = "$stack:$flavor";
 
             // Alias php:default to php:composer.
             if ($toolstackChoice === 'php:default') {
@@ -410,7 +414,7 @@ class LocalBuild
             $destination .= "/$appDir";
         }
 
-        $symlinkTarget = $this->fsHelper->symlink($webRoot, $destination);
+        $this->fsHelper->symlink($webRoot, $destination);
         $this->output->writeln("Web root: $destination");
 
         $message = "Build complete for application <info>$appIdentifier</info>";
