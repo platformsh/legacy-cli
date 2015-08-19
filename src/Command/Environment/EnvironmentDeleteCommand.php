@@ -21,7 +21,8 @@ class EnvironmentDeleteCommand extends PlatformCommand
           ->setDescription('Delete an environment')
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
           ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
-          ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
+          ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments')
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
@@ -121,11 +122,13 @@ class EnvironmentDeleteCommand extends PlatformCommand
         // Confirm which environments the user wishes to be deleted.
         $delete = array();
         $deactivate = array();
+        $error = false;
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
             $environmentId = $environment['id'];
             if ($environmentId == 'master') {
                 $output->writeln("The <error>master</error> environment cannot be deleted.");
+                $error = true;
                 continue;
             }
             // Check that the environment does not have children.
@@ -136,6 +139,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
                       "The environment <error>$environmentId</error> has children and therefore can't be deleted."
                     );
                     $output->writeln("Please delete the environment's children first.");
+                    $error = true;
                     continue 2;
                 }
             }
@@ -157,7 +161,8 @@ class EnvironmentDeleteCommand extends PlatformCommand
                 }
             }
             elseif ($environment->status === 'dirty') {
-                $output->writeln("The environment <error>$environmentId</error> is currently building, and therefore can't be deleted. Please wait");
+                $output->writeln("The environment <error>$environmentId</error> is currently building, and therefore can't be deleted. Please wait.");
+                $error = true;
                 continue;
             }
         }
@@ -175,7 +180,9 @@ class EnvironmentDeleteCommand extends PlatformCommand
             }
         }
 
-        ActivityUtil::waitMultiple($deactivateActivities, $output);
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitMultiple($deactivateActivities, $output);
+        }
 
         $deleted = 0;
         foreach ($delete as $environmentId => $environment) {
@@ -183,7 +190,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
                 if ($environment->status !== 'inactive') {
                     $environment->refresh();
                     if ($environment->status !== 'inactive') {
-                        $output->writeln("Cannot delete environment <error>$environmentId</error>: it is not (yet) inactive.");
+                        $output->writeln("Cannot delete branch <error>$environmentId</error>: it is not (yet) inactive.");
                         continue;
                     }
                 }
@@ -195,11 +202,15 @@ class EnvironmentDeleteCommand extends PlatformCommand
             }
         }
 
-        if ($deleted || $deactivated) {
+        if ($deleted < count($delete) || $deactivated < count($deactivate)) {
+            $error = true;
+        }
+
+        if ($deleted || $deactivated || $error) {
             $this->clearEnvironmentsCache();
         }
 
-        return $deleted >= count($delete) && $deactivated >= count($deactivate);
+        return !$error;
     }
 
 }
