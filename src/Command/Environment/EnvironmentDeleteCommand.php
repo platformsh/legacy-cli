@@ -139,9 +139,6 @@ class EnvironmentDeleteCommand extends PlatformCommand
                     continue 2;
                 }
             }
-            if ($environment->status === 'dirty') {
-                $environment->refresh();
-            }
             if ($environment->isActive()) {
                 $output->writeln("The environment <comment>$environmentId</comment> is currently active: deleting it will delete all associated data.");
                 $question = "Are you sure you want to delete the environment <comment>$environmentId</comment>?";
@@ -199,7 +196,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
         }
 
         if ($deleted || $deactivated) {
-            $this->getEnvironments(null, true);
+            $this->clearEnvironmentsCache();
         }
 
         return $deleted >= count($delete) && $deactivated >= count($deactivate);
