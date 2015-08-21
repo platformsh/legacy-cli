@@ -188,8 +188,7 @@ class EnvironmentBranchCommand extends PlatformCommand
             }
         }
 
-        // Refresh the environments cache.
-        $this->getEnvironments(null, true);
+        $this->clearEnvironmentsCache();
 
         return $remoteSuccess ? 0 : 1;
     }

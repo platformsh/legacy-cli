@@ -42,7 +42,8 @@ class EnvironmentMetadataCommand extends PlatformCommand
 
         $environment = $this->getSelectedEnvironment();
         if ($input->getOption('refresh')) {
-            $this->getEnvironments($this->getSelectedProject(), true);
+            $project = $this->getSelectedProject();
+            $environment = $this->getEnvironment($environment->id, $project, true);
         }
 
         $property = $input->getArgument('property');

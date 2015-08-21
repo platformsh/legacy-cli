@@ -64,8 +64,7 @@ class EnvironmentMergeCommand extends PlatformCommand
             }
         }
 
-        // Reload the stored environments.
-        $this->getEnvironments(null, true);
+        $this->clearEnvironmentsCache();
 
         return 0;
     }

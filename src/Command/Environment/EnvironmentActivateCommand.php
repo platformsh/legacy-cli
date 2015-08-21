@@ -93,7 +93,7 @@ class EnvironmentActivateCommand extends PlatformCommand
             if (!$input->getOption('no-wait')) {
                 ActivityUtil::waitMultiple($activities, $output);
             }
-            $this->getEnvironments(null, true);
+            $this->clearEnvironmentsCache();
         }
 
         return $processed >= $count;

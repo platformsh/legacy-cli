@@ -544,6 +544,19 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Clear the environments cache for a project.
+     *
+     * Use this after creating/deleting/updating environment(s).
+     *
+     * @param Project $project
+     */
+    protected function clearEnvironmentsCache(Project $project = null)
+    {
+        $project = $project ?: $this->getSelectedProject();
+        self::$cache->delete('environments:' . $project->id);
+    }
+
+    /**
      * @param Project       $project
      * @param Environment[] $environments
      */
