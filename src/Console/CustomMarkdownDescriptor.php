@@ -83,8 +83,15 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
         if ($shortcut = $option->getShortcut()) {
             $this->write(" (`-" . implode('|-', explode('|', $shortcut)). "`)");
         }
-        if ($option->acceptValue() && $option->isArray()) {
-            $this->write(" (multiple values allowed)");
+        $notes = array();
+        if ($option->isArray()) {
+            $notes[] = 'multiple values allowed';
+        }
+        elseif ($option->acceptValue()) {
+            $notes[] = 'expects a value';
+        }
+        if ($notes) {
+            $this->write(' (' . implode('; ', $notes) . ')');
         }
         if ($description = $option->getDescription()) {
             $this->write("  \n  " . $description);
