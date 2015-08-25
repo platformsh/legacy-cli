@@ -19,4 +19,12 @@ trait HasExamplesTrait
 
         return $this;
     }
+
+    /**
+     * @return array
+     */
+    public function getExamples()
+    {
+        return $this->examples;
+    }
 }

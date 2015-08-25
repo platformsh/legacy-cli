@@ -6,7 +6,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\CustomTextDescriptor;
+use Platformsh\Cli\Console\CustomTextDescriptor;
 use Symfony\Component\Console\Command\ListCommand as ParentListCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
