@@ -831,20 +831,6 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function getProcessedExamples()
-    {
-        $output = '';
-        $name = $this->getName();
-        foreach ($this->examples as $arguments => $description) {
-            $output .= "\n$description:\n  <info>platform $name $arguments</info>\n";
-        }
-
-        return trim($output);
-    }
-
-    /**
      * Run another CLI command.
      *
      * @param string         $name

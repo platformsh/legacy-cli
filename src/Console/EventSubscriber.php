@@ -1,5 +1,5 @@
 <?php
-namespace Platformsh\Cli;
+namespace Platformsh\Cli\Console;
 
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;

@@ -6,7 +6,8 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\CustomTextDescriptor;
+use Platformsh\Cli\Console\CustomMarkdownDescriptor;
+use Platformsh\Cli\Console\CustomTextDescriptor;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\HelpCommand as ParentHelpCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
@@ -42,6 +43,7 @@ class HelpCommand extends ParentHelpCommand
 
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor());
+        $helper->register('md', new CustomMarkdownDescriptor());
         $helper->describe(
           $output,
           $this->command,

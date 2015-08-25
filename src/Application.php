@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli;
 
+use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
