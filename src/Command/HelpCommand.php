@@ -47,7 +47,7 @@ class HelpCommand extends ParentHelpCommand
           $this->command,
           array(
             'format' => $input->getOption('format'),
-            'raw' => $input->getOption('raw'),
+            'raw_text' => $input->getOption('raw'),
           )
         );
     }
