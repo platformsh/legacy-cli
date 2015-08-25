@@ -20,6 +20,7 @@ class EnvironmentBackupCommand extends PlatformCommand
           ->setDescription('Make a backup (snapshot) of an environment')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to back up')
           ->addOption('list', 'l', InputOption::VALUE_NONE, 'List backups')
+          ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of backups to list', 10)
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the backup to complete');
         $this->addProjectOption()
              ->addEnvironmentOption();
@@ -33,7 +34,7 @@ class EnvironmentBackupCommand extends PlatformCommand
         $this->validateInput($input);
 
         if ($input->getOption('list')) {
-            return $this->listBackups($output);
+            return $this->listBackups($output, $input->getOption('limit'));
         }
 
         $selectedEnvironment = $this->getSelectedEnvironment();
@@ -72,17 +73,18 @@ class EnvironmentBackupCommand extends PlatformCommand
 
     /**
      * @param OutputInterface $output
+     * @param int $limit
      *
      * @return int
      */
-    protected function listBackups(OutputInterface $output)
+    protected function listBackups(OutputInterface $output, $limit = 10)
     {
         $environment = $this->getSelectedEnvironment();
 
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
         $stdErr->writeln("Finding backups for the environment <info>{$environment['id']}</info>");
-        $results = $environment->getActivities(10, 'environment.backup');
+        $results = $environment->getActivities($limit, 'environment.backup');
         if (!$results) {
             $stdErr->writeln('No backups found');
             return 1;
