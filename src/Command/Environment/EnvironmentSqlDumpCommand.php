@@ -17,13 +17,14 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
             ->setName('environment:sql-dump')
             ->setAliases(array('sql-dump'))
             ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_OPTIONAL, 'A filename where the dump should be saved. Defaults to "dump.sql" in the project root');
+            ->addOption('file', 'f', InputOption::VALUE_OPTIONAL, 'A filename where the dump should be saved. Defaults to "envionment-dump.sql" in the project root');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $environment = $this->getCurrentEnvironment($this->getCurrentProject());
 
         $dumpFile = $input->getOption('file');
         if ($dumpFile) {
@@ -31,7 +32,7 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
             $fsHelper = $this->getHelper('fs');
             $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
             if (is_dir($dumpFile)) {
-                $dumpFile .= '/' . 'dump.sql';
+                $dumpFile .= "/$environment-dump.sql";
             }
         }
         elseif (!$projectRoot = $this->getProjectRoot()) {
@@ -40,7 +41,7 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
             );
         }
         else {
-            $dumpFile = $projectRoot . '/dump.sql';
+            $dumpFile = $projectRoot . "/$environment-dump.sql";
         }
 
         if (file_exists($dumpFile)) {
