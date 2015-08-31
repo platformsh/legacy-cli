@@ -218,7 +218,7 @@ class CompletionCommand extends ParentCompletionCommand
      */
     protected function getProjectIdFromCommandLine($commandLine)
     {
-        if (preg_match('/\W(\-\-project|get) ?=? ?[\'"]?([0-9a-z]+)[\'"]?/', $commandLine, $matches)) {
+        if (preg_match('/\W(\-\-project|\-p|get) ?=? ?[\'"]?([0-9a-z]+)[\'"]?/', $commandLine, $matches)) {
             return $matches[2];
         }
 
