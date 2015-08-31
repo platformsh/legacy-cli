@@ -344,13 +344,15 @@ abstract class PlatformCommand extends Command
     /**
      * Get the current environment if the user is in a project directory.
      *
-     * @param Project $project The current project.
+     * @param Project $expectedProject The expected project.
      *
-     * @return Environment|false The current environment
+     * @return Environment|false The current environment.
      */
-    public function getCurrentEnvironment(Project $project)
+    public function getCurrentEnvironment(Project $expectedProject = null)
     {
-        if (!$projectRoot = $this->getProjectRoot()) {
+        if (!($projectRoot = $this->getProjectRoot())
+          || !($project = $this->getCurrentProject())
+          || ($expectedProject !== null && $expectedProject->id !== $project->id)) {
             return false;
         }
 
