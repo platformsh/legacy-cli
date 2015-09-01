@@ -38,6 +38,12 @@ class UserDeleteCommand extends PlatformCommand
             return 1;
         }
 
+        if ($project->owner === $selectedUser->id) {
+            $this->stdErr->writeln("The user <error>$email</error> is the owner of the project <error>{$project->title}</error>.");
+            $this->stdErr->writeln("The project's owner cannot be deleted.");
+            return 1;
+        }
+
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
