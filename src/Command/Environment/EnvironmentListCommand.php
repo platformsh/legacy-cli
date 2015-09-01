@@ -29,7 +29,13 @@ class EnvironmentListCommand extends PlatformCommand
         $this
           ->setName('environment:list')
           ->setAliases(array('environments'))
-          ->setDescription('Get a list of all environments')
+          ->setDescription('Get a list of environments')
+          ->addOption(
+            'no-inactive',
+            'I',
+            InputOption::VALUE_NONE,
+            'Do not show inactive environments'
+          )
           ->addOption(
             'pipe',
             null,
@@ -178,15 +184,22 @@ class EnvironmentListCommand extends PlatformCommand
 
         $environments = $this->getEnvironments(null, $refresh);
 
+        if ($input->getOption('no-inactive')) {
+            $environments = array_filter($environments, function ($environment) {
+                return $environment->status !== 'inactive';
+            });
+        }
+
         if ($input->getOption('pipe')) {
             $output->writeln(array_keys($environments));
 
             return;
         }
 
-        $this->currentEnvironment = $this->getCurrentEnvironment($this->getSelectedProject());
+        $project = $this->getSelectedProject();
+        $this->currentEnvironment = $this->getCurrentEnvironment($project);
 
-        if (($currentProject = $this->getCurrentProject()) && $currentProject == $this->getSelectedProject()) {
+        if (($currentProject = $this->getCurrentProject()) && $currentProject == $project) {
             $config = $this->getProjectConfig($this->getProjectRoot());
             if (isset($config['mapping'])) {
                 $this->mapping = $config['mapping'];

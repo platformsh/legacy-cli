@@ -5,7 +5,7 @@
  * command list and each command's help.
  */
 
-namespace Platformsh\Cli;
+namespace Platformsh\Cli\Console;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Application as ConsoleApplication;
@@ -53,12 +53,13 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText("\n");
         }
 
-        if ($command instanceof PlatformCommand && ($examples = $command->getProcessedExamples())) {
+        if ($command instanceof PlatformCommand && ($examples = $command->getExamples())) {
             $this->writeText("\n");
             $this->writeText('<comment>Examples:</comment>', $options);
-            $this->writeText("\n");
-            $this->writeText(' ' . str_replace("\n", "\n ", $examples), $options);
-            $this->writeText("\n");
+            $name = $command->getName();
+            foreach ($examples as $arguments => $description) {
+                $this->writeText("\n $description:\n   <info>platform $name $arguments</info>\n");
+            }
         }
     }
 
