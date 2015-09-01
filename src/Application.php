@@ -106,7 +106,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Domain\DomainDeleteCommand();
         $commands[] = new Command\Domain\DomainListCommand();
         $commands[] = new Command\Environment\EnvironmentActivateCommand();
-        $commands[] = new Command\Environment\EnvironmentBackupCommand();
         $commands[] = new Command\Environment\EnvironmentBranchCommand();
         $commands[] = new Command\Environment\EnvironmentCheckoutCommand();
         $commands[] = new Command\Environment\EnvironmentDeleteCommand();
@@ -116,7 +115,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentMetadataCommand();
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
-        $commands[] = new Command\Environment\EnvironmentRestoreCommand();
         $commands[] = new Command\Environment\EnvironmentRoutesCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
         $commands[] = new Command\Environment\EnvironmentSqlCommand();
@@ -138,6 +136,9 @@ class Application extends ParentApplication
         $commands[] = new Command\Project\ProjectMetadataCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
+        $commands[] = new Command\Snapshot\SnapshotCreateCommand();
+        $commands[] = new Command\Snapshot\SnapshotListCommand();
+        $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
         $commands[] = new Command\SshKey\SshKeyAddCommand();
         $commands[] = new Command\SshKey\SshKeyDeleteCommand();
         $commands[] = new Command\SshKey\SshKeyListCommand();
