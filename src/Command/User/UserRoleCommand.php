@@ -71,6 +71,12 @@ class UserRoleCommand extends UserCommand
             return 1;
         }
 
+        if ($role && $project->owner === $selectedUser->id) {
+            $this->stdErr->writeln("The user <error>$email</error> is the owner of the project <error>{$project->title}</error>.");
+            $this->stdErr->writeln("You cannot change the role of the project's owner.");
+            return 1;
+        }
+
         if ($role === $currentRole) {
             $this->stdErr->writeln("There is nothing to change");
         }
