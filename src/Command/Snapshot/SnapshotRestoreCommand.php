@@ -15,6 +15,7 @@ class SnapshotRestoreCommand extends PlatformCommand
     {
         $this
           ->setName('snapshot:restore')
+          ->setHiddenAliases(array('environment:restore'))
           ->setDescription('Restore an environment snapshot')
           ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one')
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');

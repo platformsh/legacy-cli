@@ -15,6 +15,7 @@ class SnapshotCreateCommand extends PlatformCommand
     {
         $this
           ->setName('snapshot:create')
+          ->setHiddenAliases(array('backup', 'environment:backup'))
           ->setDescription('Make a snapshot of an environment')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
           ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the snapshot to complete');
