@@ -1,0 +1,4 @@
+name: composer-php56
+type: php:5.6
+build:
+  flavor: composer

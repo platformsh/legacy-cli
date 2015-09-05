@@ -17,6 +17,16 @@ class ComposerTest extends BaseToolstackTest
         $this->assertFileExists($repositoryDir . '/.gitignore');
     }
 
+    public function testBuildComposerCustomPhp()
+    {
+        $this->assertBuildSucceeds('tests/data/apps/composer-php56');
+    }
+
+    public function testBuildComposerHhvm()
+    {
+        $this->assertBuildSucceeds('tests/data/apps/hhvm37');
+    }
+
     /**
      * Test the case where a user has specified "php:symfony" as the toolstack,
      * for an application which does not contain a composer.json file. The build
