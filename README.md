@@ -102,7 +102,6 @@ domain
   domain:list (domains)                     Get a list of all domains
 environment
   environment:activate                      Activate an environment
-  environment:backup                        Make a backup (snapshot) of an environment
   environment:branch (branch)               Branch an environment
   environment:checkout (checkout)           Check out an environment
   environment:delete                        Delete an environment
@@ -112,7 +111,6 @@ environment
   environment:merge (merge)                 Merge an environment
   environment:metadata                      Read or set metadata for an environment
   environment:relationships (relationships) List an environment's relationships
-  environment:restore                       Restore an environment backup
   environment:routes (routes)               List an environment's routes
   environment:set-remote                    Set the remote environment to track for a branch
   environment:sql (sql)                     Run SQL on the remote database
@@ -134,6 +132,10 @@ project
   project:get (get)                         Clone and build a project locally
   project:list (projects)                   Get a list of all active projects
   project:metadata                          Read or set metadata for a project
+snapshot
+  snapshot:create                           Make a snapshot of an environment
+  snapshot:list (snapshots)                 List available snapshots of an environment
+  snapshot:restore                          Restore an environment snapshot
 ssh-key
   ssh-key:add                               Add a new SSH key
   ssh-key:delete                            Delete an SSH key

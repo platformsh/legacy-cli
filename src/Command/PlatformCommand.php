@@ -53,6 +53,7 @@ abstract class PlatformCommand extends Command
     protected $environmentsTtl;
 
     private $hiddenInList = false;
+    private $hiddenAliases = array();
 
     /**
      * The project, selected either by an option or the CWD.
@@ -864,5 +865,32 @@ abstract class PlatformCommand extends Command
         $cmdInput = new ArrayInput(array('command' => $name) + $arguments);
 
         return $command->run($cmdInput, $this->output);
+    }
+
+    /**
+     * Add aliases that should be hidden from help.
+     *
+     * @see parent::setAliases()
+     *
+     * @param array $hiddenAliases
+     *
+     * @return self
+     */
+    protected function setHiddenAliases(array $hiddenAliases)
+    {
+        $this->hiddenAliases = $hiddenAliases;
+        $this->setAliases(array_merge($this->getAliases(), $hiddenAliases));
+
+        return $this;
+    }
+
+    /**
+     * Get aliases that should be visible in help.
+     *
+     * @return array
+     */
+    public function getVisibleAliases()
+    {
+        return array_diff($this->getAliases(), $this->hiddenAliases);
     }
 }

@@ -25,9 +25,10 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write("$description\n\n");
         }
 
-        if ($command->getAliases()) {
+        $aliases = $command instanceof PlatformCommand ? $command->getVisibleAliases() : $command->getAliases();
+        if ($aliases) {
             $this->write(
-              'Aliases: ' . '`'.implode('`, `', $command->getAliases()).'`' . "\n\n"
+              'Aliases: ' . '`'.implode('`, `', $aliases).'`' . "\n\n"
             );
         }
 

@@ -25,10 +25,13 @@ class CustomTextDescriptor extends TextDescriptor
         $command->mergeApplicationDefinition(false);
 
         $this->writeText("<comment>Command:</comment> " . $command->getName(), $options);
-        if ($aliases = $command->getAliases()) {
+
+        $aliases = $command instanceof PlatformCommand ? $command->getVisibleAliases() : $command->getAliases();
+        if ($aliases) {
             $this->writeText("\n");
             $this->writeText('<comment>Aliases:</comment> ' . implode(', ', $aliases), $options);
         }
+
         if ($description = $command->getDescription()) {
             $this->writeText("\n");
             $this->writeText("<comment>Description:</comment> $description", $options);
@@ -103,16 +106,17 @@ class CustomTextDescriptor extends TextDescriptor
                 foreach ($namespace['commands'] as $name) {
                     $command = $description->getCommand($name);
                     $aliases = $command->getAliases();
-                    if ($aliases && ApplicationDescription::GLOBAL_NAMESPACE === $namespace['id'] && in_array(
-                        $name,
-                        $aliases
-                      )
-                    ) {
-                        // If the command has aliases, do not list it in the
+                    if ($aliases && in_array($name, $aliases)) {
+                        // If the command is an alias, do not list it in the
                         // 'global' namespace. The aliases will be shown inline
                         // with the full command name.
                         continue;
                     }
+
+                    if ($command instanceof PlatformCommand) {
+                        $aliases = $command->getVisibleAliases();
+                    }
+
                     // Colour local commands differently from remote ones.
                     $commandDescription = $command->getDescription();
                     if ($command instanceof PlatformCommand && !$command->isLocal()) {
