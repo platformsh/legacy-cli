@@ -3,8 +3,8 @@
     "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
-        "doctrine/cache": "~1.4.1",
-        "platformsh/client": "0.1.21",
+        "doctrine/cache": "~1.4.2",
+        "platformsh/client": "0.1.22",
         "symfony/console": ">= 2.5.2 < 2.7.0",
         "symfony/yaml": "~2.5",
         "symfony/finder": "~2.5",

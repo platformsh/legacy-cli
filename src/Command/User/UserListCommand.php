@@ -23,7 +23,6 @@ class UserListCommand extends PlatformCommand
         $this->validateInput($input);
 
         $project = $this->getSelectedProject();
-        $project->ensureFull();
 
         $rows = array();
         $i = 0;

@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ParseException;
 use Platformsh\Cli\Exception\ConnectionFailedException;
 use Platformsh\Cli\Exception\LoginRequiredException;
+use Platformsh\Cli\Exception\PermissionDeniedException;
 use Symfony\Component\Console\Event\ConsoleExceptionEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -35,8 +36,8 @@ class EventSubscriber implements EventSubscriberInterface
             $request = $exception->getRequest();
             $event->setException(new ConnectionFailedException(
               "Failed to connect to host: " . $request->getHost()
-              . " \nRequest URL: " . $request->getUrl()
-              . " \nPlease check your Internet connection"
+              . " \nPlease check your Internet connection.",
+              $request
             ));
             $event->stopPropagation();
         }
@@ -56,15 +57,22 @@ class EventSubscriber implements EventSubscriberInterface
             // error.
             if ($response->getStatusCode() === 400 && isset($json['error_description']) && $json['error_description'] === 'Invalid refresh token') {
                 $event->setException(new LoginRequiredException(
-                    "Invalid refresh token: please log in again."
-                    . " \nRequest URL: " . $request->getUrl()
+                    "Invalid refresh token: please log in again.",
+                    $request
                 ));
                 $event->stopPropagation();
             }
             elseif ($response->getStatusCode() === 401) {
                 $event->setException(new LoginRequiredException(
-                    "Unauthorized: please log in again."
-                    . " \nRequest URL: " . $request->getUrl()
+                    "Unauthorized: please log in again.",
+                     $request
+                ));
+                $event->stopPropagation();
+            }
+            elseif ($response->getStatusCode() === 403) {
+                $event->setException(new PermissionDeniedException(
+                  "Permission denied. Check your project or environment permissions.",
+                  $request
                 ));
                 $event->stopPropagation();
             }
