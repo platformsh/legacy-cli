@@ -2,8 +2,6 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 [![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli)
 
-Alternative README versions: [`master`](https://github.com/platformsh/platformsh-cli/blob/master/README.md),   [`1.x`](https://github.com/platformsh/platformsh-cli/blob/1.x/README.md)
-
 ### Requirements
 
 * Operating system: Linux, OS X, Windows Vista, Windows 7 (any), or Windows 8 Pro (Win8 Standard does not work due to an issue with symlink permissions)
