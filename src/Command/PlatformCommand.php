@@ -450,6 +450,14 @@ abstract class PlatformCommand extends Command
      */
     protected function getProject($id, $host = null, $refresh = false)
     {
+        // Allow the specified project to be a full URL.
+        if (strpos($id, '//') !== false) {
+            $url = $id;
+            $id = basename($url);
+            $host = parse_url($url, PHP_URL_HOST);
+        }
+
+        // Find the project in the user's main project list.
         $projects = $this->getProjects($refresh);
         if (isset($projects[$id])) {
             return $projects[$id];

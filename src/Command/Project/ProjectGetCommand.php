@@ -122,7 +122,7 @@ class ProjectGetCommand extends PlatformCommand
 
         $local = new LocalProject();
         $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
-        $local->createProjectFiles($projectRoot, $projectId, $hostname);
+        $local->createProjectFiles($projectRoot, $project->id, $hostname);
 
         $environments = $this->getEnvironments($project, true);
 
