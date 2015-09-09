@@ -89,7 +89,7 @@ class UserRoleCommand extends UserCommand
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
 
-        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+        if ($input->getOption('pipe')) {
             if ($level == 'project') {
                 $output->writeln($selectedUser->role);
             } elseif ($level == 'environment') {

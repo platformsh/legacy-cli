@@ -56,7 +56,7 @@ class ActivityListCommand extends PlatformCommand
             );
         }
 
-        if ($output instanceof StreamOutput && ($input->getOption('pipe') || !$this->isTerminal($output))) {
+        if ($output instanceof StreamOutput && $input->getOption('pipe')) {
             $stream = $output->getStream();
             array_unshift($rows, $headers);
             foreach ($rows as $row) {

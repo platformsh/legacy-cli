@@ -50,7 +50,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
         $projectConfig = LocalProject::getProjectConfig($projectRoot);
         $current_group = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $projectConfig['id'];
 
-        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+        if ($input->getOption('pipe')) {
             $output->writeln($current_group);
 
             return 0;

@@ -37,7 +37,7 @@ class ProjectListCommand extends PlatformCommand
 
         $projects = $this->getProjects($refresh);
 
-        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+        if ($input->getOption('pipe')) {
             $output->writeln(array_keys($projects));
 
             return 0;
