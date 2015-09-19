@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -34,6 +35,7 @@ class LoginCommand extends PlatformCommand
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)
     {
+        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $helper */
         $helper = $this->getHelper('question');
 
         $question = new Question('Your email address: ');
@@ -96,10 +98,47 @@ class LoginCommand extends PlatformCommand
 
         try {
             $this->authenticateUser($email, $password);
-        } catch (\InvalidArgumentException $e) {
-            $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
-            $output->writeln("Forgot your password? Visit: <comment>https://accounts.platform.sh/user/password</comment>\n");
-            $this->configureAccount($input, $output);
+        } catch (BadResponseException $e) {
+            // If a two-factor authentication challenge is received, then ask
+            // the user for their TOTP code, and then retry authenticateUser().
+            if ($e->getResponse()->getHeader('X-Drupal-TFA')) {
+                $question = new Question("Your application verification code: ");
+                $question->setValidator(function ($answer) use ($email, $password) {
+                    if (trim($answer) == '') {
+                        throw new \RuntimeException("The code cannot be empty.");
+                    }
+                    try {
+                        $this->authenticateUser($email, $password, $answer);
+                    }
+                    catch (BadResponseException $e) {
+                        // If there is a two-factor authentication error, show
+                        // the error description that the server provides.
+                        //
+                        // A RuntimeException here causes the user to be asked
+                        // again for their TOTP code.
+                        if ($e->getResponse()->getHeader('X-Drupal-TFA')) {
+                            $json = $e->getResponse()->json();
+                            throw new \RuntimeException($json['error_description']);
+                        }
+                        else {
+                            throw $e;
+                        }
+                    }
+
+                    return $answer;
+                });
+                $question->setMaxAttempts(5);
+                $output->writeln("\nTwo-factor authentication is required.");
+                $helper->ask($input, $output, $question);
+            }
+            elseif ($e->getResponse()->getStatusCode() === 401) {
+                $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
+                $output->writeln("Forgot your password? Visit: <comment>https://accounts.platform.sh/user/password</comment>\n");
+                $this->configureAccount($input, $output);
+            }
+            else {
+                throw $e;
+            }
         }
     }
 
