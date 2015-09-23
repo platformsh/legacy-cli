@@ -561,7 +561,7 @@ abstract class PlatformCommand extends Command
      *
      * @param Project $project
      */
-    protected function clearEnvironmentsCache(Project $project = null)
+    public function clearEnvironmentsCache(Project $project = null)
     {
         $project = $project ?: $this->getSelectedProject();
         self::$cache->delete('environments:' . $project->id);
