@@ -274,12 +274,13 @@ abstract class PlatformCommand extends Command
      *
      * @param string $email    The user's email.
      * @param string $password The user's password.
+     * @param string $totp     The user's TFA one-time password.
      */
-    protected function authenticateUser($email, $password)
+    protected function authenticateUser($email, $password, $totp = null)
     {
         $this->getClient(false)
              ->getConnector()
-             ->logIn($email, $password, true);
+             ->logIn($email, $password, true, $totp);
     }
 
     /**
@@ -450,6 +451,14 @@ abstract class PlatformCommand extends Command
      */
     protected function getProject($id, $host = null, $refresh = false)
     {
+        // Allow the specified project to be a full URL.
+        if (strpos($id, '//') !== false) {
+            $url = $id;
+            $id = basename($url);
+            $host = parse_url($url, PHP_URL_HOST);
+        }
+
+        // Find the project in the user's main project list.
         $projects = $this->getProjects($refresh);
         if (isset($projects[$id])) {
             return $projects[$id];
@@ -553,7 +562,7 @@ abstract class PlatformCommand extends Command
      *
      * @param Project $project
      */
-    protected function clearEnvironmentsCache(Project $project = null)
+    public function clearEnvironmentsCache(Project $project = null)
     {
         $project = $project ?: $this->getSelectedProject();
         self::$cache->delete('environments:' . $project->id);

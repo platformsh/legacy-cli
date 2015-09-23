@@ -76,7 +76,7 @@ class VariableGetCommand extends PlatformCommand
             }
         }
 
-        if ($input->getOption('pipe') || !$this->isTerminal($output)) {
+        if ($input->getOption('pipe')) {
             foreach ($results as $variable) {
                 $output->writeln($variable['id'] . "\t" . $variable['value']);
             }

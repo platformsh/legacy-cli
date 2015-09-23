@@ -56,6 +56,7 @@ class LocalInitCommand extends PlatformCommand
                 return 1;
             }
             $gitUrl = $project->getGitUrl();
+            $projectId = $project->id;
         }
 
         $inside = strpos(getcwd(), $realPath) === 0;

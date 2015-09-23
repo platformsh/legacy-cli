@@ -55,6 +55,7 @@ class EnvironmentBranchCommand extends PlatformCommand
     {
         $this->envArgName = 'parent';
         $this->validateInput($input, true);
+        $selectedProject = $this->getSelectedProject();
 
         $branchName = $input->getArgument('name');
         if (empty($branchName)) {
@@ -62,7 +63,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                 // List environments.
                 return $this->runOtherCommand(
                   'environments',
-                  array('--project' => $this->getSelectedProject()->id)
+                  array('--project' => $selectedProject->id)
                 );
             }
             $this->stdErr->writeln("<error>You must specify the name of the new branch.</error>");
@@ -79,7 +80,7 @@ class EnvironmentBranchCommand extends PlatformCommand
             return 1;
         }
 
-        if ($environment = $this->getEnvironment($machineName, $this->getSelectedProject())) {
+        if ($environment = $this->getEnvironment($machineName, $selectedProject)) {
             $checkout = $this->getHelper('question')
                              ->confirm(
                                "The environment <comment>$machineName</comment> already exists. Check out?",
@@ -129,6 +130,9 @@ class EnvironmentBranchCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->branch($branchName, $machineName);
 
+        // Clear the environments cache, as branching has started.
+        $this->clearEnvironmentsCache($selectedProject);
+
         if ($projectRoot) {
             $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
             $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
@@ -169,6 +173,9 @@ class EnvironmentBranchCommand extends PlatformCommand
               "The environment <info>$branchName</info> has been branched.",
               '<error>Branching failed</error>'
             );
+
+            // Clear the environments cache again.
+            $this->clearEnvironmentsCache($selectedProject);
         }
 
         $build = $input->getOption('build');
