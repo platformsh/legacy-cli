@@ -274,12 +274,13 @@ abstract class PlatformCommand extends Command
      *
      * @param string $email    The user's email.
      * @param string $password The user's password.
+     * @param string $totp     The user's TFA one-time password.
      */
-    protected function authenticateUser($email, $password)
+    protected function authenticateUser($email, $password, $totp = null)
     {
         $this->getClient(false)
              ->getConnector()
-             ->logIn($email, $password, true);
+             ->logIn($email, $password, true, $totp);
     }
 
     /**
