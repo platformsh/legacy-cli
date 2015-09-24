@@ -67,7 +67,7 @@ class ProjectGetCommand extends PlatformCommand
                 return 1;
             }
         }
-        $project = $this->getProject($projectId, $input->getOption('host'));
+        $project = $this->getProject($projectId, $input->getOption('host'), true);
         if (!$project) {
             $this->stdErr->writeln("<error>Project not found: $projectId</error>");
 
