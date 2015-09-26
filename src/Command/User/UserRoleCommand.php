@@ -15,8 +15,8 @@ class UserRoleCommand extends UserCommand
           ->setName('user:role')
           ->setDescription("View or change a user's role")
           ->addArgument('email', InputArgument::REQUIRED, "The user's email address")
-          ->addOption('role', 'r', InputOption::VALUE_OPTIONAL, "A new role for the user")
-          ->addOption('level', 'l', InputOption::VALUE_OPTIONAL, "The role level ('project' or 'environment')", 'project')
+          ->addOption('role', 'r', InputOption::VALUE_REQUIRED, "A new role for the user")
+          ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", 'project')
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only');
         $this->addProjectOption()
           ->addEnvironmentOption();

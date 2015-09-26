@@ -14,15 +14,14 @@ abstract class UrlCommandBase extends PlatformCommand
         $this->addOption(
           'browser',
           null,
-          InputOption::VALUE_OPTIONAL,
+          InputOption::VALUE_REQUIRED,
           'The browser to use to open the URL. Set 0 for none.'
-        )
-             ->addOption(
-               'pipe',
-               null,
-               InputOption::VALUE_NONE,
-               'Output the raw URL, suitable for piping to another command.'
-             );
+        )->addOption(
+          'pipe',
+          null,
+          InputOption::VALUE_REQUIRED,
+          'Output the raw URL, suitable for piping to another command.'
+        );
     }
 
     /**

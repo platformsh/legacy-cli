@@ -43,9 +43,8 @@ abstract class IntegrationCommand extends PlatformCommand
     protected function setUpOptions()
     {
         foreach ($this->getOptions() as $name => $option) {
-            $type = empty($option['required']) ? InputOption::VALUE_OPTIONAL : InputOption::VALUE_REQUIRED;
             $description = empty($option['description']) ? ucfirst($name) : $option['description'];
-            $this->addOption(str_replace('_', '-', $name), null, $type, $description);
+            $this->addOption(str_replace('_', '-', $name), null, InputOption::VALUE_REQUIRED, $description);
         }
     }
 

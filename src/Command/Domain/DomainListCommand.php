@@ -23,7 +23,7 @@ class DomainListCommand extends PlatformCommand
           ->addOption(
             'project',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'The project ID'
           );
     }

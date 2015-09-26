@@ -25,7 +25,7 @@ class ProjectListCommand extends PlatformCommand
           ->addOption(
             'refresh',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'Whether to refresh the list.',
             1
           );
