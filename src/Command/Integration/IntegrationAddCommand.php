@@ -6,9 +6,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationAddCommand extends IntegrationCommand
 {
-
-    protected $values = array();
-
     /**
      * {@inheritdoc}
      */
@@ -17,7 +14,7 @@ class IntegrationAddCommand extends IntegrationCommand
         $this
           ->setName('integration:add')
           ->setDescription('Add an integration to the project');
-        $this->setUpOptions();
+        $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption();
         $this->addExample(
           'Add an integration with a GitHub repository',
@@ -29,14 +26,13 @@ class IntegrationAddCommand extends IntegrationCommand
     {
         $this->validateInput($input);
 
-        if (!$this->validateOptions($input)) {
-            return 1;
-        }
+        $values = $this->getForm()
+          ->resolveOptions($input, $this->stdErr, $this->getHelper('question'));
 
         $integration = $this->getSelectedProject()
-                            ->addIntegration($this->values['type'], $this->values);
+                            ->addIntegration($values['type'], $values);
         $id = $integration['id'];
-        $this->stdErr->writeln("Integration <info>$id</info> created for <info>{$this->values['type']}</info>");
+        $this->stdErr->writeln("Integration <info>$id</info> created for <info>{$values['type']}</info>");
 
         $output->writeln($this->formatIntegrationData($integration));
 
