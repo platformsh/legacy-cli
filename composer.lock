@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "8e96a96ea1ffec2135b4988557a96edd",
+    "hash": "b03999a553fa2e1c44770c1ef88b335b",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -719,16 +719,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.3",
+            "version": "v0.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "73b44a9d96f0301e29e15bb459cfdc74b7230fc2"
+                "reference": "86f79afdcb46fd4f8cb04573ae1011fd29713f39"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/73b44a9d96f0301e29e15bb459cfdc74b7230fc2",
-                "reference": "73b44a9d96f0301e29e15bb459cfdc74b7230fc2",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/86f79afdcb46fd4f8cb04573ae1011fd29713f39",
+                "reference": "86f79afdcb46fd4f8cb04573ae1011fd29713f39",
                 "shasum": ""
             },
             "require": {
@@ -753,7 +753,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2015-09-30 14:50:41"
+            "time": "2015-10-03 10:09:34"
         },
         {
             "name": "react/promise",
