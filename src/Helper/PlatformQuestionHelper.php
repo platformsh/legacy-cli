@@ -62,6 +62,11 @@ class PlatformQuestionHelper extends QuestionHelper
         $defaultKey = $default !== null ? array_search($default, $itemList) : null;
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
         $question->setMaxAttempts(5);
+
+        // Unfortunately the default autocompletion can cause '2' to be
+        // completed to '20', etc.
+        $question->setAutocompleterValues(null);
+
         $choice = $this->ask($input, $output, $question);
         $choiceKey = array_search($choice, $items);
         if ($choiceKey === false) {
