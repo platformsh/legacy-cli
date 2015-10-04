@@ -13,8 +13,8 @@ class SelfBuildCommand extends PlatformCommand
         $this
           ->setName('self-build')
           ->setDescription('Build a new package of the CLI')
-          ->addOption('key', null, InputOption::VALUE_OPTIONAL, 'The path to a private key')
-          ->addOption('output', null, InputOption::VALUE_OPTIONAL, 'The output filename');
+          ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
+          ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename');
         $this->setHiddenInList();
     }
 

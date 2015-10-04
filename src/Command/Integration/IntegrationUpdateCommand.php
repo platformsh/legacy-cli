@@ -7,9 +7,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationUpdateCommand extends IntegrationCommand
 {
-
-    protected $values = array();
-
     /**
      * {@inheritdoc}
      */
@@ -19,7 +16,7 @@ class IntegrationUpdateCommand extends IntegrationCommand
           ->setName('integration:update')
           ->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
           ->setDescription('Update an integration');
-        $this->setUpOptions();
+        $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption();
         $this->addExample('Switch on the "fetch branches" option for a specific integration', 'ZXhhbXBsZSB --fetch-branches 1');
     }
@@ -36,12 +33,22 @@ class IntegrationUpdateCommand extends IntegrationCommand
 
             return 1;
         }
-        $this->values = $integration->getProperties();
-        if (!$this->validateOptions($input)) {
-            return 1;
+
+        $values = [];
+        $form = $this->getForm();
+        $currentValues = $integration->getProperties();
+        foreach ($form->getFields() as $key => $field) {
+            $value = $field->getValueFromInput($input);
+            if ($value !== null && $currentValues[$key] != $value) {
+                $values[$key] = $value;
+            }
         }
-        $integration->update($this->values);
-        $this->stdErr->writeln("Integration <info>$id</info> (<info>{$this->values['type']}</info>) updated");
+        if (!$values) {
+            throw new \InvalidArgumentException("No values were provided to update");
+        }
+
+        $integration->update($values);
+        $this->stdErr->writeln("Integration <info>$id</info> (<info>{$integration->type}</info>) updated");
 
         $output->writeln($this->formatIntegrationData($integration));
 

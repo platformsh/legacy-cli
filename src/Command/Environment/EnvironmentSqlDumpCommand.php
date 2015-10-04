@@ -17,7 +17,7 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
             ->setName('environment:sql-dump')
             ->setAliases(array('sql-dump'))
             ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_OPTIONAL, 'A filename where the dump should be saved. Defaults to "environment-dump.sql" in the project root');
+            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "environment-dump.sql" in the project root');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
     }
 

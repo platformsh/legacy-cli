@@ -45,14 +45,14 @@ class EnvironmentListCommand extends PlatformCommand
           ->addOption(
             'show',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
             'name,status'
           )
           ->addOption(
             'refresh',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'Whether to refresh the list.',
             1
           );

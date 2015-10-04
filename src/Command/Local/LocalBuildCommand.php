@@ -31,13 +31,13 @@ class LocalBuildCommand extends PlatformCommand
           ->addOption(
             'source',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'The source directory. Default: ' . LocalProject::REPOSITORY_DIR
           )
           ->addOption(
             'destination',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'The destination, to which the web root of each app will be symlinked. Default: ' . LocalProject::WEB_ROOT
           )
           ->addOption(
@@ -79,7 +79,7 @@ class LocalBuildCommand extends PlatformCommand
           ->addOption(
             'concurrency',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'Drush: set the number of concurrent projects that will be processed at the same time',
             $this->defaultDrushConcurrency
           )

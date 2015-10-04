@@ -21,7 +21,7 @@ class SshKeyAddCommand extends PlatformCommand
             InputArgument::OPTIONAL,
             'The path to an existing SSH key. Leave blank to generate a new key'
           )
-          ->addOption('name', null, InputOption::VALUE_OPTIONAL, 'A name to identify the key');
+          ->addOption('name', null, InputOption::VALUE_REQUIRED, 'A name to identify the key');
         $this->addExample('Add an existing public key', '~/.ssh/id_rsa.pub');
     }
 

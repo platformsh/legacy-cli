@@ -32,7 +32,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
           ->addOption(
             'enabled',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'Whether access control should be enabled: 1 to enable, 0 to disable'
           );
         $this->addProjectOption()

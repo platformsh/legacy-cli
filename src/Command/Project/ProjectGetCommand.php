@@ -37,7 +37,7 @@ class ProjectGetCommand extends PlatformCommand
           ->addOption(
             'environment',
             'e',
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             "The environment ID to clone. Defaults to 'master'"
           )
           ->addOption(
@@ -49,7 +49,7 @@ class ProjectGetCommand extends PlatformCommand
           ->addOption(
             'host',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             "The project's API hostname"
           );
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
@@ -67,7 +67,7 @@ class ProjectGetCommand extends PlatformCommand
                 return 1;
             }
         }
-        $project = $this->getProject($projectId, $input->getOption('host'));
+        $project = $this->getProject($projectId, $input->getOption('host'), true);
         if (!$project) {
             $this->stdErr->writeln("<error>Project not found: $projectId</error>");
 

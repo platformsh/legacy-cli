@@ -458,12 +458,6 @@ abstract class PlatformCommand extends Command
             $host = parse_url($url, PHP_URL_HOST);
         }
 
-        // Find the project in the user's main project list.
-        $projects = $this->getProjects($refresh);
-        if (isset($projects[$id])) {
-            return $projects[$id];
-        }
-
         // Get the project directly if a hostname is specified.
         if (!empty($host)) {
             $scheme = 'https';
@@ -472,6 +466,12 @@ abstract class PlatformCommand extends Command
                 $host = substr($host, $pos + 2);
             }
             return $this->getClient()->getProjectDirect($id, $host, $scheme != 'http');
+        }
+
+        // Otherwise, find the project in the user's main project list.
+        $projects = $this->getProjects($refresh);
+        if (isset($projects[$id])) {
+            return $projects[$id];
         }
 
         return false;
@@ -656,8 +656,8 @@ abstract class PlatformCommand extends Command
      */
     protected function addProjectOption()
     {
-        $this->addOption('project', 'p', InputOption::VALUE_OPTIONAL, 'The project ID');
-        $this->addOption('host', null, InputOption::VALUE_OPTIONAL, "The project's API hostname");
+        $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID');
+        $this->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname");
 
         return $this;
     }
@@ -669,7 +669,7 @@ abstract class PlatformCommand extends Command
      */
     protected function addEnvironmentOption()
     {
-        return $this->addOption('environment', 'e', InputOption::VALUE_OPTIONAL, 'The environment ID');
+        return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, 'The environment ID');
     }
 
     /**
@@ -679,7 +679,7 @@ abstract class PlatformCommand extends Command
      */
     protected function addAppOption()
     {
-        return $this->addOption('app', null, InputOption::VALUE_OPTIONAL, 'The remote application name');
+        return $this->addOption('app', null, InputOption::VALUE_REQUIRED, 'The remote application name');
     }
 
     /**

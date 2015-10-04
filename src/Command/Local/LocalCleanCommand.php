@@ -20,14 +20,14 @@ class LocalCleanCommand extends PlatformCommand
           ->addOption(
             'keep',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'The maximum number of builds to keep',
             5
           )
           ->addOption(
             'max-age',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'The maximum age of builds, in seconds. Ignored if not set.'
           )
           ->addOption(

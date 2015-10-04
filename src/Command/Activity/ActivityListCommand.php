@@ -18,8 +18,8 @@ class ActivityListCommand extends PlatformCommand
         $this
           ->setName('activity:list')
           ->setAliases(array('activities'))
-          ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
-          ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of results displayed', 5)
+          ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
+          ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 5)
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
           ->setDescription('Get the most recent activities for an environment');
         $this->addProjectOption()

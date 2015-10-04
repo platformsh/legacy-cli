@@ -17,7 +17,7 @@ class SnapshotListCommand extends PlatformCommand
           ->setName('snapshot:list')
           ->setAliases(array('snapshots'))
           ->setDescription('List available snapshots of an environment')
-          ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of snapshots to list', 10);
+          ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10);
         $this->addProjectOption()
              ->addEnvironmentOption();
     }

@@ -21,11 +21,11 @@ class ActivityLogCommand extends PlatformCommand
           ->addOption(
             'refresh',
             null,
-            InputOption::VALUE_OPTIONAL,
+            InputOption::VALUE_REQUIRED,
             'Log refresh interval (seconds). Set to 0 to disable refreshing.',
             1
           )
-          ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Filter activities by type')
+          ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
           ->setDescription('Display the log for an environment activity');
         $this->addProjectOption()
              ->addEnvironmentOption();
