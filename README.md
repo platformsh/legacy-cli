@@ -127,6 +127,7 @@ local
   local:drush-aliases (drush-aliases)       Find the project's Drush aliases
   local:init (init)                         Create a local project file structure from a Git repository
 project
+  project:delete                            Delete a project
   project:get (get)                         Clone and build a project locally
   project:list (projects)                   Get a list of all active projects
   project:metadata                          Read or set metadata for a project
