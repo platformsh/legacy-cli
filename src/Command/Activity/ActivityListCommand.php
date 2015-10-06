@@ -21,6 +21,7 @@ class ActivityListCommand extends PlatformCommand
           ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
           ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 5)
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
+          ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
           ->setDescription('Get the most recent activities for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
@@ -34,8 +35,14 @@ class ActivityListCommand extends PlatformCommand
 
         $environment = $this->getSelectedEnvironment();
 
+        $startsAt = null;
+        if ($input->getOption('start') && !($startsAt = strtotime($input->getOption('start')))) {
+            $this->stdErr->writeln('Invalid date: <error>' . $input->getOption('start') . '</error>');
+            return 1;
+        }
+
         $limit = (int) $input->getOption('limit');
-        $activities = $environment->getActivities($limit, $input->getOption('type'));
+        $activities = $environment->getActivities($limit, $input->getOption('type'), $startsAt);
         if (!$activities) {
             $this->stdErr->writeln('No activities found');
 

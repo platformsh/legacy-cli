@@ -17,7 +17,8 @@ class SnapshotListCommand extends PlatformCommand
           ->setName('snapshot:list')
           ->setAliases(array('snapshots'))
           ->setDescription('List available snapshots of an environment')
-          ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10);
+          ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
+          ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -28,12 +29,16 @@ class SnapshotListCommand extends PlatformCommand
 
         $environment = $this->getSelectedEnvironment();
 
-        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $startsAt = null;
+        if ($input->getOption('start') && !($startsAt = strtotime($input->getOption('start')))) {
+            $this->stdErr->writeln('Invalid date: <error>' . $input->getOption('start') . '</error>');
+            return 1;
+        }
 
-        $stdErr->writeln("Finding snapshots for the environment <info>{$environment['id']}</info>");
-        $results = $environment->getActivities($input->getOption('limit'), 'environment.backup');
+        $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment['id']}</info>");
+        $results = $environment->getActivities($input->getOption('limit'), 'environment.backup', $startsAt);
         if (!$results) {
-            $stdErr->writeln('No snapshots found');
+            $this->stdErr->writeln('No snapshots found');
             return 1;
         }
 
