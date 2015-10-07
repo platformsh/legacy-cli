@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Exception;
 
-class LoginRequiredException extends HttpExceptionBase
+class LoginRequiredException extends HttpException
 {
     protected $message = 'Not logged in.';
     protected $code = 3;

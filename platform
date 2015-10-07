@@ -3,7 +3,7 @@
 
 define('CLI_ROOT', __DIR__);
 
-error_reporting(E_ERROR | E_WARNING | E_PARSE);
+error_reporting(getenv('PLATFORMSH_CLI_DEBUG') ? E_ALL : false);
 
 if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
     require CLI_ROOT . '/vendor/autoload.php';
