@@ -22,11 +22,12 @@ class ActivityListCommand extends PlatformCommand
           ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 5)
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
           ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
-          ->setDescription('Get the most recent activities for an environment');
+          ->setDescription('Get a list of activities for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List recent activities on the current environment')
-          ->addExample('List recent pushes', '--type environment.push');
+          ->addExample('List recent pushes', '--type environment.push')
+          ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -73,7 +74,7 @@ class ActivityListCommand extends PlatformCommand
             return 0;
         }
 
-        $this->stdErr->writeln("Recent activities for the environment <info>" . $environment['id'] . "</info>");
+        $this->stdErr->writeln("Activities for the environment <info>" . $environment['id'] . "</info>");
         $table = new Table($output);
         $table->setHeaders($headers);
         $table->addRows($rows);

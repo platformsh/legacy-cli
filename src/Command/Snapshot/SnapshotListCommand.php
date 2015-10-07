@@ -21,6 +21,8 @@ class SnapshotListCommand extends PlatformCommand
           ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
         $this->addProjectOption()
              ->addEnvironmentOption();
+        $this->addExample('List the most recent snapshots')
+          ->addExample('List snapshots made before last week', "--start '1 week ago'");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
