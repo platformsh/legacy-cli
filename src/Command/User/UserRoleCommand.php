@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,7 +19,8 @@ class UserRoleCommand extends UserCommand
           ->addArgument('email', InputArgument::REQUIRED, "The user's email address")
           ->addOption('role', 'r', InputOption::VALUE_REQUIRED, "A new role for the user")
           ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", 'project')
-          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only');
+          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only')
+          ->addOption('wait', null, InputOption::VALUE_NONE, 'Wait for environment(s) to be redeployed, if necessary');
         $this->addProjectOption()
           ->addEnvironmentOption();
         $this->addExample("View Alice's role on the project", 'alice@example.com');
@@ -85,8 +88,16 @@ class UserRoleCommand extends UserCommand
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
         elseif ($role && $level == 'environment') {
-            $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
+            $result = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
             $this->stdErr->writeln("User <info>$email</info> updated");
+            if ($input->getOption('wait') && $result instanceof Activity) {
+                ActivityUtil::waitAndLog(
+                  $result,
+                  $this->stdErr,
+                  'Environment redeployed successfully',
+                  'Failed to redeploy environment'
+                );
+            }
         }
 
         if ($input->getOption('pipe')) {

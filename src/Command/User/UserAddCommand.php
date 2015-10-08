@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -16,7 +18,8 @@ class UserAddCommand extends UserCommand
           ->setName('user:add')
           ->setDescription('Add a user to the project')
           ->addArgument('email', InputArgument::OPTIONAL, "The new user's email address")
-          ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'");
+          ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'")
+          ->addOption('wait', null, InputOption::VALUE_NONE, 'Wait for environment(s) to be redeployed, if necessary');
         $this->addProjectOption();
         $this->addExample('Add Alice as a new administrator', 'alice@example.com --role admin');
     }
@@ -106,7 +109,26 @@ class UserAddCommand extends UserCommand
             }
         }
 
-        $project->addUser($email, $projectRole);
+        $this->stdErr->writeln("Adding the user to the project");
+        $user = $project->addUser($email, $projectRole);
+
+        if (!empty($environmentRoles)) {
+            $this->stdErr->writeln("Setting environment role(s)");
+            $activities = [];
+            foreach ($environmentRoles as $environmentId => $role) {
+                if (!isset($environments[$environmentId])) {
+                    $this->stdErr->writeln("<error>Environment not found: $environmentId</error>");
+                    continue;
+                }
+                $result = $user->changeEnvironmentRole($environments[$environmentId], $role);
+                if ($result instanceof Activity) {
+                    $activities[] = $result;
+                }
+            }
+            if ($input->getOption('wait')) {
+                ActivityUtil::waitMultiple($activities, $this->stdErr, 'Waiting for environment(s) to be redeployed');
+            }
+        }
 
         $this->stdErr->writeln("User <info>$email</info> created");
         return 0;
