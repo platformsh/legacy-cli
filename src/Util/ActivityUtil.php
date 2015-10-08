@@ -49,15 +49,20 @@ abstract class ActivityUtil
      *
      * @param Activity[]      $activities
      * @param OutputInterface $output
+     * @param string|null $message
      */
-    public static function waitMultiple(array $activities, OutputInterface $output)
+    public static function waitMultiple(array $activities, OutputInterface $output, $message = null)
     {
         $count = count($activities);
         if ($count <= 0) {
             return;
         }
         $complete = 0;
-        $output->writeln("Waiting...");
+        if ($message === null) {
+            $activitiesPlural = $count > 1 ? 'activities' : 'activity';
+            $message = "Waiting for the $activitiesPlural to complete...";
+        }
+        $output->writeln($message);
         $bar = new ProgressBar($output);
         $bar->start($count);
         $bar->setFormat('verbose');
