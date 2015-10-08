@@ -37,9 +37,23 @@ class DomainAddCommand extends DomainCommand
             return 1;
         }
 
+        $project = $this->getSelectedProject();
+
+        $project->ensureFull();
+        $subscription_data = $project->getProperty('subscription');
+        if (!empty($subscription_data['plan']) && $subscription_data['plan'] === 'development') {
+            $this->stdErr->writeln("The project '{$project->title}' is on a Development plan, so it cannot have a custom domain.");
+
+            $account = $this->getClient()->getAccountInfo();
+            if ($account['uuid'] == $project->owner) {
+                $this->stdErr->writeln("Visit <info>https://accounts.platform.sh/</info> to change the plan.");
+            }
+
+            return 1;
+        }
+
         try {
-            $domain = $this->getSelectedProject()
-                           ->addDomain($this->domainName, $this->sslOptions);
+            $domain = $project->addDomain($this->domainName, $this->sslOptions);
         }
         catch (ClientException $e) {
             // Catch 409 Conflict errors.
