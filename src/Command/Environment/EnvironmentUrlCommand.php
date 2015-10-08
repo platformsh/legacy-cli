@@ -55,7 +55,7 @@ class EnvironmentUrlCommand extends UrlCommandBase
         $url = $urls[0];
 
         // Allow the user to choose a URL.
-        if ($input->getOption('browser') == 0) {
+        if ($input->getOption('browser') !== '0') {
             /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
             $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to choose a URL', $input, $output, $url);
