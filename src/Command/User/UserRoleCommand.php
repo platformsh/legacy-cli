@@ -20,7 +20,7 @@ class UserRoleCommand extends UserCommand
           ->addOption('role', 'r', InputOption::VALUE_REQUIRED, "A new role for the user")
           ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", 'project')
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only')
-          ->addOption('wait', null, InputOption::VALUE_NONE, 'Wait for environment(s) to be redeployed, if necessary');
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for environment(s) to be redeployed');
         $this->addProjectOption()
           ->addEnvironmentOption();
         $this->addExample("View Alice's role on the project", 'alice@example.com');
@@ -90,7 +90,7 @@ class UserRoleCommand extends UserCommand
         elseif ($role && $level == 'environment') {
             $result = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
             $this->stdErr->writeln("User <info>$email</info> updated");
-            if ($input->getOption('wait') && $result instanceof Activity) {
+            if (!$input->getOption('no-wait') && $result instanceof Activity) {
                 ActivityUtil::waitAndLog(
                   $result,
                   $this->stdErr,

@@ -19,7 +19,7 @@ class UserAddCommand extends UserCommand
           ->setDescription('Add a user to the project')
           ->addArgument('email', InputArgument::OPTIONAL, "The new user's email address")
           ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'")
-          ->addOption('wait', null, InputOption::VALUE_NONE, 'Wait for environment(s) to be redeployed, if necessary');
+          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for environment(s) to be redeployed');
         $this->addProjectOption();
         $this->addExample('Add Alice as a new administrator', 'alice@example.com --role admin');
     }
@@ -125,7 +125,7 @@ class UserAddCommand extends UserCommand
                     $activities[] = $result;
                 }
             }
-            if ($input->getOption('wait')) {
+            if (!$input->getOption('no-wait')) {
                 ActivityUtil::waitMultiple($activities, $this->stdErr, 'Waiting for environment(s) to be redeployed');
             }
         }
