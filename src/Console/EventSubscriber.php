@@ -3,9 +3,10 @@ namespace Platformsh\Cli\Console;
 
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\ParseException;
+use GuzzleHttp\Exception\ServerException;
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Exception\ConnectionFailedException;
+use Platformsh\Cli\Exception\HttpException;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\PermissionDeniedException;
 use Platformsh\Client\Exception\EnvironmentStateException;
@@ -44,38 +45,40 @@ class EventSubscriber implements EventSubscriberInterface
             $event->stopPropagation();
         }
 
-        // Handle Guzzle client exceptions, i.e. HTTP 4xx errors.
-        if ($exception instanceof ClientException && ($response = $exception->getResponse())) {
+        // Handle Guzzle exceptions, i.e. HTTP 4xx or 5xx errors.
+        if (($exception instanceof ClientException || $exception instanceof ServerException) && ($response = $exception->getResponse())) {
             $request = $exception->getRequest();
-            try {
-                $response->getBody()->seek(0);
-                $json = $response->json();
-            }
-            catch (ParseException $e) {
-                $json = [];
-            }
+            $response->getBody()->seek(0);
+            $json = (array) json_decode($response->getBody()->getContents(), true);
 
             // Create a friendlier message for the OAuth2 "Invalid refresh token"
             // error.
             if ($response->getStatusCode() === 400 && isset($json['error_description']) && $json['error_description'] === 'Invalid refresh token') {
                 $event->setException(new LoginRequiredException(
                     "Invalid refresh token: please log in again.",
-                    $request
+                    $request,
+                    $response
                 ));
                 $event->stopPropagation();
             }
             elseif ($response->getStatusCode() === 401) {
                 $event->setException(new LoginRequiredException(
                     "Unauthorized: please log in again.",
-                     $request
+                     $request,
+                     $response
                 ));
                 $event->stopPropagation();
             }
             elseif ($response->getStatusCode() === 403) {
                 $event->setException(new PermissionDeniedException(
-                  "Permission denied. Check your project or environment permissions.",
-                  $request
+                    "Permission denied. Check your project or environment permissions.",
+                    $request,
+                    $response
                 ));
+                $event->stopPropagation();
+            }
+            else {
+                $event->setException(new HttpException(null, $request, $response));
                 $event->stopPropagation();
             }
         }
