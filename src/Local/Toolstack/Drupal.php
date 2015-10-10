@@ -362,15 +362,9 @@ class Drupal extends ToolstackBase
         $defaultSettingsPhp = 'settings.php';
         $defaultSettingsLocal = 'settings.local.php';
 
-        // Override settings.php and settings.local.php for Drupal 8.
+        // Override settings.php for Drupal 8.
         if ($this->isDrupal8($webRoot)) {
             $defaultSettingsPhp = '8/settings.php';
-            $defaultSettingsLocal = '8/settings.local.php';
-
-            if ($shared && !file_exists($shared . '/config')) {
-                mkdir($shared . '/config/active', 0775, true);
-                mkdir($shared . '/config/staging', 0775, true);
-            }
         }
 
         // Create a settings.php if it is missing.
