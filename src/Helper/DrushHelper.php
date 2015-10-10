@@ -47,14 +47,16 @@ class DrushHelper extends Helper
     /**
      * Get the installed Drush version.
      *
+     * @param bool $reset
+     *
      * @return string
      *
-     * @throws \Exception
+     * @throws \Exception if the version can't be found.
      */
-    public function getVersion()
+    public function getVersion($reset = false)
     {
         static $version;
-        if (isset($version)) {
+        if (!$reset && isset($version)) {
             return $version;
         }
         exec($this->getDrushExecutable() . ' --version', $drushVersion, $returnCode);
@@ -62,8 +64,13 @@ class DrushHelper extends Helper
             $message = $returnCode == 127 ? 'Error finding Drush version' : 'Drush is not installed';
             throw new \Exception($message, $returnCode);
         }
-        $versionParts = explode(':', $drushVersion[0], 2);
-        $version = trim($versionParts[1]);
+
+        // Parse the version from the Drush output. It should be a string a bit
+        // like " Drush Version   :  8.0.0-beta14 ".
+        if (!preg_match('/:\s*([0-9]+\.[a-z0-9\-\.]+)\s*$/', $drushVersion[0], $matches)) {
+            throw new \Exception("Unexpected 'drush --version' output: \n" . implode("\n", $drushVersion));
+        }
+        $version = $matches[1];
 
         return $version;
     }
@@ -71,19 +78,20 @@ class DrushHelper extends Helper
     /**
      * @param string $minVersion
      * @param bool   $attemptInstall
+     * @param bool   $reset
      *
      * @throws \Exception
      */
-    public function ensureInstalled($minVersion = '6', $attemptInstall = true)
+    public function ensureInstalled($minVersion = '6', $attemptInstall = true, $reset = false)
     {
         try {
-            $version = $this->getVersion();
+            $version = $this->getVersion($reset);
         }
         catch (\Exception $e) {
             if ($e->getCode() === 127) {
                 // Retry installing, if the default Drush does not exist.
                 if ($attemptInstall && !getenv('PLATFORMSH_CLI_DRUSH') && $this->install()) {
-                    $this->ensureInstalled($minVersion, false);
+                    $this->ensureInstalled($minVersion, false, true);
 
                     return;
                 }
@@ -91,10 +99,7 @@ class DrushHelper extends Helper
 
             throw $e;
         }
-        if (!$minVersion) {
-            return;
-        }
-        if (version_compare($version, $minVersion, '<')) {
+        if ($minVersion && version_compare($version, $minVersion, '<')) {
             throw new \Exception(
               sprintf('Drush version %s found, but %s (or later) is required', $version, $minVersion)
             );
