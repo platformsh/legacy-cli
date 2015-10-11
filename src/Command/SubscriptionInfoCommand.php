@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SubscriptionMetadataCommand extends PlatformCommand
+class SubscriptionInfoCommand extends PlatformCommand
 {
     /** @var PropertyFormatter */
     protected $formatter;
@@ -20,12 +20,12 @@ class SubscriptionMetadataCommand extends PlatformCommand
     protected function configure()
     {
         $this
-          ->setName('subscription:metadata')
+          ->setName('subscription:info')
           ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
-          ->setDescription('Read metadata for a subscription');
+          ->setDescription('Read subscription properties');
         $this->addProjectOption();
         $this->setHiddenInList();
-        $this->addExample('View all subscription metadata')
+        $this->addExample('View all subscription properties')
           ->addExample('View the subscription status', 'status')
           ->addExample('View the storage limit (in MiB)', 'storage');
     }
@@ -67,8 +67,6 @@ class SubscriptionMetadataCommand extends PlatformCommand
      */
     protected function listProperties(Subscription $subscription)
     {
-        $this->stdErr->writeln("Metadata for the subscription <info>" . $subscription->id . "</info>:");
-
         $table = new Table($this->output);
         $table->setHeaders(array("Property", "Value"));
         foreach ($subscription->getProperties() as $key => $value) {

@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentMetadataCommand extends PlatformCommand
+class EnvironmentInfoCommand extends PlatformCommand
 {
     /** @var PropertyFormatter */
     protected $formatter;
@@ -21,19 +21,20 @@ class EnvironmentMetadataCommand extends PlatformCommand
     protected function configure()
     {
         $this
-          ->setName('environment:metadata')
+          ->setName('environment:info')
           ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
           ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
           ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-          ->setDescription('Read or set metadata for an environment');
+          ->setDescription('Read or set properties for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
-        $this->addExample('Read all environment metadata')
+        $this->addExample('Read all environment properties')
           ->addExample("Show the environment's status", 'status')
           ->addExample('Show the date the environment was created', 'created_at')
           ->addExample('Enable email sending', 'enable_smtp true')
           ->addExample('Change the environment title', 'title "New feature"')
           ->addExample("Change the environment's parent branch", 'parent sprint-2');
+        $this->setHiddenAliases(array('environment:metadata'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -72,8 +73,6 @@ class EnvironmentMetadataCommand extends PlatformCommand
      */
     protected function listProperties(Environment $environment, OutputInterface $output)
     {
-        $this->stdErr->writeln("Metadata for the environment <info>" . $environment['id'] . "</info>:");
-
         $table = new Table($output);
         $table->setHeaders(array("Property", "Value"));
         foreach ($environment->getProperties() as $key => $value) {

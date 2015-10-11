@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectMetadataCommand extends PlatformCommand
+class ProjectInfoCommand extends PlatformCommand
 {
     /** @var PropertyFormatter */
     protected $formatter;
@@ -21,15 +21,16 @@ class ProjectMetadataCommand extends PlatformCommand
     protected function configure()
     {
         $this
-          ->setName('project:metadata')
+          ->setName('project:info')
           ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
           ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
           ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-          ->setDescription('Read or set metadata for a project');
+          ->setDescription('Read or set properties for a project');
         $this->addProjectOption();
-        $this->addExample('Read all project metadata')
+        $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
+        $this->setHiddenAliases(array('project:metadata'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -67,8 +68,6 @@ class ProjectMetadataCommand extends PlatformCommand
      */
     protected function listProperties(Project $project, OutputInterface $output)
     {
-        $this->stdErr->writeln("Metadata for the project <info>" . $project['id'] . "</info>:");
-
         // Properties not to display, as they are internal, deprecated, or
         // otherwise confusing.
         $blacklist = array(

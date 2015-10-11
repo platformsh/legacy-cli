@@ -112,7 +112,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentDrushCommand();
         $commands[] = new Command\Environment\EnvironmentHttpAccessCommand();
         $commands[] = new Command\Environment\EnvironmentListCommand();
-        $commands[] = new Command\Environment\EnvironmentMetadataCommand();
+        $commands[] = new Command\Environment\EnvironmentInfoCommand();
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentRoutesCommand();
@@ -134,7 +134,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Project\ProjectDeleteCommand();
         $commands[] = new Command\Project\ProjectGetCommand();
         $commands[] = new Command\Project\ProjectListCommand();
-        $commands[] = new Command\Project\ProjectMetadataCommand();
+        $commands[] = new Command\Project\ProjectInfoCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
@@ -143,7 +143,7 @@ class Application extends ParentApplication
         $commands[] = new Command\SshKey\SshKeyAddCommand();
         $commands[] = new Command\SshKey\SshKeyDeleteCommand();
         $commands[] = new Command\SshKey\SshKeyListCommand();
-        $commands[] = new Command\SubscriptionMetadataCommand();
+        $commands[] = new Command\SubscriptionInfoCommand();
         $commands[] = new Command\User\UserAddCommand();
         $commands[] = new Command\User\UserDeleteCommand();
         $commands[] = new Command\User\UserListCommand();
