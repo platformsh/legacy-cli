@@ -30,7 +30,7 @@ class WebCommand extends UrlCommandBase
 
         $project = $this->hasSelectedProject() ? $this->getSelectedProject() : false;
 
-        $url = 'https://accounts.platform.sh/platform/login';
+        $url = 'https://accounts.platform.sh/';
         if ($project) {
             $url = $project->getLink('#ui');
             if ($this->hasSelectedEnvironment()) {
