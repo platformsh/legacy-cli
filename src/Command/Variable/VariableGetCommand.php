@@ -22,10 +22,11 @@ class VariableGetCommand extends PlatformCommand
           ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only')
           ->addOption('ssh', null, InputOption::VALUE_NONE, 'Use SSH to get the currently active variables')
-          ->setDescription('Get a variable for an environment');
+          ->setDescription('View variable(s) for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
-        $this->addExample('Get the variable "example"', 'example');
+        $this->addExample('View the variable "example"', 'example');
+        $this->setHiddenAliases(array('variable:list'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

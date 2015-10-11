@@ -20,6 +20,7 @@ class IntegrationGetCommand extends IntegrationCommand
           ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
           ->setDescription('View project integration(s)');
         $this->addProjectOption();
+        $this->setHiddenAliases(array('integration:list'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
