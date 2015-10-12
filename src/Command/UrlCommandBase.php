@@ -19,7 +19,7 @@ abstract class UrlCommandBase extends PlatformCommand
         )->addOption(
           'pipe',
           null,
-          InputOption::VALUE_REQUIRED,
+          InputOption::VALUE_NONE,
           'Output the raw URL, suitable for piping to another command.'
         );
     }

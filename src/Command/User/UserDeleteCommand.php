@@ -54,6 +54,14 @@ class UserDeleteCommand extends PlatformCommand
         $selectedUser->delete();
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
+
+        // If the user was deleting themselves from the project, then invalidate
+        // the projects cache.
+        $account = $this->getClient()->getAccountInfo();
+        if ($account['uuid'] === $selectedUser->id) {
+            $this->clearProjectsCache();
+        }
+
         return 0;
     }
 

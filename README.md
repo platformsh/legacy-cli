@@ -1,6 +1,6 @@
 The **Platform.sh CLI** is the official command-line interface for [Platform.sh](https://platform.sh). Use this tool to interact with your [Platform.sh](https://platform.sh) projects, and to build them locally for development purposes.
 
-[![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli)
+[![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli) [![Latest Stable Version](https://poser.pugx.org/platformsh/cli/v/stable)](https://github.com/platformsh/platformsh-cli/releases) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/master/LICENSE)
 
 ### Requirements
 
@@ -105,9 +105,9 @@ environment
   environment:delete                        Delete an environment
   environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
+  environment:info                          Read or set properties for an environment
   environment:list (environments)           Get a list of all environments
   environment:merge (merge)                 Merge an environment
-  environment:metadata                      Read or set metadata for an environment
   environment:relationships (relationships) List an environment's relationships
   environment:routes (routes)               List an environment's routes
   environment:set-remote                    Set the remote environment to track for a branch
@@ -129,8 +129,8 @@ local
 project
   project:delete                            Delete a project
   project:get (get)                         Clone and build a project locally
+  project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
-  project:metadata                          Read or set metadata for a project
 snapshot
   snapshot:create                           Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment

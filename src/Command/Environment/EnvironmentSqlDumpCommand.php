@@ -64,7 +64,7 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = "pg_dump --clean --single-transaction"
+                $dumpCommand = "pg_dump --clean"
                   . " postgresql://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
                 break;
 

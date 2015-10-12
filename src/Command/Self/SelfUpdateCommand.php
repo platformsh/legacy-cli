@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Self;
 
 use Herrera\Phar\Update\Manager;
 use Herrera\Phar\Update\Manifest;
+use Herrera\Version\Parser;
 use Platformsh\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,8 +24,9 @@ class SelfUpdateCommand extends PlatformCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $manifest = $input->getOption('manifest') ?: 'https://platform.sh/cli/manifest.json';
+        $manifestUrl = $input->getOption('manifest') ?: 'https://platform.sh/cli/manifest.json';
         $currentVersion = $input->getOption('current-version') ?: $this->getApplication()->getVersion();
+        $onlyMinor = !$input->getOption('major');
 
         if (extension_loaded('Phar') && !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln('This instance of the CLI was not installed as a Phar archive.');
@@ -34,23 +36,44 @@ class SelfUpdateCommand extends PlatformCommand
             return 1;
         }
 
-        $manager = new Manager(Manifest::loadFile($manifest));
+        $this->stdErr->writeln("Checking for updates");
+
+        // Download the manifest file.
+        $manifest = Manifest::loadFile($manifestUrl);
+
+        // Instantiate the update manager.
+        $manager = new Manager($manifest);
         if (isset($localPhar)) {
             $manager->setRunningFile($localPhar);
         }
 
-        $onlyMinor = !$input->getOption('major');
+        // Find the most recent available version in the manifest.
+        $update = $manifest->findRecent(
+          Parser::toVersion($currentVersion),
+          $onlyMinor
+        );
 
-        $updated = $manager->update($currentVersion, $onlyMinor);
-        if ($updated) {
-            $this->stdErr->writeln("Successfully updated");
-            $localPhar = $manager->getRunningFile();
-            passthru('php ' . escapeshellarg($localPhar) . ' --version');
-        }
-        else {
+        if ($update === null) {
             $this->stdErr->writeln("No updates found. The Platform.sh CLI is up-to-date.");
+            return 0;
         }
 
-        return 0;
+        $newVersionString = $update->getVersion()->__toString();
+        $this->stdErr->writeln("Updating to version $newVersionString");
+
+        // Download the new version.
+        $update->getFile();
+
+        // Replace the current Phar with the new one.
+        $update->copyTo($manager->getRunningFile());
+
+        $this->stdErr->writeln("Successfully updated to version <info>$newVersionString</info>");
+
+        // Errors appear if new classes are instantiated after this stage
+        // (namely, Symfony's ConsoleTerminateEvent). This suggests PHP
+        // can't read files properly from the overwritten Phar, or perhaps it's
+        // because the autoloader's name has changed. We avoid the problem by
+        // terminating now.
+        exit;
     }
 }
