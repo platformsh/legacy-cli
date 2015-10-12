@@ -570,8 +570,6 @@ abstract class PlatformCommand extends Command
 
     /**
      * Clear the projects cache.
-     *
-     * Use this after deleting projects/users.
      */
     protected function clearProjectsCache()
     {
