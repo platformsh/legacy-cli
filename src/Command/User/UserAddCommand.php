@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -53,7 +53,7 @@ class UserAddCommand extends UserCommand
         }
 
         $projectRole = $input->getOption('role');
-        if ($projectRole && !in_array($projectRole, array('admin', 'viewer'))) {
+        if ($projectRole && !in_array($projectRole, ProjectAccess::$roles)) {
             $this->stdErr->writeln("Valid project-level roles are 'admin' or 'viewer'");
             return 1;
         }
@@ -120,13 +120,15 @@ class UserAddCommand extends UserCommand
                     $this->stdErr->writeln("<error>Environment not found: $environmentId</error>");
                     continue;
                 }
-                $result = $user->changeEnvironmentRole($environments[$environmentId], $role);
-                if ($result instanceof Activity) {
-                    $activities[] = $result;
+                $activity = $user->changeEnvironmentRole($environments[$environmentId], $role);
+                if (!$input->getOption('no-wait')) {
+                    ActivityUtil::waitAndLog(
+                      $activity,
+                      $this->stdErr,
+                      "Set role for environment <info>$environmentId</info>",
+                      "Failed to set role for environment <error>$environmentId</error>"
+                    );
                 }
-            }
-            if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitMultiple($activities, $this->stdErr, 'Waiting for environment(s) to be redeployed');
             }
         }
 

@@ -2,7 +2,8 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\EnvironmentAccess;
+use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -55,7 +56,7 @@ class UserRoleCommand extends UserCommand
         }
 
         $currentRole = null;
-        $validRoles = array('admin', 'viewer');
+        $validRoles = ProjectAccess::$roles;
         if ($level == 'project') {
             $currentRole = $selectedUser['role'];
         }
@@ -65,7 +66,7 @@ class UserRoleCommand extends UserCommand
                 return 1;
             }
             $currentRole = $selectedUser->getEnvironmentRole($this->getSelectedEnvironment());
-            $validRoles = array('admin', 'viewer', 'contributor');
+            $validRoles = EnvironmentAccess::$roles;
         }
 
         $role = $input->getOption('role');
@@ -88,11 +89,11 @@ class UserRoleCommand extends UserCommand
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
         elseif ($role && $level == 'environment') {
-            $result = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
+            $activity = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
             $this->stdErr->writeln("User <info>$email</info> updated");
-            if (!$input->getOption('no-wait') && $result instanceof Activity) {
+            if (!$input->getOption('no-wait')) {
                 ActivityUtil::waitAndLog(
-                  $result,
+                  $activity,
                   $this->stdErr,
                   'Environment redeployed successfully',
                   'Failed to redeploy environment'
