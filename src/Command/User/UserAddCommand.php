@@ -46,8 +46,8 @@ class UserAddCommand extends PlatformCommand
         $project = $this->getSelectedProject();
 
         $users = $project->getUsers();
-        foreach ($users as $user) {
-            if ($user->getAccount()['email'] === $email) {
+        foreach ($users as $projectAccess) {
+            if ($projectAccess->getAccount()['email'] === $email) {
                 $this->stdErr->writeln("The user already exists: <comment>$email</comment>");
                 return 1;
             }
@@ -111,7 +111,7 @@ class UserAddCommand extends PlatformCommand
         }
 
         $this->stdErr->writeln("Adding the user to the project");
-        $user = $project->addUser($email, $projectRole);
+        $projectAccess = $project->addUser($email, $projectRole);
 
         if (!empty($environmentRoles)) {
             $this->stdErr->writeln("Setting environment role(s)");
@@ -124,14 +124,14 @@ class UserAddCommand extends PlatformCommand
                 if ($role == 'none') {
                     continue;
                 }
-                $access = $user->getEnvironmentAccess($environments[$environmentId]);
+                $access = $environments[$environmentId]->getUser($projectAccess->id);
                 if ($access) {
                     $this->stdErr->writeln("Modifying the user's role on the environment: <info>$environmentId</info>");
                     $activity = $access->update(['role' => $role]);
                 }
                 else {
                     $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
-                    $activity = $environments[$environmentId]->addUser($user->id, $role);
+                    $activity = $environments[$environmentId]->addUser($projectAccess->id, $role);
                 }
                 if (!$input->getOption('no-wait')) {
                     ActivityUtil::waitAndLog($activity, $this->stdErr);
