@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\CacheUtil;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,8 +21,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
           ->setAliases(array('relationships'))
           ->setDescription('List an environment\'s relationships')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
-          ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view')
-          ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the relationships', '0');
+          ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
@@ -36,21 +34,14 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
     {
         $this->validateInput($input);
 
-        $app = $input->getOption('app');
-        $environment = $this->getSelectedEnvironment();
+        $sshUrl = $this->getSelectedEnvironment()
+          ->getSshUrl($input->getOption('app'));
 
-        $cacheKey = implode('-', ['relationships', $environment->id . $environment->project . $app]);
-        $cache = CacheUtil::getCache();
-        $relationships = $cache->fetch($cacheKey);
-        if (empty($relationships) || $input->getOption('refresh')) {
-            $util = new RelationshipsUtil($this->stdErr);
-            $sshUrl = $environment->getSshUrl();
-            $relationships = $util->getRelationships($sshUrl);
-            if (empty($relationships)) {
-                $this->stdErr->writeln('No relationships found');
-                return 1;
-            }
-            $cache->save($cacheKey, $relationships, 3600);
+        $util = new RelationshipsUtil($this->stdErr);
+        $relationships = $util->getRelationships($sshUrl);
+        if (!$relationships) {
+            $this->stdErr->writeln('No relationships found');
+            return 1;
         }
 
         if ($property = $input->getOption('property')) {
