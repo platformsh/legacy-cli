@@ -19,13 +19,8 @@ class DomainListCommand extends PlatformCommand
         $this
           ->setName('domain:list')
           ->setAliases(array('domains'))
-          ->setDescription('Get a list of all domains')
-          ->addOption(
-            'project',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'The project ID'
-          );
+          ->setDescription('Get a list of all domains');
+        $this->addProjectOption();
     }
 
     /**
