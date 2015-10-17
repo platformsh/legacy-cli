@@ -2,13 +2,12 @@
 
 namespace Platformsh\Cli\Command;
 
-use Doctrine\Common\Cache\FilesystemCache;
-use Doctrine\Common\Cache\VoidCache;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Util\CacheUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -29,9 +28,6 @@ abstract class PlatformCommand extends Command
 
     /** @var PlatformClient|null */
     private static $client;
-
-    /** @var \Doctrine\Common\Cache\CacheProvider|null */
-    private static $cache;
 
     /** @var string */
     protected static $sessionId = 'default';
@@ -100,10 +96,8 @@ abstract class PlatformCommand extends Command
         if (!isset(self::$apiToken) && getenv('PLATFORMSH_CLI_API_TOKEN')) {
             self::$apiToken = getenv('PLATFORMSH_CLI_API_TOKEN');
         }
-        if (!isset(self::$cache)) {
-            // Note: the cache directory is based on self::$sessionId.
-            self::$cache = getenv('PLATFORMSH_CLI_DISABLE_CACHE') ? new VoidCache() : new FilesystemCache($this->getCacheDir());
-        }
+        // Note: the cache directory is based on self::$sessionId.
+        CacheUtil::createCache($this->getCacheDir());
     }
 
     /**
@@ -214,7 +208,7 @@ abstract class PlatformCommand extends Command
      */
     protected function clearCache()
     {
-        self::$cache->flushAll();
+        CacheUtil::getCache()->flushAll();
     }
 
     /**
@@ -429,7 +423,9 @@ abstract class PlatformCommand extends Command
         /** @var Project[] $projects */
         $projects = array();
 
-        if ($refresh || !self::$cache->contains($cacheKey)) {
+        $cache = CacheUtil::getCache();
+
+        if ($refresh || !$cache->contains($cacheKey)) {
             foreach ($this->getClient()->getProjects() as $project) {
                 $projects[$project->id] = $project;
             }
@@ -441,12 +437,12 @@ abstract class PlatformCommand extends Command
                 $cachedProjects[$id]['git'] = $project->getGitUrl();
             }
 
-            self::$cache->save($cacheKey, $cachedProjects, $this->projectsTtl);
+            $cache->save($cacheKey, $cachedProjects, $this->projectsTtl);
         } else {
             $connector = $this->getClient(false)
                               ->getConnector();
             $client = $connector->getClient();
-            foreach ((array) self::$cache->fetch($cacheKey) as $id => $data) {
+            foreach ((array) $cache->fetch($cacheKey) as $id => $data) {
                 $projects[$id] = new Project($data, $data['_endpoint'], $client);
             }
         }
@@ -506,7 +502,8 @@ abstract class PlatformCommand extends Command
         $projectId = $project->getProperty('id');
 
         $cacheKey = 'environments:' . $projectId;
-        $cached = self::$cache->contains($cacheKey);
+        $cache = CacheUtil::getCache();
+        $cached = $cache->contains($cacheKey);
 
         if ($refresh || !$cached) {
             $environments = array();
@@ -517,18 +514,18 @@ abstract class PlatformCommand extends Command
             }
 
             // Recreate the aliases if the list of environments has changed.
-            if ($updateAliases && (!$cached || array_diff_key($environments, self::$cache->fetch($cacheKey)))) {
+            if ($updateAliases && (!$cached || array_diff_key($environments, $cache->fetch($cacheKey)))) {
                 $this->updateDrushAliases($project, $environments);
             }
 
-            self::$cache->save($cacheKey, $toCache, $this->environmentsTtl);
+            $cache->save($cacheKey, $toCache, $this->environmentsTtl);
         } else {
             $environments = array();
             $connector = $this->getClient(false)
                               ->getConnector();
             $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
             $client = $connector->getClient();
-            foreach ((array) self::$cache->fetch($cacheKey) as $id => $data) {
+            foreach ((array) $cache->fetch($cacheKey) as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $client);
             }
         }
@@ -599,7 +596,7 @@ abstract class PlatformCommand extends Command
     public function clearEnvironmentsCache(Project $project = null)
     {
         $project = $project ?: $this->getSelectedProject();
-        self::$cache->delete('environments:' . $project->id);
+        CacheUtil::getCache()->delete('environments:' . $project->id);
     }
 
     /**
@@ -607,7 +604,7 @@ abstract class PlatformCommand extends Command
      */
     protected function clearProjectsCache()
     {
-        self::$cache->delete('projects');
+        CacheUtil::getCache()->delete('projects');
     }
 
     /**
