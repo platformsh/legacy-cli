@@ -2,9 +2,11 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentRelationshipsCommand extends PlatformCommand
@@ -18,10 +20,14 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
           ->setName('environment:relationships')
           ->setAliases(array('relationships'))
           ->setDescription('List an environment\'s relationships')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
+          ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
+        $this->addExample("View all the current environment's relationships");
+        $this->addExample("View the 'master' environment's relationships", 'master');
+        $this->addExample("View the 'master' environment's database port", 'master --property database.0.port');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -38,6 +44,19 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
             return 1;
         }
 
+        if ($property = $input->getOption('property')) {
+            $parents = explode('.', $property);
+            $result = self::getNestedArrayValue($relationships, $parents, $key_exists);
+            if (!$key_exists) {
+                $this->stdErr->writeln("Relationship property found: <error>$property</error>");
+
+                return 1;
+            }
+            $formatter = new PropertyFormatter();
+            $output->writeln($formatter->format($result, end($parents)));
+            return 0;
+        }
+
         foreach ($relationships as $key => $relationship) {
             foreach ($relationship as $delta => $info) {
                 $output->writeln("<comment>$key:$delta:</comment>");
@@ -51,5 +70,34 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
         }
 
         return 0;
+    }
+
+    /**
+     * Get a nested value in an array.
+     *
+     * @see Copied from \Drupal\Component\Utility\NestedArray::getValue()
+     *
+     * @param array $array
+     * @param array $parents
+     * @param bool  $key_exists
+     *
+     * @return mixed
+     */
+    protected static function &getNestedArrayValue(array &$array, array $parents, &$key_exists = NULL)
+    {
+        $ref = &$array;
+        foreach ($parents as $parent) {
+            if (is_array($ref) && array_key_exists($parent, $ref)) {
+                $ref = &$ref[$parent];
+            }
+            else {
+                $key_exists = FALSE;
+                $null = NULL;
+                return $null;
+            }
+        }
+        $key_exists = TRUE;
+
+        return $ref;
     }
 }
