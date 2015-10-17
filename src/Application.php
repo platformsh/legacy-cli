@@ -96,6 +96,7 @@ class Application extends ParentApplication
             return $commands;
         }
 
+        $commands[] = new Command\ClearCacheCommand();
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\Activity\ActivityListCommand();

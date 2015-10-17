@@ -28,8 +28,7 @@ class UserDeleteCommand extends PlatformCommand
 
         $email = $input->getArgument('email');
         foreach ($project->getUsers() as $user) {
-            $account = $user->getAccount();
-            if ($account['email'] === $email) {
+            if ($this->getAccount($user)['email'] === $email) {
                 $selectedUser = $user;
                 break;
             }

@@ -47,7 +47,7 @@ class UserAddCommand extends PlatformCommand
 
         $users = $project->getUsers();
         foreach ($users as $projectAccess) {
-            if ($projectAccess->getAccount()['email'] === $email) {
+            if ($this->getAccount($projectAccess)['email'] === $email) {
                 $this->stdErr->writeln("The user already exists: <comment>$email</comment>");
                 return 1;
             }

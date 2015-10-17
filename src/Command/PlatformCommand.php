@@ -12,6 +12,7 @@ use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
+use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\Console\Command\Command;
@@ -51,6 +52,7 @@ abstract class PlatformCommand extends Command
 
     protected $projectsTtl;
     protected $environmentsTtl;
+    protected $usersTtl;
 
     private $hiddenInList = false;
     private $hiddenAliases = array();
@@ -90,6 +92,7 @@ abstract class PlatformCommand extends Command
 
         $this->projectsTtl = getenv('PLATFORMSH_CLI_PROJECTS_TTL') ?: 3600;
         $this->environmentsTtl = getenv('PLATFORMSH_CLI_ENVIRONMENTS_TTL') ?: 600;
+        $this->usersTtl = getenv('PLATFORMSH_CLI_USERS_TTL') ?: 3600;
 
         if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
             self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
@@ -564,6 +567,26 @@ abstract class PlatformCommand extends Command
         }
 
         return $environments[$id];
+    }
+
+    /**
+     * Get a user's account info.
+     *
+     * @param ProjectAccess $user
+     * @param bool $reset
+     *
+     * @return array
+     *   An array containing 'email' and 'display_name'.
+     */
+    protected function getAccount(ProjectAccess $user, $reset = false)
+    {
+        $cacheKey = 'account-' . $user->id;
+        if ($reset || !($details = self::$cache->fetch($cacheKey))) {
+            $details = $user->getAccount()->getProperties();
+            self::$cache->save($cacheKey, $details, $this->usersTtl);
+        }
+
+        return $details;
     }
 
     /**
