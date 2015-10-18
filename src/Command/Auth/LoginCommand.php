@@ -54,21 +54,6 @@ class LoginCommand extends PlatformCommand
         $question->setMaxAttempts(5);
         $email = $helper->ask($input, $output, $question);
 
-        $userExists = true;
-        if (!$userExists) {
-            $createAccountText = "\nThis email address is not associated with a Platform.sh account. \n";
-            $createAccountText .= 'Would you like to create a new account?';
-            $createAccount = $helper->confirm($createAccountText, $input, $output);
-            if ($createAccount) {
-                // @todo
-            } else {
-                // Start from the beginning.
-                $this->configureAccount($input, $output);
-
-                return;
-            }
-        }
-
         $pendingInvitation = false;
         if ($pendingInvitation) {
             $resendInviteText = "\nThis email address is associated with a Platform.sh account, \n";
