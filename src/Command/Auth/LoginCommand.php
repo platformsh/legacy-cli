@@ -30,6 +30,7 @@ class LoginCommand extends PlatformCommand
 
         $this->stdErr->writeln("Please log in using your <info>Platform.sh</info> account\n");
         $this->configureAccount($input, $this->stdErr);
+        $this->clearCache();
         $this->stdErr->writeln("\n<info>Thank you, you are all set.</info>\n");
     }
 
