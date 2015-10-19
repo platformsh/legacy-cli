@@ -115,7 +115,6 @@ class UserAddCommand extends PlatformCommand
 
         if (!empty($environmentRoles)) {
             $this->stdErr->writeln("Setting environment role(s)");
-            $activities = [];
             foreach ($environmentRoles as $environmentId => $role) {
                 if (!isset($environments[$environmentId])) {
                     $this->stdErr->writeln("<error>Environment not found: $environmentId</error>");
