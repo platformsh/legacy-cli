@@ -57,7 +57,7 @@ class DomainListCommand extends PlatformCommand
         foreach ($tree as $domain) {
             $rows[] = array(
               $domain['id'],
-              $formatter->format((bool) $domain['has_certificate']),
+              $formatter->format((bool) $domain['ssl']['has_certificate']),
               $formatter->format($domain['created_at'], 'created_at'),
             );
         }
