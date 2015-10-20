@@ -19,9 +19,9 @@ class UserAddCommand extends PlatformCommand
           ->setName('user:add')
           ->setDescription('Add a user to the project')
           ->addArgument('email', InputArgument::OPTIONAL, "The new user's email address")
-          ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'")
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for environment(s) to be redeployed');
+          ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'");
         $this->addProjectOption();
+        $this->addNoWaitOption();
         $this->addExample('Add Alice as a new administrator', 'alice@example.com --role admin');
     }
 
@@ -111,10 +111,20 @@ class UserAddCommand extends PlatformCommand
         }
 
         $this->stdErr->writeln("Adding the user to the project");
-        $projectAccess = $project->addUser($email, $projectRole);
+        $result = $project->addUser($email, $projectRole);
+
+        $this->stdErr->writeln("User <info>$email</info> created");
 
         if (!empty($environmentRoles)) {
+
+            if (!isset($result['_embedded']['entity']['id'])) {
+                $this->stdErr->writeln("Failed to find user ID from response");
+                return 1;
+            }
+            $uuid = $result['_embedded']['entity']['id'];
+
             $this->stdErr->writeln("Setting environment role(s)");
+            $activities = [];
             foreach ($environmentRoles as $environmentId => $role) {
                 if (!isset($environments[$environmentId])) {
                     $this->stdErr->writeln("<error>Environment not found: $environmentId</error>");
@@ -123,22 +133,21 @@ class UserAddCommand extends PlatformCommand
                 if ($role == 'none') {
                     continue;
                 }
-                $access = $environments[$environmentId]->getUser($projectAccess->id);
+                $access = $environments[$environmentId]->getUser($uuid);
                 if ($access) {
                     $this->stdErr->writeln("Modifying the user's role on the environment: <info>$environmentId</info>");
                     $activity = $access->update(['role' => $role]);
                 }
                 else {
                     $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
-                    $activity = $environments[$environmentId]->addUser($projectAccess->id, $role);
+                    $activities[] = $environments[$environmentId]->addUser($uuid, $role);
                 }
-                if (!$input->getOption('no-wait')) {
-                    ActivityUtil::waitAndLog($activity, $this->stdErr);
-                }
+            }
+            if (!$input->getOption('no-wait')) {
+                ActivityUtil::waitMultiple($activities, $this->stdErr);
             }
         }
 
-        $this->stdErr->writeln("User <info>$email</info> created");
         return 0;
     }
 

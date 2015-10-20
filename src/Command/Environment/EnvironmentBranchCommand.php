@@ -35,19 +35,14 @@ class EnvironmentBranchCommand extends PlatformCommand
             "Create the new environment even if the branch cannot be checked out locally"
           )
           ->addOption(
-            'no-wait',
-            null,
-            InputOption::VALUE_NONE,
-            'Do not wait for the Platform.sh branch to be created'
-          )
-          ->addOption(
             'build',
             null,
             InputOption::VALUE_NONE,
             "Build the new environment locally"
           );
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption("Do not wait for the environment to be branched");
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
 
@@ -167,6 +162,7 @@ class EnvironmentBranchCommand extends PlatformCommand
 
         $remoteSuccess = true;
         if (!$input->getOption('no-wait')) {
+            $this->stdErr->writeln('Waiting for the environment to be branched...');
             $remoteSuccess = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,

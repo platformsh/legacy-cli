@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMergeCommand extends PlatformCommand
@@ -17,10 +16,10 @@ class EnvironmentMergeCommand extends PlatformCommand
           ->setName('environment:merge')
           ->setAliases(array('merge'))
           ->setDescription('Merge an environment')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge')
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
     }
 
@@ -53,6 +52,7 @@ class EnvironmentMergeCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
+            $this->stdErr->writeln("Waiting for the merge to complete...");
             $success = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,

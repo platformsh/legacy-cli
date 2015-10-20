@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -15,7 +17,7 @@ class IntegrationAddCommand extends IntegrationCommand
           ->setName('integration:add')
           ->setDescription('Add an integration to the project');
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption();
+        $this->addProjectOption()->addNoWaitOption();
         $this->addExample(
           'Add an integration with a GitHub repository',
           '--type github --repository myuser/example-repo --token UFpYS1MzQktjNw --fetch-branches 0'
@@ -29,12 +31,20 @@ class IntegrationAddCommand extends IntegrationCommand
         $values = $this->getForm()
           ->resolveOptions($input, $this->stdErr, $this->getHelper('question'));
 
-        $integration = $this->getSelectedProject()
-                            ->addIntegration($values['type'], $values);
-        $id = $integration['id'];
-        $this->stdErr->writeln("Integration <info>$id</info> created for <info>{$values['type']}</info>");
+        $activity = $this->getSelectedProject()
+                         ->addIntegration($values['type'], $values);
 
-        $output->writeln($this->formatIntegrationData($integration));
+        if ($activity instanceof Activity) {
+            $data = $activity->payload['integration'];
+            $integrationId = $data['id'];
+            $this->stdErr->writeln("Integration <info>$integrationId</info> created for <info>{$values['type']}</info>");
+            if (!$input->getOption('no-wait')) {
+                ActivityUtil::waitAndLog($activity, $this->stdErr);
+            }
+        }
+        else {
+            $this->stdErr->writeln("Integration created for <info>{$values['type']}</info>");
+        }
 
         return 0;
     }

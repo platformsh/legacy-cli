@@ -6,7 +6,6 @@ use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentActivateCommand extends PlatformCommand
@@ -17,10 +16,10 @@ class EnvironmentActivateCommand extends PlatformCommand
         $this
           ->setName('environment:activate')
           ->setDescription('Activate an environment')
-          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
     }
 

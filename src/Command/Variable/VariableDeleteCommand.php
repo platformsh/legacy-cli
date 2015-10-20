@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,7 +20,8 @@ class VariableDeleteCommand extends PlatformCommand
           ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
           ->setDescription('Delete a variable from an environment');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
         $this->addExample('Delete the variable "example"', 'example');
     }
 
@@ -63,16 +66,19 @@ class VariableDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        $variable->delete();
+        $activity = $variable->delete();
 
         $this->stdErr->writeln("Deleted variable <info>$variableName</info>");
-        if (!$this->getSelectedEnvironment()
-                  ->getLastActivity()
-        ) {
+
+        $success = true;
+        if (!$activity instanceof Activity) {
             $this->rebuildWarning();
         }
+        elseif (!$input->getOption('no-wait')) {
+            $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+        }
 
-        return 0;
+        return $success ? 0 : 1;
     }
 
 }

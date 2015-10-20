@@ -87,6 +87,7 @@ class SnapshotRestoreCommand extends PlatformCommand
 
         $activity = $selectedActivity->restore();
         if (!$input->getOption('no-wait')) {
+            $this->stdErr->writeln("Waiting for the restore to complete...");
             $success = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,

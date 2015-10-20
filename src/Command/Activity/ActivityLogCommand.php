@@ -77,7 +77,7 @@ class ActivityLogCommand extends PlatformCommand
     protected function displayLog(Activity $activity, OutputInterface $output, $poll = true, $interval = 1)
     {
         $logger = function ($log) use ($output) {
-            $output->write($log);
+            $output->write(preg_replace('/^/m', '    ', $log));
         };
         if (!$poll) {
             $logger($activity['log']);

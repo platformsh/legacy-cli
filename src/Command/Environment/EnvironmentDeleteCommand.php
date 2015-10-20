@@ -21,10 +21,10 @@ class EnvironmentDeleteCommand extends PlatformCommand
           ->setDescription('Delete an environment')
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
           ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
-          ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments')
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+          ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with "master"', '--merged master');

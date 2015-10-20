@@ -93,12 +93,7 @@ class UserRoleCommand extends PlatformCommand
             $activity = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
             $this->stdErr->writeln("User <info>$email</info> updated");
             if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitAndLog(
-                  $activity,
-                  $this->stdErr,
-                  'Environment redeployed successfully',
-                  'Failed to redeploy environment'
-                );
+                ActivityUtil::waitAndLog($activity, $this->stdErr);
             }
         }
 
