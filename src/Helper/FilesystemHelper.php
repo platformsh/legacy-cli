@@ -11,7 +11,7 @@ class FilesystemHelper extends Helper
 
     protected $relative = false;
     protected $fs;
-    protected $copyIfSymlinkUnavailable = true;
+    protected $copyOnWindows = false;
 
     /** @var ShellHelperInterface */
     protected $shellHelper;
@@ -29,6 +29,7 @@ class FilesystemHelper extends Helper
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->fs = $fs ?: new Filesystem();
+        $this->copyOnWindows = getenv('PLATFORMSH_CLI_COPY_ON_WINDOWS');
     }
 
     /**
@@ -177,7 +178,7 @@ class FilesystemHelper extends Helper
         if ($this->relative) {
             $target = $this->makePathRelative($target, $link);
         }
-        $this->fs->symlink($target, $link, $this->copyIfSymlinkUnavailable);
+        $this->fs->symlink($target, $link, $this->copyOnWindows);
 
         return $target;
     }
@@ -247,7 +248,7 @@ class FilesystemHelper extends Helper
                         chdir($destination);
                     }
 
-                    $this->fs->symlink($sourceFile, $linkFile, $this->copyIfSymlinkUnavailable);
+                    $this->fs->symlink($sourceFile, $linkFile, $this->copyOnWindows);
                 }
             }
         }
