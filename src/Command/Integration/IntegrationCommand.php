@@ -49,9 +49,16 @@ abstract class IntegrationCommand extends PlatformCommand
           ]),
           'repository' => new Field('Repository', [
             'conditions' => ['type' => 'github'],
-            'description' => 'GitHub: the repository to track (in the form \'user/repo\')',
+            'description' => 'GitHub: the repository to track (the URL, e.g. \'https://github.com/user/repo\')',
             'validator' => function ($string) {
                 return substr_count($string, '/', 1) === 1;
+            },
+            'normalizer' => function ($string) {
+                if (preg_match('#^https?://#', $string)) {
+                    return parse_url($string, PHP_URL_PATH);
+                }
+
+                return $string;
             },
           ]),
           'build_pull_requests' => new BooleanField('Build pull requests', [
