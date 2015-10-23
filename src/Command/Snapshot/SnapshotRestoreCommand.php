@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SnapshotRestoreCommand extends PlatformCommand
@@ -15,12 +14,12 @@ class SnapshotRestoreCommand extends PlatformCommand
     {
         $this
           ->setName('snapshot:restore')
-          ->setHiddenAliases(array('environment:restore'))
           ->setDescription('Restore an environment snapshot')
-          ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one')
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+          ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
+        $this->setHiddenAliases(array('environment:restore'));
         $this->addExample('Restore the most recent snapshot');
         $this->addExample('Restore a specific snapshot', '92c9a4b2aa75422efb3d');
     }

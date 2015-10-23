@@ -21,10 +21,10 @@ class UserRoleCommand extends PlatformCommand
           ->addArgument('email', InputArgument::REQUIRED, "The user's email address")
           ->addOption('role', 'r', InputOption::VALUE_REQUIRED, "A new role for the user")
           ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", 'project')
-          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only')
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for environment(s) to be redeployed');
+          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only');
         $this->addProjectOption()
-          ->addEnvironmentOption();
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
         $this->addExample("View Alice's role on the project", 'alice@example.com');
         $this->addExample("View Alice's role on the environment", 'alice@example.com --level environment');
         $this->addExample("Give Alice the 'contributor' role on the environment 'test'", 'alice@example.com --level environment --environment test --role contributor');
