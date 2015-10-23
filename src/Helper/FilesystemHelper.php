@@ -29,7 +29,7 @@ class FilesystemHelper extends Helper
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->fs = $fs ?: new Filesystem();
-        $this->copyOnWindows = getenv('PLATFORMSH_CLI_COPY_ON_WINDOWS');
+        $this->copyOnWindows = (bool) getenv('PLATFORMSH_CLI_COPY_ON_WINDOWS');
     }
 
     /**
