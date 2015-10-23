@@ -2,7 +2,9 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -36,7 +38,8 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
             'Whether access control should be enabled: 1 to enable, 0 to disable'
           );
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
         $this->addExample('Require a username and password', '--auth myname:mypassword');
         $this->addExample('Restrict access to only one IP address', '--access deny:any --access allow:69.208.1.192');
         $this->addExample('Remove the password requirement, keeping IP restrictions', '--auth 0');
@@ -186,17 +189,21 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
                 }
 
                 // Patch the environment with the changes.
-                $selectedEnvironment->update(array('http_access' => $accessOpts));
+                $activity = $selectedEnvironment->update(array('http_access' => $accessOpts));
 
                 $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
                 $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
 
-                if (!$selectedEnvironment->getLastActivity()) {
+                $success = true;
+                if (!$activity instanceof Activity) {
                     $this->rebuildWarning();
                 }
+                elseif (!$input->getOption('no-wait')) {
+                    $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+                }
 
-                return 0;
+                return $success ? 0 : 1;
             }
         }
 

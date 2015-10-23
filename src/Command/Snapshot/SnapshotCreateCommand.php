@@ -44,6 +44,7 @@ class SnapshotCreateCommand extends PlatformCommand
         $this->stdErr->writeln("Creating a snapshot of <info>$environmentId</info>");
 
         if (!$input->getOption('no-wait')) {
+            $this->stdErr->writeln("Waiting for the snapshot to complete...");
             $success = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,

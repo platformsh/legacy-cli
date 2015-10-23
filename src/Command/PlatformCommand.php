@@ -691,6 +691,18 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Add the --no-wait option.
+     *
+     * @param string $description
+     *
+     * @return self
+     */
+    protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
+    {
+        return $this->addOption('no-wait', null, InputOption::VALUE_NONE, $description);
+    }
+
+    /**
      * @param string $projectId
      * @param string $host
      *

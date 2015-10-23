@@ -2,7 +2,9 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -27,7 +29,8 @@ class EnvironmentInfoCommand extends PlatformCommand
           ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
           ->setDescription('Read or set properties for an environment');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
         $this->addExample('Read all environment properties')
           ->addExample("Show the environment's status", 'status')
           ->addExample('Show the date the environment was created', 'created_at')
@@ -57,7 +60,7 @@ class EnvironmentInfoCommand extends PlatformCommand
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $environment);
+            return $this->setProperty($property, $value, $environment, $input->getOption('no-wait'));
         }
 
         $output->writeln($this->formatter->format($environment->getProperty($property), $property));
@@ -84,13 +87,14 @@ class EnvironmentInfoCommand extends PlatformCommand
     }
 
     /**
-     * @param string          $property
-     * @param string          $value
-     * @param Environment     $environment
+     * @param string      $property
+     * @param string      $value
+     * @param Environment $environment
+     * @param bool        $noWait
      *
      * @return int
      */
-    protected function setProperty($property, $value, Environment $environment)
+    protected function setProperty($property, $value, Environment $environment, $noWait)
     {
         if (!$this->validateValue($property, $value)) {
             return 1;
@@ -108,18 +112,21 @@ class EnvironmentInfoCommand extends PlatformCommand
 
             return 0;
         }
-        $environment->update(array($property => $value));
+        $activity = $environment->update(array($property => $value));
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment[$property], $property));
 
         $rebuildProperties = array('enable_smtp', 'restrict_robots');
-        if (in_array($property, $rebuildProperties) && !$environment->getLastActivity()) {
+        $success = true;
+        if ($activity instanceof Activity && !$noWait) {
+            $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+        }
+        elseif (!($activity instanceof Activity) && in_array($property, $rebuildProperties)) {
             $this->rebuildWarning();
         }
 
-        // Refresh the stored environments.
-        $this->getEnvironments($this->getSelectedProject(), true);
+        $this->clearEnvironmentsCache();
 
-        return 0;
+        return $success ? 0 : 1;
     }
 
     /**

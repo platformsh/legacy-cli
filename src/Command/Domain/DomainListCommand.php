@@ -6,7 +6,6 @@ use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Domain;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainListCommand extends PlatformCommand

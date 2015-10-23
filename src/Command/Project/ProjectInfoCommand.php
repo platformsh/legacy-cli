@@ -2,7 +2,9 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -26,7 +28,7 @@ class ProjectInfoCommand extends PlatformCommand
           ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
           ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
           ->setDescription('Read or set properties for a project');
-        $this->addProjectOption();
+        $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
@@ -52,7 +54,7 @@ class ProjectInfoCommand extends PlatformCommand
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $project);
+            return $this->setProperty($property, $value, $project, $input->getOption('no-wait'));
         }
 
         $output->writeln($this->formatter->format($project->getProperty($property), $property));
@@ -96,13 +98,14 @@ class ProjectInfoCommand extends PlatformCommand
     }
 
     /**
-     * @param string          $property
-     * @param string          $value
-     * @param Project         $project
+     * @param string  $property
+     * @param string  $value
+     * @param Project $project
+     * @param bool    $noWait
      *
      * @return int
      */
-    protected function setProperty($property, $value, Project $project)
+    protected function setProperty($property, $value, Project $project, $noWait)
     {
         if (!$this->validateValue($property, $value)) {
             return 1;
@@ -122,11 +125,17 @@ class ProjectInfoCommand extends PlatformCommand
         }
 
         $project->ensureFull();
-        $project->update(array($property => $value));
+        $activity = $project->update(array($property => $value));
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
-        $this->getProjects(true);
 
-        return 0;
+        $this->clearProjectsCache();
+
+        $success = true;
+        if ($activity instanceof Activity && !$noWait) {
+            $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+        }
+
+        return $success ? 0 : 1;
     }
 
     /**
