@@ -167,11 +167,11 @@ class DrushHelper extends Helper
         $executable = 'drush';
         if (strpos(PHP_OS, 'WIN') !== false) {
             // Use "where drush" to find the full path to the Drush executable
-            // on Windows. It can return a list of commands; exec() will give us
-            // the last command in the list.
-            $result = exec('where drush', $commands, $returnVar);
-            if ($returnVar == 0 && $result) {
-                $executable = $result;
+            // on Windows. It can return a list of commands.
+            $fullPaths = $this->shellHelper->execute(['where', 'drush'], null, false, true);
+            if ($fullPaths) {
+                $fullPaths = preg_split('/[\r\n]/', trim($fullPaths));
+                $executable = end($fullPaths);
             }
             else {
                 trigger_error("Failed to find Drush executable via 'where drush'", E_USER_NOTICE);
