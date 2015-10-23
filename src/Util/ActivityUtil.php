@@ -22,7 +22,7 @@ abstract class ActivityUtil
      */
     public static function waitAndLog(Activity $activity, OutputInterface $output, $success = null, $failure = null)
     {
-        $output->writeln('Waiting for activity <info>' . $activity->id . '</info> (' . $activity->getDescription() . '):');
+        $output->writeln('Waiting for the activity <info>' . $activity->id . '</info> (' . $activity->getDescription() . '):');
         $activity->wait(
           null,
           function ($log) use ($output) {
