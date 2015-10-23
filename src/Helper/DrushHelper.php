@@ -59,7 +59,8 @@ class DrushHelper extends Helper
         if (!$reset && isset($version)) {
             return $version;
         }
-        exec($this->getDrushExecutable() . ' --version', $drushVersion, $returnCode);
+        $command = $this->getDrushExecutable() . ' --version';
+        exec($command, $drushVersion, $returnCode);
         if ($returnCode > 0) {
             $message = $returnCode == 127 ? 'Error finding Drush version' : 'Drush is not installed';
             throw new \Exception($message, $returnCode);
@@ -68,7 +69,7 @@ class DrushHelper extends Helper
         // Parse the version from the Drush output. It should be a string a bit
         // like " Drush Version   :  8.0.0-beta14 ".
         if (!preg_match('/:\s*([0-9]+\.[a-z0-9\-\.]+)\s*$/', $drushVersion[0], $matches)) {
-            throw new \Exception("Unexpected 'drush --version' output: \n" . implode("\n", $drushVersion));
+            throw new \Exception("Unexpected output from command '$command': \n" . implode("\n", $drushVersion));
         }
         $version = $matches[1];
 
