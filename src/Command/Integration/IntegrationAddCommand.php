@@ -31,20 +31,21 @@ class IntegrationAddCommand extends IntegrationCommand
         $values = $this->getForm()
           ->resolveOptions($input, $this->stdErr, $this->getHelper('question'));
 
-        $activity = $this->getSelectedProject()
+        $result = $this->getSelectedProject()
                          ->addIntegration($values['type'], $values);
 
-        if ($activity instanceof Activity) {
-            $data = $activity->payload['integration'];
-            $integrationId = $data['id'];
-            $this->stdErr->writeln("Integration <info>$integrationId</info> created for <info>{$values['type']}</info>");
-            if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitAndLog($activity, $this->stdErr);
-            }
+        $integrationId = $result instanceof Activity
+          ? $result->payload['integration']['id']
+          : $result['_embedded']['entity']['id'];
+
+        $this->stdErr->writeln("Created integration <info>$integrationId</info> (type: {$values['type']})");
+
+        if ($result instanceof Activity && !$input->getOption('no-wait')) {
+            $success = ActivityUtil::waitAndLog($result, $this->stdErr);
         }
-        else {
-            $this->stdErr->writeln("Integration created for <info>{$values['type']}</info>");
-        }
+
+        $integration = $this->getSelectedProject()->getIntegration($integrationId);
+        $output->writeln($this->formatIntegrationData($integration));
 
         return 0;
     }
