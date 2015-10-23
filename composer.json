@@ -4,8 +4,9 @@
     "license": "MIT",
     "require": {
         "doctrine/cache": "~1.4.2",
+        "guzzlehttp/ringphp": "^1.1",
         "platformsh/console-form": "0.0.4",
-        "platformsh/client": "0.1.31",
+        "platformsh/client": "0.2.1",
         "symfony/console": "~2.5 >=2.5.2",
         "symfony/yaml": "~2.5",
         "symfony/finder": "~2.5",

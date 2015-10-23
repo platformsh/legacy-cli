@@ -49,9 +49,16 @@ abstract class IntegrationCommand extends PlatformCommand
           ]),
           'repository' => new Field('Repository', [
             'conditions' => ['type' => 'github'],
-            'description' => 'GitHub: the repository to track (in the form \'user/repo\')',
+            'description' => 'GitHub: the repository to track (the URL, e.g. \'https://github.com/user/repo\')',
             'validator' => function ($string) {
                 return substr_count($string, '/', 1) === 1;
+            },
+            'normalizer' => function ($string) {
+                if (preg_match('#^https?://#', $string)) {
+                    return parse_url($string, PHP_URL_PATH);
+                }
+
+                return $string;
             },
           ]),
           'build_pull_requests' => new BooleanField('Build pull requests', [
@@ -96,28 +103,31 @@ abstract class IntegrationCommand extends PlatformCommand
     protected function formatIntegrationData(Integration $integration)
     {
         $properties = $integration->getProperties();
-        $output = '';
+        $info = [];
         if ($properties['type'] == 'github') {
-            $payloadUrl = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
-            $output = "Repository: " . $properties['repository']
-              . "\nBuild PRs: " . ($properties['build_pull_requests'] ? 'yes' : 'no')
-              . "\nFetch branches: " . ($properties['fetch_branches'] ? 'yes' : 'no')
-              . "\nPayload URL: " . $payloadUrl;
+            $info["Repository"] = $properties['repository'];
+            $info["Build PRs"] = $properties['build_pull_requests'] ? 'yes' : 'no';
+            $info["Fetch branches"] = $properties['fetch_branches'] ? 'yes' : 'no';
+            $info["Payload URL"] = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
         } elseif ($properties['type'] == 'bitbucket') {
-            $payloadUrl = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
-            $output = "Repository: " . $properties['repository']
-              . "\nFetch branches: " . ($properties['fetch_branches'] ? 'yes' : 'no')
-              . "\nPrune branches: " . (!empty($properties['prune_branches']) ? 'yes' : 'no')
-              . "\nPayload URL: " . $payloadUrl;
+            $info["Repository"] = $properties['repository'];
+            $info["Fetch branches"] = $properties['fetch_branches'] ? 'yes' : 'no';
+            $info["Prune branches"] = $properties['prune_branches'] ? 'yes' : 'no';
+            $info["Payload URL"] = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
         } elseif ($properties['type'] == 'hipchat') {
-            $output = "Room ID: " . $properties['room']
-              . "\nEvents: " . implode(', ', $properties['events'])
-              . "\nStates: " . implode(', ', $properties['states']);
+            $info["Room ID"] = $properties['room'];
+            $info["Events"] = implode(', ', $properties['events']);
+            $info["States"] = implode(', ', $properties['states']);
         } elseif ($properties['type'] == 'webhook') {
-            $output = "URL: " . $properties['url'];
+            $info["URL"] = $properties['url'];
         }
 
-        return $output;
+        $output = '';
+        foreach ($info as $label => $value) {
+            $output .= "$label: $value\n";
+        }
+
+        return rtrim($output);
     }
 
 }

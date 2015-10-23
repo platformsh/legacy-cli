@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
+use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -16,7 +18,7 @@ class DomainAddCommand extends DomainCommand
         $this
           ->setName('domain:add')
           ->setDescription('Add a new domain to the project');
-        $this->addProjectOption();
+        $this->addProjectOption()->addNoWaitOption();
         $this->addDomainOptions();
         $this->setHelp('See https://docs.platform.sh/use-platform/going-live.html#1-domains');
         $this->addExample('Add the domain example.com', 'example.com');
@@ -38,7 +40,8 @@ class DomainAddCommand extends DomainCommand
         }
 
         try {
-            $domain = $this->getSelectedProject()
+            $this->stdErr->writeln("Adding the domain <info>{$this->domainName}</info>");
+            $activity = $this->getSelectedProject()
                            ->addDomain($this->domainName, $this->sslOptions);
         }
         catch (ClientException $e) {
@@ -53,9 +56,9 @@ class DomainAddCommand extends DomainCommand
             throw $e;
         }
 
-        $this->stdErr->writeln("The domain <info>{$this->domainName}</info> was successfully added to the project.");
-
-        $this->displayDomain($domain, $this->stdErr);
+        if ($activity instanceof Activity && !$input->getOption('no-wait')) {
+            ActivityUtil::waitAndLog($activity, $this->stdErr);
+        }
 
         return 0;
     }

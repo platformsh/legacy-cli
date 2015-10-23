@@ -30,6 +30,7 @@ class LoginCommand extends PlatformCommand
 
         $this->stdErr->writeln("Please log in using your <info>Platform.sh</info> account\n");
         $this->configureAccount($input, $this->stdErr);
+        $this->clearCache();
         $this->stdErr->writeln("\n<info>Thank you, you are all set.</info>\n");
     }
 
@@ -52,21 +53,6 @@ class LoginCommand extends PlatformCommand
         );
         $question->setMaxAttempts(5);
         $email = $helper->ask($input, $output, $question);
-
-        $userExists = true;
-        if (!$userExists) {
-            $createAccountText = "\nThis email address is not associated with a Platform.sh account. \n";
-            $createAccountText .= 'Would you like to create a new account?';
-            $createAccount = $helper->confirm($createAccountText, $input, $output);
-            if ($createAccount) {
-                // @todo
-            } else {
-                // Start from the beginning.
-                $this->configureAccount($input, $output);
-
-                return;
-            }
-        }
 
         $pendingInvitation = false;
         if ($pendingInvitation) {

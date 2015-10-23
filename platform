@@ -3,7 +3,9 @@
 
 define('CLI_ROOT', __DIR__);
 
-error_reporting(getenv('PLATFORMSH_CLI_DEBUG') ? E_ALL : false);
+// Ensure that errors are only reported once.
+ini_set('display_errors', 1);
+ini_set('log_errors', 0);
 
 if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
     require CLI_ROOT . '/vendor/autoload.php';

@@ -1,14 +1,16 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\EnvironmentAccess;
+use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UserRoleCommand extends UserCommand
+class UserRoleCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -19,10 +21,10 @@ class UserRoleCommand extends UserCommand
           ->addArgument('email', InputArgument::REQUIRED, "The user's email address")
           ->addOption('role', 'r', InputOption::VALUE_REQUIRED, "A new role for the user")
           ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", 'project')
-          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only')
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for environment(s) to be redeployed');
+          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only');
         $this->addProjectOption()
-          ->addEnvironmentOption();
+          ->addEnvironmentOption()
+          ->addNoWaitOption();
         $this->addExample("View Alice's role on the project", 'alice@example.com');
         $this->addExample("View Alice's role on the environment", 'alice@example.com --level environment');
         $this->addExample("Give Alice the 'contributor' role on the environment 'test'", 'alice@example.com --level environment --environment test --role contributor');
@@ -55,7 +57,7 @@ class UserRoleCommand extends UserCommand
         }
 
         $currentRole = null;
-        $validRoles = array('admin', 'viewer');
+        $validRoles = ProjectAccess::$roles;
         if ($level == 'project') {
             $currentRole = $selectedUser['role'];
         }
@@ -65,7 +67,7 @@ class UserRoleCommand extends UserCommand
                 return 1;
             }
             $currentRole = $selectedUser->getEnvironmentRole($this->getSelectedEnvironment());
-            $validRoles = array('admin', 'viewer', 'contributor');
+            $validRoles = EnvironmentAccess::$roles;
         }
 
         $role = $input->getOption('role');
@@ -88,15 +90,10 @@ class UserRoleCommand extends UserCommand
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
         elseif ($role && $level == 'environment') {
-            $result = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
+            $activity = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
             $this->stdErr->writeln("User <info>$email</info> updated");
-            if (!$input->getOption('no-wait') && $result instanceof Activity) {
-                ActivityUtil::waitAndLog(
-                  $result,
-                  $this->stdErr,
-                  'Environment redeployed successfully',
-                  'Failed to redeploy environment'
-                );
+            if (!$input->getOption('no-wait')) {
+                ActivityUtil::waitAndLog($activity, $this->stdErr);
             }
         }
 

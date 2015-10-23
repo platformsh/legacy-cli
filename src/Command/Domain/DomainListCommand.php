@@ -6,7 +6,6 @@ use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Domain;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainListCommand extends PlatformCommand
@@ -19,13 +18,8 @@ class DomainListCommand extends PlatformCommand
         $this
           ->setName('domain:list')
           ->setAliases(array('domains'))
-          ->setDescription('Get a list of all domains')
-          ->addOption(
-            'project',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'The project ID'
-          );
+          ->setDescription('Get a list of all domains');
+        $this->addProjectOption();
     }
 
     /**
@@ -62,7 +56,7 @@ class DomainListCommand extends PlatformCommand
         foreach ($tree as $domain) {
             $rows[] = array(
               $domain['id'],
-              $formatter->format((bool) $domain['has_certificate']),
+              $formatter->format((bool) $domain['ssl']['has_certificate']),
               $formatter->format($domain['created_at'], 'created_at'),
             );
         }

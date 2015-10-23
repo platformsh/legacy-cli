@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SnapshotCreateCommand extends PlatformCommand
@@ -15,12 +14,12 @@ class SnapshotCreateCommand extends PlatformCommand
     {
         $this
           ->setName('snapshot:create')
-          ->setHiddenAliases(array('backup', 'environment:backup'))
           ->setDescription('Make a snapshot of an environment')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for the snapshot to complete');
+          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption('Do not wait for the snapshot to complete');
+        $this->setHiddenAliases(array('backup', 'environment:backup'));
         $this->setHelp('See https://docs.platform.sh/use-platform/backup-and-restore.html');
         $this->addExample('Make a snapshot of the current environment');
     }
@@ -44,6 +43,7 @@ class SnapshotCreateCommand extends PlatformCommand
         $this->stdErr->writeln("Creating a snapshot of <info>$environmentId</info>");
 
         if (!$input->getOption('no-wait')) {
+            $this->stdErr->writeln("Waiting for the snapshot to complete...");
             $success = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,

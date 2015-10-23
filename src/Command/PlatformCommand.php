@@ -193,6 +193,17 @@ abstract class PlatformCommand extends Command
         $this->output = $output;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         self::$interactive = $input->isInteractive();
+
+        // Tune error reporting based on the output verbosity.
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            error_reporting(E_ALL);
+        }
+        elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
+            error_reporting(false);
+        }
+        else {
+            error_reporting(E_PARSE | E_ERROR | E_USER_ERROR);
+        }
     }
 
     /**
@@ -458,6 +469,12 @@ abstract class PlatformCommand extends Command
             $host = parse_url($url, PHP_URL_HOST);
         }
 
+        // Find the project in the user's main project list. This uses a cache.
+        $projects = $this->getProjects($refresh);
+        if (isset($projects[$id])) {
+            return $projects[$id];
+        }
+
         // Get the project directly if a hostname is specified.
         if (!empty($host)) {
             $scheme = 'https';
@@ -466,12 +483,6 @@ abstract class PlatformCommand extends Command
                 $host = substr($host, $pos + 2);
             }
             return $this->getClient()->getProjectDirect($id, $host, $scheme != 'http');
-        }
-
-        // Otherwise, find the project in the user's main project list.
-        $projects = $this->getProjects($refresh);
-        if (isset($projects[$id])) {
-            return $projects[$id];
         }
 
         return false;
@@ -688,6 +699,18 @@ abstract class PlatformCommand extends Command
     protected function addAppOption()
     {
         return $this->addOption('app', null, InputOption::VALUE_REQUIRED, 'The remote application name');
+    }
+
+    /**
+     * Add the --no-wait option.
+     *
+     * @param string $description
+     *
+     * @return self
+     */
+    protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
+    {
+        return $this->addOption('no-wait', null, InputOption::VALUE_NONE, $description);
     }
 
     /**

@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,7 +24,8 @@ class VariableSetCommand extends PlatformCommand
           ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
           ->setDescription('Set a variable for an environment');
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addNoWaitOption();
         $this->addExample('Set the variable "example" to the string "123"', 'example 123');
         $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
         $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
@@ -54,23 +57,20 @@ class VariableSetCommand extends PlatformCommand
         }
 
         // Set the variable to a new value.
-        $variable = $this->getSelectedEnvironment()
+        $activity = $this->getSelectedEnvironment()
                          ->setVariable($variableName, $variableValue, $json);
-        if (!$variable) {
-            $this->stdErr->writeln("Failed to set variable <error>$variableName</error>");
-
-            return 1;
-        }
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
-        if (!$this->getSelectedEnvironment()
-                  ->getLastActivity()
-        ) {
+        $success = true;
+        if (!$activity instanceof Activity) {
             $this->rebuildWarning();
         }
+        elseif (!$input->getOption('no-wait')) {
+            $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+        }
 
-        return 0;
+        return $success ? 0 : 1;
     }
 
     /**

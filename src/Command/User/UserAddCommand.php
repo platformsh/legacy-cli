@@ -1,15 +1,16 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class UserAddCommand extends UserCommand
+class UserAddCommand extends PlatformCommand
 {
 
     protected function configure()
@@ -18,9 +19,9 @@ class UserAddCommand extends UserCommand
           ->setName('user:add')
           ->setDescription('Add a user to the project')
           ->addArgument('email', InputArgument::OPTIONAL, "The new user's email address")
-          ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'")
-          ->addOption('no-wait', null, InputOption::VALUE_NONE, 'Do not wait for environment(s) to be redeployed');
+          ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'");
         $this->addProjectOption();
+        $this->addNoWaitOption();
         $this->addExample('Add Alice as a new administrator', 'alice@example.com --role admin');
     }
 
@@ -45,15 +46,15 @@ class UserAddCommand extends UserCommand
         $project = $this->getSelectedProject();
 
         $users = $project->getUsers();
-        foreach ($users as $user) {
-            if ($user->getAccount()['email'] === $email) {
+        foreach ($users as $projectAccess) {
+            if ($projectAccess->getAccount()['email'] === $email) {
                 $this->stdErr->writeln("The user already exists: <comment>$email</comment>");
                 return 1;
             }
         }
 
         $projectRole = $input->getOption('role');
-        if ($projectRole && !in_array($projectRole, array('admin', 'viewer'))) {
+        if ($projectRole && !in_array($projectRole, ProjectAccess::$roles)) {
             $this->stdErr->writeln("Valid project-level roles are 'admin' or 'viewer'");
             return 1;
         }
@@ -74,10 +75,10 @@ class UserAddCommand extends UserCommand
         if ($projectRole !== 'admin') {
             $environments = $this->getEnvironments($project);
             if ($input->isInteractive()) {
-                $this->stdErr->writeln("The user's environment-level roles can be 'viewer', 'contributor', or 'admin'.");
+                $this->stdErr->writeln("The user's environment-level roles can be 'viewer', 'contributor', 'admin', or 'none'.");
             }
             foreach ($environments as $environment) {
-                $question = new Question('<info>' . $environment->id . '</info> environment role <question>[V/c/a]</question>: ', 'viewer');
+                $question = new Question('<info>' . $environment->id . '</info> environment role <question>[v/c/a/N]</question>: ', 'none');
                 $question->setValidator(array($this, 'validateRole'));
                 $question->setMaxAttempts(5);
                 $environmentRoles[$environment->id] = $this->standardizeRole($questionHelper->ask($input, $this->stdErr, $question));
@@ -110,9 +111,18 @@ class UserAddCommand extends UserCommand
         }
 
         $this->stdErr->writeln("Adding the user to the project");
-        $user = $project->addUser($email, $projectRole);
+        $result = $project->addUser($email, $projectRole);
+
+        $this->stdErr->writeln("User <info>$email</info> created");
 
         if (!empty($environmentRoles)) {
+
+            if (!isset($result['_embedded']['entity']['id'])) {
+                $this->stdErr->writeln("Failed to find user ID from response");
+                return 1;
+            }
+            $uuid = $result['_embedded']['entity']['id'];
+
             $this->stdErr->writeln("Setting environment role(s)");
             $activities = [];
             foreach ($environmentRoles as $environmentId => $role) {
@@ -120,18 +130,73 @@ class UserAddCommand extends UserCommand
                     $this->stdErr->writeln("<error>Environment not found: $environmentId</error>");
                     continue;
                 }
-                $result = $user->changeEnvironmentRole($environments[$environmentId], $role);
-                if ($result instanceof Activity) {
-                    $activities[] = $result;
+                if ($role == 'none') {
+                    continue;
+                }
+                $access = $environments[$environmentId]->getUser($uuid);
+                if ($access) {
+                    $this->stdErr->writeln("Modifying the user's role on the environment: <info>$environmentId</info>");
+                    $activity = $access->update(['role' => $role]);
+                }
+                else {
+                    $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
+                    $activities[] = $environments[$environmentId]->addUser($uuid, $role);
                 }
             }
             if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitMultiple($activities, $this->stdErr, 'Waiting for environment(s) to be redeployed');
+                ActivityUtil::waitMultiple($activities, $this->stdErr);
             }
         }
 
-        $this->stdErr->writeln("User <info>$email</info> created");
         return 0;
     }
 
+    /**
+     * @param string $value
+     *
+     * @return string
+     */
+    public function validateRole($value)
+    {
+        if (empty($value) || !in_array($value, array('admin', 'contributor', 'viewer', 'none', 'a', 'c', 'v', 'n'))) {
+            throw new \RuntimeException("Invalid role: $value");
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param string $value
+     *
+     * @return string
+     */
+    public function validateEmail($value)
+    {
+        if (empty($value) || !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            throw new \RuntimeException("Invalid email address: $value");
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param string $givenRole
+     *
+     * @return string
+     * @throws \Exception
+     */
+    protected function standardizeRole($givenRole)
+    {
+        $possibleRoles = array('viewer', 'admin', 'contributor', 'none');
+        if (in_array($givenRole, $possibleRoles)) {
+            return $givenRole;
+        }
+        $role = strtolower($givenRole);
+        foreach ($possibleRoles as $possibleRole) {
+            if (strpos($possibleRole, $role) === 0) {
+                return $possibleRole;
+            }
+        }
+        throw new \Exception("Role not found: $givenRole");
+    }
 }
