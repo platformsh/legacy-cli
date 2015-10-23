@@ -193,6 +193,17 @@ abstract class PlatformCommand extends Command
         $this->output = $output;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         self::$interactive = $input->isInteractive();
+
+        // Tune error reporting based on the output verbosity.
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            error_reporting(E_ALL);
+        }
+        elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
+            error_reporting(false);
+        }
+        else {
+            error_reporting(E_PARSE | E_ERROR | E_USER_ERROR);
+        }
     }
 
     /**

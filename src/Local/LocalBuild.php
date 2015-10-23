@@ -645,8 +645,12 @@ class LocalBuild
                 if (!$quiet) {
                     $this->output->writeln("Deleting: " . basename($filename));
                 }
-                $this->fsHelper->remove($filename);
-                $numDeleted++;
+                if ($this->fsHelper->remove($filename)) {
+                    $numDeleted++;
+                }
+                elseif (!$quiet) {
+                    $this->output->writeln("Failed to delete: <error>" . basename($filename) . "</error>");
+                }
             } else {
                 $numKept++;
             }

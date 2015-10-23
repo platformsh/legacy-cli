@@ -73,6 +73,7 @@ class FilesystemHelper extends Helper
         try {
             $this->fs->remove($filename);
         } catch (IOException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
             return false;
         }
 
