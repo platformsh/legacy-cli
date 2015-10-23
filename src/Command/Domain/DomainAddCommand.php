@@ -40,6 +40,7 @@ class DomainAddCommand extends DomainCommand
         }
 
         try {
+            $this->stdErr->writeln("Adding the domain <info>{$this->domainName}</info>");
             $activity = $this->getSelectedProject()
                            ->addDomain($this->domainName, $this->sslOptions);
         }
@@ -54,8 +55,6 @@ class DomainAddCommand extends DomainCommand
 
             throw $e;
         }
-
-        $this->stdErr->writeln("The domain <info>{$this->domainName}</info> was successfully added to the project.");
 
         if ($activity instanceof Activity && !$input->getOption('no-wait')) {
             ActivityUtil::waitAndLog($activity, $this->stdErr);
