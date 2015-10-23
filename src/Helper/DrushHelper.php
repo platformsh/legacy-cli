@@ -165,8 +165,17 @@ class DrushHelper extends Helper
         }
 
         $executable = 'drush';
-        if (strpos(PHP_OS, 'WIN') !== false && ($fullPath = shell_exec('where drush'))) {
-            $executable = $fullPath;
+        if (strpos(PHP_OS, 'WIN') !== false) {
+            // Use "where drush" to find the full path to the Drush executable
+            // on Windows. It can return a list of commands; exec() will give us
+            // the last command in the list.
+            $result = exec('where drush', $commands, $returnVar);
+            if ($returnVar == 0 && $result) {
+                $executable = $result;
+            }
+            else {
+                trigger_error("Failed to find Drush executable via 'where drush'", E_USER_NOTICE);
+            }
         }
 
         return $executable;
