@@ -202,7 +202,7 @@ abstract class PlatformCommand extends Command
             error_reporting(false);
         }
         else {
-            error_reporting(E_PARSE | E_ERROR | E_USER_ERROR);
+            error_reporting(E_PARSE);
         }
     }
 
