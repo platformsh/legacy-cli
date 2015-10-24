@@ -115,8 +115,8 @@ class UserAddCommand extends PlatformCommand
 
         $this->stdErr->writeln("User <info>$email</info> created");
 
+        $success = true;
         if (!empty($environmentRoles)) {
-
             if (!isset($result['_embedded']['entity']['id'])) {
                 $this->stdErr->writeln("Failed to find user ID from response");
                 return 1;
@@ -128,6 +128,7 @@ class UserAddCommand extends PlatformCommand
             foreach ($environmentRoles as $environmentId => $role) {
                 if (!isset($environments[$environmentId])) {
                     $this->stdErr->writeln("<error>Environment not found: $environmentId</error>");
+                    $success = false;
                     continue;
                 }
                 if ($role == 'none') {
@@ -144,11 +145,13 @@ class UserAddCommand extends PlatformCommand
                 }
             }
             if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitMultiple($activities, $this->stdErr);
+                if (!ActivityUtil::waitMultiple($activities, $this->stdErr)) {
+                    $success = false;
+                }
             }
         }
 
-        return 0;
+        return $success ? 0 : 1;
     }
 
     /**

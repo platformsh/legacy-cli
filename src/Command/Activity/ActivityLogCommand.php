@@ -58,7 +58,7 @@ class ActivityLogCommand extends PlatformCommand
         }
 
         $this->stdErr->writeln(
-          "Log for activity <info>" . $activity['id'] . "</info> (" . $activity->getDescription() . "):"
+          "Log for activity <info>" . $activity['id'] . "</info> (" . $activity->getDescription() . "):\n"
         );
 
         $refresh = $input->getOption('refresh');
@@ -77,7 +77,7 @@ class ActivityLogCommand extends PlatformCommand
     protected function displayLog(Activity $activity, OutputInterface $output, $poll = true, $interval = 1)
     {
         $logger = function ($log) use ($output) {
-            $output->write(preg_replace('/^/m', '    ', $log));
+            $output->write($log);
         };
         if (!$poll) {
             $logger($activity['log']);

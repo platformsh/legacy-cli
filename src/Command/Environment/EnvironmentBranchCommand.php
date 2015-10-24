@@ -169,9 +169,6 @@ class EnvironmentBranchCommand extends PlatformCommand
               "The environment <info>$branchName</info> has been branched.",
               '<error>Branching failed</error>'
             );
-
-            // Clear the environments cache again.
-            $this->clearEnvironmentsCache($selectedProject);
         }
 
         $build = $input->getOption('build');

@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -50,7 +51,7 @@ class ActivityListCommand extends PlatformCommand
             return 1;
         }
 
-        $headers = array("ID", "Created", "Description", "% Complete", "Result");
+        $headers = array("ID", "Created", "Description", "% Complete", "State");
         $rows = array();
         foreach ($activities as $activity) {
             $description = $activity->getDescription();
@@ -60,7 +61,7 @@ class ActivityListCommand extends PlatformCommand
               date('Y-m-d H:i:s', strtotime($activity['created_at'])),
               $description,
               $activity->getCompletionPercent(),
-              $activity->state,
+              ActivityUtil::formatState($activity->state),
             );
         }
 

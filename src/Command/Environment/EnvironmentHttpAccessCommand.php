@@ -190,6 +190,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
 
                 // Patch the environment with the changes.
                 $activity = $selectedEnvironment->update(array('http_access' => $accessOpts));
+                $this->clearEnvironmentsCache();
 
                 $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 

@@ -181,7 +181,9 @@ class EnvironmentDeleteCommand extends PlatformCommand
         }
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($deactivateActivities, $output);
+            if (!ActivityUtil::waitMultiple($deactivateActivities, $output)) {
+                $error = true;
+            }
         }
 
         $deleted = 0;

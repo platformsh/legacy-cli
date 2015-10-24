@@ -115,6 +115,8 @@ class EnvironmentInfoCommand extends PlatformCommand
         $activity = $environment->update(array($property => $value));
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment[$property], $property));
 
+        $this->clearEnvironmentsCache();
+
         $rebuildProperties = array('enable_smtp', 'restrict_robots');
         $success = true;
         if ($activity instanceof Activity && !$noWait) {
@@ -123,8 +125,6 @@ class EnvironmentInfoCommand extends PlatformCommand
         elseif (!($activity instanceof Activity) && in_array($property, $rebuildProperties)) {
             $this->rebuildWarning();
         }
-
-        $this->clearEnvironmentsCache();
 
         return $success ? 0 : 1;
     }
