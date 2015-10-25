@@ -91,7 +91,6 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
         if (!$input->getOption('no-wait')) {
-            $this->stdErr->writeln("Waiting for synchronization to complete...");
             $success = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,

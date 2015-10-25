@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -189,7 +188,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
                 }
 
                 // Patch the environment with the changes.
-                $activity = $selectedEnvironment->update(array('http_access' => $accessOpts));
+                $result = $selectedEnvironment->update(array('http_access' => $accessOpts));
                 $this->clearEnvironmentsCache();
 
                 $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
@@ -197,11 +196,11 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
                 $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
 
                 $success = true;
-                if (!$activity instanceof Activity) {
+                if (!$result->countActivities()) {
                     $this->rebuildWarning();
                 }
                 elseif (!$input->getOption('no-wait')) {
-                    $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+                    $success = ActivityUtil::waitOnResult($result, $this->stdErr);
                 }
 
                 return $success ? 0 : 1;

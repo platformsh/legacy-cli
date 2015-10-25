@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -41,7 +40,7 @@ class DomainAddCommand extends DomainCommand
 
         try {
             $this->stdErr->writeln("Adding the domain <info>{$this->domainName}</info>");
-            $activity = $this->getSelectedProject()
+            $result = $this->getSelectedProject()
                            ->addDomain($this->domainName, $this->sslOptions);
         }
         catch (ClientException $e) {
@@ -56,8 +55,8 @@ class DomainAddCommand extends DomainCommand
             throw $e;
         }
 
-        if ($activity instanceof Activity && !$input->getOption('no-wait')) {
-            ActivityUtil::waitAndLog($activity, $this->stdErr);
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitOnResult($result, $this->stdErr);
         }
 
         return 0;

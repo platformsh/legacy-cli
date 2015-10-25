@@ -90,10 +90,10 @@ class UserRoleCommand extends PlatformCommand
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
         elseif ($role && $level == 'environment') {
-            $activity = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
+            $result = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
             $this->stdErr->writeln("User <info>$email</info> updated");
             if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitAndLog($activity, $this->stdErr);
+                ActivityUtil::waitOnResult($result, $this->stdErr);
             }
         }
 

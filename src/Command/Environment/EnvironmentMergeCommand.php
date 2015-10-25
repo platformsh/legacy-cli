@@ -54,7 +54,6 @@ class EnvironmentMergeCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
-            $this->stdErr->writeln("Waiting for the merge to complete...");
             $success = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,

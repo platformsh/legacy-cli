@@ -62,29 +62,20 @@ class ActivityLogCommand extends PlatformCommand
         );
 
         $refresh = $input->getOption('refresh');
-        $poll = $refresh > 0 && $this->isTerminal($output);
-        $this->displayLog($activity, $output, $poll, $refresh);
+        if ($refresh > 0 && $this->isTerminal($output) && !$activity->isComplete()) {
+            $activity->wait(
+                null,
+                function ($log) use ($output) {
+                    $output->write($log);
+                },
+                $refresh
+            );
+        }
+        else {
+            $output->write($activity->log);
+        }
 
         return 0;
-    }
-
-    /**
-     * @param Activity $activity
-     * @param OutputInterface $output
-     * @param bool $poll
-     * @param float|int $interval A refresh interval (in seconds).
-     */
-    protected function displayLog(Activity $activity, OutputInterface $output, $poll = true, $interval = 1)
-    {
-        $logger = function ($log) use ($output) {
-            $output->write($log);
-        };
-        if (!$poll) {
-            $logger($activity['log']);
-
-            return;
-        }
-        $activity->wait(null, $logger, $interval);
     }
 
 }

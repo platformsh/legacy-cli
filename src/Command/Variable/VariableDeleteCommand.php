@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -66,16 +65,16 @@ class VariableDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        $activity = $variable->delete();
+        $result = $variable->delete();
 
         $this->stdErr->writeln("Deleted variable <info>$variableName</info>");
 
         $success = true;
-        if (!$activity instanceof Activity) {
+        if (!$result->countActivities()) {
             $this->rebuildWarning();
         }
         elseif (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+            $success = ActivityUtil::waitOnResult($result, $this->stdErr);
         }
 
         return $success ? 0 : 1;

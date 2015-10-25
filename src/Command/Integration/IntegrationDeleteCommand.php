@@ -42,12 +42,12 @@ class IntegrationDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        $activity = $integration->delete();
+        $result = $integration->delete();
 
         $this->stdErr->writeln("Deleted integration <info>$id</info>");
 
-        if ($activity instanceof Activity && !$input->getOption('no-wait')) {
-            ActivityUtil::waitAndLog($activity, $this->stdErr);
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitOnResult($result, $this->stdErr);
         }
 
         return 0;

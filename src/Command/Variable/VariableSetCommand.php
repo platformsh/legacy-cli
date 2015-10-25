@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -57,17 +56,17 @@ class VariableSetCommand extends PlatformCommand
         }
 
         // Set the variable to a new value.
-        $activity = $this->getSelectedEnvironment()
-                         ->setVariable($variableName, $variableValue, $json);
+        $result = $this->getSelectedEnvironment()
+                       ->setVariable($variableName, $variableValue, $json);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
         $success = true;
-        if (!$activity instanceof Activity) {
+        if (!$result->countActivities()) {
             $this->rebuildWarning();
         }
         elseif (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+            $success = ActivityUtil::waitOnResult($result, $this->stdErr);
         }
 
         return $success ? 0 : 1;
