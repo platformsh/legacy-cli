@@ -36,17 +36,9 @@ class IntegrationDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$integration->operationAvailable('delete')) {
-            $this->stdErr->writeln("The integration <error>$id</error> cannot be deleted");
-
-            return 1;
-        }
-
         $type = $integration->getProperty('type');
         $confirmText = "Delete the integration <info>$id</info> (type: $type)?";
-        if (!$this->getHelper('question')
-                  ->confirm($confirmText, $input, $this->stdErr)
-        ) {
+        if (!$this->getHelper('question')->confirm($confirmText, $input, $this->stdErr)) {
             return 1;
         }
 

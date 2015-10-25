@@ -40,7 +40,7 @@ class VariableDeleteCommand extends PlatformCommand
         }
 
         if (!$variable->operationAvailable('delete')) {
-            if ($variable->getProperty('inherited')) {
+            if ($variable->inherited) {
                 $this->stdErr->writeln(
                   "The variable <error>$variableName</error> is inherited,"
                   . " so it cannot be deleted from this environment."

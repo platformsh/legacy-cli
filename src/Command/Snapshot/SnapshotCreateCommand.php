@@ -34,6 +34,9 @@ class SnapshotCreateCommand extends PlatformCommand
             $this->stdErr->writeln(
               "Operation not available: cannot create a snapshot of <error>$environmentId</error>"
             );
+            if ($selectedEnvironment->is_dirty) {
+                $this->clearEnvironmentsCache();
+            }
 
             return 1;
         }

@@ -51,6 +51,7 @@ class EnvironmentBranchCommand extends PlatformCommand
         $this->envArgName = 'parent';
         $this->validateInput($input, true);
         $selectedProject = $this->getSelectedProject();
+        $parentEnvironment = $this->getSelectedEnvironment();
 
         $branchName = $input->getArgument('name');
         if (empty($branchName)) {
@@ -67,9 +68,8 @@ class EnvironmentBranchCommand extends PlatformCommand
         }
 
         $machineName = Environment::sanitizeId($branchName);
-        $environmentId = $this->getSelectedEnvironment()['id'];
 
-        if ($machineName == $environmentId) {
+        if ($machineName == $parentEnvironment->id) {
             $this->stdErr->writeln("<comment>Already on $machineName</comment>");
 
             return 1;
@@ -92,12 +92,13 @@ class EnvironmentBranchCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$this->getSelectedEnvironment()
-                  ->operationAvailable('branch')
-        ) {
+        if (!$parentEnvironment->operationAvailable('branch')) {
             $this->stdErr->writeln(
-              "Operation not available: The environment <error>$environmentId</error> can't be branched."
+              "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
             );
+            if ($parentEnvironment->is_dirty) {
+                $this->clearEnvironmentsCache();
+            }
 
             return 1;
         }
@@ -117,13 +118,11 @@ class EnvironmentBranchCommand extends PlatformCommand
             return 1;
         }
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
-
         $this->stdErr->writeln(
-          "Creating a new environment <info>$branchName</info>, branched from <info>{$selectedEnvironment['title']}</info>"
+          "Creating a new environment <info>$branchName</info>, branched from <info>{$parentEnvironment->title}</info>"
         );
 
-        $activity = $selectedEnvironment->branch($branchName, $machineName);
+        $activity = $parentEnvironment->branch($branchName, $machineName);
 
         // Clear the environments cache, as branching has started.
         $this->clearEnvironmentsCache($selectedProject);

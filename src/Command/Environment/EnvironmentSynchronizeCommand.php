@@ -39,6 +39,9 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
             $this->stdErr->writeln(
               "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
+            if ($selectedEnvironment->is_dirty) {
+                $this->clearEnvironmentsCache();
+            }
 
             return 1;
         }
