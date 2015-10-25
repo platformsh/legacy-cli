@@ -444,7 +444,7 @@ abstract class PlatformCommand extends Command
                               ->getConnector();
             $client = $connector->getClient();
             foreach ((array) self::$cache->fetch($cacheKey) as $id => $data) {
-                $projects[$id] = Project::wrap($data, $data['_endpoint'], $client);
+                $projects[$id] = new Project($data, $data['_endpoint'], $client);
             }
         }
 
@@ -526,7 +526,7 @@ abstract class PlatformCommand extends Command
             $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project['endpoint'];
             $client = $connector->getClient();
             foreach ((array) self::$cache->fetch($cacheKey) as $id => $data) {
-                $environments[$id] = Environment::wrap($data, $endpoint, $client);
+                $environments[$id] = new Environment($data, $endpoint, $client);
             }
         }
 

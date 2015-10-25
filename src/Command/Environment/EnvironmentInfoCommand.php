@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -112,17 +111,17 @@ class EnvironmentInfoCommand extends PlatformCommand
 
             return 0;
         }
-        $activity = $environment->update(array($property => $value));
+        $result = $environment->update(array($property => $value));
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment[$property], $property));
 
         $this->clearEnvironmentsCache();
 
         $rebuildProperties = array('enable_smtp', 'restrict_robots');
         $success = true;
-        if ($activity instanceof Activity && !$noWait) {
-            $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+        if ($result->countActivities() && !$noWait) {
+            $success = ActivityUtil::waitOnResult($result, $this->stdErr);
         }
-        elseif (!($activity instanceof Activity) && in_array($property, $rebuildProperties)) {
+        elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
             $this->rebuildWarning();
         }
 

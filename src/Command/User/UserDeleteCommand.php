@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -15,7 +16,7 @@ class UserDeleteCommand extends PlatformCommand
           ->setName('user:delete')
           ->setDescription('Delete a user')
           ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
-        $this->addProjectOption();
+        $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Delete Alice from the project', 'alice@example.com');
     }
 
@@ -51,9 +52,13 @@ class UserDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        $selectedUser->delete();
+        $result = $selectedUser->delete();
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
+
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitOnResult($result, $this->stdErr);
+        }
 
         // If the user was deleting themselves from the project, then invalidate
         // the projects cache.
