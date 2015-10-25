@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
