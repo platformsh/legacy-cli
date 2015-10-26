@@ -143,6 +143,7 @@ abstract class ActivityUtil
         while ($complete < $count) {
             sleep(1);
             $states = [];
+            $complete = 0;
             foreach ($activities as $activity) {
                 if (!$activity->isComplete()) {
                     $activity->refresh();
