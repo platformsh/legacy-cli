@@ -71,7 +71,7 @@ class UserRoleCommand extends PlatformCommand
         }
 
         $role = $input->getOption('role');
-        if ($role && !in_array($role, $validRoles)) {
+        if ($role && $role !== 'none' && !in_array($role, $validRoles)) {
             $this->stdErr->writeln("Invalid role: $role");
             return 1;
         }
@@ -82,19 +82,32 @@ class UserRoleCommand extends PlatformCommand
             return 1;
         }
 
-        if ($role === $currentRole) {
+        if ($role === $currentRole || ($role === 'none' && $currentRole === false)) {
             $this->stdErr->writeln("There is nothing to change");
         }
         elseif ($role && $level == 'project') {
-            $selectedUser->update(array('role' => $role));
+            $result = $selectedUser->update(array('role' => $role));
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
         elseif ($role && $level == 'environment') {
-            $activity = $selectedUser->changeEnvironmentRole($this->getSelectedEnvironment(), $role);
-            $this->stdErr->writeln("User <info>$email</info> updated");
-            if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitAndLog($activity, $this->stdErr);
+            $environment = $this->getSelectedEnvironment();
+            $access = $environment->getUser($selectedUser->id);
+            if ($role == 'none') {
+                if ($access) {
+                    $result = $access->delete();
+                }
             }
+            elseif ($access) {
+                $result = $access->update(['role' => $role]);
+            }
+            else {
+                $result = $environment->addUser($selectedUser->id, $role);
+            }
+            $this->stdErr->writeln("User <info>$email</info> updated");
+        }
+
+        if (isset($result) && !$input->getOption('no-wait')) {
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         if ($input->getOption('pipe')) {
@@ -102,7 +115,7 @@ class UserRoleCommand extends PlatformCommand
                 $output->writeln($selectedUser->role);
             } elseif ($level == 'environment') {
                 $environment = $this->getSelectedEnvironment();
-                $output->writeln($selectedUser->getEnvironmentRole($environment));
+                $output->writeln($selectedUser->getEnvironmentRole($environment) ?: 'none');
             }
 
             return 0;
@@ -112,7 +125,7 @@ class UserRoleCommand extends PlatformCommand
             $output->writeln("Project role: <info>{$selectedUser->role}</info>");
         } elseif ($level == 'environment') {
             $environment = $this->getSelectedEnvironment();
-            $environmentRole = $selectedUser->getEnvironmentRole($environment);
+            $environmentRole = $selectedUser->getEnvironmentRole($environment) ?: 'none';
             $output->writeln("Role for environment {$environment->title}: <info>$environmentRole</info>");
         }
 

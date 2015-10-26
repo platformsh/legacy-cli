@@ -162,6 +162,7 @@ with the `platform projects` and `platform environments` commands.
 You can configure the CLI via these environment variables:
 
 * `PLATFORMSH_CLI_API_TOKEN`: an API token to use for all requests
+* `PLATFORMSH_CLI_COPY_ON_WINDOWS`: set to 1 to avoid some Windows symlink issues
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')

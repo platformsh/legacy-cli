@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -45,12 +44,12 @@ class DomainDeleteCommand extends PlatformCommand
             return 0;
         }
 
-        $activity = $domain->delete();
+        $result = $domain->delete();
 
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
-        if ($activity instanceof Activity && !$input->getOption('no-wait')) {
-            ActivityUtil::waitAndLog($activity, $this->stdErr);
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         return 0;

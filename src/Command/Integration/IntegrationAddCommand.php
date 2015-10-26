@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -34,20 +34,19 @@ class IntegrationAddCommand extends IntegrationCommand
         $result = $this->getSelectedProject()
                          ->addIntegration($values['type'], $values);
 
-        $integrationId = $result instanceof Activity
-          ? $result->payload['integration']['id']
-          : $result['_embedded']['entity']['id'];
+        /** @var Integration $integration */
+        $integration = $result->getEntity();
 
-        $this->stdErr->writeln("Created integration <info>$integrationId</info> (type: {$values['type']})");
+        $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 
-        if ($result instanceof Activity && !$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitAndLog($result, $this->stdErr);
+        $success = true;
+        if (!$input->getOption('no-wait')) {
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
-        $integration = $this->getSelectedProject()->getIntegration($integrationId);
         $output->writeln($this->formatIntegrationData($integration));
 
-        return 0;
+        return $success ? 0 : 1;
     }
 
 }

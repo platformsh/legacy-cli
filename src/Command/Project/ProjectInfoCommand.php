@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Project;
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -125,14 +124,14 @@ class ProjectInfoCommand extends PlatformCommand
         }
 
         $project->ensureFull();
-        $activity = $project->update(array($property => $value));
+        $result = $project->update(array($property => $value));
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
 
         $this->clearProjectsCache();
 
         $success = true;
-        if ($activity instanceof Activity && !$noWait) {
-            $success = ActivityUtil::waitAndLog($activity, $this->stdErr);
+        if (!$noWait) {
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         return $success ? 0 : 1;

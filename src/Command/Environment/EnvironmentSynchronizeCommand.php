@@ -39,6 +39,9 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
             $this->stdErr->writeln(
               "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
+            if ($selectedEnvironment->is_dirty) {
+                $this->clearEnvironmentsCache();
+            }
 
             return 1;
         }
@@ -88,7 +91,6 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
 
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
         if (!$input->getOption('no-wait')) {
-            $this->stdErr->writeln("Waiting for synchronization to complete...");
             $success = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,

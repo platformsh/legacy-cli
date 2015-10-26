@@ -112,22 +112,21 @@ class UserAddCommand extends PlatformCommand
 
         $this->stdErr->writeln("Adding the user to the project");
         $result = $project->addUser($email, $projectRole);
+        $activities = $result->getActivities();
 
         $this->stdErr->writeln("User <info>$email</info> created");
 
+        $success = true;
         if (!empty($environmentRoles)) {
-
-            if (!isset($result['_embedded']['entity']['id'])) {
-                $this->stdErr->writeln("Failed to find user ID from response");
-                return 1;
-            }
-            $uuid = $result['_embedded']['entity']['id'];
+            /** @var ProjectAccess $projectAccess */
+            $projectAccess = $result->getEntity();
+            $uuid = $projectAccess->id;
 
             $this->stdErr->writeln("Setting environment role(s)");
-            $activities = [];
             foreach ($environmentRoles as $environmentId => $role) {
                 if (!isset($environments[$environmentId])) {
                     $this->stdErr->writeln("<error>Environment not found: $environmentId</error>");
+                    $success = false;
                     continue;
                 }
                 if ($role == 'none') {
@@ -136,19 +135,23 @@ class UserAddCommand extends PlatformCommand
                 $access = $environments[$environmentId]->getUser($uuid);
                 if ($access) {
                     $this->stdErr->writeln("Modifying the user's role on the environment: <info>$environmentId</info>");
-                    $activity = $access->update(['role' => $role]);
+                    $result = $access->update(['role' => $role]);
                 }
                 else {
                     $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
-                    $activities[] = $environments[$environmentId]->addUser($uuid, $role);
+                    $result = $environments[$environmentId]->addUser($uuid, $role);
                 }
-            }
-            if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitMultiple($activities, $this->stdErr);
+                $activities = array_merge($activities, $result->getActivities());
             }
         }
 
-        return 0;
+        if (!$input->getOption('no-wait')) {
+            if (!ActivityUtil::waitMultiple($activities, $this->stdErr)) {
+                $success = false;
+            }
+        }
+
+        return $success ? 0 : 1;
     }
 
     /**

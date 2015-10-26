@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -36,26 +35,18 @@ class IntegrationDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        if (!$integration->operationAvailable('delete')) {
-            $this->stdErr->writeln("The integration <error>$id</error> cannot be deleted");
-
-            return 1;
-        }
-
         $type = $integration->getProperty('type');
         $confirmText = "Delete the integration <info>$id</info> (type: $type)?";
-        if (!$this->getHelper('question')
-                  ->confirm($confirmText, $input, $this->stdErr)
-        ) {
+        if (!$this->getHelper('question')->confirm($confirmText, $input, $this->stdErr)) {
             return 1;
         }
 
-        $activity = $integration->delete();
+        $result = $integration->delete();
 
         $this->stdErr->writeln("Deleted integration <info>$id</info>");
 
-        if ($activity instanceof Activity && !$input->getOption('no-wait')) {
-            ActivityUtil::waitAndLog($activity, $this->stdErr);
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         return 0;

@@ -50,9 +50,10 @@ class EnvironmentMergeCommand extends PlatformCommand
 
         $this->stdErr->writeln("Merging <info>$environmentId</info> with <info>$parentId</info>");
 
+        $this->clearEnvironmentsCache();
+
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
-            $this->stdErr->writeln("Waiting for the merge to complete...");
             $success = ActivityUtil::waitAndLog(
               $activity,
               $this->stdErr,
@@ -63,8 +64,6 @@ class EnvironmentMergeCommand extends PlatformCommand
                 return 1;
             }
         }
-
-        $this->clearEnvironmentsCache();
 
         return 0;
     }
