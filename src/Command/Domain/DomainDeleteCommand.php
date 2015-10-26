@@ -49,7 +49,7 @@ class DomainDeleteCommand extends PlatformCommand
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitOnResult($result, $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         return 0;

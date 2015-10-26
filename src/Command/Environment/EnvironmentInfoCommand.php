@@ -119,7 +119,7 @@ class EnvironmentInfoCommand extends PlatformCommand
         $rebuildProperties = array('enable_smtp', 'restrict_robots');
         $success = true;
         if ($result->countActivities() && !$noWait) {
-            $success = ActivityUtil::waitOnResult($result, $this->stdErr);
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
         elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
             $this->rebuildWarning();

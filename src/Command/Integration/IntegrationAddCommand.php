@@ -41,7 +41,7 @@ class IntegrationAddCommand extends IntegrationCommand
 
         $success = true;
         if (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitOnResult($result, $this->stdErr);
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         $output->writeln($this->formatIntegrationData($integration));

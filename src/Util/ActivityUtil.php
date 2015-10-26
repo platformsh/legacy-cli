@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Util;
 
 use Platformsh\Client\Model\Activity;
-use Platformsh\Client\Model\Result;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -15,24 +14,6 @@ abstract class ActivityUtil
         Activity::STATE_COMPLETE => 'complete',
         Activity::STATE_IN_PROGRESS => 'in progress',
     ];
-
-    /**
-     * Wait for the activities in a result to complete.
-     *
-     * @param Result $result
-     * @param OutputInterface $output
-     *
-     * @return bool
-     */
-    public static function waitOnResult(Result $result, OutputInterface $output)
-    {
-        $activities = $result->getActivities();
-        if (count($activities) === 1) {
-            return self::waitAndLog(reset($activities), $output);
-        }
-
-        return self::waitMultiple($activities, $output);
-    }
 
     /**
      * Wait for a single activity to complete, and display the log continuously.
@@ -113,10 +94,11 @@ abstract class ActivityUtil
         $count = count($activities);
         if ($count == 0) {
             return true;
+        } elseif ($count === 1) {
+            return self::waitAndLog(reset($activities), $output);
         }
 
-        $activitiesPlural = $count > 1 ? 'activities' : 'activity';
-        $output->writeln("Waiting for the $activitiesPlural to complete...");
+        $output->writeln("Waiting for $count activities...");
 
         // Initialize a progress bar which will show elapsed time and all of the
         // activities' states.

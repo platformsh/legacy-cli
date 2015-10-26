@@ -107,7 +107,7 @@ class UserRoleCommand extends PlatformCommand
         }
 
         if (isset($result) && !$input->getOption('no-wait')) {
-            ActivityUtil::waitOnResult($result, $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         if ($input->getOption('pipe')) {

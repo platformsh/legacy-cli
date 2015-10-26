@@ -74,7 +74,7 @@ class VariableDeleteCommand extends PlatformCommand
             $this->rebuildWarning();
         }
         elseif (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitOnResult($result, $this->stdErr);
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         return $success ? 0 : 1;

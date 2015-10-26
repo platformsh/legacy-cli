@@ -131,7 +131,7 @@ class ProjectInfoCommand extends PlatformCommand
 
         $success = true;
         if (!$noWait) {
-            $success = ActivityUtil::waitOnResult($result, $this->stdErr);
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
         return $success ? 0 : 1;
