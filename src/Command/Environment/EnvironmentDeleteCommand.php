@@ -20,6 +20,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
           ->setName('environment:delete')
           ->setDescription('Delete an environment')
           ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
+          ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
           ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
           ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
         $this->addProjectOption()
@@ -148,8 +149,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
                 $question = "Are you sure you want to delete the environment <comment>$environmentId</comment>?";
                 if ($questionHelper->confirm($question, $input, $output)) {
                     $deactivate[$environmentId] = $environment;
-                    $question = "Delete the remote Git branch too?";
-                    if ($questionHelper->confirm($question, $input, $output)) {
+                    if ($input->getOption('delete-branch') || ($input->isInteractive() && $questionHelper->confirm("Delete the remote Git branch too?", $input, $output))) {
                         $delete[$environmentId] = $environment;
                     }
                 }
