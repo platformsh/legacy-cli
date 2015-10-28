@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
@@ -111,7 +110,6 @@ class EnvironmentBranchCommand extends PlatformCommand
               "<comment>This command was run from outside your local project root, the new Platform.sh branch cannot be checked out in your local Git repository."
               . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
             );
-            $local_error = true;
         } elseif (!$projectRoot) {
             $this->stdErr->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
 
@@ -137,7 +135,6 @@ class EnvironmentBranchCommand extends PlatformCommand
                 $this->stdErr->writeln("Checking out <info>$machineName</info> locally");
                 if (!$gitHelper->checkOut($machineName)) {
                     $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
-                    $local_error = true;
                     if (!$force) {
                         return 1;
                     }
@@ -151,7 +148,6 @@ class EnvironmentBranchCommand extends PlatformCommand
                 $this->stdErr->writeln("Creating local branch <info>$machineName</info>");
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
-                    $local_error = true;
                     if (!$force) {
                         return 1;
                     }
@@ -167,23 +163,6 @@ class EnvironmentBranchCommand extends PlatformCommand
               "The environment <info>$branchName</info> has been branched.",
               '<error>Branching failed</error>'
             );
-        }
-
-        $build = $input->getOption('build');
-        if (empty($local_error) && $build && $projectRoot) {
-            // Build the new branch.
-            try {
-                $buildSettings = array(
-                  'environmentId' => $machineName,
-                  'verbosity' => $output->getVerbosity(),
-                );
-                $builder = new LocalBuild($buildSettings, $output);
-                $builder->buildProject($projectRoot);
-            } catch (\Exception $e) {
-                $this->stdErr->writeln("<comment>The new branch could not be built: \n" . $e->getMessage() . "</comment>");
-
-                return 1;
-            }
         }
 
         $this->clearEnvironmentsCache();
