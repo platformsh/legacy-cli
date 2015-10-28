@@ -164,21 +164,7 @@ class DrushHelper extends Helper
             return getenv('PLATFORMSH_CLI_DRUSH');
         }
 
-        $executable = 'drush';
-        if (strpos(PHP_OS, 'WIN') !== false) {
-            // Use "where drush" to find the full path to the Drush executable
-            // on Windows. It can return a list of commands.
-            $fullPaths = $this->shellHelper->execute(['where', 'drush'], null, false, true);
-            if ($fullPaths) {
-                $fullPaths = preg_split('/[\r\n]/', trim($fullPaths));
-                $executable = end($fullPaths);
-            }
-            else {
-                trigger_error("Failed to find Drush executable via 'where drush'", E_USER_NOTICE);
-            }
-        }
-
-        return $executable;
+        return $this->shellHelper->resolveCommand('drush');
     }
 
     /**
