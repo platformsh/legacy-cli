@@ -117,7 +117,7 @@ class LocalProject
     {
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
-        foreach (['origin', 'platform'] as $remote) {
+        foreach (['platform', 'origin'] as $remote) {
             if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
