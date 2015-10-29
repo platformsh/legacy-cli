@@ -54,7 +54,7 @@ class ProjectDeleteCommand extends PlatformCommand
         $subscriptionId = $project->getSubscriptionId();
         $subscription = $client->getSubscription($subscriptionId);
 
-        $result = $subscription->delete();
+        $subscription->delete();
         $this->clearProjectsCache();
 
         $this->stdErr->writeln("\nThe project <info>$title</info> (<info>{$project->id}</info>) was deleted.");

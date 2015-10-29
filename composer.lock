@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "0849b63f203c206a551c79757dae473e",
-    "content-hash": "2849625a3421f0ab0737e595fc5ae7af",
+    "hash": "46740a70f842ae63c7b3dd489ab99643",
+    "content-hash": "8cceac3f2742f0a508648052c865580e",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -679,16 +679,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.3.0",
+            "version": "v0.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "91406527bc16a2884ca69f4af636fe1027409a9a"
+                "reference": "0ae4eab17cc096f7081f66a8cb953877fdad8359"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/91406527bc16a2884ca69f4af636fe1027409a9a",
-                "reference": "91406527bc16a2884ca69f4af636fe1027409a9a",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/0ae4eab17cc096f7081f66a8cb953877fdad8359",
+                "reference": "0ae4eab17cc096f7081f66a8cb953877fdad8359",
                 "shasum": ""
             },
             "require": {
@@ -716,7 +716,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2015-10-25 12:30:38"
+            "time": "2015-10-29 23:07:11"
         },
         {
             "name": "platformsh/console-form",
