@@ -33,7 +33,7 @@ class WelcomeCommand extends PlatformCommand
             // The project is known. Show the environments.
             $projectName = $currentProject->title;
             $projectURI = $currentProject->getLink('#ui');
-            $projectId = $currentProject['id'];
+            $projectId = $currentProject->id;
             $this->stdErr->writeln("Project Name: <info>$projectName</info>");
             $this->stdErr->writeln("Project ID: <info>$projectId</info>");
             $this->stdErr->writeln("Project Dashboard: <info>$projectURI</info>\n");

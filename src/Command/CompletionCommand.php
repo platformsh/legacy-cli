@@ -172,7 +172,7 @@ class CompletionCommand extends ParentCompletionCommand
             $environments = array_filter(
               $environments,
               function ($environment) use ($currentEnvironment) {
-                  return $environment['id'] != $currentEnvironment['id'];
+                  return $environment->id !== $currentEnvironment->id;
               }
             );
         }

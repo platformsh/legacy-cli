@@ -144,7 +144,7 @@ class EnvironmentBranchCommand extends PlatformCommand
                 }
             } else {
                 // Create a new branch, using the current or specified environment as the parent if it exists locally.
-                $parent = $this->getSelectedEnvironment()['id'];
+                $parent = $this->getSelectedEnvironment()->id;
                 if (!$gitHelper->branchExists($parent)) {
                     $parent = null;
                 }

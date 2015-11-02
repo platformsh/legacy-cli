@@ -164,7 +164,7 @@ class EnvironmentHttpAccessCommand extends PlatformCommand
         // Ensure the environment is refreshed.
         $selectedEnvironment = $this->getSelectedEnvironment();
         $selectedEnvironment->ensureFull();
-        $environmentId = $selectedEnvironment['id'];
+        $environmentId = $selectedEnvironment->id;
 
         $formatter = new PropertyFormatter();
 

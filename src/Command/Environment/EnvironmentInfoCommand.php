@@ -112,7 +112,7 @@ class EnvironmentInfoCommand extends PlatformCommand
             return 0;
         }
         $result = $environment->update(array($property => $value));
-        $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment[$property], $property));
+        $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment->$property, $property));
 
         $this->clearEnvironmentsCache();
 
@@ -167,16 +167,16 @@ class EnvironmentInfoCommand extends PlatformCommand
         $selectedEnvironment = $this->getSelectedEnvironment();
         switch ($property) {
             case 'parent':
-                if ($selectedEnvironment['id'] === 'master') {
+                if ($selectedEnvironment->id === 'master') {
                     $message = "The master environment cannot have a parent";
                     $valid = false;
-                } elseif ($value === $selectedEnvironment['id']) {
+                } elseif ($value === $selectedEnvironment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
                 } elseif (!$parentEnvironment = $this->getEnvironment($value)) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
-                } elseif ($parentEnvironment['parent'] === $selectedEnvironment['id']) {
+                } elseif ($parentEnvironment->parent === $selectedEnvironment->id) {
                     $valid = false;
                 }
                 break;

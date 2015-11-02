@@ -59,7 +59,7 @@ class EnvironmentActivateCommand extends PlatformCommand
         $process = array();
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
-            $environmentId = $environment['id'];
+            $environmentId = $environment->id;
             if ($environment->isActive()) {
                 $output->writeln("The environment <info>$environmentId</info> is already active.");
                 $count--;

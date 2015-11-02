@@ -126,7 +126,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
         $error = false;
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
-            $environmentId = $environment['id'];
+            $environmentId = $environment->id;
             if ($environmentId == 'master') {
                 $output->writeln("The <error>master</error> environment cannot be deleted.");
                 $error = true;
@@ -135,7 +135,7 @@ class EnvironmentDeleteCommand extends PlatformCommand
             // Check that the environment does not have children.
             // @todo remove this check when Platform's behavior is fixed
             foreach ($this->getEnvironments() as $potentialChild) {
-                if ($potentialChild['parent'] == $environment['id']) {
+                if ($potentialChild->parent == $environment->id) {
                     $output->writeln(
                       "The environment <error>$environmentId</error> has children and therefore can't be deleted."
                     );

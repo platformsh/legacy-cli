@@ -52,7 +52,7 @@ class VariableDeleteCommand extends PlatformCommand
             return 1;
         }
 
-        $environmentId = $this->getSelectedEnvironment()['id'];
+        $environmentId = $this->getSelectedEnvironment()->id;
         $confirm = $this->getHelper('question')
                         ->confirm(
                           "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",

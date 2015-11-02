@@ -231,11 +231,11 @@ class ProjectGetCommand extends PlatformCommand
     {
         // Create a list starting with "master".
         $default = 'master';
-        $environmentList = array($default => $environments[$default]['title']);
+        $environmentList = array($default => $environments[$default]->title);
         foreach ($environments as $environment) {
             $id = $environment->id;
             if ($id != $default) {
-                $environmentList[$id] = $environment['title'];
+                $environmentList[$id] = $environment->title;
             }
         }
         if (count($environmentList) === 1) {

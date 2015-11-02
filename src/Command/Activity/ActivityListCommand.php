@@ -57,7 +57,7 @@ class ActivityListCommand extends PlatformCommand
             $description = $activity->getDescription();
             $description = wordwrap($description, 40);
             $rows[] = array(
-              $activity['id'],
+              $activity->id,
               date('Y-m-d H:i:s', strtotime($activity['created_at'])),
               $description,
               $activity->getCompletionPercent(),
@@ -75,7 +75,7 @@ class ActivityListCommand extends PlatformCommand
             return 0;
         }
 
-        $this->stdErr->writeln("Activities for the environment <info>" . $environment['id'] . "</info>");
+        $this->stdErr->writeln("Activities for the environment <info>" . $environment->id . "</info>");
         $table = new Table($output);
         $table->setHeaders($headers);
         $table->addRows($rows);

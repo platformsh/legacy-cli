@@ -512,8 +512,8 @@ abstract class PlatformCommand extends Command
             $environments = array();
             $toCache = array();
             foreach ($project->getEnvironments() as $environment) {
-                $environments[$environment['id']] = $environment;
-                $toCache[$environment['id']] = $environment->getData();
+                $environments[$environment->id] = $environment;
+                $toCache[$environment->id] = $environment->getData();
             }
 
             // Recreate the aliases if the list of environments has changed.
@@ -526,7 +526,7 @@ abstract class PlatformCommand extends Command
             $environments = array();
             $connector = $this->getClient(false)
                               ->getConnector();
-            $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project['endpoint'];
+            $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
             $client = $connector->getClient();
             foreach ((array) self::$cache->fetch($cacheKey) as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $client);
@@ -554,7 +554,7 @@ abstract class PlatformCommand extends Command
 
         // Statically cache not found environments.
         static $notFound = array();
-        $cacheKey = $project['id'] . ':' . $id;
+        $cacheKey = $project->id . ':' . $id;
         if (!$refresh && isset($notFound[$cacheKey])) {
             return false;
         }
@@ -622,7 +622,7 @@ abstract class PlatformCommand extends Command
         }
         // Double-check that the passed project is the current one.
         $currentProject = $this->getCurrentProject();
-        if (!$currentProject || $currentProject['id'] != $project['id']) {
+        if (!$currentProject || $currentProject->id != $project->id) {
             return;
         }
         // Ignore the project if it doesn't contain a Drupal application.
@@ -834,8 +834,8 @@ abstract class PlatformCommand extends Command
         }
 
         if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $this->stdErr->writeln("Selected project: " . $this->project['id']);
-            $environmentId = $this->environment ? $this->environment['id'] : '[none]';
+            $this->stdErr->writeln("Selected project: " . $this->project->id);
+            $environmentId = $this->environment ? $this->environment->id : '[none]';
             $this->stdErr->writeln("Selected environment: $environmentId");
         }
     }

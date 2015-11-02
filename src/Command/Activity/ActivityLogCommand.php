@@ -58,7 +58,7 @@ class ActivityLogCommand extends PlatformCommand
         }
 
         $this->stdErr->writeln(
-          "Log for activity <info>" . $activity['id'] . "</info> (" . $activity->getDescription() . "):\n"
+          "Log for activity <info>" . $activity->id . "</info> (" . $activity->getDescription() . "):\n"
         );
 
         $refresh = $input->getOption('refresh');

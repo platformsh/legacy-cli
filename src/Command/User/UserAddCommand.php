@@ -92,7 +92,7 @@ class UserAddCommand extends PlatformCommand
         if (!empty($environmentRoles)) {
             foreach ($environments as $environment) {
                 if (isset($environmentRoles[$environment->id])) {
-                    $summaryFields[$environment['title']] = $environmentRoles[$environment->id];
+                    $summaryFields[$environment->title] = $environmentRoles[$environment->id];
                 }
             }
         }
