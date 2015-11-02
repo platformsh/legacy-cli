@@ -19,7 +19,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
         $this
           ->setName('environment:relationships')
           ->setAliases(array('relationships'))
-          ->setDescription('List an environment\'s relationships')
+          ->setDescription('Show an environment\'s relationships')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
           ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view');
         $this->addProjectOption()
@@ -44,30 +44,23 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
             return 1;
         }
 
+        $value = $relationships;
+        $key = null;
+
         if ($property = $input->getOption('property')) {
             $parents = explode('.', $property);
-            $result = self::getNestedArrayValue($relationships, $parents, $key_exists);
+            $key = end($parents);
+            $value = self::getNestedArrayValue($relationships, $parents, $key_exists);
             if (!$key_exists) {
                 $this->stdErr->writeln("Relationship property found: <error>$property</error>");
 
                 return 1;
             }
-            $formatter = new PropertyFormatter();
-            $output->writeln($formatter->format($result, end($parents)));
-            return 0;
         }
 
-        foreach ($relationships as $key => $relationship) {
-            foreach ($relationship as $delta => $info) {
-                $output->writeln("<comment>$key:$delta:</comment>");
-                foreach ($info as $prop => $value) {
-                    if (is_scalar($value)) {
-                        $propString = str_pad("$prop", 10, " ");
-                        $output->writeln("<info>  $propString: $value</info>");
-                    }
-                }
-            }
-        }
+        $formatter = new PropertyFormatter();
+        $formatter->jsonOptions = JSON_PRETTY_PRINT;
+        $output->writeln($formatter->format($value, $key));
 
         return 0;
     }
