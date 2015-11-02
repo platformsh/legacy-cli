@@ -119,7 +119,8 @@ class LoginCommand extends PlatformCommand
             }
             elseif ($e->getResponse()->getStatusCode() === 401) {
                 $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
-                $output->writeln("Forgot your password? Visit: <comment>https://accounts.platform.sh/user/password</comment>\n");
+                $output->writeln("Forgot your password? Or don't have a password yet? Visit:");
+                $output->writeln("  <comment>https://accounts.platform.sh/user/password</comment>\n");
                 $this->configureAccount($input, $output);
             }
             else {
