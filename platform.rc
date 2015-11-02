@@ -2,7 +2,7 @@
 # Platform.sh CLI shell configuration.
 
 # Enable auto-completion.
-if HOOK=$(platform _completion -g -p platform); then
+if HOOK=$(platform _completion -g -p platform 2>/dev/null); then
     # Try two commands.
     # See https://github.com/stecman/symfony-console-completion/issues/12
     echo "$HOOK" | source /dev/stdin
