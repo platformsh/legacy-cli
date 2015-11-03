@@ -41,20 +41,20 @@ class EnvironmentCheckoutCommand extends PlatformCommand
             $environments = $this->getEnvironments($project);
             $currentEnvironment = $this->getCurrentEnvironment($project);
             if ($currentEnvironment) {
-                $this->stdErr->writeln("The current environment is <info>{$currentEnvironment['title']}</info>.");
+                $this->stdErr->writeln("The current environment is <info>{$currentEnvironment->title}</info>.");
             }
             $environmentList = array();
             foreach ($environments as $id => $environment) {
-                if ($currentEnvironment && $id == $currentEnvironment['id']) {
+                if ($currentEnvironment && $id == $currentEnvironment->id) {
                     continue;
                 }
-                $environmentList[$id] = $environment['title'];
+                $environmentList[$id] = $environment->title;
             }
             $config = $this->getProjectConfig($this->getProjectRoot());
             if (!empty($config['mapping'])) {
                 foreach ($config['mapping'] as $branch => $id) {
                     unset($environmentList[$id]);
-                    if ($currentEnvironment && $id == $currentEnvironment['id']) {
+                    if ($currentEnvironment && $id == $currentEnvironment->id) {
                         continue;
                     }
                     if (!isset($environments[$id])) {
@@ -142,8 +142,8 @@ class EnvironmentCheckoutCommand extends PlatformCommand
         // than running 'git ls-remote'.
         $environments = $this->getEnvironments($project);
         foreach ($environments as $environment) {
-            if ($environment['title'] == $branch || $environment['id'] == $branch) {
-                return $environment['id'];
+            if ($environment->title == $branch || $environment->id == $branch) {
+                return $environment->id;
             }
         }
 

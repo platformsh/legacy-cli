@@ -68,8 +68,8 @@ class IntegrationGetCommand extends IntegrationCommand
             $data = $this->formatIntegrationData($integration);
             $table->addRow(
               array(
-                $integration['id'],
-                $integration->getProperty('type'),
+                $integration->id,
+                $integration->type,
                 $data,
               )
             );

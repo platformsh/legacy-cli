@@ -89,4 +89,28 @@ class ShellHelper extends Helper implements ShellHelperInterface
         return (bool) $this->execute($args);
     }
 
+    /**
+     * Resolve the absolute path to a command, if necessary.
+     *
+     * @param string $command
+     *
+     * @return string
+     */
+    public function resolveCommand($command)
+    {
+        // Use "where" to resolve the absolute path to the command on Windows.
+        // This should not be necessary on other systems.
+        if (strpos(PHP_OS, 'WIN') !== false) {
+            $fullPaths = $this->execute(['where', $command], null, false, true);
+            if ($fullPaths) {
+                $fullPaths = preg_split('/[\r\n]/', trim($fullPaths));
+                $command = end($fullPaths);
+            } else {
+                trigger_error("Failed to find executable path via 'where $command'", E_USER_NOTICE);
+            }
+        }
+
+        return $command;
+    }
+
 }

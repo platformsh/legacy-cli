@@ -30,9 +30,9 @@ class ProjectGetCommand extends PlatformCommand
             'The project ID'
           )
           ->addArgument(
-            'directory-name',
+            'directory',
             InputArgument::OPTIONAL,
-            'The directory name. Defaults to the project title'
+            'The directory to clone to. Defaults to the project title'
           )
           ->addOption(
             'environment',
@@ -77,15 +77,15 @@ class ProjectGetCommand extends PlatformCommand
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
-        $directoryName = $input->getArgument('directory-name');
-        if (empty($directoryName)) {
+        $directory = $input->getArgument('directory');
+        if (empty($directory)) {
             $slugify = new Slugify();
-            $directoryName = $project->title ? $slugify->slugify($project->title) : $project->id;
-            $directoryName = $questionHelper->askInput('Directory name', $input, $this->stdErr, $directoryName);
+            $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
+            $directory = $questionHelper->askInput('Directory', $input, $this->stdErr, $directory);
         }
 
         if ($projectRoot = $this->getProjectRoot()) {
-            if (strpos(realpath(dirname($directoryName)), $projectRoot) === 0) {
+            if (strpos(realpath(dirname($directory)), $projectRoot) === 0) {
                 $this->stdErr->writeln("<error>A project cannot be cloned inside another project.</error>");
 
                 return 1;
@@ -97,27 +97,27 @@ class ProjectGetCommand extends PlatformCommand
 
         // Create the directory structure.
         $existed = false;
-        if (file_exists($directoryName)) {
+        if (file_exists($directory)) {
             $existed = true;
-            $this->stdErr->writeln("The directory <error>$directoryName</error> already exists");
+            $this->stdErr->writeln("The directory <error>$directory</error> already exists");
             if ($questionHelper->confirm("Overwrite?", $input, $this->stdErr, false)) {
-                $fsHelper->remove($directoryName);
+                $fsHelper->remove($directory);
             }
             else {
                 return 1;
             }
         }
-        mkdir($directoryName);
-        $projectRoot = realpath($directoryName);
+        mkdir($directory);
+        $projectRoot = realpath($directory);
         if (!$projectRoot) {
-            throw new \Exception("Failed to create project directory: $directoryName");
+            throw new \Exception("Failed to create project directory: $directory");
         }
 
         if ($existed) {
-            $this->stdErr->writeln("Re-created project directory: <info>$directoryName</info>");
+            $this->stdErr->writeln("Re-created project directory: <info>$directory</info>");
         }
         else {
-            $this->stdErr->writeln("Created new project directory: <info>$directoryName</info>");
+            $this->stdErr->writeln("Created new project directory: <info>$directory</info>");
         }
 
         $local = new LocalProject();
@@ -144,7 +144,7 @@ class ProjectGetCommand extends PlatformCommand
 
         // Prepare to talk to the Platform.sh repository.
         $gitUrl = $project->getGitUrl();
-        $repositoryDir = $directoryName . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
         $gitHelper->ensureInstalled();
@@ -192,12 +192,16 @@ class ProjectGetCommand extends PlatformCommand
         $this->setProjectRoot($projectRoot);
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directoryName</info>");
+        $this->stdErr->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");
 
         // Ensure that Drush aliases are created.
         if (Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             $this->stdErr->writeln('');
-            $this->runOtherCommand('local:drush-aliases', array('--group' => $directoryName), $input);
+            $this->runOtherCommand('local:drush-aliases', array(
+              // The default Drush alias group is the final part of the
+              // directory path.
+              '--group' => basename($directory),
+            ), $input);
         }
 
         // Allow the build to be skipped.
@@ -231,11 +235,11 @@ class ProjectGetCommand extends PlatformCommand
     {
         // Create a list starting with "master".
         $default = 'master';
-        $environmentList = array($default => $environments[$default]['title']);
+        $environmentList = array($default => $environments[$default]->title);
         foreach ($environments as $environment) {
             $id = $environment->id;
             if ($id != $default) {
-                $environmentList[$id] = $environment['title'];
+                $environmentList[$id] = $environment->title;
             }
         }
         if (count($environmentList) === 1) {

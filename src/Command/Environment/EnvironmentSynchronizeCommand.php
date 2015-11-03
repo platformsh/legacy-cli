@@ -33,7 +33,7 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
         $this->validateInput($input);
 
         $selectedEnvironment = $this->getSelectedEnvironment();
-        $environmentId = $selectedEnvironment['id'];
+        $environmentId = $selectedEnvironment->id;
 
         if (!$selectedEnvironment->operationAvailable('synchronize')) {
             $this->stdErr->writeln(
@@ -46,7 +46,7 @@ class EnvironmentSynchronizeCommand extends PlatformCommand
             return 1;
         }
 
-        $parentId = $selectedEnvironment['parent'];
+        $parentId = $selectedEnvironment->parent;
 
         $questionHelper = $this->getHelper('question');
 

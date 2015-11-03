@@ -35,7 +35,7 @@ class WebCommand extends UrlCommandBase
             $url = $project->getLink('#ui');
             if ($this->hasSelectedEnvironment()) {
                 $environment = $this->getSelectedEnvironment();
-                $url .= '/environments/' . $environment['id'];
+                $url .= '/environments/' . $environment->id;
             }
         }
 

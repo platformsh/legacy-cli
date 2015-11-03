@@ -27,7 +27,7 @@ class UserListCommand extends PlatformCommand
         $rows = array();
         $i = 0;
         foreach ($project->getUsers() as $user) {
-            $account = $user->getAccount();
+            $account = $this->getAccount($user);
             $role = $user['role'];
             $weight = $i++;
             if ($project->owner === $user->id) {

@@ -29,7 +29,7 @@ class SnapshotCreateCommand extends PlatformCommand
         $this->validateInput($input);
 
         $selectedEnvironment = $this->getSelectedEnvironment();
-        $environmentId = $selectedEnvironment['id'];
+        $environmentId = $selectedEnvironment->id;
         if (!$selectedEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
               "Operation not available: cannot create a snapshot of <error>$environmentId</error>"

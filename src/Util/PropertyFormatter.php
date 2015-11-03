@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Util;
 
 class PropertyFormatter
 {
+    /** @var int */
+    public $jsonOptions;
 
     /**
      * @param mixed  $value
@@ -25,7 +27,7 @@ class PropertyFormatter
         }
 
         if (!is_string($value)) {
-            $value = json_encode($value);
+            $value = json_encode($value, $this->jsonOptions);
         }
 
         return $value;

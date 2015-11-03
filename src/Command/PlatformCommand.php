@@ -2,16 +2,16 @@
 
 namespace Platformsh\Cli\Command;
 
-use Doctrine\Common\Cache\FilesystemCache;
-use Doctrine\Common\Cache\VoidCache;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Util\CacheUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
+use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\Console\Command\Command;
@@ -28,9 +28,6 @@ abstract class PlatformCommand extends Command
 
     /** @var PlatformClient|null */
     private static $client;
-
-    /** @var \Doctrine\Common\Cache\CacheProvider|null */
-    private static $cache;
 
     /** @var string */
     protected static $sessionId = 'default';
@@ -51,6 +48,7 @@ abstract class PlatformCommand extends Command
 
     protected $projectsTtl;
     protected $environmentsTtl;
+    protected $usersTtl;
 
     private $hiddenInList = false;
     private $hiddenAliases = array();
@@ -90,6 +88,7 @@ abstract class PlatformCommand extends Command
 
         $this->projectsTtl = getenv('PLATFORMSH_CLI_PROJECTS_TTL') ?: 3600;
         $this->environmentsTtl = getenv('PLATFORMSH_CLI_ENVIRONMENTS_TTL') ?: 600;
+        $this->usersTtl = getenv('PLATFORMSH_CLI_USERS_TTL') ?: 3600;
 
         if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
             self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
@@ -97,10 +96,8 @@ abstract class PlatformCommand extends Command
         if (!isset(self::$apiToken) && getenv('PLATFORMSH_CLI_API_TOKEN')) {
             self::$apiToken = getenv('PLATFORMSH_CLI_API_TOKEN');
         }
-        if (!isset(self::$cache)) {
-            // Note: the cache directory is based on self::$sessionId.
-            self::$cache = getenv('PLATFORMSH_CLI_DISABLE_CACHE') ? new VoidCache() : new FilesystemCache($this->getCacheDir());
-        }
+        // Note: the cache directory is based on self::$sessionId.
+        CacheUtil::setCacheDir($this->getCacheDir());
     }
 
     /**
@@ -211,7 +208,7 @@ abstract class PlatformCommand extends Command
      */
     protected function clearCache()
     {
-        self::$cache->flushAll();
+        CacheUtil::getCache()->flushAll();
     }
 
     /**
@@ -426,7 +423,9 @@ abstract class PlatformCommand extends Command
         /** @var Project[] $projects */
         $projects = array();
 
-        if ($refresh || !self::$cache->contains($cacheKey)) {
+        $cache = CacheUtil::getCache();
+
+        if ($refresh || !$cache->contains($cacheKey)) {
             foreach ($this->getClient()->getProjects() as $project) {
                 $projects[$project->id] = $project;
             }
@@ -438,12 +437,12 @@ abstract class PlatformCommand extends Command
                 $cachedProjects[$id]['git'] = $project->getGitUrl();
             }
 
-            self::$cache->save($cacheKey, $cachedProjects, $this->projectsTtl);
+            $cache->save($cacheKey, $cachedProjects, $this->projectsTtl);
         } else {
             $connector = $this->getClient(false)
                               ->getConnector();
             $client = $connector->getClient();
-            foreach ((array) self::$cache->fetch($cacheKey) as $id => $data) {
+            foreach ((array) $cache->fetch($cacheKey) as $id => $data) {
                 $projects[$id] = new Project($data, $data['_endpoint'], $client);
             }
         }
@@ -503,29 +502,30 @@ abstract class PlatformCommand extends Command
         $projectId = $project->getProperty('id');
 
         $cacheKey = 'environments:' . $projectId;
-        $cached = self::$cache->contains($cacheKey);
+        $cache = CacheUtil::getCache();
+        $cached = $cache->contains($cacheKey);
 
         if ($refresh || !$cached) {
             $environments = array();
             $toCache = array();
             foreach ($project->getEnvironments() as $environment) {
-                $environments[$environment['id']] = $environment;
-                $toCache[$environment['id']] = $environment->getData();
+                $environments[$environment->id] = $environment;
+                $toCache[$environment->id] = $environment->getData();
             }
 
             // Recreate the aliases if the list of environments has changed.
-            if ($updateAliases && (!$cached || array_diff_key($environments, self::$cache->fetch($cacheKey)))) {
+            if ($updateAliases && (!$cached || array_diff_key($environments, $cache->fetch($cacheKey)))) {
                 $this->updateDrushAliases($project, $environments);
             }
 
-            self::$cache->save($cacheKey, $toCache, $this->environmentsTtl);
+            $cache->save($cacheKey, $toCache, $this->environmentsTtl);
         } else {
             $environments = array();
             $connector = $this->getClient(false)
                               ->getConnector();
-            $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project['endpoint'];
+            $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
             $client = $connector->getClient();
-            foreach ((array) self::$cache->fetch($cacheKey) as $id => $data) {
+            foreach ((array) $cache->fetch($cacheKey) as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $client);
             }
         }
@@ -551,7 +551,7 @@ abstract class PlatformCommand extends Command
 
         // Statically cache not found environments.
         static $notFound = array();
-        $cacheKey = $project['id'] . ':' . $id;
+        $cacheKey = $project->id . ':' . $id;
         if (!$refresh && isset($notFound[$cacheKey])) {
             return false;
         }
@@ -567,6 +567,26 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * Get a user's account info.
+     *
+     * @param ProjectAccess $user
+     * @param bool $reset
+     *
+     * @return array
+     *   An array containing 'email' and 'display_name'.
+     */
+    protected function getAccount(ProjectAccess $user, $reset = false)
+    {
+        $cacheKey = 'account-' . $user->id;
+        if ($reset || !($details = self::$cache->fetch($cacheKey))) {
+            $details = $user->getAccount()->getProperties();
+            self::$cache->save($cacheKey, $details, $this->usersTtl);
+        }
+
+        return $details;
+    }
+
+    /**
      * Clear the environments cache for a project.
      *
      * Use this after creating/deleting/updating environment(s).
@@ -576,7 +596,7 @@ abstract class PlatformCommand extends Command
     public function clearEnvironmentsCache(Project $project = null)
     {
         $project = $project ?: $this->getSelectedProject();
-        self::$cache->delete('environments:' . $project->id);
+        CacheUtil::getCache()->delete('environments:' . $project->id);
     }
 
     /**
@@ -584,7 +604,7 @@ abstract class PlatformCommand extends Command
      */
     protected function clearProjectsCache()
     {
-        self::$cache->delete('projects');
+        CacheUtil::getCache()->delete('projects');
     }
 
     /**
@@ -599,7 +619,7 @@ abstract class PlatformCommand extends Command
         }
         // Double-check that the passed project is the current one.
         $currentProject = $this->getCurrentProject();
-        if (!$currentProject || $currentProject['id'] != $project['id']) {
+        if (!$currentProject || $currentProject->id != $project->id) {
             return;
         }
         // Ignore the project if it doesn't contain a Drupal application.
@@ -811,8 +831,8 @@ abstract class PlatformCommand extends Command
         }
 
         if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $this->stdErr->writeln("Selected project: " . $this->project['id']);
-            $environmentId = $this->environment ? $this->environment['id'] : '[none]';
+            $this->stdErr->writeln("Selected project: " . $this->project->id);
+            $environmentId = $this->environment ? $this->environment->id : '[none]';
             $this->stdErr->writeln("Selected environment: $environmentId");
         }
     }

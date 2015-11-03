@@ -71,12 +71,12 @@ class EnvironmentListCommand extends PlatformCommand
     {
         $children = array();
         foreach ($environments as $environment) {
-            if ($environment['parent'] === $parent) {
-                $this->children[$environment['id']] = $this->buildEnvironmentTree(
+            if ($environment->parent === $parent) {
+                $this->children[$environment->id] = $this->buildEnvironmentTree(
                   $environments,
-                  $environment->getProperty('id')
+                  $environment->id
                 );
-                $children[$environment['id']] = $environment;
+                $children[$environment->id] = $environment;
             }
         }
 
@@ -125,18 +125,18 @@ class EnvironmentListCommand extends PlatformCommand
         foreach ($tree as $environment) {
             $row = array();
 
-            $id = str_repeat('   ', $indent) . $environment['id'];
-            if ($environment['id'] == $this->currentEnvironment['id']) {
+            $id = str_repeat('   ', $indent) . $environment->id;
+            if ($environment->id == $this->currentEnvironment->id) {
                 $id .= "<info>*</info>";
             }
             $row[] = $id;
 
             if ($this->showNames) {
-                if ($branch = array_search($environment['id'], $this->mapping)) {
-                    $row[] = sprintf('%s (%s)', $environment['title'], $branch);
+                if ($branch = array_search($environment->id, $this->mapping)) {
+                    $row[] = sprintf('%s (%s)', $environment->title, $branch);
                 }
                 else {
-                    $row[] = $environment['title'];
+                    $row[] = $environment->title;
                 }
             }
 
@@ -155,7 +155,7 @@ class EnvironmentListCommand extends PlatformCommand
             }
 
             $rows[] = $row;
-            $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment['id']], $indent + 1));
+            $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment->id], $indent + 1));
         }
 
         return $rows;

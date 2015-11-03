@@ -47,7 +47,7 @@ class SnapshotRestoreCommand extends PlatformCommand
             }
         } else {
             // Find the most recent snapshot.
-            $environmentId = $environment['id'];
+            $environmentId = $environment->id;
             $this->stdErr->writeln("Finding the most recent snapshot for the environment <info>$environmentId</info>");
             $snapshotActivities = $environment->getActivities(1, 'environment.backup');
             if (!$snapshotActivities) {

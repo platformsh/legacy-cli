@@ -226,7 +226,7 @@ class LocalBuildCommand extends PlatformCommand
                 $project = false;
             }
             if ($project && ($environment = $this->getCurrentEnvironment($project))) {
-                return $environment['id'];
+                return $environment->id;
             }
         }
 

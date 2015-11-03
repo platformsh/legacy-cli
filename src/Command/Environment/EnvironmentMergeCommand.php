@@ -28,7 +28,7 @@ class EnvironmentMergeCommand extends PlatformCommand
         $this->validateInput($input);
 
         $selectedEnvironment = $this->getSelectedEnvironment();
-        $environmentId = $selectedEnvironment['id'];
+        $environmentId = $selectedEnvironment->id;
 
         if (!$selectedEnvironment->operationAvailable('merge')) {
             $this->stdErr->writeln("Operation not available: The environment <error>$environmentId</error> can't be merged.");
@@ -36,7 +36,7 @@ class EnvironmentMergeCommand extends PlatformCommand
             return 1;
         }
 
-        $parentId = $selectedEnvironment['parent'];
+        $parentId = $selectedEnvironment->parent;
 
         if (!$this->getHelper('question')
                   ->confirm(

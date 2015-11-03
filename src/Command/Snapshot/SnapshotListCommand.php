@@ -36,7 +36,7 @@ class SnapshotListCommand extends PlatformCommand
             return 1;
         }
 
-        $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment['id']}</info>");
+        $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");
         $results = $environment->getActivities($input->getOption('limit'), 'environment.backup', $startsAt);
         if (!$results) {
             $this->stdErr->writeln('No snapshots found');

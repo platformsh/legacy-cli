@@ -84,6 +84,7 @@ Global options:
   --shell          -s Launch the shell
 
 Available commands:
+  clear-cache (clearcache, cc)              Clear the CLI cache
   docs                                      Open the Platform.sh online documentation
   help                                      Displays help for a command
   list                                      Lists commands
@@ -153,9 +154,9 @@ variable
 ### Known issues
 
 #### Caching
-The CLI caches details of your projects and their environments. These caches
-could become out-of-date. You can get a fresh list of projects or environments
-with the `platform projects` and `platform environments` commands.
+The CLI caches details of your projects and their environments, and some other
+information. These caches could become out-of-date. You can clear caches with
+the command `platform clear-cache` (or `platform cc` for short).
 
 ### Customization
 
@@ -169,4 +170,5 @@ You can configure the CLI via these environment variables:
 * `PLATFORMSH_CLI_ENVIRONMENTS_TTL`: the cache TTL for environments, in seconds (default 600)
 * `PLATFORMSH_CLI_PROJECTS_TTL`: the cache TTL for projects, in seconds (default 3600)
 * `PLATFORMSH_CLI_SESSION_ID`: change user (default 'default')
+* `PLATFORMSH_CLI_USERS_TTL`: the cache TTL for user account info, in seconds (default 3600)
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
