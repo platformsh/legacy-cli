@@ -29,14 +29,12 @@ class WelcomeCommand extends PlatformCommand
         // delegated commands below will not have interactive input.
         $this->getClient();
 
-        if ($currentProject = $this->getCurrentProject()) {
+        if ($project = $this->getCurrentProject()) {
             // The project is known. Show the environments.
-            $projectName = $currentProject->title;
-            $projectURI = $currentProject->getLink('#ui');
-            $projectId = $currentProject->id;
-            $this->stdErr->writeln("Project Name: <info>$projectName</info>");
-            $this->stdErr->writeln("Project ID: <info>$projectId</info>");
-            $this->stdErr->writeln("Project Dashboard: <info>$projectURI</info>\n");
+            $projectUri = $project->getLink('#ui');
+            $this->stdErr->writeln("Project title: <info>{$project->title}</info>");
+            $this->stdErr->writeln("Project ID: <info>{$project->id}</info>");
+            $this->stdErr->writeln("Project dashboard: <info>$projectUri</info>\n");
             $this->runOtherCommand('environments', array('--refresh' => 0));
             $this->stdErr->writeln("\nYou can list other projects by running <info>platform projects</info>\n");
             $this->stdErr->writeln("Manage your domains by running <info>platform domains</info>");
