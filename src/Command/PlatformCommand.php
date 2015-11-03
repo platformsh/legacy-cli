@@ -578,9 +578,10 @@ abstract class PlatformCommand extends Command
     protected function getAccount(ProjectAccess $user, $reset = false)
     {
         $cacheKey = 'account-' . $user->id;
-        if ($reset || !($details = self::$cache->fetch($cacheKey))) {
+        $cache = CacheUtil::getCache();
+        if ($reset || !($details = $cache->fetch($cacheKey))) {
             $details = $user->getAccount()->getProperties();
-            self::$cache->save($cacheKey, $details, $this->usersTtl);
+            $cache->save($cacheKey, $details, $this->usersTtl);
         }
 
         return $details;
