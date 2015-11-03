@@ -18,7 +18,7 @@ class IntegrationDeleteCommand extends PlatformCommand
           ->setName('integration:delete')
           ->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
           ->setDescription('Delete an integration from a project');
-        $this->addProjectOption();
+        $this->addProjectOption()->addNoWaitOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
