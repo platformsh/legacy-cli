@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -17,7 +18,7 @@ class IntegrationUpdateCommand extends IntegrationCommand
           ->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
           ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption();
+        $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Switch on the "fetch branches" option for a specific integration', 'ZXhhbXBsZSB --fetch-branches 1');
     }
 
@@ -47,10 +48,23 @@ class IntegrationUpdateCommand extends IntegrationCommand
             throw new \InvalidArgumentException("No values were provided to update");
         }
 
-        $integration->update($values);
+        // Complete the PATCH request with the current values. This is a
+        // workaround: at the moment a PATCH with only the changed values will
+        // cause a 500 error.
+        foreach ($currentValues as $key => $currentValue) {
+            if ($key !== 'id' && !array_key_exists($key, $values)) {
+                $values[$key] = $currentValue;
+            }
+        }
+
+        $result = $integration->update($values);
         $this->stdErr->writeln("Integration <info>$id</info> (<info>{$integration->type}</info>) updated");
 
         $output->writeln($this->formatIntegrationData($integration));
+
+        if (!$input->getOption('no-wait')) {
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+        }
 
         return 0;
     }
