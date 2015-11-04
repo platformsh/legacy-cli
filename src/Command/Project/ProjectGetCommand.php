@@ -100,7 +100,7 @@ class ProjectGetCommand extends PlatformCommand
         if (file_exists($directory)) {
             $existed = true;
             $this->stdErr->writeln("The directory <error>$directory</error> already exists");
-            if ($questionHelper->confirm("Overwrite?", $input, $this->stdErr, false)) {
+            if (file_exists($directory . '/' . LocalProject::PROJECT_CONFIG) && $questionHelper->confirm("Overwrite?", $input, $this->stdErr, false)) {
                 $fsHelper->remove($directory);
             }
             else {
