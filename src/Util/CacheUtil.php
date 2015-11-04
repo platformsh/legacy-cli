@@ -15,9 +15,6 @@ class CacheUtil
      */
     public static function setCacheDir($cacheDir)
     {
-        if (!is_dir($cacheDir)) {
-            throw new \InvalidArgumentException("Not a directory: $cacheDir");
-        }
         self::$cacheDir = $cacheDir;
     }
 
