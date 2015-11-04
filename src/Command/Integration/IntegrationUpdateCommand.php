@@ -48,6 +48,15 @@ class IntegrationUpdateCommand extends IntegrationCommand
             throw new \InvalidArgumentException("No values were provided to update");
         }
 
+        // Complete the PATCH request with the current values. This is a
+        // workaround: at the moment a PATCH with only the changed values will
+        // cause a 500 error.
+        foreach ($currentValues as $key => $currentValue) {
+            if ($key !== 'id' && !array_key_exists($key, $values)) {
+                $values[$key] = $currentValue;
+            }
+        }
+
         $result = $integration->update($values);
         $this->stdErr->writeln("Integration <info>$id</info> (<info>{$integration->type}</info>) updated");
 
