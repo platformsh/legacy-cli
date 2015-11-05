@@ -463,7 +463,7 @@ class LocalBuild
             $this->output->writeln('  ' . $line);
         }
         if ($returnVar > 0) {
-            $this->output->writeln('<error>The build hook failed</error>');
+            $this->output->writeln("<error>The build hook failed with the exit code: $returnVar</error>");
             return false;
         }
 
