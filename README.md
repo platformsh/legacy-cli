@@ -4,10 +4,10 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 ## Requirements
 
-* Operating system: Linux, OS X, Windows Vista, Windows 7 (any), or Windows 8 Pro (Win8 Standard does not work due to an issue with symlink permissions)
-* PHP 5.4.0 or higher, with cURL support
+* Operating system: Linux, OS X, Windows Vista, Windows 7, Windows 8 Pro, or Windows 10 (Windows 8 Standard does not work due to an issue with symlink permissions)
+* PHP 5.5 or higher, with cURL support
 * [Composer](https://getcomposer.org/)
-* [Drush](https://github.com/drush-ops/drush) (only needed for Drupal projects)
+* [Drush](https://github.com/drush-ops/drush) (only for Drupal projects, optional)
 
 ## Installation
 
@@ -164,6 +164,7 @@ variable
 ## Known issues
 
 ### Caching
+
 The CLI caches details of your projects and their environments, and some other
 information. These caches could become out-of-date. You can clear caches with
 the command `platform clear-cache` (or `platform cc` for short).
@@ -177,8 +178,10 @@ You can configure the CLI via these environment variables:
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')
-* `PLATFORMSH_CLI_ENVIRONMENTS_TTL`: the cache TTL for environments, in seconds (default 600)
-* `PLATFORMSH_CLI_PROJECTS_TTL`: the cache TTL for projects, in seconds (default 3600)
-* `PLATFORMSH_CLI_SESSION_ID`: change user (default 'default')
-* `PLATFORMSH_CLI_USERS_TTL`: the cache TTL for user account info, in seconds (default 3600)
+* `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
+
+## Contributing
+
+If you clone this repository locally, you can build it with `composer install`,
+and you can run the tests with `./vendor/bin/phpunit -c ./phpunit.xml`.
