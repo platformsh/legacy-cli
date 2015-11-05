@@ -211,6 +211,18 @@ abstract class ToolstackBase implements ToolstackInterface
     }
 
     /**
+     * @return string
+     */
+    public function getAppRoot()
+    {
+        if ($this->buildInPlace && !$this->copy) {
+            return $this->appRoot;
+        }
+
+        return $this->buildDir;
+    }
+
+    /**
      * @inheritdoc
      */
     public function install()

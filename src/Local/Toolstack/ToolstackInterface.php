@@ -59,9 +59,18 @@ interface ToolstackInterface
     public function install();
 
     /**
+     * Get the document root after build.
+     *
      * @return string
      */
     public function getWebRoot();
+
+    /**
+     * Get the application root after build.
+     *
+     * @return string
+     */
+    public function getAppRoot();
 
     /**
      * Find whether the build may be archived.

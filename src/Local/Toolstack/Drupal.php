@@ -239,6 +239,7 @@ class Drupal extends ToolstackBase
 
         // Symlink, non-recursively, all files from the app into the
         // 'sites/default' directory.
+        $this->fsHelper->setRelativeLinks(false);
         $this->fsHelper->symlinkAll(
           $this->appRoot,
           $this->getBuildDir() . '/sites/default',
@@ -314,6 +315,7 @@ class Drupal extends ToolstackBase
         // Symlink recursively; skip existing files (built by Drush make) for
         // example 'modules/contrib', but include files from the app such as
         // 'modules/custom'.
+        $this->fsHelper->setRelativeLinks(false);
         $this->fsHelper->symlinkAll(
           $this->appRoot,
           $profileDir,
