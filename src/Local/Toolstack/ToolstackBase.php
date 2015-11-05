@@ -32,7 +32,6 @@ abstract class ToolstackBase implements ToolstackInterface
 
     protected $settings = array();
     protected $appRoot;
-    protected $sourceDir;
     protected $documentRoot;
     protected $buildDir;
     protected $copy = false;
@@ -83,10 +82,9 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, $documentRoot, $appRoot, $sourceDir, array $settings)
+    public function prepare($buildDir, $documentRoot, $appRoot, array $settings)
     {
         $this->appRoot = $appRoot;
-        $this->sourceDir = $sourceDir;
         $this->settings = $settings;
 
         $this->buildDir = $buildDir;

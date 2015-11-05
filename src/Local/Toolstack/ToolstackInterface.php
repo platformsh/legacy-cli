@@ -41,10 +41,9 @@ interface ToolstackInterface
      *                             relative to the build directory.
      * @param string $appRoot      The root of the application's source code
      *                             (in the repository).
-     * @param string $sourceDir    The source directory.
      * @param array  $settings     Additional settings for the build.
      */
-    public function prepare($buildDir, $documentRoot, $appRoot, $sourceDir, array $settings);
+    public function prepare($buildDir, $documentRoot, $appRoot, array $settings);
 
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and

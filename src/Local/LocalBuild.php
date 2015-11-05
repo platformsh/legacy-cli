@@ -348,7 +348,7 @@ class LocalBuild
             'multiApp' => $multiApp,
             'appName' => $appName,
           );
-        $toolstack->prepare($buildDir, $documentRoot, $appRoot, $sourceDir, $buildSettings);
+        $toolstack->prepare($buildDir, $documentRoot, $appRoot, $buildSettings);
 
         $archive = false;
         if (empty($this->settings['noArchive']) && empty($this->settings['noCache']) && !empty($this->settings['projectRoot'])) {
