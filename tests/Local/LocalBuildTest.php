@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests;
 
+use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalBuild;
 
 class LocalBuildTest extends \PHPUnit_Framework_TestCase
@@ -58,8 +59,7 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
     {
         $fakeRepositoryRoot = 'tests/data/repositories/multiple';
 
-        $builder = new LocalBuild();
-        $applications = $builder->getApplications($fakeRepositoryRoot);
+        $applications = LocalApplication::getApplications($fakeRepositoryRoot);
         $this->assertCount(6, $applications, 'Detect multiple apps');
     }
 
@@ -76,17 +76,20 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/simple';
 
-        $builder = new LocalBuild();
-        $config = $builder->getAppConfig($fakeAppRoot);
+        $app = new LocalApplication($fakeAppRoot);
+        $config = $app->getConfig();
         $this->assertEquals(array('name' => 'simple'), $config);
+        $this->assertEquals('simple', $app->getId());
     }
 
     public function testGetAppConfigNested()
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/nest/nested';
 
-        $builder = new LocalBuild();
-        $config = $builder->getAppConfig($fakeAppRoot);
+        $app = new LocalApplication($fakeAppRoot);
+        $config = $app->getConfig();
         $this->assertEquals(array('name' => 'nested1'), $config);
+        $this->assertEquals('nested1', $app->getName());
+        $this->assertEquals('nested1', $app->getId());
     }
 }

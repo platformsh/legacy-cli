@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
@@ -9,8 +8,6 @@ use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Parser;
 
 class LocalBuild
 {
@@ -86,18 +83,16 @@ class LocalBuild
     public function build($sourceDir, $destination, array $apps = array())
     {
         $success = true;
-        $identifiers = array();
-        foreach ($this->getApplications($sourceDir) as $identifier => $appRoot) {
-            $appConfig = $this->getAppConfig($appRoot);
-            $appIdentifier = isset($appConfig['name']) ? $appConfig['name'] : $identifier;
-            $appConfig['_identifier'] = $appIdentifier;
-            $identifiers[] = $appIdentifier;
-            if ($apps && !in_array($appIdentifier, $apps)) {
+        $ids = array();
+        foreach (LocalApplication::getApplications($sourceDir) as $app) {
+            $id = $app->getId();
+            $ids[] = $id;
+            if ($apps && !in_array($id, $apps)) {
                 continue;
             }
-            $success = $this->buildApp($appRoot, $sourceDir, $destination, $appConfig) && $success;
+            $success = $this->buildApp($app, $sourceDir, $destination) && $success;
         }
-        $notFounds = array_diff($apps, $identifiers);
+        $notFounds = array_diff($apps, $ids);
         if ($notFounds) {
             foreach ($notFounds as $notFound) {
                 $this->output->writeln("Application not found: <comment>$notFound</comment>");
@@ -119,83 +114,6 @@ class LocalBuild
         }
 
         return $success;
-    }
-
-    /**
-     * Get a list of applications in the repository.
-     *
-     * @param string $repositoryRoot The absolute path to the repository.
-     *
-     * @return string[]    A list of directories containing applications.
-     */
-    public function getApplications($repositoryRoot)
-    {
-        $finder = new Finder();
-        $finder->in($repositoryRoot)
-               ->ignoreDotFiles(false)
-               ->notPath('builds')
-               ->name('.platform.app.yaml')
-               ->depth('> 0')
-               ->depth('< 5');
-        if ($finder->count() == 0) {
-            return array('default' => $repositoryRoot);
-        }
-        $applications = array();
-        /** @var \Symfony\Component\Finder\SplFileInfo $file */
-        foreach ($finder as $file) {
-            $filename = $file->getRealPath();
-            $appRoot = dirname($filename);
-            $identifier = ltrim(str_replace($repositoryRoot, '', $appRoot), '/');
-            $applications[$identifier] = $appRoot;
-        }
-
-        return array_unique($applications);
-    }
-
-    /**
-     * Get the application's configuration, parsed from its YAML definition.
-     *
-     * @param string $appRoot The absolute path to the application.
-     *
-     * @return array
-     */
-    public function getAppConfig($appRoot)
-    {
-        $config = array();
-        if (file_exists($appRoot . '/.platform.app.yaml')) {
-            try {
-                $parser = new Parser();
-                $config = (array) $parser->parse(file_get_contents($appRoot . '/.platform.app.yaml'));
-            }
-            catch (ParseException $e) {
-                throw new InvalidConfigException(
-                  "Parse error in file '$appRoot/.platform.app.yaml'. \n" . $e->getMessage()
-                );
-            }
-        }
-
-        return $this->normalizeConfig($config);
-    }
-
-    /**
-     * Normalize an application's configuration.
-     *
-     * @param array $config
-     *
-     * @return array
-     */
-    public function normalizeConfig(array $config)
-    {
-        // Backwards compatibility with old config format: toolstack is changed
-        // to application type and build['flavor'].
-        if (isset($config['toolstack'])) {
-            if (!strpos($config['toolstack'], ':')) {
-                throw new InvalidConfigException("Invalid value for 'toolstack'");
-            }
-            list($config['type'], $config['build']['flavor']) = explode(':', $config['toolstack'], 2);
-        }
-
-        return $config;
     }
 
     /**
@@ -301,27 +219,28 @@ class LocalBuild
     }
 
     /**
-     * @param string $appRoot
-     * @param string $sourceDir
-     * @param string $destination
-     * @param array  $appConfig
+     * @param LocalApplication $app
+     * @param string           $sourceDir
+     * @param string           $destination
      *
      * @return bool
      */
-    protected function buildApp($appRoot, $sourceDir, $destination, array $appConfig = array())
+    protected function buildApp($app, $sourceDir, $destination)
     {
         $verbose = $this->output->isVerbose();
 
+        $appRoot = $app->getRoot();
+        $appConfig = $app->getConfig();
         $multiApp = $appRoot != $sourceDir;
-        $appName = isset($appConfig['name']) ? $appConfig['name'] : false;
-        $appIdentifier = $appName ?: $appConfig['_identifier'];
+        $appName = $app->getName();
+        $appId = $app->getId();
 
         $buildName = date('Y-m-d--H-i-s');
         if (!empty($this->settings['environmentId'])) {
             $buildName .= '--' . $this->settings['environmentId'];
         }
         if ($multiApp) {
-            $buildName .= '--' . str_replace('/', '-', $appIdentifier);
+            $buildName .= '--' . str_replace('/', '-', $appId);
         }
 
         if (!empty($this->settings['projectRoot'])) {
@@ -337,7 +256,7 @@ class LocalBuild
         $toolstack = $this->getToolstack($appRoot, $appConfig);
 
         if (!$toolstack) {
-            $this->output->writeln("Toolstack not found for application <error>$appIdentifier</error>");
+            $this->output->writeln("Toolstack not found for application <error>$appId</error>");
 
             return false;
         }
@@ -362,11 +281,11 @@ class LocalBuild
         }
 
         if ($archive && file_exists($archive)) {
-            $message = "Extracting archive for application <info>$appIdentifier</info>";
+            $message = "Extracting archive for application <info>$appId</info>";
             $this->output->writeln($message);
             $this->fsHelper->extractArchive($archive, $buildDir);
         } else {
-            $message = "Building application <info>$appIdentifier</info>";
+            $message = "Building application <info>$appId</info>";
             if (isset($appConfig['type'])) {
                 $message .= ' (runtime type: ' . $appConfig['type'] . ')';
             }
@@ -393,14 +312,14 @@ class LocalBuild
 
         $webRoot = $toolstack->getWebRoot();
 
-        // Symlink the built web root ($webRoot) into www or www/appIdentifier.
+        // Symlink the built web root ($webRoot) into www or www/appId.
         if (!is_dir($webRoot)) {
             $this->output->writeln("Web root not found: <error>$webRoot</error>");
 
             return false;
         }
         if ($multiApp) {
-            $appDir = str_replace('/', '-', $appIdentifier);
+            $appDir = str_replace('/', '-', $appId);
             if (is_link($destination)) {
                 $this->fsHelper->remove($destination);
             }
@@ -410,7 +329,7 @@ class LocalBuild
         $this->fsHelper->symlink($webRoot, $destination);
         $this->output->writeln("Web root: $destination");
 
-        $message = "Build complete for application <info>$appIdentifier</info>";
+        $message = "Build complete for application <info>$appId</info>";
         $this->output->writeln($message);
 
         return true;
