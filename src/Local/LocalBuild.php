@@ -348,7 +348,7 @@ class LocalBuild
             'multiApp' => $multiApp,
             'appName' => $appName,
           );
-        $toolstack->prepare($buildDir, $documentRoot, $appRoot, $sourceDir, $buildSettings);
+        $toolstack->prepare($buildDir, $documentRoot, $appRoot, $buildSettings);
 
         $archive = false;
         if (empty($this->settings['noArchive']) && empty($this->settings['noCache']) && !empty($this->settings['projectRoot'])) {
@@ -374,17 +374,10 @@ class LocalBuild
 
             $toolstack->build();
 
-            // We can only run post-build hooks for apps that actually have
-            // a separate build directory.
-            if (file_exists($buildDir)) {
-                if ($this->runPostBuildHooks($appConfig, $buildDir) === false) {
-                    // The user may not care if build hooks fail, but we should
-                    // not archive the result.
-                    $archive = false;
-                }
-            }
-            else {
-                $this->warnAboutHooks($appConfig, 'build');
+            if ($this->runPostBuildHooks($appConfig, $toolstack->getAppRoot()) === false) {
+                // The user may not care if build hooks fail, but we should
+                // not archive the result.
+                $archive = false;
             }
 
             if ($archive && $toolstack->canArchive()) {
@@ -470,33 +463,11 @@ class LocalBuild
             $this->output->writeln('  ' . $line);
         }
         if ($returnVar > 0) {
-            $this->output->writeln('<error>The build hook failed</error>');
+            $this->output->writeln("<error>The build hook failed with the exit code: $returnVar</error>");
             return false;
         }
 
         return true;
-    }
-
-    /**
-     * Warn the user that the CLI will not run hooks.
-     *
-     * @param array  $appConfig
-     * @param string $hookType
-     */
-    protected function warnAboutHooks(array $appConfig, $hookType)
-    {
-        if (empty($appConfig['hooks'][$hookType])) {
-            return;
-        }
-        $indent = '        ';
-        $this->output->writeln(
-          "<comment>You have defined the following $hookType hook(s). The CLI will not run them locally, unless you use the --copy option.</comment>"
-        );
-        $this->output->writeln("    $hookType: |");
-        $hooks = (array) $appConfig['hooks'][$hookType];
-        $asString = implode("\n", array_map('trim', $hooks));
-        $withIndent = $indent . str_replace("\n", "\n$indent", $asString);
-        $this->output->writeln($withIndent);
     }
 
     /**
