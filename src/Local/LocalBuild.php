@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Local;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
@@ -20,19 +19,6 @@ class LocalBuild
     protected $output;
     protected $fsHelper;
     protected $gitHelper;
-
-    /**
-     * @return ToolstackInterface[]
-     */
-    public function getToolstacks()
-    {
-        return array(
-          new Toolstack\Drupal(),
-          new Toolstack\Symfony(),
-          new Toolstack\Composer(),
-          new Toolstack\NoToolstack(),
-        );
-    }
 
     /**
      * @param array           $settings
@@ -114,54 +100,6 @@ class LocalBuild
         }
 
         return $success;
-    }
-
-    /**
-     * Get the toolstack for a particular application.
-     *
-     * @param string $appRoot   The absolute path to the application.
-     * @param mixed  $appConfig The application's configuration.
-     *
-     * @throws \Exception   If a specified toolstack is not found.
-     *
-     * @return ToolstackInterface|false
-     */
-    public function getToolstack($appRoot, array $appConfig = array())
-    {
-        $toolstackChoice = false;
-
-        // For now, we reconstruct a toolstack string based on the 'type' and
-        // 'build.flavor' config keys.
-        if (isset($appConfig['type'])) {
-            list($stack, ) = explode(':', $appConfig['type'], 2);
-            $flavor = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
-
-            // Toolstack classes for HHVM are the same as PHP.
-            if ($stack === 'hhvm') {
-                $stack = 'php';
-            }
-
-            $toolstackChoice = "$stack:$flavor";
-
-            // Alias php:default to php:composer.
-            if ($toolstackChoice === 'php:default') {
-                $toolstackChoice = 'php:composer';
-            }
-        }
-
-        foreach (self::getToolstacks() as $toolstack) {
-            $key = $toolstack->getKey();
-            if ((!$toolstackChoice && $toolstack->detect($appRoot))
-              || ($key && $toolstackChoice === $key)
-            ) {
-                return $toolstack;
-            }
-        }
-        if ($toolstackChoice) {
-            throw new \Exception("Toolstack not found: $toolstackChoice");
-        }
-
-        return false;
     }
 
     /**
@@ -253,8 +191,7 @@ class LocalBuild
         // Get the configured document root.
         $documentRoot = $this->getDocumentRoot($appConfig);
 
-        $toolstack = $this->getToolstack($appRoot, $appConfig);
-
+        $toolstack = $app->getToolstack();
         if (!$toolstack) {
             $this->output->writeln("Toolstack not found for application <error>$appId</error>");
 

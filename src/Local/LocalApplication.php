@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Exception\InvalidConfigException;
+use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Parser;
@@ -63,6 +64,16 @@ class LocalApplication
     }
 
     /**
+     * Override the application config.
+     *
+     * @param array $config
+     */
+    public function setConfig(array $config)
+    {
+        $this->config = $config;
+    }
+
+    /**
      * Get the application's configuration, parsed from its YAML definition.
      *
      * @return array
@@ -107,6 +118,65 @@ class LocalApplication
         }
 
         return $config;
+    }
+
+    /**
+     * @return ToolstackInterface[]
+     */
+    public function getToolstacks()
+    {
+        return array(
+          new Toolstack\Drupal(),
+          new Toolstack\Symfony(),
+          new Toolstack\Composer(),
+          new Toolstack\NoToolstack(),
+        );
+    }
+
+    /**
+     * Get the toolstack for the application.
+     *
+     * @throws \Exception   If a specified toolstack is not found.
+     *
+     * @return ToolstackInterface|false
+     */
+    public function getToolstack()
+    {
+        $toolstackChoice = false;
+
+        // For now, we reconstruct a toolstack string based on the 'type' and
+        // 'build.flavor' config keys.
+        $appConfig = $this->getConfig();
+        if (isset($appConfig['type'])) {
+            list($stack, ) = explode(':', $appConfig['type'], 2);
+            $flavor = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
+
+            // Toolstack classes for HHVM are the same as PHP.
+            if ($stack === 'hhvm') {
+                $stack = 'php';
+            }
+
+            $toolstackChoice = "$stack:$flavor";
+
+            // Alias php:default to php:composer.
+            if ($toolstackChoice === 'php:default') {
+                $toolstackChoice = 'php:composer';
+            }
+        }
+
+        foreach (self::getToolstacks() as $toolstack) {
+            $key = $toolstack->getKey();
+            if ((!$toolstackChoice && $toolstack->detect($this->getRoot()))
+              || ($key && $toolstackChoice === $key)
+            ) {
+                return $toolstack;
+            }
+        }
+        if ($toolstackChoice) {
+            throw new \Exception("Toolstack not found: $toolstackChoice");
+        }
+
+        return false;
     }
 
     /**
