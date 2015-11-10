@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Cli\Util\CacheUtil;
@@ -656,6 +657,19 @@ abstract class PlatformCommand extends Command
     }
 
     /**
+     * @return bool
+     */
+    protected function selectedProjectIsCurrent()
+    {
+        $current = $this->getCurrentProject();
+        if (!$current || !$this->hasSelectedProject()) {
+            return false;
+        }
+
+        return $current->id === $this->getSelectedProject()->id;
+    }
+
+    /**
      * Warn the user that the remote environment needs rebuilding.
      */
     protected function rebuildWarning()
@@ -790,6 +804,54 @@ abstract class PlatformCommand extends Command
         }
 
         return $environment;
+    }
+
+    /**
+     * Find the name of the app the user wants to use for an SSH command.
+     *
+     * @param InputInterface $input
+     *   The user input object.
+     * @param callable|null $filter
+     *   A filter callback that takes one argument: a LocalApplication object.
+     *
+     * @return string|null
+     *   The application name, or null if it could not be found.
+     */
+    protected function selectApp(InputInterface $input, callable $filter = null)
+    {
+        $appName = $input->getOption('app');
+        if ($appName) {
+            return $appName;
+        }
+        $projectRoot = $this->getProjectRoot();
+        if (!$projectRoot || !$this->selectedProjectIsCurrent() || !is_dir($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+            return null;
+        }
+        /** @var LocalApplication[] $apps */
+        $apps = LocalApplication::getApplications($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+
+        if ($filter) {
+            $apps = array_filter($apps, $filter);
+        }
+
+        if (count($apps) > 1 && $input->isInteractive()) {
+            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
+            $choices = [];
+            foreach ($apps as $app) {
+                $choices[$app->getName()] = $app->getName();
+            }
+            $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:', $input, $this->stdErr);
+        }
+        elseif (count($apps) === 1) {
+            $app = reset($apps);
+            $appName = $app->getName();
+            if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+                $this->stdErr->writeln("Selected app: " . $appName);
+            }
+        }
+
+        return $appName;
     }
 
     /**

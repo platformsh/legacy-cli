@@ -36,7 +36,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
     {
         $this->validateInput($input);
 
-        $app = $input->getOption('app');
+        $app = $this->selectApp($input);
         $environment = $this->getSelectedEnvironment();
 
         $cacheKey = implode('-', ['relationships', $environment->id . $environment->project . $app]);
@@ -44,7 +44,7 @@ class EnvironmentRelationshipsCommand extends PlatformCommand
         $relationships = $cache->fetch($cacheKey);
         if (empty($relationships) || $input->getOption('refresh')) {
             $util = new RelationshipsUtil($this->stdErr);
-            $sshUrl = $environment->getSshUrl();
+            $sshUrl = $environment->getSshUrl($app);
             $relationships = $util->getRelationships($sshUrl);
             if (empty($relationships)) {
                 $this->stdErr->writeln('No relationships found');

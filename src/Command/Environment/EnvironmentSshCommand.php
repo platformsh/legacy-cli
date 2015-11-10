@@ -35,7 +35,7 @@ class EnvironmentSshCommand extends PlatformCommand
         $this->validateInput($input);
 
         $sshUrl = $this->getSelectedEnvironment()
-                       ->getSshUrl($input->getOption('app'));
+                       ->getSshUrl($this->selectApp($input));
 
         if ($input->getOption('pipe')) {
             $output->write($sshUrl);

@@ -118,6 +118,8 @@ class LocalApplication
      */
     public static function getApplications($directory)
     {
+        // Finder can be extremely slow with a deep directory structure. The
+        // search depth is limited to safeguard against this.
         $finder = new Finder();
         $finder->in($directory)
                ->ignoreDotFiles(false)
