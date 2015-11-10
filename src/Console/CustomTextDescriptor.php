@@ -40,12 +40,14 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText('<comment>Usage:</comment>', $options);
         $this->writeText("\n");
-        $this->writeText(' ' . $command->getSynopsis(), $options);
+        $executableName = 'platform';
+        $this->writeText(' ' . $executableName . ' ' . $command->getSynopsis(), $options);
         $this->writeText("\n");
 
         if ($definition = $command->getNativeDefinition()) {
             $this->writeText("\n");
             $this->describeInputDefinition($definition, $options);
+            $this->writeText("\n");
         }
 
         if ($help = $command->getProcessedHelp()) {

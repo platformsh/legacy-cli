@@ -239,6 +239,7 @@ class Drupal extends ToolstackBase
 
         // Symlink, non-recursively, all files from the app into the
         // 'sites/default' directory.
+        $this->fsHelper->setRelativeLinks(false);
         $this->fsHelper->symlinkAll(
           $this->appRoot,
           $this->getBuildDir() . '/sites/default',
@@ -314,6 +315,7 @@ class Drupal extends ToolstackBase
         // Symlink recursively; skip existing files (built by Drush make) for
         // example 'modules/contrib', but include files from the app such as
         // 'modules/custom'.
+        $this->fsHelper->setRelativeLinks(false);
         $this->fsHelper->symlinkAll(
           $this->appRoot,
           $profileDir,
@@ -368,7 +370,7 @@ class Drupal extends ToolstackBase
         }
 
         // Create a settings.php if it is missing.
-        if (!file_exists($sitesDefault . '/settings.php')) {
+        if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.php')) {
             $this->fsHelper->copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
         }
 
@@ -394,7 +396,7 @@ class Drupal extends ToolstackBase
         // Symlink all files and folders from shared. The "copy" option is
         // ignored, to avoid copying a huge sites/default/files directory every
         // time.
-        if ($shared) {
+        if ($shared && is_dir($sitesDefault)) {
             $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
             $this->fsHelper->symlinkAll($shared, $sitesDefault);
         }

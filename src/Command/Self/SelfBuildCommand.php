@@ -43,6 +43,7 @@ class SelfBuildCommand extends PlatformCommand
 
         /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
         $shellHelper = $this->getHelper('shell');
+        $shellHelper->setOutput($output);
         if (!$shellHelper->commandExists('box')) {
             $this->stdErr->writeln('Command not found: <error>box</error>');
             $this->stdErr->writeln('The Box utility is required to build new CLI packages. Try:');
@@ -82,13 +83,17 @@ class SelfBuildCommand extends PlatformCommand
             }
         }
 
-        $shellHelper->setOutput($output);
-
         $this->stdErr->writeln('Ensuring correct composer dependencies');
+
+        // Remove the 'vendor' directory, in case the developer has incorporated
+        // their own version of dependencies locally.
+        $shellHelper->execute(array('rm', '-r', 'vendor'), CLI_ROOT, true, false);
+
         $shellHelper->execute(array(
           'composer',
           'install',
           '--no-dev',
+          '--classmap-authoritative',
           '--no-interaction',
         ), CLI_ROOT, true, false);
 
