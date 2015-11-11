@@ -28,11 +28,13 @@ class SelfUpdateCommand extends PlatformCommand
         $currentVersion = $input->getOption('current-version') ?: $this->getApplication()->getVersion();
         $onlyMinor = !$input->getOption('major');
 
-        if (extension_loaded('Phar') && !($localPhar = \Phar::running(false))) {
+        if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln('This instance of the CLI was not installed as a Phar archive.');
             if (file_exists(CLI_ROOT . '/../../autoload.php')) {
-                $this->stdErr->writeln('Update using: <info>composer global update</info>');
+                $this->stdErr->writeln("Update using:\n  composer global update");
             }
+            $this->stdErr->writeln("\nYou can switch to a Phar install (recommended):");
+            $this->stdErr->writeln("  curl -sS https://platform.sh/cli/installer | php");
             return 1;
         }
 
