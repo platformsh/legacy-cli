@@ -388,6 +388,14 @@ class DrushHelper extends Helper
             $sshUser .= '--' . $app->getName();
         }
 
+        $uri = $environment->getLink('public-url');
+        if ($multiApp) {
+            $guess = str_replace('http://', 'http://' . $app->getName() . '---', $uri);
+            if (in_array($guess, $environment->getRouteUrls())) {
+                $uri = $guess;
+            }
+        }
+
         $appConfig = $app->getConfig();
         $documentRoot = '/public';
         if (isset($appConfig['web']['document_root']) && $appConfig['web']['document_root'] !== '/') {
@@ -395,7 +403,7 @@ class DrushHelper extends Helper
         }
 
         return array(
-          'uri' => $environment->getLink('public-url'),
+          'uri' => $uri,
           'remote-host' => $sshUrl['host'],
           'remote-user' => $sshUser,
           'root' => '/app/' . ltrim($documentRoot, '/'),
