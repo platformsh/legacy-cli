@@ -65,7 +65,7 @@ class Drupal extends ToolstackBase
                ->name('composer.json');
         foreach ($finder as $file) {
             $composerJson = json_decode(file_get_contents($file), true);
-            if (isset($composerJson['require']['drupal/core'])) {
+            if (isset($composerJson['require']['drupal/core']) || isset($composerJson['require']['drupal/phing-drush-task'])) {
                 return true;
             }
         }

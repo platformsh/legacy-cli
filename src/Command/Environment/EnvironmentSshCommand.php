@@ -35,7 +35,7 @@ class EnvironmentSshCommand extends PlatformCommand
         $this->validateInput($input);
 
         $sshUrl = $this->getSelectedEnvironment()
-                       ->getSshUrl($input->getOption('app'));
+                       ->getSshUrl($this->selectApp($input));
 
         if ($input->getOption('pipe')) {
             $output->write($sshUrl);
@@ -56,7 +56,7 @@ class EnvironmentSshCommand extends PlatformCommand
             $sshOptions .= 'vv';
         } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
             $sshOptions .= 'v';
-        } elseif ($output->getVerbosity() <= OutputInterface::VERBOSITY_NORMAL) {
+        } elseif ($output->getVerbosity() <= OutputInterface::VERBOSITY_QUIET) {
             $sshOptions .= 'q';
         }
 

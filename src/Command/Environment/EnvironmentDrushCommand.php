@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\PlatformCommand;
 use Platformsh\Cli\Helper\ArgvHelper;
+use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -72,8 +73,12 @@ class EnvironmentDrushCommand extends PlatformCommand
             $sshOptions .= ' -q';
         }
 
+        $appName = $this->selectApp($input, function (LocalApplication $app) {
+            return Drupal::isDrupal($app->getRoot());
+        });
+
         $selectedEnvironment = $this->getSelectedEnvironment();
-        $sshUrl = $selectedEnvironment->getSshUrl($input->getOption('app'));
+        $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
         // The PLATFORM_DOCUMENT_ROOT environment variable is new. Default to
         // /app/public for backwards compatibility.
