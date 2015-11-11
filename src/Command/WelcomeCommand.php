@@ -37,7 +37,6 @@ class WelcomeCommand extends PlatformCommand
             $this->stdErr->writeln("Project dashboard: <info>$projectUri</info>\n");
             $this->runOtherCommand('environments', array('--refresh' => 0));
             $this->stdErr->writeln("\nYou can list other projects by running <info>platform projects</info>\n");
-            $this->stdErr->writeln("Manage your domains by running <info>platform domains</info>");
         } else {
             // The project is not known. Show all projects.
             $this->runOtherCommand('projects', array('--refresh' => 0));
