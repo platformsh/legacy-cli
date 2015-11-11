@@ -25,6 +25,8 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
     {
         $this->validateInput($input);
         $environment = $this->getSelectedEnvironment();
+        $appName = $this->selectApp($input);
+        $sshUrl = $environment->getSshUrl($appName);
 
         $dumpFile = $input->getOption('file');
         if ($dumpFile) {
@@ -41,7 +43,11 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
             );
         }
         else {
-            $dumpFile = $projectRoot . "/{$environment->id}-dump.sql";
+            $dumpFile = $projectRoot . '/' . $environment->id;
+            if ($appName) {
+                $dumpFile .= '--' . $appName;
+            }
+            $dumpFile .= '-dump.sql';
         }
 
         if (file_exists($dumpFile)) {
@@ -53,8 +59,6 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
         }
 
         $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
-
-        $sshUrl = $environment->getSshUrl($input->getOption('app'));
 
         $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);

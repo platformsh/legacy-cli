@@ -1,0 +1,3 @@
+name: drupal1
+build:
+  flavor: drupal

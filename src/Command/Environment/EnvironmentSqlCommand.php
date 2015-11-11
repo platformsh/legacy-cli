@@ -30,7 +30,7 @@ class EnvironmentSqlCommand extends PlatformCommand
         $sshOptions = '';
 
         $sshUrl = $this->getSelectedEnvironment()
-          ->getSshUrl($input->getOption('app'));
+          ->getSshUrl($this->selectApp($input));
 
         $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);
