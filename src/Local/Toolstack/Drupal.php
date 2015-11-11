@@ -58,6 +58,18 @@ class Drupal extends ToolstackBase
             }
         }
 
+        // Check whether there is a composer.json file requiring Drupal core.
+        $finder->in($directory)
+               ->files()
+               ->depth($depth)
+               ->name('composer.json');
+        foreach ($finder as $file) {
+            $composerJson = json_decode(file_get_contents($file), true);
+            if (isset($composerJson['require']['drupal/core'])) {
+                return true;
+            }
+        }
+
         return false;
     }
 

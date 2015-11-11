@@ -2,70 +2,80 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 [![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli) [![Latest Stable Version](https://poser.pugx.org/platformsh/cli/v/stable)](https://github.com/platformsh/platformsh-cli/releases) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/master/LICENSE)
 
-### Requirements
+## Requirements
 
-* Operating system: Linux, OS X, Windows Vista, Windows 7 (any), or Windows 8 Pro (Win8 Standard does not work due to an issue with symlink permissions)
-* PHP 5.4.0 or higher, with cURL support
+* Operating system: Linux, OS X, Windows Vista, Windows 7, Windows 8 Pro, or Windows 10 (Windows 8 Standard does not work due to an issue with symlink permissions)
+* PHP 5.5 or higher, with cURL support
 * [Composer](https://getcomposer.org/)
-* [Drush](https://github.com/drush-ops/drush) (only needed for Drupal projects)
+* [Drush](https://github.com/drush-ops/drush) (only for Drupal projects, optional)
 
-### Installation
+## Installation
 
-* [Install Composer globally](https://getcomposer.org/doc/00-intro.md#globally).
+### Installing on OS X or Linux
 
-* Install the latest stable version of the CLI:
+Simply use this command:
+
+    curl -sS https://platform.sh/cli/installer | php
+
+### Installing on Windows
+
+1. Install Composer using [Composer-Setup.exe](https://getcomposer.org/doc/00-intro.md#installation-windows).
+
+2. Install the CLI, in your preferred terminal application (e.g. in Git Bash):
 
         composer global require platformsh/cli:@stable
 
-* Make sure Composer's `vendor/bin` directory is in your system's PATH.
-
-  In Linux or OS X, add this line to your [shell configuration
-  file](#shell-configuration-file):
-
-        export PATH="$PATH:$HOME/.composer/vendor/bin"
-
-  In Windows, you can use this command from a Command Prompt (cmd.exe):
+3. Make sure the Composer `vendor/bin` directory is in your PATH. Use this
+  command from a Command Prompt (cmd.exe):
 
         setx PATH "%PATH%;%APPDATA%\Composer\vendor\bin"
 
+  Start a new terminal before continuing.
+
+### Installing manually
+
+Installing manually is not recommended, unless you are confident you know what
+you are doing.
+
+1. Download the latest stable package from the
+  [Releases page](https://github.com/platformsh/platformsh-cli/releases)
+  (look for the latest `platform.phar` file).
+
+2. Rename the file to `platform`, ensure it is executable, and move it into a
+  directory in your PATH (use `echo $PATH` to see your options).
+
+3. Download the latest [`platform.rc`](https://raw.githubusercontent.com/platformsh/platformsh-cli/master/platform.rc)
+  file. Include it from your shell configuration file (`.bash_profile`,
+  `.bashrc`, or `.zshrc`, etc.):
+
+  ```bash
+  ; Include Platform.sh CLI shell configuration.
+  . /path/to/platform.rc 2>/dev/null
+  ```
+
+  This step enables features such as autocompletion and shell aliases.
+
   Start a new shell before continuing.
 
-* Enable auto-completion and shell aliases (optional, but recommended).
-
-  In Linux or OS X, add this line to your [shell configuration
-  file](#shell-configuration-file):
-
-        . "$HOME/.composer/vendor/platformsh/cli/platform.rc" 2>/dev/null
-
-  In Windows, it would be:
-
-        . "$APPDATA/Composer/vendor/platformsh/cli/platform.rc" 2> nul
-
-#### Shell configuration file
-Your 'shell configuration file' might be in any of the following
-locations:
-
-* `~/.bashrc` (common in Linux)
-* `~/.bash_profile` (common in OS X)
-* `~/.zshrc` (if using ZSH)
-
-Start a new shell or type `source <filename>` to load the new configuration.
-
-### Updating
+## Updating
 
 New releases of the CLI are made regularly. Update with this command:
 
+    platform self-update
+
+If you installed the CLI using Composer, then you may need this command instead:
+
     composer global update
 
-### Usage
+## Usage
 
 You can run the Platform.sh CLI in your shell by typing `platform`.
 
-        platform
+    platform
 
 Use the 'list' command to get a list of available options and commands:
 
-        platform list
+    platform list
 
 ### Commands
 
@@ -151,14 +161,15 @@ variable
   variable:set (vset)                       Set a variable for an environment
 ```
 
-### Known issues
+## Known issues
 
-#### Caching
+### Caching
+
 The CLI caches details of your projects and their environments, and some other
 information. These caches could become out-of-date. You can clear caches with
 the command `platform clear-cache` (or `platform cc` for short).
 
-### Customization
+## Customization
 
 You can configure the CLI via these environment variables:
 
@@ -167,8 +178,10 @@ You can configure the CLI via these environment variables:
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')
-* `PLATFORMSH_CLI_ENVIRONMENTS_TTL`: the cache TTL for environments, in seconds (default 600)
-* `PLATFORMSH_CLI_PROJECTS_TTL`: the cache TTL for projects, in seconds (default 3600)
-* `PLATFORMSH_CLI_SESSION_ID`: change user (default 'default')
-* `PLATFORMSH_CLI_USERS_TTL`: the cache TTL for user account info, in seconds (default 3600)
+* `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
+
+## Contributing
+
+If you clone this repository locally, you can build it with `composer install`,
+and you can run the tests with `./vendor/bin/phpunit -c ./phpunit.xml`.
