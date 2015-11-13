@@ -15,6 +15,8 @@ class EnvironmentUrlCommand extends UrlCommandBase
             ->setName('environment:url')
             ->setAliases(['url'])
             ->setDescription('Get the public URLs of an environment');
+        $this->urlUtil->addBrowserOption($this->getDefinition());
+        $this->urlUtil->addPipeOption($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -56,7 +58,7 @@ class EnvironmentUrlCommand extends UrlCommandBase
         $questionHelper = $this->getHelper('question');
         $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to choose a URL', $urls[0]);
 
-        $this->openUrl($url, $input, $output);
+        $this->urlUtil->openUrl($url, $input, $output);
 
         return 0;
     }

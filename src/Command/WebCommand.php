@@ -14,6 +14,8 @@ class WebCommand extends UrlCommandBase
         $this
             ->setName('web')
             ->setDescription('Open the Web UI');
+        $this->urlUtil->addBrowserOption($this->getDefinition());
+        $this->urlUtil->addPipeOption($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -39,6 +41,6 @@ class WebCommand extends UrlCommandBase
             }
         }
 
-        $this->openUrl($url, $input, $output);
+        $this->urlUtil->openUrl($url, $input, $output);
     }
 }

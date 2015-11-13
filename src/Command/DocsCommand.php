@@ -17,6 +17,8 @@ class DocsCommand extends UrlCommandBase
             ->setDescription('Open the online documentation')
             ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
         $this->addExample('Search for information about the CLI', 'CLI');
+        $this->urlUtil->addBrowserOption($this->getDefinition());
+        $this->urlUtil->addPipeOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -36,7 +38,7 @@ class DocsCommand extends UrlCommandBase
                 . urlencode('site:' . $hostname . ' ' . $query);
         }
 
-        $this->openUrl($url, $input, $output);
+        $this->urlUtil->openUrl($url, $input, $output);
     }
 
     /**

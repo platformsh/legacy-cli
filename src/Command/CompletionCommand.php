@@ -129,6 +129,16 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 Completion::TYPE_OPTION,
                 [$this, 'getAppNames']
             ),
+            new Completion\ShellPathCompletion(
+                'server:run',
+                'log',
+                Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+                'server:start',
+                'log',
+                Completion::TYPE_OPTION
+            )
         ]);
 
         try {
