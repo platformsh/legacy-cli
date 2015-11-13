@@ -68,6 +68,16 @@ class LocalApplication
     }
 
     /**
+     * Get the destination relative path for the web root of this application.
+     *
+     * @return string
+     */
+    public function getWebPath()
+    {
+        return str_replace('/', '-', $this->getId());
+    }
+
+    /**
      * Override the application config.
      *
      * @param array $config
