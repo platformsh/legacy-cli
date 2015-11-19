@@ -240,7 +240,15 @@ class Drupal extends ToolstackBase
             $args[] = "--lock=$projectMake.lock";
         }
 
-        $drushHelper->execute($args, null, true, false);
+        // Run Drush make.
+        //
+        // Note that this is run inside the make file's directory. This fixes an
+        // issue with the 'copy' Drush Make download type. According to the
+        // Drush documentation, URLs for copying files can be either absolute or
+        // relative to the make file's directory. However, in Drush's actual
+        // implementation, it's actually relative to the current working
+        // directory.
+        $drushHelper->execute($args, dirname($projectMake), true, false);
 
         $this->processSettingsPhp();
 
@@ -290,7 +298,7 @@ class Drupal extends ToolstackBase
             $args[] = "--lock=$projectCoreMake.lock";
         }
 
-        $drushHelper->execute($args, null, true, false);
+        $drushHelper->execute($args, dirname($projectCoreMake), true, false);
 
         $profileDir = $drupalRoot . '/profiles/' . $profileName;
         mkdir($profileDir, 0755, true);
@@ -298,7 +306,7 @@ class Drupal extends ToolstackBase
         $this->output->writeln("Building the profile: <info>$profileName</info>");
 
         $args = array_merge(
-          array('make', '--no-core', '--contrib-destination=.', $projectMake),
+          array('make', '--no-core', '--contrib-destination=.', $projectMake, $profileDir),
           $this->drushFlags
         );
 
@@ -307,7 +315,7 @@ class Drupal extends ToolstackBase
             $args[] = "--lock=$projectMake.lock";
         }
 
-        $drushHelper->execute($args, $profileDir, true, false);
+        $drushHelper->execute($args, dirname($projectMake), true, false);
 
         if ($this->copy) {
             $this->output->writeln("Copying existing app files to the profile");
