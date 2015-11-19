@@ -95,7 +95,7 @@ class Drupal extends ToolstackBase
             $this->buildInPlace = true;
 
             if ($this->copy) {
-                $this->fsHelper->copyAll($this->appRoot, $this->getBuildDir());
+                $this->fsHelper->copyAll($this->appRoot, $this->getDrupalRoot());
             }
             else {
                 $this->copyGitIgnore('drupal/gitignore-vanilla');
@@ -228,8 +228,10 @@ class Drupal extends ToolstackBase
         $drushHelper->ensureInstalled();
         $this->setUpDrushFlags();
 
+        $drupalRoot = $this->getDrupalRoot();
+
         $args = array_merge(
-          array('make', $projectMake, $this->getBuildDir()),
+          array('make', $projectMake, $drupalRoot),
           $this->drushFlags
         );
 
@@ -253,7 +255,7 @@ class Drupal extends ToolstackBase
         // 'sites/default' directory.
         $this->fsHelper->symlinkAll(
           $this->appRoot,
-          $this->getBuildDir() . '/sites/default',
+          $drupalRoot . '/sites/default',
           true,
           false,
           array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
@@ -275,8 +277,10 @@ class Drupal extends ToolstackBase
         $projectMake = $this->findDrushMakeFile(true);
         $projectCoreMake = $this->findDrushMakeFile(true, true);
 
+        $drupalRoot = $this->getDrupalRoot();
+
         $args = array_merge(
-          array('make', $projectCoreMake, $this->getBuildDir()),
+          array('make', $projectCoreMake, $drupalRoot),
           $this->drushFlags
         );
 
@@ -288,7 +292,7 @@ class Drupal extends ToolstackBase
 
         $drushHelper->execute($args, null, true, false);
 
-        $profileDir = $this->getBuildDir() . '/profiles/' . $profileName;
+        $profileDir = $drupalRoot . '/profiles/' . $profileName;
         mkdir($profileDir, 0755, true);
 
         $this->output->writeln("Building the profile: <info>$profileName</info>");
@@ -337,6 +341,14 @@ class Drupal extends ToolstackBase
     }
 
     /**
+     * @return string
+     */
+    protected function getDrupalRoot()
+    {
+        return $this->getBuildDir() . '/' . $this->documentRoot;
+    }
+
+    /**
      * Handle a custom settings.php file for project and profile mode.
      *
      * If the user has a custom settings.php file, and we symlink it into
@@ -355,7 +367,7 @@ class Drupal extends ToolstackBase
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
-            $this->fsHelper->copy($settingsPhpFile, $this->getBuildDir() . '/sites/default/settings.php');
+            $this->fsHelper->copy($settingsPhpFile, $this->getDrupalRoot() . '/sites/default/settings.php');
             $this->output->writeln(
               "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
               . "\nYou will need to rebuild if you edit this file.</comment>"

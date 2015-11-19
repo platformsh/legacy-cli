@@ -200,12 +200,8 @@ abstract class ToolstackBase implements ToolstackInterface
         if ($this->buildInPlace && !$this->copy) {
             return $this->appRoot;
         }
-        $buildDir = $this->buildDir;
-        if ($this->documentRoot === 'public') {
-            $buildDir .= '/public';
-        }
 
-        return $buildDir;
+        return $this->buildDir;
     }
 
     /**
