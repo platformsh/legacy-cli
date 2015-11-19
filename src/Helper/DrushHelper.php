@@ -112,14 +112,22 @@ class DrushHelper extends Helper
     /**
      * Install Drush globally, using Composer.
      *
-     * @param string $version The version to install. At the time of writing,
-     *                        Platform.sh uses Drush 6.4.0.
+     * @param string|null $version
+     *   The version to install.
      *
      * @return bool
      */
-    protected function install($version = '6.4.0')
+    protected function install($version = null)
     {
-        $args = array('composer', 'global', 'require', 'drush/drush:' . $version);
+        if (!$this->shellHelper->commandExists('composer')) {
+            return false;
+        }
+        $args = array(
+          $this->shellHelper->resolveCommand('composer'),
+          'global',
+          'require',
+          ($version ? sprintf('drush/drush:%s', $version) : 'drush/drush'),
+        );
 
         return (bool) $this->shellHelper->execute($args, null, false, false);
     }
