@@ -95,7 +95,12 @@ class Drupal extends ToolstackBase
             $this->buildInPlace = true;
 
             if ($this->copy) {
-                $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
+                if (file_exists($this->appRoot . '/' . $this->documentRoot)) {
+                    $this->fsHelper->copyAll($this->appRoot, $this->buildDir);
+                }
+                else {
+                    $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
+                }
             }
             else {
                 $this->copyGitIgnore('drupal/gitignore-vanilla');

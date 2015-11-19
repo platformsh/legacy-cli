@@ -15,9 +15,13 @@ class NoToolstack extends ToolstackBase
         $this->buildInPlace = true;
 
         if ($this->copy) {
-            $buildDir = $this->getBuildDir();
             $this->output->writeln("Copying");
-            $this->fsHelper->copyAll($this->appRoot, $buildDir);
+            if (file_exists($this->appRoot . '/' . $this->documentRoot)) {
+                $this->fsHelper->copyAll($this->appRoot, $this->buildDir);
+            }
+            else {
+                $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
+            }
         }
 
         $this->processSpecialDestinations();

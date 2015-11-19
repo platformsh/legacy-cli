@@ -1,0 +1,3 @@
+type: php
+web:
+  document_root: "/web"
