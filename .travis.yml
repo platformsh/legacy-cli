@@ -9,22 +9,13 @@ php:
   - hhvm
   - 7.0
 
-matrix:
-  allow_failures:
-    - php: 7.0
-  fast_finish: true
-
-env:
-  - COMPOSER_LOWEST=0
-  - COMPOSER_LOWEST=1
-
 cache:
   directories:
     - $HOME/.composer/cache
+    - $HOME/.drush/cache
 
 install:
   - composer install --no-interaction
-  - if [ "$COMPOSER_LOWEST" = 1 ]; then travis_wait composer update --prefer-lowest --no-interaction; fi
 
 script:
   - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text
