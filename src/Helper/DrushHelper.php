@@ -70,7 +70,7 @@ class DrushHelper extends Helper
 
         // Parse the version from the Drush output. It should be a string a bit
         // like " Drush Version   :  8.0.0-beta14 ".
-        if (!preg_match('/:\s*([0-9]+\.[a-z0-9\-\.]+)\s*$/', $drushVersion[0], $matches)) {
+        if (!preg_match('/[:\s]\s*([0-9]+\.[a-z0-9\-\.]+)\s*$/', $drushVersion[0], $matches)) {
             throw new \Exception("Unexpected output from command '$command': \n" . implode("\n", $drushVersion));
         }
         $version = $matches[1];
@@ -112,14 +112,22 @@ class DrushHelper extends Helper
     /**
      * Install Drush globally, using Composer.
      *
-     * @param string $version The version to install. At the time of writing,
-     *                        Platform.sh uses Drush 6.4.0.
+     * @param string|null $version
+     *   The version to install.
      *
      * @return bool
      */
-    protected function install($version = '6.4.0')
+    protected function install($version = null)
     {
-        $args = array('composer', 'global', 'require', 'drush/drush:' . $version);
+        if (!$this->shellHelper->commandExists('composer')) {
+            return false;
+        }
+        $args = array(
+          $this->shellHelper->resolveCommand('composer'),
+          'global',
+          'require',
+          ($version ? sprintf('drush/drush:%s', $version) : 'drush/drush'),
+        );
 
         return (bool) $this->shellHelper->execute($args, null, false, false);
     }

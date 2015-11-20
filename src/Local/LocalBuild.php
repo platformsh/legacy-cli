@@ -13,7 +13,7 @@ class LocalBuild
 
     // Some changes may not be backwards-compatible with previous build
     // archives. Increment this number as breaking changes are released.
-    const BUILD_VERSION = 2;
+    const BUILD_VERSION = 3;
 
     protected $settings;
     protected $output;

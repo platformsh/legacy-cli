@@ -95,7 +95,12 @@ class Drupal extends ToolstackBase
             $this->buildInPlace = true;
 
             if ($this->copy) {
-                $this->fsHelper->copyAll($this->appRoot, $this->getBuildDir());
+                if (file_exists($this->appRoot . '/' . $this->documentRoot)) {
+                    $this->fsHelper->copyAll($this->appRoot, $this->buildDir);
+                }
+                else {
+                    $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
+                }
             }
             else {
                 $this->copyGitIgnore('drupal/gitignore-vanilla');
@@ -228,8 +233,10 @@ class Drupal extends ToolstackBase
         $drushHelper->ensureInstalled();
         $this->setUpDrushFlags();
 
+        $drupalRoot = $this->getWebRoot();
+
         $args = array_merge(
-          array('make', $projectMake, $this->getBuildDir()),
+          array('make', $projectMake, $drupalRoot),
           $this->drushFlags
         );
 
@@ -238,7 +245,15 @@ class Drupal extends ToolstackBase
             $args[] = "--lock=$projectMake.lock";
         }
 
-        $drushHelper->execute($args, null, true, false);
+        // Run Drush make.
+        //
+        // Note that this is run inside the make file's directory. This fixes an
+        // issue with the 'copy' Drush Make download type. According to the
+        // Drush documentation, URLs for copying files can be either absolute or
+        // relative to the make file's directory. However, in Drush's actual
+        // implementation, it's actually relative to the current working
+        // directory.
+        $drushHelper->execute($args, dirname($projectMake), true, false);
 
         $this->processSettingsPhp();
 
@@ -253,7 +268,7 @@ class Drupal extends ToolstackBase
         // 'sites/default' directory.
         $this->fsHelper->symlinkAll(
           $this->appRoot,
-          $this->getBuildDir() . '/sites/default',
+          $drupalRoot . '/sites/default',
           true,
           false,
           array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
@@ -275,8 +290,10 @@ class Drupal extends ToolstackBase
         $projectMake = $this->findDrushMakeFile(true);
         $projectCoreMake = $this->findDrushMakeFile(true, true);
 
+        $drupalRoot = $this->getWebRoot();
+
         $args = array_merge(
-          array('make', $projectCoreMake, $this->getBuildDir()),
+          array('make', $projectCoreMake, $drupalRoot),
           $this->drushFlags
         );
 
@@ -286,15 +303,15 @@ class Drupal extends ToolstackBase
             $args[] = "--lock=$projectCoreMake.lock";
         }
 
-        $drushHelper->execute($args, null, true, false);
+        $drushHelper->execute($args, dirname($projectCoreMake), true, false);
 
-        $profileDir = $this->getBuildDir() . '/profiles/' . $profileName;
+        $profileDir = $drupalRoot . '/profiles/' . $profileName;
         mkdir($profileDir, 0755, true);
 
         $this->output->writeln("Building the profile: <info>$profileName</info>");
 
         $args = array_merge(
-          array('make', '--no-core', '--contrib-destination=.', $projectMake),
+          array('make', '--no-core', '--contrib-destination=.', $projectMake, $profileDir),
           $this->drushFlags
         );
 
@@ -303,7 +320,7 @@ class Drupal extends ToolstackBase
             $args[] = "--lock=$projectMake.lock";
         }
 
-        $drushHelper->execute($args, $profileDir, true, false);
+        $drushHelper->execute($args, dirname($projectMake), true, false);
 
         if ($this->copy) {
             $this->output->writeln("Copying existing app files to the profile");
@@ -355,7 +372,7 @@ class Drupal extends ToolstackBase
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
-            $this->fsHelper->copy($settingsPhpFile, $this->getBuildDir() . '/sites/default/settings.php');
+            $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->output->writeln(
               "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
               . "\nYou will need to rebuild if you edit this file.</comment>"

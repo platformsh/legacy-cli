@@ -57,15 +57,20 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
      * @param string $sourceDir
      *   A directory containing source code for the project or app. Files will
      *   be copied into a dummy project.
+     * @param array $buildSettings
+     *   An array of custom build settings.
      *
      * @return string
      *   The project root for the dummy project.
      */
-    protected function assertBuildSucceeds($sourceDir)
+    protected function assertBuildSucceeds($sourceDir, array $buildSettings = [])
     {
         $projectRoot = $this->createDummyProject($sourceDir);
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
-        $success = $this->builder->buildProject($projectRoot);
+        $builder = $buildSettings
+            ? new LocalBuild($buildSettings + $this->buildSettings, self::$output)
+            : $this->builder;
+        $success = $builder->buildProject($projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
 
         return $projectRoot;

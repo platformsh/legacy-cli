@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Tests\Toolstack;
 
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
-use Symfony\Component\Console\Output\ConsoleOutput;
 
 class VanillaTest extends BaseToolstackTest
 {
@@ -21,14 +20,24 @@ class VanillaTest extends BaseToolstackTest
      */
     public function testBuildNoSymlinks()
     {
-        $builder = new LocalBuild(array('copy' => true), new ConsoleOutput());
         $sourceDir = 'tests/data/apps/vanilla';
-        $projectRoot = $this->createDummyProject($sourceDir);
-        $success = $builder->buildProject($projectRoot);
-        $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
+        $projectRoot = $this->assertBuildSucceeds($sourceDir, ['copy' => true]);
         $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
         $this->assertTrue(is_dir($webRoot), 'Web root is an actual directory');
+    }
+
+    /**
+     * Test building with a custom web root.
+     */
+    public function testBuildCustomWebRoot()
+    {
+        $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot');
+        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $this->assertFileExists($webRoot . '/index.html');
+        $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot', ['copy' => true]);
+        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $this->assertFileExists($webRoot . '/index.html');
     }
 
     /**
@@ -66,7 +75,7 @@ class VanillaTest extends BaseToolstackTest
 
         $destination = $projectRoot . '/web';
 
-        $builder = new LocalBuild(array(), self::$output);
+        $builder = new LocalBuild($this->buildSettings, self::$output);
         $builder->buildProject($projectRoot, null, $destination);
         $this->assertFileExists($destination . '/index.html');
     }
