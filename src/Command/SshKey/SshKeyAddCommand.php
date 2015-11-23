@@ -54,7 +54,7 @@ class SshKeyAddCommand extends PlatformCommand
                 $shellHelper->execute($args, null, true);
                 $path = "$newKey.pub";
                 $this->stdErr->writeln("Generated a new key: $path");
-                passthru('ssh-add ' . escapeshellarg($newKey));
+                passthru('eval $(ssh-agent); ssh-add ' . escapeshellarg($newKey));
             } else {
                 $this->stdErr->writeln("<error>You must specify the path to a public SSH key</error>");
 
