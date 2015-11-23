@@ -127,6 +127,8 @@ class DrushHelper extends Helper
           'global',
           'require',
           ($version ? sprintf('drush/drush:%s', $version) : 'drush/drush'),
+          '--no-interaction',
+          '--no-progress',
         );
 
         return (bool) $this->shellHelper->execute($args, null, false, false);
