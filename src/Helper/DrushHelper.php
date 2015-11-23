@@ -64,7 +64,7 @@ class DrushHelper extends Helper
         $command = $this->getDrushExecutable() . ' --version';
         exec($command, $drushVersion, $returnCode);
         if ($returnCode > 0) {
-            $message = $returnCode == 127 ? 'Error finding Drush version' : 'Drush is not installed';
+            $message = $returnCode !== 127 ? 'Error finding Drush version' : 'Drush is not installed';
             throw new \Exception($message, $returnCode);
         }
 
