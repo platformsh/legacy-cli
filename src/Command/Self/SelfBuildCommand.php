@@ -95,6 +95,7 @@ class SelfBuildCommand extends PlatformCommand
           '--no-dev',
           '--classmap-authoritative',
           '--no-interaction',
+          '--no-progress',
         ), CLI_ROOT, true, false);
 
         $boxArgs = array('box', 'build', '--no-interaction');
