@@ -87,7 +87,8 @@ class SshKeyAddCommand extends PlatformCommand
 
         $name = $input->getOption('name');
         if (!$name) {
-            $name = $questionHelper->askInput('Enter a name for the key', $input, $this->stdErr);
+            $defaultName = gethostname() ?: null;
+            $name = $questionHelper->askInput('Enter a name for the key', $input, $this->stdErr, $defaultName);
         }
 
         $this->getClient()
