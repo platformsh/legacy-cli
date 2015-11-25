@@ -56,9 +56,11 @@ class LogoutCommand extends PlatformCommand
         $this->stdErr->writeln("You have been logged out of the Platform.sh CLI.");
 
         if ($input->getOption('all')) {
-            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fs */
-            $fs = $this->getHelper('fs');
-            $fs->remove(dirname($this->getCacheDir()));
+            if (file_exists($this->getSessionsDir())) {
+                /** @var \Platformsh\Cli\Helper\FilesystemHelper $fs */
+                $fs = $this->getHelper('fs');
+                $fs->remove($this->getSessionsDir());
+            }
             $this->stdErr->writeln("All known session files have been deleted.");
         }
 

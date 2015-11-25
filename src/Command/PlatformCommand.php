@@ -33,6 +33,9 @@ abstract class PlatformCommand extends Command
     /** @var string */
     protected static $sessionId = 'default';
 
+    /** @var string */
+    protected static $configDir;
+
     /** @var string|null */
     protected static $apiToken;
 
@@ -170,7 +173,7 @@ abstract class PlatformCommand extends Command
             else {
                 $session = $connector->getSession();
                 $session->setId('cli-' . self::$sessionId);
-                $session->setStorage(new File());
+                $session->setStorage(new File($this->getSessionsDir()));
             }
 
             self::$client = new PlatformClient($connector);
@@ -215,12 +218,32 @@ abstract class PlatformCommand extends Command
     /**
      * @return string
      */
+    protected function getConfigDir()
+    {
+        if (!isset(self::$configDir)) {
+            $fs = new FilesystemHelper();
+            self::$configDir = $fs->getHomeDirectory() . '/.platformsh';
+        }
+
+        return self::$configDir;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getSessionsDir()
+    {
+        return $this->getConfigDir() . '/.session';
+    }
+
+    /**
+     * @return string
+     */
     protected function getCacheDir()
     {
         $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', self::$sessionId);
 
-        $fs = new FilesystemHelper();
-        return $fs->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
+        return $this->getSessionsDir() . '/sess-' . $sessionId . '/cache';
     }
 
     /**
