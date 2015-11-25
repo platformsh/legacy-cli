@@ -129,6 +129,7 @@ class LocalApplication
           new Toolstack\Drupal(),
           new Toolstack\Symfony(),
           new Toolstack\Composer(),
+          new Toolstack\NodeJs(),
           new Toolstack\NoToolstack(),
         );
     }
