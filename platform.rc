@@ -56,3 +56,8 @@ function platform_local_drush {
     fi
 }
 alias pldr=platform_local_drush
+
+# For people who don't like typing.
+if ! command -v p >/dev/null 2>&1; then
+  alias p=platform
+fi
