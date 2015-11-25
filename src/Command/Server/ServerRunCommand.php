@@ -156,12 +156,7 @@ class ServerRunCommand extends ServerCommandBase
             sleep(1);
         }
 
-        if (!$router = $this->createRouter($appConfig, $projectRoot)) {
-            return 1;
-        }
-
-        $process = $this->createServerProcess($address, $docRoot, $router);
-        $process->setEnv($this->createEnv($projectRoot, $docRoot, $appConfig));
+        $process = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig);
         $process->start(function ($type, $buffer) use ($log) {
             $log->write($buffer);
         });
@@ -169,7 +164,6 @@ class ServerRunCommand extends ServerCommandBase
         $this->writeServerInfo($address, $pid, [
           'appId' => $appId,
           'docRoot' => $docRoot,
-          'router' => $router,
           'logFile' => $logFile,
           'projectRoot' => $projectRoot,
         ]);

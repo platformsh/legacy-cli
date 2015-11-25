@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Process\ProcessBuilder;
 
 abstract class ServerCommandBase extends CommandBase
@@ -272,41 +273,76 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Creates a process to start PHP's built-in web server.
+     * Creates a process to start a web server.
      *
      * @param string $address
-     * @param string $documentRoot
-     * @param string $router
+     * @param string $docRoot
+     * @param string $projectRoot
+     * @param array $appConfig
      *
-     * @return \Symfony\Component\Process\Process The process
+     * @return Process
      */
-    protected function createServerProcess($address, $documentRoot, $router)
+    protected function createServerProcess($address, $docRoot, $projectRoot, array $appConfig)
     {
-        $this->showSecurityWarning();
-
-        $arguments = [$this->getHelper('shell')->resolveCommand('php')];
-
-        foreach ($this->getServerPhpConfig() as $item => $value) {
-            $arguments[] = sprintf('-d %s="%s"', $item, $value);
+        $stack = 'php';
+        if (isset($appConfig['type'])) {
+            $type = explode(':', $appConfig['type'], 2);
+            $stack = $type[0];
+            $version = isset($type[1]) ? $type[1] : false;
+            if ($stack === 'hhvm') {
+                $stack = 'php';
+            }
+            if ($stack === 'php' && $version && version_compare(PHP_VERSION, $version, '<')) {
+                $this->stdErr->writeln(
+                  sprintf("<comment>Warning:</comment> your local PHP version is %s, but the app expects %s", PHP_VERSION, $version)
+                );
+            }
         }
 
-        $arguments = array_merge($arguments, [
-          '-t',
-          $documentRoot,
-          '-S',
-          $address,
-          $router,
-        ]);
+        $arguments = [];
 
-        // An 'exec' is needed to stop creating two processes on some OSs.
-        if (strpos(PHP_OS, 'WIN') === false) {
-            array_unshift($arguments, 'exec');
+        if ($stack === 'php') {
+            $router = $this->createRouter('php', $projectRoot);
+
+            $this->showSecurityWarning();
+
+            $arguments[] = $this->getHelper('shell')->resolveCommand('php');
+
+            foreach ($this->getServerPhpConfig() as $item => $value) {
+                $arguments[] = sprintf('-d %s="%s"', $item, $value);
+            }
+
+            $arguments = array_merge($arguments, [
+              '-t',
+              $docRoot,
+              '-S',
+              $address,
+              $router,
+            ]);
+
+            // An 'exec' is needed to stop creating two processes on some OSs.
+            if (strpos(PHP_OS, 'WIN') === false) {
+                array_unshift($arguments, 'exec');
+            }
+
+            $builder = new ProcessBuilder($arguments);
+            $process = $builder->getProcess();
+        }
+        else {
+            if (empty($appConfig['web']['commands']['start'])) {
+                throw new \RuntimeException('The start command (`web.commands.start`) was not found.');
+            }
+            $process = new Process($appConfig['web']['commands']['start']);
         }
 
-        $builder = new ProcessBuilder($arguments);
-        $builder->setTimeout(null);
+        $process->setTimeout(null);
+        $env = $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
+        $process->setEnv($env);
+        if (isset($env['PLATFORM_APP_DIR'])) {
+            $process->setWorkingDirectory($env['PLATFORM_APP_DIR']);
+        }
 
-        return $builder->getProcess();
+        return $process;
     }
 
     /**
@@ -330,33 +366,19 @@ abstract class ServerCommandBase extends CommandBase
     /**
      * Create a router file.
      *
-     * @param array $appConfig
+     * @param string $stack
      * @param string $projectRoot
      *
      * @return string|bool
      *   The absolute path to the file on success, false on failure.
      */
-    protected function createRouter(array $appConfig, $projectRoot)
+    protected function createRouter($stack, $projectRoot)
     {
         static $created = [];
 
-        $stack = 'php';
-        if (isset($appConfig['type'])) {
-            list($stack, $version) = explode(':', $appConfig['type'], 2);
-            if ($stack === 'hhvm') {
-                $stack = 'php';
-            }
-            if ($stack === 'php' && $version && version_compare(PHP_VERSION, $version, '<')) {
-                $this->stdErr->writeln(
-                  sprintf("<comment>Warning:</comment> your local PHP version is %s, but the app expects %s", PHP_VERSION, $version)
-                );
-            }
-        }
-
         $router_src = sprintf('%s/resources/router/router-%s.php', CLI_ROOT, $stack);
         if (!file_exists($router_src)) {
-            $this->stdErr->writeln(sprintf('Router not found for application type: <error>%s</error>', $appConfig['type']));
-            $this->stdErr->writeln('This app type is not supported in the CLI yet');
+            $this->stdErr->writeln(sprintf('Router not found for stack: <error>%s</error>', $stack));
             return false;
         }
 
@@ -392,21 +414,25 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @param string $projectRoot
      * @param string $docRoot
+     * @param string $address
      * @param array $appConfig
      *
      * @return array
      */
-    protected function createEnv($projectRoot, $docRoot, array $appConfig)
+    protected function createEnv($projectRoot, $docRoot, $address, array $appConfig)
     {
+        $realDocRoot = realpath($docRoot);
         $env = [
           'PLATFORM_ENVIRONMENT' => '_local',
           'PLATFORM_APPLICATION' => base64_encode(json_encode($appConfig)),
           'PLATFORM_APPLICATION_NAME' => isset($appConfig['name']) ? $appConfig['name'] : '',
-          'PLATFORM_DOCUMENT_ROOT' => realpath($docRoot),
+          'PLATFORM_DOCUMENT_ROOT' => $realDocRoot,
         ];
 
-        if (dirname(dirname($docRoot)) === $projectRoot . '/' . LocalProject::BUILD_DIR) {
-            $env['PLATFORM_APP_DIR'] = dirname($docRoot);
+        list($env['IP'], $env['PORT']) = explode(':', $address);
+
+        if (dirname(dirname($realDocRoot)) === $projectRoot . '/' . LocalProject::BUILD_DIR) {
+            $env['PLATFORM_APP_DIR'] = dirname($realDocRoot);
         }
 
         if ($projectRoot === $this->getProjectRoot()) {

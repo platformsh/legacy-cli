@@ -144,14 +144,8 @@ class ServerStartCommand extends ServerCommandBase
                 sleep(1);
             }
 
-            if (!$router = $this->createRouter($appConfig, $projectRoot)) {
-                $error = true;
-                continue;
-            }
-
             // Set up the process object.
-            $processes[$address] = $this->createServerProcess($address, $docRoot, $router);
-            $processes[$address]->setEnv($this->createEnv($projectRoot, $docRoot, $appConfig));
+            $processes[$address] = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig);
 
             // Start the server.
             try {
@@ -173,7 +167,6 @@ class ServerStartCommand extends ServerCommandBase
             $this->writeServerInfo($address, $pid, [
               'appId' => $appId,
               'docRoot' => $docRoot,
-              'router' => $router,
               'logFile' => $logFile,
               'projectRoot' => $projectRoot,
             ]);
