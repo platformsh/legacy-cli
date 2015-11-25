@@ -144,18 +144,15 @@ class ServerStartCommand extends ServerCommandBase
                 sleep(1);
             }
 
-            // Set up the process object.
-            $processes[$address] = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig);
-
-            // Start the server.
             try {
+                $processes[$address] = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig);
                 $processes[$address]->start(
                     function ($type, $buffer) use ($log) {
                         $log->write($buffer);
                     }
                 );
             }
-            catch (\RuntimeException $e) {
+            catch (\Exception $e) {
                 $this->stdErr->writeln(sprintf('Failed to start server: %s', $e->getMessage()));
                 unset($processes[$address]);
                 $error = true;

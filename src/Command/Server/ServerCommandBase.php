@@ -280,6 +280,8 @@ abstract class ServerCommandBase extends CommandBase
      * @param string $projectRoot
      * @param array $appConfig
      *
+     * @throws \Exception
+     *
      * @return Process
      */
     protected function createServerProcess($address, $docRoot, $projectRoot, array $appConfig)
@@ -329,10 +331,22 @@ abstract class ServerCommandBase extends CommandBase
             $process = $builder->getProcess();
         }
         else {
-            if (empty($appConfig['web']['commands']['start'])) {
+            // Bail out. We can't support non-PHP apps for now.
+            throw new \Exception(
+              sprintf("Not supported: the CLI doesn't yet support starting a server for the application type '%s'", $appConfig['type'])
+            );
+
+            // The following code is a potential strategy for non-PHP apps, but
+            // it won't really work without starting more than one process,
+            // which would need a rethink.
+            /*
+            if (!empty($appConfig['web']['commands']['start'])) {
+                $process = new Process($appConfig['web']['commands']['start']);
+            }
+            else {
                 throw new \RuntimeException('The start command (`web.commands.start`) was not found.');
             }
-            $process = new Process($appConfig['web']['commands']['start']);
+            */
         }
 
         $process->setTimeout(null);
