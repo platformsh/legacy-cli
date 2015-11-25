@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Helper;
 
+use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
@@ -53,7 +54,10 @@ class DrushHelper extends Helper
      *
      * @return string
      *
-     * @throws \Exception if the version can't be found.
+     * @throws \Exception
+     *   If the version can't be found.
+     * @throws \Platformsh\Cli\Exception\DependencyMissingException
+     *   If Drush is not installed.
      */
     public function getVersion($reset = false)
     {
@@ -64,8 +68,10 @@ class DrushHelper extends Helper
         $command = $this->getDrushExecutable() . ' --version';
         exec($command, $drushVersion, $returnCode);
         if ($returnCode > 0) {
-            $message = $returnCode == 127 ? 'Error finding Drush version' : 'Drush is not installed';
-            throw new \Exception($message, $returnCode);
+            if ($returnCode === 127) {
+                throw new DependencyMissingException('Drush is not installed');
+            }
+            throw new \Exception("Error finding Drush version using command '$command'");
         }
 
         // Parse the version from the Drush output. It should be a string a bit
@@ -80,56 +86,18 @@ class DrushHelper extends Helper
 
     /**
      * @param string $minVersion
-     * @param bool   $attemptInstall
      * @param bool   $reset
      *
      * @throws \Exception
      */
-    public function ensureInstalled($minVersion = '6', $attemptInstall = true, $reset = false)
+    public function ensureInstalled($minVersion = '6', $reset = false)
     {
-        try {
-            $version = $this->getVersion($reset);
-        }
-        catch (\Exception $e) {
-            if ($e->getCode() === 127) {
-                // Retry installing, if the default Drush does not exist.
-                if ($attemptInstall && !getenv('PLATFORMSH_CLI_DRUSH') && $this->install()) {
-                    $this->ensureInstalled($minVersion, false, true);
-
-                    return;
-                }
-            }
-
-            throw $e;
-        }
+        $version = $this->getVersion($reset);
         if ($minVersion && version_compare($version, $minVersion, '<')) {
             throw new \Exception(
               sprintf('Drush version %s found, but %s (or later) is required', $version, $minVersion)
             );
         }
-    }
-
-    /**
-     * Install Drush globally, using Composer.
-     *
-     * @param string|null $version
-     *   The version to install.
-     *
-     * @return bool
-     */
-    protected function install($version = null)
-    {
-        if (!$this->shellHelper->commandExists('composer')) {
-            return false;
-        }
-        $args = array(
-          $this->shellHelper->resolveCommand('composer'),
-          'global',
-          'require',
-          ($version ? sprintf('drush/drush:%s', $version) : 'drush/drush'),
-        );
-
-        return (bool) $this->shellHelper->execute($args, null, false, false);
     }
 
     /**

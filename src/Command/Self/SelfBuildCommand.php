@@ -90,14 +90,15 @@ class SelfBuildCommand extends PlatformCommand
         $shellHelper->execute(array('rm', '-r', 'vendor'), CLI_ROOT, true, false);
 
         $shellHelper->execute(array(
-          'composer',
+          $shellHelper->resolveCommand('composer'),
           'install',
           '--no-dev',
           '--classmap-authoritative',
           '--no-interaction',
+          '--no-progress',
         ), CLI_ROOT, true, false);
 
-        $boxArgs = array('box', 'build', '--no-interaction');
+        $boxArgs = array($shellHelper->resolveCommand('box'), 'build', '--no-interaction');
 
         // Create a temporary box.json file for this build.
         if (!empty($config)) {

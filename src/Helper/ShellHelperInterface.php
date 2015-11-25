@@ -42,4 +42,12 @@ interface ShellHelperInterface
      */
     public function commandExists($command);
 
+    /**
+     * Resolve the absolute path to a command.
+     *
+     * @param string $command
+     *
+     * @return string
+     */
+    public function resolveCommand($command);
 }

@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "d09a9dc42957e6b251b01b11fb71c537",
-    "content-hash": "4cc94e081844b25517bcab93bad2c86f",
+    "hash": "8021282d38a1c2f412c1eb7f4593a96c",
+    "content-hash": "7aec5499b74bcda611bca4d63988c730",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -117,16 +117,16 @@
         },
         {
             "name": "doctrine/cache",
-            "version": "v1.5.0",
+            "version": "v1.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/cache.git",
-                "reference": "eb8a73619af4f1c8711e2ce482f5de3643258a1f"
+                "reference": "2b9cec5a5e722010cbebc91713d4c11eaa064d5e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/cache/zipball/eb8a73619af4f1c8711e2ce482f5de3643258a1f",
-                "reference": "eb8a73619af4f1c8711e2ce482f5de3643258a1f",
+                "url": "https://api.github.com/repos/doctrine/cache/zipball/2b9cec5a5e722010cbebc91713d4c11eaa064d5e",
+                "reference": "2b9cec5a5e722010cbebc91713d4c11eaa064d5e",
                 "shasum": ""
             },
             "require": {
@@ -183,7 +183,7 @@
                 "cache",
                 "caching"
             ],
-            "time": "2015-10-28 11:27:45"
+            "time": "2015-11-02 18:35:48"
         },
         {
             "name": "firebase/php-jwt",
@@ -679,16 +679,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.3.1",
+            "version": "v0.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "0ae4eab17cc096f7081f66a8cb953877fdad8359"
+                "reference": "b6a5a7d580523577e2a19f33e953d814c4885d21"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/0ae4eab17cc096f7081f66a8cb953877fdad8359",
-                "reference": "0ae4eab17cc096f7081f66a8cb953877fdad8359",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/b6a5a7d580523577e2a19f33e953d814c4885d21",
+                "reference": "b6a5a7d580523577e2a19f33e953d814c4885d21",
                 "shasum": ""
             },
             "require": {
@@ -716,7 +716,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2015-10-29 23:07:11"
+            "time": "2015-11-12 09:35:47"
         },
         {
             "name": "platformsh/console-form",

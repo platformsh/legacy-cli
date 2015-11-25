@@ -155,7 +155,24 @@ class ProjectGetCommand extends PlatformCommand
             // The ls-remote command failed.
             $fsHelper->rmdir($projectRoot);
             $this->stdErr->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
-            $this->stdErr->writeln('Please check your SSH credentials or contact Platform.sh support');
+
+            // Suggest SSH key commands.
+            $sshKeys = [];
+            try {
+                $sshKeys = $this->getClient(false)->getSshKeys();
+            }
+            catch (\Exception $e) {
+                // Ignore exceptions.
+            }
+
+            if (!empty($sshKeys)) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Please check your SSH credentials');
+                $this->stdErr->writeln('You can list your keys with: <comment>platform ssh-keys</comment>');
+            }
+            else {
+                $this->stdErr->writeln('You probably need to add an SSH key, with: <comment>platform ssh-key:add</comment>');
+            }
 
             return 1;
         } elseif (is_bool($repoHead)) {

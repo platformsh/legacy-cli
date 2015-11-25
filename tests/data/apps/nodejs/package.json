@@ -1,0 +1,6 @@
+{
+    "name": "nodejs_test",
+    "dependencies": {
+        "platformsh": "^0.0.1"
+    }
+}

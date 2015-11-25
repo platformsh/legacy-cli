@@ -77,40 +77,53 @@ class ShellHelper extends Helper implements ShellHelperInterface
     }
 
     /**
+     * Run 'where' or equivalent on a command.
+     *
+     * @param string $command
+     *
+     * @return string|bool
+     *   A list of command paths (one per line) or false on failure.
+     */
+    protected function findWhere($command)
+    {
+        static $result;
+        if (!isset($result[$command])) {
+            if (is_executable($command)) {
+                $result[$command] = $command;
+            }
+            else {
+                $args = ['command', '-v', $command];
+                if (strpos(PHP_OS, 'WIN') !== false) {
+                    $args = ['where', $command];
+                }
+                $result[$command] = $this->execute($args, null, false, true);
+                if ($result[$command] === false) {
+                    trigger_error(sprintf("Failed to find command via: %s", implode(' ', $args)), E_USER_NOTICE);
+                }
+            }
+        }
+
+        return $result[$command];
+    }
+
+    /**
      * @inheritdoc
      */
     public function commandExists($command)
     {
-        $args = array('command', '-v', $command);
-        if (strpos(PHP_OS, 'WIN') !== false) {
-            $args = array('where', $command);
-        }
-
-        return (bool) $this->execute($args);
+        return (bool) $this->findWhere($command);
     }
 
     /**
-     * Resolve the absolute path to a command, if necessary.
-     *
-     * @param string $command
-     *
-     * @return string
+     * {@inheritdoc}
      */
     public function resolveCommand($command)
     {
-        // Use "where" to resolve the absolute path to the command on Windows.
-        // This should not be necessary on other systems.
-        if (strpos(PHP_OS, 'WIN') !== false) {
-            $fullPaths = $this->execute(['where', $command], null, false, true);
-            if ($fullPaths) {
-                $fullPaths = preg_split('/[\r\n]/', trim($fullPaths));
-                $command = end($fullPaths);
-            } else {
-                trigger_error("Failed to find executable path via 'where $command'", E_USER_NOTICE);
-            }
+        if ($fullPaths = $this->findWhere($command)) {
+            $fullPaths = preg_split('/[\r\n]/', trim($fullPaths));
+            $command = end($fullPaths);
         }
 
         return $command;
     }
-
 }
