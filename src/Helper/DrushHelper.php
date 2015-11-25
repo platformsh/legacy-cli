@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Helper;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
+use Platformsh\Cli\Exception\DependencyVersionMismatchException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
@@ -56,7 +57,7 @@ class DrushHelper extends Helper
      *
      * @throws \Exception
      *   If the version can't be found.
-     * @throws \Platformsh\Cli\Exception\DependencyMissingException
+     * @throws DependencyMissingException
      *   If Drush is not installed.
      */
     public function getVersion($reset = false)
@@ -88,13 +89,13 @@ class DrushHelper extends Helper
      * @param string $minVersion
      * @param bool   $reset
      *
-     * @throws \Exception
+     * @throws DependencyVersionMismatchException
      */
     public function ensureInstalled($minVersion = '6', $reset = false)
     {
         $version = $this->getVersion($reset);
         if ($minVersion && version_compare($version, $minVersion, '<')) {
-            throw new \Exception(
+            throw new DependencyVersionMismatchException(
               sprintf('Drush version %s found, but %s (or later) is required', $version, $minVersion)
             );
         }
