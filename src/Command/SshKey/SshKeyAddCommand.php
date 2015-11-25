@@ -52,15 +52,10 @@ class SshKeyAddCommand extends PlatformCommand
                 $newKey = $this->getNewKeyFilename($default);
                 $args = array('ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', '');
                 $shellHelper->execute($args, null, true);
-                $path = "$newKey.pub";
-                $this->stdErr->writeln("Generated a new key: $path");
-
-                // Attempt to add the new key to an SSH agent.
-                $command = 'ssh-add ' . escapeshellarg($newKey);
-                if (!getenv('SSH_AGENT_PID')) {
-                    $command = 'eval $(ssh-agent); ' . $command;
-                }
-                passthru($command);
+                $this->stdErr->writeln("Generated a new key: $newKey.pub");
+                $this->stdErr->writeln('Add this key to your SSH agent with:');
+                $this->stdErr->writeln('    eval $(ssh-agent)');
+                $this->stdErr->writeln('    ssh-add ' . escapeshellarg($newKey));
             } else {
                 $this->stdErr->writeln("<error>You must specify the path to a public SSH key</error>");
 
