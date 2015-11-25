@@ -26,5 +26,4 @@ class ShellHelperTest extends \PHPUnit_Framework_TestCase
         $this->setExpectedException('Exception');
         $shellHelper->execute(array('which', 'nonexistent'), null, true);
     }
-
 }

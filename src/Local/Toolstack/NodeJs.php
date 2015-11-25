@@ -39,9 +39,8 @@ class NodeJs extends ToolstackBase
 
             $npm = $this->shellHelper->resolveCommand('npm');
 
-            $this->shellHelper->execute(['npm', 'prune'], $buildDir, true, false);
-
-            $this->shellHelper->execute(['npm', 'install'], $buildDir, true, false);
+            $this->shellHelper->execute([$npm, 'prune'], $buildDir, true, false);
+            $this->shellHelper->execute([$npm, 'install'], $buildDir, true, false);
         }
 
         $this->processSpecialDestinations();
