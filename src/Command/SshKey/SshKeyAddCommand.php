@@ -53,7 +53,7 @@ class SshKeyAddCommand extends PlatformCommand
                 $args = array('ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', '');
                 $shellHelper->execute($args, null, true);
                 $this->stdErr->writeln("Generated a new key: $newKey.pub");
-                $this->stdErr->writeln('Add this key to your SSH agent with:');
+                $this->stdErr->writeln('Add this key to an SSH agent with:');
                 $this->stdErr->writeln('    eval $(ssh-agent)');
                 $this->stdErr->writeln('    ssh-add ' . escapeshellarg($newKey));
             } else {
