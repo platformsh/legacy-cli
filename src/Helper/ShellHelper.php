@@ -80,11 +80,12 @@ class ShellHelper extends Helper implements ShellHelperInterface
      * Run 'where' or equivalent on a command.
      *
      * @param string $command
+     * @param bool $noticeOnError
      *
      * @return string|bool
      *   A list of command paths (one per line) or false on failure.
      */
-    protected function findWhere($command)
+    protected function findWhere($command, $noticeOnError = true)
     {
         static $result;
         if (!isset($result[$command])) {
@@ -97,7 +98,7 @@ class ShellHelper extends Helper implements ShellHelperInterface
                     $args = ['where', $command];
                 }
                 $result[$command] = $this->execute($args, null, false, true);
-                if ($result[$command] === false) {
+                if ($result[$command] === false && $noticeOnError) {
                     trigger_error(sprintf("Failed to find command via: %s", implode(' ', $args)), E_USER_NOTICE);
                 }
             }
@@ -111,7 +112,7 @@ class ShellHelper extends Helper implements ShellHelperInterface
      */
     public function commandExists($command)
     {
-        return (bool) $this->findWhere($command);
+        return (bool) $this->findWhere($command, false);
     }
 
     /**
