@@ -36,13 +36,13 @@ abstract class IntegrationCommand extends PlatformCommand
           'type' => new OptionsField('Integration type', [
             'name' => 'Integration type',
             'optionName' => 'type',
-            'description' => "The integration type ('github', 'hipchat', or 'webhook')",
-            'options' => ['github', 'hipchat', 'webhook'],
+            'description' => "The integration type ('github', 'hipchat', 'slack' or 'webhook')",
+            'options' => ['github', 'hipchat', 'slack', 'webhook'],
           ]),
           'token' => new Field('Token', [
-            'conditions' => ['type' => ['github', 'hipchat']],
+            'conditions' => ['type' => ['github', 'hipchat', 'slack']],
             'name' => 'Token',
-            'description' => 'GitHub or HipChat: An OAuth token for the integration',
+            'description' => 'GitHub, Hipchat or Slack: An OAuth token for the integration',
             'validator' => function ($string) {
                 return base64_decode($string, true) !== false;
             },
@@ -69,24 +69,29 @@ abstract class IntegrationCommand extends PlatformCommand
             'conditions' => ['type' => 'github'],
             'description' => 'GitHub: sync all branches to Platform.sh',
           ]),
-          'room' => new Field('Hipchat room ID', [
+          'room' => new Field('Hipchat or room ID', [
             'conditions' => ['type' => 'hipchat'],
             'validator' => 'is_numeric',
             'optionName' => 'room',
             'name' => 'HipChat room ID',
           ]),
+          'channel' => new Field('Slack Channel', [
+            'conditions' => ['type' => 'slack'],
+            'optionName' => 'channel',
+            'name' => 'Slack channel',
+          ]),
           'events' => new ArrayField('Events to report', [
-            'conditions' => ['type' => 'hipchat'],
+            'conditions' => ['type' => ['hipchat', 'slack']],
             'optionName' => 'events',
             'default' => ['*'],
-            'description' => 'HipChat: events to report',
+            'description' => 'HipChat or Slack: events to report',
           ]),
           'states' => new ArrayField('States to report', [
-            'conditions' => ['type' => 'hipchat'],
+            'conditions' => ['type' => ['hipchat', 'slack']],
             'optionName' => 'states',
             'name' => 'States to report',
             'default' => ['complete'],
-            'description' => 'HipChat: states to report, e.g. complete,in_progress',
+            'description' => 'HipChat or Slack: states to report, e.g. complete,in_progress',
           ]),
           'url' => new UrlField('URL', [
             'conditions' => ['type' => 'webhook'],
@@ -116,6 +121,10 @@ abstract class IntegrationCommand extends PlatformCommand
             $info["Payload URL"] = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
         } elseif ($properties['type'] == 'hipchat') {
             $info["Room ID"] = $properties['room'];
+            $info["Events"] = implode(', ', $properties['events']);
+            $info["States"] = implode(', ', $properties['states']);
+        } elseif ($properties['type'] == 'slack') {
+            $info["Channel"] = $properties['channel'];
             $info["Events"] = implode(', ', $properties['events']);
             $info["States"] = implode(', ', $properties['states']);
         } elseif ($properties['type'] == 'webhook') {
