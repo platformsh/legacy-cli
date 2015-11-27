@@ -69,7 +69,7 @@ abstract class IntegrationCommand extends PlatformCommand
             'conditions' => ['type' => 'github'],
             'description' => 'GitHub: sync all branches to Platform.sh',
           ]),
-          'room' => new Field('Hipchat or room ID', [
+          'room' => new Field('Hipchat room ID', [
             'conditions' => ['type' => 'hipchat'],
             'validator' => 'is_numeric',
             'optionName' => 'room',
