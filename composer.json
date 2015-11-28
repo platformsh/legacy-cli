@@ -5,7 +5,7 @@
     "require": {
         "doctrine/cache": "~1.5",
         "guzzlehttp/ringphp": "^1.1",
-        "platformsh/console-form": "0.0.4",
+        "platformsh/console-form": "0.0.5",
         "platformsh/client": "0.3.2",
         "symfony/console": "~2.5 >=2.5.2",
         "symfony/yaml": "~2.5",
