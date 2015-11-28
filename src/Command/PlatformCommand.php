@@ -30,11 +30,11 @@ abstract class PlatformCommand extends Command
     /** @var PlatformClient|null */
     private static $client;
 
-    /** @var string */
-    protected static $sessionId = 'default';
+    /** @var string|null */
+    private static $homeDir;
 
     /** @var string */
-    protected static $configDir;
+    protected static $sessionId = 'default';
 
     /** @var string|null */
     protected static $apiToken;
@@ -254,14 +254,22 @@ abstract class PlatformCommand extends Command
     /**
      * @return string
      */
-    protected function getConfigDir()
+    protected function getHomeDir()
     {
-        if (!isset(self::$configDir)) {
+        if (!isset(self::$homeDir)) {
             $fs = new FilesystemHelper();
-            self::$configDir = $fs->getHomeDirectory() . '/.platformsh';
+            self::$homeDir = $fs->getHomeDirectory();
         }
 
-        return self::$configDir;
+        return self::$homeDir;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getConfigDir()
+    {
+        return $this->getHomeDir() . '/.platformsh';
     }
 
     /**
@@ -679,10 +687,7 @@ abstract class PlatformCommand extends Command
         }
         /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
         $drushHelper = $this->getHelper('drush');
-        $drushHelper->setHomeDir(
-          $this->getHelper('fs')
-               ->getHomeDirectory()
-        );
+        $drushHelper->setHomeDir($this->getHomeDir());
         $drushHelper->createAliases($project, $projectRoot, $environments);
     }
 

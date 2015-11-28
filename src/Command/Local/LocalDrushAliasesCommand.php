@@ -60,8 +60,7 @@ class LocalDrushAliasesCommand extends PlatformCommand
 
         $new_group = ltrim($input->getOption('group'), '@');
 
-        $homeDir = $this->getHelper('fs')
-                        ->getHomeDirectory();
+        $homeDir = $this->getHomeDir();
 
         $drushHelper = new DrushHelper($output);
         $drushHelper->ensureInstalled();

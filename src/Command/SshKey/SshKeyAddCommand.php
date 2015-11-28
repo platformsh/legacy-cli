@@ -97,10 +97,7 @@ class SshKeyAddCommand extends PlatformCommand
      */
     protected function getDefaultKeyFilename()
     {
-        $home = $this->getHelper('fs')
-                     ->getHomeDirectory();
-
-        return "$home/.ssh/platform_sh.key";
+        return $this->getHomeDir() . '/.ssh/platform_sh.key';
     }
 
     /**
