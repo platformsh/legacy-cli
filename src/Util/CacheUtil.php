@@ -24,7 +24,14 @@ class CacheUtil
     public static function getCache()
     {
         if (!isset(self::$cache)) {
-            self::$cache = getenv('PLATFORMSH_CLI_DISABLE_CACHE') ? new VoidCache() : new FilesystemCache(self::$cacheDir);
+            if (getenv('PLATFORMSH_CLI_DISABLE_CACHE')) {
+                self::$cache = new VoidCache();
+            }
+            else {
+                // Remove permissions from the group and others.
+                $umask = 0077;
+                self::$cache = new FilesystemCache(self::$cacheDir, FilesystemCache::EXTENSION, $umask);
+            }
         }
 
         return self::$cache;

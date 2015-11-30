@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Helper;
 
+use Platformsh\Cli\Exception\DependencyMissingException;
 use Symfony\Component\Console\Helper\Helper;
 
 class GitHelper extends Helper
@@ -27,29 +28,34 @@ class GitHelper extends Helper
     }
 
     /**
+     * @throws DependencyMissingException
+     *
      * @return string|false
      */
     public function getVersion()
     {
         static $version;
         if (!$version) {
+            if (!$this->shellHelper->commandExists('git')) {
+                throw new DependencyMissingException('Git must be installed');
+            }
+
             $version = false;
             $string = $this->execute(array('--version'), false);
             if ($string && preg_match('/(^| )([0-9]+[^ ]*)/', $string, $matches)) {
                 $version = $matches[2];
             }
         }
+
         return $version;
     }
 
     /**
-     * @throws \Exception
+     * @throws DependencyMissingException
      */
     public function ensureInstalled()
     {
-        if (!$this->getVersion()) {
-            throw new \Exception('Git must be installed');
-        }
+        $this->getVersion();
     }
 
     /**

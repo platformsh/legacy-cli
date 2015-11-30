@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Local\Toolstack;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class NodeJs extends ToolstackBase
 {
@@ -38,9 +39,18 @@ class NodeJs extends ToolstackBase
             }
 
             $npm = $this->shellHelper->resolveCommand('npm');
+            $npmArgs = [$npm];
+            if (!empty($this->settings['verbosity']) && $this->settings['verbosity'] >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+                $npmArgs[] = '--loglevel=verbose';
+            }
 
-            $this->shellHelper->execute([$npm, 'prune'], $buildDir, true, false);
-            $this->shellHelper->execute([$npm, 'install'], $buildDir, true, false);
+            $pruneArgs = $npmArgs;
+            $pruneArgs[] = 'prune';
+            $this->shellHelper->execute($pruneArgs, $buildDir, true, false);
+
+            $installArgs = $npmArgs;
+            $installArgs[] = 'install';
+            $this->shellHelper->execute($installArgs, $buildDir, true, false);
         }
 
         $this->processSpecialDestinations();

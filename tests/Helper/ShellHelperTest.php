@@ -17,6 +17,10 @@ class ShellHelperTest extends \PHPUnit_Framework_TestCase
         // Find a command that will work on all platforms.
         $workingCommand = strpos(PHP_OS, 'WIN') !== false ? 'help' : 'pwd';
 
+        // Test commandExists().
+        $this->assertTrue($shellHelper->commandExists($workingCommand));
+        $this->assertFalse($shellHelper->commandExists('nonexistent'));
+
         // With $mustRun disabled.
         $this->assertNotEmpty($shellHelper->execute(array($workingCommand)));
         $this->assertFalse($shellHelper->execute(array('which', 'nonexistent')));

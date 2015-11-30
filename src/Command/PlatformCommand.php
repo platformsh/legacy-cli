@@ -30,6 +30,9 @@ abstract class PlatformCommand extends Command
     /** @var PlatformClient|null */
     private static $client;
 
+    /** @var string|null */
+    private static $homeDir;
+
     /** @var string */
     protected static $sessionId = 'default';
 
@@ -97,8 +100,9 @@ abstract class PlatformCommand extends Command
         if (!isset(self::$apiToken) && getenv('PLATFORMSH_CLI_API_TOKEN')) {
             self::$apiToken = getenv('PLATFORMSH_CLI_API_TOKEN');
         }
-        // Note: the cache directory is based on self::$sessionId.
-        CacheUtil::setCacheDir($this->getCacheDir());
+
+        // Initialize the local file-based cache.
+        CacheUtil::setCacheDir($this->getConfigDir() . '/cache');
     }
 
     /**
@@ -170,7 +174,7 @@ abstract class PlatformCommand extends Command
             else {
                 $session = $connector->getSession();
                 $session->setId('cli-' . self::$sessionId);
-                $session->setStorage(new File());
+                $session->setStorage(new File($this->getSessionsDir()));
             }
 
             self::$client = new PlatformClient($connector);
@@ -202,6 +206,41 @@ abstract class PlatformCommand extends Command
         else {
             error_reporting(E_PARSE);
         }
+
+        $this->_deleteOldCaches();
+    }
+
+    /**
+     * Clean up old cache directories from previous versions.
+     *
+     * @todo remove in version 3
+     */
+    private function _deleteOldCaches()
+    {
+        static $alreadyRunOnce;
+        if ($alreadyRunOnce) {
+            return;
+        }
+        $alreadyRunOnce = true;
+        $sessionsDir = $this->getSessionsDir();
+        if (!is_dir($sessionsDir)) {
+            return;
+        }
+        foreach (scandir($sessionsDir) as $filename) {
+            if (strpos($filename, 'sess-') !== 0) {
+                continue;
+            }
+            $sessionDir = $sessionsDir . DIRECTORY_SEPARATOR . $filename;
+            foreach (scandir($sessionDir) as $filename2) {
+                if ($filename2[0] === '.' || strpos($filename2, '.json') !== false) {
+                    continue;
+                }
+                if (!isset($fs)) {
+                    $fs = new FilesystemHelper();
+                }
+                $fs->remove($sessionDir . DIRECTORY_SEPARATOR . $filename2);
+            }
+        }
     }
 
     /**
@@ -215,12 +254,30 @@ abstract class PlatformCommand extends Command
     /**
      * @return string
      */
-    protected function getCacheDir()
+    protected function getHomeDir()
     {
-        $sessionId = 'cli-' . preg_replace('/[\W]+/', '-', self::$sessionId);
+        if (!isset(self::$homeDir)) {
+            $fs = new FilesystemHelper();
+            self::$homeDir = $fs->getHomeDirectory();
+        }
 
-        $fs = new FilesystemHelper();
-        return $fs->getHomeDirectory() . '/.platformsh/.session/sess-' . $sessionId;
+        return self::$homeDir;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getConfigDir()
+    {
+        return $this->getHomeDir() . '/.platformsh';
+    }
+
+    /**
+     * @return string
+     */
+    protected function getSessionsDir()
+    {
+        return $this->getConfigDir() . '/.session';
     }
 
     /**
@@ -419,7 +476,7 @@ abstract class PlatformCommand extends Command
      */
     public function getProjects($refresh = false)
     {
-        $cacheKey = 'projects';
+        $cacheKey = sprintf('%:projects', self::$sessionId);
 
         /** @var Project[] $projects */
         $projects = array();
@@ -578,7 +635,7 @@ abstract class PlatformCommand extends Command
      */
     protected function getAccount(ProjectAccess $user, $reset = false)
     {
-        $cacheKey = 'account-' . $user->id;
+        $cacheKey = 'account:' . $user->id;
         $cache = CacheUtil::getCache();
         if ($reset || !($details = $cache->fetch($cacheKey))) {
             $details = $user->getAccount()->getProperties();
@@ -606,7 +663,7 @@ abstract class PlatformCommand extends Command
      */
     protected function clearProjectsCache()
     {
-        CacheUtil::getCache()->delete('projects');
+        CacheUtil::getCache()->delete(sprintf('%s:projects', self::$sessionId));
     }
 
     /**
@@ -630,10 +687,7 @@ abstract class PlatformCommand extends Command
         }
         /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
         $drushHelper = $this->getHelper('drush');
-        $drushHelper->setHomeDir(
-          $this->getHelper('fs')
-               ->getHomeDirectory()
-        );
+        $drushHelper->setHomeDir($this->getHomeDir());
         $drushHelper->createAliases($project, $projectRoot, $environments);
     }
 

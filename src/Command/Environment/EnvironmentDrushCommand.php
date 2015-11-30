@@ -80,15 +80,41 @@ class EnvironmentDrushCommand extends PlatformCommand
         $selectedEnvironment = $this->getSelectedEnvironment();
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
-        // The PLATFORM_DOCUMENT_ROOT environment variable is new. Default to
-        // /app/public for backwards compatibility.
-        $appRoot = '${PLATFORM_DOCUMENT_ROOT:-/app/public}';
+        // Get the LocalApplication object for the specified application, if
+        // available.
+        $projectRoot = $this->getProjectRoot();
+        if ($appName && $projectRoot && $this->selectedProjectIsCurrent() && is_dir($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+            $apps = LocalApplication::getApplications($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+            foreach ($apps as $possibleApp) {
+                if ($possibleApp->getName() === $appName) {
+                    $app = $possibleApp;
+                    break;
+                }
+            }
+        }
+
+        // Use the local application configuration (if available) to determine
+        // the correct Drupal root.
+        if (isset($app) && isset($app->getConfig()['web']['document_root'])) {
+            $documentRoot = trim($app->getConfig()['web']['document_root'], '/') ?: 'public';
+            $drupalRoot = '/app/' . $documentRoot;
+        }
+        else {
+            // Fall back to the PLATFORM_DOCUMENT_ROOT environment variable,
+            // which is usually correct, except where the document_root was
+            // specified as '/'.
+            $drupalRoot = '${PLATFORM_DOCUMENT_ROOT:-/app/public}';
+
+            if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+                $this->stdErr->writeln('<comment>Warning:</comment> using $PLATFORM_DOCUMENT_ROOT for the Drupal root. This fails in cases where the document_root is /.');
+            }
+        }
 
         $dimensions = $this->getApplication()
                            ->getTerminalDimensions();
         $columns = $dimensions[0] ?: 80;
 
-        $sshDrushCommand = "COLUMNS=$columns drush --root=\"$appRoot\"";
+        $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";
         if ($environmentUrl = $selectedEnvironment->getLink('public-url')) {
             $sshDrushCommand .= " --uri=" . escapeshellarg($environmentUrl);
         }

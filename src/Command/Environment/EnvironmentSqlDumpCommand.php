@@ -17,7 +17,8 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
             ->setName('environment:sql-dump')
             ->setAliases(array('sql-dump'))
             ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "environment-dump.sql" in the project root');
+            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "environment-dump.sql" in the project root')
+            ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
     }
 
@@ -28,37 +29,40 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
 
-        $dumpFile = $input->getOption('file');
-        if ($dumpFile) {
-            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-            $fsHelper = $this->getHelper('fs');
-            $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
-            if (is_dir($dumpFile)) {
-                $dumpFile .= "/{$environment->id}-dump.sql";
+        if (!$input->getOption('stdout')) {
+            if ($input->getOption('file')) {
+                $dumpFile = $input->getOption('file');
+                /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
+                $fsHelper = $this->getHelper('fs');
+                $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
+                if (is_dir($dumpFile)) {
+                    $dumpFile .= "/{$environment->id}-dump.sql";
+                }
             }
-        }
-        elseif (!$projectRoot = $this->getProjectRoot()) {
-            throw new RootNotFoundException(
-              'Project root not found. Specify --file or go to a project directory.'
-            );
-        }
-        else {
-            $dumpFile = $projectRoot . '/' . $environment->id;
-            if ($appName) {
-                $dumpFile .= '--' . $appName;
-            }
-            $dumpFile .= '-dump.sql';
-        }
-
-        if (file_exists($dumpFile)) {
-            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
-            if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", $input, $this->stdErr, false)) {
-                return 1;
+            else {
+                if (!$projectRoot = $this->getProjectRoot()) {
+                    throw new RootNotFoundException(
+                      'Project root not found. Specify --file or go to a project directory.'
+                    );
+                }
+                $dumpFile = $projectRoot . '/' . $environment->id;
+                if ($appName) {
+                    $dumpFile .= '--' . $appName;
+                }
+                $dumpFile .= '-dump.sql';
             }
         }
 
-        $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
+        if (isset($dumpFile)) {
+            if (file_exists($dumpFile)) {
+                /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+                $questionHelper = $this->getHelper('question');
+                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", $input, $this->stdErr, false)) {
+                    return 1;
+                }
+            }
+            $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
+        }
 
         $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);
@@ -83,8 +87,10 @@ class EnvironmentSqlDumpCommand extends PlatformCommand
         set_time_limit(0);
 
         $command = 'ssh ' . escapeshellarg($sshUrl)
-          . ' ' . escapeshellarg($dumpCommand)
-          . ' > ' . escapeshellarg($dumpFile);
+          . ' ' . escapeshellarg($dumpCommand);
+        if (isset($dumpFile)) {
+            $command .= ' > ' . escapeshellarg($dumpFile);
+        }
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $this->stdErr->writeln("Running command: <info>$command</info>");
