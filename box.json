@@ -6,6 +6,7 @@
   ],
   "files": [
     "platform",
+    "platform.rc",
     "vendor/autoload.php",
     "vendor/herrera-io/phar-update/res/schema.json"
   ],

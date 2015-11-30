@@ -25,10 +25,14 @@ class LocalInstallCommand extends PlatformCommand
         $homeDir = $this->getHomeDir();
         $configDir = $this->getConfigDir();
 
-        $platformRc = CLI_ROOT . '/platform.rc';
-        $platformRcDestination = $configDir . DIRECTORY_SEPARATOR . 'platform.rc';
+        $platformRc = file_get_contents(CLI_ROOT . '/platform.rc');
+        if ($platformRc === false) {
+            $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/platform.rc'));
+            return 1;
+        }
 
-        if (!copy($platformRc, $platformRcDestination)) {
+        $platformRcDestination = $configDir . DIRECTORY_SEPARATOR . 'platform.rc';
+        if (file_put_contents($platformRcDestination, $platformRc) === false) {
             $this->stdErr->writeln(sprintf('Failed to write file: %s', $platformRcDestination));
             return 1;
         }
