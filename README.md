@@ -44,18 +44,9 @@ you are doing.
 2. Rename the file to `platform`, ensure it is executable, and move it into a
   directory in your PATH (use `echo $PATH` to see your options).
 
-3. Download the latest [`platform.rc`](https://raw.githubusercontent.com/platformsh/platformsh-cli/master/platform.rc)
-  file. Include it from your shell configuration file (`.bash_profile`,
-  `.bashrc`, or `.zshrc`, etc.):
+3. Enable autocompletion and shell aliases:
 
-  ```bash
-  ; Include Platform.sh CLI shell configuration.
-  . /path/to/platform.rc 2>/dev/null
-  ```
-
-  This step enables features such as autocompletion and shell aliases.
-
-  Start a new shell before continuing.
+        platform local:install
 
 ## Updating
 
