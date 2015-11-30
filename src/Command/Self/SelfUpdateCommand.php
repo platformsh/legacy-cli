@@ -25,13 +25,15 @@ class SelfUpdateCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $manifestUrl = $input->getOption('manifest') ?: 'https://platform.sh/cli/manifest.json';
-        $currentVersion = $input->getOption('current-version') ?: $this->getApplication()->getVersion();
+        $currentVersion = $input->getOption('current-version');
+        if (!$currentVersion) {
+            $currentVersion = $this->getApplication()->getVersion();
+            $currentVersion = preg_replace('/^([\d])\.x\-dev$/', '$1.0.0', $currentVersion);
+        }
         $onlyMinor = !$input->getOption('major');
 
-        $this->stdErr->writeln("Current version: <info>$currentVersion</info>");
-
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
-            $this->stdErr->writeln("\nThis instance of the CLI was not installed as a Phar archive.");
+            $this->stdErr->writeln('This instance of the CLI was not installed as a Phar archive.');
             if (file_exists(CLI_ROOT . '/../../autoload.php')) {
                 $this->stdErr->writeln("Update using:\n  composer global update");
             }
@@ -39,8 +41,6 @@ class SelfUpdateCommand extends PlatformCommand
             $this->stdErr->writeln("  curl -sS https://platform.sh/cli/installer | php");
             return 1;
         }
-
-        $this->stdErr->writeln("Checking for updates");
 
         // Download the manifest file.
         $manifest = Manifest::loadFile($manifestUrl);
@@ -58,12 +58,18 @@ class SelfUpdateCommand extends PlatformCommand
         );
 
         if ($update === null) {
-            $this->stdErr->writeln("No updates found. The Platform.sh CLI is up-to-date.");
+            $this->stdErr->writeln(sprintf('No updates found. The Platform.sh CLI is up-to-date (current version: %s)', $currentVersion));
             return 0;
         }
 
         $newVersionString = $update->getVersion()->__toString();
-        $this->stdErr->writeln("Updating to version $newVersionString");
+        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+        if (!$questionHelper->confirm(sprintf('Update to version %s?', $newVersionString), $input, $output)) {
+            return 1;
+        }
+
+        $this->stdErr->writeln(sprintf('Updating to version %s', $newVersionString));
 
         // Download the new version.
         $update->getFile();

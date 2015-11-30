@@ -22,6 +22,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
+use Symfony\Component\Yaml\Yaml;
 
 abstract class PlatformCommand extends Command
 {
@@ -32,6 +33,16 @@ abstract class PlatformCommand extends Command
 
     /** @var string|null */
     private static $homeDir;
+
+    /** @var bool */
+    private static $checkedUpdates;
+
+    /**
+     * @var bool
+     *
+     * @todo remove in version 3
+     */
+    private static $cleanedOldCaches;
 
     /** @var string */
     protected static $sessionId = 'default';
@@ -217,11 +228,10 @@ abstract class PlatformCommand extends Command
      */
     private function _deleteOldCaches()
     {
-        static $alreadyRunOnce;
-        if ($alreadyRunOnce) {
+        if (self::$cleanedOldCaches) {
             return;
         }
-        $alreadyRunOnce = true;
+        self::$cleanedOldCaches = true;
         $sessionsDir = $this->getSessionsDir();
         if (!is_dir($sessionsDir)) {
             return;
@@ -270,6 +280,82 @@ abstract class PlatformCommand extends Command
     protected function getConfigDir()
     {
         return $this->getHomeDir() . '/.platformsh';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function interact(InputInterface $input, OutputInterface $output)
+    {
+        // Work around a bug in Console which means the default command's input
+        // is always considered to be interactive.
+        if ($this->getName() === 'welcome' && isset($GLOBALS['argv']) && array_intersect($GLOBALS['argv'], array('-n', '--no', '-y', '---yes'))) {
+            $input->setInteractive(false);
+            return;
+        }
+
+        $this->checkUpdates($input, $this->stdErr);
+    }
+
+    /**
+     * Check for updates.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @param bool $reset
+     */
+    protected function checkUpdates(InputInterface $input, OutputInterface $output, $reset = false)
+    {
+        if (!$reset && self::$checkedUpdates) {
+            return;
+        }
+        self::$checkedUpdates = true;
+
+        // Check that this instance of the CLI was installed as a Phar.
+        if (!extension_loaded('Phar') || !\Phar::running(false)) {
+            return;
+        }
+
+        $timestamp = time();
+
+        $config = $this->getGlobalConfig();
+        if (isset($config['updates']['check']) && $config['updates']['check'] == false) {
+            return;
+        }
+        elseif (!$reset && isset($config['updates']['last_checked']) && $config['updates']['last_checked'] > $timestamp - 86400) {
+            return;
+        }
+
+        $config['updates']['check'] = true;
+        $config['updates']['last_checked'] = $timestamp;
+        $this->writeGlobalConfig($config);
+        $output->writeln("<info>Checking for updates...</info>\n");
+        $this->runOtherCommand('self-update', array(), $input);
+        $output->writeln('');
+    }
+
+    /**
+     * @return array
+     */
+    protected function getGlobalConfig()
+    {
+        $configFile = $this->getConfigDir() . '/config.yaml';
+        if (file_exists($configFile)) {
+            return Yaml::parse(file_get_contents($configFile));
+        }
+
+        return array();
+    }
+
+    /**
+     * @param array $config
+     */
+    protected function writeGlobalConfig(array $config)
+    {
+        $configFile = $this->getConfigDir() . '/config.yaml';
+        if (file_put_contents($configFile, Yaml::dump($config)) === false) {
+            trigger_error(sprintf('Failed to write global config to: %s', $configFile), E_USER_NOTICE);
+        }
     }
 
     /**
