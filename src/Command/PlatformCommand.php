@@ -291,6 +291,7 @@ abstract class PlatformCommand extends Command
         // is always considered to be interactive.
         if ($this->getName() === 'welcome' && isset($GLOBALS['argv']) && array_intersect($GLOBALS['argv'], array('-n', '--no', '-y', '---yes'))) {
             $input->setInteractive(false);
+            self::$interactive = false;
             return;
         }
 
@@ -1125,6 +1126,7 @@ abstract class PlatformCommand extends Command
         }
 
         $cmdInput = new ArrayInput(array('command' => $name) + $arguments);
+        $cmdInput->setInteractive(self::$interactive);
 
         return $command->run($cmdInput, $this->output);
     }
