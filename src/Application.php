@@ -15,7 +15,6 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Shell;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
@@ -53,7 +52,6 @@ class Application extends ParentApplication
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
             new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts'),
             new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
-            new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell'),
         ]);
     }
 
@@ -188,12 +186,6 @@ class Application extends ParentApplication
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y']) || $input->hasParameterOption(['--no', '-n'])) {
             $input->setInteractive(false);
-        } // Enable the shell.
-        elseif ($input->hasParameterOption(['--shell', '-s'])) {
-            $shell = new Shell($this);
-            $shell->run();
-
-            return 0;
         }
 
         return parent::doRun($input, $output);
