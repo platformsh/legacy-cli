@@ -13,8 +13,8 @@
         "symfony/filesystem": "~2.5",
         "symfony/process": "~2.5",
         "stecman/symfony-console-completion": "~0.6",
-        "herrera-io/phar-update": "@stable",
-        "symfony/event-dispatcher": "^2.7"
+        "symfony/event-dispatcher": "^2.7",
+        "padraic/phar-updater": "^1.0"
     },
     "suggest": {
         "drush/drush": "For Drupal projects"

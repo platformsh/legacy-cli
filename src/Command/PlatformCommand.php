@@ -329,7 +329,6 @@ abstract class PlatformCommand extends Command
         $config['updates']['check'] = true;
         $config['updates']['last_checked'] = $timestamp;
         $this->writeGlobalConfig($config);
-        $output->writeln("<info>Checking for updates...</info>\n");
         $this->runOtherCommand('self-update', array(), $input);
         $output->writeln('');
     }
