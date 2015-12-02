@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Exception\LoginRequiredException;
+use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalApplication;
@@ -455,11 +456,18 @@ abstract class PlatformCommand extends Command
             // There is a chance that the project isn't available.
             if (!$project) {
                 $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
-                throw new \RuntimeException(
-                  "Project ID not found: " . $config['id']
-                  . "\nEither you do not have access to the project on Platform.sh, or it no longer exists."
-                  . "\nThe project ID was determined from the file: " . $filename
-                );
+                if (isset($config['host'])) {
+                    $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
+                    $message = "Project not found: " . $projectUrl
+                      . "\nThe project probably no longer exists."
+                      . "\nThe project's hostname and ID were determined from the file: " . $filename;
+                }
+                else {
+                    $message = "Project not found: " . $config['id']
+                      . "\nEither you do not have access to the project on Platform.sh, or the project no longer exists."
+                      . "\nThe project ID was determined from the file: " . $filename;
+                }
+                throw new ProjectNotFoundException($message);
             }
         }
 
