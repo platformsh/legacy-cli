@@ -98,6 +98,8 @@ class Application extends ParentApplication
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\Activity\ActivityListCommand();
         $commands[] = new Command\Activity\ActivityLogCommand();
+        $commands[] = new Command\App\AppConfigGetCommand();
+        $commands[] = new Command\App\AppListCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
         $commands[] = new Command\Domain\DomainAddCommand();

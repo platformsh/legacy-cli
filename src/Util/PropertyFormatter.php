@@ -2,10 +2,12 @@
 
 namespace Platformsh\Cli\Util;
 
+use Symfony\Component\Yaml\Yaml;
+
 class PropertyFormatter
 {
     /** @var int */
-    public $jsonOptions;
+    public $yamlInline = 2;
 
     /**
      * @param mixed  $value
@@ -27,7 +29,7 @@ class PropertyFormatter
         }
 
         if (!is_string($value)) {
-            $value = json_encode($value, $this->jsonOptions);
+            $value = rtrim(Yaml::dump($value, $this->yamlInline));
         }
 
         return $value;
