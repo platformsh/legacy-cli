@@ -25,7 +25,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Yaml\Yaml;
 
-abstract class PlatformCommand extends Command implements CanHideInListInterface
+abstract class CommandBase extends Command implements CanHideInListInterface
 {
     use HasExamplesTrait;
 
@@ -844,7 +844,7 @@ abstract class PlatformCommand extends Command implements CanHideInListInterface
     /**
      * Add the --project and --host options.
      *
-     * @return self
+     * @return CommandBase
      */
     protected function addProjectOption()
     {
@@ -857,7 +857,7 @@ abstract class PlatformCommand extends Command implements CanHideInListInterface
     /**
      * Add the --environment option.
      *
-     * @return self
+     * @return CommandBase
      */
     protected function addEnvironmentOption()
     {
@@ -867,7 +867,7 @@ abstract class PlatformCommand extends Command implements CanHideInListInterface
     /**
      * Add the --app option.
      *
-     * @return self
+     * @return CommandBase
      */
     protected function addAppOption()
     {
@@ -879,7 +879,7 @@ abstract class PlatformCommand extends Command implements CanHideInListInterface
      *
      * @param string $description
      *
-     * @return self
+     * @return CommandBase
      */
     protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
     {
@@ -1108,7 +1108,7 @@ abstract class PlatformCommand extends Command implements CanHideInListInterface
      */
     protected function runOtherCommand($name, array $arguments = array(), InputInterface $input = null)
     {
-        /** @var PlatformCommand $command */
+        /** @var CommandBase $command */
         $command = $this->getApplication()->find($name);
         // Pass on the project root to the other command.
         if ($root = $this->getProjectRoot()) {
@@ -1136,7 +1136,7 @@ abstract class PlatformCommand extends Command implements CanHideInListInterface
      *
      * @param array $hiddenAliases
      *
-     * @return self
+     * @return CommandBase
      */
     protected function setHiddenAliases(array $hiddenAliases)
     {

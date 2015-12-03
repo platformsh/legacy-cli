@@ -1,14 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class VariableSetCommand extends PlatformCommand
+class VariableSetCommand extends CommandBase
 {
     /**
      * {@inheritdoc}

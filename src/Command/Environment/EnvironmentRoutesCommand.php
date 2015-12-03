@@ -1,13 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentRoutesCommand extends PlatformCommand
+class EnvironmentRoutesCommand extends CommandBase
 {
     /**
      * {@inheritdoc}

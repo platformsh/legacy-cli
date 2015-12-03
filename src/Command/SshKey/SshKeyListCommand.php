@@ -1,12 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshKeyListCommand extends PlatformCommand
+class SshKeyListCommand extends CommandBase
 {
 
     protected function configure()

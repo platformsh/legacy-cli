@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Cocur\Slugify\Slugify;
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
@@ -15,7 +15,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectGetCommand extends PlatformCommand
+class ProjectGetCommand extends CommandBase
 {
 
     protected function configure()

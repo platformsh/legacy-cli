@@ -2,12 +2,12 @@
 namespace Platformsh\Cli\Command\Auth;
 
 use GuzzleHttp\Exception\BadResponseException;
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class LoginCommand extends PlatformCommand
+class LoginCommand extends CommandBase
 {
 
     protected function configure()

@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Local\LocalProject;
@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LocalDrushAliasesCommand extends PlatformCommand
+class LocalDrushAliasesCommand extends CommandBase
 {
     protected $local = true;
 

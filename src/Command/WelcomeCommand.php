@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class WelcomeCommand extends PlatformCommand
+class WelcomeCommand extends CommandBase
 {
     protected $hiddenInList = true;
     protected $local = true;

@@ -1,13 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Snapshot;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SnapshotListCommand extends PlatformCommand
+class SnapshotListCommand extends CommandBase
 {
 
     protected function configure()

@@ -1,13 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectListCommand extends PlatformCommand
+class ProjectListCommand extends CommandBase
 {
 
     protected function configure()

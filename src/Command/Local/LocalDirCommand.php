@@ -1,14 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LocalDirCommand extends PlatformCommand
+class LocalDirCommand extends CommandBase
 {
     protected $hiddenInList = true;
     protected $local = true;

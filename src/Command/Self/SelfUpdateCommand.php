@@ -2,13 +2,13 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Humbug\SelfUpdate\Updater;
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\SelfUpdate\ManifestStrategy;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SelfUpdateCommand extends PlatformCommand
+class SelfUpdateCommand extends CommandBase
 {
     protected function configure()
     {

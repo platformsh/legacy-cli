@@ -1,12 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UserListCommand extends PlatformCommand
+class UserListCommand extends CommandBase
 {
 
     protected function configure()

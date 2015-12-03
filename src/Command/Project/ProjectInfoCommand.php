@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Project;
@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectInfoCommand extends PlatformCommand
+class ProjectInfoCommand extends CommandBase
 {
     /** @var PropertyFormatter */
     protected $formatter;

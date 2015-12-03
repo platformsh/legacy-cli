@@ -8,7 +8,7 @@ use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as Parent
 class CompletionCommand extends ParentCompletionCommand implements CanHideInListInterface
 {
 
-    /** @var PlatformCommand */
+    /** @var CommandBase */
     protected $platformCommand;
 
     /**

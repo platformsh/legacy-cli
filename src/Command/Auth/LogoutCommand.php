@@ -1,12 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LogoutCommand extends PlatformCommand
+class LogoutCommand extends CommandBase
 {
     protected $local = true;
 
