@@ -174,5 +174,4 @@ You can configure the CLI via these environment variables:
 
 ## Contributing
 
-If you clone this repository locally, you can build it with `composer install`,
-and you can run the tests with `./vendor/bin/phpunit -c ./phpunit.xml`.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute to the CLI.
