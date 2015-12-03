@@ -31,12 +31,17 @@ class EnvironmentDrushCommand extends PlatformCommand
 
     public function isEnabled()
     {
-        $projectRoot = $this->getProjectRoot();
-        if ($projectRoot) {
-            return Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $enabled = parent::isEnabled();
+
+        // Hide this command in the list if the project is not Drupal.
+        if ($enabled && isset($GLOBALS['argv'][1]) && $GLOBALS['argv'][1] === 'list') {
+            $projectRoot = $this->getProjectRoot();
+            if ($projectRoot) {
+                return Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+            }
         }
 
-        return true;
+        return $enabled;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
