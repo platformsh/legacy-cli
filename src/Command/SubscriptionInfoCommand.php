@@ -11,6 +11,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SubscriptionInfoCommand extends PlatformCommand
 {
+    protected $hiddenInList = true;
+
     /** @var PropertyFormatter */
     protected $formatter;
 
@@ -24,7 +26,6 @@ class SubscriptionInfoCommand extends PlatformCommand
           ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
           ->setDescription('Read subscription properties');
         $this->addProjectOption();
-        $this->setHiddenInList();
         $this->addExample('View all subscription properties')
           ->addExample('View the subscription status', 'status')
           ->addExample('View the storage limit (in MiB)', 'storage');

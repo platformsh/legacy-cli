@@ -7,17 +7,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalInstallCommand extends PlatformCommand
 {
+    protected $hiddenInList = true;
+    protected $local = true;
 
     protected function configure()
     {
         $this->setName('local:install')
           ->setDescription('Install CLI configuration files');
-        $this->setHiddenInList();
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

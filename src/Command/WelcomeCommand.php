@@ -7,18 +7,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class WelcomeCommand extends PlatformCommand
 {
+    protected $hiddenInList = true;
+    protected $local = true;
 
     protected function configure()
     {
         $this
           ->setName('welcome')
           ->setDescription('Welcome to Platform.sh');
-        $this->setHiddenInList();
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -7,6 +7,7 @@
 
 namespace Platformsh\Cli\Console;
 
+use Platformsh\Cli\Command\CanHideInListInterface;
 use Platformsh\Cli\Command\PlatformCommand;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
@@ -117,6 +118,10 @@ class CustomTextDescriptor extends TextDescriptor
 
                     if ($command instanceof PlatformCommand) {
                         $aliases = $command->getVisibleAliases();
+                    }
+
+                    if ($command instanceof CanHideInListInterface && $command->hideInList()) {
+                        continue;
                     }
 
                     // Colour local commands differently from remote ones.

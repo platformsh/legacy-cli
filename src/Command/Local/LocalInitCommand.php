@@ -9,6 +9,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalInitCommand extends PlatformCommand
 {
+    protected $local = true;
 
     protected function configure()
     {
@@ -18,11 +19,6 @@ class LocalInitCommand extends PlatformCommand
           ->addArgument('directory', InputArgument::OPTIONAL, 'The path to the repository.')
           ->setDescription('Create a local project file structure from a Git repository');
         $this->addProjectOption();
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

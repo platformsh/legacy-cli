@@ -8,6 +8,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfBuildCommand extends PlatformCommand
 {
+    protected $hiddenInList = true;
+    protected $local = true;
+
     protected function configure()
     {
         $this
@@ -15,12 +18,6 @@ class SelfBuildCommand extends PlatformCommand
           ->setDescription('Build a new package of the CLI')
           ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
           ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename');
-        $this->setHiddenInList();
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

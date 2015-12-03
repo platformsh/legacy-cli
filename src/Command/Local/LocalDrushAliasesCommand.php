@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalDrushAliasesCommand extends PlatformCommand
 {
+    protected $local = true;
 
     protected function configure()
     {
@@ -25,24 +26,17 @@ class LocalDrushAliasesCommand extends PlatformCommand
         $this->addExample('Change the alias group to @example', '-g example');
     }
 
-    public function isLocal()
+    public function hideInList()
     {
-        return true;
-    }
-
-    public function isEnabled()
-    {
-        $enabled = parent::isEnabled();
-
         // Hide this command in the list if the project is not Drupal.
-        if ($enabled && isset($GLOBALS['argv'][1]) && $GLOBALS['argv'][1] === 'list') {
-            $projectRoot = $this->getProjectRoot();
-            if ($projectRoot) {
-                return Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+                return true;
             }
         }
 
-        return $enabled;
+        return parent::hideInList();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

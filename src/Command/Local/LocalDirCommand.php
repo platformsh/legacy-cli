@@ -10,6 +10,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalDirCommand extends PlatformCommand
 {
+    protected $hiddenInList = true;
+    protected $local = true;
 
     protected function configure()
     {
@@ -18,12 +20,6 @@ class LocalDirCommand extends PlatformCommand
           ->setAliases(array('dir'))
           ->setDescription('Find the local project root')
           ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('repo', 'web', or 'shared')");
-        $this->setHiddenInList();
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

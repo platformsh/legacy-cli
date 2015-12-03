@@ -25,7 +25,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Yaml\Yaml;
 
-abstract class PlatformCommand extends Command
+abstract class PlatformCommand extends Command implements CanHideInListInterface
 {
     use HasExamplesTrait;
 
@@ -66,7 +66,14 @@ abstract class PlatformCommand extends Command
     protected $environmentsTtl;
     protected $usersTtl;
 
-    private $hiddenInList = false;
+    protected $hiddenInList = false;
+    protected $local = false;
+
+    /**
+     * @see self::setHiddenAliases()
+     *
+     * @var array
+     */
     private $hiddenAliases = array();
 
     /**
@@ -118,29 +125,10 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * Make the command hidden in the list.
-     *
-     * @return $this
-     */
-    public function setHiddenInList()
-    {
-        $this->hiddenInList = true;
-        return $this;
-    }
-
-    /**
      * {@inheritdoc}
      */
-    public function isEnabled() {
-        $enabled = parent::isEnabled();
-
-        // Hide the command in the list, if necessary.
-        if ($enabled && $this->hiddenInList) {
-            global $argv;
-            $enabled = !isset($argv[1]) || $argv[1] != 'list';
-        }
-
-        return $enabled;
+    public function hideInList() {
+        return $this->hiddenInList;
     }
 
     /**
@@ -411,10 +399,12 @@ abstract class PlatformCommand extends Command
     /**
      * Is this command used to work with your local environment or send
      * commands to the Platform remote environment? Defaults to FALSE.
+     *
+     * @return bool
      */
     public function isLocal()
     {
-        return false;
+        return $this->local;
     }
 
     /**

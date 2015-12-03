@@ -7,6 +7,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ClearCacheCommand extends PlatformCommand
 {
+    protected $local = true;
 
     protected function configure()
     {
@@ -14,11 +15,6 @@ class ClearCacheCommand extends PlatformCommand
           ->setName('clear-cache')
           ->setAliases(['clearcache', 'cc'])
           ->setDescription('Clear the CLI cache');
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

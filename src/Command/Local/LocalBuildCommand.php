@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalBuildCommand extends PlatformCommand
 {
-
+    protected $local = true;
     protected $defaultDrushConcurrency = 4;
 
     protected function configure()
@@ -92,11 +92,6 @@ class LocalBuildCommand extends PlatformCommand
         $this->addExample('Build the current project');
         $this->addExample('Build the app "example" without symlinking the source files', 'example --copy');
         $this->addExample('Rebuild the current project without using an archive', '--no-archive');
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

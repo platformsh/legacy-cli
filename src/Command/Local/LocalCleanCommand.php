@@ -10,6 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalCleanCommand extends PlatformCommand
 {
+    protected $local = true;
 
     protected function configure()
     {
@@ -36,11 +37,6 @@ class LocalCleanCommand extends PlatformCommand
             InputOption::VALUE_NONE,
             'Delete active build(s) too'
           );
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
