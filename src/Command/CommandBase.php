@@ -560,7 +560,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     public function getProjects($refresh = false)
     {
-        $cacheKey = sprintf('%:projects', self::$sessionId);
+        $cacheKey = sprintf('%s:projects', self::$sessionId);
 
         /** @var Project[] $projects */
         $projects = array();
