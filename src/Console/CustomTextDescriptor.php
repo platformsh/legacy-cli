@@ -7,7 +7,8 @@
 
 namespace Platformsh\Cli\Console;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CanHideInListInterface;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
@@ -26,7 +27,7 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText("<comment>Command:</comment> " . $command->getName(), $options);
 
-        $aliases = $command instanceof PlatformCommand ? $command->getVisibleAliases() : $command->getAliases();
+        $aliases = $command instanceof CommandBase ? $command->getVisibleAliases() : $command->getAliases();
         if ($aliases) {
             $this->writeText("\n");
             $this->writeText('<comment>Aliases:</comment> ' . implode(', ', $aliases), $options);
@@ -58,7 +59,7 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText("\n");
         }
 
-        if ($command instanceof PlatformCommand && ($examples = $command->getExamples())) {
+        if ($command instanceof CommandBase && ($examples = $command->getExamples())) {
             $this->writeText("\n");
             $this->writeText('<comment>Examples:</comment>', $options);
             $name = $command->getName();
@@ -115,13 +116,17 @@ class CustomTextDescriptor extends TextDescriptor
                         continue;
                     }
 
-                    if ($command instanceof PlatformCommand) {
+                    if ($command instanceof CommandBase) {
                         $aliases = $command->getVisibleAliases();
+                    }
+
+                    if ($command instanceof CanHideInListInterface && $command->hideInList()) {
+                        continue;
                     }
 
                     // Colour local commands differently from remote ones.
                     $commandDescription = $command->getDescription();
-                    if ($command instanceof PlatformCommand && !$command->isLocal()) {
+                    if ($command instanceof CommandBase && !$command->isLocal()) {
                         $commandDescription = "<fg=cyan>$commandDescription</fg=cyan>";
                     }
                     $this->writeText("\n");

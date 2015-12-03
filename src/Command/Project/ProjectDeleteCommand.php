@@ -1,11 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectDeleteCommand extends PlatformCommand
+class ProjectDeleteCommand extends CommandBase
 {
 
     protected function configure()

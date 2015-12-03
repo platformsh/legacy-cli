@@ -1,15 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
-use Herrera\Phar\Update\Manager;
-use Herrera\Phar\Update\Manifest;
-use Herrera\Version\Parser;
-use Platformsh\Cli\Command\PlatformCommand;
+use Humbug\SelfUpdate\Updater;
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\SelfUpdate\ManifestStrategy;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SelfUpdateCommand extends PlatformCommand
+class SelfUpdateCommand extends CommandBase
 {
     protected function configure()
     {
@@ -25,12 +24,8 @@ class SelfUpdateCommand extends PlatformCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $manifestUrl = $input->getOption('manifest') ?: 'https://platform.sh/cli/manifest.json';
-        $currentVersion = $input->getOption('current-version');
-        if (!$currentVersion) {
-            $currentVersion = $this->getApplication()->getVersion();
-            $currentVersion = preg_replace('/^([\d])\.x\-dev$/', '$1.0.0', $currentVersion);
-        }
-        $onlyMinor = !$input->getOption('major');
+        $currentVersion = $input->getOption('current-version') ?: $this->getApplication()->getVersion();
+        $allowMajor = $input->getOption('major');
 
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln('This instance of the CLI was not installed as a Phar archive.');
@@ -42,27 +37,18 @@ class SelfUpdateCommand extends PlatformCommand
             return 1;
         }
 
-        // Download the manifest file.
-        $manifest = Manifest::loadFile($manifestUrl);
+        $this->stdErr->writeln(sprintf('Checking for updates (current version: <info>%s</info>)', $currentVersion));
 
-        // Instantiate the update manager.
-        $manager = new Manager($manifest);
-        if (isset($localPhar)) {
-            $manager->setRunningFile($localPhar);
-        }
+        $updater = new Updater(null, false);
+        $strategy = new ManifestStrategy($currentVersion, $allowMajor, $manifestUrl);
+        $updater->setStrategyObject($strategy);
 
-        // Find the most recent available version in the manifest.
-        $update = $manifest->findRecent(
-          Parser::toVersion($currentVersion),
-          $onlyMinor
-        );
-
-        if ($update === null) {
-            $this->stdErr->writeln(sprintf('No updates found. The Platform.sh CLI is up-to-date (current version: %s)', $currentVersion));
+        if (!$updater->hasUpdate()) {
+            $this->stdErr->writeln('No updates found');
             return 0;
         }
 
-        $newVersionString = $update->getVersion()->__toString();
+        $newVersionString = $updater->getNewVersion();
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
         if (!$questionHelper->confirm(sprintf('Update to version %s?', $newVersionString), $input, $output)) {
@@ -71,11 +57,7 @@ class SelfUpdateCommand extends PlatformCommand
 
         $this->stdErr->writeln(sprintf('Updating to version %s', $newVersionString));
 
-        // Download the new version.
-        $update->getFile();
-
-        // Replace the current Phar with the new one.
-        $update->copyTo($manager->getRunningFile());
+        $updater->update();
 
         $this->stdErr->writeln("Successfully updated to version <info>$newVersionString</info>");
 

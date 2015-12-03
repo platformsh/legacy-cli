@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Console;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\MarkdownDescriptor;
 use Symfony\Component\Console\Input\InputArgument;
@@ -25,7 +25,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write("$description\n\n");
         }
 
-        $aliases = $command instanceof PlatformCommand ? $command->getVisibleAliases() : $command->getAliases();
+        $aliases = $command instanceof CommandBase ? $command->getVisibleAliases() : $command->getAliases();
         if ($aliases) {
             $this->write(
               'Aliases: ' . '`'.implode('`, `', $aliases).'`' . "\n\n"
@@ -45,7 +45,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write("\n\n");
         }
 
-        if ($command instanceof PlatformCommand && ($examples = $command->getExamples())) {
+        if ($command instanceof CommandBase && ($examples = $command->getExamples())) {
             $this->write('## Examples');
             $this->write("\n");
             $name = $command->getName();

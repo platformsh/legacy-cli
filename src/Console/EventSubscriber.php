@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Console;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ConnectionFailedException;
 use Platformsh\Cli\Exception\HttpException;
 use Platformsh\Cli\Exception\LoginRequiredException;
@@ -87,7 +87,7 @@ class EventSubscriber implements EventSubscriberInterface
         // cache is old - we should invalidate it.
         if ($exception instanceof EnvironmentStateException) {
             $command = $event->getCommand();
-            if ($command instanceof PlatformCommand) {
+            if ($command instanceof CommandBase) {
                 $command->clearEnvironmentsCache();
             }
         }

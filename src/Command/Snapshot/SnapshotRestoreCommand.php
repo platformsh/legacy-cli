@@ -1,13 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Snapshot;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SnapshotRestoreCommand extends PlatformCommand
+class SnapshotRestoreCommand extends CommandBase
 {
 
     protected function configure()

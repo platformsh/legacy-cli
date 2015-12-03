@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
@@ -10,7 +10,7 @@ use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
 use Platformsh\Client\Model\Integration;
 
-abstract class IntegrationCommand extends PlatformCommand
+abstract class IntegrationCommandBase extends CommandBase
 {
     /** @var Form */
     private $form;

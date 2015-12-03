@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Helper\ArgvHelper;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentDrushCommand extends PlatformCommand
+class EnvironmentDrushCommand extends CommandBase
 {
 
     protected function configure()
@@ -29,14 +29,17 @@ class EnvironmentDrushCommand extends PlatformCommand
         $this->addExample('Enable the Overlay module on the remote environment', "'en overlay'");
     }
 
-    public function isEnabled()
+    public function hideInList()
     {
+        // Hide this command in the list if the project is not Drupal.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
-            return Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+            if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+                return true;
+            }
         }
 
-        return true;
+        return parent::hideInList();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

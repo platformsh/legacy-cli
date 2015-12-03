@@ -6,7 +6,7 @@ use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class DomainAddCommand extends DomainCommand
+class DomainAddCommand extends DomainCommandBase
 {
 
     /**

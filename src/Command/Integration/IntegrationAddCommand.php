@@ -6,7 +6,7 @@ use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationAddCommand extends IntegrationCommand
+class IntegrationAddCommand extends IntegrationCommandBase
 {
     /**
      * {@inheritdoc}

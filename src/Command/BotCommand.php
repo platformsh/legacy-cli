@@ -6,13 +6,14 @@ use Platformsh\Cli\Util\Bot;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class BotCommand extends PlatformCommand
+class BotCommand extends CommandBase
 {
+    protected $hiddenInList = true;
+    protected $local = true;
 
     protected function configure()
     {
         $this->setName('bot')->setDescription('The Platform.sh Bot');
-        $this->setHiddenInList();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

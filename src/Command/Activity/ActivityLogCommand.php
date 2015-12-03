@@ -1,14 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityLogCommand extends PlatformCommand
+class ActivityLogCommand extends CommandBase
 {
     /**
      * {@inheritdoc}

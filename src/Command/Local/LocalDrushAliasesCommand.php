@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Local\LocalProject;
@@ -10,8 +10,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LocalDrushAliasesCommand extends PlatformCommand
+class LocalDrushAliasesCommand extends CommandBase
 {
+    protected $local = true;
 
     protected function configure()
     {
@@ -25,19 +26,17 @@ class LocalDrushAliasesCommand extends PlatformCommand
         $this->addExample('Change the alias group to @example', '-g example');
     }
 
-    public function isLocal()
+    public function hideInList()
     {
-        return true;
-    }
-
-    public function isEnabled()
-    {
+        // Hide this command in the list if the project is not Drupal.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
-            return Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+            if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+                return true;
+            }
         }
 
-        return true;
+        return parent::hideInList();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

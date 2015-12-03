@@ -1,23 +1,19 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LocalInstallCommand extends PlatformCommand
+class LocalInstallCommand extends CommandBase
 {
+    protected $hiddenInList = true;
+    protected $local = true;
 
     protected function configure()
     {
         $this->setName('local:install')
           ->setDescription('Install CLI configuration files');
-        $this->setHiddenInList();
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

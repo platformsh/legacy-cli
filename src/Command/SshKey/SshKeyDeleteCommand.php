@@ -1,12 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshKeyDeleteCommand extends PlatformCommand
+class SshKeyDeleteCommand extends CommandBase
 {
 
     protected function configure()

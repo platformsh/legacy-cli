@@ -5,10 +5,10 @@ namespace Platformsh\Cli\Command;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
 
-class CompletionCommand extends ParentCompletionCommand
+class CompletionCommand extends ParentCompletionCommand implements CanHideInListInterface
 {
 
-    /** @var PlatformCommand */
+    /** @var CommandBase */
     protected $platformCommand;
 
     /**
@@ -17,19 +17,17 @@ class CompletionCommand extends ParentCompletionCommand
      */
     protected $projects;
 
-    public function isEnabled()
-    {
-        // Hide the command in the list.
-        global $argv;
-
-        return !isset($argv[1]) || $argv[1] != 'list';
-    }
-
-    public function isLocal()
+    /**
+     * {@inheritdoc}
+     */
+    public function hideInList()
     {
         return true;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function setUp()
     {
         $this->platformCommand = new WelcomeCommand();

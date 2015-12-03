@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationGetCommand extends IntegrationCommand
+class IntegrationGetCommand extends IntegrationCommandBase
 {
     /**
      * {@inheritdoc}

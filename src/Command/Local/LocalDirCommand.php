@@ -1,15 +1,17 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LocalDirCommand extends PlatformCommand
+class LocalDirCommand extends CommandBase
 {
+    protected $hiddenInList = true;
+    protected $local = true;
 
     protected function configure()
     {
@@ -18,12 +20,6 @@ class LocalDirCommand extends PlatformCommand
           ->setAliases(array('dir'))
           ->setDescription('Find the local project root')
           ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('repo', 'web', or 'shared')");
-        $this->setHiddenInList();
-    }
-
-    public function isLocal()
-    {
-        return true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

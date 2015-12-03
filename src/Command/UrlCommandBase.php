@@ -6,7 +6,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class UrlCommandBase extends PlatformCommand
+abstract class UrlCommandBase extends CommandBase
 {
 
     protected function configure()

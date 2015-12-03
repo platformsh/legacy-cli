@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Exception\LoginRequiredException;
+use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalApplication;
@@ -24,7 +25,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Yaml\Yaml;
 
-abstract class PlatformCommand extends Command
+abstract class CommandBase extends Command implements CanHideInListInterface
 {
     use HasExamplesTrait;
 
@@ -65,7 +66,14 @@ abstract class PlatformCommand extends Command
     protected $environmentsTtl;
     protected $usersTtl;
 
-    private $hiddenInList = false;
+    protected $hiddenInList = false;
+    protected $local = false;
+
+    /**
+     * @see self::setHiddenAliases()
+     *
+     * @var array
+     */
     private $hiddenAliases = array();
 
     /**
@@ -117,29 +125,10 @@ abstract class PlatformCommand extends Command
     }
 
     /**
-     * Make the command hidden in the list.
-     *
-     * @return $this
-     */
-    public function setHiddenInList()
-    {
-        $this->hiddenInList = true;
-        return $this;
-    }
-
-    /**
      * {@inheritdoc}
      */
-    public function isEnabled() {
-        $enabled = parent::isEnabled();
-
-        // Hide the command in the list, if necessary.
-        if ($enabled && $this->hiddenInList) {
-            global $argv;
-            $enabled = !isset($argv[1]) || $argv[1] != 'list';
-        }
-
-        return $enabled;
+    public function hideInList() {
+        return $this->hiddenInList;
     }
 
     /**
@@ -291,6 +280,7 @@ abstract class PlatformCommand extends Command
         // is always considered to be interactive.
         if ($this->getName() === 'welcome' && isset($GLOBALS['argv']) && array_intersect($GLOBALS['argv'], array('-n', '--no', '-y', '---yes'))) {
             $input->setInteractive(false);
+            self::$interactive = false;
             return;
         }
 
@@ -329,7 +319,6 @@ abstract class PlatformCommand extends Command
         $config['updates']['check'] = true;
         $config['updates']['last_checked'] = $timestamp;
         $this->writeGlobalConfig($config);
-        $output->writeln("<info>Checking for updates...</info>\n");
         $this->runOtherCommand('self-update', array(), $input);
         $output->writeln('');
     }
@@ -410,10 +399,12 @@ abstract class PlatformCommand extends Command
     /**
      * Is this command used to work with your local environment or send
      * commands to the Platform remote environment? Defaults to FALSE.
+     *
+     * @return bool
      */
     public function isLocal()
     {
-        return false;
+        return $this->local;
     }
 
     /**
@@ -455,11 +446,18 @@ abstract class PlatformCommand extends Command
             // There is a chance that the project isn't available.
             if (!$project) {
                 $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
-                throw new \RuntimeException(
-                  "Project ID not found: " . $config['id']
-                  . "\nEither you do not have access to the project on Platform.sh, or it no longer exists."
-                  . "\nThe project ID was determined from the file: " . $filename
-                );
+                if (isset($config['host'])) {
+                    $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
+                    $message = "Project not found: " . $projectUrl
+                      . "\nThe project probably no longer exists."
+                      . "\nThe project's hostname and ID were determined from the file: " . $filename;
+                }
+                else {
+                    $message = "Project not found: " . $config['id']
+                      . "\nEither you do not have access to the project on Platform.sh, or the project no longer exists."
+                      . "\nThe project ID was determined from the file: " . $filename;
+                }
+                throw new ProjectNotFoundException($message);
             }
         }
 
@@ -846,7 +844,7 @@ abstract class PlatformCommand extends Command
     /**
      * Add the --project and --host options.
      *
-     * @return self
+     * @return CommandBase
      */
     protected function addProjectOption()
     {
@@ -859,7 +857,7 @@ abstract class PlatformCommand extends Command
     /**
      * Add the --environment option.
      *
-     * @return self
+     * @return CommandBase
      */
     protected function addEnvironmentOption()
     {
@@ -869,7 +867,7 @@ abstract class PlatformCommand extends Command
     /**
      * Add the --app option.
      *
-     * @return self
+     * @return CommandBase
      */
     protected function addAppOption()
     {
@@ -881,7 +879,7 @@ abstract class PlatformCommand extends Command
      *
      * @param string $description
      *
-     * @return self
+     * @return CommandBase
      */
     protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
     {
@@ -1110,7 +1108,7 @@ abstract class PlatformCommand extends Command
      */
     protected function runOtherCommand($name, array $arguments = array(), InputInterface $input = null)
     {
-        /** @var PlatformCommand $command */
+        /** @var CommandBase $command */
         $command = $this->getApplication()->find($name);
         // Pass on the project root to the other command.
         if ($root = $this->getProjectRoot()) {
@@ -1126,6 +1124,7 @@ abstract class PlatformCommand extends Command
         }
 
         $cmdInput = new ArrayInput(array('command' => $name) + $arguments);
+        $cmdInput->setInteractive(self::$interactive);
 
         return $command->run($cmdInput, $this->output);
     }
@@ -1137,7 +1136,7 @@ abstract class PlatformCommand extends Command
      *
      * @param array $hiddenAliases
      *
-     * @return self
+     * @return CommandBase
      */
     protected function setHiddenAliases(array $hiddenAliases)
     {

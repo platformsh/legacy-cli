@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
-use Platformsh\Cli\Command\PlatformCommand;
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Domain;
 use Symfony\Component\Console\Input\InputArgument;
@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class DomainCommand extends PlatformCommand
+abstract class DomainCommandBase extends CommandBase
 {
 
     // The final array of SSL options for the client parameters.
