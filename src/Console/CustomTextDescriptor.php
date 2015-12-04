@@ -99,15 +99,32 @@ class CustomTextDescriptor extends TextDescriptor
                 $this->writeText('<comment>Available commands:</comment>', $options);
             }
 
-            // add commands by namespace
+            // Display commands grouped by namespace.
             foreach ($description->getNamespaces() as $namespace) {
+                // Filter hidden commands in the namespace.
+                /** @var Command[] $commands */
+                $commands = [];
+                foreach ($namespace['commands'] as $name) {
+                    $command = $description->getCommand($name);
+                    if ($command instanceof CanHideInListInterface && $command->hideInList()) {
+                        continue;
+                    }
+                    $commands[$name] = $command;
+                }
+
+                // Skip the namespace if it doesn't contain any commands.
+                if (!count($commands)) {
+                    continue;
+                }
+
+                // Display the namespace name.
                 if (!$describedNamespace && ApplicationDescription::GLOBAL_NAMESPACE !== $namespace['id']) {
                     $this->writeText("\n");
                     $this->writeText('<comment>' . $namespace['id'] . '</comment>', $options);
                 }
 
-                foreach ($namespace['commands'] as $name) {
-                    $command = $description->getCommand($name);
+                // Display each command.
+                foreach ($commands as $name => $command) {
                     $aliases = $command->getAliases();
                     if ($aliases && in_array($name, $aliases)) {
                         // If the command is an alias, do not list it in the
@@ -118,10 +135,6 @@ class CustomTextDescriptor extends TextDescriptor
 
                     if ($command instanceof CommandBase) {
                         $aliases = $command->getVisibleAliases();
-                    }
-
-                    if ($command instanceof CanHideInListInterface && $command->hideInList()) {
-                        continue;
                     }
 
                     // Colour local commands differently from remote ones.
