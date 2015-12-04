@@ -106,7 +106,7 @@ class CustomTextDescriptor extends TextDescriptor
                 $commands = [];
                 foreach ($namespace['commands'] as $name) {
                     $command = $description->getCommand($name);
-                    if ($command instanceof CanHideInListInterface && $command->hideInList()) {
+                    if (!$describedNamespace && $command instanceof CanHideInListInterface && $command->hideInList()) {
                         continue;
                     }
                     $commands[$name] = $command;
