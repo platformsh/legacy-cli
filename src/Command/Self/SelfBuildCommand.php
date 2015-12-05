@@ -54,7 +54,7 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        $config = array();
+        $config = [];
         if ($outputFilename) {
             /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
             $fsHelper = $this->getHelper('fs');
@@ -84,18 +84,18 @@ class SelfBuildCommand extends CommandBase
 
         // Remove the 'vendor' directory, in case the developer has incorporated
         // their own version of dependencies locally.
-        $shellHelper->execute(array('rm', '-r', 'vendor'), CLI_ROOT, true, false);
+        $shellHelper->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
 
-        $shellHelper->execute(array(
-          $shellHelper->resolveCommand('composer'),
-          'install',
-          '--no-dev',
-          '--classmap-authoritative',
-          '--no-interaction',
-          '--no-progress',
-        ), CLI_ROOT, true, false);
+        $shellHelper->execute([
+            $shellHelper->resolveCommand('composer'),
+            'install',
+            '--no-dev',
+            '--classmap-authoritative',
+            '--no-interaction',
+            '--no-progress',
+        ], CLI_ROOT, true, false);
 
-        $boxArgs = array($shellHelper->resolveCommand('box'), 'build', '--no-interaction');
+        $boxArgs = [$shellHelper->resolveCommand('box'), 'build', '--no-interaction'];
 
         // Create a temporary box.json file for this build.
         if (!empty($config)) {

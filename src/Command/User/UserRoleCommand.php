@@ -33,7 +33,7 @@ class UserRoleCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $level = $input->getOption('level');
-        $validLevels = array('project', 'environment');
+        $validLevels = ['project', 'environment'];
         if (!in_array($level, $validLevels)) {
             $this->stdErr->writeln("Invalid level: <error>$level</error>");
             return 1;
@@ -86,7 +86,7 @@ class UserRoleCommand extends CommandBase
             $this->stdErr->writeln("There is nothing to change");
         }
         elseif ($role && $level == 'project') {
-            $result = $selectedUser->update(array('role' => $role));
+            $result = $selectedUser->update(['role' => $role]);
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
         elseif ($role && $level == 'environment') {

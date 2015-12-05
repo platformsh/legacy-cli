@@ -69,11 +69,11 @@ class SubscriptionInfoCommand extends CommandBase
     protected function listProperties(Subscription $subscription)
     {
         $table = new Table($this->output);
-        $table->setHeaders(array("Property", "Value"));
+        $table->setHeaders(["Property", "Value"]);
         foreach ($subscription->getProperties() as $key => $value) {
             $value = $this->formatter->format($value, $key);
             $value = wordwrap($value, 50, "\n", true);
-            $table->addRow(array($key, $value));
+            $table->addRow([$key, $value]);
         }
         $table->render();
 

@@ -21,7 +21,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     /** @var LocalBuild */
     protected $builder;
 
-    protected $buildSettings = array('noClean' => true);
+    protected $buildSettings = ['noClean' => true];
 
     /**
      * {@inheritdoc}

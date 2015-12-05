@@ -43,8 +43,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         $this->setUp();
         $projectIds = array_keys($this->projects);
 
-        $this->handler->addHandlers(
-          array(
+        $this->handler->addHandlers([
             new Completion(
               'project:get',
               'id',
@@ -59,24 +58,24 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
             Completion::makeGlobalHandler(
               'environment',
               Completion::TYPE_ARGUMENT,
-              array($this, 'getEnvironments')
+              [$this, 'getEnvironments']
             ),
             Completion::makeGlobalHandler(
               'environment',
               Completion::TYPE_OPTION,
-              array($this, 'getEnvironments')
+              [$this, 'getEnvironments']
             ),
             new Completion(
               'environment:branch',
               'parent',
               Completion::TYPE_ARGUMENT,
-              array($this, 'getEnvironments')
+              [$this, 'getEnvironments']
             ),
             new Completion(
               'environment:checkout',
               'id',
               Completion::TYPE_ARGUMENT,
-              array($this, 'getEnvironmentsForCheckout')
+              [$this, 'getEnvironmentsForCheckout']
             ),
             new Completion\ShellPathCompletion(
               'ssh-key:add',
@@ -117,9 +116,8 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
               'local:init',
               'directory',
               Completion::TYPE_ARGUMENT
-            )
-          )
-        );
+            ),
+        ]);
 
         try {
             return $this->handler->runCompletion();
@@ -143,7 +141,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         if (!$client->getConnector()
                     ->isLoggedIn()
         ) {
-            return array();
+            return [];
         }
 
         return $this->platformCommand->getProjects();
@@ -158,7 +156,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     {
         $project = $this->platformCommand->getCurrentProject();
         if (!$project) {
-            return array();
+            return [];
         }
         try {
             $currentEnvironment = $this->platformCommand->getCurrentEnvironment($project);
@@ -190,7 +188,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     public function getEnvironments()
     {
         if (!$this->projects) {
-            return array();
+            return [];
         }
         $commandLine = $this->handler->getContext()
                                      ->getCommandLine();
@@ -200,7 +198,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         } elseif (isset($this->projects[$currentProjectId])) {
             $project = $this->projects[$currentProjectId];
         } else {
-            return array();
+            return [];
         }
         $environments = $this->platformCommand->getEnvironments($project, false, false);
 

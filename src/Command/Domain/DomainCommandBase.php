@@ -13,7 +13,7 @@ abstract class DomainCommandBase extends CommandBase
 {
 
     // The final array of SSL options for the client parameters.
-    protected $sslOptions = array();
+    protected $sslOptions = [];
 
     protected $domainName;
 
@@ -119,7 +119,7 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         // Split up the chain file contents.
-        $chain = array();
+        $chain = [];
         $begin = '-----BEGIN CERTIFICATE-----';
         foreach ($chainFileContents as $data) {
             if (substr_count($data, $begin) > 1) {
@@ -133,11 +133,11 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         // Yay we win.
-        $this->sslOptions = array(
+        $this->sslOptions = [
           'certificate' => $sslCert,
           'key' => $sslPrivateKey,
           'chain' => $chain,
-        );
+        ];
 
         return true;
     }
@@ -167,7 +167,7 @@ abstract class DomainCommandBase extends CommandBase
      */
     protected function readChainFiles(array $chainPaths)
     {
-        $chainFiles = array();
+        $chainFiles = [];
         foreach ($chainPaths as $chainPath) {
             if (!is_readable($chainPath)) {
                 throw new \Exception("The chain file could not be read: $chainPath");

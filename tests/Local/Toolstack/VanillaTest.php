@@ -53,12 +53,12 @@ class VanillaTest extends BaseToolstackTest
         $destination = tempnam($tempDir, '');
 
         // Test with symlinking.
-        $builder = new LocalBuild(array('absoluteLinks' => true), self::$output);
+        $builder = new LocalBuild(['absoluteLinks' => true], self::$output);
         $builder->build($sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 
         // Test with copying.
-        $builder = new LocalBuild(array('copy' => true, 'absoluteLinks' => true), self::$output);
+        $builder = new LocalBuild(['copy' => true, 'absoluteLinks' => true], self::$output);
         $builder->build($sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 

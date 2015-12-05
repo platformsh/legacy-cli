@@ -151,7 +151,7 @@ class DrushHelper extends Helper
      */
     public function clearCache()
     {
-        return (bool) $this->execute(array('cache-clear', 'drush'));
+        return (bool) $this->execute(['cache-clear', 'drush']);
     }
 
     /**
@@ -162,12 +162,12 @@ class DrushHelper extends Helper
     public function getAliases($groupName)
     {
         return $this->execute(
-          array(
+          [
             'site-alias',
             '--pipe',
             '--format=list',
             '@' . $groupName,
-          )
+          ]
         );
     }
 
@@ -203,8 +203,8 @@ class DrushHelper extends Helper
         // Include the previous alias file(s) so that the user's own
         // modifications can be merged. This may create a PHP parse error for
         // invalid syntax, but in that case the user could not run Drush anyway.
-        $aliases = array();
-        $originalFiles = array($filename);
+        $aliases = [];
+        $originalFiles = [$filename];
         if ($original) {
             array_unshift($originalFiles, $drushDir . '/' . $original . '.aliases.drushrc.php');
         }
@@ -272,10 +272,10 @@ class DrushHelper extends Helper
             if ($multiApp) {
                 $webRoot .= '/' . $appId;
             }
-            $local = array(
+            $local = [
               'root' => $webRoot,
               self::AUTO_REMOVE_KEY => true,
-            );
+            ];
             if (isset($aliases[$localAliasName])) {
                 $local = array_replace_recursive($aliases[$localAliasName], $local);
                 unset($aliases[$localAliasName]);
@@ -379,18 +379,18 @@ class DrushHelper extends Helper
             $documentRoot = $appConfig['web']['document_root'];
         }
 
-        return array(
-          'uri' => $uri,
-          'remote-host' => $sshUrl['host'],
-          'remote-user' => $sshUser,
-          'root' => '/app/' . ltrim($documentRoot, '/'),
-          self::AUTO_REMOVE_KEY => true,
-          'command-specific' => array(
-              'site-install' => array(
-                  'sites-subdir' => 'default',
-              ),
-          ),
-        );
+        return [
+            'uri' => $uri,
+            'remote-host' => $sshUrl['host'],
+            'remote-user' => $sshUser,
+            'root' => '/app/' . ltrim($documentRoot, '/'),
+            self::AUTO_REMOVE_KEY => true,
+            'command-specific' => [
+                'site-install' => [
+                    'sites-subdir' => 'default',
+                ],
+            ],
+        ];
     }
 
 }

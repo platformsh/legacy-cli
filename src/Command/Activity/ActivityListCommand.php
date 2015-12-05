@@ -18,7 +18,7 @@ class ActivityListCommand extends CommandBase
     {
         $this
           ->setName('activity:list')
-          ->setAliases(array('activities'))
+          ->setAliases(['activities'])
           ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
           ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 5)
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
@@ -51,18 +51,18 @@ class ActivityListCommand extends CommandBase
             return 1;
         }
 
-        $headers = array("ID", "Created", "Description", "% Complete", "State");
-        $rows = array();
+        $headers = ["ID", "Created", "Description", "% Complete", "State"];
+        $rows = [];
         foreach ($activities as $activity) {
             $description = $activity->getDescription();
             $description = wordwrap($description, 40);
-            $rows[] = array(
-              $activity->id,
-              date('Y-m-d H:i:s', strtotime($activity['created_at'])),
-              $description,
-              $activity->getCompletionPercent(),
-              ActivityUtil::formatState($activity->state),
-            );
+            $rows[] = [
+                $activity->id,
+                date('Y-m-d H:i:s', strtotime($activity['created_at'])),
+                $description,
+                $activity->getCompletionPercent(),
+                ActivityUtil::formatState($activity->state),
+            ];
         }
 
         if ($output instanceof StreamOutput && $input->getOption('pipe')) {

@@ -18,7 +18,7 @@ class EnvironmentDrushCommand extends CommandBase
     {
         $this
           ->setName('environment:drush')
-          ->setAliases(array('drush'))
+          ->setAliases(['drush'])
           ->setDescription('Run a drush command on the remote environment')
           ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
         $this->addProjectOption()
@@ -58,7 +58,7 @@ class EnvironmentDrushCommand extends CommandBase
         $sshOptions = '';
 
         // Pass through options that the CLI shares with Drush and SSH.
-        foreach (array('yes', 'no', 'quiet') as $option) {
+        foreach (['yes', 'no', 'quiet'] as $option) {
             if ($input->getOption($option)) {
                 $drushCommand .= " --$option";
             }

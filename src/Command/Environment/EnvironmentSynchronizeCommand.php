@@ -14,7 +14,7 @@ class EnvironmentSynchronizeCommand extends CommandBase
     {
         $this
           ->setName('environment:synchronize')
-          ->setAliases(array('sync'))
+          ->setAliases(['sync'])
           ->setDescription('Synchronize an environment')
           ->addArgument(
             'synchronize',
@@ -52,7 +52,7 @@ class EnvironmentSynchronizeCommand extends CommandBase
 
         if ($synchronize = $input->getArgument('synchronize')) {
             // The input was invalid.
-            if (array_diff($input->getArgument('synchronize'), array('code', 'data', 'both'))) {
+            if (array_diff($input->getArgument('synchronize'), ['code', 'data', 'both'])) {
                 $this->stdErr->writeln("Specify 'code', 'data', or 'both'");
                 return 1;
             }

@@ -31,11 +31,11 @@ class WelcomeCommand extends CommandBase
             $this->stdErr->writeln("Project title: <info>{$project->title}</info>");
             $this->stdErr->writeln("Project ID: <info>{$project->id}</info>");
             $this->stdErr->writeln("Project dashboard: <info>$projectUri</info>\n");
-            $this->runOtherCommand('environments', array('--refresh' => 0));
+            $this->runOtherCommand('environments', ['--refresh' => 0]);
             $this->stdErr->writeln("\nYou can list other projects by running <info>platform projects</info>\n");
         } else {
             // The project is not known. Show all projects.
-            $this->runOtherCommand('projects', array('--refresh' => 0));
+            $this->runOtherCommand('projects', ['--refresh' => 0]);
         }
 
         $this->stdErr->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>\n");

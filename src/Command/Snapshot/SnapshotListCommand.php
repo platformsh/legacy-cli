@@ -14,7 +14,7 @@ class SnapshotListCommand extends CommandBase
     {
         $this
           ->setName('snapshot:list')
-          ->setAliases(array('snapshots'))
+          ->setAliases(['snapshots'])
           ->setDescription('List available snapshots of an environment')
           ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
           ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
@@ -43,16 +43,16 @@ class SnapshotListCommand extends CommandBase
             return 1;
         }
 
-        $headers = array("Created", "% Complete", "Snapshot name");
-        $rows = array();
+        $headers = ["Created", "% Complete", "Snapshot name"];
+        $rows = [];
         foreach ($results as $result) {
-            $payload = $result->getProperty('payload');
+            $payload = $result->payload;
             $snapshot_name = !empty($payload['backup_name']) ? $payload['backup_name'] : 'N/A';
-            $rows[] = array(
-              date('Y-m-d H:i:s', strtotime($result->getProperty('created_at'))),
-              $result->getCompletionPercent(),
-              $snapshot_name,
-            );
+            $rows[] = [
+                date('Y-m-d H:i:s', strtotime($result->created_at)),
+                $result->getCompletionPercent(),
+                $snapshot_name,
+            ];
         }
 
         $table = new Table($output);

@@ -16,7 +16,7 @@ class EnvironmentRoutesCommand extends CommandBase
     {
         $this
           ->setName('environment:routes')
-          ->setAliases(array('routes'))
+          ->setAliases(['routes'])
           ->setDescription('List an environment\'s routes')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
@@ -36,17 +36,17 @@ class EnvironmentRoutesCommand extends CommandBase
             return 0;
         }
 
-        $header = array('Route', 'Type', 'To', 'Cache', 'SSI');
+        $header = ['Route', 'Type', 'To', 'Cache', 'SSI'];
 
-        $rows = array();
+        $rows = [];
         foreach ($routes as $route) {
-            $rows[] = array(
+            $rows[] = [
                 $route->id,
                 $route->type,
                 $route->type == 'upstream' ? $route->upstream : $route->to,
                 wordwrap(json_encode($route->cache), 30, "\n", true),
                 wordwrap(json_encode($route->ssi), 30, "\n", true),
-            );
+            ];
         }
 
         $this->stdErr->writeln("Routes for the environment <info>{$environment->id}</info>:");

@@ -26,7 +26,7 @@ class LocalBuild
      * @param object          $fsHelper
      * @param object          $gitHelper
      */
-    public function __construct(array $settings = array(), OutputInterface $output = null, $fsHelper = null, $gitHelper = null)
+    public function __construct(array $settings = [], OutputInterface $output = null, $fsHelper = null, $gitHelper = null)
     {
         $this->settings = $settings;
         $this->output = $output ?: new NullOutput();
@@ -66,10 +66,10 @@ class LocalBuild
      *
      * @return bool
      */
-    public function build($sourceDir, $destination, array $apps = array())
+    public function build($sourceDir, $destination, array $apps = [])
     {
         $success = true;
-        $ids = array();
+        $ids = [];
         foreach (LocalApplication::getApplications($sourceDir) as $app) {
             $id = $app->getId();
             $ids[] = $id;
@@ -114,11 +114,11 @@ class LocalBuild
      */
     public function getTreeId($appRoot)
     {
-        $hashes = array();
+        $hashes = [];
 
         // Get a hash representing all the files in the application, excluding
         // the .platform folder.
-        $tree = $this->gitHelper->execute(array('ls-files', '-s'), $appRoot);
+        $tree = $this->gitHelper->execute(['ls-files', '-s'], $appRoot);
         if ($tree === false) {
             return false;
         }
@@ -127,7 +127,7 @@ class LocalBuild
 
         // Include the hashes of untracked and modified files.
         $others = $this->gitHelper->execute(
-          array('ls-files', '--modified', '--others', '--exclude-standard', '-x .platform', '.'),
+          ['ls-files', '--modified', '--others', '--exclude-standard', '-x .platform', '.'],
           $appRoot
         );
         if ($others === false) {
@@ -146,7 +146,7 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = array('environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency', 'projectRoot');
+        $irrelevant = ['environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency', 'projectRoot'];
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 
@@ -200,10 +200,10 @@ class LocalBuild
 
         $toolstack->setOutput($this->output);
 
-        $buildSettings = $this->settings + array(
+        $buildSettings = $this->settings + [
             'multiApp' => $multiApp,
             'appName' => $appName,
-          );
+          ];
         $toolstack->prepare($buildDir, $documentRoot, $appRoot, $buildSettings);
 
         $archive = false;
@@ -345,7 +345,7 @@ class LocalBuild
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
         // build(s).
-        $blacklist = array();
+        $blacklist = [];
         if (!$includeActive) {
             $blacklist = $this->getActiveBuilds($projectRoot);
         }
@@ -371,9 +371,9 @@ class LocalBuild
     {
         $www = $projectRoot . '/' . LocalProject::WEB_ROOT;
         if (!file_exists($www)) {
-            return array();
+            return [];
         }
-        $links = array($www);
+        $links = [$www];
         if (!is_link($www) && is_dir($www)) {
             $finder = new Finder();
             /** @var \Symfony\Component\Finder\SplFileInfo $file */
@@ -383,7 +383,7 @@ class LocalBuild
                 $links[] = $file->getPathname();
             }
         }
-        $activeBuilds = array();
+        $activeBuilds = [];
         $buildsDir = $projectRoot . '/' . LocalProject::BUILD_DIR;
         foreach ($links as $link) {
             if (is_link($link) && ($target = readlink($link))) {
@@ -428,7 +428,7 @@ class LocalBuild
           $projectRoot . '/' . LocalProject::ARCHIVE_DIR,
           $maxAge,
           $keepMax,
-          array(),
+          [],
           $quiet
         );
     }
@@ -444,14 +444,14 @@ class LocalBuild
      *
      * @return int[]
      */
-    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $blacklist = array(), $quiet = true)
+    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $blacklist = [], $quiet = true)
     {
         if (!is_dir($directory)) {
-            return array(0, 0);
+            return [0, 0];
         }
         $files = glob($directory . '/*');
         if (!$files) {
-            return array(0, 0);
+            return [0, 0];
         }
         // Sort files by modified time (descending).
         usort(
@@ -483,7 +483,7 @@ class LocalBuild
             }
         }
 
-        return array($numDeleted, $numKept);
+        return [$numDeleted, $numKept];
     }
 
 }

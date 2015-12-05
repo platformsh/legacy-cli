@@ -31,7 +31,7 @@ class ProjectInfoCommand extends CommandBase
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
-        $this->setHiddenAliases(array('project:metadata'));
+        $this->setHiddenAliases(['project:metadata']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -71,7 +71,7 @@ class ProjectInfoCommand extends CommandBase
     {
         // Properties not to display, as they are internal, deprecated, or
         // otherwise confusing.
-        $blacklist = array(
+        $blacklist = [
           'name',
           'cluster',
           'cluster_label',
@@ -80,15 +80,15 @@ class ProjectInfoCommand extends CommandBase
           '_endpoint',
           'repository',
           'subscription',
-        );
+        ];
 
         $table = new Table($output);
-        $table->setHeaders(array("Property", "Value"));
+        $table->setHeaders(["Property", "Value"]);
         foreach ($project->getProperties() as $key => $value) {
             if (!in_array($key, $blacklist)) {
                 $value = $this->formatter->format($value, $key);
                 $value = wordwrap($value, 50, "\n", true);
-                $table->addRow(array($key, $value));
+                $table->addRow([$key, $value]);
             }
         }
         $table->render();
@@ -124,7 +124,7 @@ class ProjectInfoCommand extends CommandBase
         }
 
         $project->ensureFull();
-        $result = $project->update(array($property => $value));
+        $result = $project->update([$property => $value]);
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
 
         $this->clearProjectsCache();
@@ -146,7 +146,7 @@ class ProjectInfoCommand extends CommandBase
      */
     protected function getType($property)
     {
-        $writableProperties = array('title' => 'string');
+        $writableProperties = ['title' => 'string'];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }

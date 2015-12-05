@@ -36,7 +36,7 @@ class ArgvHelper extends Helper
         // was just one argument, it indicates that the user passed an entire
         // command inside quotes.
         if (count($args) > 1) {
-            $args = array_map(array($this, 'escapeArg'), $args);
+            $args = array_map([$this, 'escapeArg'], $args);
         }
         $command = implode(' ', $args);
 

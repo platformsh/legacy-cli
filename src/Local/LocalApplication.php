@@ -81,7 +81,7 @@ class LocalApplication
     public function getConfig()
     {
         if (!isset($this->config)) {
-            $this->config = array();
+            $this->config = [];
             if (file_exists($this->appRoot . '/.platform.app.yaml')) {
                 try {
                     $parser = new Parser();
@@ -125,13 +125,13 @@ class LocalApplication
      */
     public function getToolstacks()
     {
-        return array(
-          new Toolstack\Drupal(),
-          new Toolstack\Symfony(),
-          new Toolstack\Composer(),
-          new Toolstack\NodeJs(),
-          new Toolstack\NoToolstack(),
-        );
+        return [
+            new Toolstack\Drupal(),
+            new Toolstack\Symfony(),
+            new Toolstack\Composer(),
+            new Toolstack\NodeJs(),
+            new Toolstack\NoToolstack(),
+        ];
     }
 
     /**

@@ -19,7 +19,7 @@ class LocalBuildCommand extends CommandBase
     {
         $this
           ->setName('local:build')
-          ->setAliases(array('build'))
+          ->setAliases(['build'])
           ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
           ->setDescription('Build the current project locally')
           ->addOption(
@@ -164,7 +164,7 @@ class LocalBuildCommand extends CommandBase
             }
         }
 
-        $settings = array();
+        $settings = [];
 
         $settings['projectRoot'] = $projectRoot;
 
@@ -175,7 +175,7 @@ class LocalBuildCommand extends CommandBase
         $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : $this->defaultDrushConcurrency;
 
         // Some simple settings flags.
-        $settingsMap = array(
+        $settingsMap = [
           'absoluteLinks' => 'abslinks',
           'copy' => 'copy',
           'drushWorkingCopy' => 'working-copy',
@@ -184,7 +184,7 @@ class LocalBuildCommand extends CommandBase
           'noCache' => 'no-cache',
           'noClean' => 'no-clean',
           'noBuildHooks' => 'no-build-hooks',
-        );
+        ];
         foreach ($settingsMap as $setting => $option) {
             $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
         }

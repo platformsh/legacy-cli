@@ -14,7 +14,7 @@ class ProjectListCommand extends CommandBase
     {
         $this
           ->setName('project:list')
-          ->setAliases(array('projects'))
+          ->setAliases(['projects'])
           ->setDescription('Get a list of all active projects')
           ->addOption(
             'pipe',
@@ -43,18 +43,18 @@ class ProjectListCommand extends CommandBase
             return 0;
         }
 
-        $rows = array();
+        $rows = [];
         foreach ($projects as $project) {
-            $rows[] = array(
-              $project->id,
-              $project->title,
-              $project->getLink('#ui'),
-            );
+            $rows[] = [
+                $project->id,
+                $project->title,
+                $project->getLink('#ui'),
+            ];
         }
 
         $this->stdErr->writeln("Your projects are: ");
         $table = new Table($output);
-        $table->setHeaders(array('ID', 'Name', "URL"))
+        $table->setHeaders(['ID', 'Name', "URL"])
               ->addRows($rows);
         $table->render();
 

@@ -13,7 +13,7 @@ class UserListCommand extends CommandBase
     {
         $this
           ->setName('user:list')
-          ->setAliases(array('users'))
+          ->setAliases(['users'])
           ->setDescription('List project users');
         $this->addProjectOption();
     }
@@ -24,7 +24,7 @@ class UserListCommand extends CommandBase
 
         $project = $this->getSelectedProject();
 
-        $rows = array();
+        $rows = [];
         $i = 0;
         foreach ($project->getUsers() as $user) {
             $account = $this->getAccount($user);
@@ -34,13 +34,13 @@ class UserListCommand extends CommandBase
                 $weight = -1;
                 $role .= ' (owner)';
             }
-            $rows[$weight] = array($account['email'], $account['display_name'], $role);
+            $rows[$weight] = [$account['email'], $account['display_name'], $role];
         }
 
         ksort($rows);
 
         $table = new Table($output);
-        $table->setHeaders(array('Email address', 'Name', 'Role'));
+        $table->setHeaders(['Email address', 'Name', 'Role']);
         $table->setRows($rows);
         $table->render();
         return 0;

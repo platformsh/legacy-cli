@@ -46,7 +46,7 @@ class SshKeyAddCommand extends CommandBase
               && $shellHelper->commandExists('ssh-add')
               && $questionHelper->confirm("Generate a new key?", $input, $this->stdErr)) {
                 $newKey = $this->getNewKeyFilename($default);
-                $args = array('ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', '');
+                $args = ['ssh-keygen', '-t', 'rsa', '-f', $newKey, '-N', ''];
                 $shellHelper->execute($args, null, true);
                 $publicKeyPath = $newKey . '.pub';
                 $this->stdErr->writeln("Generated a new key: $publicKeyPath");

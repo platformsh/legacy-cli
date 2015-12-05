@@ -18,7 +18,7 @@ class LocalDrushAliasesCommand extends CommandBase
     {
         $this
           ->setName('local:drush-aliases')
-          ->setAliases(array('drush-aliases'))
+          ->setAliases(['drush-aliases'])
           ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
           ->addOption('group', 'g', InputOption::VALUE_REQUIRED, 'Recreate the aliases with a new group name.')
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')

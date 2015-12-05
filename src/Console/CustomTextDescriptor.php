@@ -20,7 +20,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeCommand(Command $command, array $options = array())
+    protected function describeCommand(Command $command, array $options = [])
     {
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
@@ -72,7 +72,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeApplication(ConsoleApplication $application, array $options = array())
+    protected function describeApplication(ConsoleApplication $application, array $options = [])
     {
         $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
         $description = new ApplicationDescription($application, $describedNamespace);
@@ -177,7 +177,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function writeText($content, array $options = array())
+    protected function writeText($content, array $options = [])
     {
         $this->write(
           isset($options['raw_text']) && $options['raw_text'] ? strip_tags($content) : $content,

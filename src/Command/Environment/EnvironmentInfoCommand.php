@@ -36,7 +36,7 @@ class EnvironmentInfoCommand extends CommandBase
           ->addExample('Enable email sending', 'enable_smtp true')
           ->addExample('Change the environment title', 'title "New feature"')
           ->addExample("Change the environment's parent branch", 'parent sprint-2');
-        $this->setHiddenAliases(array('environment:metadata'));
+        $this->setHiddenAliases(['environment:metadata']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -76,9 +76,9 @@ class EnvironmentInfoCommand extends CommandBase
     protected function listProperties(Environment $environment, OutputInterface $output)
     {
         $table = new Table($output);
-        $table->setHeaders(array("Property", "Value"));
+        $table->setHeaders(["Property", "Value"]);
         foreach ($environment->getProperties() as $key => $value) {
-            $table->addRow(array($key, $this->formatter->format($value, $key)));
+            $table->addRow([$key, $this->formatter->format($value, $key)]);
         }
         $table->render();
 
@@ -111,12 +111,12 @@ class EnvironmentInfoCommand extends CommandBase
 
             return 0;
         }
-        $result = $environment->update(array($property => $value));
+        $result = $environment->update([$property => $value]);
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment->$property, $property));
 
         $this->clearEnvironmentsCache();
 
-        $rebuildProperties = array('enable_smtp', 'restrict_robots');
+        $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
         if ($result->countActivities() && !$noWait) {
             $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
@@ -137,12 +137,12 @@ class EnvironmentInfoCommand extends CommandBase
      */
     protected function getType($property)
     {
-        $writableProperties = array(
+        $writableProperties = [
           'enable_smtp' => 'boolean',
           'parent' => 'string',
           'title' => 'string',
           'restrict_robots' => 'boolean',
-        );
+        ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }
@@ -184,7 +184,7 @@ class EnvironmentInfoCommand extends CommandBase
         }
         switch ($type) {
             case 'boolean':
-                $valid = in_array($value, array('1', '0', 'false', 'true'));
+                $valid = in_array($value, ['1', '0', 'false', 'true']);
                 break;
 
         }

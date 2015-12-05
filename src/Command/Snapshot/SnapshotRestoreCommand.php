@@ -19,7 +19,7 @@ class SnapshotRestoreCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
-        $this->setHiddenAliases(array('environment:restore'));
+        $this->setHiddenAliases(['environment:restore']);
         $this->addExample('Restore the most recent snapshot');
         $this->addExample('Restore a specific snapshot', '92c9a4b2aa75422efb3d');
     }

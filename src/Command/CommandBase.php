@@ -74,7 +74,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      *
      * @var array
      */
-    private $hiddenAliases = array();
+    private $hiddenAliases = [];
 
     /**
      * The project, selected either by an option or the CWD.
@@ -153,8 +153,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
             // Proxy support with the http_proxy or https_proxy environment
             // variables.
-            $proxies = array();
-            foreach (array('https', 'http') as $scheme) {
+            $proxies = [];
+            foreach (['https', 'http'] as $scheme) {
                 $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
             }
             $proxies = array_filter($proxies);
@@ -278,7 +278,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     {
         // Work around a bug in Console which means the default command's input
         // is always considered to be interactive.
-        if ($this->getName() === 'welcome' && isset($GLOBALS['argv']) && array_intersect($GLOBALS['argv'], array('-n', '--no', '-y', '---yes'))) {
+        if ($this->getName() === 'welcome' && isset($GLOBALS['argv']) && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
             $input->setInteractive(false);
             self::$interactive = false;
             return;
@@ -319,7 +319,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $config['updates']['check'] = true;
         $config['updates']['last_checked'] = $timestamp;
         $this->writeGlobalConfig($config);
-        $this->runOtherCommand('self-update', array(), $input);
+        $this->runOtherCommand('self-update', [], $input);
         $output->writeln('');
     }
 
@@ -333,7 +333,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             return Yaml::parse(file_get_contents($configFile));
         }
 
-        return array();
+        return [];
     }
 
     /**
@@ -563,7 +563,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $cacheKey = sprintf('%s:projects', self::$sessionId);
 
         /** @var Project[] $projects */
-        $projects = array();
+        $projects = [];
 
         $cache = CacheUtil::getCache();
 
@@ -572,7 +572,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 $projects[$project->id] = $project;
             }
 
-            $cachedProjects = array();
+            $cachedProjects = [];
             foreach ($projects as $id => $project) {
                 $cachedProjects[$id] = $project->getData();
                 $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
@@ -648,8 +648,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $cached = $cache->contains($cacheKey);
 
         if ($refresh || !$cached) {
-            $environments = array();
-            $toCache = array();
+            $environments = [];
+            $toCache = [];
             foreach ($project->getEnvironments() as $environment) {
                 $environments[$environment->id] = $environment;
                 $toCache[$environment->id] = $environment->getData();
@@ -662,7 +662,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
             $cache->save($cacheKey, $toCache, $this->environmentsTtl);
         } else {
-            $environments = array();
+            $environments = [];
             $connector = $this->getClient(false)
                               ->getConnector();
             $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
@@ -692,7 +692,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         // Statically cache not found environments.
-        static $notFound = array();
+        static $notFound = [];
         $cacheKey = $project->id . ':' . $id;
         if (!$refresh && isset($notFound[$cacheKey])) {
             return false;
@@ -1106,7 +1106,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      *
      * @return int
      */
-    protected function runOtherCommand($name, array $arguments = array(), InputInterface $input = null)
+    protected function runOtherCommand($name, array $arguments = [], InputInterface $input = null)
     {
         /** @var CommandBase $command */
         $command = $this->getApplication()->find($name);
@@ -1117,13 +1117,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         // Pass on interactivity arguments to the other command.
         if ($input) {
-            $arguments += array(
-              '--yes' => $input->getOption('yes'),
-              '--no' => $input->getOption('no'),
-            );
+            $arguments += [
+                '--yes' => $input->getOption('yes'),
+                '--no' => $input->getOption('no'),
+            ];
         }
 
-        $cmdInput = new ArrayInput(array('command' => $name) + $arguments);
+        $cmdInput = new ArrayInput(['command' => $name] + $arguments);
         $cmdInput->setInteractive(self::$interactive);
 
         return $command->run($cmdInput, $this->output);

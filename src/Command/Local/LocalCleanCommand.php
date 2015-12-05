@@ -16,7 +16,7 @@ class LocalCleanCommand extends CommandBase
     {
         $this
           ->setName('local:clean')
-          ->setAliases(array('clean'))
+          ->setAliases(['clean'])
           ->setDescription('Remove old project builds')
           ->addOption(
             'keep',
@@ -46,7 +46,7 @@ class LocalCleanCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $builder = new LocalBuild(array(), $this->stdErr);
+        $builder = new LocalBuild([], $this->stdErr);
         $result = $builder->cleanBuilds(
           $projectRoot,
           $input->getOption('max-age'),

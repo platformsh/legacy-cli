@@ -14,7 +14,7 @@ class EnvironmentMergeCommand extends CommandBase
     {
         $this
           ->setName('environment:merge')
-          ->setAliases(array('merge'))
+          ->setAliases(['merge'])
           ->setDescription('Merge an environment')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
         $this->addProjectOption()

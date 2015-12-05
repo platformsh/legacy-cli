@@ -14,7 +14,7 @@ class EnvironmentSqlCommand extends CommandBase
     {
         $this
             ->setName('environment:sql')
-            ->setAliases(array('sql'))
+            ->setAliases(['sql'])
             ->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();

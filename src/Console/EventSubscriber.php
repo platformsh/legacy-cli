@@ -20,7 +20,7 @@ class EventSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return array('console.exception' => 'onException');
+        return ['console.exception' => 'onException'];
     }
 
     /**

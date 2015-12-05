@@ -10,7 +10,7 @@ use Symfony\Component\Finder\Finder;
 class Drupal extends ToolstackBase
 {
 
-    protected $drushFlags = array();
+    protected $drushFlags = [];
 
     public function getKey()
     {
@@ -125,7 +125,7 @@ class Drupal extends ToolstackBase
         }
         $repositoryDir = $this->settings['projectRoot'] . '/' . LocalProject::REPOSITORY_DIR;
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
-        if (!$this->gitHelper->execute(array('check-ignore', $relative), $repositoryDir)) {
+        if (!$this->gitHelper->execute(['check-ignore', $relative], $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
             $this->output->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
         }
@@ -136,7 +136,7 @@ class Drupal extends ToolstackBase
      */
     protected function setUpDrushFlags()
     {
-        $this->drushFlags = array();
+        $this->drushFlags = [];
         $this->drushFlags[] = '--yes';
         if (!empty($this->settings['verbosity'])) {
             $verbosity = $this->settings['verbosity'];
@@ -176,19 +176,19 @@ class Drupal extends ToolstackBase
      *   The absolute filename of the make file.
      */
     protected function findDrushMakeFile($required = false, $core = false) {
-        $candidates = array(
+        $candidates = [
           'project.make.yml',
           'project.make',
           'drupal-org.make.yml',
           'drupal-org.make',
-        );
+        ];
         if (empty($this->settings['drushUpdateLock'])) {
-            $candidates = array_merge(array(
+            $candidates = array_merge([
               'project.make.lock',
               'project.make.yml.lock',
               'drupal-org.make.yml.lock',
               'drupal-org.make.lock',
-            ), $candidates);
+            ], $candidates);
         }
         foreach ($candidates as &$candidate) {
             if ($core) {
@@ -236,7 +236,7 @@ class Drupal extends ToolstackBase
         $drupalRoot = $this->getWebRoot();
 
         $args = array_merge(
-          array('make', $projectMake, $drupalRoot),
+          ['make', $projectMake, $drupalRoot],
           $this->drushFlags
         );
 
@@ -293,7 +293,7 @@ class Drupal extends ToolstackBase
         $drupalRoot = $this->getWebRoot();
 
         $args = array_merge(
-          array('make', $projectCoreMake, $drupalRoot),
+          ['make', $projectCoreMake, $drupalRoot],
           $this->drushFlags
         );
 
@@ -311,7 +311,7 @@ class Drupal extends ToolstackBase
         $this->output->writeln("Building the profile: <info>$profileName</info>");
 
         $args = array_merge(
-          array('make', '--no-core', '--contrib-destination=.', $projectMake, $profileDir),
+          ['make', '--no-core', '--contrib-destination=.', $projectMake, $profileDir],
           $this->drushFlags
         );
 

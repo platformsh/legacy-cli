@@ -65,7 +65,7 @@ class EnvironmentDeleteCommand extends CommandBase
                 return 0;
             }
         } elseif ($this->hasSelectedEnvironment()) {
-            $toDelete = array($this->getSelectedEnvironment());
+            $toDelete = [$this->getSelectedEnvironment()];
         } elseif ($environmentIds = $input->getArgument('environment')) {
             $toDelete = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
@@ -99,7 +99,7 @@ class EnvironmentDeleteCommand extends CommandBase
         $environments = $this->getEnvironments($this->getSelectedProject(), true);
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
-        $gitHelper->execute(array('fetch', 'origin'));
+        $gitHelper->execute(['fetch', 'origin']);
         $mergedBranches = $gitHelper->getMergedBranches($base);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
         unset($mergedEnvironments[$base], $mergedEnvironments['master']);
@@ -121,8 +121,8 @@ class EnvironmentDeleteCommand extends CommandBase
     protected function deleteMultiple(array $environments, InputInterface $input, OutputInterface $output)
     {
         // Confirm which environments the user wishes to be deleted.
-        $delete = array();
-        $deactivate = array();
+        $delete = [];
+        $deactivate = [];
         $error = false;
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
@@ -167,7 +167,7 @@ class EnvironmentDeleteCommand extends CommandBase
             }
         }
 
-        $deactivateActivities = array();
+        $deactivateActivities = [];
         $deactivated = 0;
         /** @var Environment $environment */
         foreach ($deactivate as $environmentId => $environment) {

@@ -14,7 +14,7 @@ class SelfUpdateCommand extends CommandBase
     {
         $this
           ->setName('self-update')
-          ->setAliases(array('up'))
+          ->setAliases(['up'])
           ->setDescription('Update the CLI to the latest version')
           ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
           ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')

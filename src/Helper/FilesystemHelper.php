@@ -129,7 +129,7 @@ class FilesystemHelper extends Helper
         }
 
         if (is_dir($source)) {
-            $skip = array('.', '..', '.git');
+            $skip = ['.', '..', '.git'];
 
             // Prevent infinite recursion when the destination is inside the
             // source.
@@ -195,7 +195,7 @@ class FilesystemHelper extends Helper
      *
      * @throws \Exception When a conflict is discovered.
      */
-    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = array(), $copy = false)
+    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = [], $copy = false)
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -203,7 +203,7 @@ class FilesystemHelper extends Helper
 
         // The symlink won't work if $source is a relative path.
         $source = realpath($source);
-        $skip = array('.', '..', '.git');
+        $skip = ['.', '..', '.git'];
 
         // Go through the blacklist, adding files to $skip.
         foreach ($blacklist as $pattern) {
@@ -224,7 +224,7 @@ class FilesystemHelper extends Helper
 
                 if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
                     // Note: the blacklist is not used recursively.
-                    $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, array(), $copy);
+                    $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, [], $copy);
                     continue;
                 }
                 elseif (file_exists($linkFile)) {
@@ -318,7 +318,7 @@ class FilesystemHelper extends Helper
         $tar = $this->getTarExecutable();
         $dir = $this->fixTarPath($dir);
         $destination = $this->fixTarPath($destination);
-        $this->shellHelper->execute(array($tar, '-czp', '-C' . $dir, '-f' . $destination, '.'), null, true);
+        $this->shellHelper->execute([$tar, '-czp', '-C' . $dir, '-f' . $destination, '.'], null, true);
     }
 
     /**
@@ -341,7 +341,7 @@ class FilesystemHelper extends Helper
         }
         $destination = $this->fixTarPath($destination);
         $archive = $this->fixTarPath($archive);
-        $this->shellHelper->execute(array($tar, '-xzp', '-C' . $destination, '-f' . $archive), null, true);
+        $this->shellHelper->execute([$tar, '-xzp', '-C' . $destination, '-f' . $archive], null, true);
     }
 
     /**
@@ -373,7 +373,7 @@ class FilesystemHelper extends Helper
      */
     protected function getTarExecutable()
     {
-        $candidates = array('tar', 'tar.exe', 'bsdtar.exe');
+        $candidates = ['tar', 'tar.exe', 'bsdtar.exe'];
         foreach ($candidates as $command) {
             if ($this->shellHelper->commandExists($command)) {
                 return $command;

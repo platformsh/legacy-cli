@@ -15,7 +15,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
     {
         $this
             ->setName('environment:sql-dump')
-            ->setAliases(array('sql-dump'))
+            ->setAliases(['sql-dump'])
             ->setDescription('Create a local dump of the remote database')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "environment-dump.sql" in the project root')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');

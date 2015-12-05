@@ -22,12 +22,12 @@ class ShellHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($shellHelper->commandExists('nonexistent'));
 
         // With $mustRun disabled.
-        $this->assertNotEmpty($shellHelper->execute(array($workingCommand)));
-        $this->assertFalse($shellHelper->execute(array('which', 'nonexistent')));
+        $this->assertNotEmpty($shellHelper->execute([$workingCommand]));
+        $this->assertFalse($shellHelper->execute(['which', 'nonexistent']));
 
         // With $mustRun enabled.
-        $this->assertNotEmpty($shellHelper->execute(array($workingCommand), null, true));
+        $this->assertNotEmpty($shellHelper->execute([$workingCommand], null, true));
         $this->setExpectedException('Exception');
-        $shellHelper->execute(array('which', 'nonexistent'), null, true);
+        $shellHelper->execute(['which', 'nonexistent'], null, true);
     }
 }

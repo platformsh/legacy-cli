@@ -19,7 +19,7 @@ class EnvironmentBranchCommand extends CommandBase
     {
         $this
           ->setName('environment:branch')
-          ->setAliases(array('branch'))
+          ->setAliases(['branch'])
           ->setDescription('Branch an environment')
           ->addArgument(
             'name',
@@ -58,7 +58,7 @@ class EnvironmentBranchCommand extends CommandBase
                 // List environments.
                 return $this->runOtherCommand(
                   'environments',
-                  array('--project' => $selectedProject->id)
+                  ['--project' => $selectedProject->id]
                 );
             }
             $this->stdErr->writeln("<error>You must specify the name of the new branch.</error>");
@@ -84,7 +84,7 @@ class EnvironmentBranchCommand extends CommandBase
             if ($checkout) {
                 return $this->runOtherCommand(
                   'environment:checkout',
-                  array('id' => $environment->id)
+                  ['id' => $environment->id]
                 );
             }
 

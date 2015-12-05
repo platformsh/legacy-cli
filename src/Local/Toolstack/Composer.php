@@ -32,15 +32,15 @@ class Composer extends ToolstackBase
         if (file_exists($buildDir . '/composer.json')) {
             $this->output->writeln("Found a composer.json file; installing dependencies");
 
-            $args = array(
-              $this->shellHelper->resolveCommand('composer'),
-              'install',
-              '--no-progress',
-              '--prefer-dist',
-              '--optimize-autoloader',
-              '--no-interaction',
-              '--no-ansi',
-            );
+            $args = [
+                $this->shellHelper->resolveCommand('composer'),
+                'install',
+                '--no-progress',
+                '--prefer-dist',
+                '--optimize-autoloader',
+                '--no-interaction',
+                '--no-ansi',
+            ];
             $this->shellHelper->execute($args, $buildDir, true, false);
         }
 

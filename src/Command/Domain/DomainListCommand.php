@@ -17,7 +17,7 @@ class DomainListCommand extends CommandBase
     {
         $this
           ->setName('domain:list')
-          ->setAliases(array('domains'))
+          ->setAliases(['domains'])
           ->setDescription('Get a list of all domains');
         $this->addProjectOption();
     }
@@ -34,7 +34,7 @@ class DomainListCommand extends CommandBase
     {
         $table = new Table($output);
         $table
-          ->setHeaders(array('Name', 'SSL enabled', 'Creation date'))
+          ->setHeaders(['Name', 'SSL enabled', 'Creation date'])
           ->addRows($this->buildDomainRows($tree));
 
         return $table;
@@ -49,16 +49,16 @@ class DomainListCommand extends CommandBase
      */
     protected function buildDomainRows(array $tree)
     {
-        $rows = array();
+        $rows = [];
 
         $formatter = new PropertyFormatter();
 
         foreach ($tree as $domain) {
-            $rows[] = array(
-              $domain->id,
-              $formatter->format((bool) $domain['ssl']['has_certificate']),
-              $formatter->format($domain['created_at'], 'created_at'),
-            );
+            $rows[] = [
+                $domain->id,
+                $formatter->format((bool) $domain['ssl']['has_certificate']),
+                $formatter->format($domain['created_at'], 'created_at'),
+            ];
         }
 
         return $rows;

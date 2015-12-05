@@ -26,11 +26,11 @@ class ListCommand extends ParentListCommand
         $helper->describe(
           $output,
           $this->getApplication(),
-          array(
+          [
             'format' => $input->getOption('format'),
             'raw_text' => $input->getOption('raw'),
             'namespace' => $input->getArgument('namespace'),
-          )
+          ]
         );
     }
 

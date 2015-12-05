@@ -34,17 +34,17 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
         $this->drushHelper = new DrushHelper();
 
         // Set up a dummy project with a remote environment.
-        $this->project = new Project(array(
+        $this->project = new Project([
           'id' => 'test',
           'title' => 'Test project title',
-        ));
-        $this->environments[] = new Environment(array(
-          'id' => 'master',
-          '_links' => array(
-            'public-url' => array('href' => 'http://example.com'),
-            'ssh' => array('href' => 'ssh://user@example.com'),
-          ),
-        ));
+        ]);
+        $this->environments[] = new Environment([
+            'id' => 'master',
+            '_links' => [
+                'public-url' => ['href' => 'http://example.com'],
+                'ssh' => ['href' => 'ssh://user@example.com'],
+            ],
+        ]);
     }
 
     public function testCreateAliases()
@@ -65,7 +65,7 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.
-        $aliases = array();
+        $aliases = [];
         include_once "$homeDir/.drush/test.aliases.drushrc.php";
         $this->assertArrayHasKey('master', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
@@ -91,7 +91,7 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.
-        $aliases = array();
+        $aliases = [];
         include_once "$homeDir/.drush/test.aliases.drushrc.php";
 
         // The aliases are the same as for single apps, because there's only one
@@ -120,7 +120,7 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.
-        $aliases = array();
+        $aliases = [];
         include_once "$homeDir/.drush/test.aliases.drushrc.php";
 
         $this->assertArrayHasKey('master--drupal1', $aliases);

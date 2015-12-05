@@ -18,7 +18,7 @@ class VariableGetCommand extends CommandBase
     {
         $this
           ->setName('variable:get')
-          ->setAliases(array('variables', 'vget'))
+          ->setAliases(['variables', 'vget'])
           ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
           ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only')
           ->addOption('ssh', null, InputOption::VALUE_NONE, 'Use SSH to get the currently active variables')
@@ -26,7 +26,7 @@ class VariableGetCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('View the variable "example"', 'example');
-        $this->setHiddenAliases(array('variable:list'));
+        $this->setHiddenAliases(['variable:list']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -36,15 +36,11 @@ class VariableGetCommand extends CommandBase
         // @todo This --ssh option is only here as a temporary workaround.
         if ($input->getOption('ssh')) {
             $shellHelper = $this->getHelper('shell');
-            $platformVariables = $shellHelper->execute(
-              array(
+            $platformVariables = $shellHelper->execute([
                 'ssh',
-                $this->getSelectedEnvironment()
-                     ->getSshUrl(),
+                $this->getSelectedEnvironment()->getSshUrl(),
                 'echo $PLATFORM_VARIABLES',
-              ),
-              true
-            );
+            ], true);
             $results = json_decode(base64_decode($platformVariables), true);
             foreach ($results as $id => $value) {
                 if (!is_scalar($value)) {
@@ -66,7 +62,7 @@ class VariableGetCommand extends CommandBase
 
                 return 1;
             }
-            $results = array($variable);
+            $results = [$variable];
         } else {
             $results = $this->getSelectedEnvironment()
                             ->getVariables();
@@ -98,7 +94,7 @@ class VariableGetCommand extends CommandBase
     protected function buildVariablesTable(array $variables, OutputInterface $output)
     {
         $table = new Table($output);
-        $table->setHeaders(array("ID", "Value", "Inherited", "JSON"));
+        $table->setHeaders(["ID", "Value", "Inherited", "JSON"]);
         foreach ($variables as $variable) {
             $value = $variable->value;
             // Truncate long values.
@@ -108,12 +104,12 @@ class VariableGetCommand extends CommandBase
             // Wrap long values.
             $value = wordwrap($value, 30, "\n", true);
             $table->addRow(
-              array(
+              [
                 $variable->id,
                 $value,
                 $variable->inherited ? 'Yes' : 'No',
                 $variable->is_json ? 'Yes' : 'No',
-              )
+              ]
             );
         }
 

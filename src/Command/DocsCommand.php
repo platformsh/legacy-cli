@@ -45,7 +45,7 @@ class DocsCommand extends UrlCommandBase
      */
     protected function getSearchQuery(array $args)
     {
-        $quoted = array_map(array($this, 'quoteTerm'), $args);
+        $quoted = array_map([$this, 'quoteTerm'], $args);
 
         return implode(' ', $quoted);
     }

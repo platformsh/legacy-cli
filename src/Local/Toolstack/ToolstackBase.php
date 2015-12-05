@@ -17,7 +17,7 @@ abstract class ToolstackBase implements ToolstackInterface
      *
      * @var string[]
      */
-    protected $ignoredFiles = array();
+    protected $ignoredFiles = [];
 
     /**
      * Special destinations for installation.
@@ -28,9 +28,9 @@ abstract class ToolstackBase implements ToolstackInterface
      *     "{webroot}" - see getWebRoot() (usually /app/public on Platform.sh)
      *     "{approot}" - the $buildDir (usually /app on Platform.sh)
      */
-    protected $specialDestinations = array();
+    protected $specialDestinations = [];
 
-    protected $settings = array();
+    protected $settings = [];
     protected $appRoot;
     protected $documentRoot;
     protected $buildDir;
@@ -61,13 +61,13 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->fsHelper = $fsHelper ?: new FilesystemHelper($shellHelper);
         $this->gitHelper = $gitHelper ?: new GitHelper();
 
-        $this->specialDestinations = array(
+        $this->specialDestinations = [
           "favicon.ico" => "{webroot}",
           "robots.txt" => "{webroot}",
-        );
+        ];
 
         // Platform.sh has '.platform.app.yaml', but we need to be stricter.
-        $this->ignoredFiles = array('.*');
+        $this->ignoredFiles = ['.*'];
     }
 
     /**
@@ -110,7 +110,11 @@ abstract class ToolstackBase implements ToolstackInterface
             }
 
             // On Platform these replacements would be a bit different.
-            $absDestination = str_replace(array('{webroot}', '{approot}'), array($this->getWebRoot(), $this->buildDir), $relDestination);
+            $absDestination = str_replace(
+                ['{webroot}', '{approot}'],
+                [$this->getWebRoot(), $this->buildDir],
+                $relDestination
+            );
 
             foreach ($matched as $source) {
                 // Ignore the source if it's in ignoredFiles.

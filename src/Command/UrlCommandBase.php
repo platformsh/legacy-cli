@@ -56,7 +56,7 @@ abstract class UrlCommandBase extends CommandBase
         }
 
         if ($browser) {
-            $opened = $shellHelper->execute(array($browser, $url));
+            $opened = $shellHelper->execute([$browser, $url]);
             if ($opened) {
                 $this->stdErr->writeln("Opened: $url");
 
@@ -74,7 +74,7 @@ abstract class UrlCommandBase extends CommandBase
      */
     protected function getDefaultBrowser()
     {
-        $potential = array('xdg-open', 'open', 'start');
+        $potential = ['xdg-open', 'open', 'start'];
         $shellHelper = $this->getHelper('shell');
         foreach ($potential as $browser) {
             if ($shellHelper->commandExists($browser)) {

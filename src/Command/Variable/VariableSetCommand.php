@@ -17,7 +17,7 @@ class VariableSetCommand extends CommandBase
     {
         $this
           ->setName('variable:set')
-          ->setAliases(array('vset'))
+          ->setAliases(['vset'])
           ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
           ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
           ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')

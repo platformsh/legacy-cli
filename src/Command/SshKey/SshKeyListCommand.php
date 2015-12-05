@@ -13,7 +13,7 @@ class SshKeyListCommand extends CommandBase
     {
         $this
           ->setName('ssh-key:list')
-          ->setAliases(array('ssh-keys'))
+          ->setAliases(['ssh-keys'])
           ->setDescription('Get a list of SSH keys in your account');;
     }
 
@@ -27,10 +27,10 @@ class SshKeyListCommand extends CommandBase
         } else {
             $this->stdErr->writeln("Your SSH keys are:");
             $table = new Table($output);
-            $headers = array('ID', 'Title', 'Fingerprint');
-            $rows = array();
+            $headers = ['ID', 'Title', 'Fingerprint'];
+            $rows = [];
             foreach ($keys as $key) {
-                $rows[] = array($key['key_id'], $key['title'], $key['fingerprint']);
+                $rows[] = [$key['key_id'], $key['title'], $key['fingerprint']];
             }
             $table->setHeaders($headers);
             $table->addRows($rows);

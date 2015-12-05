@@ -15,11 +15,11 @@ class EnvironmentListCommand extends CommandBase
     protected $showUrls = false;
     protected $showStatus = false;
 
-    protected $children = array();
+    protected $children = [];
 
     /** @var Environment */
     protected $currentEnvironment;
-    protected $mapping = array();
+    protected $mapping = [];
 
     /**
      * {@inheritdoc}
@@ -28,7 +28,7 @@ class EnvironmentListCommand extends CommandBase
     {
         $this
           ->setName('environment:list')
-          ->setAliases(array('environments'))
+          ->setAliases(['environments'])
           ->setDescription('Get a list of environments')
           ->addOption(
             'no-inactive',
@@ -69,7 +69,7 @@ class EnvironmentListCommand extends CommandBase
      */
     protected function buildEnvironmentTree(array $environments, $parent = null)
     {
-        $children = array();
+        $children = [];
         foreach ($environments as $environment) {
             if ($environment->parent === $parent) {
                 $this->children[$environment->id] = $this->buildEnvironmentTree(
@@ -93,7 +93,7 @@ class EnvironmentListCommand extends CommandBase
      */
     protected function buildEnvironmentTable($tree, OutputInterface $output)
     {
-        $headers = array('ID');
+        $headers = ['ID'];
         if ($this->showNames) {
             $headers[] = 'Name';
         }
@@ -121,9 +121,9 @@ class EnvironmentListCommand extends CommandBase
      */
     protected function buildEnvironmentRows($tree, $indent = 0)
     {
-        $rows = array();
+        $rows = [];
         foreach ($tree as $environment) {
-            $row = array();
+            $row = [];
 
             $id = str_repeat('   ', $indent) . $environment->id;
             if ($environment->id == $this->currentEnvironment->id) {
@@ -212,7 +212,7 @@ class EnvironmentListCommand extends CommandBase
         // to the top level.
         if (isset($tree['master'])) {
             $tree += $this->children['master'];
-            $this->children['master'] = array();
+            $this->children['master'] = [];
         }
 
         $this->stdErr->writeln("Your environments are: ");

@@ -13,7 +13,7 @@ class EnvironmentUrlCommand extends UrlCommandBase
         parent::configure();
         $this
           ->setName('environment:url')
-          ->setAliases(array('url'))
+          ->setAliases(['url'])
           ->setDescription('Get the public URLs of an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();

@@ -51,11 +51,11 @@ class PropertyFormatter
     protected function formatHttpAccess($httpAccess)
     {
         $info = (array) $httpAccess;
-        $info += array(
-          'addresses' => array(),
-          'basic_auth' => array(),
-          'is_enabled' => true,
-        );
+        $info += [
+            'addresses' => [],
+            'basic_auth' => [],
+            'is_enabled' => true,
+        ];
         // Hide passwords.
         $info['basic_auth'] = array_map(function () {
             return '******';

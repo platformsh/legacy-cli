@@ -15,7 +15,7 @@ class LocalInitCommand extends CommandBase
     {
         $this
           ->setName('local:init')
-          ->setAliases(array('init'))
+          ->setAliases(['init'])
           ->addArgument('directory', InputArgument::OPTIONAL, 'The path to the repository.')
           ->setDescription('Create a local project file structure from a Git repository');
         $this->addProjectOption();

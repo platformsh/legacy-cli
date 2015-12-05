@@ -19,7 +19,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
     {
         $this
           ->setName('environment:relationships')
-          ->setAliases(array('relationships'))
+          ->setAliases(['relationships'])
           ->setDescription('Show an environment\'s relationships')
           ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
           ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view')

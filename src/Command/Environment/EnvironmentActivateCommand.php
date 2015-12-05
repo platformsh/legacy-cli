@@ -28,7 +28,7 @@ class EnvironmentActivateCommand extends CommandBase
         $this->validateInput($input);
 
         if ($this->hasSelectedEnvironment()) {
-            $toActivate = array($this->getSelectedEnvironment());
+            $toActivate = [$this->getSelectedEnvironment()];
         } else {
             $environments = $this->getEnvironments();
             $environmentIds = $input->getArgument('environment');
@@ -56,7 +56,7 @@ class EnvironmentActivateCommand extends CommandBase
         $count = count($environments);
         $processed = 0;
         // Confirm which environments the user wishes to be activated.
-        $process = array();
+        $process = [];
         $questionHelper = $this->getHelper('question');
         foreach ($environments as $environment) {
             $environmentId = $environment->id;
@@ -77,7 +77,7 @@ class EnvironmentActivateCommand extends CommandBase
             }
             $process[$environmentId] = $environment;
         }
-        $activities = array();
+        $activities = [];
         /** @var Environment $environment */
         foreach ($process as $environmentId => $environment) {
             try {

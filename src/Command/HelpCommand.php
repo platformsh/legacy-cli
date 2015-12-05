@@ -45,12 +45,12 @@ class HelpCommand extends ParentHelpCommand
         $helper->register('txt', new CustomTextDescriptor());
         $helper->register('md', new CustomMarkdownDescriptor());
         $helper->describe(
-          $output,
-          $this->command,
-          array(
-            'format' => $input->getOption('format'),
-            'raw_text' => $input->getOption('raw'),
-          )
+            $output,
+            $this->command,
+            [
+                'format' => $input->getOption('format'),
+                'raw_text' => $input->getOption('raw'),
+            ]
         );
     }
 

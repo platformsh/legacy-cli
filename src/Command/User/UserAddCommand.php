@@ -38,7 +38,7 @@ class UserAddCommand extends CommandBase
         }
         elseif (!$email) {
             $question = new Question('Email address: ');
-            $question->setValidator(array($this, 'validateEmail'));
+            $question->setValidator([$this, 'validateEmail']);
             $question->setMaxAttempts(5);
             $email = $questionHelper->ask($input, $this->stdErr, $question);
         }
@@ -65,7 +65,7 @@ class UserAddCommand extends CommandBase
             }
             $this->stdErr->writeln("The user's project role can be 'viewer' ('v') or 'admin' ('a').");
             $question = new Question('Project role <question>[V/a]</question>: ', 'viewer');
-            $question->setValidator(array($this, 'validateRole'));
+            $question->setValidator([$this, 'validateRole']);
             $question->setMaxAttempts(5);
             $projectRole = $this->standardizeRole($questionHelper->ask($input, $this->stdErr, $question));
         }
@@ -79,7 +79,7 @@ class UserAddCommand extends CommandBase
             }
             foreach ($environments as $environment) {
                 $question = new Question('<info>' . $environment->id . '</info> environment role <question>[v/c/a/N]</question>: ', 'none');
-                $question->setValidator(array($this, 'validateRole'));
+                $question->setValidator([$this, 'validateRole']);
                 $question->setMaxAttempts(5);
                 $environmentRoles[$environment->id] = $this->standardizeRole($questionHelper->ask($input, $this->stdErr, $question));
             }
@@ -161,7 +161,7 @@ class UserAddCommand extends CommandBase
      */
     public function validateRole($value)
     {
-        if (empty($value) || !in_array($value, array('admin', 'contributor', 'viewer', 'none', 'a', 'c', 'v', 'n'))) {
+        if (empty($value) || !in_array($value, ['admin', 'contributor', 'viewer', 'none', 'a', 'c', 'v', 'n'])) {
             throw new \RuntimeException("Invalid role: $value");
         }
 
@@ -190,7 +190,7 @@ class UserAddCommand extends CommandBase
      */
     protected function standardizeRole($givenRole)
     {
-        $possibleRoles = array('viewer', 'admin', 'contributor', 'none');
+        $possibleRoles = ['viewer', 'admin', 'contributor', 'none'];
         if (in_array($givenRole, $possibleRoles)) {
             return $givenRole;
         }

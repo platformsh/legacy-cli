@@ -16,11 +16,11 @@ class IntegrationGetCommand extends IntegrationCommandBase
     {
         $this
           ->setName('integration:get')
-          ->setAliases(array('integrations'))
+          ->setAliases(['integrations'])
           ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
           ->setDescription('View project integration(s)');
         $this->addProjectOption();
-        $this->setHiddenAliases(array('integration:list'));
+        $this->setHiddenAliases(['integration:list']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -37,7 +37,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
 
                 return 1;
             }
-            $results = array($integration);
+            $results = [$integration];
         } else {
             $results = $this->getSelectedProject()
                             ->getIntegrations();
@@ -63,15 +63,15 @@ class IntegrationGetCommand extends IntegrationCommandBase
     protected function buildTable(array $integrations, OutputInterface $output)
     {
         $table = new Table($output);
-        $table->setHeaders(array("ID", "Type", "Details"));
+        $table->setHeaders(["ID", "Type", "Details"]);
         foreach ($integrations as $integration) {
             $data = $this->formatIntegrationData($integration);
             $table->addRow(
-              array(
+              [
                 $integration->id,
                 $integration->type,
                 $data,
-              )
+              ]
             );
         }
 
