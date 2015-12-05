@@ -108,9 +108,7 @@ class EnvironmentDrushCommand extends CommandBase
             // specified as '/'.
             $drupalRoot = '${PLATFORM_DOCUMENT_ROOT:-/app/public}';
 
-            if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-                $this->stdErr->writeln('<comment>Warning:</comment> using $PLATFORM_DOCUMENT_ROOT for the Drupal root. This fails in cases where the document_root is /.');
-            }
+            $this->debug('<comment>Warning:</comment> using $PLATFORM_DOCUMENT_ROOT for the Drupal root. This fails in cases where the document_root is /.');
         }
 
         $dimensions = $this->getApplication()

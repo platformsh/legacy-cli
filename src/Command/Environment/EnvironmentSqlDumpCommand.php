@@ -92,9 +92,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
             $command .= ' > ' . escapeshellarg($dumpFile);
         }
 
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->stdErr->writeln("Running command: <info>$command</info>");
-        }
+        $this->debug("Running command: <info>$command</info>");
 
         passthru($command, $return_var);
         return $return_var;

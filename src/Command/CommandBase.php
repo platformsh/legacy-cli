@@ -69,6 +69,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     private static $projectConfig = [];
 
+    /**
+     * A cache of environment objects.
+     *
+     * @var Environment[]
+     */
+    private static $environments = [];
+
     /** @var OutputInterface|null */
     protected $output;
 
@@ -97,6 +104,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      * @var Project|false
      */
     private $project;
+
+    /**
+     * The current project, based on the CWD.
+     *
+     * @var Project|null
+     */
+    private $currentProject;
 
     /**
      * The environment, selected by an option, an argument, or the CWD.
@@ -177,9 +191,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 $session->setStorage(new File($this->getSessionsDir()));
             }
 
+            $this->debug('Initializing API client');
             self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
+                $this->debug('The user is not logged in yet');
                 $this->login();
             }
         }
@@ -195,6 +211,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $this->output = $output;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         self::$interactive = $input->isInteractive();
+
+        if (getenv('PLATFORMSH_CLI_DEBUG')) {
+            $this->stdErr->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+        }
 
         // Tune error reporting based on the output verbosity.
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
@@ -330,6 +350,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     {
         $configFile = $this->getConfigDir() . '/config.yaml';
         if (file_exists($configFile)) {
+            $this->debug('Loading config from file: ' . $configFile);
             return Yaml::parse(file_get_contents($configFile));
         }
 
@@ -435,6 +456,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     public function getCurrentProject()
     {
+        if (isset($this->currentProject)) {
+            return $this->currentProject;
+        }
         if (!$projectRoot = $this->getProjectRoot()) {
             return false;
         }
@@ -459,7 +483,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 }
                 throw new ProjectNotFoundException($message);
             }
+            $this->debug('Selecting project ' . $config['id'] . ' based on project root');
         }
+        $this->currentProject = $project;
 
         return $project;
     }
@@ -474,6 +500,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected function getProjectConfig($projectRoot)
     {
         if (!isset(self::$projectConfig[$projectRoot])) {
+            $this->debug('Loading project config for ' . $projectRoot);
             self::$projectConfig[$projectRoot] = LocalProject::getProjectConfig($projectRoot) ?: [];
         }
 
@@ -518,6 +545,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             if (!empty($config['mapping'][$currentBranch])) {
                 $environment = $this->getEnvironment($config['mapping'][$currentBranch], $project);
                 if ($environment) {
+                    $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
                     return $environment;
                 }
                 else {
@@ -534,6 +562,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->getEnvironment($potentialEnvironment, $project);
             if ($environment) {
+                $this->debug('Selected environment ' . $potentialEnvironment . ', based on Git upstream: ' . $upstream);
                 return $environment;
             }
         }
@@ -544,6 +573,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             $currentBranchSanitized = Environment::sanitizeId($currentBranch);
             $environment = $this->getEnvironment($currentBranchSanitized, $project);
             if ($environment) {
+                $this->debug('Selected environment ' . $currentBranchSanitized . ', based on branch name:' . $currentBranch);
                 return $environment;
             }
         }
@@ -568,6 +598,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $cache = CacheUtil::getCache();
 
         if ($refresh || !$cache->contains($cacheKey)) {
+            $this->debug('Fetching projects list');
             foreach ($this->getClient()->getProjects() as $project) {
                 $projects[$project->id] = $project;
             }
@@ -581,11 +612,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
             $cache->save($cacheKey, $cachedProjects, $this->projectsTtl);
         } else {
-            $connector = $this->getClient(false)
-                              ->getConnector();
-            $client = $connector->getClient();
+            $this->debug('Loading projects list from cache');
+            $guzzleClient = $this->getClient(false)
+                ->getConnector()
+                ->getClient();
             foreach ((array) $cache->fetch($cacheKey) as $id => $data) {
-                $projects[$id] = new Project($data, $data['_endpoint'], $client);
+                $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
             }
         }
 
@@ -623,6 +655,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 $scheme = parse_url($host, PHP_URL_SCHEME);
                 $host = substr($host, $pos + 2);
             }
+            $this->debug('Fetching project information from host: ' . $host);
+
             return $this->getClient()->getProjectDirect($id, $host, $scheme != 'http');
         }
 
@@ -643,34 +677,42 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $project = $project ?: $this->getSelectedProject();
         $projectId = $project->getProperty('id');
 
+        if (!$refresh && isset(self::$environments[$projectId])) {
+            return self::$environments[$projectId];
+        }
+
         $cacheKey = 'environments:' . $projectId;
         $cache = CacheUtil::getCache();
-        $cached = $cache->contains($cacheKey);
+        $cached = $cache->fetch($cacheKey);
 
         if ($refresh || !$cached) {
             $environments = [];
             $toCache = [];
+            $this->debug('Fetching environments list for project: ' . $projectId);
             foreach ($project->getEnvironments() as $environment) {
                 $environments[$environment->id] = $environment;
                 $toCache[$environment->id] = $environment->getData();
             }
 
             // Recreate the aliases if the list of environments has changed.
-            if ($updateAliases && (!$cached || array_diff_key($environments, $cache->fetch($cacheKey)))) {
+            if ($updateAliases && (!$cached || array_diff_key($environments, $cached))) {
                 $this->updateDrushAliases($project, $environments);
             }
 
             $cache->save($cacheKey, $toCache, $this->environmentsTtl);
         } else {
+            $this->debug('Loading environments list from cache for project: ' . $projectId);
             $environments = [];
             $connector = $this->getClient(false)
                               ->getConnector();
             $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
             $client = $connector->getClient();
-            foreach ((array) $cache->fetch($cacheKey) as $id => $data) {
+            foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $client);
             }
         }
+
+        self::$environments[$projectId] = $environments;
 
         return $environments;
     }
@@ -722,6 +764,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $cacheKey = 'account:' . $user->id;
         $cache = CacheUtil::getCache();
         if ($reset || !($details = $cache->fetch($cacheKey))) {
+            $this->debug('Loading account details for user ' . $user->id);
             $details = $user->getAccount()->getProperties();
             $cache->save($cacheKey, $details, $this->usersTtl);
         }
@@ -769,6 +812,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             return;
         }
+        $this->debug('Updating Drush aliases');
         /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
         $drushHelper = $this->getHelper('drush');
         $drushHelper->setHomeDir($this->getHomeDir());
@@ -791,7 +835,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     public function getProjectRoot()
     {
-        return self::$projectRoot ?: LocalProject::getProjectRoot();
+        if (empty(self::$projectRoot)) {
+            self::$projectRoot = LocalProject::getProjectRoot();
+        }
+
+        return self::$projectRoot;
     }
 
     /**
@@ -965,6 +1013,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if (!$projectRoot || !$this->selectedProjectIsCurrent() || !is_dir($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             return null;
         }
+
+        $this->debug('Searching for applications in local repository');
         /** @var LocalApplication[] $apps */
         $apps = LocalApplication::getApplications($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
 
@@ -984,9 +1034,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         elseif (count($apps) === 1) {
             $app = reset($apps);
             $appName = $app->getName();
-            if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-                $this->stdErr->writeln("Selected app: " . $appName);
-            }
+            $this->debug("Selected app: " . $appName);
         }
 
         return $appName;
@@ -1020,6 +1068,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 $argument = $argument[0];
             }
             if (!is_array($argument)) {
+                $this->debug('Selecting environment based on input argument');
                 $this->environment = $this->selectEnvironment($argument);
             }
         } elseif ($input->hasOption($envOptionName)) {
@@ -1031,10 +1080,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             }
         }
 
-        if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $this->stdErr->writeln("Selected project: " . $this->project->id);
-            $environmentId = $this->environment ? $this->environment->id : '[none]';
-            $this->stdErr->writeln("Selected environment: $environmentId");
+        $this->debug('Validated input');
+        $this->debug('Selected project: ' . $this->project->id);
+        if ($this->environment) {
+            $this->debug('Selected environment: ' . $this->environment->id);
         }
     }
 
@@ -1122,6 +1171,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $cmdInput = new ArrayInput(['command' => $name] + $arguments);
         $cmdInput->setInteractive(self::$interactive);
 
+        $this->debug('Running command: ' . $name);
+
         return $command->run($cmdInput, $this->output);
     }
 
@@ -1170,5 +1221,17 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $replacements = [$name, $_SERVER['PHP_SELF'] . ' ' . $name];
 
         return str_replace($placeholders, $replacements, $help);
+    }
+
+    /**
+     * Print a message if debug output is enabled.
+     *
+     * @param string $message
+     */
+    protected function debug($message)
+    {
+        if (isset($this->stdErr) && $this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
+        }
     }
 }

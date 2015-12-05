@@ -73,9 +73,7 @@ class EnvironmentSqlCommand extends CommandBase
         $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sqlCommand);
 
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->stdErr->writeln("Running command: <info>$command</info>");
-        }
+        $this->debug("Running command: <info>$command</info>");
 
         passthru($command, $return_var);
         return $return_var;
