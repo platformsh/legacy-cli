@@ -41,13 +41,11 @@ abstract class ActivityUtil
 
         // Wait for the activity to complete.
         $activity->wait(
-        // React whenever the activity is polled to advance the progress bar.
-        // So, even if there is no new log output, the user will see that the
-        // process has not frozen.
+            // Advance the progress bar whenever the activity is polled.
             function () use ($bar) {
                 $bar->advance();
             },
-            // React whenever there is new log output.
+            // Display new log output when it is available.
             function ($log) use ($output, $bar) {
                 // Clear the progress bar and ensure the current line is flushed.
                 $bar->clear();
