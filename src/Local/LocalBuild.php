@@ -127,8 +127,8 @@ class LocalBuild
 
         // Include the hashes of untracked and modified files.
         $others = $this->gitHelper->execute(
-          ['ls-files', '--modified', '--others', '--exclude-standard', '-x .platform', '.'],
-          $appRoot
+            ['ls-files', '--modified', '--others', '--exclude-standard', '-x .platform', '.'],
+            $appRoot
         );
         if ($others === false) {
             return false;
@@ -201,9 +201,9 @@ class LocalBuild
         $toolstack->setOutput($this->output);
 
         $buildSettings = $this->settings + [
-            'multiApp' => $multiApp,
-            'appName' => $appName,
-          ];
+                'multiApp' => $multiApp,
+                'appName' => $appName,
+            ];
         $toolstack->prepare($buildDir, $documentRoot, $appRoot, $buildSettings);
 
         $archive = false;
@@ -351,11 +351,11 @@ class LocalBuild
         }
 
         return $this->cleanDirectory(
-          $projectRoot . '/' . LocalProject::BUILD_DIR,
-          $maxAge,
-          $keepMax,
-          $blacklist,
-          $quiet
+            $projectRoot . '/' . LocalProject::BUILD_DIR,
+            $maxAge,
+            $keepMax,
+            $blacklist,
+            $quiet
         );
     }
 
@@ -425,11 +425,11 @@ class LocalBuild
     public function cleanArchives($projectRoot, $maxAge = null, $keepMax = 10, $quiet = true)
     {
         return $this->cleanDirectory(
-          $projectRoot . '/' . LocalProject::ARCHIVE_DIR,
-          $maxAge,
-          $keepMax,
-          [],
-          $quiet
+            $projectRoot . '/' . LocalProject::ARCHIVE_DIR,
+            $maxAge,
+            $keepMax,
+            [],
+            $quiet
         );
     }
 
@@ -455,10 +455,10 @@ class LocalBuild
         }
         // Sort files by modified time (descending).
         usort(
-          $files,
-          function ($a, $b) {
-              return filemtime($a) < filemtime($b);
-          }
+            $files,
+            function ($a, $b) {
+                return filemtime($a) < filemtime($b);
+            }
         );
         $now = time();
         $numDeleted = 0;

@@ -38,8 +38,8 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->builder = new LocalBuild(
-          $this->buildSettings,
-          self::$output
+            $this->buildSettings,
+            self::$output
         );
     }
 

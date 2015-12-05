@@ -170,10 +170,10 @@ class Application extends ParentApplication
         foreach ($this->getDefinition()
                       ->getOptions() as $option) {
             $messages[] = sprintf(
-              '  %-29s %s %s',
-              '<info>--' . $option->getName() . '</info>',
-              $option->getShortcut() ? '<info>-' . $option->getShortcut() . '</info>' : '  ',
-              $option->getDescription()
+                '  %-29s %s %s',
+                '<info>--' . $option->getName() . '</info>',
+                $option->getShortcut() ? '<info>-' . $option->getShortcut() . '</info>' : '  ',
+                $option->getDescription()
             );
         }
 

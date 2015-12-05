@@ -449,13 +449,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 if (isset($config['host'])) {
                     $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
                     $message = "Project not found: " . $projectUrl
-                      . "\nThe project probably no longer exists."
-                      . "\nThe project's hostname and ID were determined from the file: " . $filename;
+                        . "\nThe project probably no longer exists."
+                        . "\nThe project's hostname and ID were determined from the file: " . $filename;
                 }
                 else {
                     $message = "Project not found: " . $config['id']
-                      . "\nEither you do not have access to the project on Platform.sh, or the project no longer exists."
-                      . "\nThe project ID was determined from the file: " . $filename;
+                        . "\nEither you do not have access to the project on Platform.sh, or the project no longer exists."
+                        . "\nThe project ID was determined from the file: " . $filename;
                 }
                 throw new ProjectNotFoundException($message);
             }
@@ -503,8 +503,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     public function getCurrentEnvironment(Project $expectedProject = null)
     {
         if (!($projectRoot = $this->getProjectRoot())
-          || !($project = $this->getCurrentProject())
-          || ($expectedProject !== null && $expectedProject->id !== $project->id)) {
+            || !($project = $this->getCurrentProject())
+            || ($expectedProject !== null && $expectedProject->id !== $project->id)) {
             return false;
         }
 
@@ -903,8 +903,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             $project = $this->getCurrentProject();
             if (!$project) {
                 throw new RootNotFoundException(
-                  "Could not determine the current project."
-                  . "\nSpecify it manually using --project or go to a project directory."
+                    "Could not determine the current project."
+                    . "\nSpecify it manually using --project or go to a project directory."
                 );
             }
         }
@@ -930,12 +930,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 $message = "Could not determine the current environment.";
                 if ($this->getProjectRoot()) {
                     throw new \RuntimeException(
-                      $message . "\nSpecify it manually using --environment."
+                        $message . "\nSpecify it manually using --environment."
                     );
                 }
                 else {
                     throw new RootNotFoundException(
-                      $message . "\nSpecify it manually using --environment or go to a project directory."
+                        $message . "\nSpecify it manually using --environment or go to a project directory."
                     );
                 }
             }
@@ -1008,11 +1008,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
                 throw new \InvalidArgumentException(
-                  sprintf(
-                    "You cannot use both the '%s' argument and the '--%s' option",
-                    $this->envArgName,
-                    $envOptionName
-                  )
+                    sprintf(
+                        "You cannot use both the '%s' argument and the '--%s' option",
+                        $this->envArgName,
+                        $envOptionName
+                    )
                 );
             }
             $argument = $input->getArgument($this->envArgName);

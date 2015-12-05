@@ -15,10 +15,10 @@ class IntegrationGetCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-          ->setName('integration:get')
-          ->setAliases(['integrations'])
-          ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
-          ->setDescription('View project integration(s)');
+            ->setName('integration:get')
+            ->setAliases(['integrations'])
+            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
+            ->setDescription('View project integration(s)');
         $this->addProjectOption();
         $this->setHiddenAliases(['integration:list']);
     }
@@ -66,13 +66,11 @@ class IntegrationGetCommand extends IntegrationCommandBase
         $table->setHeaders(["ID", "Type", "Details"]);
         foreach ($integrations as $integration) {
             $data = $this->formatIntegrationData($integration);
-            $table->addRow(
-              [
+            $table->addRow([
                 $integration->id,
                 $integration->type,
                 $data,
-              ]
-            );
+            ]);
         }
 
         return $table;

@@ -17,10 +17,10 @@ class EnvironmentDrushCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:drush')
-          ->setAliases(['drush'])
-          ->setDescription('Run a drush command on the remote environment')
-          ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
+            ->setName('environment:drush')
+            ->setAliases(['drush'])
+            ->setDescription('Run a drush command on the remote environment')
+            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
@@ -124,7 +124,7 @@ class EnvironmentDrushCommand extends CommandBase
         $sshDrushCommand .= ' ' . $drushCommand . ' 2>&1';
 
         $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
-          . ' ' . escapeshellarg($sshDrushCommand);
+            . ' ' . escapeshellarg($sshDrushCommand);
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $this->stdErr->writeln("Running command: <info>$command</info>");

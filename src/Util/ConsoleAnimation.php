@@ -51,5 +51,5 @@ class ConsoleAnimation
         if (!isset($this->frames[$this->currentFrame])) {
             $this->currentFrame = 0;
         }
-   }
+    }
 }

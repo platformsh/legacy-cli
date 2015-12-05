@@ -102,10 +102,10 @@ class GitHelper extends Helper
         $args = ['branch', '--list', '--merged', $ref];
         $mergedBranches = $this->execute($args, $dir, $mustRun);
         $array = array_map(
-          function ($element) {
-              return trim($element, ' *');
-          },
-          explode("\n", $mergedBranches)
+            function ($element) {
+                return trim($element, ' *');
+            },
+            explode("\n", $mergedBranches)
         );
 
         return $array;

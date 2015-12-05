@@ -15,28 +15,28 @@ class LocalCleanCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('local:clean')
-          ->setAliases(['clean'])
-          ->setDescription('Remove old project builds')
-          ->addOption(
-            'keep',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'The maximum number of builds to keep',
-            5
-          )
-          ->addOption(
-            'max-age',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'The maximum age of builds, in seconds. Ignored if not set.'
-          )
-          ->addOption(
-            'include-active',
-            null,
-            InputOption::VALUE_NONE,
-            'Delete active build(s) too'
-          );
+            ->setName('local:clean')
+            ->setAliases(['clean'])
+            ->setDescription('Remove old project builds')
+            ->addOption(
+                'keep',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'The maximum number of builds to keep',
+                5
+            )
+            ->addOption(
+                'max-age',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'The maximum age of builds, in seconds. Ignored if not set.'
+            )
+            ->addOption(
+                'include-active',
+                null,
+                InputOption::VALUE_NONE,
+                'Delete active build(s) too'
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -48,11 +48,11 @@ class LocalCleanCommand extends CommandBase
 
         $builder = new LocalBuild([], $this->stdErr);
         $result = $builder->cleanBuilds(
-          $projectRoot,
-          $input->getOption('max-age'),
-          $input->getOption('keep'),
-          $input->getOption('include-active'),
-          false
+            $projectRoot,
+            $input->getOption('max-age'),
+            $input->getOption('keep'),
+            $input->getOption('include-active'),
+            false
         );
 
         if (!$result[0] && !$result[1]) {

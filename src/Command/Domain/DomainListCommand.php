@@ -16,9 +16,9 @@ class DomainListCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('domain:list')
-          ->setAliases(['domains'])
-          ->setDescription('Get a list of all domains');
+            ->setName('domain:list')
+            ->setAliases(['domains'])
+            ->setDescription('Get a list of all domains');
         $this->addProjectOption();
     }
 
@@ -34,8 +34,8 @@ class DomainListCommand extends CommandBase
     {
         $table = new Table($output);
         $table
-          ->setHeaders(['Name', 'SSL enabled', 'Creation date'])
-          ->addRows($this->buildDomainRows($tree));
+            ->setHeaders(['Name', 'SSL enabled', 'Creation date'])
+            ->addRows($this->buildDomainRows($tree));
 
         return $table;
     }
@@ -85,7 +85,7 @@ class DomainListCommand extends CommandBase
         $this->stdErr->writeln("\nAdd a domain to the project by running <info>platform domain:add [domain-name]</info>");
         if (!empty($domains)) {
             $this->stdErr->writeln(
-              "Delete domains by running <info>platform domain:delete [domain-name]</info>"
+                "Delete domains by running <info>platform domain:delete [domain-name]</info>"
             );
         }
     }

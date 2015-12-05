@@ -15,10 +15,10 @@ class EnvironmentRoutesCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:routes')
-          ->setAliases(['routes'])
-          ->setDescription('List an environment\'s routes')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+            ->setName('environment:routes')
+            ->setAliases(['routes'])
+            ->setDescription('List an environment\'s routes')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
     }

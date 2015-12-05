@@ -13,8 +13,8 @@ class LoginCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('login')
-          ->setDescription('Log in to Platform.sh');
+            ->setName('login')
+            ->setDescription('Log in to Platform.sh');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -41,15 +41,15 @@ class LoginCommand extends CommandBase
 
         $question = new Question('Your email address: ');
         $question->setValidator(
-          function ($answer) {
-              if (empty($answer) || !filter_var($answer, FILTER_VALIDATE_EMAIL)) {
-                  throw new \RunTimeException(
-                    'Please provide a valid email address.'
-                  );
-              }
+            function ($answer) {
+                if (empty($answer) || !filter_var($answer, FILTER_VALIDATE_EMAIL)) {
+                    throw new \RunTimeException(
+                        'Please provide a valid email address.'
+                    );
+                }
 
-              return $answer;
-          }
+                return $answer;
+            }
         );
         $question->setMaxAttempts(5);
         $email = $helper->ask($input, $output, $question);
@@ -70,13 +70,13 @@ class LoginCommand extends CommandBase
 
         $question = new Question('Your password: ');
         $question->setValidator(
-          function ($answer) {
-              if (trim($answer) == '') {
-                  throw new \RuntimeException('The password cannot be empty');
-              }
+            function ($answer) {
+                if (trim($answer) == '') {
+                    throw new \RuntimeException('The password cannot be empty');
+                }
 
-              return $answer;
-          }
+                return $answer;
+            }
         );
         $question->setHidden(true);
         $question->setMaxAttempts(5);

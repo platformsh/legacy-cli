@@ -12,9 +12,9 @@ class UserListCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('user:list')
-          ->setAliases(['users'])
-          ->setDescription('List project users');
+            ->setName('user:list')
+            ->setAliases(['users'])
+            ->setDescription('List project users');
         $this->addProjectOption();
     }
 

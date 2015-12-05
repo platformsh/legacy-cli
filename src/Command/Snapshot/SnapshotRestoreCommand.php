@@ -13,9 +13,9 @@ class SnapshotRestoreCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('snapshot:restore')
-          ->setDescription('Restore an environment snapshot')
-          ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one');
+            ->setName('snapshot:restore')
+            ->setDescription('Restore an environment snapshot')
+            ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -74,9 +74,9 @@ class SnapshotRestoreCommand extends CommandBase
         $name = $selectedActivity['payload']['backup_name'];
         $date = date('Y-m-d H:i', strtotime($selectedActivity['created_at']));
         if (!$questionHelper->confirm(
-          "Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment>?",
-          $input,
-          $this->stdErr
+            "Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment>?",
+            $input,
+            $this->stdErr
         )
         ) {
             return 1;
@@ -88,10 +88,10 @@ class SnapshotRestoreCommand extends CommandBase
         if (!$input->getOption('no-wait')) {
             $this->stdErr->writeln("Waiting for the restore to complete...");
             $success = ActivityUtil::waitAndLog(
-              $activity,
-              $this->stdErr,
-              "The snapshot was successfully restored",
-              "Restoring failed"
+                $activity,
+                $this->stdErr,
+                "The snapshot was successfully restored",
+                "Restoring failed"
             );
             if (!$success) {
                 return 1;

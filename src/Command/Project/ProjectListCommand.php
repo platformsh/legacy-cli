@@ -13,22 +13,22 @@ class ProjectListCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('project:list')
-          ->setAliases(['projects'])
-          ->setDescription('Get a list of all active projects')
-          ->addOption(
-            'pipe',
-            null,
-            InputOption::VALUE_NONE,
-            'Output a simple list of project IDs.'
-          )
-          ->addOption(
-            'refresh',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Whether to refresh the list.',
-            1
-          );
+            ->setName('project:list')
+            ->setAliases(['projects'])
+            ->setDescription('Get a list of all active projects')
+            ->addOption(
+                'pipe',
+                null,
+                InputOption::VALUE_NONE,
+                'Output a simple list of project IDs.'
+            )
+            ->addOption(
+                'refresh',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Whether to refresh the list.',
+                1
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

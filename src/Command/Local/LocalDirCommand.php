@@ -16,10 +16,10 @@ class LocalDirCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('local:dir')
-          ->setAliases(['dir'])
-          ->setDescription('Find the local project root')
-          ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('repo', 'web', or 'shared')");
+            ->setName('local:dir')
+            ->setAliases(['dir'])
+            ->setDescription('Find the local project root')
+            ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('repo', 'web', or 'shared')");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -32,11 +32,11 @@ class LocalDirCommand extends CommandBase
         $dir = $projectRoot;
 
         $subDirs = [
-          'shared' => LocalProject::SHARED_DIR,
-          'repo' => LocalProject::REPOSITORY_DIR,
-          'repository' => LocalProject::REPOSITORY_DIR,
-          'web' => LocalProject::WEB_ROOT,
-          'web_root' => LocalProject::WEB_ROOT,
+            'shared' => LocalProject::SHARED_DIR,
+            'repo' => LocalProject::REPOSITORY_DIR,
+            'repository' => LocalProject::REPOSITORY_DIR,
+            'web' => LocalProject::WEB_ROOT,
+            'web_root' => LocalProject::WEB_ROOT,
         ];
 
         $subDir = $input->getArgument('subdir');

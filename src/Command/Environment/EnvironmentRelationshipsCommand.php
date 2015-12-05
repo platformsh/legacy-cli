@@ -18,12 +18,12 @@ class EnvironmentRelationshipsCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:relationships')
-          ->setAliases(['relationships'])
-          ->setDescription('Show an environment\'s relationships')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
-          ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view')
-          ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the relationships', '0');
+            ->setName('environment:relationships')
+            ->setAliases(['relationships'])
+            ->setDescription('Show an environment\'s relationships')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
+            ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view')
+            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the relationships', '0');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();

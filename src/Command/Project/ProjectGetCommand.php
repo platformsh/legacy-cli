@@ -21,37 +21,37 @@ class ProjectGetCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('project:get')
-          ->setAliases(['get'])
-          ->setDescription('Clone and build a project locally')
-          ->addArgument(
-            'id',
-            InputArgument::OPTIONAL,
-            'The project ID'
-          )
-          ->addArgument(
-            'directory',
-            InputArgument::OPTIONAL,
-            'The directory to clone to. Defaults to the project title'
-          )
-          ->addOption(
-            'environment',
-            'e',
-            InputOption::VALUE_REQUIRED,
-            "The environment ID to clone. Defaults to 'master'"
-          )
-          ->addOption(
-            'no-build',
-            null,
-            InputOption::VALUE_NONE,
-            "Do not build the retrieved project"
-          )
-          ->addOption(
-            'host',
-            null,
-            InputOption::VALUE_REQUIRED,
-            "The project's API hostname"
-          );
+            ->setName('project:get')
+            ->setAliases(['get'])
+            ->setDescription('Clone and build a project locally')
+            ->addArgument(
+                'id',
+                InputArgument::OPTIONAL,
+                'The project ID'
+            )
+            ->addArgument(
+                'directory',
+                InputArgument::OPTIONAL,
+                'The directory to clone to. Defaults to the project title'
+            )
+            ->addOption(
+                'environment',
+                'e',
+                InputOption::VALUE_REQUIRED,
+                "The environment ID to clone. Defaults to 'master'"
+            )
+            ->addOption(
+                'no-build',
+                null,
+                InputOption::VALUE_NONE,
+                "Do not build the retrieved project"
+            )
+            ->addOption(
+                'host',
+                null,
+                InputOption::VALUE_REQUIRED,
+                "The project's API hostname"
+            );
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
 
@@ -186,7 +186,7 @@ class ProjectGetCommand extends CommandBase
             $local->ensureGitRemote($repositoryDir, $gitUrl);
             $this->stdErr->writeln("Your repository has been initialized and connected to <info>Platform.sh</info>!");
             $this->stdErr->writeln(
-              "Commit and push to the <info>$environment</info> branch and Platform.sh will build your project automatically"
+                "Commit and push to the <info>$environment</info> branch and Platform.sh will build your project automatically"
             );
 
             return 0;

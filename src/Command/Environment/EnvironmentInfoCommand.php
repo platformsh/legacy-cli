@@ -22,20 +22,20 @@ class EnvironmentInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:info')
-          ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
-          ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-          ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-          ->setDescription('Read or set properties for an environment');
+            ->setName('environment:info')
+            ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+            ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
+            ->setDescription('Read or set properties for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
         $this->addExample('Read all environment properties')
-          ->addExample("Show the environment's status", 'status')
-          ->addExample('Show the date the environment was created', 'created_at')
-          ->addExample('Enable email sending', 'enable_smtp true')
-          ->addExample('Change the environment title', 'title "New feature"')
-          ->addExample("Change the environment's parent branch", 'parent sprint-2');
+             ->addExample("Show the environment's status", 'status')
+             ->addExample('Show the date the environment was created', 'created_at')
+             ->addExample('Enable email sending', 'enable_smtp true')
+             ->addExample('Change the environment title', 'title "New feature"')
+             ->addExample("Change the environment's parent branch", 'parent sprint-2');
         $this->setHiddenAliases(['environment:metadata']);
     }
 
@@ -106,7 +106,7 @@ class EnvironmentInfoCommand extends CommandBase
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-              "Property <info>$property</info> already set as: " . $this->formatter->format($environment->getProperty($property, false), $property)
+                "Property <info>$property</info> already set as: " . $this->formatter->format($environment->getProperty($property, false), $property)
             );
 
             return 0;
@@ -138,10 +138,10 @@ class EnvironmentInfoCommand extends CommandBase
     protected function getType($property)
     {
         $writableProperties = [
-          'enable_smtp' => 'boolean',
-          'parent' => 'string',
-          'title' => 'string',
-          'restrict_robots' => 'boolean',
+            'enable_smtp' => 'boolean',
+            'parent' => 'string',
+            'title' => 'string',
+            'restrict_robots' => 'boolean',
         ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;

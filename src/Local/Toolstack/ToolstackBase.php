@@ -62,8 +62,8 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->gitHelper = $gitHelper ?: new GitHelper();
 
         $this->specialDestinations = [
-          "favicon.ico" => "{webroot}",
-          "robots.txt" => "{webroot}",
+            "favicon.ico" => "{webroot}",
+            "robots.txt" => "{webroot}",
         ];
 
         // Platform.sh has '.platform.app.yaml', but we need to be stricter.
@@ -140,10 +140,10 @@ abstract class ToolstackBase implements ToolstackInterface
                 // Delete existing files, emitting a warning.
                 if (file_exists($destination)) {
                     $this->output->writeln(
-                      sprintf(
-                        "Overriding existing path '%s' in destination",
-                        str_replace($this->buildDir . '/', '', $destination)
-                      )
+                        sprintf(
+                            "Overriding existing path '%s' in destination",
+                            str_replace($this->buildDir . '/', '', $destination)
+                        )
                     );
                     $this->fsHelper->remove($destination);
                 }

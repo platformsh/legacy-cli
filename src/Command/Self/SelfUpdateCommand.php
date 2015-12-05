@@ -13,12 +13,12 @@ class SelfUpdateCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('self-update')
-          ->setAliases(['up'])
-          ->setDescription('Update the CLI to the latest version')
-          ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
-          ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
-          ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version');
+            ->setName('self-update')
+            ->setAliases(['up'])
+            ->setDescription('Update the CLI to the latest version')
+            ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
+            ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
+            ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

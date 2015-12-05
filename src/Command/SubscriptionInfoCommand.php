@@ -22,13 +22,13 @@ class SubscriptionInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('subscription:info')
-          ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
-          ->setDescription('Read subscription properties');
+            ->setName('subscription:info')
+            ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+            ->setDescription('Read subscription properties');
         $this->addProjectOption();
         $this->addExample('View all subscription properties')
-          ->addExample('View the subscription status', 'status')
-          ->addExample('View the storage limit (in MiB)', 'storage');
+             ->addExample('View the subscription status', 'status')
+             ->addExample('View the storage limit (in MiB)', 'storage');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -37,7 +37,7 @@ class SubscriptionInfoCommand extends CommandBase
 
         $project = $this->getSelectedProject();
         $subscription = $this->getClient()
-          ->getSubscription($project->getSubscriptionId());
+                             ->getSubscription($project->getSubscriptionId());
         if (!$subscription) {
             $this->stdErr->writeln("Subscription not found");
 
@@ -52,10 +52,10 @@ class SubscriptionInfoCommand extends CommandBase
         }
 
         $output->writeln(
-          $this->formatter->format(
-            $subscription->getProperty($property),
-            $property
-          )
+            $this->formatter->format(
+                $subscription->getProperty($property),
+                $property
+            )
         );
 
         return 0;

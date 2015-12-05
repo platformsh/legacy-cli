@@ -14,10 +14,10 @@ class SelfBuildCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('self-build')
-          ->setDescription('Build a new package of the CLI')
-          ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
-          ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename');
+            ->setName('self-build')
+            ->setDescription('Build a new package of the CLI')
+            ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
+            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

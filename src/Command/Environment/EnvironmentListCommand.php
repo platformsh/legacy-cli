@@ -27,35 +27,35 @@ class EnvironmentListCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:list')
-          ->setAliases(['environments'])
-          ->setDescription('Get a list of environments')
-          ->addOption(
-            'no-inactive',
-            'I',
-            InputOption::VALUE_NONE,
-            'Do not show inactive environments'
-          )
-          ->addOption(
-            'pipe',
-            null,
-            InputOption::VALUE_NONE,
-            'Output a simple list of environment IDs.'
-          )
-          ->addOption(
-            'show',
-            null,
-            InputOption::VALUE_REQUIRED,
-            "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
-            'name,status'
-          )
-          ->addOption(
-            'refresh',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Whether to refresh the list.',
-            1
-          );
+            ->setName('environment:list')
+            ->setAliases(['environments'])
+            ->setDescription('Get a list of environments')
+            ->addOption(
+                'no-inactive',
+                'I',
+                InputOption::VALUE_NONE,
+                'Do not show inactive environments'
+            )
+            ->addOption(
+                'pipe',
+                null,
+                InputOption::VALUE_NONE,
+                'Output a simple list of environment IDs.'
+            )
+            ->addOption(
+                'show',
+                null,
+                InputOption::VALUE_REQUIRED,
+                "Specify information to show about the environment: 'name', 'status', 'url', or 'all'.",
+                'name,status'
+            )
+            ->addOption(
+                'refresh',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Whether to refresh the list.',
+                1
+            );
         $this->addProjectOption();
     }
 
@@ -73,8 +73,8 @@ class EnvironmentListCommand extends CommandBase
         foreach ($environments as $environment) {
             if ($environment->parent === $parent) {
                 $this->children[$environment->id] = $this->buildEnvironmentTree(
-                  $environments,
-                  $environment->id
+                    $environments,
+                    $environment->id
                 );
                 $children[$environment->id] = $environment;
             }
@@ -105,8 +105,8 @@ class EnvironmentListCommand extends CommandBase
         }
         $table = new Table($output);
         $table
-          ->setHeaders($headers)
-          ->addRows($this->buildEnvironmentRows($tree));
+            ->setHeaders($headers)
+            ->addRows($this->buildEnvironmentRows($tree));
 
         return $table;
     }
@@ -231,12 +231,12 @@ class EnvironmentListCommand extends CommandBase
 
         if ($currentEnvironment->operationAvailable('branch')) {
             $this->stdErr->writeln(
-              "Branch a new environment by running <info>platform environment:branch [new-name]</info>"
+                "Branch a new environment by running <info>platform environment:branch [new-name]</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('activate')) {
             $this->stdErr->writeln(
-              "Activate the current environment by running <info>platform environment:activate</info>"
+                "Activate the current environment by running <info>platform environment:activate</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('delete')) {
@@ -244,7 +244,7 @@ class EnvironmentListCommand extends CommandBase
         }
         if ($currentEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-              "Back up the current environment by running <info>platform environment:backup</info>"
+                "Back up the current environment by running <info>platform environment:backup</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {
@@ -252,7 +252,7 @@ class EnvironmentListCommand extends CommandBase
         }
         if ($currentEnvironment->operationAvailable('synchronize')) {
             $this->stdErr->writeln(
-              "Sync the current environment by running <info>platform environment:synchronize</info>"
+                "Sync the current environment by running <info>platform environment:synchronize</info>"
             );
         }
     }

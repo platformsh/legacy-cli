@@ -16,10 +16,10 @@ class UserAddCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('user:add')
-          ->setDescription('Add a user to the project')
-          ->addArgument('email', InputArgument::OPTIONAL, "The new user's email address")
-          ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'");
+            ->setName('user:add')
+            ->setDescription('Add a user to the project')
+            ->addArgument('email', InputArgument::OPTIONAL, "The new user's email address")
+            ->addOption('role', null, InputOption::VALUE_REQUIRED, "The new user's role: 'admin' or 'viewer'");
         $this->addProjectOption();
         $this->addNoWaitOption();
         $this->addExample('Add Alice as a new administrator', 'alice@example.com --role admin');

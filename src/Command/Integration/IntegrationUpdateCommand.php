@@ -14,9 +14,9 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-          ->setName('integration:update')
-          ->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
-          ->setDescription('Update an integration');
+            ->setName('integration:update')
+            ->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
+            ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Switch on the "fetch branches" option for a specific integration', 'ZXhhbXBsZSB --fetch-branches 1');

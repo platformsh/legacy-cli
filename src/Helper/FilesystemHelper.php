@@ -300,8 +300,8 @@ class FilesystemHelper extends Helper
             }
             $basename = basename($relativePath);
             $absolute = $basename == '..'
-              ? dirname($parentRealPath)
-              : rtrim($parentRealPath . '/' . $basename, './');
+                ? dirname($parentRealPath)
+                : rtrim($parentRealPath . '/' . $basename, './');
         }
 
         return $absolute;
@@ -357,11 +357,11 @@ class FilesystemHelper extends Helper
     {
         if ($this->isWindows()) {
             $path = preg_replace_callback(
-              '#^([A-Z]):/#i',
-              function (array $matches) {
-                  return '/' . strtolower($matches[1]) . '/';
-              },
-              str_replace('\\', '/', $path)
+                '#^([A-Z]):/#i',
+                function (array $matches) {
+                    return '/' . strtolower($matches[1]) . '/';
+                },
+                str_replace('\\', '/', $path)
             );
         }
 

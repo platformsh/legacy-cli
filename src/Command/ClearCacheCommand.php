@@ -12,9 +12,9 @@ class ClearCacheCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('clear-cache')
-          ->setAliases(['clearcache', 'cc'])
-          ->setDescription('Clear the CLI cache');
+            ->setName('clear-cache')
+            ->setAliases(['clearcache', 'cc'])
+            ->setDescription('Clear the CLI cache');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

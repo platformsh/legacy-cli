@@ -15,27 +15,27 @@ class EnvironmentHttpAccessCommand extends CommandBase
     {
         parent::configure();
         $this
-          ->setName('environment:http-access')
-          ->setAliases(['httpaccess'])
-          ->setDescription('Update HTTP access settings for an environment')
-          ->addOption(
-            'access',
-            null,
-            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-            'Access restriction in the format "permission:address"'
-          )
-          ->addOption(
-            'auth',
-            null,
-            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-            'Authentication details in the format "username:password"'
-          )
-          ->addOption(
-            'enabled',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Whether access control should be enabled: 1 to enable, 0 to disable'
-          );
+            ->setName('environment:http-access')
+            ->setAliases(['httpaccess'])
+            ->setDescription('Update HTTP access settings for an environment')
+            ->addOption(
+                'access',
+                null,
+                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+                'Access restriction in the format "permission:address"'
+            )
+            ->addOption(
+                'auth',
+                null,
+                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+                'Authentication details in the format "username:password"'
+            )
+            ->addOption(
+                'enabled',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Whether access control should be enabled: 1 to enable, 0 to disable'
+            );
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -86,16 +86,16 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $parts = explode(':', $access, 2);
         if (count($parts) != 2) {
             $message = sprintf(
-              'Access "<error>%s</error>" is not valid, please use the format: permission:address',
-              $access
+                'Access "<error>%s</error>" is not valid, please use the format: permission:address',
+                $access
             );
             throw new \InvalidArgumentException($message);
         }
 
         if (!in_array($parts[0], ['allow', 'deny'])) {
             $message = sprintf(
-              "The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'",
-              $parts[0]
+                "The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'",
+                $parts[0]
             );
             throw new \InvalidArgumentException($message);
         }

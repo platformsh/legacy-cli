@@ -12,13 +12,13 @@ class SshKeyDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('ssh-key:delete')
-          ->setDescription('Delete an SSH key')
-          ->addArgument(
-            'id',
-            InputArgument::OPTIONAL,
-            'The ID of the SSH key to delete'
-          );
+            ->setName('ssh-key:delete')
+            ->setDescription('Delete an SSH key')
+            ->addArgument(
+                'id',
+                InputArgument::OPTIONAL,
+                'The ID of the SSH key to delete'
+            );
         $this->addExample('Delete the key 123', '123');
     }
 

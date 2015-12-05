@@ -13,7 +13,7 @@ class LocalInstallCommand extends CommandBase
     protected function configure()
     {
         $this->setName('local:install')
-          ->setDescription('Install CLI configuration files');
+             ->setDescription('Install CLI configuration files');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -45,9 +45,9 @@ class LocalInstallCommand extends CommandBase
         }
 
         $shellConfig .= PHP_EOL . PHP_EOL
-          . "# Automatically added by Platform.sh CLI installer" . PHP_EOL
-          . "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-          . '. ' . escapeshellarg($platformRcDestination) . " 2>/dev/null" . PHP_EOL;
+            . "# Automatically added by Platform.sh CLI installer" . PHP_EOL
+            . "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
+            . '. ' . escapeshellarg($platformRcDestination) . " 2>/dev/null" . PHP_EOL;
         if (!file_put_contents($shellConfigFile, $shellConfig)) {
             $this->stdErr->writeln(sprintf('Failed to modify configuration file: %s', $shellConfigFile));
             return 1;

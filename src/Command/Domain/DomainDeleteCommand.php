@@ -15,9 +15,9 @@ class DomainDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('domain:delete')
-          ->setDescription('Delete a domain from the project')
-          ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
+            ->setName('domain:delete')
+            ->setDescription('Delete a domain from the project')
+            ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Delete the domain example.com', 'example.com');
     }

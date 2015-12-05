@@ -92,8 +92,8 @@ class CustomTextDescriptor extends TextDescriptor
 
             if ($describedNamespace) {
                 $this->writeText(
-                  sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace),
-                  $options
+                    sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace),
+                    $options
                 );
             } else {
                 $this->writeText('<comment>Available commands:</comment>', $options);
@@ -144,12 +144,12 @@ class CustomTextDescriptor extends TextDescriptor
                     }
                     $this->writeText("\n");
                     $this->writeText(
-                      sprintf(
-                        "  %-${width}s %s",
-                        "<info>$name</info>" . $this->formatAliases($aliases),
-                        $commandDescription
-                      ),
-                      $options
+                        sprintf(
+                            "  %-${width}s %s",
+                            "<info>$name</info>" . $this->formatAliases($aliases),
+                            $commandDescription
+                        ),
+                        $options
                     );
                 }
             }
@@ -180,8 +180,8 @@ class CustomTextDescriptor extends TextDescriptor
     protected function writeText($content, array $options = [])
     {
         $this->write(
-          isset($options['raw_text']) && $options['raw_text'] ? strip_tags($content) : $content,
-          isset($options['raw_output']) ? !$options['raw_output'] : true
+            isset($options['raw_text']) && $options['raw_text'] ? strip_tags($content) : $content,
+            isset($options['raw_output']) ? !$options['raw_output'] : true
         );
     }
 

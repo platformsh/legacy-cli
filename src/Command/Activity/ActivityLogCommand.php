@@ -16,17 +16,17 @@ class ActivityLogCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('activity:log')
-          ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
-          ->addOption(
-            'refresh',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Log refresh interval (seconds). Set to 0 to disable refreshing.',
-            1
-          )
-          ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
-          ->setDescription('Display the log for an environment activity');
+            ->setName('activity:log')
+            ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
+            ->addOption(
+                'refresh',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Log refresh interval (seconds). Set to 0 to disable refreshing.',
+                1
+            )
+            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
+            ->setDescription('Display the log for an environment activity');
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('Display the log for the last push', '--type environment.push');
@@ -58,7 +58,7 @@ class ActivityLogCommand extends CommandBase
         }
 
         $this->stdErr->writeln(
-          "Log for activity <info>" . $activity->id . "</info> (" . $activity->getDescription() . "):\n"
+            "Log for activity <info>" . $activity->id . "</info> (" . $activity->getDescription() . "):\n"
         );
 
         $refresh = $input->getOption('refresh');

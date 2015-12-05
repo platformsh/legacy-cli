@@ -62,7 +62,7 @@ class PropertyFormatter
         }, $info['basic_auth']);
 
         return "Enabled: " . json_encode($info['is_enabled'])
-            . "\nAccess: " . json_encode($info['addresses'])
-            . "\nAuth: " . json_encode($info['basic_auth']);
+        . "\nAccess: " . json_encode($info['addresses'])
+        . "\nAuth: " . json_encode($info['basic_auth']);
     }
 }

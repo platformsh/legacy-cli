@@ -90,7 +90,7 @@ class LocalApplication
                 }
                 catch (ParseException $e) {
                     throw new InvalidConfigException(
-                      "Parse error in file '{$this->appRoot}/.platform.app.yaml'. \n" . $e->getMessage()
+                        "Parse error in file '{$this->appRoot}/.platform.app.yaml'. \n" . $e->getMessage()
                     );
                 }
             }
@@ -168,7 +168,7 @@ class LocalApplication
         foreach (self::getToolstacks() as $toolstack) {
             $key = $toolstack->getKey();
             if ((!$toolstackChoice && $toolstack->detect($this->getRoot()))
-              || ($key && $toolstackChoice === $key)
+                || ($key && $toolstackChoice === $key)
             ) {
                 return $toolstack;
             }

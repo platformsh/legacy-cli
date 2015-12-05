@@ -17,12 +17,12 @@ class VariableGetCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('variable:get')
-          ->setAliases(['variables', 'vget'])
-          ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
-          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only')
-          ->addOption('ssh', null, InputOption::VALUE_NONE, 'Use SSH to get the currently active variables')
-          ->setDescription('View variable(s) for an environment');
+            ->setName('variable:get')
+            ->setAliases(['variables', 'vget'])
+            ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only')
+            ->addOption('ssh', null, InputOption::VALUE_NONE, 'Use SSH to get the currently active variables')
+            ->setDescription('View variable(s) for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('View the variable "example"', 'example');
@@ -103,14 +103,12 @@ class VariableGetCommand extends CommandBase
             }
             // Wrap long values.
             $value = wordwrap($value, 30, "\n", true);
-            $table->addRow(
-              [
+            $table->addRow([
                 $variable->id,
                 $value,
                 $variable->inherited ? 'Yes' : 'No',
                 $variable->is_json ? 'Yes' : 'No',
-              ]
-            );
+            ]);
         }
 
         return $table;

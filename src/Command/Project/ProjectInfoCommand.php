@@ -22,11 +22,11 @@ class ProjectInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('project:info')
-          ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
-          ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-          ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-          ->setDescription('Read or set properties for a project');
+            ->setName('project:info')
+            ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+            ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
+            ->setDescription('Read or set properties for a project');
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
@@ -72,14 +72,14 @@ class ProjectInfoCommand extends CommandBase
         // Properties not to display, as they are internal, deprecated, or
         // otherwise confusing.
         $blacklist = [
-          'name',
-          'cluster',
-          'cluster_label',
-          'license_id',
-          'plan',
-          '_endpoint',
-          'repository',
-          'subscription',
+            'name',
+            'cluster',
+            'cluster_label',
+            'license_id',
+            'plan',
+            '_endpoint',
+            'repository',
+            'subscription',
         ];
 
         $table = new Table($output);
@@ -117,7 +117,7 @@ class ProjectInfoCommand extends CommandBase
         $currentValue = $project->getProperty($property);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-              "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
+                "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
             );
 
             return 0;

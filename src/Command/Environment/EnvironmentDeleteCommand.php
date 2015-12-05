@@ -17,12 +17,12 @@ class EnvironmentDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:delete')
-          ->setDescription('Delete an environment')
-          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
-          ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
-          ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
-          ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
+            ->setName('environment:delete')
+            ->setDescription('Delete an environment')
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
+            ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
+            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
+            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -39,11 +39,11 @@ class EnvironmentDeleteCommand extends CommandBase
 
         if ($input->getOption('inactive')) {
             $toDelete = array_filter(
-              $environments,
-              function ($environment) {
-                  /** @var Environment $environment */
-                  return $environment->status == 'inactive';
-              }
+                $environments,
+                function ($environment) {
+                    /** @var Environment $environment */
+                    return $environment->status == 'inactive';
+                }
             );
             if (!$toDelete) {
                 $this->stdErr->writeln("No inactive environments found");
@@ -137,7 +137,7 @@ class EnvironmentDeleteCommand extends CommandBase
             foreach ($this->getEnvironments() as $potentialChild) {
                 if ($potentialChild->parent == $environment->id) {
                     $output->writeln(
-                      "The environment <error>$environmentId</error> has children and therefore can't be deleted."
+                        "The environment <error>$environmentId</error> has children and therefore can't be deleted."
                     );
                     $output->writeln("Please delete the environment's children first.");
                     $error = true;

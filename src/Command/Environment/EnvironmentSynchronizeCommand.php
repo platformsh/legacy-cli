@@ -13,15 +13,15 @@ class EnvironmentSynchronizeCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:synchronize')
-          ->setAliases(['sync'])
-          ->setDescription('Synchronize an environment')
-          ->addArgument(
-            'synchronize',
-            InputArgument::IS_ARRAY,
-            'What to synchronize: code, data or both',
-            null
-          );
+            ->setName('environment:synchronize')
+            ->setAliases(['sync'])
+            ->setDescription('Synchronize an environment')
+            ->addArgument(
+                'synchronize',
+                InputArgument::IS_ARRAY,
+                'What to synchronize: code, data or both',
+                null
+            );
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -37,7 +37,7 @@ class EnvironmentSynchronizeCommand extends CommandBase
 
         if (!$selectedEnvironment->operationAvailable('synchronize')) {
             $this->stdErr->writeln(
-              "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
+                "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
             if ($selectedEnvironment->is_dirty) {
                 $this->clearEnvironmentsCache();
@@ -59,26 +59,26 @@ class EnvironmentSynchronizeCommand extends CommandBase
             $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
             $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
             if (!$questionHelper->confirm(
-              "Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?",
-              $input,
-              $this->stdErr,
-              false
+                "Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?",
+                $input,
+                $this->stdErr,
+                false
             )
             ) {
                 return 0;
             }
         } else {
             $syncCode = $questionHelper->confirm(
-              "Synchronize code from <info>$parentId</info> to <info>$environmentId</info>?",
-              $input,
-              $this->stdErr,
-              false
+                "Synchronize code from <info>$parentId</info> to <info>$environmentId</info>?",
+                $input,
+                $this->stdErr,
+                false
             );
             $syncData = $questionHelper->confirm(
-              "Synchronize data from <info>$parentId</info> to <info>$environmentId</info>?",
-              $input,
-              $this->stdErr,
-              false
+                "Synchronize data from <info>$parentId</info> to <info>$environmentId</info>?",
+                $input,
+                $this->stdErr,
+                false
             );
         }
         if (!$syncCode && !$syncData) {
@@ -92,10 +92,10 @@ class EnvironmentSynchronizeCommand extends CommandBase
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
         if (!$input->getOption('no-wait')) {
             $success = ActivityUtil::waitAndLog(
-              $activity,
-              $this->stdErr,
-              "Synchronization complete",
-              "Synchronization failed"
+                $activity,
+                $this->stdErr,
+                "Synchronization complete",
+                "Synchronization failed"
             );
             if (!$success) {
                 return 1;

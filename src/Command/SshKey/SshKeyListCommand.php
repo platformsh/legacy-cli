@@ -12,9 +12,9 @@ class SshKeyListCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('ssh-key:list')
-          ->setAliases(['ssh-keys'])
-          ->setDescription('Get a list of SSH keys in your account');;
+            ->setName('ssh-key:list')
+            ->setAliases(['ssh-keys'])
+            ->setDescription('Get a list of SSH keys in your account');;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

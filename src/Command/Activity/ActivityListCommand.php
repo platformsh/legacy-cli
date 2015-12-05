@@ -17,18 +17,18 @@ class ActivityListCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('activity:list')
-          ->setAliases(['activities'])
-          ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
-          ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 5)
-          ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
-          ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
-          ->setDescription('Get a list of activities for an environment');
+            ->setName('activity:list')
+            ->setAliases(['activities'])
+            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 5)
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
+            ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
+            ->setDescription('Get a list of activities for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List recent activities on the current environment')
-          ->addExample('List recent pushes', '--type environment.push')
-          ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15');
+             ->addExample('List recent pushes', '--type environment.push')
+             ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

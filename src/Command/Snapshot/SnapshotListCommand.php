@@ -13,15 +13,15 @@ class SnapshotListCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('snapshot:list')
-          ->setAliases(['snapshots'])
-          ->setDescription('List available snapshots of an environment')
-          ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
-          ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
+            ->setName('snapshot:list')
+            ->setAliases(['snapshots'])
+            ->setDescription('List available snapshots of an environment')
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
+            ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List the most recent snapshots')
-          ->addExample('List snapshots made before last week', "--start '1 week ago'");
+             ->addExample('List snapshots made before last week', "--start '1 week ago'");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

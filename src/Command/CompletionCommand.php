@@ -45,77 +45,77 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
 
         $this->handler->addHandlers([
             new Completion(
-              'project:get',
-              'id',
-              Completion::TYPE_ARGUMENT,
-              $projectIds
+                'project:get',
+                'id',
+                Completion::TYPE_ARGUMENT,
+                $projectIds
             ),
             Completion::makeGlobalHandler(
-              'project',
-              Completion::TYPE_OPTION,
-              $projectIds
+                'project',
+                Completion::TYPE_OPTION,
+                $projectIds
             ),
             Completion::makeGlobalHandler(
-              'environment',
-              Completion::TYPE_ARGUMENT,
-              [$this, 'getEnvironments']
+                'environment',
+                Completion::TYPE_ARGUMENT,
+                [$this, 'getEnvironments']
             ),
             Completion::makeGlobalHandler(
-              'environment',
-              Completion::TYPE_OPTION,
-              [$this, 'getEnvironments']
+                'environment',
+                Completion::TYPE_OPTION,
+                [$this, 'getEnvironments']
             ),
             new Completion(
-              'environment:branch',
-              'parent',
-              Completion::TYPE_ARGUMENT,
-              [$this, 'getEnvironments']
+                'environment:branch',
+                'parent',
+                Completion::TYPE_ARGUMENT,
+                [$this, 'getEnvironments']
             ),
             new Completion(
-              'environment:checkout',
-              'id',
-              Completion::TYPE_ARGUMENT,
-              [$this, 'getEnvironmentsForCheckout']
+                'environment:checkout',
+                'id',
+                Completion::TYPE_ARGUMENT,
+                [$this, 'getEnvironmentsForCheckout']
             ),
             new Completion\ShellPathCompletion(
-              'ssh-key:add',
-              'path',
-              Completion::TYPE_ARGUMENT
+                'ssh-key:add',
+                'path',
+                Completion::TYPE_ARGUMENT
             ),
             new Completion\ShellPathCompletion(
-              'domain:add',
-              'cert',
-              Completion::TYPE_OPTION
+                'domain:add',
+                'cert',
+                Completion::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
-              'domain:add',
-              'key',
-              Completion::TYPE_OPTION
+                'domain:add',
+                'key',
+                Completion::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
-              'domain:add',
-              'chain',
-              Completion::TYPE_OPTION
+                'domain:add',
+                'chain',
+                Completion::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
-              'local:build',
-              'source',
-              Completion::TYPE_OPTION
+                'local:build',
+                'source',
+                Completion::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
-              'local:build',
-              'destination',
-              Completion::TYPE_OPTION
+                'local:build',
+                'destination',
+                Completion::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
-              'environment:sql-dump',
-              'file',
-              Completion::TYPE_OPTION
+                'environment:sql-dump',
+                'file',
+                Completion::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
-              'local:init',
-              'directory',
-              Completion::TYPE_ARGUMENT
+                'local:init',
+                'directory',
+                Completion::TYPE_ARGUMENT
             ),
         ]);
 
@@ -166,10 +166,10 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         $environments = $this->platformCommand->getEnvironments($project, false, false);
         if ($currentEnvironment) {
             $environments = array_filter(
-              $environments,
-              function ($environment) use ($currentEnvironment) {
-                  return $environment->id !== $currentEnvironment->id;
-              }
+                $environments,
+                function ($environment) use ($currentEnvironment) {
+                    return $environment->id !== $currentEnvironment->id;
+                }
             );
         }
 

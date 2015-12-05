@@ -13,9 +13,9 @@ class SnapshotCreateCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('snapshot:create')
-          ->setDescription('Make a snapshot of an environment')
-          ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+            ->setName('snapshot:create')
+            ->setDescription('Make a snapshot of an environment')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption('Do not wait for the snapshot to complete');
@@ -32,7 +32,7 @@ class SnapshotCreateCommand extends CommandBase
         $environmentId = $selectedEnvironment->id;
         if (!$selectedEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-              "Operation not available: cannot create a snapshot of <error>$environmentId</error>"
+                "Operation not available: cannot create a snapshot of <error>$environmentId</error>"
             );
             if ($selectedEnvironment->is_dirty) {
                 $this->clearEnvironmentsCache();
@@ -48,10 +48,10 @@ class SnapshotCreateCommand extends CommandBase
         if (!$input->getOption('no-wait')) {
             $this->stdErr->writeln("Waiting for the snapshot to complete...");
             $success = ActivityUtil::waitAndLog(
-              $activity,
-              $this->stdErr,
-              "A snapshot of environment <info>$environmentId</info> has been created",
-              "The snapshot failed"
+                $activity,
+                $this->stdErr,
+                "A snapshot of environment <info>$environmentId</info> has been created",
+                "The snapshot failed"
             );
             if (!$success) {
                 return 1;

@@ -115,9 +115,9 @@ class ArgvHelper extends Helper
             unset($args[$key]);
             // Unset the option's value too.
             if ($option->acceptValue()
-              && isset($args[$key + 1])
-              && !strpos($arg, '=')
-              && $args[$key + 1][0] !== '-'
+                && isset($args[$key + 1])
+                && !strpos($arg, '=')
+                && $args[$key + 1][0] !== '-'
             ) {
                 unset($args[$key + 1]);
             }

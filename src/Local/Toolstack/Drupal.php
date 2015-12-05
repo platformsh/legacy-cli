@@ -177,17 +177,17 @@ class Drupal extends ToolstackBase
      */
     protected function findDrushMakeFile($required = false, $core = false) {
         $candidates = [
-          'project.make.yml',
-          'project.make',
-          'drupal-org.make.yml',
-          'drupal-org.make',
+            'project.make.yml',
+            'project.make',
+            'drupal-org.make.yml',
+            'drupal-org.make',
         ];
         if (empty($this->settings['drushUpdateLock'])) {
             $candidates = array_merge([
-              'project.make.lock',
-              'project.make.yml.lock',
-              'drupal-org.make.yml.lock',
-              'drupal-org.make.lock',
+                'project.make.lock',
+                'project.make.yml.lock',
+                'drupal-org.make.yml.lock',
+                'drupal-org.make.lock',
             ], $candidates);
         }
         foreach ($candidates as &$candidate) {
@@ -201,8 +201,8 @@ class Drupal extends ToolstackBase
 
         if ($required) {
             throw new \Exception(
-              ($core ? "Couldn't find a core make file in the directory." : "Couldn't find a make file in the directory.")
-              . " Possible filenames: " . implode(',', $candidates)
+                ($core ? "Couldn't find a core make file in the directory." : "Couldn't find a make file in the directory.")
+                . " Possible filenames: " . implode(',', $candidates)
             );
         }
 
@@ -236,8 +236,8 @@ class Drupal extends ToolstackBase
         $drupalRoot = $this->getWebRoot();
 
         $args = array_merge(
-          ['make', $projectMake, $drupalRoot],
-          $this->drushFlags
+            ['make', $projectMake, $drupalRoot],
+            $this->drushFlags
         );
 
         // Create a lock file automatically.
@@ -267,12 +267,12 @@ class Drupal extends ToolstackBase
         // Symlink, non-recursively, all files from the app into the
         // 'sites/default' directory.
         $this->fsHelper->symlinkAll(
-          $this->appRoot,
-          $drupalRoot . '/sites/default',
-          true,
-          false,
-          array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
-          $this->copy
+            $this->appRoot,
+            $drupalRoot . '/sites/default',
+            true,
+            false,
+            array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
+            $this->copy
         );
     }
 
@@ -293,8 +293,8 @@ class Drupal extends ToolstackBase
         $drupalRoot = $this->getWebRoot();
 
         $args = array_merge(
-          ['make', $projectCoreMake, $drupalRoot],
-          $this->drushFlags
+            ['make', $projectCoreMake, $drupalRoot],
+            $this->drushFlags
         );
 
         // Create a lock file automatically.
@@ -311,8 +311,8 @@ class Drupal extends ToolstackBase
         $this->output->writeln("Building the profile: <info>$profileName</info>");
 
         $args = array_merge(
-          ['make', '--no-core', '--contrib-destination=.', $projectMake, $profileDir],
-          $this->drushFlags
+            ['make', '--no-core', '--contrib-destination=.', $projectMake, $profileDir],
+            $this->drushFlags
         );
 
         // Create a lock file automatically.
@@ -344,12 +344,12 @@ class Drupal extends ToolstackBase
         // example 'modules/contrib', but include files from the app such as
         // 'modules/custom'.
         $this->fsHelper->symlinkAll(
-          $this->appRoot,
-          $profileDir,
-          true,
-          true,
-          array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
-          $this->copy
+            $this->appRoot,
+            $profileDir,
+            true,
+            true,
+            array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
+            $this->copy
         );
     }
 
@@ -374,8 +374,8 @@ class Drupal extends ToolstackBase
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
             $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->output->writeln(
-              "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
-              . "\nYou will need to rebuild if you edit this file.</comment>"
+                "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
+                . "\nYou will need to rebuild if you edit this file.</comment>"
             );
             $this->ignoredFiles[] = 'settings.php';
         }

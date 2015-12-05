@@ -30,7 +30,7 @@ class EnvironmentSqlCommand extends CommandBase
         $sshOptions = '';
 
         $sshUrl = $this->getSelectedEnvironment()
-          ->getSshUrl($this->selectApp($input));
+                       ->getSshUrl($this->selectApp($input));
 
         $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);
@@ -45,8 +45,8 @@ class EnvironmentSqlCommand extends CommandBase
 
             default:
                 $sqlCommand = "mysql --no-auto-rehash --database={$database['path']}"
-                  . " --host={$database['host']} --port={$database['port']}"
-                  . " --user={$database['username']} --password={$database['password']}";
+                    . " --host={$database['host']} --port={$database['port']}"
+                    . " --user={$database['username']} --password={$database['password']}";
                 break;
         }
 
@@ -71,7 +71,7 @@ class EnvironmentSqlCommand extends CommandBase
         }
 
         $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
-          . ' ' . escapeshellarg($sqlCommand);
+            . ' ' . escapeshellarg($sqlCommand);
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $this->stdErr->writeln("Running command: <info>$command</info>");

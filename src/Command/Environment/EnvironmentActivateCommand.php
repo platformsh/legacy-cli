@@ -14,9 +14,9 @@ class EnvironmentActivateCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:activate')
-          ->setDescription('Activate an environment')
-          ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
+            ->setName('environment:activate')
+            ->setDescription('Activate an environment')
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -67,7 +67,7 @@ class EnvironmentActivateCommand extends CommandBase
             }
             if (!$environment->operationAvailable('activate')) {
                 $output->writeln(
-                  "Operation not available: The environment <error>$environmentId</error> can't be activated."
+                    "Operation not available: The environment <error>$environmentId</error> can't be activated."
                 );
                 continue;
             }

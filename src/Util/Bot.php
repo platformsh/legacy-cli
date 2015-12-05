@@ -13,10 +13,10 @@ class Bot extends ConsoleAnimation
     {
         $interval = 500000;
         $filenames = [
-          CLI_ROOT . '/resources/bot/bot1',
-          CLI_ROOT . '/resources/bot/bot2',
-          CLI_ROOT . '/resources/bot/bot3',
-          CLI_ROOT . '/resources/bot/bot4',
+            CLI_ROOT . '/resources/bot/bot1',
+            CLI_ROOT . '/resources/bot/bot2',
+            CLI_ROOT . '/resources/bot/bot3',
+            CLI_ROOT . '/resources/bot/bot4',
         ];
 
         // The frames are the contents of each file, with each line indented.

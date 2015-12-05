@@ -18,14 +18,14 @@ class EnvironmentCheckoutCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('environment:checkout')
-          ->setAliases(['checkout'])
-          ->setDescription('Check out an environment')
-          ->addArgument(
-            'id',
-            InputArgument::OPTIONAL,
-            'The ID of the environment to check out. For example: "sprint2"'
-          );
+            ->setName('environment:checkout')
+            ->setAliases(['checkout'])
+            ->setDescription('Check out an environment')
+            ->addArgument(
+                'id',
+                InputArgument::OPTIONAL,
+                'The ID of the environment to check out. For example: "sprint2"'
+            );
         $this->addExample('Check out the environment "develop"', 'master');
     }
 

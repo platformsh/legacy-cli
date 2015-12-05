@@ -13,8 +13,8 @@ class WelcomeCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('welcome')
-          ->setDescription('Welcome to Platform.sh');
+            ->setName('welcome')
+            ->setDescription('Welcome to Platform.sh');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

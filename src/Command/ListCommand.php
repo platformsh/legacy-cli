@@ -24,13 +24,13 @@ class ListCommand extends ParentListCommand
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor());
         $helper->describe(
-          $output,
-          $this->getApplication(),
-          [
-            'format' => $input->getOption('format'),
-            'raw_text' => $input->getOption('raw'),
-            'namespace' => $input->getArgument('namespace'),
-          ]
+            $output,
+            $this->getApplication(),
+            [
+                'format' => $input->getOption('format'),
+                'raw_text' => $input->getOption('raw'),
+                'namespace' => $input->getArgument('namespace'),
+            ]
         );
     }
 

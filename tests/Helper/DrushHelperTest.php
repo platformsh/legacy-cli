@@ -35,8 +35,8 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
 
         // Set up a dummy project with a remote environment.
         $this->project = new Project([
-          'id' => 'test',
-          'title' => 'Test project title',
+            'id' => 'test',
+            'title' => 'Test project title',
         ]);
         $this->environments[] = new Environment([
             'id' => 'master',
