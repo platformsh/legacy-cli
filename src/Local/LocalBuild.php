@@ -198,6 +198,19 @@ class LocalBuild
             return false;
         }
 
+        // Warn about a mismatched PHP version.
+        if (isset($appConfig['type']) && strpos($appConfig['type'], ':')) {
+            list($stack, $version) = explode(':', $appConfig['type'], 2);
+            if ($stack === 'php' && version_compare($version, PHP_VERSION, '>')) {
+                $this->output->writeln(sprintf(
+                    '<comment>Warning:</comment> the application <comment>%s</comment> expects PHP %s, but the system version is %s.',
+                    $appId,
+                    $version,
+                    PHP_VERSION
+                ));
+            }
+        }
+
         $toolstack->setOutput($this->output);
 
         $buildSettings = $this->settings + [
