@@ -1155,4 +1155,24 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     {
         return array_diff($this->getAliases(), $this->hiddenAliases);
     }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Overrides the default method so that the description is not repeated
+     * twice.
+     */
+    public function getProcessedHelp()
+    {
+        $help = $this->getHelp();
+        if ($help === '') {
+            return $help;
+        }
+        $name = $this->getName();
+
+        $placeholders = ['%command.name%', '%command.full_name%'];
+        $replacements = [$name, $_SERVER['PHP_SELF'] . ' ' . $name];
+
+        return str_replace($placeholders, $replacements, $help);
+    }
 }
