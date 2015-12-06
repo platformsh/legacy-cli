@@ -68,4 +68,12 @@ class SelfUpdateCommand extends CommandBase
         // terminating now.
         exit;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function checkUpdates(InputInterface $input, OutputInterface $output, $reset = false)
+    {
+        // Don't check for updates automatically when running self-update.
+    }
 }
