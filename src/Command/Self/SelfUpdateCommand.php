@@ -29,11 +29,14 @@ class SelfUpdateCommand extends CommandBase
 
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln('This instance of the CLI was not installed as a Phar archive.');
+
+            // Instructions for users who are running a global Composer install.
             if (file_exists(CLI_ROOT . '/../../autoload.php')) {
-                $this->stdErr->writeln("Update using:\n  composer global update");
+                $this->stdErr->writeln("Update using:\n\n  composer global update");
+                $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>):\n");
+                $this->stdErr->writeln("  composer global remove platformsh/cli");
+                $this->stdErr->writeln("  curl -sS https://platform.sh/cli/installer | php\n");
             }
-            $this->stdErr->writeln("\nYou can switch to a Phar install (recommended):");
-            $this->stdErr->writeln("  curl -sS https://platform.sh/cli/installer | php");
             return 1;
         }
 

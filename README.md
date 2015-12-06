@@ -54,10 +54,6 @@ New releases of the CLI are made regularly. Update with this command:
 
     platform self-update
 
-If you installed the CLI using Composer, then you may need this command instead:
-
-    composer global update
-
 ## Usage
 
 You can run the Platform.sh CLI in your shell by typing `platform`.
