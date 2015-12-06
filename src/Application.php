@@ -129,12 +129,12 @@ class Application extends ParentApplication
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
         $commands[] = new Command\Local\LocalDirCommand();
         $commands[] = new Command\Local\LocalInitCommand();
-        $commands[] = new Command\Local\LocalInstallCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
         $commands[] = new Command\Project\ProjectGetCommand();
         $commands[] = new Command\Project\ProjectListCommand();
         $commands[] = new Command\Project\ProjectInfoCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
+        $commands[] = new Command\Self\SelfInstallCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
         $commands[] = new Command\Snapshot\SnapshotListCommand();

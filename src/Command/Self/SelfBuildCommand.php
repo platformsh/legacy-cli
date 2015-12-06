@@ -14,19 +14,21 @@ class SelfBuildCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('self-build')
+            ->setName('self:build')
             ->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
             ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename');
     }
 
+    public function isEnabled()
+    {
+        // You can't build a Phar from another Phar.
+        return !extension_loaded('Phar') || !\Phar::running(false);
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (extension_loaded('Phar') && \Phar::running(false)) {
-            $this->stdErr->writeln('Cannot build a Phar from another Phar');
-            return 1;
-        }
-        elseif (!file_exists(CLI_ROOT . '/vendor')) {
+        if (!file_exists(CLI_ROOT . '/vendor')) {
             $this->stdErr->writeln('Directory not found: <error>' . CLI_ROOT . '/vendor</error>');
             $this->stdErr->writeln('Cannot build from a global install');
             return 1;

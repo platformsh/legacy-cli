@@ -1,19 +1,19 @@
 <?php
-namespace Platformsh\Cli\Command\Local;
+namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LocalInstallCommand extends CommandBase
+class SelfInstallCommand extends CommandBase
 {
-    protected $hiddenInList = true;
     protected $local = true;
 
     protected function configure()
     {
-        $this->setName('local:install')
+        $this->setName('self:install')
              ->setDescription('Install or update CLI configuration files');
+        $this->setHiddenAliases(['local:install']);
         $this->setHelp(<<<EOT
 This command automatically installs shell configuration for the Platform.sh CLI,
 adding autocompletion support and handy aliases. Bash and ZSH are supported.

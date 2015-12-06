@@ -46,13 +46,13 @@ you are doing.
 
 3. Enable autocompletion and shell aliases:
 
-        platform local:install
+        platform self:install
 
 ## Updating
 
 New releases of the CLI are made regularly. Update with this command:
 
-    platform self-update
+    platform self:update
 
 ## Usage
 
@@ -87,7 +87,6 @@ Available commands:
   list                                      Lists commands
   login                                     Log in to Platform.sh
   logout                                    Log out of Platform.sh
-  self-update (up)                          Update the CLI to the latest version
   web                                       Open the Platform.sh Web UI
 activity
   activity:list (activities)                Get the most recent activities for an environment
@@ -129,6 +128,9 @@ project
   project:get (get)                         Clone and build a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
+self
+  self:install                              Install or update CLI configuration files
+  self:update                               Update the CLI to the latest version
 snapshot
   snapshot:create                           Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment
