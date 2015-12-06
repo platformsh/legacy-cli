@@ -54,6 +54,21 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /** @var bool */
     protected static $interactive = false;
 
+    /**
+     * @see self::getProjectRoot()
+     * @see self::setProjectRoot()
+     *
+     * @var string|false
+     */
+    private static $projectRoot = false;
+
+    /**
+     * The local project configuration.
+     *
+     * @var array
+     */
+    private static $projectConfig = [];
+
     /** @var OutputInterface|null */
     protected $output;
 
@@ -89,21 +104,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      * @var Environment|false
      */
     private $environment;
-
-    /**
-     * @see self::getProjectRoot()
-     * @see self::setProjectRoot()
-     *
-     * @var string|false
-     */
-    private $projectRoot = false;
-
-    /**
-     * The local project configuration.
-     *
-     * @var array
-     */
-    private $projectConfig = [];
 
     public function __construct($name = null)
     {
@@ -783,7 +783,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if (!is_dir($root)) {
             throw new \InvalidArgumentException("Invalid project root: $root");
         }
-        $this->projectRoot = $root;
+        self::$projectRoot = $root;
     }
 
     /**
@@ -791,7 +791,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     public function getProjectRoot()
     {
-        return $this->projectRoot ?: LocalProject::getProjectRoot();
+        return self::$projectRoot ?: LocalProject::getProjectRoot();
     }
 
     /**
@@ -1110,10 +1110,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     {
         /** @var CommandBase $command */
         $command = $this->getApplication()->find($name);
-        // Pass on the project root to the other command.
-        if ($root = $this->getProjectRoot()) {
-            $command->setProjectRoot($root);
-        }
 
         // Pass on interactivity arguments to the other command.
         if ($input) {
