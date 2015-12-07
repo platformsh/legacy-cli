@@ -3,8 +3,8 @@ namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Util\Table;
 use Platformsh\Client\Model\Domain;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -19,25 +19,8 @@ class DomainListCommand extends DomainCommandBase
             ->setName('domain:list')
             ->setAliases(['domains'])
             ->setDescription('Get a list of all domains');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
-    }
-
-    /**
-     * Build a table of domains.
-     *
-     * @param Domain[] $tree
-     * @param OutputInterface $output
-     *
-     * @return Table
-     */
-    protected function buildDomainTable(array $tree, $output)
-    {
-        $table = new Table($output);
-        $table
-            ->setHeaders(['Name', 'SSL enabled', 'Creation date'])
-            ->addRows($this->buildDomainRows($tree));
-
-        return $table;
     }
 
     /**
@@ -89,9 +72,18 @@ class DomainListCommand extends DomainCommandBase
             return 1;
         }
 
+        $table = new Table($input, $output);
+        $header = ['Name', 'SSL enabled', 'Creation date'];
+        $rows = $this->buildDomainRows($domains);
+
+        if ($table->formatIsMachineReadable()) {
+            $table->render($rows, $header);
+
+            return 0;
+        }
+
         $this->stdErr->writeln("Your domains are: ");
-        $table = $this->buildDomainTable($domains, $output);
-        $table->render();
+        $table->render($rows, $header);
 
         $this->stdErr->writeln("\nAdd a new domain by running <info>platform domain:add [domain-name]</info>");
         $this->stdErr->writeln(

@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Symfony\Component\Console\Helper\Table;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -15,6 +15,7 @@ class UserListCommand extends CommandBase
             ->setName('user:list')
             ->setAliases(['users'])
             ->setDescription('List project users');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
     }
 
@@ -26,23 +27,23 @@ class UserListCommand extends CommandBase
 
         $rows = [];
         $i = 0;
+        $table = new Table($input, $output);
         foreach ($project->getUsers() as $user) {
             $account = $this->getAccount($user);
             $role = $user['role'];
             $weight = $i++;
             if ($project->owner === $user->id) {
                 $weight = -1;
-                $role .= ' (owner)';
+                if (!$table->formatIsMachineReadable()) {
+                    $role .= ' (owner)';
+                }
             }
             $rows[$weight] = [$account['email'], $account['display_name'], $role];
         }
 
         ksort($rows);
 
-        $table = new Table($output);
-        $table->setHeaders(['Email address', 'Name', 'Role']);
-        $table->setRows($rows);
-        $table->render();
+        $table->render(array_values($rows), ['Email address', 'Name', 'Role']);
         return 0;
     }
 

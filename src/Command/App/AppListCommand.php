@@ -5,7 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
-use Symfony\Component\Console\Helper\Table;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -21,6 +21,7 @@ class AppListCommand extends CommandBase
         $this->setName('app:list')
             ->setAliases(['apps'])
             ->setDescription('Get a list of all apps in the local repository');
+        Table::addFormatOption($this->getDefinition());
     }
 
     /**
@@ -40,9 +41,7 @@ class AppListCommand extends CommandBase
             $rows[] = [$app->getName(), $app->getRoot()];
         }
 
-        $table = new Table($output);
-        $table->setHeaders(['Name or ID', 'Path']);
-        $table->addRows($rows);
-        $table->render();
+        $table = new Table($input, $output);
+        $table->render($rows, ['Name', 'Path']);
     }
 }

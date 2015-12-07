@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
-use Symfony\Component\Console\Helper\Table;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,6 +18,7 @@ class SnapshotListCommand extends CommandBase
             ->setDescription('List available snapshots of an environment')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List the most recent snapshots')
@@ -36,14 +37,19 @@ class SnapshotListCommand extends CommandBase
             return 1;
         }
 
-        $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");
+        $table = new Table($input, $output);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");
+        }
+
         $results = $environment->getActivities($input->getOption('limit'), 'environment.backup', $startsAt);
         if (!$results) {
             $this->stdErr->writeln('No snapshots found');
             return 1;
         }
 
-        $headers = ["Created", "% Complete", "Snapshot name"];
+        $headers = ['Created', '% Complete', 'Snapshot name'];
         $rows = [];
         foreach ($results as $result) {
             $payload = $result->payload;
@@ -55,10 +61,7 @@ class SnapshotListCommand extends CommandBase
             ];
         }
 
-        $table = new Table($output);
-        $table->setHeaders($headers);
-        $table->setRows($rows);
-        $table->render();
+        $table->render($rows, $headers);
         return 0;
     }
 }
