@@ -91,6 +91,9 @@ Available commands:
 activity
   activity:list (activities)                Get the most recent activities for an environment
   activity:log                              Display the log for an environment activity
+app
+  app:config-get                            Get the configuration of an app
+  app:list (apps)                           Get a list of all apps in the local repository
 domain
   domain:add                                Add a new domain to the project
   domain:delete                             Delete a domain from the project
