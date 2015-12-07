@@ -1,9 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Domain;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -176,6 +178,29 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         return $chainFiles;
+    }
+
+    /**
+     * Output a clear explanation for domains API errors.
+     *
+     * @param ClientException $e
+     * @param Project         $project
+     *
+     * @throws ClientException If it can't be explained.
+     */
+    protected function handleApiException(ClientException $e, Project $project)
+    {
+        $response = $e->getResponse();
+        if ($response !== null && $response->getStatusCode() === 403) {
+            $project->ensureFull();
+            $data = $project->getData();
+            if (!$project->hasLink('#manage-domains') && !empty($data['subscription']['plan']) && $data['subscription']['plan'] === 'development') {
+                $this->stdErr->writeln('This project is on a Development plan. Upgrade the plan to add domains.');
+            }
+        }
+        else {
+            throw $e;
+        }
     }
 
 }

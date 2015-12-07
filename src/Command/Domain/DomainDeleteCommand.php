@@ -30,18 +30,17 @@ class DomainDeleteCommand extends CommandBase
         $this->validateInput($input);
 
         $name = $input->getArgument('name');
-        $domain = $this->getSelectedProject()
-                       ->getDomain($name);
+        $project = $this->getSelectedProject();
+
+        $domain = $project->getDomain($name);
+
         if (!$domain) {
             $this->stdErr->writeln("Domain not found: <error>$name</error>");
-
             return 1;
         }
 
-        if (!$this->getHelper('question')
-                  ->confirm("Are you sure you want to delete the domain <info>$name</info>?", $input, $this->stdErr)
-        ) {
-            return 0;
+        if (!$this->getHelper('question')->confirm("Are you sure you want to delete the domain <info>$name</info>?", $input, $this->stdErr)) {
+            return 1;
         }
 
         $result = $domain->delete();
