@@ -18,9 +18,24 @@ class BotCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $bot = new Bot($this->stdErr);
+        $bot = new Bot($output);
+
+        if (!$output->isDecorated()) {
+            $bot->render();
+            return;
+        }
+
+        // Stay positive: return code 0 when the user quits.
+        if (function_exists('pcntl_signal')) {
+            declare(ticks = 1);
+            pcntl_signal(SIGINT, function () {
+                echo "\n";
+                exit;
+            });
+        }
+
         while (true) {
-            $bot->displayNext();
+            $bot->render();
         }
     }
 }
