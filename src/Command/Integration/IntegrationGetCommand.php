@@ -1,8 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Client\Model\Integration;
-use Symfony\Component\Console\Helper\Table;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,6 +18,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
             ->setAliases(['integrations'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
             ->setDescription('View project integration(s)');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
         $this->setHiddenAliases(['integration:list']);
     }
@@ -48,32 +48,21 @@ class IntegrationGetCommand extends IntegrationCommandBase
             }
         }
 
-        $table = $this->buildTable($results, $output);
-        $table->render();
+        $table = new Table($input, $output);
 
-        return 0;
-    }
-
-    /**
-     * @param Integration[]   $integrations
-     * @param OutputInterface $output
-     *
-     * @return Table
-     */
-    protected function buildTable(array $integrations, OutputInterface $output)
-    {
-        $table = new Table($output);
-        $table->setHeaders(["ID", "Type", "Details"]);
-        foreach ($integrations as $integration) {
+        $header = ['ID', 'Type', 'Details'];
+        $rows = [];
+        foreach ($results as $integration) {
             $data = $this->formatIntegrationData($integration);
-            $table->addRow([
+            $rows[] = [
                 $integration->id,
                 $integration->type,
                 $data,
-            ]);
+            ];
         }
 
-        return $table;
-    }
+        $table->render($rows, $header);
 
+        return 0;
+    }
 }

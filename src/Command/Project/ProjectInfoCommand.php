@@ -3,9 +3,9 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Project;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -27,6 +27,7 @@ class ProjectInfoCommand extends CommandBase
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for a project');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
@@ -48,7 +49,7 @@ class ProjectInfoCommand extends CommandBase
         $property = $input->getArgument('property');
 
         if (!$property) {
-            return $this->listProperties($project, $output);
+            return $this->listProperties($project, new Table($input, $output));
         }
 
         $value = $input->getArgument('value');
@@ -62,12 +63,12 @@ class ProjectInfoCommand extends CommandBase
     }
 
     /**
-     * @param Project         $project
-     * @param OutputInterface $output
+     * @param Project $project
+     * @param Table   $table
      *
      * @return int
      */
-    protected function listProperties(Project $project, OutputInterface $output)
+    protected function listProperties(Project $project, Table $table)
     {
         // Properties not to display, as they are internal, deprecated, or
         // otherwise confusing.
@@ -82,16 +83,17 @@ class ProjectInfoCommand extends CommandBase
             'subscription',
         ];
 
-        $table = new Table($output);
-        $table->setHeaders(["Property", "Value"]);
+        $headings = [];
+        $values = [];
         foreach ($project->getProperties() as $key => $value) {
             if (!in_array($key, $blacklist)) {
                 $value = $this->formatter->format($value, $key);
                 $value = wordwrap($value, 50, "\n", true);
-                $table->addRow([$key, $value]);
+                $headings[] = $key;
+                $values = $value;
             }
         }
-        $table->render();
+        $table->renderSimple($values, $headings);
 
         return 0;
     }

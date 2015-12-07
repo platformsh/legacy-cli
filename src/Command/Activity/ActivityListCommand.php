@@ -3,11 +3,10 @@ namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
-use Symfony\Component\Console\Helper\Table;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\StreamOutput;
 
 class ActivityListCommand extends CommandBase
 {
@@ -21,9 +20,9 @@ class ActivityListCommand extends CommandBase
             ->setAliases(['activities'])
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 5)
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output tab-separated results')
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->setDescription('Get a list of activities for an environment');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List recent activities on the current environment')
@@ -51,11 +50,14 @@ class ActivityListCommand extends CommandBase
             return 1;
         }
 
-        $headers = ["ID", "Created", "Description", "% Complete", "State"];
+        $table = new Table($input, $output);
+
         $rows = [];
         foreach ($activities as $activity) {
             $description = $activity->getDescription();
-            $description = wordwrap($description, 40);
+            if (!$table->formatIsMachineReadable()) {
+                $description = wordwrap($description, 40);
+            }
             $rows[] = [
                 $activity->id,
                 date('Y-m-d H:i:s', strtotime($activity['created_at'])),
@@ -65,21 +67,13 @@ class ActivityListCommand extends CommandBase
             ];
         }
 
-        if ($output instanceof StreamOutput && $input->getOption('pipe')) {
-            $stream = $output->getStream();
-            array_unshift($rows, $headers);
-            foreach ($rows as $row) {
-                fputcsv($stream, $row, "\t");
-            }
-
-            return 0;
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln("Activities for the environment <info>" . $environment->id . "</info>");
         }
 
-        $this->stdErr->writeln("Activities for the environment <info>" . $environment->id . "</info>");
-        $table = new Table($output);
-        $table->setHeaders($headers);
-        $table->addRows($rows);
-        $table->render();
+        $headers = ['ID', 'Created', 'Description', '% Complete', 'State'];
+
+        $table->render($rows, $headers);
 
         return 0;
     }

@@ -3,9 +3,9 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Client\Model\Environment;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -27,6 +27,7 @@ class EnvironmentInfoCommand extends CommandBase
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for an environment');
+        Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -54,7 +55,7 @@ class EnvironmentInfoCommand extends CommandBase
         $this->formatter = new PropertyFormatter();
 
         if (!$property) {
-            return $this->listProperties($environment, $output);
+            return $this->listProperties($environment, new Table($input, $output));
         }
 
         $value = $input->getArgument('value');
@@ -68,19 +69,21 @@ class EnvironmentInfoCommand extends CommandBase
     }
 
     /**
-     * @param Environment     $environment
-     * @param OutputInterface $output
+     * @param Environment $environment
+     *
+     * @param Table       $table
      *
      * @return int
      */
-    protected function listProperties(Environment $environment, OutputInterface $output)
+    protected function listProperties(Environment $environment, Table $table)
     {
-        $table = new Table($output);
-        $table->setHeaders(["Property", "Value"]);
+        $headings = [];
+        $values = [];
         foreach ($environment->getProperties() as $key => $value) {
-            $table->addRow([$key, $this->formatter->format($value, $key)]);
+            $headings[] = $key;
+            $values[] = $this->formatter->format($value, $key);
         }
-        $table->render();
+        $table->renderSimple($values, $headings);
 
         return 0;
     }
