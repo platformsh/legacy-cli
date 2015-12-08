@@ -43,7 +43,7 @@ class UserListCommand extends CommandBase
 
         ksort($rows);
 
-        $table->render(array_values($rows), ['Email address', 'Name', 'Role']);
+        $table->render(array_values($rows), ['Email address', 'Name', 'Project role']);
         return 0;
     }
 
