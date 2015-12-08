@@ -63,7 +63,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     private static $projectRoot = false;
 
     /**
-     * The local project configuration.
+     * An array of local project configurations, keyed by project root.
      *
      * @var array
      */
@@ -473,11 +473,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function getProjectConfig($projectRoot)
     {
-        if (!isset($this->projectConfig[$projectRoot])) {
-            $this->projectConfig[$projectRoot] = LocalProject::getProjectConfig($projectRoot) ?: [];
+        if (!isset(self::$projectConfig[$projectRoot])) {
+            self::$projectConfig[$projectRoot] = LocalProject::getProjectConfig($projectRoot) ?: [];
         }
 
-        return $this->projectConfig[$projectRoot];
+        return self::$projectConfig[$projectRoot];
     }
 
     /**
@@ -489,7 +489,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function setProjectConfig($key, $value, $projectRoot)
     {
-        unset($this->projectConfig[$projectRoot]);
+        unset(self::$projectConfig[$projectRoot]);
         LocalProject::writeCurrentProjectConfig($key, $value, $projectRoot);
     }
 
