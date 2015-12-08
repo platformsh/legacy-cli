@@ -56,7 +56,8 @@ class UserRoleCommand extends CommandBase
             return 1;
         }
 
-        $currentRole = null;
+        $currentRole = false;
+        $environmentAccess = false;
         $validRoles = ProjectAccess::$roles;
         if ($level == 'project') {
             $currentRole = $selectedUser['role'];
@@ -66,7 +67,15 @@ class UserRoleCommand extends CommandBase
                 $this->stdErr->writeln('You must specify an environment');
                 return 1;
             }
-            $currentRole = $selectedUser->getEnvironmentRole($this->getSelectedEnvironment());
+            $environment = $this->getSelectedEnvironment();
+            $environmentAccesses = $environment->getUsers();
+            foreach ($environmentAccesses as $candidate) {
+                if ($candidate->user === $selectedUser->id) {
+                    $environmentAccess = $candidate;
+                    $currentRole = $environmentAccess->role;
+                    break;
+                }
+            }
             $validRoles = EnvironmentAccess::$roles;
         }
 
@@ -91,14 +100,13 @@ class UserRoleCommand extends CommandBase
         }
         elseif ($role && $level == 'environment') {
             $environment = $this->getSelectedEnvironment();
-            $access = $environment->getUser($selectedUser->id);
             if ($role == 'none') {
-                if ($access) {
-                    $result = $access->delete();
+                if ($environmentAccess) {
+                    $result = $environmentAccess->delete();
                 }
             }
-            elseif ($access) {
-                $result = $access->update(['role' => $role]);
+            elseif ($environmentAccess) {
+                $result = $environmentAccess->update(['role' => $role]);
             }
             else {
                 $result = $environment->addUser($selectedUser->id, $role);
@@ -121,12 +129,18 @@ class UserRoleCommand extends CommandBase
             return 0;
         }
 
-        if ($level == 'project') {
-            $output->writeln("Project role: <info>{$selectedUser->role}</info>");
-        } elseif ($level == 'environment') {
+        $output->writeln("Project role: <info>{$selectedUser->role}</info>");
+
+        if ($this->hasSelectedEnvironment()) {
             $environment = $this->getSelectedEnvironment();
-            $environmentRole = $selectedUser->getEnvironmentRole($environment) ?: 'none';
-            $output->writeln("Role for environment {$environment->title}: <info>$environmentRole</info>");
+            $environmentAccesses = $environment->getUsers();
+            $currentEnvironmentRole = 'none';
+            foreach ($environmentAccesses as $environmentAccess) {
+                if ($selectedUser->id === $environmentAccess->user) {
+                    $currentEnvironmentRole = $environmentAccess->role;
+                }
+            }
+            $output->writeln("Role for environment {$environment->title}: <info>$currentEnvironmentRole</info>");
         }
 
         return 0;
