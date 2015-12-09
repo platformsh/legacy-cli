@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Process\Process;
@@ -45,10 +46,10 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function isServerRunningForAddress($address)
     {
-        $lockFile = $this->getLockFile($address);
+        $pidFile = $this->getPidFile($address);
         $serverInfo = $this->getServerInfo();
-        if (file_exists($lockFile)) {
-            $pid = file_get_contents($lockFile);
+        if (file_exists($pidFile)) {
+            $pid = file_get_contents($pidFile);
         }
         elseif (isset($serverInfo[$address])) {
             $pid = $serverInfo[$address]['pid'];
@@ -64,8 +65,7 @@ abstract class ServerCommandBase extends CommandBase
         }
 
         list($hostname, $port) = explode(':', $address);
-        if (false !== $fp = @fsockopen($hostname, $port, $errno, $errstr, 10)) {
-            fclose($fp);
+        if (PortUtil::isPortInUse($port, $hostname)) {
             return true;
         }
 
@@ -134,9 +134,9 @@ abstract class ServerCommandBase extends CommandBase
                 $this->stdErr->writeln(sprintf('Failed to kill process <error>%d</error> (POSIX error %s)', $pid, posix_get_last_error()));
             }
         }
-        $lockFile = $this->getLockFile($address);
-        if (file_exists($lockFile)) {
-            $success = unlink($lockFile) && $success;
+        $pidFile = $this->getPidFile($address);
+        if (file_exists($pidFile)) {
+            $success = unlink($pidFile) && $success;
         }
         unset($this->serverInfo[$address]);
         $this->saveServerInfo();
@@ -151,7 +151,7 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function writeServerInfo($address, $pid, array $info = [])
     {
-        file_put_contents($this->getLockFile($address), $pid);
+        file_put_contents($this->getPidFile($address), $pid);
         list($ip, $port) = explode(':', $address);
         $this->serverInfo[$address] = $info + [
             'address' => $address,
@@ -176,88 +176,7 @@ abstract class ServerCommandBase extends CommandBase
             $ports[] = $server['port'];
         }
 
-        return $ports ? max($ports) + 1 : $default;
-    }
-
-    /**
-     * @param int $port
-     *
-     * @return bool
-     */
-    protected function validatePort($port)
-    {
-        if (!is_numeric($port) || $port < 0 || $port > 65535) {
-            return false;
-        }
-
-        static $unsafePorts = [
-          1,    // tcpmux
-          7,    // echo
-          9,    // discard
-          11,   // systat
-          13,   // daytime
-          15,   // netstat
-          17,   // qotd
-          19,   // chargen
-          20,   // ftp data
-          21,   // ftp access
-          22,   // ssh
-          23,   // telnet
-          25,   // smtp
-          37,   // time
-          42,   // name
-          43,   // nicname
-          53,   // domain
-          77,   // priv-rjs
-          79,   // finger
-          87,   // ttylink
-          95,   // supdup
-          101,  // hostriame
-          102,  // iso-tsap
-          103,  // gppitnp
-          104,  // acr-nema
-          109,  // pop2
-          110,  // pop3
-          111,  // sunrpc
-          113,  // auth
-          115,  // sftp
-          117,  // uucp-path
-          119,  // nntp
-          123,  // NTP
-          135,  // loc-srv /epmap
-          139,  // netbios
-          143,  // imap2
-          179,  // BGP
-          389,  // ldap
-          465,  // smtp+ssl
-          512,  // print / exec
-          513,  // login
-          514,  // shell
-          515,  // printer
-          526,  // tempo
-          530,  // courier
-          531,  // chat
-          532,  // netnews
-          540,  // uucp
-          556,  // remotefs
-          563,  // nntp+ssl
-          587,  // stmp?
-          601,  // ??
-          636,  // ldap+ssl
-          993,  // ldap+ssl
-          995,  // pop3+ssl
-          2049, // nfs
-          3659, // apple-sasl / PasswordServer
-          4045, // lockd
-          6000, // X11
-          6665, // Alternate IRC [Apple addition]
-          6666, // Alternate IRC [Apple addition]
-          6667, // Standard IRC [Apple addition]
-          6668, // Alternate IRC [Apple addition]
-          6669, // Alternate IRC [Apple addition]
-        ];
-
-        return !in_array($port, $unsafePorts);
+        return PortUtil::getPort($ports ? max($ports) + 1 : $default);
     }
 
     /**
@@ -267,7 +186,7 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return string The filename
      */
-    protected function getLockFile($address)
+    protected function getPidFile($address)
     {
         return $this->getConfigDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
     }

@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
-use Symfony\Component\Console\Helper\Table;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -14,6 +14,7 @@ class ServerStatusCommand extends ServerCommandBase
           ->setName('server:status')
           ->setDescription('Check the status of local project web server(s)')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check all servers');
+        Table::addFormatOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -36,16 +37,16 @@ class ServerStatusCommand extends ServerCommandBase
             }
         }
 
-        $table = new Table($output);
+        $table = new Table($input, $output);
         $headers = ['Address', 'PID', 'App', 'Project root', 'Log'];
-        $table->setHeaders($headers);
+        $rows = [];
         foreach ($servers as $address => $server) {
             $row = [$address, $server['pid'], $server['appId'], $server['projectRoot']];
             $logFile = ltrim(str_replace($server['projectRoot'], '', $server['logFile']), '/');
             $row[] = $logFile;
-            $table->addRow($row);
+            $rows[] = $row;
         }
-        $table->render();
+        $table->render($rows, $headers);
 
         return 0;
     }

@@ -5,6 +5,7 @@ use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Cli\Util\UrlUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -45,7 +46,7 @@ class ServerRunCommand extends ServerCommandBase
         }
 
         $port = $input->getOption('port') ?: $this->getPort();
-        if (!$this->validatePort($port)) {
+        if (!PortUtil::validatePort($port)) {
             $this->stdErr->writeln(sprintf('Invalid port: <error>%s</error>', $port));
             return 1;
         }

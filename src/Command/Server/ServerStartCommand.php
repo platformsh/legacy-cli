@@ -5,6 +5,8 @@ use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Util\PortUtil;
+use Platformsh\Cli\Util\ProcessManager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -24,11 +26,7 @@ class ServerStartCommand extends ServerCommandBase
 
     public function isEnabled()
     {
-        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
-            return false;
-        }
-
-        return parent::isEnabled();
+        return ProcessManager::supported() && parent::isEnabled();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -46,7 +44,7 @@ class ServerStartCommand extends ServerCommandBase
         }
 
         $port = $input->getOption('port') ?: $this->getPort();
-        if (!$this->validatePort($port)) {
+        if (!PortUtil::validatePort($port)) {
             $this->stdErr->writeln(sprintf('Invalid port: <error>%s</error>', $port));
             return 1;
         }
@@ -90,11 +88,12 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
+        $processManager = new ProcessManager();
+
         // Fork the PHP process so that we can start servers asynchronously.
-        $this->fork();
+        $processManager->fork();
 
         $error = false;
-        /** @var \Symfony\Component\Process\Process[] $processes */
         $processes = [];
         $force = $input->getOption('force');
         foreach ($items as $appId => $item) {
@@ -144,13 +143,12 @@ class ServerStartCommand extends ServerCommandBase
                 sleep(1);
             }
 
+            $pidFile = $this->getPidFile($address);
+            $process = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig);
+            $processes[$address] = $process;
+
             try {
-                $processes[$address] = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig);
-                $processes[$address]->start(
-                    function ($type, $buffer) use ($log) {
-                        $log->write($buffer);
-                    }
-                );
+                $processManager->startProcess($process, $pidFile, $log);
             }
             catch (\Exception $e) {
                 $this->stdErr->writeln(sprintf('Failed to start server: %s', $e->getMessage()));
@@ -160,7 +158,7 @@ class ServerStartCommand extends ServerCommandBase
             }
 
             // Save metadata on the server.
-            $pid = $processes[$address]->getPid();
+            $pid = $process->getPid();
             $this->writeServerInfo($address, $pid, [
               'appId' => $appId,
               'docRoot' => $docRoot,
@@ -168,18 +166,17 @@ class ServerStartCommand extends ServerCommandBase
               'projectRoot' => $projectRoot,
             ]);
 
-            $this->stdErr->writeln(sprintf('Web server started at <info>http://%s</info> for app <info>%s</info>', $address, $appId));
-            $log->writeln(sprintf('Process started: %s ', $processes[$address]->getCommandLine()));
-
             // Wait a small time to capture any immediate errors.
             usleep(100000);
-
-            if (!$processes[$address]->isRunning() && !$processes[$address]->isSuccessful()) {
-                $this->stdErr->writeln(trim($processes[$address]->getErrorOutput()));
-                unlink($this->getLockFile($address));
+            if (!$process->isRunning() && !$process->isSuccessful()) {
+                $this->stdErr->writeln(trim($process->getErrorOutput()));
+                unlink($this->getPidFile($address));
                 unset($processes[$address]);
                 $error = true;
+                continue;
             }
+
+            $this->stdErr->writeln(sprintf('Web server started at <info>http://%s</info> for app <info>%s</info>', $address, $appId));
         }
 
         if (count($processes)) {
@@ -189,88 +186,10 @@ class ServerStartCommand extends ServerCommandBase
 
         // The terminal has received all necessary output, so we can stop the
         // parent process.
-        $this->killParent($error);
+        $processManager->killParent($error);
 
-        if (!count($processes)) {
-            return $error ? 1 : 0;
-        }
-
-        // Wait for the processes to complete.
-        while (count($processes)) {
-            sleep(1);
-            // This loop avoids assigning any process object to a variable, to
-            // make it harder to destroy an object by mistake (destroying a
-            // process object causes its process to stop).
-            foreach (array_keys($processes) as $address) {
-                $lockFile = $this->getLockFile($address);
-                if (!file_exists($lockFile)) {
-                    $log->writeln(sprintf('Process stopped: %s', $processes[$address]->getCommandLine()));
-                    $processes[$address]->stop();
-                    unset($processes[$address]);
-                }
-                elseif (!$processes[$address]->isRunning()) {
-                    $exitCode = $processes[$address]->getExitCode();
-                    if ($exitCode === 143 || $exitCode === 147) {
-                        $log->writeln(sprintf('Process killed: %s', $processes[$address]->getCommandLine()));
-                    }
-                    elseif ($exitCode > 0) {
-                        $log->writeln(sprintf('Process stopped unexpectedly with exit code %s: %s', $exitCode, $processes[$address]->getCommandLine()));
-                    }
-                    unlink($lockFile);
-                    unset($processes[$address]);
-                }
-            }
-        }
+        $processManager->monitor($log);
 
         return $error ? 1 : 0;
-    }
-
-    /**
-     * Fork the PHP process.
-     *
-     * Code run after this method is run in a child process. The parent process
-     * merely waits for a SIGCHLD (successful) or SIGTERM (error) signal from
-     * the child.
-     *
-     * This depends on the PCNTL extension.
-     */
-    protected function fork()
-    {
-        $pid = pcntl_fork();
-        if ($pid === -1) {
-            throw new \RuntimeException('Failed to fork PHP process');
-        }
-        elseif ($pid > 0) {
-            // This is the parent process. If the child process succeeds, this
-            // receives SIGCHLD. If it fails, this receives SIGTERM.
-            declare (ticks = 1);
-            pcntl_signal(SIGCHLD, function () {
-                exit;
-            });
-            pcntl_signal(SIGTERM, function () {
-                exit(1);
-            });
-
-            // Wait a reasonable amount of time for the child processes to
-            // finish.
-            sleep(60);
-            throw new \RuntimeException('Timeout in parent process');
-        }
-        elseif (posix_setsid() === -1) {
-            throw new \RuntimeException('Child process failed to become session leader');
-        }
-    }
-
-    /**
-     * Kill the parent process.
-     *
-     * @param bool $error
-     *   Whether the parent process should exit with an error status.
-     */
-    protected function killParent($error = false)
-    {
-        if (!posix_kill(posix_getppid(), $error ? SIGTERM : SIGCHLD)) {
-            throw new \RuntimeException('Failed to kill parent process');
-        }
     }
 }
