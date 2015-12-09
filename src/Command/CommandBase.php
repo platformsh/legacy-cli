@@ -627,9 +627,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /**
      * Return the user's project with the given id.
      *
-     * @param string $id
-     * @param string $host
-     * @param bool   $refresh
+     * @param string $id        The project ID, or a full URL to the project
+     *                          (this can be any API or web interface URL for
+     *                          the project).
+     * @param string $host      The project's hostname, if $id is just an ID.
+     *                          If not provided, the hostname will be determined
+     *                          from the user's projects list.
+     * @param bool   $refresh   Whether to bypass the cache.
      *
      * @return Project|false
      */
@@ -638,8 +642,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         // Allow the specified project to be a full URL.
         if (strpos($id, '//') !== false) {
             $url = $id;
-            $id = basename($url);
+            $this->debug('Parsing project ID and hostname from URL');
             $host = parse_url($url, PHP_URL_HOST);
+            $id = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
+            if (preg_match('/\W/', $id)) {
+                throw new \InvalidArgumentException(sprintf('Invalid project URL: %s', $url));
+            }
         }
 
         // Find the project in the user's main project list. This uses a cache.
