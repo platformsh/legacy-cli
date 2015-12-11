@@ -639,17 +639,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function getProject($id, $host = null, $refresh = false)
     {
-        // Allow the specified project to be a full URL.
-        if (strpos($id, '//') !== false) {
-            $url = $id;
-            $this->debug('Parsing project ID and hostname from URL');
-            $host = parse_url($url, PHP_URL_HOST);
-            $id = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
-            if (preg_match('/\W/', $id)) {
-                throw new \InvalidArgumentException(sprintf('Invalid project URL: %s', $url));
-            }
-        }
-
         // Find the project in the user's main project list. This uses a cache.
         $projects = $this->getProjects($refresh);
         if (isset($projects[$id])) {
@@ -1049,14 +1038,85 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     }
 
     /**
+     * Parse the project ID and possibly other details from a provided URL.
+     *
+     * @param string $url
+     *     A web UI, API, or public URL of the project.
+     *
+     * @throws \InvalidArgumentException
+     *     If the project ID can't be found in the URL.
+     *
+     * @return array
+     *     An array of containing at least a 'projectId'. Keys 'host',
+     *     'environmentId', and 'appId' will be either null or strings.
+     */
+    protected function parseProjectId($url)
+    {
+        $result = [
+            'projectId' => null,
+            'host' => null,
+            'environmentId' => null,
+            'appId' => null,
+        ];
+
+        // If it's a plain alphanumeric string, then it's an ID already.
+        if (!preg_match('/\W/', $url)) {
+            $result['projectId'] = $url;
+
+            return $result;
+        }
+
+        $this->debug('Parsing URL to determine project ID');
+
+        $host = parse_url($url, PHP_URL_HOST);
+        $path = parse_url($url, PHP_URL_PATH);
+        if ((!$path || $path === '/') && preg_match('/\-\w+\.[a-z]{2}\.platform\.sh$/', $host)) {
+            list($env_project_app, $result['host']) = explode('.', $host, 2);
+            if (($doubleDashPos = strrpos($env_project_app, '--')) !== false) {
+                $env_project = substr($env_project_app, 0, $doubleDashPos);
+                $result['appId'] = substr($env_project_app, $doubleDashPos + 2);
+            }
+            else {
+                $env_project = $env_project_app;
+            }
+            if (($dashPos = strrpos($env_project, '-')) !== false) {
+                $result['projectId'] = substr($env_project, $dashPos + 1);
+                $result['environmentId'] = substr($env_project, 0, $dashPos);
+            }
+        }
+        else {
+            $result['host'] = $host;
+            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $path));
+            if (preg_match('#/environments(/\w+)/?.*$#', $path, $matches)) {
+                $result['environmentId'] = basename($matches[1]);
+            }
+        }
+        if (empty($result['projectId']) || preg_match('/\W/', $result['projectId'])) {
+            throw new \InvalidArgumentException(sprintf('Invalid project URL: %s', $url));
+        }
+
+        return $result;
+    }
+
+    /**
      * @param InputInterface  $input
      * @param bool $envNotRequired
      */
     protected function validateInput(InputInterface $input, $envNotRequired = null)
     {
-        // Select the project.
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
+
+        // Parse the project ID.
+        $result = $this->parseProjectId($projectId);
+        $host = $projectHost ?: $result['host'];
+        $projectId = $result['projectId'];
+        $environmentId = $result['environmentId'];
+        if (isset($result['appId']) && $input->hasOption('app') && !$input->getOption('app')) {
+            $input->setOption('app', $result['appId']);
+        }
+
+        // Select the project.
         $this->project = $this->selectProject($projectId, $projectHost);
 
         // Select the environment.
@@ -1080,11 +1140,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 $this->environment = $this->selectEnvironment($argument);
             }
         } elseif ($input->hasOption($envOptionName)) {
-            if ($envNotRequired && !$input->getOption($envOptionName)) {
+            $environmentId = isset($environmentId) ? $environmentId : $input->getOption($envOptionName);
+            if (!$environmentId && $envNotRequired) {
                 $this->environment = $this->getCurrentEnvironment($this->project);
             }
             else {
-                $this->environment = $this->selectEnvironment($input->getOption($envOptionName));
+                $this->environment = $this->selectEnvironment($environmentId);
             }
         }
 

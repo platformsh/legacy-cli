@@ -58,6 +58,7 @@ class ProjectGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectId = $input->getArgument('id');
+        $environmentOption = $input->getOption('environment');
         if (empty($projectId)) {
             if ($input->isInteractive() && ($projects = $this->getProjects(true))) {
                 $projectId = $this->offerProjectChoice($projects, $input);
@@ -67,6 +68,13 @@ class ProjectGetCommand extends CommandBase
                 return 1;
             }
         }
+        else {
+            $result = $this->parseProjectId($projectId);
+            $projectId = $result['projectId'];
+            $host = $input->getOption('host') ?: $result['host'];
+            $environmentOption = $environmentOption ?: $result['environmentId'];
+        }
+
         $project = $this->getProject($projectId, $input->getOption('host'), true);
         if (!$project) {
             $this->stdErr->writeln("<error>Project not found: $projectId</error>");
@@ -126,7 +134,6 @@ class ProjectGetCommand extends CommandBase
 
         $environments = $this->getEnvironments($project, true);
 
-        $environmentOption = $input->getOption('environment');
         if ($environmentOption) {
             if (!isset($environments[$environmentOption])) {
                 $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
