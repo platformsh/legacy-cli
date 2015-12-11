@@ -10,8 +10,6 @@ use Symfony\Component\Finder\Finder;
 class Drupal extends ToolstackBase
 {
 
-    protected $drushFlags = [];
-
     public function getKey()
     {
         return 'php:drupal';
@@ -133,35 +131,40 @@ class Drupal extends ToolstackBase
 
     /**
      * Set up options to pass to the drush commands.
+     *
+     * @return array
      */
-    protected function setUpDrushFlags()
+    protected function getDrushFlags()
     {
-        $this->drushFlags = [];
-        $this->drushFlags[] = '--yes';
+        $drushFlags = [
+            '--yes',
+        ];
         if (!empty($this->settings['verbosity'])) {
             $verbosity = $this->settings['verbosity'];
             if ($verbosity === OutputInterface::VERBOSITY_QUIET) {
-                $this->drushFlags[] = '--quiet';
+                $drushFlags[] = '--quiet';
             } elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
-                $this->drushFlags[] = '--debug';
+                $drushFlags[] = '--debug';
             } elseif ($verbosity >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-                $this->drushFlags[] = '--verbose';
+                $drushFlags[] = '--verbose';
             }
         }
 
         if (!empty($this->settings['drushWorkingCopy'])) {
-            $this->drushFlags[] = '--working-copy';
+            $drushFlags[] = '--working-copy';
         }
 
         if (!empty($this->settings['noCache'])) {
-            $this->drushFlags[] = '--no-cache';
+            $drushFlags[] = '--no-cache';
         } else {
-            $this->drushFlags[] = '--cache-duration-releasexml=300';
+            $drushFlags[] = '--cache-duration-releasexml=300';
         }
 
         if (!empty($this->settings['drushConcurrency'])) {
-            $this->drushFlags[] = '--concurrency=' . $this->settings['drushConcurrency'];
+            $drushFlags[] = '--concurrency=' . $this->settings['drushConcurrency'];
         }
+
+        return $drushFlags;
     }
 
     /**
@@ -231,13 +234,13 @@ class Drupal extends ToolstackBase
     {
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
-        $this->setUpDrushFlags();
+        $drushFlags = $this->getDrushFlags();
 
         $drupalRoot = $this->getWebRoot();
 
         $args = array_merge(
             ['make', $projectMake, $drupalRoot],
-            $this->drushFlags
+            $drushFlags
         );
 
         // Create a lock file automatically.
@@ -285,7 +288,7 @@ class Drupal extends ToolstackBase
     {
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
-        $this->setUpDrushFlags();
+        $drushFlags = $this->getDrushFlags();
 
         $projectMake = $this->findDrushMakeFile(true);
         $projectCoreMake = $this->findDrushMakeFile(true, true);
@@ -294,7 +297,7 @@ class Drupal extends ToolstackBase
 
         $args = array_merge(
             ['make', $projectCoreMake, $drupalRoot],
-            $this->drushFlags
+            $drushFlags
         );
 
         // Create a lock file automatically.
@@ -312,7 +315,7 @@ class Drupal extends ToolstackBase
 
         $args = array_merge(
             ['make', '--no-core', '--contrib-destination=.', $projectMake, $profileDir],
-            $this->drushFlags
+            $drushFlags
         );
 
         // Create a lock file automatically.
