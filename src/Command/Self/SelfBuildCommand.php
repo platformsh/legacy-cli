@@ -17,7 +17,8 @@ class SelfBuildCommand extends CommandBase
             ->setName('self:build')
             ->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
-            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename');
+            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename')
+            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
     }
 
     public function isEnabled()
@@ -82,20 +83,22 @@ class SelfBuildCommand extends CommandBase
             }
         }
 
-        $this->stdErr->writeln('Ensuring correct composer dependencies');
+        if (!$input->getOption('no-composer-rebuild')) {
+            $this->stdErr->writeln('Ensuring correct composer dependencies');
 
-        // Remove the 'vendor' directory, in case the developer has incorporated
-        // their own version of dependencies locally.
-        $shellHelper->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
+            // Remove the 'vendor' directory, in case the developer has incorporated
+            // their own version of dependencies locally.
+            $shellHelper->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
 
-        $shellHelper->execute([
-            $shellHelper->resolveCommand('composer'),
-            'install',
-            '--no-dev',
-            '--classmap-authoritative',
-            '--no-interaction',
-            '--no-progress',
-        ], CLI_ROOT, true, false);
+            $shellHelper->execute([
+                $shellHelper->resolveCommand('composer'),
+                'install',
+                '--no-dev',
+                '--classmap-authoritative',
+                '--no-interaction',
+                '--no-progress',
+            ], CLI_ROOT, true, false);
+        }
 
         $boxArgs = [$shellHelper->resolveCommand('box'), 'build', '--no-interaction'];
 
