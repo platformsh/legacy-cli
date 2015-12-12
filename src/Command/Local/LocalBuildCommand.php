@@ -170,8 +170,6 @@ class LocalBuildCommand extends CommandBase
 
         $settings['environmentId'] = $this->determineEnvironmentId($sourceDir, $projectRoot);
 
-        $settings['verbosity'] = $output->getVerbosity();
-
         $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : $this->defaultDrushConcurrency;
 
         // Some simple settings flags.
