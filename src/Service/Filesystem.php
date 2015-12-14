@@ -450,6 +450,6 @@ class Filesystem
      */
     protected function isWindows()
     {
-        return strpos(PHP_OS, 'WIN') !== false;
+        return stripos(PHP_OS, 'WIN') === 0;
     }
 }

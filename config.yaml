@@ -15,6 +15,7 @@ local:
   local_dir: '.platform/local'
   archive_dir: '.platform/local/build-archives'
   build_dir: '.platform/local/builds'
+  dependencies_dir: '.platform/local/deps'
   project_config: '.platform/local/project.yaml'
   project_config_legacy: '.platform-project'
   shared_dir: '.platform/local/shared'
