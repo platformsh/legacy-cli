@@ -79,9 +79,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /** @var OutputInterface|null */
     protected $output;
 
-    /** @var InputInterface|null */
-    protected $input;
-
     /** @var OutputInterface|null */
     protected $stdErr;
 
@@ -93,6 +90,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
     protected $hiddenInList = false;
     protected $local = false;
+
+    /** @var InputInterface|null */
+    private $input;
 
     /**
      * @see self::setHiddenAliases()
@@ -308,17 +308,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             return;
         }
 
-        $this->checkUpdates($input, $this->stdErr);
+        $this->checkUpdates();
     }
 
     /**
      * Check for updates.
      *
-     * @param InputInterface $input
-     * @param OutputInterface $output
      * @param bool $reset
      */
-    protected function checkUpdates(InputInterface $input, OutputInterface $output, $reset = false)
+    protected function checkUpdates($reset = false)
     {
         if (!$reset && self::$checkedUpdates) {
             return;
@@ -344,7 +342,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $config['updates']['last_checked'] = $timestamp;
         $this->writeGlobalConfig($config);
         $this->runOtherCommand('self-update');
-        $output->writeln('');
+        $this->stdErr->writeln('');
     }
 
     /**
