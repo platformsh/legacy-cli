@@ -1242,7 +1242,18 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         $this->debug('Running command: ' . $name);
 
-        return $command->run($cmdInput, $this->output);
+        // If -q|--quiet is in $arguments, then override IO configuration by
+        // temporarily suppressing the output for this command only.
+        if (!empty($arguments['-q']) || !empty($arguments['--quiet'])) {
+            $originalVerbosity = $this->output->getVerbosity();
+            $this->output->setVerbosity(OutputInterface::VERBOSITY_QUIET);
+            $cmdReturnStatus = $command->run($cmdInput, $this->output);
+            $this->output->setVerbosity($originalVerbosity);
+            return $cmdReturnStatus;
+        }
+        else {
+            return $command->run($cmdInput, $this->output);
+        }
     }
 
     /**
