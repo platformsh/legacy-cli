@@ -47,22 +47,6 @@ class FilesystemHelper extends Helper
     }
 
     /**
-     * Delete a directory and all of its files.
-     *
-     * @param string $directory A path to a directory.
-     *
-     * @return bool
-     */
-    public function rmdir($directory)
-    {
-        if (!is_dir($directory)) {
-            throw new \InvalidArgumentException("Not a directory: $directory");
-        }
-
-        return $this->remove($directory);
-    }
-
-    /**
      * Delete a file or directory.
      *
      * @param string $filename
