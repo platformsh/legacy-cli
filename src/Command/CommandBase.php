@@ -79,6 +79,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /** @var OutputInterface|null */
     protected $output;
 
+    /** @var InputInterface|null */
+    protected $input;
+
     /** @var OutputInterface|null */
     protected $stdErr;
 
@@ -209,6 +212,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->output = $output;
+        $this->input = $input;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         self::$interactive = $input->isInteractive();
 
@@ -339,7 +343,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $config['updates']['check'] = true;
         $config['updates']['last_checked'] = $timestamp;
         $this->writeGlobalConfig($config);
-        $this->runOtherCommand('self-update', [], $input);
+        $this->runOtherCommand('self-update');
         $output->writeln('');
     }
 
@@ -1219,21 +1223,21 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      *   The name of the other command.
      * @param array          $arguments
      *   Arguments for the other command.
-     * @param InputInterface $input
-     *   The input to the current command.
+     * @param OutputInterface $output
+     *   The output for the other command. Defaults to the current output.
      *
      * @return int
      */
-    protected function runOtherCommand($name, array $arguments = [], InputInterface $input = null)
+    protected function runOtherCommand($name, array $arguments = [], OutputInterface $output = null)
     {
         /** @var CommandBase $command */
         $command = $this->getApplication()->find($name);
 
         // Pass on interactivity arguments to the other command.
-        if ($input) {
+        if (isset($this->input)) {
             $arguments += [
-                '--yes' => $input->getOption('yes'),
-                '--no' => $input->getOption('no'),
+                '--yes' => $this->input->getOption('yes'),
+                '--no' => $this->input->getOption('no'),
             ];
         }
 
@@ -1242,7 +1246,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         $this->debug('Running command: ' . $name);
 
-        return $command->run($cmdInput, $this->output);
+        return $command->run($cmdInput, $output ?: $this->output);
     }
 
     /**
