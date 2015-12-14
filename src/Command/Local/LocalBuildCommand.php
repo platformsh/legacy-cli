@@ -24,7 +24,7 @@ class LocalBuildCommand extends CommandBase
             ->setDescription('Build the current project locally')
             ->addOption(
                 'abslinks',
-                'a',
+                null,
                 InputOption::VALUE_NONE,
                 'Use absolute links'
             )

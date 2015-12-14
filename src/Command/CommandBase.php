@@ -918,7 +918,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function addAppOption()
     {
-        return $this->addOption('app', null, InputOption::VALUE_REQUIRED, 'The remote application name');
+        return $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, 'The remote application name');
     }
 
     /**
@@ -962,7 +962,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /**
      * @param string $environmentId
      *
-     * @return array
+     * @return Environment
      */
     protected function selectEnvironment($environmentId = null)
     {
@@ -1030,6 +1030,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             }
             $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:', $input, $this->stdErr);
         }
+
+        $input->setOption('app', $appName);
 
         return $appName;
     }
