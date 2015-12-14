@@ -227,8 +227,7 @@ class ProjectGetCommand extends CommandBase
                     // The default Drush alias group is the final part of the
                     // directory path.
                     '--group' => basename($directory),
-                ],
-                $input
+                ]
             );
         }
 
