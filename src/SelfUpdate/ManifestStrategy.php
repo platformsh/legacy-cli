@@ -24,16 +24,21 @@ class ManifestStrategy implements StrategyInterface
     /** @var bool */
     private $allowMajor = false;
 
+    /** @var bool */
+    private $allowUnstable = false;
+
     /**
      * @param string $localVersion
-     * @param bool $allowMajor
      * @param string $manifestUrl
+     * @param bool   $allowMajor
+     * @param bool   $allowUnstable
      */
-    public function __construct($localVersion, $allowMajor = false, $manifestUrl)
+    public function __construct($localVersion, $manifestUrl, $allowMajor = false, $allowUnstable = false)
     {
         $this->localVersion = $localVersion;
         $this->manifestUrl = $manifestUrl;
         $this->allowMajor = $allowMajor;
+        $this->allowUnstable = $allowUnstable;
     }
 
     /**
@@ -46,6 +51,9 @@ class ManifestStrategy implements StrategyInterface
     public function download(Updater $updater)
     {
         $version = $this->getCurrentRemoteVersion($updater);
+        if ($version === false) {
+            throw new \Exception('No remote versions found');
+        }
         $versionInfo = $this->getAvailableVersions();
         if (!isset($versionInfo[$version]['url'])) {
             throw new \Exception(
@@ -149,10 +157,14 @@ class ManifestStrategy implements StrategyInterface
      * @param Updater $updater
      *
      * @return string|bool
+     *   A version number or false if no versions were found.
      */
     public function getCurrentRemoteVersion(Updater $updater)
     {
         $versionParser = new VersionParser(array_keys($this->getAvailableVersions()));
+        if ($this->allowUnstable) {
+            return $versionParser->getMostRecentAll();
+        }
 
         return $versionParser->getMostRecentStable();
     }

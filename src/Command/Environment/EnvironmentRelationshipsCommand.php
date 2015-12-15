@@ -23,7 +23,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
             ->setAliases(['relationships'])
             ->setDescription('Show an environment\'s relationships')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
-            ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The relationship property to view')
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the relationships', '0');
         $this->addProjectOption()
              ->addEnvironmentOption()

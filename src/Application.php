@@ -145,6 +145,10 @@ class Application extends ParentApplication
         $commands[] = new Command\SshKey\SshKeyDeleteCommand();
         $commands[] = new Command\SshKey\SshKeyListCommand();
         $commands[] = new Command\SubscriptionInfoCommand();
+        $commands[] = new Command\Tunnel\TunnelCloseCommand();
+        $commands[] = new Command\Tunnel\TunnelInfoCommand();
+        $commands[] = new Command\Tunnel\TunnelListCommand();
+        $commands[] = new Command\Tunnel\TunnelOpenCommand();
         $commands[] = new Command\User\UserAddCommand();
         $commands[] = new Command\User\UserDeleteCommand();
         $commands[] = new Command\User\UserListCommand();

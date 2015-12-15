@@ -918,7 +918,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function addAppOption()
     {
-        return $this->addOption('app', null, InputOption::VALUE_REQUIRED, 'The remote application name');
+        return $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, 'The remote application name');
     }
 
     /**
@@ -962,7 +962,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /**
      * @param string $environmentId
      *
-     * @return array
+     * @return Environment
      */
     protected function selectEnvironment($environmentId = null)
     {
@@ -1030,11 +1030,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             }
             $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:', $input, $this->stdErr);
         }
-        elseif (count($apps) === 1) {
-            $app = reset($apps);
-            $appName = $app->getName();
-            $this->debug("Selected app: " . $appName);
-        }
+
+        $input->setOption('app', $appName);
 
         return $appName;
     }
@@ -1088,8 +1085,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
         else {
             $result['host'] = $host;
-            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $path));
-            if (preg_match('#/environments(/\w+)/?.*$#', $path, $matches)) {
+            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
+            if (preg_match('#/environments(/\w+)/?.*$#', $url, $matches)) {
                 $result['environmentId'] = basename($matches[1]);
             }
         }
@@ -1111,8 +1108,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         // Parse the project ID.
         $result = $this->parseProjectId($projectId);
-        $host = $projectHost ?: $result['host'];
         $projectId = $result['projectId'];
+        $projectHost = $projectHost ?: $result['host'];
         $environmentId = $result['environmentId'];
         if (isset($result['appId']) && $input->hasOption('app') && !$input->getOption('app')) {
             $input->setOption('app', $result['appId']);
