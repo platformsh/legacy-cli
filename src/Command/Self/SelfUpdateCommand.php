@@ -17,6 +17,7 @@ class SelfUpdateCommand extends CommandBase
             ->setAliases(['self-update'])
             ->setDescription('Update the CLI to the latest version')
             ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
+            ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to a new unstable version, if available')
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
             ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version');
         $this->setHiddenAliases(['update']);
@@ -27,6 +28,7 @@ class SelfUpdateCommand extends CommandBase
         $manifestUrl = $input->getOption('manifest') ?: 'https://platform.sh/cli/manifest.json';
         $currentVersion = $input->getOption('current-version') ?: $this->getApplication()->getVersion();
         $allowMajor = $input->getOption('major');
+        $allowUnstable = $input->getOption('unstable');
 
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln('This instance of the CLI was not installed as a Phar archive.');
@@ -44,7 +46,7 @@ class SelfUpdateCommand extends CommandBase
         $this->stdErr->writeln(sprintf('Checking for updates (current version: <info>%s</info>)', $currentVersion));
 
         $updater = new Updater(null, false);
-        $strategy = new ManifestStrategy($currentVersion, $allowMajor, $manifestUrl);
+        $strategy = new ManifestStrategy($currentVersion, $manifestUrl, $allowMajor, $allowUnstable);
         $updater->setStrategyObject($strategy);
 
         if (!$updater->hasUpdate()) {
