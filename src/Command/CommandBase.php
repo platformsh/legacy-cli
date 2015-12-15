@@ -1030,11 +1030,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             }
             $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:', $input, $this->stdErr);
         }
-        elseif (count($apps) === 1) {
-            $app = reset($apps);
-            $appName = $app->getName();
-            $this->debug("Selected app: " . $appName);
-        }
 
         return $appName;
     }
