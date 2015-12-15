@@ -1088,8 +1088,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
         else {
             $result['host'] = $host;
-            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $path));
-            if (preg_match('#/environments(/\w+)/?.*$#', $path, $matches)) {
+            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
+            if (preg_match('#/environments(/\w+)/?.*$#', $url, $matches)) {
                 $result['environmentId'] = basename($matches[1]);
             }
         }
@@ -1111,8 +1111,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         // Parse the project ID.
         $result = $this->parseProjectId($projectId);
-        $host = $projectHost ?: $result['host'];
         $projectId = $result['projectId'];
+        $projectHost = $projectHost ?: $result['host'];
         $environmentId = $result['environmentId'];
         if (isset($result['appId']) && $input->hasOption('app') && !$input->getOption('app')) {
             $input->setOption('app', $result['appId']);
