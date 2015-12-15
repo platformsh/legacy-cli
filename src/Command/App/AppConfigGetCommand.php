@@ -18,7 +18,7 @@ class AppConfigGetCommand extends CommandBase
         $this
             ->setName('app:config-get')
             ->setDescription('View the configuration of an app')
-            ->addOption('property', null, InputOption::VALUE_REQUIRED, 'The configuration property to view');
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();

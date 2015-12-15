@@ -14,7 +14,7 @@ class LogoutCommand extends CommandBase
     {
         $this
             ->setName('logout')
-            ->addOption('all', null, InputOption::VALUE_NONE, 'Log out of all sessions')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
             ->setDescription('Log out of Platform.sh');
     }
 
