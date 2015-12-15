@@ -198,12 +198,13 @@ abstract class ServerCommandBase extends CommandBase
      * @param string $docRoot
      * @param string $projectRoot
      * @param array $appConfig
+     * @param array $env
      *
      * @throws \Exception
      *
      * @return Process
      */
-    protected function createServerProcess($address, $docRoot, $projectRoot, array $appConfig)
+    protected function createServerProcess($address, $docRoot, $projectRoot, array $appConfig, array $env = [])
     {
         $stack = 'php';
         if (isset($appConfig['type'])) {
@@ -269,7 +270,7 @@ abstract class ServerCommandBase extends CommandBase
         }
 
         $process->setTimeout(null);
-        $env = $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
+        $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);
         if (isset($env['PLATFORM_APP_DIR'])) {
             $process->setWorkingDirectory($env['PLATFORM_APP_DIR']);

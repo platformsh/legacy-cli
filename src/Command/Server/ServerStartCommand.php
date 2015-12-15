@@ -9,6 +9,7 @@ use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Cli\Util\ProcessManager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ServerStartCommand extends ServerCommandBase
@@ -21,7 +22,8 @@ class ServerStartCommand extends ServerCommandBase
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting servers')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port of the first server')
-          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to local-server.log in the project root');
+          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to local-server.log in the project root')
+          ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote Platform.sh environments as relationships');
     }
 
     public function isEnabled()
@@ -67,13 +69,30 @@ class ServerStartCommand extends ServerCommandBase
                 continue;
             }
             $items[$appId] = [
-              'docRoot' => $docRoot,
-              'address' => sprintf('%s:%s', $ip, $port++),
-              'name' => $app->getName(),
-              'config' => $app->getConfig(),
+                'docRoot' => $docRoot,
+                'address' => sprintf('%s:%s', $ip, $port++),
+                'name' => $app->getName(),
+                'config' => $app->getConfig(),
+                'env' => [],
             ];
             if (Drupal::isDrupal($app->getRoot())) {
-                $items[$app->getId()]['config']['is_drupal'] = true;
+                $items[$appId]['config']['is_drupal'] = true;
+            }
+
+            if ($input->getOption('tunnel')) {
+                $bufferedOutput = new BufferedOutput();
+                $result = $this->runOtherCommand(
+                    'tunnel:info',
+                    ['--encode' => true] + ($multiApp ? ['--app' => $appId] : []),
+                    $bufferedOutput
+                );
+                if ($result != 0) {
+                    $this->stdErr->writeln(sprintf('Failed to get SSH tunnel information for the app <error>%s</error>', $appId));
+                    unset($items[$appId]);
+                    continue;
+                }
+                $relationships = $bufferedOutput->fetch();
+                $items[$appId]['env']['PLATFORM_RELATIONSHIPS'] = $relationships;
             }
         }
 
@@ -144,7 +163,7 @@ class ServerStartCommand extends ServerCommandBase
             }
 
             $pidFile = $this->getPidFile($address);
-            $process = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig);
+            $process = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig, $item['env']);
             $processes[$address] = $process;
 
             try {
