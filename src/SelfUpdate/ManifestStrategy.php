@@ -28,10 +28,17 @@ class ManifestStrategy implements StrategyInterface
     private $allowUnstable = false;
 
     /**
-     * @param string $localVersion
-     * @param string $manifestUrl
-     * @param bool   $allowMajor
-     * @param bool   $allowUnstable
+     * ManifestStrategy constructor.
+     *
+     * @param string $localVersion  The local version.
+     * @param string $manifestUrl   The URL to a JSON manifest file. The
+     *                              manifest contains an array of objects, each
+     *                              containing a 'version', 'sha1', and 'url'.
+     * @param bool   $allowMajor    Whether to allow updating between major
+     *                              versions.
+     * @param bool   $allowUnstable Whether to allow updating to an unstable
+     *                              version. Ignored if $localVersion is unstable
+     *                              and there are no new stable versions.
      */
     public function __construct($localVersion, $manifestUrl, $allowMajor = false, $allowUnstable = false)
     {
@@ -162,11 +169,16 @@ class ManifestStrategy implements StrategyInterface
     public function getCurrentRemoteVersion(Updater $updater)
     {
         $versionParser = new VersionParser(array_keys($this->getAvailableVersions()));
-        if ($this->allowUnstable) {
-            return $versionParser->getMostRecentAll();
+
+        $mostRecent = $versionParser->getMostRecentStable();
+
+        // Look for unstable updates if explicitly allowed, or if the local
+        // version is already unstable and there is no new stable version.
+        if ($this->allowUnstable || ($versionParser->isUnstable($this->localVersion) && version_compare($mostRecent, $this->localVersion, '<'))) {
+            $mostRecent = $versionParser->getMostRecentAll();
         }
 
-        return $versionParser->getMostRecentStable();
+        return version_compare($mostRecent, $this->localVersion, '>') ? $mostRecent : false;
     }
 
     /**
