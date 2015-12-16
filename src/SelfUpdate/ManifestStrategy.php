@@ -154,8 +154,8 @@ class ManifestStrategy implements StrategyInterface
                 throw new \RuntimeException(sprintf('Failed to download manifest: %s', $this->manifestUrl));
             }
 
-            $this->manifest = json_decode($manifestContents, true);
-            if (null === $this->manifest || json_last_error() !== JSON_ERROR_NONE) {
+            $this->manifest = (array) json_decode($manifestContents, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new JsonParsingException(
                     'Error parsing manifest file'
                     . (function_exists('json_last_error_msg') ? ': ' . json_last_error_msg() : '')
