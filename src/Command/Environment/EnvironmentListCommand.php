@@ -15,7 +15,6 @@ class EnvironmentListCommand extends CommandBase
 
     /** @var Environment */
     protected $currentEnvironment;
-    protected $mapping = [];
 
     /**
      * {@inheritdoc}
@@ -97,16 +96,8 @@ class EnvironmentListCommand extends CommandBase
                 $id .= "<info>*</info>";
             }
             $row[] = $id;
-
-            if ($branch = array_search($environment->id, $this->mapping)) {
-                $row[] = sprintf('%s (%s)', $environment->title, $branch);
-            }
-            else {
-                $row[] = $environment->title;
-            }
-
+            $row[] = $environment->title;
             $row[] = $this->formatEnvironmentStatus($environment->status);
-
             $rows[] = $row;
             $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment->id], $indent, $indicateCurrent, $indentAmount + 1));
         }
@@ -139,13 +130,6 @@ class EnvironmentListCommand extends CommandBase
 
         $project = $this->getSelectedProject();
         $this->currentEnvironment = $this->getCurrentEnvironment($project);
-
-        if (($currentProject = $this->getCurrentProject()) && $currentProject == $project) {
-            $config = $this->getProjectConfig($this->getProjectRoot());
-            if (isset($config['mapping'])) {
-                $this->mapping = $config['mapping'];
-            }
-        }
 
         $tree = $this->buildEnvironmentTree($environments);
 

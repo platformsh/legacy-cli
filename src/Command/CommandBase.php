@@ -63,13 +63,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     private static $projectRoot = false;
 
     /**
-     * An array of local project configurations, keyed by project root.
-     *
-     * @var array
-     */
-    private static $projectConfig = [];
-
-    /**
      * A cache of environment objects.
      *
      * @var Environment[]
@@ -466,7 +459,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         $project = false;
-        $config = $this->getProjectConfig($projectRoot);
+        $config = LocalProject::getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
@@ -493,36 +486,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     }
 
     /**
-     * Get the project configuration.
-     *
-     * @param string $projectRoot
-     *
-     * @return array
-     */
-    protected function getProjectConfig($projectRoot)
-    {
-        if (!isset(self::$projectConfig[$projectRoot])) {
-            $this->debug('Loading project config for ' . $projectRoot);
-            self::$projectConfig[$projectRoot] = LocalProject::getProjectConfig($projectRoot) ?: [];
-        }
-
-        return self::$projectConfig[$projectRoot];
-    }
-
-    /**
-     * Set a value in the project configuration.
-     *
-     * @param string $key
-     * @param mixed $value
-     * @param string $projectRoot
-     */
-    protected function setProjectConfig($key, $value, $projectRoot)
-    {
-        unset(self::$projectConfig[$projectRoot]);
-        LocalProject::writeCurrentProjectConfig($key, $value, $projectRoot);
-    }
-
-    /**
      * Get the current environment if the user is in a project directory.
      *
      * @param Project $expectedProject The expected project.
@@ -540,22 +503,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($this->getProjectRoot() . '/' . LocalProject::REPOSITORY_DIR);
         $currentBranch = $gitHelper->getCurrentBranch();
-
-        // Check if there is a manual mapping set for the current branch.
-        if ($currentBranch) {
-            $config = $this->getProjectConfig($projectRoot);
-            if (!empty($config['mapping'][$currentBranch])) {
-                $environment = $this->getEnvironment($config['mapping'][$currentBranch], $project);
-                if ($environment) {
-                    $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
-                    return $environment;
-                }
-                else {
-                    unset($config['mapping'][$currentBranch]);
-                    $this->setProjectConfig('mapping', $config['mapping'], $projectRoot);
-                }
-            }
-        }
 
         // Check whether the user has a Git upstream set to a Platform
         // environment ID.

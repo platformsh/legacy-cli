@@ -50,19 +50,6 @@ class EnvironmentCheckoutCommand extends CommandBase
                 }
                 $environmentList[$id] = $environment->title;
             }
-            $config = $this->getProjectConfig($this->getProjectRoot());
-            if (!empty($config['mapping'])) {
-                foreach ($config['mapping'] as $branch => $id) {
-                    unset($environmentList[$id]);
-                    if ($currentEnvironment && $id == $currentEnvironment->id) {
-                        continue;
-                    }
-                    if (!isset($environments[$id])) {
-                        continue;
-                    }
-                    $environmentList[$branch] = sprintf('%s (%s)', $environments[$id]->title, $branch);
-                }
-            }
             if (!count($environmentList)) {
                 $this->stdErr->writeln("Use <info>platform branch</info> to create an environment.");
 
