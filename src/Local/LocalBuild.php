@@ -19,6 +19,7 @@ class LocalBuild
     protected $output;
     protected $fsHelper;
     protected $gitHelper;
+    protected $shellHelper;
 
     /**
      * @param array           $settings
@@ -26,11 +27,12 @@ class LocalBuild
      * @param object          $fsHelper
      * @param object          $gitHelper
      */
-    public function __construct(array $settings = [], OutputInterface $output = null, $fsHelper = null, $gitHelper = null)
+    public function __construct(array $settings = [], OutputInterface $output = null, $fsHelper = null, $gitHelper = null, $shellHelper = null)
     {
         $this->settings = $settings;
         $this->output = $output ?: new NullOutput();
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper(new ShellHelper($output));
+        $this->shellHelper = $shellHelper ?: new ShellHelper($output);
+        $this->fsHelper = $fsHelper ?: new FilesystemHelper($this->shellHelper);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
         $this->gitHelper = $gitHelper ?: new GitHelper();
 
@@ -330,13 +332,9 @@ class LocalBuild
         }
         $this->output->writeln("Running post-build hooks");
         $command = implode(';', (array) $appConfig['hooks']['build']);
-        chdir($buildDir);
-        exec($command, $output, $returnVar);
-        foreach ($output as $line) {
-            $this->output->writeln('  ' . $line);
-        }
-        if ($returnVar > 0) {
-            $this->output->writeln("<error>The build hook failed with the exit code: $returnVar</error>");
+        $code = $this->shellHelper->executeSimple($command, $buildDir);
+        if ($code !== true) {
+            $this->output->writeln("<error>The build hook failed with the exit code: $code</error>");
             return false;
         }
 
