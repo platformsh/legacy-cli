@@ -334,7 +334,7 @@ class LocalBuild
         $command = implode(';', (array) $appConfig['hooks']['build']);
         $code = $this->shellHelper->executeSimple($command, $buildDir);
         if ($code !== true) {
-            $this->output->writeln("<error>The build hook failed with the exit code: $code</error>");
+            $this->output->writeln("<comment>The build hook failed with the exit code: $code</comment>");
             return false;
         }
 
