@@ -268,7 +268,7 @@ class LocalBuild
 
         // Symlink the built web root ($webRoot) into www or www/appId.
         if (!is_dir($webRoot)) {
-            $this->output->writeln("Web root not found: <error>$webRoot</error>");
+            $this->output->writeln("\nWeb root not found: <error>$webRoot</error>\n");
 
             return false;
         }
@@ -281,10 +281,10 @@ class LocalBuild
         }
 
         $this->fsHelper->symlink($webRoot, $destination);
-        $this->output->writeln("Web root: $destination");
 
-        $message = "Build complete for application <info>$appId</info>";
+        $message = "\nBuild complete for application <info>$appId</info>";
         $this->output->writeln($message);
+        $this->output->writeln("Web root: $destination\n");
 
         return true;
     }
