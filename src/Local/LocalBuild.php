@@ -19,6 +19,7 @@ class LocalBuild
     protected $output;
     protected $fsHelper;
     protected $gitHelper;
+    protected $shellHelper;
 
     /**
      * @param array           $settings
@@ -26,11 +27,12 @@ class LocalBuild
      * @param object          $fsHelper
      * @param object          $gitHelper
      */
-    public function __construct(array $settings = [], OutputInterface $output = null, $fsHelper = null, $gitHelper = null)
+    public function __construct(array $settings = [], OutputInterface $output = null, $fsHelper = null, $gitHelper = null, $shellHelper = null)
     {
         $this->settings = $settings;
         $this->output = $output ?: new NullOutput();
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper(new ShellHelper($output));
+        $this->shellHelper = $shellHelper ?: new ShellHelper($output);
+        $this->fsHelper = $fsHelper ?: new FilesystemHelper($this->shellHelper);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
         $this->gitHelper = $gitHelper ?: new GitHelper();
 
@@ -268,7 +270,7 @@ class LocalBuild
 
         // Symlink the built web root ($webRoot) into www or www/appId.
         if (!is_dir($webRoot)) {
-            $this->output->writeln("Web root not found: <error>$webRoot</error>");
+            $this->output->writeln("\nWeb root not found: <error>$webRoot</error>\n");
 
             return false;
         }
@@ -281,10 +283,10 @@ class LocalBuild
         }
 
         $this->fsHelper->symlink($webRoot, $destination);
-        $this->output->writeln("Web root: $destination");
 
-        $message = "Build complete for application <info>$appId</info>";
+        $message = "\nBuild complete for application <info>$appId</info>";
         $this->output->writeln($message);
+        $this->output->writeln("Web root: $destination\n");
 
         return true;
     }
@@ -330,13 +332,9 @@ class LocalBuild
         }
         $this->output->writeln("Running post-build hooks");
         $command = implode(';', (array) $appConfig['hooks']['build']);
-        chdir($buildDir);
-        exec($command, $output, $returnVar);
-        foreach ($output as $line) {
-            $this->output->writeln('  ' . $line);
-        }
-        if ($returnVar > 0) {
-            $this->output->writeln("<error>The build hook failed with the exit code: $returnVar</error>");
+        $code = $this->shellHelper->executeSimple($command, $buildDir);
+        if ($code !== true) {
+            $this->output->writeln("<comment>The build hook failed with the exit code: $code</comment>");
             return false;
         }
 

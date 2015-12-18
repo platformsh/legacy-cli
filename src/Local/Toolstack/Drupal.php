@@ -377,8 +377,8 @@ class Drupal extends ToolstackBase
             $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
             $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->output->writeln(
-                "<comment>Your settings.php file has been copied (not symlinked) into the build directory."
-                . "\nYou will need to rebuild if you edit this file.</comment>"
+                "  <comment>Your settings.php file has been copied (not symlinked) into the build directory."
+                . "\n  You will need to rebuild if you edit this file.</comment>"
             );
             $this->ignoredFiles[] = 'settings.php';
         }

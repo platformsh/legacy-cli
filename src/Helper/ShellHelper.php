@@ -6,6 +6,7 @@ use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Process\ProcessBuilder;
 
 class ShellHelper extends Helper implements ShellHelperInterface
@@ -13,6 +14,8 @@ class ShellHelper extends Helper implements ShellHelperInterface
 
     /** @var OutputInterface */
     protected $output;
+
+    protected $defaultTimeout = 3600;
 
     public function getName()
     {
@@ -30,6 +33,23 @@ class ShellHelper extends Helper implements ShellHelperInterface
     }
 
     /**
+     * Execute a command, sending output to the defined output.
+     *
+     * @param string      $commandline
+     * @param string|null $dir
+     *
+     * @return int|true
+     *   True on success, or the command's exit code on failure.
+     */
+    public function executeSimple($commandline, $dir = null)
+    {
+        $process = new Process($commandline, $dir, null, null, $this->defaultTimeout);
+        $result = $this->runProcess($process, false, false);
+
+        return is_int($result) ? $result : true;
+    }
+
+    /**
      * @inheritdoc
      *
      * @throws \Exception
@@ -39,26 +59,37 @@ class ShellHelper extends Helper implements ShellHelperInterface
     {
         $builder = new ProcessBuilder($args);
         $process = $builder->getProcess();
-
-        // The default timeout is 1 minute. Increase it to 1 hour.
-        $process->setTimeout(3600);
-
+        $process->setTimeout($this->defaultTimeout);
         if ($dir) {
             $process->setWorkingDirectory($dir);
         }
 
+        $result = $this->runProcess($process, $mustRun, $quiet);
+
+        return is_int($result) ? $result === 0 : $result;
+    }
+
+    /**
+     * @param Process     $process
+     * @param bool        $mustRun
+     * @param bool        $quiet
+     *
+     * @return int|string
+     * @throws \Exception
+     */
+    protected function runProcess(Process $process, $mustRun = false, $quiet = true)
+    {
         if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $this->output->writeln("Running command: <info>" . $process->getCommandLine() . "</info>");
         }
 
         try {
             $process->mustRun($quiet ? null : function ($type, $buffer) {
-                $indent = '  ';
-                $this->output->writeln($indent . str_replace("\n", "\n$indent", trim($buffer)));
+                $this->output->write(preg_replace('/^/m', '  ', $buffer));
             });
         } catch (ProcessFailedException $e) {
             if (!$mustRun) {
-                return false;
+                return $process->getExitCode();
             }
             // The default for ProcessFailedException is to print the entire
             // STDOUT and STDERR. But if $quiet is disabled, then the user will
