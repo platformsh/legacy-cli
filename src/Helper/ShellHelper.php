@@ -43,7 +43,7 @@ class ShellHelper extends Helper implements ShellHelperInterface
      */
     public function executeSimple($commandline, $dir = null)
     {
-        $process = new Process($commandline, $dir, [], null, $this->defaultTimeout);
+        $process = new Process($commandline, $dir, null, null, $this->defaultTimeout);
         $result = $this->runProcess($process, false, false);
 
         return is_int($result) ? $result : true;
