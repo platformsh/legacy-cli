@@ -86,12 +86,17 @@ class EnvironmentDrushCommand extends CommandBase
         // Get the LocalApplication object for the specified application, if
         // available.
         $projectRoot = $this->getProjectRoot();
-        if ($appName && $projectRoot && $this->selectedProjectIsCurrent() && is_dir($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+        if ($projectRoot && $this->selectedProjectIsCurrent() && is_dir($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
             $apps = LocalApplication::getApplications($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
-            foreach ($apps as $possibleApp) {
-                if ($possibleApp->getName() === $appName) {
-                    $app = $possibleApp;
-                    break;
+            if (count($apps) === 1 && $appName === null) {
+                $app = reset($apps);
+            }
+            else {
+                foreach ($apps as $possibleApp) {
+                    if ($possibleApp->getName() === $appName) {
+                        $app = $possibleApp;
+                        break;
+                    }
                 }
             }
         }
