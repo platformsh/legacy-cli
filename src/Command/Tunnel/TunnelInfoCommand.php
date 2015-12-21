@@ -36,9 +36,11 @@ class TunnelInfoCommand extends TunnelCommandBase
             $service = $tunnel['service'];
 
             // Overwrite the service's address with the local tunnel details.
-            $service['host'] = self::LOCAL_IP;
-            $service['ip'] = self::LOCAL_IP;
-            $service['port'] = $tunnel['localPort'];
+            $service = array_merge($service, array_intersect_key([
+                'host' => self::LOCAL_IP,
+                'ip' => self::LOCAL_IP,
+                'port' => $tunnel['localPort'],
+            ], $service));
 
             $relationships[$tunnel['relationship']][$tunnel['serviceKey']] = $service;
         }
