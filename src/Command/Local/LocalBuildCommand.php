@@ -211,15 +211,14 @@ class LocalBuildCommand extends CommandBase
         if ($projectRoot && $this->isLoggedIn()) {
             try {
                 $project = $this->getCurrentProject();
+                if ($project && ($environment = $this->getCurrentEnvironment($project))) {
+                    return $environment->id;
+                }
             }
             catch (\Exception $e) {
                 // An exception may be thrown if the user no longer has access
                 // to the project, or perhaps if there is no network access. We
                 // can still let the user build the project locally.
-                $project = false;
-            }
-            if ($project && ($environment = $this->getCurrentEnvironment($project))) {
-                return $environment->id;
             }
         }
 
