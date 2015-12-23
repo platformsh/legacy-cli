@@ -19,16 +19,16 @@ class EnvironmentSetRemoteCommand extends CommandBase
     {
         $this
             ->setName('environment:set-remote')
-            ->setDescription('Set the remote environment to track for a branch')
+            ->setDescription('Set the remote environment to map to a branch')
             ->addArgument(
                 'environment',
                 InputArgument::REQUIRED,
-                'The environment machine name. Set to 0 to stop tracking a branch'
+                'The environment machine name. Set to 0 to remove the mapping for a branch'
             )
             ->addArgument(
                 'branch',
                 InputArgument::OPTIONAL,
-                'The Git branch to track (defaults to the current branch)'
+                'The Git branch to map (defaults to the current branch)'
             );
         $this->addExample('Set the remote environment for this branch to "pr-655"', 'pr-655');
     }
@@ -65,7 +65,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
 
         // Check whether the branch is mapped by default (its name or its Git
         // upstream is the same as the remote environment ID).
-        $mappedByDefault = ($specifiedEnvironmentId === $specifiedBranch);
+        $mappedByDefault = isset($specifiedEnvironment) && $specifiedEnvironment->status != 'inactive' && $specifiedEnvironmentId === $specifiedBranch;
         if ($specifiedEnvironmentId != '0' && !$mappedByDefault) {
             $upstream = $gitHelper->getUpstream($specifiedBranch);
             if (strpos($upstream, '/')) {
@@ -86,7 +86,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
             unset($config['mapping'][$specifiedBranch]);
             $this->setProjectConfig('mapping', $config['mapping'], $projectRoot);
         }
-        elseif (!$this->getEnvironment($specifiedBranch)) {
+        else {
             if (isset($config['mapping']) && ($current = array_search($specifiedEnvironmentId, $config['mapping'])) !== false) {
                 unset($config['mapping'][$current]);
             }
@@ -97,14 +97,14 @@ class EnvironmentSetRemoteCommand extends CommandBase
         // Check the success of the operation.
         if (isset($config['mapping'][$specifiedBranch])) {
             $actualRemoteEnvironment = $config['mapping'][$specifiedBranch];
-            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is tracking the remote environment <info>$actualRemoteEnvironment</info>");
+            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is mapped to the remote environment <info>$actualRemoteEnvironment</info>");
         }
-        elseif ($mappedByDefault || $this->getEnvironment($specifiedBranch)) {
+        elseif ($mappedByDefault) {
             $actualRemoteEnvironment = $specifiedBranch;
-            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is tracking the default remote environment, <info>$specifiedBranch</info>");
+            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is mapped to the default remote environment, <info>$specifiedBranch</info>");
         }
         else {
-            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is not tracking a remote environment");
+            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is not mapped to a remote environment");
         }
 
         $success = !empty($actualRemoteEnvironment)
