@@ -309,7 +309,6 @@ class Drupal extends ToolstackBase
         $drushHelper->execute($args, dirname($projectCoreMake), true, false);
 
         $profileDir = $drupalRoot . '/profiles/' . $profileName;
-        mkdir($profileDir, 0755, true);
 
         $this->output->writeln("Building the profile: <info>$profileName</info>");
 

@@ -40,6 +40,8 @@ class DrupalTest extends BaseToolstackTest
         $this->assertFileExists($webRoot . '/index.php');
         $this->assertFileExists($webRoot . '/sites/default/settings.php');
         $this->assertFileExists($webRoot . '/profiles/test/test.profile');
+        $this->assertFileExists($webRoot . '/profiles/test/modules/platform/platform.module');
+        $this->assertFileExists($webRoot . '/profiles/test/modules/test_module/test_module_file.php');
     }
 
     public function testBuildUpdateLock()
