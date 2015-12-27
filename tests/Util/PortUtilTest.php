@@ -12,17 +12,14 @@ class PortUtilTest extends \PHPUnit_Framework_TestCase
         $port = $util->getPort();
         $this->assertFalse($util->isPortInUse($port));
 
-        // Scan for an open local port, try getPort() on the port number and
+        // Find a listening local port, try getPort() on the port number and
         // test that a new number is returned.
-        for ($start = 25, $end = 74; $end <= 1024; $start += 50, $end += 50) {
-            exec(sprintf('nc -z 127.0.0.1 %d-%d 2>&1', $start, $end), $output, $returnVar);
-            if ($returnVar === 0 && preg_match('/port ([0-9]+)/', end($output), $matches)) {
-                $openPort = $matches[1];
-                $this->assertNotEquals($util->getPort($openPort), $openPort);
-                break;
-            }
+        exec('lsof -sTCP:LISTEN -i@127.0.0.1 -P -n', $output, $returnVar);
+        if ($returnVar === 0 && preg_match('/127\.0\.0\.1:([0-9]+)/', end($output), $matches)) {
+            $openPort = $matches[1];
+            $this->assertNotEquals($util->getPort($openPort), $openPort);
         }
-        if (!isset($openPort)) {
+        else {
             $this->markTestIncomplete('Failed to find open port');
         }
     }
