@@ -9,13 +9,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SshKeyAddCommand extends CommandBase
 {
+    const DEFAULT_BASENAME = 'id_rsa';
 
     protected function configure()
     {
         $this
             ->setName('ssh-key:add')
             ->setDescription('Add a new SSH key')
-            ->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH key')
+            ->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH public key')
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'A name to identify the key');
         $this->addExample('Add an existing public key', '~/.ssh/id_rsa.pub');
     }
@@ -30,7 +31,7 @@ class SshKeyAddCommand extends CommandBase
 
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
-            $defaultKeyPath = $this->getDefaultKeyPath();
+            $defaultKeyPath = $this->getHomeDir() . '/.ssh/' . self::DEFAULT_BASENAME;
             $defaultPublicKeyPath = $defaultKeyPath . '.pub';
 
             // Look for an existing local key.
@@ -41,12 +42,13 @@ class SshKeyAddCommand extends CommandBase
             // Offer to generate a key.
             elseif ($shellHelper->commandExists('ssh-keygen')
                 && $questionHelper->confirm("Generate a new key?", $input, $this->stdErr)) {
-                $newKeyPath = $this->getNewKeyPath($defaultKeyPath);
+                $newKeyPath = $this->getNewKeyPath();
                 $args = ['ssh-keygen', '-t', 'rsa', '-f', $newKeyPath, '-N', ''];
                 $shellHelper->execute($args, null, true);
                 $publicKeyPath = $newKeyPath . '.pub';
                 $this->stdErr->writeln("Generated a new key: $publicKeyPath");
 
+                // An SSH agent is required if the key's filename is unusual.
                 if (!in_array(basename($newKeyPath), ['id_rsa', 'id_dsa'])) {
                     $this->stdErr->writeln('Add this key to an SSH agent with:');
                     $this->stdErr->writeln('    eval $(ssh-agent)');
@@ -145,37 +147,28 @@ class SshKeyAddCommand extends CommandBase
     }
 
     /**
-     * The path to the user's key that we expect to be used with Platform.sh.
-     *
-     * @param string $basename
-     *
-     * @return string
-     */
-    protected function getDefaultKeyPath($basename = 'id_rsa')
-    {
-        return $this->getHomeDir() . '/.ssh/' . $basename;
-    }
-
-    /**
      * Find the path for a new SSH key.
      *
-     * If the file already exists, this will recurse to find a new filename.
+     * If the file already exists, this will recurse to find a new filename. The
+     * first will be "id_rsa", the second "platform_sh.key", the third
+     * "platform_sh.2.key", and so on.
      *
-     * @param string $base
-     * @param int    $number
+     * @param int $number
      *
      * @return string
      */
-    protected function getNewKeyPath($base, $number = 1)
+    protected function getNewKeyPath($number = 0)
     {
-        $base = $base ?: $this->getDefaultKeyPath();
-        $filename = $base;
-        if ($number > 1) {
-            $base = $this->getDefaultKeyPath('platform_sh.key');
-            $filename = strpos($base, '.key') ? str_replace('.key', ".$number.key", $base) : "$base.$number";
+        $basename = 'platform_sh.key';
+        if ($number === 0) {
+            $basename = self::DEFAULT_BASENAME;
         }
+        elseif ($number > 1) {
+            $basename = strpos($basename, '.key') ? str_replace('.key', ".$number.key", $basename) : "$basename.$number";
+        }
+        $filename = $this->getHomeDir() . '/.ssh/' . $basename;
         if (file_exists($filename)) {
-            return $this->getNewKeyPath($base, ++$number);
+            return $this->getNewKeyPath(++$number);
         }
 
         return $filename;
