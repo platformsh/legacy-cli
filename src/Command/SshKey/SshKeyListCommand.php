@@ -44,8 +44,8 @@ class SshKeyListCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $this->stdErr->writeln("Add a new SSH key by running <info>platform ssh-key:add [path]</info>");
-        $this->stdErr->writeln("Delete an SSH key by running <info>platform ssh-key:delete [id]</info>");
+        $this->stdErr->writeln("Add a new SSH key with: <info>platform ssh-key:add</info>");
+        $this->stdErr->writeln("Delete an SSH key with: <info>platform ssh-key:delete [id]</info>");
 
         return !empty($keys) ? 0 : 1;
     }

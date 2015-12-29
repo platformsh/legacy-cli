@@ -26,7 +26,8 @@ class SshKeyDeleteCommand extends CommandBase
     {
         $id = $input->getArgument('id');
         if (empty($id) || !is_numeric($id)) {
-            $this->stdErr->writeln("<error>You must specify the ID of the key to delete</error>");
+            $this->stdErr->writeln("<error>You must specify the ID of the SSH key to delete.</error>");
+            $this->stdErr->writeln("List your SSH keys with: <info>platform ssh-keys</info>");
 
             return 1;
         }
@@ -39,7 +40,7 @@ class SshKeyDeleteCommand extends CommandBase
 
         $key->delete();
 
-        $this->stdErr->writeln("The SSH key <info>#$id</info> has been deleted from your Platform.sh account");
+        $this->stdErr->writeln("The SSH key <info>$id</info> has been deleted from your Platform.sh account.");
 
         return 0;
     }

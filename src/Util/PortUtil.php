@@ -72,8 +72,10 @@ class PortUtil
     ];
 
     /**
-     * @param int $start
-     * @param string|null $hostname
+     * Get the next available valid port.
+     *
+     * @param int         $start    The starting port number.
+     * @param string|null $hostname The hostname, defaults to 127.0.0.1.
      *
      * @throws \Exception on failure
      *
@@ -83,10 +85,7 @@ class PortUtil
     {
         $limit = 30;
         for ($port = $start; $port < $start + $limit; $port++) {
-            if (in_array($port, self::$unsafePorts) || self::isPortInUse($port, $hostname)) {
-                continue;
-            }
-            if (static::validatePort($port)) {
+            if (static::validatePort($port) && !static::isPortInUse($port, $hostname)) {
                 return $port;
             }
         }
@@ -94,7 +93,9 @@ class PortUtil
     }
 
     /**
-     * @param int $port
+     * Validate a port number.
+     *
+     * @param int|string $port
      *
      * @return bool
      */
@@ -108,7 +109,9 @@ class PortUtil
     }
 
     /**
-     * @param int $port
+     * Check whether a port is open.
+     *
+     * @param int         $port
      * @param string|null $hostname
      *
      * @return bool
@@ -118,6 +121,7 @@ class PortUtil
         $fp = @fsockopen($hostname !== null ? $hostname : '127.0.0.1', $port, $errno, $errstr, 10);
         if ($fp !== false) {
             fclose($fp);
+
             return true;
         }
 

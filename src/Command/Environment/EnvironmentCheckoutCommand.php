@@ -53,14 +53,10 @@ class EnvironmentCheckoutCommand extends CommandBase
             $config = $this->getProjectConfig($this->getProjectRoot());
             if (!empty($config['mapping'])) {
                 foreach ($config['mapping'] as $branch => $id) {
-                    unset($environmentList[$id]);
-                    if ($currentEnvironment && $id == $currentEnvironment->id) {
-                        continue;
+                    if (isset($environmentList[$id]) && isset($environmentList[$branch])) {
+                        unset($environmentList[$id]);
+                        $environmentList[$branch] = sprintf('%s (%s)', $environments[$id]->title, $branch);
                     }
-                    if (!isset($environments[$id])) {
-                        continue;
-                    }
-                    $environmentList[$branch] = sprintf('%s (%s)', $environments[$id]->title, $branch);
                 }
             }
             if (!count($environmentList)) {
