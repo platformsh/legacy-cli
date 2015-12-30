@@ -59,6 +59,7 @@ class ProjectGetCommand extends CommandBase
     {
         $projectId = $input->getArgument('id');
         $environmentOption = $input->getOption('environment');
+        $hostOption = $input->getOption('host');
         if (empty($projectId)) {
             if ($input->isInteractive() && ($projects = $this->getProjects(true))) {
                 $projectId = $this->offerProjectChoice($projects, $input);
@@ -71,11 +72,11 @@ class ProjectGetCommand extends CommandBase
         else {
             $result = $this->parseProjectId($projectId);
             $projectId = $result['projectId'];
-            $host = $input->getOption('host') ?: $result['host'];
+            $hostOption = $hostOption ?: $result['host'];
             $environmentOption = $environmentOption ?: $result['environmentId'];
         }
 
-        $project = $this->getProject($projectId, $input->getOption('host'), true);
+        $project = $this->getProject($projectId, $hostOption, true);
         if (!$project) {
             $this->stdErr->writeln("<error>Project not found: $projectId</error>");
 
