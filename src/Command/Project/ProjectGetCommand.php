@@ -8,7 +8,6 @@ use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
-use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -144,8 +143,6 @@ class ProjectGetCommand extends CommandBase
             $environment = $environmentOption;
         } elseif (count($environments) === 1) {
             $environment = key($environments);
-        } elseif ($environments && $input->isInteractive()) {
-            $environment = $this->offerEnvironmentChoice($environments, $input);
         } else {
             $environment = 'master';
         }
@@ -252,34 +249,6 @@ class ProjectGetCommand extends CommandBase
         $success = $builder->buildProject($projectRoot);
 
         return $success ? 0 : 1;
-    }
-
-    /**
-     * @param Environment[]   $environments
-     * @param InputInterface  $input
-     *
-     * @return string
-     *   The chosen environment ID.
-     */
-    protected function offerEnvironmentChoice(array $environments, InputInterface $input)
-    {
-        // Create a list starting with "master".
-        $default = 'master';
-        $environmentList = [$default => $environments[$default]->title];
-        foreach ($environments as $environment) {
-            $id = $environment->id;
-            if ($id != $default) {
-                $environmentList[$id] = $environment->title;
-            }
-        }
-        if (count($environmentList) === 1) {
-            return key($environmentList);
-        }
-
-        $text = "Enter a number to choose which environment to check out:";
-
-        return $this->getHelper('question')
-                    ->choose($environmentList, $text, $input, $this->stdErr, $default);
     }
 
     /**
