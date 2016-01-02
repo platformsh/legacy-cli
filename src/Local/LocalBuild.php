@@ -190,7 +190,7 @@ class LocalBuild
         }
 
         // Find the right build directory.
-        $buildName = date('Y-m-d--H-i-s');
+        $buildName = 'current';
         if (!empty($this->settings['environmentId'])) {
             $buildName .= '--' . $this->settings['environmentId'];
         }
@@ -205,6 +205,14 @@ class LocalBuild
             // As the build directory is inside the source directory, ensure it
             // isn't copied or symlinked into the build.
             $toolstack->addIgnoredFiles([LocalProject::BUILD_DIR]);
+        }
+        if (file_exists($buildDir)) {
+            $previousBuildDir = dirname($buildDir) . '/' . str_replace('current', 'previous', basename($buildDir));
+            $this->output->writeln("Moving previous build to: " . $previousBuildDir);
+            if (file_exists($previousBuildDir)) {
+                $this->fsHelper->remove($previousBuildDir);
+            }
+            rename($buildDir, $previousBuildDir);
         }
 
         // If the destination is inside the source directory, ensure it isn't
@@ -362,6 +370,8 @@ class LocalBuild
      * @param int    $keepMax
      * @param bool   $includeActive
      * @param bool   $quiet
+     *
+     * @deprecated No longer needed from 3.0.0.
      *
      * @return int[]
      *   The numbers of deleted and kept builds.
