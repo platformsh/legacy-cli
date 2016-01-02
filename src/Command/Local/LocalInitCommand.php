@@ -67,10 +67,6 @@ class LocalInitCommand extends CommandBase
 
         $this->stdErr->writeln("Project initialized in directory: <info>$projectRoot</info>");
 
-        if ($inside) {
-            $this->stdErr->writeln("<comment>Type 'cd .' to refresh your shell</comment>");
-        }
-
         return 0;
     }
 

@@ -3,19 +3,18 @@
 namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Helper\GitHelper;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
 
 class LocalProject
 {
 
-    const ARCHIVE_DIR = '.build-archives';
-    const BUILD_DIR = 'builds';
-    const PROJECT_CONFIG = '.platform-project';
-    const REPOSITORY_DIR = 'repository';
-    const SHARED_DIR = 'shared';
+    const ARCHIVE_DIR = '.platform/local/build-archives';
+    const BUILD_DIR = '.platform/local/builds';
+    const PROJECT_CONFIG = '.platform/local/project.yaml';
+    const SHARED_DIR = '.platform/local/shared';
     const WEB_ROOT = 'www';
+    const REPOSITORY_DIR = '.'; // for backwards compatibility
 
     /**
      * Create the default files for a project.
@@ -26,8 +25,8 @@ class LocalProject
      */
     public function createProjectFiles($projectRoot, $projectId, $host = null)
     {
-        mkdir($projectRoot . '/' . self::BUILD_DIR);
-        mkdir($projectRoot . '/' . self::SHARED_DIR);
+        mkdir($projectRoot . '/' . self::BUILD_DIR, 0755, true);
+        mkdir($projectRoot . '/' . self::SHARED_DIR, 0755, true);
 
         // Create the .platform-project file.
         $projectConfig = ['id' => $projectId];
@@ -65,7 +64,7 @@ class LocalProject
             throw new \RuntimeException('The directory is not a Git repository');
         }
 
-        if (file_exists($dir . '/../' . self::PROJECT_CONFIG)) {
+        if (file_exists($dir . '/' . self::PROJECT_CONFIG)) {
             throw new \RuntimeException("The project is already initialized");
         }
 
@@ -75,17 +74,9 @@ class LocalProject
             $projectId = $this->getProjectId($gitUrl);
         }
 
-        // Move the directory into a 'repository' subdirectory.
-        $backupDir = $this->getBackupDir($dir);
-        $repositoryDir = $dir . '/' . LocalProject::REPOSITORY_DIR;
-        $fs = new Filesystem();
-        $fs->rename($dir, $backupDir);
-        $fs->mkdir($dir, 0755);
-        $fs->rename($backupDir, $repositoryDir);
-
         // Set up the project.
         $this->createProjectFiles($dir, $projectId);
-        $this->ensureGitRemote($repositoryDir, $gitUrl);
+        $this->ensureGitRemote($dir, $gitUrl);
 
         return $dir;
     }
@@ -153,29 +144,10 @@ class LocalProject
     }
 
     /**
-     * Get a backup name for a directory.
-     *
-     * @param     $dir
-     * @param int $inc
-     *
-     * @return string
-     */
-    protected function getBackupDir($dir, $inc = 0)
-    {
-        $backupDir = $dir . '-backup';
-        $backupDir .= $inc ?: '';
-        if (file_exists($backupDir)) {
-            return $this->getBackupDir($dir, ++$inc);
-        }
-
-        return $backupDir;
-    }
-
-    /**
      * Find the root of the current project.
      *
-     * The project root contains a .platform-project YAML file. The current
-     * directory tree is traversed until the file is found.
+     * The project root contains a .platform/local/project.yaml file. The
+     * current directory tree is traversed until the file is found.
      *
      * @return string|false
      */

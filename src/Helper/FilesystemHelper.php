@@ -113,7 +113,8 @@ class FilesystemHelper extends Helper
         }
 
         if (is_dir($source)) {
-            $skip = ['.', '..', '.git'];
+            // An array of relative filenames to always exclude from copying.
+            $skip = ['.', '..', '.git', '.platform'];
 
             // Prevent infinite recursion when the destination is inside the
             // source.
@@ -129,7 +130,7 @@ class FilesystemHelper extends Helper
                     continue;
                 } elseif (is_dir($source . '/' . $file)) {
                     $this->copyAll($source . '/' . $file, $destination . '/' . $file);
-                } else {
+                } elseif (is_file($source . '/' . $file)) {
                     $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }
