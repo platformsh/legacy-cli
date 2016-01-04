@@ -90,7 +90,7 @@ class TunnelOpenCommand extends TunnelCommandBase
                 $relationshipString = $this->formatTunnelRelationship($tunnel);
 
                 if ($openTunnelInfo = $this->isTunnelOpen($tunnel)) {
-                    $this->stdErr->writeln("A tunnel is already open for the relationship: <info>$relationshipString</info>");
+                    $this->stdErr->writeln(sprintf("A tunnel is already open on port %s for the relationship: <info>%s</info>", $openTunnelInfo['localPort'], $relationshipString));
                     continue;
                 }
 
