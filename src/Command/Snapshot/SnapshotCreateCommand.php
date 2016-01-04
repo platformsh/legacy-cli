@@ -14,12 +14,13 @@ class SnapshotCreateCommand extends CommandBase
     {
         $this
             ->setName('snapshot:create')
+            ->setAliases(['backup'])
             ->setDescription('Make a snapshot of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption('Do not wait for the snapshot to complete');
-        $this->setHiddenAliases(['backup', 'environment:backup']);
+        $this->setHiddenAliases(['environment:backup']);
         $this->setHelp('See https://docs.platform.sh/use-platform/backup-and-restore.html');
         $this->addExample('Make a snapshot of the current environment');
     }

@@ -135,7 +135,7 @@ self
   self:install                              Install or update CLI configuration files
   self:update                               Update the CLI to the latest version
 snapshot
-  snapshot:create                           Make a snapshot of an environment
+  snapshot:create (backup)                  Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment
   snapshot:restore                          Restore an environment snapshot
 ssh-key
