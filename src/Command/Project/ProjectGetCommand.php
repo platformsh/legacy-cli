@@ -82,6 +82,24 @@ class ProjectGetCommand extends CommandBase
             return 1;
         }
 
+        $environments = $this->getEnvironments($project);
+        if ($environmentOption) {
+            if (!isset($environments[$environmentOption])) {
+                // Reload the environments list.
+                $environments = $this->getEnvironments($project, true);
+                if (!isset($environments[$environmentOption])) {
+                    $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
+                }
+
+                return 1;
+            }
+            $environment = $environmentOption;
+        } elseif (count($environments) === 1) {
+            $environment = key($environments);
+        } else {
+            $environment = 'master';
+        }
+
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
@@ -135,22 +153,6 @@ class ProjectGetCommand extends CommandBase
         $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
         $local->createProjectFiles($projectRoot, $project->id, $hostname);
 
-        $environments = $this->getEnvironments($project, true);
-
-        if ($environmentOption) {
-            if (!isset($environments[$environmentOption])) {
-                $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
-                $cleanUp();
-
-                return 1;
-            }
-            $environment = $environmentOption;
-        } elseif (count($environments) === 1) {
-            $environment = key($environments);
-        } else {
-            $environment = 'master';
-        }
-
         // Prepare to talk to the Platform.sh repository.
         $gitUrl = $project->getGitUrl();
         $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
@@ -159,6 +161,7 @@ class ProjectGetCommand extends CommandBase
         $gitHelper->ensureInstalled();
 
         // First check if the repo actually exists.
+        $this->stdErr->writeln('Checking Git repository status');
         $repoHead = $gitHelper->execute(['ls-remote', $gitUrl, 'HEAD'], false);
         if ($repoHead === false) {
             // The ls-remote command failed.
@@ -202,6 +205,7 @@ class ProjectGetCommand extends CommandBase
         }
 
         // We have a repo! Yay. Clone it.
+        $this->stdErr->writeln('Cloning Git repository');
         $cloneArgs = ['--branch', $environment, '--origin', 'platform'];
         $cloned = $gitHelper->cloneRepo($gitUrl, $repositoryDir, $cloneArgs);
         if (!$cloned) {
