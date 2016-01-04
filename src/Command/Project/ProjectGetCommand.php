@@ -210,7 +210,7 @@ class ProjectGetCommand extends CommandBase
             return 1;
         }
 
-        $gitHelper->updateSubmodules($repositoryDir);
+        $gitHelper->updateSubmodules(true, $repositoryDir);
 
         $local->ensureGitRemote($repositoryDir, $gitUrl);
         $this->setProjectRoot($projectRoot);
