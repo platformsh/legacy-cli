@@ -1139,7 +1139,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 $this->environment = $this->selectEnvironment($argument);
             }
         } elseif ($input->hasOption($envOptionName)) {
-            $environmentId = isset($environmentId) ? $environmentId : $input->getOption($envOptionName);
+            $environmentId = $input->getOption($envOptionName) ?: $environmentId;
             if (!$environmentId && $envNotRequired) {
                 $this->environment = $this->getCurrentEnvironment($this->project);
             }
