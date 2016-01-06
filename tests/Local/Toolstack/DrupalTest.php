@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
+use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalProject;
 
 class DrupalTest extends BaseToolstackTest
@@ -78,5 +79,26 @@ class DrupalTest extends BaseToolstackTest
         // Build again. This will extract the archive.
         $success = $this->builder->buildProject($projectRoot);
         $this->assertTrue($success);
+    }
+
+    public function testDoNotSymlinkBuildsIntoSitesDefault()
+    {
+        $tempDir = self::$root->getName();
+        $repository = tempnam($tempDir, '');
+        unlink($repository);
+        mkdir($repository);
+        $fsHelper = new FilesystemHelper();
+        $sourceDir = 'tests/data/apps/drupal/project';
+        $fsHelper->copyAll($sourceDir, $repository);
+        $wwwDir = $repository . '/www';
+
+        // Run these tests twice to check that a previous build does not affect
+        // the next one.
+        for ($i = 1; $i <= 2; $i++) {
+            $this->assertTrue($this->builder->build($repository, $wwwDir));
+            $this->assertFileExists($wwwDir . '/sites/default/settings.php');
+            $this->assertFileNotExists($wwwDir . '/sites/default/builds');
+            $this->assertFileNotExists($wwwDir . '/sites/default/www');
+        }
     }
 }
