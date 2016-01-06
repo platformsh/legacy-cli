@@ -161,7 +161,6 @@ class ProjectGetCommand extends CommandBase
         $gitHelper->ensureInstalled();
 
         // First check if the repo actually exists.
-        $this->stdErr->writeln('Checking Git repository status');
         $repoHead = $gitHelper->execute(['ls-remote', $gitUrl, 'HEAD'], false);
         if ($repoHead === false) {
             // The ls-remote command failed.
@@ -205,7 +204,6 @@ class ProjectGetCommand extends CommandBase
         }
 
         // We have a repo! Yay. Clone it.
-        $this->stdErr->writeln('Cloning Git repository');
         $cloneArgs = ['--branch', $environment, '--origin', 'platform'];
         $cloned = $gitHelper->cloneRepo($gitUrl, $repositoryDir, $cloneArgs);
         if (!$cloned) {
