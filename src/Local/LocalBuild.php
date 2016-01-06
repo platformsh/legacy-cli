@@ -179,21 +179,6 @@ class LocalBuild
         $appName = $app->getName();
         $appId = $app->getId();
 
-        $buildName = date('Y-m-d--H-i-s');
-        if (!empty($this->settings['environmentId'])) {
-            $buildName .= '--' . $this->settings['environmentId'];
-        }
-        if ($multiApp) {
-            $buildName .= '--' . str_replace('/', '-', $appId);
-        }
-
-        if (!empty($this->settings['projectRoot'])) {
-            $buildDir = $this->settings['projectRoot'] . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
-        }
-        else {
-            $buildDir = $sourceDir . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
-        }
-
         // Get the configured document root.
         $documentRoot = $this->getDocumentRoot($appConfig);
 
@@ -202,6 +187,32 @@ class LocalBuild
             $this->output->writeln("Toolstack not found for application <error>$appId</error>");
 
             return false;
+        }
+
+        // Find the right build directory.
+        $buildName = date('Y-m-d--H-i-s');
+        if (!empty($this->settings['environmentId'])) {
+            $buildName .= '--' . $this->settings['environmentId'];
+        }
+        if ($multiApp) {
+            $buildName .= '--' . str_replace('/', '-', $appId);
+        }
+        if (!empty($this->settings['projectRoot'])) {
+            $buildDir = $this->settings['projectRoot'] . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+        }
+        else {
+            $buildDir = $sourceDir . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+            // As the build directory is inside the source directory, ensure it
+            // isn't copied or symlinked into the build.
+            $toolstack->addIgnoredFiles([LocalProject::BUILD_DIR]);
+        }
+
+        // If the destination is inside the source directory, ensure it isn't
+        // copied or symlinked into the build.
+        if (strpos($destination, $sourceDir) === 0) {
+            $toolstack->addIgnoredFiles([
+                ltrim(substr($destination, strlen($sourceDir)), '/'),
+            ]);
         }
 
         // Warn about a mismatched PHP version.

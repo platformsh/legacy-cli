@@ -82,6 +82,14 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
+    public function addIgnoredFiles(array $ignoredFiles)
+    {
+        $this->ignoredFiles = array_merge($this->ignoredFiles, $ignoredFiles);
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function prepare($buildDir, $documentRoot, $appRoot, array $settings)
     {
         $this->appRoot = $appRoot;
@@ -93,14 +101,6 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->absoluteLinks = !empty($settings['absoluteLinks']);
         $this->copy = !empty($settings['copy']);
         $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
-
-        // If building within the application's code directory (e.g. if not in
-        // a 'project' structure) then ensure the 'builds' directory and 'www'
-        // web root are never copied nor linked into the build.
-        if (!isset($this->settings['projectRoot']) || $settings['projectRoot'] === $appRoot) {
-            $this->ignoredFiles[] = LocalProject::BUILD_DIR;
-            $this->ignoredFiles[] = LocalProject::WEB_ROOT;
-        }
     }
 
     /**

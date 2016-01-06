@@ -77,4 +77,11 @@ interface ToolstackInterface
      * @return bool
      */
     public function canArchive();
+
+    /**
+     * Add to the list of files (in the app root) that should not be copied.
+     *
+     * @param array $ignoredFiles
+     */
+    public function addIgnoredFiles(array $ignoredFiles);
 }
