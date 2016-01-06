@@ -6,8 +6,9 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 * Operating system: Linux, OS X, Windows Vista, Windows 7, Windows 8 Pro, or Windows 10 (Windows 8 Standard does not work due to an issue with symlink permissions)
 * PHP 5.5 or higher, with cURL support
-* [Composer](https://getcomposer.org/)
-* [Drush](https://github.com/drush-ops/drush) (only for Drupal projects, optional)
+* For building locally, your project's dependencies, e.g.
+  * [Composer](https://getcomposer.org/) (for many PHP projects)
+  * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
 
 ## Installation
 
@@ -134,7 +135,7 @@ self
   self:install                              Install or update CLI configuration files
   self:update                               Update the CLI to the latest version
 snapshot
-  snapshot:create                           Make a snapshot of an environment
+  snapshot:create (backup)                  Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment
   snapshot:restore                          Restore an environment snapshot
 ssh-key

@@ -8,7 +8,6 @@ use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
-use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -23,7 +22,7 @@ class ProjectGetCommand extends CommandBase
         $this
             ->setName('project:get')
             ->setAliases(['get'])
-            ->setDescription('Clone and build a project locally')
+            ->setDescription('Clone a project locally')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
@@ -41,16 +40,16 @@ class ProjectGetCommand extends CommandBase
                 "The environment ID to clone. Defaults to 'master'"
             )
             ->addOption(
-                'no-build',
-                null,
-                InputOption::VALUE_NONE,
-                "Do not build the retrieved project"
-            )
-            ->addOption(
                 'host',
                 null,
                 InputOption::VALUE_REQUIRED,
                 "The project's API hostname"
+            )
+            ->addOption(
+                'build',
+                null,
+                InputOption::VALUE_NONE,
+                'Build the project after cloning'
             );
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
@@ -81,6 +80,24 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln("<error>Project not found: $projectId</error>");
 
             return 1;
+        }
+
+        $environments = $this->getEnvironments($project);
+        if ($environmentOption) {
+            if (!isset($environments[$environmentOption])) {
+                // Reload the environments list.
+                $environments = $this->getEnvironments($project, true);
+                if (!isset($environments[$environmentOption])) {
+                    $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
+                }
+
+                return 1;
+            }
+            $environment = $environmentOption;
+        } elseif (count($environments) === 1) {
+            $environment = key($environments);
+        } else {
+            $environment = 'master';
         }
 
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
@@ -123,32 +140,18 @@ class ProjectGetCommand extends CommandBase
         }
 
         if ($existed) {
-            $this->stdErr->writeln("Re-created project directory: <info>$directory</info>");
+            $this->stdErr->writeln("Re-created project directory: $directory");
         }
         else {
-            $this->stdErr->writeln("Created new project directory: <info>$directory</info>");
+            $this->stdErr->writeln("Created new project directory: $directory");
         }
+        $cleanUp = function() use ($projectRoot, $fsHelper) {
+            $fsHelper->remove($projectRoot);
+        };
 
         $local = new LocalProject();
         $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
         $local->createProjectFiles($projectRoot, $project->id, $hostname);
-
-        $environments = $this->getEnvironments($project, true);
-
-        if ($environmentOption) {
-            if (!isset($environments[$environmentOption])) {
-                $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
-
-                return 1;
-            }
-            $environment = $environmentOption;
-        } elseif (count($environments) === 1) {
-            $environment = key($environments);
-        } elseif ($environments && $input->isInteractive()) {
-            $environment = $this->offerEnvironmentChoice($environments, $input);
-        } else {
-            $environment = 'master';
-        }
 
         // Prepare to talk to the Platform.sh repository.
         $gitUrl = $project->getGitUrl();
@@ -161,7 +164,7 @@ class ProjectGetCommand extends CommandBase
         $repoHead = $gitHelper->execute(['ls-remote', $gitUrl, 'HEAD'], false);
         if ($repoHead === false) {
             // The ls-remote command failed.
-            $fsHelper->rmdir($projectRoot);
+            $cleanUp();
             $this->stdErr->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
 
             // Suggest SSH key commands.
@@ -206,18 +209,24 @@ class ProjectGetCommand extends CommandBase
         if (!$cloned) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
-            $fsHelper->rmdir($projectRoot);
+            $cleanUp();
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
             $this->stdErr->writeln('Please check your SSH credentials or contact Platform.sh support');
 
             return 1;
         }
 
+        $gitHelper->updateSubmodules(true, $repositoryDir);
+
         $local->ensureGitRemote($repositoryDir, $gitUrl);
         $this->setProjectRoot($projectRoot);
 
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln("The project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");
+        $this->stdErr->writeln("\nThe project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");
+
+        // Return early if there is no code in the repository.
+        if (!glob($repositoryDir . '/*')) {
+            return 0;
+        }
 
         // Ensure that Drush aliases are created.
         if (Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
@@ -232,52 +241,25 @@ class ProjectGetCommand extends CommandBase
             );
         }
 
-        // Allow the build to be skipped.
-        if ($input->getOption('no-build')) {
-            return 0;
-        }
-
-        // Always skip the build if the cloned repository is empty ('.', '..',
-        // '.git' being the only found items)
-        if (count(scandir($repositoryDir)) <= 3) {
-            return 0;
-        }
-
         // Launch the first build.
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('Building the project locally for the first time. Run <info>platform build</info> to repeat this.');
-        $builder = new LocalBuild(['environmentId' => $environment], $output);
-        $success = $builder->buildProject($projectRoot);
+        $success = true;
+        if ($input->getOption('build')) {
+            // Launch the first build.
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Building the project locally for the first time. Run <info>platform build</info> to repeat this.');
+            $options = ['environmentId' => $environment, 'noClean' => true];
+            $builder = new LocalBuild($options, $output);
+            $success = $builder->buildProject($projectRoot);
+        }
+        else {
+            $this->stdErr->writeln(
+                "\nYou can build the project with: "
+                . "\n    cd $directory"
+                . "\n    platform build"
+            );
+        }
 
         return $success ? 0 : 1;
-    }
-
-    /**
-     * @param Environment[]   $environments
-     * @param InputInterface  $input
-     *
-     * @return string
-     *   The chosen environment ID.
-     */
-    protected function offerEnvironmentChoice(array $environments, InputInterface $input)
-    {
-        // Create a list starting with "master".
-        $default = 'master';
-        $environmentList = [$default => $environments[$default]->title];
-        foreach ($environments as $environment) {
-            $id = $environment->id;
-            if ($id != $default) {
-                $environmentList[$id] = $environment->title;
-            }
-        }
-        if (count($environmentList) === 1) {
-            return key($environmentList);
-        }
-
-        $text = "Enter a number to choose which environment to check out:";
-
-        return $this->getHelper('question')
-                    ->choose($environmentList, $text, $input, $this->stdErr, $default);
     }
 
     /**

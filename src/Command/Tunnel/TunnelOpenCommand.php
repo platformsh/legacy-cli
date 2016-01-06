@@ -31,11 +31,11 @@ class TunnelOpenCommand extends TunnelCommandBase
         $environment = $this->getSelectedEnvironment();
 
         if ($environment->id === 'master') {
-            $this->stdErr->writeln('Tunnelling to the <error>master</error> environment is not safe.');
-            if (count($this->getEnvironments($project)) === 1) {
-                $this->stdErr->writeln('Use <info>platform branch</info> to create a new development environment.');
+            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
+            if (!$questionHelper->confirm('Are you sure you want to open SSH tunnel(s) to the <comment>master</comment> (production) environment?', $input, $output, false)) {
+                return 1;
             }
-            return 1;
         }
 
         $appName = $this->selectApp($input);
@@ -90,7 +90,7 @@ class TunnelOpenCommand extends TunnelCommandBase
                 $relationshipString = $this->formatTunnelRelationship($tunnel);
 
                 if ($openTunnelInfo = $this->isTunnelOpen($tunnel)) {
-                    $this->stdErr->writeln("A tunnel is already open for the relationship: <info>$relationshipString</info>");
+                    $this->stdErr->writeln(sprintf("A tunnel is already open on port %s for the relationship: <info>%s</info>", $openTunnelInfo['localPort'], $relationshipString));
                     continue;
                 }
 

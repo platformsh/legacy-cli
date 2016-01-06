@@ -4,6 +4,40 @@ namespace Platformsh\Cli\Util;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
+/**
+ * A utility to manage multiple external processes launched from a CLI command.
+ *
+ * Usage:
+ * <code>
+ *   $manager = new \Platformsh\Cli\Util\ProcessManager();
+ *
+ *   // Fork: everything after this will run in a child. The user's shell will
+ *   // be blocked until the parent is killed.
+ *   $manager->fork().
+ *
+ *   $logFile = 'path/to/logFile';
+ *   $log = new \Symfony\Component\Console\Output\StreamOutput(fopen($logFile, 'a'));
+ *
+ *   // Create multiple external processes.
+ *   foreach ($commands as $key => $command) {
+ *     $process = new \Symfony\Component\Process\Process($command);
+ *     $pidFile = 'path/to/pidFile' . $key;
+ *
+ *     // Start the process with the manager.
+ *     $manager->startProcess($process, $pidFile, $log);
+ *
+ *     // Report this to the shell.
+ *     echo "Started process: " . $process->getCommandLine() . "\n";
+ *   }
+ *
+ *   // Kill the parent process to release the shell prompt.
+ *   $manager->killParent();
+ *
+ *   // Monitor the external process(es). This keeps them running until the
+ *   // $pidFile is deleted or they are otherwise stopped.
+ *   $manager->monitor();
+ * </code>
+ */
 class ProcessManager
 {
     /** @var Process[] */
@@ -18,7 +52,7 @@ class ProcessManager
     }
 
     /**
-     * Fork the PHP process.
+     * Fork the current PHP process.
      *
      * Code run after this method is run in a child process. The parent process
      * merely waits for a SIGCHLD (successful) or SIGTERM (error) signal from
@@ -67,9 +101,15 @@ class ProcessManager
     }
 
     /**
+     * Start a managed external process.
+     *
      * @param Process $process
+     *   The Symfony Process object to manage.
      * @param string $pidFile
+     *   The path to a lock file which governs the process: if the file is
+     *   deleted then the process will be stopped in self::monitor().
      * @param OutputInterface $log
+     *   An output stream to which log messages can be written.
      *
      * @throws \Exception on failure
      *

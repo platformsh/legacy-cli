@@ -337,6 +337,28 @@ class GitHelper extends Helper
     }
 
     /**
+     * Update and/or initialize submodules.
+     *
+     * @param bool $recursive
+     *   Whether to recurse into nested submodules.
+     * @param string $dir
+     *   The path to a Git repository.
+     * @param bool   $mustRun
+     *   Enable exceptions if the Git command fails.
+     *
+     * @return bool
+     */
+    public function updateSubmodules($recursive = false, $dir = null, $mustRun = false)
+    {
+        $args = ['submodule', 'update', '--init'];
+        if ($recursive) {
+            $args[] = '--recursive';
+        }
+
+        return (bool) $this->execute($args, $dir, $mustRun, false);
+    }
+
+    /**
      * Read a configuration item.
      *
      * @param string $key

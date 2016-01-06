@@ -82,6 +82,14 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
+    public function addIgnoredFiles(array $ignoredFiles)
+    {
+        $this->ignoredFiles = array_merge($this->ignoredFiles, $ignoredFiles);
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function prepare($buildDir, $documentRoot, $appRoot, array $settings)
     {
         $this->appRoot = $appRoot;
