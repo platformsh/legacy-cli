@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "6db142c9b955e076d006537575f85081",
-    "content-hash": "cf8cf2c4c8b31a7b8879d32e5132ce0d",
+    "hash": "35fe5802f3f67dc69241666fd8a13f8e",
+    "content-hash": "ac569299dd473e8a86c5901d2321045c",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -593,16 +593,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.5",
+            "version": "v0.0.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "7ffa689d0f04f52d9e6bca7cb2d6e8482bfce72a"
+                "reference": "420f72e2f0c30f06dee2a503234aa066214cdb22"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/7ffa689d0f04f52d9e6bca7cb2d6e8482bfce72a",
-                "reference": "7ffa689d0f04f52d9e6bca7cb2d6e8482bfce72a",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/420f72e2f0c30f06dee2a503234aa066214cdb22",
+                "reference": "420f72e2f0c30f06dee2a503234aa066214cdb22",
                 "shasum": ""
             },
             "require": {
@@ -627,7 +627,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2015-11-28 13:30:52"
+            "time": "2016-01-08 10:14:32"
         },
         {
             "name": "react/promise",
@@ -2217,16 +2217,16 @@
         },
         {
             "name": "symfony/var-dumper",
-            "version": "v2.8.0",
+            "version": "v2.8.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/var-dumper.git",
-                "reference": "e6f3855005f2bfad7d7e72431d374a6478893fe3"
+                "reference": "f943f29ae69c42511a2d85adee9d13d835b5c803"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/e6f3855005f2bfad7d7e72431d374a6478893fe3",
-                "reference": "e6f3855005f2bfad7d7e72431d374a6478893fe3",
+                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/f943f29ae69c42511a2d85adee9d13d835b5c803",
+                "reference": "f943f29ae69c42511a2d85adee9d13d835b5c803",
                 "shasum": ""
             },
             "require": {
@@ -2276,7 +2276,7 @@
                 "debug",
                 "dump"
             ],
-            "time": "2015-11-18 13:45:00"
+            "time": "2015-12-05 11:09:21"
         }
     ],
     "aliases": [],
