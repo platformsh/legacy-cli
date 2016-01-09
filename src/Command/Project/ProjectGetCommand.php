@@ -122,9 +122,7 @@ class ProjectGetCommand extends CommandBase
         $fsHelper = $this->getHelper('fs');
 
         // Create the directory structure.
-        $existed = false;
         if (file_exists($directory)) {
-            $existed = true;
             $this->stdErr->writeln("The directory <error>$directory</error> already exists");
             if (file_exists($directory . '/' . LocalProject::PROJECT_CONFIG) && $questionHelper->confirm("Overwrite?", $input, $this->stdErr, false)) {
                 $fsHelper->remove($directory);
@@ -133,29 +131,16 @@ class ProjectGetCommand extends CommandBase
                 return 1;
             }
         }
-        mkdir($directory);
-        $projectRoot = realpath($directory);
-        if (!$projectRoot) {
-            throw new \Exception("Failed to create project directory: $directory");
+        if (!$parent = realpath(dirname($directory))) {
+            throw new \Exception("Not a directory: " . dirname($directory));
         }
-
-        if ($existed) {
-            $this->stdErr->writeln("Re-created project directory: $directory");
-        }
-        else {
-            $this->stdErr->writeln("Created new project directory: $directory");
-        }
-        $cleanUp = function() use ($projectRoot, $fsHelper) {
-            $fsHelper->remove($projectRoot);
-        };
+        $projectRoot = $parent . '/' . basename($directory);
 
         $local = new LocalProject();
         $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
-        $local->createProjectFiles($projectRoot, $project->id, $hostname);
 
         // Prepare to talk to the Platform.sh repository.
         $gitUrl = $project->getGitUrl();
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
         $gitHelper->ensureInstalled();
@@ -164,7 +149,6 @@ class ProjectGetCommand extends CommandBase
         $repoHead = $gitHelper->execute(['ls-remote', $gitUrl, 'HEAD'], false);
         if ($repoHead === false) {
             // The ls-remote command failed.
-            $cleanUp();
             $this->stdErr->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
 
             // Suggest SSH key commands.
@@ -189,12 +173,12 @@ class ProjectGetCommand extends CommandBase
         } elseif (is_bool($repoHead)) {
             // The repository doesn't have a HEAD, which means it is empty.
             // We need to create the folder, run git init, and attach the remote.
-            mkdir($repositoryDir);
+            mkdir($projectRoot);
             // Initialize the repo and attach our remotes.
             $this->stdErr->writeln("Initializing empty project repository");
-            $gitHelper->execute(['init'], $repositoryDir, true);
+            $gitHelper->execute(['init'], $projectRoot, true);
             $this->stdErr->writeln("Adding Platform.sh Git remote");
-            $local->ensureGitRemote($repositoryDir, $gitUrl);
+            $local->ensureGitRemote($projectRoot, $gitUrl);
             $this->stdErr->writeln("Your repository has been initialized and connected to <info>Platform.sh</info>!");
             $this->stdErr->writeln(
                 "Commit and push to the <info>$environment</info> branch and Platform.sh will build your project automatically"
@@ -205,31 +189,30 @@ class ProjectGetCommand extends CommandBase
 
         // We have a repo! Yay. Clone it.
         $cloneArgs = ['--branch', $environment, '--origin', 'platform'];
-        $cloned = $gitHelper->cloneRepo($gitUrl, $repositoryDir, $cloneArgs);
+        $cloned = $gitHelper->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if (!$cloned) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
-            $cleanUp();
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
             $this->stdErr->writeln('Please check your SSH credentials or contact Platform.sh support');
 
             return 1;
         }
 
-        $gitHelper->updateSubmodules(true, $repositoryDir);
+        $gitHelper->updateSubmodules(true, $projectRoot);
 
-        $local->ensureGitRemote($repositoryDir, $gitUrl);
+        $local->ensureGitRemote($projectRoot, $gitUrl);
         $this->setProjectRoot($projectRoot);
 
         $this->stdErr->writeln("\nThe project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");
 
         // Return early if there is no code in the repository.
-        if (!glob($repositoryDir . '/*')) {
+        if (!glob($projectRoot . '/*')) {
             return 0;
         }
 
         // Ensure that Drush aliases are created.
-        if (Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+        if (Drupal::isDrupal($projectRoot)) {
             $this->stdErr->writeln('');
             $this->runOtherCommand(
                 'local:drush-aliases',

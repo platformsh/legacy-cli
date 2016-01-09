@@ -471,17 +471,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             $project = $this->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
             if (!$project) {
-                $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
+                $filename = $projectRoot . '/' . LocalProject::PROJECT_CONFIG;
                 if (isset($config['host'])) {
                     $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
                     $message = "Project not found: " . $projectUrl
-                        . "\nThe project probably no longer exists."
-                        . "\nThe project's hostname and ID were determined from the file: " . $filename;
+                        . "\nThe project probably no longer exists.";
                 }
                 else {
                     $message = "Project not found: " . $config['id']
-                        . "\nEither you do not have access to the project on Platform.sh, or the project no longer exists."
-                        . "\nThe project ID was determined from the file: " . $filename;
+                        . "\nEither you do not have access to the project on Platform.sh, or the project no longer exists.";
                 }
                 throw new ProjectNotFoundException($message);
             }
@@ -503,7 +501,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     {
         if (!isset(self::$projectConfig[$projectRoot])) {
             $this->debug('Loading project config for ' . $projectRoot);
-            self::$projectConfig[$projectRoot] = LocalProject::getProjectConfig($projectRoot) ?: [];
+            $project = new LocalProject();
+            self::$projectConfig[$projectRoot] = $project->getProjectConfig($projectRoot) ?: [];
         }
 
         return self::$projectConfig[$projectRoot];
@@ -519,7 +518,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected function setProjectConfig($key, $value, $projectRoot)
     {
         unset(self::$projectConfig[$projectRoot]);
-        LocalProject::writeCurrentProjectConfig($key, $value, $projectRoot);
+        $localProject = new LocalProject();
+        $localProject->writeCurrentProjectConfig($key, $value, $projectRoot);
     }
 
     /**
@@ -835,7 +835,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     public function getProjectRoot()
     {
         if (empty(self::$projectRoot)) {
-            self::$projectRoot = LocalProject::getProjectRoot();
+            $localProject = new LocalProject();
+            self::$projectRoot = $localProject->getProjectRoot();
         }
 
         return self::$projectRoot;

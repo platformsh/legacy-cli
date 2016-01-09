@@ -92,9 +92,9 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         unlink($projectRoot);
         mkdir($projectRoot);
 
-        // Set up the project files.
+        // Set up the project.
         $local = new LocalProject();
-        $local->createProjectFiles($projectRoot, 'testProjectId');
+        $local->initialize($projectRoot, 'testProjectId');
 
         // Make a dummy repository.
         $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;

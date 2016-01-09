@@ -46,7 +46,8 @@ class LocalDrushAliasesCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $projectConfig = LocalProject::getProjectConfig($projectRoot);
+        $localProject = new LocalProject();
+        $projectConfig = $localProject->getProjectConfig($projectRoot);
         $current_group = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $projectConfig['id'];
 
         if ($input->getOption('pipe')) {
@@ -60,6 +61,7 @@ class LocalDrushAliasesCommand extends CommandBase
         $new_group = ltrim($input->getOption('group'), '@');
 
         $homeDir = $this->getHomeDir();
+        $localProject = new LocalProject();
 
         $drushHelper = new DrushHelper($output);
         $drushHelper->ensureInstalled();
@@ -81,7 +83,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         return 1;
                     }
                 }
-                LocalProject::writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
+                $localProject->writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
             }
 
             $environments = $this->getEnvironments($project, true, false);
