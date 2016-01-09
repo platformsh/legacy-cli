@@ -97,7 +97,7 @@ class LocalProject
      */
     protected function getProjectId($gitUrl)
     {
-        if (!preg_match('/^([a-z][a-z0-9]{12})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $gitUrl, $matches)) {
+        if (!preg_match('/^([a-z0-9]{12,})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $gitUrl, $matches)) {
             throw new \RuntimeException("Not a Platform.sh Git URL: $gitUrl");
         }
 
