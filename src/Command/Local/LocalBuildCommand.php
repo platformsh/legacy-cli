@@ -117,14 +117,14 @@ class LocalBuildCommand extends CommandBase
             // source directory.
             elseif (file_exists($sourceDir . '/.platform-project')) {
                 $projectRoot = $sourceDir;
-                $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+                $sourceDir = realpath($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
             }
         }
         elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
         }
         else {
-            $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+            $sourceDir = realpath($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
         }
 
         $destination = $input->getOption('destination');
