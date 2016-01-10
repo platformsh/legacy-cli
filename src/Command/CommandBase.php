@@ -76,6 +76,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     private static $environments = [];
 
+    /** @var bool */
+    private static $legacyMigrateAsked = false;
+
     /** @var OutputInterface|null */
     protected $output;
 
@@ -232,6 +235,25 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         $this->_deleteOldCaches();
+
+        // Migrate from the legacy file structure.
+        if ($root = LocalProject::getLegacyProjectRoot()) {
+            if ($this->getName() !== 'legacy-migrate' && !self::$legacyMigrateAsked) {
+                self::$legacyMigrateAsked = true;
+                $this->stdErr->writeln('You are in a project using the legacy file structure (from the Platform.sh CLI version 2).');
+                if ($input->isInteractive()) {
+                    /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+                    $questionHelper = $this->getHelper('question');
+                    if ($questionHelper->confirm('Migrate to new structure?', $input, $this->stdErr)) {
+                        $this->runOtherCommand('legacy-migrate');
+                    }
+                }
+                else {
+                    $this->stdErr->writeln('Fix this with: <comment>platform legacy-migrate</comment>');
+                }
+                $this->stdErr->writeln('');
+            }
+        }
     }
 
     /**

@@ -103,8 +103,9 @@ class FilesystemHelper extends Helper
      *
      * @param string $source
      * @param string $destination
+     * @param array $skip
      */
-    public function copyAll($source, $destination)
+    public function copyAll($source, $destination, array $skip = ['.git', '.platform'])
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -113,8 +114,8 @@ class FilesystemHelper extends Helper
         }
 
         if (is_dir($source)) {
-            // An array of relative filenames to always exclude from copying.
-            $skip = ['.', '..', '.git', '.platform'];
+            $skip[] = '.';
+            $skip[] = '..';
 
             // Prevent infinite recursion when the destination is inside the
             // source.

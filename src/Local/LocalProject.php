@@ -16,8 +16,6 @@ class LocalProject
     const WEB_ROOT = 'www';
     const REPOSITORY_DIR = '.'; // for backwards compatibility
 
-    private static $projectConfigs = [];
-
     /**
      * Initialize a project in a directory.
      *
@@ -126,52 +124,39 @@ class LocalProject
     }
 
     /**
-     * Find the root of the current project.
+     * Find the highest level directory that contains a file.
      *
-     * The project root is a Git repository with a Platform.sh remote. The
-     * current directory tree is traversed until the Git root is found.
+     * @param string $file
+     *   The filename to look for.
+     * @param callable $callback
+     *   A callback to validate the directory when found. Accepts one argument
+     *   (the directory path). Return true to use the directory, or false to
+     *   continue traversing upwards.
      *
      * @return string|false
+     *   The path to the directory, or false if the file is not found.
      */
-    public function getProjectRoot()
+    protected static function findTopDirectoryContaining($file, callable $callback = null)
     {
-        // Statically cache the result, unless the CWD changes.
-        static $projectRoot, $lastDir;
+        static $roots = [];
         $cwd = getcwd();
-        if ($projectRoot !== null && $lastDir === $cwd) {
-            return $projectRoot;
-        }
-
-        $lastDir = $cwd;
-        $projectRoot = false;
-
-        // It's possible that getcwd() can fail.
         if ($cwd === false) {
             return false;
         }
+        if (isset($roots[$cwd][$file])) {
+            return $roots[$cwd][$file];
+        }
+
+        $roots[$cwd][$file] = false;
+        $root = &$roots[$cwd][$file];
 
         $currentDir = $cwd;
-        while (!$projectRoot) {
-            if (file_exists($currentDir . '/.git')) {
-                // It's a Platform.sh project if the project configuration file
-                // exists, or if it contains a Platform.sh Git remote.
-                if (file_exists($currentDir . '/' . self::PROJECT_CONFIG)) {
-                    $projectRoot = $currentDir;
-                    break;
+        while (!$root) {
+            if (file_exists($currentDir . '/' . $file)) {
+                if ($callback === null || $callback($currentDir)) {
+                    $root = $currentDir;
                 }
-                $projectId = $this->getProjectId($this->getGitRemoteUrl($currentDir));
-                if ($projectId) {
-                    $projectRoot = $currentDir;
-                    // Backwards compatibility: copy old project config to new
-                    // location.
-                    if (file_exists($projectRoot . '/../.platform-project')) {
-                        copy($projectRoot . '/../.platform-project', $projectRoot . '/' . self::PROJECT_CONFIG);
-                    }
-                    else {
-                        $this->writeCurrentProjectConfig('id', $projectId, $projectRoot);
-                    }
-                    break;
-                }
+                break;
             }
 
             // The file was not found, go one directory up.
@@ -182,7 +167,59 @@ class LocalProject
             $currentDir = $levelUp;
         }
 
-        return $projectRoot;
+        return $root;
+    }
+
+    /**
+     * Find the legacy root of the current project, from CLI versions <3.
+     *
+     * @return string|false
+     */
+    public static function getLegacyProjectRoot()
+    {
+        return self::findTopDirectoryContaining('.platform-project');
+    }
+
+    /**
+     * Find the root of the current project.
+     *
+     * @return string|false
+     */
+    public function getProjectRoot()
+    {
+        // Backwards compatibility - if in an old-style project root, change
+        // directory to the repository.
+        if (file_exists('.platform-project') && is_dir('repository')) {
+            $cwd = getcwd();
+            chdir('repository');
+        }
+
+        // The project root is a Git repository, which contains a PROJECT_CONFIG
+        // configuration file, and/or contains a Platform.sh Git remote.
+        $dir = $this->findTopDirectoryContaining('.git', function ($dir) {
+            if (file_exists($dir . '/' . self::PROJECT_CONFIG)) {
+                return true;
+            }
+            $projectId = $this->getProjectId($this->getGitRemoteUrl($dir));
+            if (!$projectId) {
+                return false;
+            }
+            // Backwards compatibility: copy old project config to new
+            // location.
+            if (file_exists($dir . '/../.platform-project')) {
+                copy($dir . '/../.platform-project', $dir . '/' . self::PROJECT_CONFIG);
+            }
+            else {
+                $this->writeCurrentProjectConfig('id', $projectId, $dir);
+            }
+            return true;
+        });
+
+        if (isset($cwd)) {
+            chdir($cwd);
+        }
+
+        return $dir;
     }
 
     /**
@@ -262,7 +299,7 @@ class LocalProject
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
             foreach ($filesToExclude as $key => $fileToExclude) {
-                if (strpos($existing, $filesToExclude) !== false) {
+                if (strpos($existing, $fileToExclude) !== false) {
                     unset($filesToExclude[$key]);
                 }
             }
