@@ -202,6 +202,7 @@ class ProjectGetCommand extends CommandBase
         $gitHelper->updateSubmodules(true, $projectRoot);
 
         $local->ensureGitRemote($projectRoot, $gitUrl);
+        $local->writeGitExclude($projectRoot);
         $this->setProjectRoot($projectRoot);
 
         $this->stdErr->writeln("\nThe project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");

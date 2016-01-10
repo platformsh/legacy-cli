@@ -56,6 +56,7 @@ class LocalProject
         }
 
         // Set up the project.
+        $this->writeGitExclude($dir);
         $this->writeCurrentProjectConfig('id', $projectId, $dir);
         $this->ensureGitRemote($dir, $gitUrl);
 
@@ -243,5 +244,40 @@ class LocalProject
         }
 
         return $projectConfig;
+    }
+
+    /**
+     * Write to the Git exclude file.
+     *
+     * @param string $dir
+     * @param array $filesToExclude
+     */
+    public function writeGitExclude($dir, array $filesToExclude = null)
+    {
+        if ($filesToExclude === null) {
+            $filesToExclude = ['/.platform/local', '/' . self::WEB_ROOT];
+        }
+        $excludeFilename = $dir . '/.git/info/exclude';
+        $existing = '';
+        if (file_exists($excludeFilename)) {
+            $existing = file_get_contents($excludeFilename);
+            foreach ($filesToExclude as $key => $fileToExclude) {
+                if (strpos($existing, $filesToExclude) !== false) {
+                    unset($filesToExclude[$key]);
+                }
+            }
+        }
+        if (empty($filesToExclude)) {
+            return;
+        }
+        $content = "# Automatically added by the Platform.sh CLI\n"
+            . implode("\n", $filesToExclude)
+            . "\n";
+        if (strlen($existing)) {
+            $content = $existing . "\n" . $content;
+        }
+        if (file_put_contents($excludeFilename, $content) === false) {
+            throw new \RuntimeException("Failed to write to Git exclude file: " . $excludeFilename);
+        }
     }
 }

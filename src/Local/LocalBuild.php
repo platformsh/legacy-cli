@@ -181,17 +181,16 @@ class LocalBuild
         }
 
         // Find the right build directory.
-        $buildName = 'current';
-        if (!empty($this->settings['environmentId'])) {
-            $buildName .= '--' . $this->settings['environmentId'];
-        }
-        if ($multiApp) {
-            $buildName .= '--' . str_replace('/', '-', $appId);
-        }
+        $buildName = $multiApp ? str_replace('/', '-', $appId) : 'default';
+
         $buildDir = $sourceDir . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+
+        $localProject = new LocalProject();
+        $localProject->writeGitExclude($sourceDir);
+
         if (file_exists($buildDir)) {
-            $previousBuildDir = dirname($buildDir) . '/' . str_replace('current', 'previous', basename($buildDir));
-            $this->output->writeln("Moving previous build to: " . $previousBuildDir);
+            $previousBuildDir = dirname($buildDir) . '/' . basename($buildDir) . '.bak';
+            $this->output->writeln("Backing up previous build to: " . $previousBuildDir);
             if (file_exists($previousBuildDir)) {
                 $this->fsHelper->remove($previousBuildDir);
             }
