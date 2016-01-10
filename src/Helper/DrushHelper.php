@@ -163,6 +163,7 @@ class DrushHelper extends Helper
     {
         return $this->execute(
             [
+                '@none',
                 'site-alias',
                 '--pipe',
                 '--format=list',
