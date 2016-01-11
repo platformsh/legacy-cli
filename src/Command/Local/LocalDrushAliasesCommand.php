@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Local;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\DrushHelper;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -30,10 +29,8 @@ class LocalDrushAliasesCommand extends CommandBase
     {
         // Hide this command in the list if the project is not Drupal.
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot) {
-            if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
-                return true;
-            }
+        if ($projectRoot && !Drupal::isDrupal($projectRoot)) {
+            return true;
         }
 
         return parent::hideInList();
@@ -46,8 +43,7 @@ class LocalDrushAliasesCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $localProject = new LocalProject();
-        $projectConfig = $localProject->getProjectConfig($projectRoot);
+        $projectConfig = $this->localProject->getProjectConfig($projectRoot);
         $current_group = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $projectConfig['id'];
 
         if ($input->getOption('pipe')) {
@@ -61,7 +57,6 @@ class LocalDrushAliasesCommand extends CommandBase
         $new_group = ltrim($input->getOption('group'), '@');
 
         $homeDir = $this->getHomeDir();
-        $localProject = new LocalProject();
 
         $drushHelper = new DrushHelper($output);
         $drushHelper->ensureInstalled();
@@ -83,7 +78,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         return 1;
                     }
                 }
-                $localProject->writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
+                $this->localProject->writeCurrentProjectConfig('alias-group', $new_group, $projectRoot);
             }
 
             $environments = $this->getEnvironments($project, true, false);

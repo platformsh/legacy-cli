@@ -33,8 +33,6 @@ class LocalDirCommand extends CommandBase
 
         $subDirs = [
             'shared' => LocalProject::SHARED_DIR,
-            'repo' => LocalProject::REPOSITORY_DIR,
-            'repository' => LocalProject::REPOSITORY_DIR,
             'web' => LocalProject::WEB_ROOT,
             'web_root' => LocalProject::WEB_ROOT,
         ];

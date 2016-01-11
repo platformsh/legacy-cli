@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -18,12 +17,12 @@ class LegacyMigrateCommand extends CommandBase
 
     public function hideInList()
     {
-        return LocalProject::getLegacyProjectRoot() ? false : true;
+        return $this->localProject->getLegacyProjectRoot() ? false : true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $legacyRoot = LocalProject::getLegacyProjectRoot();
+        $legacyRoot = $this->localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {
             $this->stdErr->writeln('Legacy project root not found.');
             return 1;
@@ -83,8 +82,7 @@ class LegacyMigrateCommand extends CommandBase
             $fsHelper->remove($legacyRoot . '/www');
         }
 
-        $localProject = new LocalProject();
-        $localProject->writeGitExclude($repositoryDir);
+        $this->localProject->writeGitExclude($repositoryDir);
 
         $this->stdErr->writeln('Moving repository to be the new project root');
         $fsHelper->copyAll($repositoryDir, $legacyRoot, []);

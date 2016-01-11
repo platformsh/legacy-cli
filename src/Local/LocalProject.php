@@ -9,12 +9,12 @@ use Symfony\Component\Yaml\Parser;
 class LocalProject
 {
 
-    const ARCHIVE_DIR = '.platform/local/build-archives';
-    const BUILD_DIR = '.platform/local/builds';
-    const PROJECT_CONFIG = '.platform/local/project.yaml';
-    const SHARED_DIR = '.platform/local/shared';
+    const LOCAL_DIR = '.platform/local';
+    const ARCHIVE_DIR = self::LOCAL_DIR . '/build-archives';
+    const BUILD_DIR = self::LOCAL_DIR . '/builds';
+    const PROJECT_CONFIG = self::LOCAL_DIR . '/project.yaml';
+    const SHARED_DIR = self::LOCAL_DIR . '/shared';
     const WEB_ROOT = 'www';
-    const REPOSITORY_DIR = '.'; // for backwards compatibility
 
     /**
      * Initialize a project in a directory.
@@ -266,16 +266,13 @@ class LocalProject
         if (!$projectRoot) {
             throw new \Exception('Project root not found');
         }
-        $projectConfig = self::getProjectConfig($projectRoot);
-        if (!$projectConfig) {
-            throw new \Exception('Current project configuration not found');
-        }
         $file = $projectRoot . '/' . self::PROJECT_CONFIG;
         if (!is_dir(dirname($file))) {
             mkdir(dirname($file), 0755, true);
         }
-        $dumper = new Dumper();
+        $projectConfig = self::getProjectConfig($projectRoot) ?: [];
         $projectConfig[$key] = $value;
+        $dumper = new Dumper();
         if (file_put_contents($file, $dumper->dump($projectConfig, 2)) === false) {
             throw new \Exception('Failed to write project config file: ' . $file);
         }
@@ -287,13 +284,10 @@ class LocalProject
      * Write to the Git exclude file.
      *
      * @param string $dir
-     * @param array $filesToExclude
      */
-    public function writeGitExclude($dir, array $filesToExclude = null)
+    public function writeGitExclude($dir)
     {
-        if ($filesToExclude === null) {
-            $filesToExclude = ['/.platform/local', '/' . self::WEB_ROOT];
-        }
+        $filesToExclude = ['/' . self::LOCAL_DIR, '/' . self::WEB_ROOT];
         $excludeFilename = $dir . '/.git/info/exclude';
         $existing = '';
         if (file_exists($excludeFilename)) {

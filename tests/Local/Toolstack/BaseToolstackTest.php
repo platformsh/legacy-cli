@@ -93,14 +93,16 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         mkdir($projectRoot);
 
         // Set up the project.
-        $local = new LocalProject();
-        $local->initialize($projectRoot, 'testProjectId');
-
-        // Make a dummy repository.
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        mkdir($repositoryDir);
         $fsHelper = new FilesystemHelper();
-        $fsHelper->copyAll($sourceDir, $repositoryDir);
+        $fsHelper->copyAll($sourceDir, $projectRoot);
+
+        // @todo perhaps make some of these steps unnecessary
+        $local = new LocalProject();
+        chdir($projectRoot);
+        exec('git init');
+        $local->ensureGitRemote($projectRoot, 'testProjectId');
+        $local->writeGitExclude($projectRoot);
+        $local->writeCurrentProjectConfig('id', 'testProjectId', $projectRoot);
 
         return $projectRoot;
     }

@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Helper\ArgvHelper;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
@@ -33,10 +32,8 @@ class EnvironmentDrushCommand extends CommandBase
     {
         // Hide this command in the list if the project is not Drupal.
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot) {
-            if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
-                return true;
-            }
+        if ($projectRoot && !Drupal::isDrupal($projectRoot)) {
+            return true;
         }
 
         return parent::hideInList();
@@ -86,8 +83,8 @@ class EnvironmentDrushCommand extends CommandBase
         // Get the LocalApplication object for the specified application, if
         // available.
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && $this->selectedProjectIsCurrent() && is_dir($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
-            $apps = LocalApplication::getApplications($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        if ($projectRoot && $this->selectedProjectIsCurrent()) {
+            $apps = LocalApplication::getApplications($projectRoot);
             if (count($apps) === 1 && $appName === null) {
                 $app = reset($apps);
             }

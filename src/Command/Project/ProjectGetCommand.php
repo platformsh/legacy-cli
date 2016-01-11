@@ -136,7 +136,6 @@ class ProjectGetCommand extends CommandBase
         }
         $projectRoot = $parent . '/' . basename($directory);
 
-        $local = new LocalProject();
         $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
 
         // Prepare to talk to the Platform.sh repository.
@@ -178,7 +177,7 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln("Initializing empty project repository");
             $gitHelper->execute(['init'], $projectRoot, true);
             $this->stdErr->writeln("Adding Platform.sh Git remote");
-            $local->ensureGitRemote($projectRoot, $gitUrl);
+            $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
             $this->stdErr->writeln("Your repository has been initialized and connected to <info>Platform.sh</info>!");
             $this->stdErr->writeln(
                 "Commit and push to the <info>$environment</info> branch and Platform.sh will build your project automatically"
@@ -201,8 +200,8 @@ class ProjectGetCommand extends CommandBase
 
         $gitHelper->updateSubmodules(true, $projectRoot);
 
-        $local->ensureGitRemote($projectRoot, $gitUrl);
-        $local->writeGitExclude($projectRoot);
+        $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
+        $this->localProject->writeGitExclude($projectRoot);
         $this->setProjectRoot($projectRoot);
 
         $this->stdErr->writeln("\nThe project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");

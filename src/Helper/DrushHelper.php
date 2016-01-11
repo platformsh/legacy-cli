@@ -219,7 +219,7 @@ class DrushHelper extends Helper
         }
 
         // Gather applications.
-        $apps = LocalApplication::getApplications($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $apps = LocalApplication::getApplications($projectRoot);
         $drupalApps = $apps;
         $multiApp = false;
         if (count($apps) > 1) {

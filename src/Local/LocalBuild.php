@@ -54,7 +54,7 @@ class LocalBuild
     public function buildProject($projectRoot, $sourceDir = null, $destination = null)
     {
         $this->settings['projectRoot'] = $projectRoot;
-        $sourceDir = $sourceDir ?: $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $sourceDir = $sourceDir ?: $projectRoot;
         $destination = $destination ?: $projectRoot . '/' . LocalProject::WEB_ROOT;
 
         return $this->build($sourceDir, $destination);
@@ -185,8 +185,10 @@ class LocalBuild
 
         $buildDir = $sourceDir . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
 
-        $localProject = new LocalProject();
-        $localProject->writeGitExclude($sourceDir);
+        if (file_exists($sourceDir . '/.git')) {
+            $localProject = new LocalProject();
+            $localProject->writeGitExclude($sourceDir);
+        }
 
         if (file_exists($buildDir)) {
             $previousBuildDir = dirname($buildDir) . '/' . basename($buildDir) . '.bak';

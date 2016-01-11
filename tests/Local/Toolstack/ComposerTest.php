@@ -12,9 +12,7 @@ class ComposerTest extends BaseToolstackTest
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/composer');
         $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
         $this->assertFileExists($webRoot . '/vendor/psr/log/README.md');
-
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        $this->assertFileExists($repositoryDir . '/.gitignore');
+        $this->assertFileExists($projectRoot . '/.gitignore');
     }
 
     public function testBuildComposerCustomPhp()

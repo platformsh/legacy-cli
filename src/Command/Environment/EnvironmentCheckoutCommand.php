@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
@@ -87,10 +86,9 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         $projectRoot = $this->getProjectRoot();
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
-        $gitHelper->setDefaultRepositoryDir($repositoryDir);
+        $gitHelper->setDefaultRepositoryDir($projectRoot);
 
         $branch = $this->branchExists($specifiedBranch, $project, $gitHelper);
 
@@ -108,8 +106,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         // Make sure that remotes are set up correctly.
-        $localProject = new LocalProject();
-        $localProject->ensureGitRemote($repositoryDir, $project->getGitUrl());
+        $this->localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
