@@ -96,11 +96,8 @@ class LegacyMigrateCommand extends CommandBase
         if ($cwd !== $legacyRoot) {
             $this->stdErr->writeln('Type this to refresh your shell:');
             $this->stdErr->writeln('    cd ' . $legacyRoot);
-            exit;
         }
 
-        $this->setProjectRoot($legacyRoot);
-
-        return 0;
+        exit;
     }
 }
