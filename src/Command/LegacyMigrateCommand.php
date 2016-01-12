@@ -44,17 +44,14 @@ class LegacyMigrateCommand extends CommandBase
         }
 
         if (file_exists($legacyRoot . '/builds')) {
-            if ($questionHelper->confirm("This will remove the old 'builds' directory. Continue?", $input, $this->stdErr)) {
-                $fsHelper->remove($legacyRoot . '/builds');
-            }
-            else {
+            if (glob($legacyRoot . '/builds/*') && !$questionHelper->confirm("This will remove the old 'builds' directory. Continue?", $input, $this->stdErr)) {
                 return 1;
             }
+            $this->stdErr->writeln('Removing old "builds" directory');
+            $fsHelper->remove($legacyRoot . '/builds');
         }
 
-        if (!file_exists($repositoryDir . '/.platform/local')) {
-            mkdir($repositoryDir . '/.platform/local', 0755, true);
-        }
+        $this->localProject->ensureLocalDir($repositoryDir);
 
         if (file_exists($legacyRoot . '/shared')) {
             $this->stdErr->writeln('Moving "shared" directory');

@@ -266,10 +266,8 @@ class LocalProject
         if (!$projectRoot) {
             throw new \Exception('Project root not found');
         }
+        $this->ensureLocalDir($projectRoot);
         $file = $projectRoot . '/' . self::PROJECT_CONFIG;
-        if (!is_dir(dirname($file))) {
-            mkdir(dirname($file), 0755, true);
-        }
         $projectConfig = self::getProjectConfig($projectRoot) ?: [];
         $projectConfig[$key] = $value;
         $dumper = new Dumper();
@@ -278,6 +276,31 @@ class LocalProject
         }
 
         return $projectConfig;
+    }
+
+    /**
+     * @param string $projectRoot
+     */
+    public function ensureLocalDir($projectRoot)
+    {
+        $dir = $projectRoot . '/' . self::LOCAL_DIR;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        if (!file_exists($dir . '/README.txt')) {
+            file_put_contents($dir . '/README.txt', <<<EOF
+.platform/local
+===============
+
+This directory is where the Platform.sh CLI stores configuration files, builds,
+and other data to help work with your project locally.
+
+It is not used on Platform.sh remote environments at all - the directory is
+excluded from your Git repository (via .git/info/exclude).
+
+EOF
+            );
+        }
     }
 
     /**
