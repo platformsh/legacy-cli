@@ -82,14 +82,14 @@ class EnvironmentSetRemoteCommand extends CommandBase
         $config += ['mapping' => []];
         if ($mappedByDefault || $specifiedEnvironmentId == '0') {
             unset($config['mapping'][$specifiedBranch]);
-            $this->setProjectConfig('mapping', $config['mapping'], $projectRoot);
+            $this->localProject->writeCurrentProjectConfig(['mapping' => $config['mapping']], $projectRoot);
         }
         else {
             if (isset($config['mapping']) && ($current = array_search($specifiedEnvironmentId, $config['mapping'])) !== false) {
                 unset($config['mapping'][$current]);
             }
             $config['mapping'][$specifiedBranch] = $specifiedEnvironmentId;
-            $this->setProjectConfig('mapping', $config['mapping'], $projectRoot);
+            $this->localProject->writeCurrentProjectConfig(['mapping' => $config['mapping']], $projectRoot);
         }
 
         // Check the success of the operation.

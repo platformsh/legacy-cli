@@ -51,11 +51,14 @@ class LocalProject
         if ($projectId === null || $gitUrl === null) {
             $gitUrl = $this->getGitRemoteUrl($dir);
             $projectId = $this->getProjectId($gitUrl);
+            if (!$projectId) {
+                throw new \InvalidArgumentException('Project ID not found for directory: ' . $dir);
+            }
         }
 
         // Set up the project.
         $this->writeGitExclude($dir);
-        $this->writeCurrentProjectConfig('id', $projectId, $dir);
+        $this->writeCurrentProjectConfig($projectId, $dir);
         $this->ensureGitRemote($dir, $gitUrl);
 
         return $dir;
@@ -64,15 +67,16 @@ class LocalProject
     /**
      * @param string $gitUrl
      *
-     * @return string|false
+     * @return array|false
+     *   An array containing 'id' and 'host', or false on failure.
      */
     protected function getProjectId($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $gitUrl, $matches)) {
+        if (!preg_match('/^([a-z0-9]{12,})@git\.([a-z\-]+\.platform\.sh):\1\.git$/', $gitUrl, $matches)) {
             return false;
         }
 
-        return $matches[1];
+        return ['id' => $matches[1], 'host' => $matches[2]];
     }
 
     /**
@@ -209,9 +213,7 @@ class LocalProject
             if (file_exists($dir . '/../.platform-project')) {
                 copy($dir . '/../.platform-project', $dir . '/' . self::PROJECT_CONFIG);
             }
-            else {
-                $this->writeCurrentProjectConfig('id', $projectId, $dir);
-            }
+            $this->writeCurrentProjectConfig($projectId, $dir);
             return true;
         });
 
@@ -241,7 +243,7 @@ class LocalProject
         elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $projectId = $this->getProjectId($this->getGitRemoteUrl($projectRoot));
             if ($projectId) {
-                $projectConfig = ['id' => $projectId];
+                $projectConfig = $projectId;
             }
         }
 
@@ -249,10 +251,9 @@ class LocalProject
     }
 
     /**
-     * Add a configuration value to a project.
+     * Write configuration for a project.
      *
-     * @param string $key   The configuration key
-     * @param mixed  $value The configuration value
+     * @param array $config The configuration.
      * @param string $projectRoot
      *
      * @throws \Exception On failure
@@ -260,7 +261,7 @@ class LocalProject
      * @return array
      *   The updated project configuration.
      */
-    public function writeCurrentProjectConfig($key, $value, $projectRoot = null)
+    public function writeCurrentProjectConfig(array $config, $projectRoot = null)
     {
         $projectRoot = $projectRoot ?: self::getProjectRoot();
         if (!$projectRoot) {
@@ -269,9 +270,9 @@ class LocalProject
         $this->ensureLocalDir($projectRoot);
         $file = $projectRoot . '/' . self::PROJECT_CONFIG;
         $projectConfig = self::getProjectConfig($projectRoot) ?: [];
-        $projectConfig[$key] = $value;
+        $projectConfig = array_merge($projectConfig, $config);
         $dumper = new Dumper();
-        if (file_put_contents($file, $dumper->dump($projectConfig, 2)) === false) {
+        if (file_put_contents($file, $dumper->dump($projectConfig, 10)) === false) {
             throw new \Exception('Failed to write project config file: ' . $file);
         }
 
@@ -286,6 +287,7 @@ class LocalProject
         $dir = $projectRoot . '/' . self::LOCAL_DIR;
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
+            $this->writeGitExclude($projectRoot);
         }
         if (!file_exists($dir . '/README.txt')) {
             file_put_contents($dir . '/README.txt', <<<EOF
@@ -315,19 +317,14 @@ EOF
         $existing = '';
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
-            foreach ($filesToExclude as $key => $fileToExclude) {
-                if (strpos($existing, $fileToExclude) !== false) {
-                    unset($filesToExclude[$key]);
-                }
+            if (strpos($existing, 'Platform.sh CLI') !== false) {
+                return;
             }
-        }
-        if (empty($filesToExclude)) {
-            return;
         }
         $content = "# Automatically added by the Platform.sh CLI\n"
             . implode("\n", $filesToExclude)
             . "\n";
-        if (strlen($existing)) {
+        if (!empty($existing)) {
             $content = $existing . "\n" . $content;
         }
         if (file_put_contents($excludeFilename, $content) === false) {

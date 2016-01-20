@@ -533,19 +533,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     }
 
     /**
-     * Set a value in the project configuration.
-     *
-     * @param string $key
-     * @param mixed $value
-     * @param string $projectRoot
-     */
-    protected function setProjectConfig($key, $value, $projectRoot)
-    {
-        unset(self::$projectConfig[$projectRoot]);
-        $this->localProject->writeCurrentProjectConfig($key, $value, $projectRoot);
-    }
-
-    /**
      * Get the current environment if the user is in a project directory.
      *
      * @param Project $expectedProject The expected project.
@@ -575,7 +562,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 }
                 else {
                     unset($config['mapping'][$currentBranch]);
-                    $this->setProjectConfig('mapping', $config['mapping'], $projectRoot);
+                    $this->localProject->writeCurrentProjectConfig(['mapping' => $config['mapping']], $projectRoot);
                 }
             }
         }
