@@ -125,10 +125,9 @@ class FilesystemHelper extends Helper
 
             $sourceDirectory = opendir($source);
             while ($file = readdir($sourceDirectory)) {
-                if (in_array($file, $skip)) {
+                if (in_array($file, $skip) || is_link($source . '/' . $file)) {
                     continue;
-                }
-                if (is_dir($source . '/' . $file)) {
+                } elseif (is_dir($source . '/' . $file)) {
                     $this->copyAll($source . '/' . $file, $destination . '/' . $file);
                 } else {
                     $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
