@@ -188,7 +188,7 @@ class DrushHelper extends Helper
     public function createAliases(Project $project, $projectRoot, $environments, $original = null, $merge = true)
     {
         $localProject = new LocalProject();
-        $projectConfig = $localProject->getProjectConfig($projectRoot);
+        $config = $localProject->getProjectConfig($projectRoot);
         $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
 
         // Ensure the existence of the .drush directory.
