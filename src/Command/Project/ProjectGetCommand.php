@@ -6,7 +6,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
@@ -100,13 +99,12 @@ class ProjectGetCommand extends CommandBase
             $environment = 'master';
         }
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
-
         $directory = $input->getArgument('directory');
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
+            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
             $directory = $questionHelper->askInput('Directory', $input, $this->stdErr, $directory);
         }
 
@@ -124,12 +122,7 @@ class ProjectGetCommand extends CommandBase
         // Create the directory structure.
         if (file_exists($directory)) {
             $this->stdErr->writeln("The directory <error>$directory</error> already exists");
-            if (file_exists($directory . '/' . LocalProject::PROJECT_CONFIG) && $questionHelper->confirm("Overwrite?", $input, $this->stdErr, false)) {
-                $fsHelper->remove($directory);
-            }
-            else {
-                return 1;
-            }
+            return 1;
         }
         if (!$parent = realpath(dirname($directory))) {
             throw new \Exception("Not a directory: " . dirname($directory));
@@ -187,6 +180,7 @@ class ProjectGetCommand extends CommandBase
         }
 
         // We have a repo! Yay. Clone it.
+        $this->stdErr->writeln(sprintf('Downloading project <info>%s</info>', $project->title ?: $projectId));
         $cloneArgs = ['--branch', $environment, '--origin', 'platform'];
         $cloned = $gitHelper->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if (!$cloned) {
