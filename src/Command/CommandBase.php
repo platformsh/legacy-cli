@@ -1086,7 +1086,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         else {
             $result['host'] = $host;
             $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
-            if (preg_match('#/environments(/\w+)/?.*$#', $url, $matches)) {
+            if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
                 $result['environmentId'] = basename($matches[1]);
             }
         }
