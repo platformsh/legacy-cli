@@ -10,10 +10,10 @@ class LocalProject
 {
 
     const LOCAL_DIR = '.platform/local';
-    const ARCHIVE_DIR = self::LOCAL_DIR . '/build-archives';
-    const BUILD_DIR = self::LOCAL_DIR . '/builds';
-    const PROJECT_CONFIG = self::LOCAL_DIR . '/project.yaml';
-    const SHARED_DIR = self::LOCAL_DIR . '/shared';
+    const ARCHIVE_DIR = '.platform/local/build-archives';
+    const BUILD_DIR = '.platform/local/builds';
+    const PROJECT_CONFIG = '.platform/local/project.yaml';
+    const SHARED_DIR = '.platform/local/shared';
     const WEB_ROOT = 'www';
 
     /**
