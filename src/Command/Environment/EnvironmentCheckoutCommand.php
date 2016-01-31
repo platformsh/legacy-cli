@@ -64,9 +64,22 @@ class EnvironmentCheckoutCommand extends CommandBase
 
                 return 1;
             }
-            $chooseEnvironmentText = "Enter a number to check out another environment:";
+            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $helper */
             $helper = $this->getHelper('question');
-            $specifiedBranch = $helper->choose($environmentList, $chooseEnvironmentText, $input, $output);
+            // If there's more than one choice, present the user with a list.
+            if (count($environmentList) > 1) {
+                $chooseEnvironmentText = "Enter a number to check out another environment:";
+                $specifiedBranch = $helper->choose($environmentList, $chooseEnvironmentText, $input, $output);
+            }
+            // If there's only one choice, PlatformQuestionHelper::choose() does
+            // not interact. But we still need interactive confirmation at this
+            // point.
+            elseif ($helper->confirm(sprintf('Check out environment <info>%s</info>?', reset($environmentList)), $input, $output)) {
+                $specifiedBranch = key($environmentList);
+            }
+            else {
+                return 1;
+            }
         } elseif (empty($specifiedBranch)) {
             $this->stdErr->writeln("<error>No branch specified.</error>");
 
