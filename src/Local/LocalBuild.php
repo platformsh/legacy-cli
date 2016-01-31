@@ -54,7 +54,7 @@ class LocalBuild
     public function buildProject($projectRoot, $sourceDir = null, $destination = null)
     {
         $this->settings['projectRoot'] = $projectRoot;
-        $sourceDir = $sourceDir ?: $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $sourceDir = $sourceDir ?: $projectRoot;
         $destination = $destination ?: $projectRoot . '/' . LocalProject::WEB_ROOT;
 
         return $this->build($sourceDir, $destination);
@@ -91,18 +91,9 @@ class LocalBuild
             }
         }
         if (empty($this->settings['noClean'])) {
-            if (!empty($this->settings['projectRoot'])) {
-                $this->output->writeln("Cleaning up...");
-                $this->cleanBuilds($this->settings['projectRoot']);
-                $this->cleanArchives($this->settings['projectRoot']);
-            }
-            else {
-                $buildsDir = $sourceDir . '/' . LocalProject::BUILD_DIR;
-                if (is_dir($buildsDir)) {
-                    $this->output->writeln("Cleaning up...");
-                    $this->cleanDirectory($buildsDir);
-                }
-            }
+            $this->output->writeln("Cleaning up...");
+            $this->cleanBuilds($sourceDir);
+            $this->cleanArchives($sourceDir);
         }
 
         return $success;
@@ -190,21 +181,22 @@ class LocalBuild
         }
 
         // Find the right build directory.
-        $buildName = date('Y-m-d--H-i-s');
-        if (!empty($this->settings['environmentId'])) {
-            $buildName .= '--' . $this->settings['environmentId'];
+        $buildName = $multiApp ? str_replace('/', '-', $appId) : 'default';
+
+        $buildDir = $sourceDir . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+
+        if (file_exists($sourceDir . '/.git')) {
+            $localProject = new LocalProject();
+            $localProject->writeGitExclude($sourceDir);
         }
-        if ($multiApp) {
-            $buildName .= '--' . str_replace('/', '-', $appId);
-        }
-        if (!empty($this->settings['projectRoot'])) {
-            $buildDir = $this->settings['projectRoot'] . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
-        }
-        else {
-            $buildDir = $sourceDir . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
-            // As the build directory is inside the source directory, ensure it
-            // isn't copied or symlinked into the build.
-            $toolstack->addIgnoredFiles([LocalProject::BUILD_DIR]);
+
+        if (file_exists($buildDir)) {
+            $previousBuildDir = dirname($buildDir) . '/' . basename($buildDir) . '.bak';
+            $this->output->writeln("Backing up previous build to: " . $previousBuildDir);
+            if (file_exists($previousBuildDir)) {
+                $this->fsHelper->remove($previousBuildDir);
+            }
+            rename($buildDir, $previousBuildDir);
         }
 
         // If the destination is inside the source directory, ensure it isn't
@@ -237,13 +229,13 @@ class LocalBuild
         $toolstack->prepare($buildDir, $documentRoot, $appRoot, $buildSettings);
 
         $archive = false;
-        if (empty($this->settings['noArchive']) && empty($this->settings['noCache']) && !empty($this->settings['projectRoot'])) {
+        if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
             $treeId = $this->getTreeId($appRoot);
             if ($treeId) {
                 if ($verbose) {
                     $this->output->writeln("Tree ID: $treeId");
                 }
-                $archive = $this->settings['projectRoot'] . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
+                $archive = $sourceDir . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -362,6 +354,8 @@ class LocalBuild
      * @param int    $keepMax
      * @param bool   $includeActive
      * @param bool   $quiet
+     *
+     * @deprecated No longer needed from 3.0.0.
      *
      * @return int[]
      *   The numbers of deleted and kept builds.

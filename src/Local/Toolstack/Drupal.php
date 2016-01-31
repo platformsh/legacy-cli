@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Local\Toolstack;
 
 use Platformsh\Cli\Helper\DrushHelper;
-use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -121,7 +120,7 @@ class Drupal extends ToolstackBase
         if (empty($this->settings['projectRoot'])) {
             return;
         }
-        $repositoryDir = $this->settings['projectRoot'] . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $this->settings['projectRoot'];
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
         if (!$this->gitHelper->execute(['check-ignore', $relative], $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;

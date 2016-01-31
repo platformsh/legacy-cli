@@ -103,8 +103,9 @@ class FilesystemHelper extends Helper
      *
      * @param string $source
      * @param string $destination
+     * @param array $skip
      */
-    public function copyAll($source, $destination)
+    public function copyAll($source, $destination, array $skip = ['.git', '.platform'])
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -113,7 +114,8 @@ class FilesystemHelper extends Helper
         }
 
         if (is_dir($source)) {
-            $skip = ['.', '..', '.git'];
+            $skip[] = '.';
+            $skip[] = '..';
 
             // Prevent infinite recursion when the destination is inside the
             // source.
@@ -129,7 +131,7 @@ class FilesystemHelper extends Helper
                     continue;
                 } elseif (is_dir($source . '/' . $file)) {
                     $this->copyAll($source . '/' . $file, $destination . '/' . $file);
-                } else {
+                } elseif (is_file($source . '/' . $file)) {
                     $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }

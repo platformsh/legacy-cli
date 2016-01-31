@@ -3,40 +3,18 @@
 namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Helper\GitHelper;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
 
 class LocalProject
 {
 
-    const ARCHIVE_DIR = '.build-archives';
-    const BUILD_DIR = 'builds';
-    const PROJECT_CONFIG = '.platform-project';
-    const REPOSITORY_DIR = 'repository';
-    const SHARED_DIR = 'shared';
+    const LOCAL_DIR = '.platform/local';
+    const ARCHIVE_DIR = self::LOCAL_DIR . '/build-archives';
+    const BUILD_DIR = self::LOCAL_DIR . '/builds';
+    const PROJECT_CONFIG = self::LOCAL_DIR . '/project.yaml';
+    const SHARED_DIR = self::LOCAL_DIR . '/shared';
     const WEB_ROOT = 'www';
-
-    /**
-     * Create the default files for a project.
-     *
-     * @param string $projectRoot
-     * @param string $projectId
-     * @param string $host
-     */
-    public function createProjectFiles($projectRoot, $projectId, $host = null)
-    {
-        mkdir($projectRoot . '/' . self::BUILD_DIR);
-        mkdir($projectRoot . '/' . self::SHARED_DIR);
-
-        // Create the .platform-project file.
-        $projectConfig = ['id' => $projectId];
-        if ($host !== null) {
-            $projectConfig['host'] = $host;
-        }
-        $dumper = new Dumper();
-        file_put_contents($projectRoot . '/' . self::PROJECT_CONFIG, $dumper->dump($projectConfig, 2));
-    }
 
     /**
      * Initialize a project in a directory.
@@ -65,7 +43,7 @@ class LocalProject
             throw new \RuntimeException('The directory is not a Git repository');
         }
 
-        if (file_exists($dir . '/../' . self::PROJECT_CONFIG)) {
+        if (file_exists($dir . '/' . self::PROJECT_CONFIG)) {
             throw new \RuntimeException("The project is already initialized");
         }
 
@@ -73,35 +51,32 @@ class LocalProject
         if ($projectId === null || $gitUrl === null) {
             $gitUrl = $this->getGitRemoteUrl($dir);
             $projectId = $this->getProjectId($gitUrl);
+            if (!$projectId) {
+                throw new \InvalidArgumentException('Project ID not found for directory: ' . $dir);
+            }
         }
 
-        // Move the directory into a 'repository' subdirectory.
-        $backupDir = $this->getBackupDir($dir);
-        $repositoryDir = $dir . '/' . LocalProject::REPOSITORY_DIR;
-        $fs = new Filesystem();
-        $fs->rename($dir, $backupDir);
-        $fs->mkdir($dir, 0755);
-        $fs->rename($backupDir, $repositoryDir);
-
         // Set up the project.
-        $this->createProjectFiles($dir, $projectId);
-        $this->ensureGitRemote($repositoryDir, $gitUrl);
+        $this->writeGitExclude($dir);
+        $this->writeCurrentProjectConfig($projectId, $dir);
+        $this->ensureGitRemote($dir, $gitUrl);
 
         return $dir;
     }
 
     /**
-     * @throws \RuntimeException If the URL is not a Platform.sh Git URL.
-     *
      * @param string $gitUrl
+     *
+     * @return array|false
+     *   An array containing 'id' and 'host', or false on failure.
      */
     protected function getProjectId($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $gitUrl, $matches)) {
-            throw new \RuntimeException("Not a Platform.sh Git URL: $gitUrl");
+        if (!preg_match('/^([a-z0-9]{12,})@git\.([a-z\-]+\.platform\.sh):\1\.git$/', $gitUrl, $matches)) {
+            return false;
         }
 
-        return $matches[1];
+        return ['id' => $matches[1], 'host' => $matches[2]];
     }
 
     /**
@@ -153,53 +128,38 @@ class LocalProject
     }
 
     /**
-     * Get a backup name for a directory.
+     * Find the highest level directory that contains a file.
      *
-     * @param     $dir
-     * @param int $inc
-     *
-     * @return string
-     */
-    protected function getBackupDir($dir, $inc = 0)
-    {
-        $backupDir = $dir . '-backup';
-        $backupDir .= $inc ?: '';
-        if (file_exists($backupDir)) {
-            return $this->getBackupDir($dir, ++$inc);
-        }
-
-        return $backupDir;
-    }
-
-    /**
-     * Find the root of the current project.
-     *
-     * The project root contains a .platform-project YAML file. The current
-     * directory tree is traversed until the file is found.
+     * @param string $file
+     *   The filename to look for.
+     * @param callable $callback
+     *   A callback to validate the directory when found. Accepts one argument
+     *   (the directory path). Return true to use the directory, or false to
+     *   continue traversing upwards.
      *
      * @return string|false
+     *   The path to the directory, or false if the file is not found.
      */
-    public static function getProjectRoot()
+    protected static function findTopDirectoryContaining($file, callable $callback = null)
     {
-        // Statically cache the result, unless the CWD changes.
-        static $projectRoot, $lastDir;
+        static $roots = [];
         $cwd = getcwd();
-        if ($projectRoot !== null && $lastDir === $cwd) {
-            return $projectRoot;
-        }
-
-        $lastDir = $cwd;
-        $projectRoot = false;
-
-        // It's possible that getcwd() can fail.
         if ($cwd === false) {
             return false;
         }
+        if (isset($roots[$cwd][$file])) {
+            return $roots[$cwd][$file];
+        }
+
+        $roots[$cwd][$file] = false;
+        $root = &$roots[$cwd][$file];
 
         $currentDir = $cwd;
-        while (!$projectRoot) {
-            if (file_exists($currentDir . '/' . self::PROJECT_CONFIG)) {
-                $projectRoot = $currentDir;
+        while (!$root) {
+            if (file_exists($currentDir . '/' . $file)) {
+                if ($callback === null || $callback($currentDir)) {
+                    $root = $currentDir;
+                }
                 break;
             }
 
@@ -211,7 +171,57 @@ class LocalProject
             $currentDir = $levelUp;
         }
 
-        return $projectRoot;
+        return $root;
+    }
+
+    /**
+     * Find the legacy root of the current project, from CLI versions <3.
+     *
+     * @return string|false
+     */
+    public static function getLegacyProjectRoot()
+    {
+        return self::findTopDirectoryContaining('.platform-project');
+    }
+
+    /**
+     * Find the root of the current project.
+     *
+     * @return string|false
+     */
+    public function getProjectRoot()
+    {
+        // Backwards compatibility - if in an old-style project root, change
+        // directory to the repository.
+        if (file_exists('.platform-project') && is_dir('repository')) {
+            $cwd = getcwd();
+            chdir('repository');
+        }
+
+        // The project root is a Git repository, which contains a PROJECT_CONFIG
+        // configuration file, and/or contains a Platform.sh Git remote.
+        $dir = $this->findTopDirectoryContaining('.git', function ($dir) {
+            if (file_exists($dir . '/' . self::PROJECT_CONFIG)) {
+                return true;
+            }
+            $projectId = $this->getProjectId($this->getGitRemoteUrl($dir));
+            if (!$projectId) {
+                return false;
+            }
+            // Backwards compatibility: copy old project config to new
+            // location.
+            if (file_exists($dir . '/../.platform-project')) {
+                copy($dir . '/../.platform-project', $dir . '/' . self::PROJECT_CONFIG);
+            }
+            $this->writeCurrentProjectConfig($projectId, $dir);
+            return true;
+        });
+
+        if (isset($cwd)) {
+            chdir($cwd);
+        }
+
+        return $dir;
     }
 
     /**
@@ -222,23 +232,28 @@ class LocalProject
      * @return array|null
      *   The current project's configuration.
      */
-    public static function getProjectConfig($projectRoot = null)
+    public function getProjectConfig($projectRoot = null)
     {
-        $projectConfig = null;
         $projectRoot = $projectRoot ?: self::getProjectRoot();
+        $projectConfig = null;
         if ($projectRoot && file_exists($projectRoot . '/' . self::PROJECT_CONFIG)) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . self::PROJECT_CONFIG));
+        }
+        elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
+            $projectId = $this->getProjectId($this->getGitRemoteUrl($projectRoot));
+            if ($projectId) {
+                $projectConfig = $projectId;
+            }
         }
 
         return $projectConfig;
     }
 
     /**
-     * Add a configuration value to a project.
+     * Write configuration for a project.
      *
-     * @param string $key   The configuration key
-     * @param mixed  $value The configuration value
+     * @param array $config The configuration.
      * @param string $projectRoot
      *
      * @throws \Exception On failure
@@ -246,24 +261,74 @@ class LocalProject
      * @return array
      *   The updated project configuration.
      */
-    public static function writeCurrentProjectConfig($key, $value, $projectRoot = null)
+    public function writeCurrentProjectConfig(array $config, $projectRoot = null)
     {
         $projectRoot = $projectRoot ?: self::getProjectRoot();
         if (!$projectRoot) {
             throw new \Exception('Project root not found');
         }
-        $projectConfig = self::getProjectConfig($projectRoot);
-        if (!$projectConfig) {
-            throw new \Exception('Current project configuration not found');
-        }
+        $this->ensureLocalDir($projectRoot);
         $file = $projectRoot . '/' . self::PROJECT_CONFIG;
-        if (!is_writable($file)) {
-            throw new \Exception('Project config file not writable');
-        }
+        $projectConfig = self::getProjectConfig($projectRoot) ?: [];
+        $projectConfig = array_merge($projectConfig, $config);
         $dumper = new Dumper();
-        $projectConfig[$key] = $value;
-        file_put_contents($file, $dumper->dump($projectConfig, 2));
+        if (file_put_contents($file, $dumper->dump($projectConfig, 10)) === false) {
+            throw new \Exception('Failed to write project config file: ' . $file);
+        }
 
         return $projectConfig;
+    }
+
+    /**
+     * @param string $projectRoot
+     */
+    public function ensureLocalDir($projectRoot)
+    {
+        $dir = $projectRoot . '/' . self::LOCAL_DIR;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+            $this->writeGitExclude($projectRoot);
+        }
+        if (!file_exists($dir . '/README.txt')) {
+            file_put_contents($dir . '/README.txt', <<<EOF
+.platform/local
+===============
+
+This directory is where the Platform.sh CLI stores configuration files, builds,
+and other data to help work with your project locally.
+
+It is not used on Platform.sh remote environments at all - the directory is
+excluded from your Git repository (via .git/info/exclude).
+
+EOF
+            );
+        }
+    }
+
+    /**
+     * Write to the Git exclude file.
+     *
+     * @param string $dir
+     */
+    public function writeGitExclude($dir)
+    {
+        $filesToExclude = ['/' . self::LOCAL_DIR, '/' . self::WEB_ROOT];
+        $excludeFilename = $dir . '/.git/info/exclude';
+        $existing = '';
+        if (file_exists($excludeFilename)) {
+            $existing = file_get_contents($excludeFilename);
+            if (strpos($existing, 'Platform.sh CLI') !== false) {
+                return;
+            }
+        }
+        $content = "# Automatically added by the Platform.sh CLI\n"
+            . implode("\n", $filesToExclude)
+            . "\n";
+        if (!empty($existing)) {
+            $content = $existing . "\n" . $content;
+        }
+        if (file_put_contents($excludeFilename, $content) === false) {
+            throw new \RuntimeException("Failed to write to Git exclude file: " . $excludeFilename);
+        }
     }
 }

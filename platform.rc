@@ -12,7 +12,7 @@ fi
 # Run Git commands in the project repository, from any working directory.
 function platform_local_git {
     local ROOT
-    ROOT="$(platform dir repo 2>/dev/null)"
+    ROOT="$(platform dir 2>/dev/null)"
     # Test the return code of 'platform dir' (it may have written an error
     # message to STDOUT).
     CODE=$?
@@ -20,7 +20,7 @@ function platform_local_git {
         echo $0': This can only be run from inside a project directory' >&2
         return "$CODE"
     elif [ ! "$CODE" = 0 ] || [ ! -d "$ROOT" ]; then
-        echo $0': Repository not found' >&2
+        echo $0': Project root not found' >&2
         return "$CODE"
     fi
     cd "$ROOT"

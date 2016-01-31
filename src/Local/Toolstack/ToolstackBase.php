@@ -264,8 +264,8 @@ abstract class ToolstackBase implements ToolstackInterface
         if (!file_exists($source) || empty($this->settings['projectRoot'])) {
             return;
         }
-        $repositoryDir = $this->settings['projectRoot'] . '/' . LocalProject::REPOSITORY_DIR;
-        $repositoryGitIgnore = "$repositoryDir/.gitignore";
+        $repositoryDir = $this->settings['projectRoot'];
+        $repositoryGitIgnore = $repositoryDir . '/.gitignore';
         $appGitIgnore = $this->appRoot . '/.gitignore';
         if (!file_exists($appGitIgnore) && !file_exists($repositoryGitIgnore)) {
             $this->output->writeln("Creating a .gitignore file");

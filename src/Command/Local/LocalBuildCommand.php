@@ -32,7 +32,7 @@ class LocalBuildCommand extends CommandBase
                 'source',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'The source directory. Default: ' . LocalProject::REPOSITORY_DIR
+                'The source directory. Defaults to the current project root.'
             )
             ->addOption(
                 'destination',
@@ -117,14 +117,14 @@ class LocalBuildCommand extends CommandBase
             // source directory.
             elseif (file_exists($sourceDir . '/.platform-project')) {
                 $projectRoot = $sourceDir;
-                $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+                $sourceDir = $projectRoot;
             }
         }
         elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
         }
         else {
-            $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+            $sourceDir = $projectRoot;
         }
 
         $destination = $input->getOption('destination');

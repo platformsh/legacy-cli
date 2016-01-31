@@ -56,7 +56,6 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
         $projectRoot = "$testDir/project";
         $homeDir = "$testDir/home";
         mkdir($projectRoot);
-        mkdir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
         mkdir($homeDir);
 
         // Check that aliases are created.

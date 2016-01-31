@@ -50,8 +50,7 @@ class DrupalTest extends BaseToolstackTest
         $sourceDir = 'tests/data/apps/drupal/8';
         self::$output->writeln("\nTesting build (with --lock) for directory: " . $sourceDir);
         $projectRoot = $this->assertBuildSucceeds($sourceDir, ['drushUpdateLock' => true]);
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        $this->assertFileExists("$repositoryDir/project.make.yml.lock");
+        $this->assertFileExists($projectRoot . '/project.make.yml.lock');
     }
 
     /**
@@ -64,11 +63,10 @@ class DrupalTest extends BaseToolstackTest
         $projectRoot = $this->createDummyProject('tests/data/apps/drupal/project');
 
         // Archiving only works if the repository is a genuine Git directory.
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        chdir($repositoryDir);
+        chdir($projectRoot);
         exec('git init');
 
-        $treeId = $this->builder->getTreeId($repositoryDir);
+        $treeId = $this->builder->getTreeId($projectRoot);
         $this->assertNotEmpty($treeId);
 
         // Build. This should create an archive.

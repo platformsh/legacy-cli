@@ -26,7 +26,7 @@ class Application extends ParentApplication
      */
     public function __construct()
     {
-        parent::__construct('Platform.sh CLI', '2.x-dev');
+        parent::__construct('Platform.sh CLI', '3.x-dev');
 
         $this->setDefaultTimezone();
 
@@ -96,6 +96,7 @@ class Application extends ParentApplication
         $commands[] = new Command\ClearCacheCommand();
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\DocsCommand();
+        $commands[] = new Command\LegacyMigrateCommand();
         $commands[] = new Command\Activity\ActivityListCommand();
         $commands[] = new Command\Activity\ActivityLogCommand();
         $commands[] = new Command\App\AppConfigGetCommand();
@@ -130,7 +131,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Local\LocalCleanCommand();
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
         $commands[] = new Command\Local\LocalDirCommand();
-        $commands[] = new Command\Local\LocalInitCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
         $commands[] = new Command\Project\ProjectGetCommand();
         $commands[] = new Command\Project\ProjectListCommand();
