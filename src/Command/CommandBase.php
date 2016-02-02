@@ -526,10 +526,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      * Get the current environment if the user is in a project directory.
      *
      * @param Project $expectedProject The expected project.
+     * @param bool|null $refresh Whether to refresh the environments or projects
+     *                           cache.
      *
      * @return Environment|false The current environment.
      */
-    public function getCurrentEnvironment(Project $expectedProject = null)
+    public function getCurrentEnvironment(Project $expectedProject = null, $refresh = null)
     {
         if (!($projectRoot = $this->getProjectRoot())
             || !($project = $this->getCurrentProject())
@@ -545,7 +547,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if ($currentBranch) {
             $config = $this->getProjectConfig($projectRoot);
             if (!empty($config['mapping'][$currentBranch])) {
-                $environment = $this->getEnvironment($config['mapping'][$currentBranch], $project);
+                $environment = $this->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
                 if ($environment) {
                     $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
                     return $environment;
@@ -562,7 +564,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $upstream = $gitHelper->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
-            $environment = $this->getEnvironment($potentialEnvironment, $project);
+            $environment = $this->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
                 $this->debug('Selected environment ' . $potentialEnvironment . ', based on Git upstream: ' . $upstream);
                 return $environment;
@@ -573,7 +575,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         // Fall back to trying the current branch name.
         if ($currentBranch) {
             $currentBranchSanitized = Environment::sanitizeId($currentBranch);
-            $environment = $this->getEnvironment($currentBranchSanitized, $project);
+            $environment = $this->getEnvironment($currentBranchSanitized, $project, $refresh);
             if ($environment) {
                 $this->debug('Selected environment ' . $currentBranchSanitized . ', based on branch name:' . $currentBranch);
                 return $environment;
@@ -586,11 +588,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /**
      * Return the user's projects.
      *
-     * @param boolean $refresh Whether to refresh the list of projects.
+     * @param bool|null $refresh Whether to refresh the list of projects.
      *
      * @return Project[] The user's projects, keyed by project ID.
      */
-    public function getProjects($refresh = false)
+    public function getProjects($refresh = null)
     {
         $cacheKey = sprintf('%s:projects', self::$sessionId);
 
@@ -598,8 +600,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $projects = [];
 
         $cache = CacheUtil::getCache();
+        $cached = $cache->fetch($cacheKey);
 
-        if ($refresh || !$cache->contains($cacheKey)) {
+        if ($refresh === false && !$cached) {
+            return [];
+        }
+        elseif ($refresh || !$cached) {
             $this->debug('Fetching projects list');
             foreach ($this->getClient()->getProjects() as $project) {
                 $projects[$project->id] = $project;
@@ -618,7 +624,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             $guzzleClient = $this->getClient(false)
                 ->getConnector()
                 ->getClient();
-            foreach ((array) $cache->fetch($cacheKey) as $id => $data) {
+            foreach ((array) $cached as $id => $data) {
                 $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
             }
         }
@@ -635,11 +641,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      * @param string $host      The project's hostname, if $id is just an ID.
      *                          If not provided, the hostname will be determined
      *                          from the user's projects list.
-     * @param bool   $refresh   Whether to bypass the cache.
+     * @param bool|null $refresh   Whether to bypass the cache.
      *
      * @return Project|false
      */
-    protected function getProject($id, $host = null, $refresh = false)
+    protected function getProject($id, $host = null, $refresh = null)
     {
         // Find the project in the user's main project list. This uses a cache.
         $projects = $this->getProjects($refresh);
@@ -666,12 +672,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      * Return the user's environments.
      *
      * @param Project $project       The project.
-     * @param bool    $refresh       Whether to refresh the list.
-     * @param bool    $updateAliases Whether to update Drush aliases if the list changes.
+     * @param bool|null $refresh       Whether to refresh the list.
+     * @param bool $updateAliases Whether to update Drush aliases if the list changes.
      *
      * @return Environment[] The user's environments.
      */
-    public function getEnvironments(Project $project = null, $refresh = false, $updateAliases = true)
+    public function getEnvironments(Project $project = null, $refresh = null, $updateAliases = true)
     {
         $project = $project ?: $this->getSelectedProject();
         $projectId = $project->getProperty('id');
@@ -684,7 +690,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $cache = CacheUtil::getCache();
         $cached = $cache->fetch($cacheKey);
 
-        if ($refresh || !$cached) {
+        if ($refresh === false && !$cached) {
+            return [];
+        }
+        elseif ($refresh || !$cached) {
             $environments = [];
             $toCache = [];
             $this->debug('Fetching environments list for project: ' . $projectId);
@@ -721,11 +730,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      *
      * @param string  $id      The environment ID to load.
      * @param Project $project The project.
-     * @param bool    $refresh
+     * @param bool|null $refresh
      *
      * @return Environment|false The environment, or false if not found.
      */
-    protected function getEnvironment($id, Project $project = null, $refresh = false)
+    protected function getEnvironment($id, Project $project = null, $refresh = null)
     {
         $project = $project ?: $this->getCurrentProject();
         if (!$project) {
