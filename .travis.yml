@@ -9,6 +9,11 @@ php:
   - hhvm
   - 7.0
 
+matrix:
+  allow_failures:
+    - php: hhvm
+  fast_finish: true
+
 cache:
   directories:
     - $HOME/.composer/cache
