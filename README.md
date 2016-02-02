@@ -108,6 +108,7 @@ environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
   environment:info                          Read or set properties for an environment
   environment:list (environments)           Get a list of all environments
+  environment:logs (logs)                   Read an environment's logs
   environment:merge (merge)                 Merge an environment
   environment:relationships (relationships) List an environment's relationships
   environment:routes (routes)               List an environment's routes

@@ -113,6 +113,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentDrushCommand();
         $commands[] = new Command\Environment\EnvironmentHttpAccessCommand();
         $commands[] = new Command\Environment\EnvironmentListCommand();
+        $commands[] = new Command\Environment\EnvironmentLogCommand();
         $commands[] = new Command\Environment\EnvironmentInfoCommand();
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();

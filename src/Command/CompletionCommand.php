@@ -32,7 +32,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     {
         $this->platformCommand = new WelcomeCommand();
         $this->platformCommand->setApplication($this->getApplication());
-        $this->projects = $this->getProjects();
+        $this->projects = $this->platformCommand->getProjects(false);
     }
 
     /**
@@ -130,24 +130,6 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     }
 
     /**
-     * Get a list of project IDs.
-     *
-     * @return array
-     */
-    protected function getProjects()
-    {
-        // Check that the user is logged in.
-        $client = $this->platformCommand->getClient(false);
-        if (!$client->getConnector()
-                    ->isLoggedIn()
-        ) {
-            return [];
-        }
-
-        return $this->platformCommand->getProjects();
-    }
-
-    /**
      * Get a list of environments IDs that can be checked out.
      *
      * @return string[]
@@ -159,7 +141,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
             return [];
         }
         try {
-            $currentEnvironment = $this->platformCommand->getCurrentEnvironment($project);
+            $currentEnvironment = $this->platformCommand->getCurrentEnvironment($project, false);
         } catch (\Exception $e) {
             $currentEnvironment = false;
         }
@@ -200,6 +182,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         } else {
             return [];
         }
+
         $environments = $this->platformCommand->getEnvironments($project, false, false);
 
         return array_keys($environments);
