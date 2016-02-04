@@ -22,8 +22,6 @@ class LogoutCommand extends CommandBase
     {
         // Ignore API tokens for this command.
         if (isset(self::$apiToken)) {
-            self::$apiToken = null;
-            $this->getClient(false)->getConnector()->setApiToken('');
             $this->stdErr->writeln('<comment>Warning: an API token is set</comment>');
         }
 

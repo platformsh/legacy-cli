@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "35fe5802f3f67dc69241666fd8a13f8e",
-    "content-hash": "ac569299dd473e8a86c5901d2321045c",
+    "hash": "b7cf7b5092305792be99cc4b5af87677",
+    "content-hash": "77fb768d4af5866e6cea7932531b809e",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -552,16 +552,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.3.5",
+            "version": "v0.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "9abe01659c4f8b48c7871cb4048eb6847d80e328"
+                "reference": "3029cbb1dbdcf0e7b3532723201fcde80c022eec"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/9abe01659c4f8b48c7871cb4048eb6847d80e328",
-                "reference": "9abe01659c4f8b48c7871cb4048eb6847d80e328",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/3029cbb1dbdcf0e7b3532723201fcde80c022eec",
+                "reference": "3029cbb1dbdcf0e7b3532723201fcde80c022eec",
                 "shasum": ""
             },
             "require": {
@@ -589,7 +589,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2015-12-13 23:14:34"
+            "time": "2016-02-03 20:11:23"
         },
         {
             "name": "platformsh/console-form",
@@ -1317,12 +1317,12 @@
             "version": "1.2.1",
             "source": {
                 "type": "git",
-                "url": "https://github.com/RobLoach/Console_Table.git",
-                "reference": "10d89fbbe533351dcfe5dc1e84de25d9a8395950"
+                "url": "https://github.com/pear/Console_Table.git",
+                "reference": "a129a91d8bf19317d81e68d1d3a2e18932f684e4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/RobLoach/Console_Table/zipball/10d89fbbe533351dcfe5dc1e84de25d9a8395950",
+                "url": "https://api.github.com/repos/pear/Console_Table/zipball/a129a91d8bf19317d81e68d1d3a2e18932f684e4",
                 "reference": "10d89fbbe533351dcfe5dc1e84de25d9a8395950",
                 "shasum": ""
             },
