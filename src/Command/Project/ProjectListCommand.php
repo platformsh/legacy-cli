@@ -25,7 +25,7 @@ class ProjectListCommand extends CommandBase
     {
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
-        $projects = $this->getProjects($refresh);
+        $projects = $this->getProjects($refresh ? true : null);
 
         if ($input->getOption('pipe')) {
             $output->writeln(array_keys($projects));
