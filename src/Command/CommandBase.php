@@ -51,6 +51,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /** @var string|null */
     protected static $apiToken;
 
+    /** @var string */
+    protected static $apiTokenType = 'exchange';
+
     /** @var bool */
     protected static $interactive = false;
 
@@ -139,8 +142,17 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
             self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
         }
-        if (!isset(self::$apiToken) && getenv('PLATFORMSH_CLI_API_TOKEN')) {
-            self::$apiToken = getenv('PLATFORMSH_CLI_API_TOKEN');
+        if (!isset(self::$apiToken)) {
+            // Exchangeable API tokens.
+            if (getenv('PLATFORMSH_CLI_TOKEN')) {
+                self::$apiToken = getenv('PLATFORMSH_CLI_TOKEN');
+                self::$apiTokenType = 'exchange';
+            }
+            // Permanent, personal access token (deprecated).
+            elseif (getenv('PLATFORMSH_CLI_API_TOKEN')) {
+                self::$apiToken = getenv('PLATFORMSH_CLI_API_TOKEN');
+                self::$apiTokenType = 'access';
+            }
         }
 
         $this->localProject = new LocalProject();
@@ -175,6 +187,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             $connectorOptions['debug'] = (bool) getenv('PLATFORMSH_CLI_DEBUG');
             $connectorOptions['client_id'] = 'platform-cli';
             $connectorOptions['user_agent'] = $this->getUserAgent();
+            $connectorOptions['api_token'] = self::$apiToken;
+            $connectorOptions['api_token_type'] = self::$apiTokenType;
 
             // Proxy support with the http_proxy or https_proxy environment
             // variables.
@@ -189,18 +203,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
             $connector = new Connector($connectorOptions);
 
-            // If an API token is set, that's all we need to authenticate.
-            if (isset(self::$apiToken)) {
-                $connector->setApiToken(self::$apiToken);
-            }
-            // Otherwise, set up a persistent session to store OAuth2 tokens. By
-            // default, this will be stored in a JSON file:
+            // Set up a persistent session to store OAuth2 tokens. By default,
+            // this will be stored in a JSON file:
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
-            else {
-                $session = $connector->getSession();
-                $session->setId('cli-' . self::$sessionId);
-                $session->setStorage(new File($this->getSessionsDir()));
-            }
+            $session = $connector->getSession();
+            $session->setId('cli-' . self::$sessionId);
+            $session->setStorage(new File($this->getSessionsDir()));
 
             $this->debug('Initializing API client');
             self::$client = new PlatformClient($connector);

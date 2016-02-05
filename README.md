@@ -170,13 +170,14 @@ the command `platform clear-cache` (or `platform cc` for short).
 
 You can configure the CLI via these environment variables:
 
-* `PLATFORMSH_CLI_API_TOKEN`: an API token to use for all requests
+* `PLATFORMSH_CLI_TOKEN`: an API token to use for non-interactive login (not yet available)
 * `PLATFORMSH_CLI_COPY_ON_WINDOWS`: set to 1 to avoid some Windows symlink issues
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
+* ~~`PLATFORMSH_CLI_API_TOKEN`: a 'personal access token' to authenticate all requests~~ (deprecated)
 
 ## Contributing
 
