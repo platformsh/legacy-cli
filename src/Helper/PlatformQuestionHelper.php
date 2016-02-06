@@ -28,14 +28,17 @@ class PlatformQuestionHelper extends QuestionHelper
      */
     public function confirm($questionText, InputInterface $input, OutputInterface $output, $default = true)
     {
+        $questionText .= ' <question>' . ($default ? '[Y/n]' : '[y/N]') . '</question> ';
+
         $yes = $input->hasOption('yes') && $input->getOption('yes');
         $no = $input->hasOption('no') && $input->getOption('no');
         if ($yes && !$no) {
+            $output->writeln($questionText . 'y');
             return true;
         } elseif ($no && !$yes) {
+            $output->writeln($questionText . 'n');
             return false;
         }
-        $questionText .= ' <question>' . ($default ? '[Y/n]' : '[y/N]') . '</question> ';
         $question = new ConfirmationQuestion($questionText, $default);
 
         return $this->ask($input, $output, $question);
