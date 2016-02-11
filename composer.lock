@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "b7cf7b5092305792be99cc4b5af87677",
-    "content-hash": "77fb768d4af5866e6cea7932531b809e",
+    "hash": "7f62d5178aee378d819f3454297d02cb",
+    "content-hash": "ffc823e7507ac0765d6da0e96619125d",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -552,16 +552,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.4.1",
+            "version": "v0.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "3029cbb1dbdcf0e7b3532723201fcde80c022eec"
+                "reference": "8db0818d12724c4ac1bd7ebb59830ccd0492161d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/3029cbb1dbdcf0e7b3532723201fcde80c022eec",
-                "reference": "3029cbb1dbdcf0e7b3532723201fcde80c022eec",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/8db0818d12724c4ac1bd7ebb59830ccd0492161d",
+                "reference": "8db0818d12724c4ac1bd7ebb59830ccd0492161d",
                 "shasum": ""
             },
             "require": {
@@ -589,7 +589,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2016-02-03 20:11:23"
+            "time": "2016-02-11 13:39:48"
         },
         {
             "name": "platformsh/console-form",
@@ -1314,7 +1314,7 @@
         },
         {
             "name": "pear/console_table",
-            "version": "1.2.1",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pear/Console_Table.git",
@@ -1323,7 +1323,7 @@
             "dist": {
                 "type": "zip",
                 "url": "https://api.github.com/repos/pear/Console_Table/zipball/a129a91d8bf19317d81e68d1d3a2e18932f684e4",
-                "reference": "10d89fbbe533351dcfe5dc1e84de25d9a8395950",
+                "reference": "a129a91d8bf19317d81e68d1d3a2e18932f684e4",
                 "shasum": ""
             },
             "require": {
@@ -1365,7 +1365,7 @@
             "keywords": [
                 "console"
             ],
-            "time": "2014-10-27 10:04:49"
+            "time": "2014-10-27 09:53:49"
         },
         {
             "name": "phpdocumentor/reflection-docblock",
