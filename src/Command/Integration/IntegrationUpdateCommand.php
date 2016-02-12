@@ -40,12 +40,14 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $currentValues = $integration->getProperties();
         foreach ($form->getFields() as $key => $field) {
             $value = $field->getValueFromInput($input);
-            if ($value !== null && $currentValues[$key] != $value) {
+            if ($value !== null && $currentValues[$key] !== $value) {
                 $values[$key] = $value;
             }
         }
         if (!$values) {
-            throw new \InvalidArgumentException("No values were provided to update");
+            $this->stdErr->writeln("No changed values were provided to update");
+
+            return 1;
         }
 
         // Complete the PATCH request with the current values. This is a

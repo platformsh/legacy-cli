@@ -76,17 +76,17 @@ abstract class IntegrationCommandBase extends CommandBase
                 'name' => 'HipChat room ID',
             ]),
             'events' => new ArrayField('Events to report', [
-                'conditions' => ['type' => 'hipchat'],
+                'conditions' => ['type' => ['hipchat', 'webhook']],
                 'optionName' => 'events',
                 'default' => ['*'],
-                'description' => 'HipChat: events to report',
+                'description' => 'Events to report, e.g. environment.push',
             ]),
             'states' => new ArrayField('States to report', [
-                'conditions' => ['type' => 'hipchat'],
+                'conditions' => ['type' => ['hipchat', 'webhook']],
                 'optionName' => 'states',
                 'name' => 'States to report',
                 'default' => ['complete'],
-                'description' => 'HipChat: states to report, e.g. complete,in_progress',
+                'description' => 'States to report, e.g. pending, in_progress, complete',
             ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => 'webhook'],
@@ -120,6 +120,8 @@ abstract class IntegrationCommandBase extends CommandBase
             $info["States"] = implode(', ', $properties['states']);
         } elseif ($properties['type'] == 'webhook') {
             $info["URL"] = $properties['url'];
+            $info["Events"] = implode(', ', $properties['events']);
+            $info["States"] = implode(', ', $properties['states']);
         }
 
         $output = '';
