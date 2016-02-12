@@ -80,7 +80,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $sshUrl, $logFilename));
 
-        $sshCommand = sprintf('ssh %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
+        $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
         passthru($sshCommand, $returnVar);
         return $returnVar;
     }

@@ -86,7 +86,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
 
         set_time_limit(0);
 
-        $command = 'ssh ' . escapeshellarg($sshUrl)
+        $command = 'ssh -C ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($dumpCommand);
         if (isset($dumpFile)) {
             $command .= ' > ' . escapeshellarg($dumpFile);
