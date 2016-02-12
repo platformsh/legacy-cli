@@ -16,7 +16,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
     {
         $this
             ->setName('environment:logs')
-            ->setAliases(['logs'])
+            ->setAliases(['log'])
             ->setDescription("Read an environment's logs")
             ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"')
             ->addOption('lines', null, InputOption::VALUE_REQUIRED, 'The number of lines to show', 100)
@@ -24,6 +24,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
+        $this->setHiddenAliases(['logs']);
         $this->addExample('Display a choice of logs that can be read');
         $this->addExample('Read the deploy log', 'deploy');
         $this->addExample('Read the access log continuously', 'access --tail');
@@ -79,7 +80,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $sshUrl, $logFilename));
 
-        $sshCommand = sprintf('ssh %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
+        $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
         passthru($sshCommand, $returnVar);
         return $returnVar;
     }
