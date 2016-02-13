@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "7f62d5178aee378d819f3454297d02cb",
-    "content-hash": "ffc823e7507ac0765d6da0e96619125d",
+    "hash": "7bec92113ba3779f86ecb03e35dc872e",
+    "content-hash": "45e72cdabfb35901882740c3e4ef18d5",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -552,16 +552,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.4.3",
+            "version": "v0.4.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "8db0818d12724c4ac1bd7ebb59830ccd0492161d"
+                "reference": "72478b5245faa25f72a0df577580d9c1288c7af2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/8db0818d12724c4ac1bd7ebb59830ccd0492161d",
-                "reference": "8db0818d12724c4ac1bd7ebb59830ccd0492161d",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/72478b5245faa25f72a0df577580d9c1288c7af2",
+                "reference": "72478b5245faa25f72a0df577580d9c1288c7af2",
                 "shasum": ""
             },
             "require": {
@@ -589,7 +589,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2016-02-11 13:39:48"
+            "time": "2016-02-13 12:19:31"
         },
         {
             "name": "platformsh/console-form",
@@ -2217,16 +2217,16 @@
         },
         {
             "name": "symfony/var-dumper",
-            "version": "v2.8.1",
+            "version": "v2.8.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/var-dumper.git",
-                "reference": "f943f29ae69c42511a2d85adee9d13d835b5c803"
+                "reference": "ab94426d127ad9e95433778a3a451fe9d18f3d6b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/f943f29ae69c42511a2d85adee9d13d835b5c803",
-                "reference": "f943f29ae69c42511a2d85adee9d13d835b5c803",
+                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/ab94426d127ad9e95433778a3a451fe9d18f3d6b",
+                "reference": "ab94426d127ad9e95433778a3a451fe9d18f3d6b",
                 "shasum": ""
             },
             "require": {
@@ -2276,7 +2276,7 @@
                 "debug",
                 "dump"
             ],
-            "time": "2015-12-05 11:09:21"
+            "time": "2016-01-07 13:38:40"
         }
     ],
     "aliases": [],
