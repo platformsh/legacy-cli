@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "7bec92113ba3779f86ecb03e35dc872e",
-    "content-hash": "45e72cdabfb35901882740c3e4ef18d5",
+    "hash": "8bdedb9f7235669aafff9cd41e2b9d0b",
+    "content-hash": "10a02ebc677bde4c8d381a760a7e9b9b",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -593,16 +593,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.6",
+            "version": "v0.0.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "420f72e2f0c30f06dee2a503234aa066214cdb22"
+                "reference": "98c3614f10d51ddb58dc8f3db0849678e90bc28a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/420f72e2f0c30f06dee2a503234aa066214cdb22",
-                "reference": "420f72e2f0c30f06dee2a503234aa066214cdb22",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/98c3614f10d51ddb58dc8f3db0849678e90bc28a",
+                "reference": "98c3614f10d51ddb58dc8f3db0849678e90bc28a",
                 "shasum": ""
             },
             "require": {
@@ -627,7 +627,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2016-01-08 10:14:32"
+            "time": "2016-02-17 15:41:58"
         },
         {
             "name": "react/promise",
@@ -1418,22 +1418,24 @@
         },
         {
             "name": "phpspec/prophecy",
-            "version": "v1.5.0",
+            "version": "v1.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpspec/prophecy.git",
-                "reference": "4745ded9307786b730d7a60df5cb5a6c43cf95f7"
+                "reference": "3c91bdf81797d725b14cb62906f9a4ce44235972"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpspec/prophecy/zipball/4745ded9307786b730d7a60df5cb5a6c43cf95f7",
-                "reference": "4745ded9307786b730d7a60df5cb5a6c43cf95f7",
+                "url": "https://api.github.com/repos/phpspec/prophecy/zipball/3c91bdf81797d725b14cb62906f9a4ce44235972",
+                "reference": "3c91bdf81797d725b14cb62906f9a4ce44235972",
                 "shasum": ""
             },
             "require": {
                 "doctrine/instantiator": "^1.0.2",
+                "php": "^5.3|^7.0",
                 "phpdocumentor/reflection-docblock": "~2.0",
-                "sebastian/comparator": "~1.1"
+                "sebastian/comparator": "~1.1",
+                "sebastian/recursion-context": "~1.0"
             },
             "require-dev": {
                 "phpspec/phpspec": "~2.0"
@@ -1441,7 +1443,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.4.x-dev"
+                    "dev-master": "1.5.x-dev"
                 }
             },
             "autoload": {
@@ -1474,7 +1476,7 @@
                 "spy",
                 "stub"
             ],
-            "time": "2015-08-13 10:07:40"
+            "time": "2016-02-15 07:46:21"
         },
         {
             "name": "phpunit/php-code-coverage",
