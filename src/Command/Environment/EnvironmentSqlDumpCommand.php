@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Util\RelationshipsUtil;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -17,7 +19,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
             ->setName('environment:sql-dump')
             ->setAliases(['sql-dump'])
             ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "environment-dump.sql" in the project root')
+            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>-<environment ID>-dump.sql" in the project root')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
     }
@@ -25,6 +27,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
@@ -36,7 +39,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
                 $fsHelper = $this->getHelper('fs');
                 $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
                 if (is_dir($dumpFile)) {
-                    $dumpFile .= "/{$environment->id}-dump.sql";
+                    $dumpFile .= '/' . $this->getDefaultDumpFilename($project, $environment, $appName);
                 }
             }
             else {
@@ -45,11 +48,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
                         'Project root not found. Specify --file or go to a project directory.'
                     );
                 }
-                $dumpFile = $projectRoot . '/' . $environment->id;
-                if ($appName) {
-                    $dumpFile .= '--' . $appName;
-                }
-                $dumpFile .= '-dump.sql';
+                $dumpFile = $projectRoot . '/' . $this->getDefaultDumpFilename($project, $environment, $appName);
             }
         }
 
@@ -96,5 +95,25 @@ class EnvironmentSqlDumpCommand extends CommandBase
 
         passthru($command, $return_var);
         return $return_var;
+    }
+
+    /**
+     * Get the default filename for an SQL dump.
+     *
+     * @param Project     $project
+     * @param Environment $environment
+     * @param string|null $appName
+     *
+     * @return string
+     */
+    protected function getDefaultDumpFilename(Project $project, Environment $environment, $appName = null)
+    {
+        $filename = $project->id . '-' . $environment->id;
+        if ($appName !== null) {
+            $filename .= $appName;
+        }
+        $filename .= '-dump.sql';
+
+        return $filename;
     }
 }
