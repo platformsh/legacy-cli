@@ -19,7 +19,8 @@ class EnvironmentSqlDumpCommand extends CommandBase
             ->setName('environment:sql-dump')
             ->setAliases(['sql-dump'])
             ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>-<environment ID>-dump.sql" in the project root')
+            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>--<environment ID>--dump.sql" in the project root')
+            ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
     }
@@ -31,15 +32,33 @@ class EnvironmentSqlDumpCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
+        $timestamp = $input->getOption('timestamp') ? str_replace('+', '', date('Ymd-His-O')) : null;
 
         if (!$input->getOption('stdout')) {
             if ($input->getOption('file')) {
-                $dumpFile = $input->getOption('file');
+                $dumpFile = rtrim($input->getOption('file'), '/');
                 /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
                 $fsHelper = $this->getHelper('fs');
+
+                // Insert the timestamp into the filename.
+                if ($timestamp) {
+                    $basename = basename($dumpFile);
+                    $prefix = substr($dumpFile, 0, - strlen($basename));
+                    if ($dotPos = strrpos($basename, '.')) {
+                        $basename = substr($basename, 0, $dotPos) . '--' . $timestamp . substr($basename, $dotPos);
+                    }
+                    else {
+                        $basename .= '--' . $timestamp;
+                    }
+                    $dumpFile = $prefix . $basename;
+                }
+
+                // Make the filename absolute.
                 $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
+
+                // Ensure the filename is not a directory.
                 if (is_dir($dumpFile)) {
-                    $dumpFile .= '/' . $this->getDefaultDumpFilename($project, $environment, $appName);
+                    $dumpFile .= '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
                 }
             }
             else {
@@ -48,7 +67,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
                         'Project root not found. Specify --file or go to a project directory.'
                     );
                 }
-                $dumpFile = $projectRoot . '/' . $this->getDefaultDumpFilename($project, $environment, $appName);
+                $dumpFile = $projectRoot . '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
             }
         }
 
@@ -103,16 +122,20 @@ class EnvironmentSqlDumpCommand extends CommandBase
      * @param Project     $project
      * @param Environment $environment
      * @param string|null $appName
+     * @param string|null $timestamp
      *
      * @return string
      */
-    protected function getDefaultDumpFilename(Project $project, Environment $environment, $appName = null)
+    protected function getDefaultDumpFilename(Project $project, Environment $environment, $appName = null, $timestamp = null)
     {
-        $filename = $project->id . '-' . $environment->id;
+        $filename = $project->id . '--' . $environment->id;
         if ($appName !== null) {
-            $filename .= $appName;
+            $filename .= '--' . $appName;
         }
-        $filename .= '-dump.sql';
+        if ($timestamp !== null) {
+            $filename .= '--' . $timestamp;
+        }
+        $filename .= '--dump.sql';
 
         return $filename;
     }
