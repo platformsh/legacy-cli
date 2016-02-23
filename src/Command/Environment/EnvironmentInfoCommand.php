@@ -176,7 +176,7 @@ class EnvironmentInfoCommand extends CommandBase
                 } elseif ($value === $selectedEnvironment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
-                } elseif (!$parentEnvironment = $this->getEnvironment($value)) {
+                } elseif (!$parentEnvironment = $this->getEnvironment($value, $this->getSelectedProject())) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
                 } elseif ($parentEnvironment->parent === $selectedEnvironment->id) {
