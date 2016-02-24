@@ -3,11 +3,13 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
+use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
+use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentSynchronizeCommand extends CommandBase
+class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwareInterface
 {
 
     protected function configure()
@@ -108,5 +110,25 @@ EOT
         }
 
         return 0;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function completeArgumentValues($argumentName, CompletionContext $context)
+    {
+        if ($argumentName === 'synchronize') {
+            return ['code', 'data', 'both'];
+        }
+
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function completeOptionValues($argumentName, CompletionContext $context)
+    {
+        return [];
     }
 }
