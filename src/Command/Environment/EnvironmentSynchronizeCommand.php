@@ -15,17 +15,22 @@ class EnvironmentSynchronizeCommand extends CommandBase
         $this
             ->setName('environment:synchronize')
             ->setAliases(['sync'])
-            ->setDescription('Synchronize an environment')
-            ->addArgument(
-                'synchronize',
-                InputArgument::IS_ARRAY,
-                'What to synchronize: code, data or both',
-                null
-            );
+            ->setDescription("Synchronize an environment's code and/or data from its parent")
+            ->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
+        $this->setHelp(<<<EOT
+This command synchronizes to a child environment from its parent environment.
+
+Synchronizing "code" means there will be a Git merge from the parent to the
+child. Synchronizing "data" means that all files in all services (including
+static files, databases, logs, search indices, etc.) will be copied from the
+parent to the child.
+EOT
+        );
         $this->addExample('Synchronize data from the parent environment', 'data');
+        $this->addExample('Synchronize code and data from the parent environment', 'code data');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
