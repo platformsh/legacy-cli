@@ -46,7 +46,7 @@ class LocalApplication
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getName()
     {

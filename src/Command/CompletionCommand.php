@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
 
@@ -117,6 +118,11 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 'directory',
                 Completion::TYPE_ARGUMENT
             ),
+            Completion::makeGlobalHandler(
+                'app',
+                Completion::TYPE_OPTION,
+                [$this, 'getAppNames']
+            ),
         ]);
 
         try {
@@ -156,6 +162,26 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         }
 
         return array_keys($environments);
+    }
+
+    /**
+     * Get a list of application names in the local project.
+     *
+     * @return string[]
+     */
+    public function getAppNames()
+    {
+        $apps = [];
+        if ($projectRoot = $this->platformCommand->getProjectRoot()) {
+            foreach (LocalApplication::getApplications($projectRoot) as $app) {
+                $name = $app->getName();
+                if ($name !== null) {
+                    $apps[] = $name;
+                }
+            }
+        }
+
+        return $apps;
     }
 
     /**
