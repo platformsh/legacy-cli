@@ -744,7 +744,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function getEnvironment($id, Project $project = null, $refresh = null)
     {
-        $project = $project ?: $this->getCurrentProject();
+        if ($project === null) {
+            $project = $this->hasSelectedProject() ? $this->getSelectedProject() : $this->getCurrentProject();
+        }
         if (!$project) {
             return false;
         }
