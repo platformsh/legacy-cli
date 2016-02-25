@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -55,23 +56,23 @@ class LegacyMigrateCommand extends CommandBase
 
         if (file_exists($legacyRoot . '/shared')) {
             $this->stdErr->writeln('Moving "shared" directory');
-            if (is_dir($repositoryDir . '/.platform/local/shared')) {
-                $fsHelper->copyAll($legacyRoot . '/shared', $repositoryDir . '/.platform/local/shared');
+            if (is_dir($repositoryDir . '/' . LocalProject::LOCAL_DIR . '/shared')) {
+                $fsHelper->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . LocalProject::LOCAL_DIR . '/shared');
                 $fsHelper->remove($legacyRoot . '/shared');
             }
             else {
-                rename($legacyRoot . '/shared', $repositoryDir . '/.platform/local/shared');
+                rename($legacyRoot . '/shared', $repositoryDir . '/' . LocalProject::LOCAL_DIR . '/shared');
             }
         }
 
         if (file_exists($legacyRoot . '/.build-archives')) {
             $this->stdErr->writeln('Moving ".build-archives" directory');
-            if (is_dir($repositoryDir . '/.platform/local/.build-archives')) {
-                $fsHelper->copyAll($legacyRoot . '/.build-archives', $repositoryDir . '/.platform/local/.build-archives');
+            if (is_dir($repositoryDir . '/' . LocalProject::LOCAL_DIR . '/.build-archives')) {
+                $fsHelper->copyAll($legacyRoot . '/.build-archives', $repositoryDir . '/' . LocalProject::LOCAL_DIR . '/.build-archives');
                 $fsHelper->remove($legacyRoot . '/shared');
             }
             else {
-                rename($legacyRoot . '/.build-archives', $repositoryDir . '/.platform/local/.build-archives');
+                rename($legacyRoot . '/.build-archives', $repositoryDir . '/' . LocalProject::LOCAL_DIR . '/.build-archives');
             }
         }
 
@@ -86,7 +87,7 @@ class LegacyMigrateCommand extends CommandBase
         $fsHelper->remove($repositoryDir);
 
         if (file_exists($legacyRoot . '/.platform-project')) {
-            $fsHelper->copy($legacyRoot . '/.platform-project', $legacyRoot . '/.platform/local/project.yaml');
+            $fsHelper->copy($legacyRoot . '/.platform-project', $legacyRoot . '/' . LocalProject::LOCAL_DIR . '/project.yaml');
             $fsHelper->remove($legacyRoot . '/.platform-project');
         }
 
