@@ -17,10 +17,6 @@ class ListCommand extends ParentListCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($input->getOption('xml')) {
-            $input->setOption('format', 'xml');
-        }
-
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor());
         $helper->describe(

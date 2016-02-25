@@ -37,10 +37,6 @@ class HelpCommand extends ParentHelpCommand
                                   ->find($input->getArgument('command_name'));
         }
 
-        if ($input->getOption('xml')) {
-            $input->setOption('format', 'xml');
-        }
-
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor());
         $helper->register('md', new CustomMarkdownDescriptor());
