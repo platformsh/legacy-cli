@@ -6,14 +6,14 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ServerStatusCommand extends ServerCommandBase
+class ServerListCommand extends ServerCommandBase
 {
     protected function configure()
     {
         $this
-          ->setName('server:status')
-          ->setDescription('Check the status of local project web server(s)')
-          ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check all servers');
+          ->setName('server:list')
+          ->setDescription('List running local project web server(s)')
+          ->addOption('all', 'a', InputOption::VALUE_NONE, 'List all servers');
         Table::addFormatOption($this->getDefinition());
     }
 
