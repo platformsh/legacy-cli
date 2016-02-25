@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Cli\Util\UrlUtil;
@@ -34,8 +33,7 @@ class ServerRunCommand extends ServerCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectRoot = $this->getProjectRoot();
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        if (!$projectRoot || !is_dir($repositoryDir)) {
+        if (!$projectRoot) {
             throw new RootNotFoundException();
         }
 
@@ -51,13 +49,13 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        $apps = LocalApplication::getApplications($repositoryDir);
+        $apps = LocalApplication::getApplications($projectRoot);
         if (!count($apps)) {
-            $this->stdErr->writeln(sprintf('No applications found in directory: %s', $repositoryDir));
+            $this->stdErr->writeln(sprintf('No applications found in directory: %s', $projectRoot));
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
         $multiApp = count($apps) > 1;
@@ -67,12 +65,7 @@ class ServerRunCommand extends ServerCommandBase
             foreach ($apps as $appCandidate) {
                 $appChoices[$appCandidate->getId()] = $appCandidate->getId();
             }
-            $appId = $questionHelper->choose(
-              $appChoices,
-              'Enter a number to choose an app:',
-              $input,
-              $this->stdErr
-            );
+            $appId = $questionHelper->choose($appChoices, 'Enter a number to choose an app:');
         }
         foreach ($apps as $appCandidate) {
             if ($appCandidate->getId() === $appId) {
@@ -85,11 +78,11 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $docRoot = $multiApp ? $webRoot . '/' . $app->getWebPath() : $webRoot;
         if (!file_exists($docRoot)) {
             $this->stdErr->writeln(sprintf('Document root not found: <error>%s</error>', $docRoot));
-            $this->stdErr->writeln(sprintf('Build the application with: <comment>platform build</comment>'));
+            $this->stdErr->writeln(sprintf('Build the application with: <comment>' . self::$config->get('application.executable') . ' build</comment>'));
             return 1;
         }
 

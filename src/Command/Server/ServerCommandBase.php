@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
@@ -83,7 +82,7 @@ abstract class ServerCommandBase extends CommandBase
     {
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
-            $filename = $this->getConfigDir() . '/local-servers.json';
+            $filename = $this->getUserConfigDir() . '/local-servers.json';
             if (file_exists($filename)) {
                 $this->serverInfo = (array) json_decode(file_get_contents($filename), TRUE);
             }
@@ -105,7 +104,7 @@ abstract class ServerCommandBase extends CommandBase
 
     protected function saveServerInfo()
     {
-        $filename = $this->getConfigDir() . '/local-servers.json';
+        $filename = $this->getUserConfigDir() . '/local-servers.json';
         if (!empty($this->serverInfo)) {
             if (!file_put_contents($filename, json_encode($this->serverInfo))) {
                 throw new \RuntimeException('Failed to write server info to: ' . $filename);
@@ -188,7 +187,7 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function getPidFile($address)
     {
-        return $this->getConfigDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
+        return $this->getUserConfigDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
     }
 
     /**
@@ -272,8 +271,9 @@ abstract class ServerCommandBase extends CommandBase
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);
-        if (isset($env['PLATFORM_APP_DIR'])) {
-            $process->setWorkingDirectory($env['PLATFORM_APP_DIR']);
+        $envPrefix = self::$config->get('application.env_prefix');
+        if (isset($env[$envPrefix . '_APP_DIR'])) {
+            $process->setWorkingDirectory($env[$envPrefix . '_APP_DIR']);
         }
 
         return $process;
@@ -316,7 +316,7 @@ abstract class ServerCommandBase extends CommandBase
             return false;
         }
 
-        $router = $projectRoot . '/.' . basename($router_src);
+        $router = $projectRoot . '/' . self::$config->get('local.local_dir') . '/' . basename($router_src);
         if (!isset($created[$router])) {
             if (!file_put_contents($router, file_get_contents($router_src))) {
                 $this->stdErr->writeln(sprintf('Could not create router file: <error>%s</error>', $router));
@@ -356,24 +356,25 @@ abstract class ServerCommandBase extends CommandBase
     protected function createEnv($projectRoot, $docRoot, $address, array $appConfig)
     {
         $realDocRoot = realpath($docRoot);
+        $envPrefix = self::$config->get('application.env_prefix');
         $env = [
-          'PLATFORM_ENVIRONMENT' => '_local',
-          'PLATFORM_APPLICATION' => base64_encode(json_encode($appConfig)),
-          'PLATFORM_APPLICATION_NAME' => isset($appConfig['name']) ? $appConfig['name'] : '',
-          'PLATFORM_DOCUMENT_ROOT' => $realDocRoot,
+            $envPrefix . 'ENVIRONMENT' => '_local',
+            $envPrefix . 'APPLICATION' => base64_encode(json_encode($appConfig)),
+            $envPrefix . 'APPLICATION_NAME' => isset($appConfig['name']) ? $appConfig['name'] : '',
+            $envPrefix . 'DOCUMENT_ROOT' => $realDocRoot,
         ];
 
         list($env['IP'], $env['PORT']) = explode(':', $address);
 
-        if (dirname(dirname($realDocRoot)) === $projectRoot . '/' . LocalProject::BUILD_DIR) {
-            $env['PLATFORM_APP_DIR'] = dirname($realDocRoot);
+        if (dirname(dirname($realDocRoot)) === $projectRoot . '/' . self::$config->get('local.local_dir')) {
+            $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);
         }
 
         if ($projectRoot === $this->getProjectRoot()) {
             try {
                 $project = $this->getCurrentProject();
                 if ($project) {
-                    $env['PLATFORM_PROJECT'] = $project->id;
+                    $env[$envPrefix . 'PROJECT'] = $project->id;
                 }
             }
             catch (\Exception $e) {

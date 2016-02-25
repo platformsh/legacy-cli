@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Cli\Util\ProcessManager;
@@ -22,8 +21,8 @@ class ServerStartCommand extends ServerCommandBase
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting servers')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port of the first server')
-          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to local-server.log in the project root')
-          ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote Platform.sh environments as relationships');
+          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to ' . self::$config->get('local.local_dir') . '/server.log')
+          ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote ' . self::$config->get('service.name') . ' environments as relationships');
     }
 
     public function isEnabled()
@@ -34,8 +33,7 @@ class ServerStartCommand extends ServerCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectRoot = $this->getProjectRoot();
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        if (!$projectRoot || !is_dir($repositoryDir)) {
+        if (!$projectRoot) {
             throw new RootNotFoundException();
         }
 
@@ -51,14 +49,14 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        $apps = LocalApplication::getApplications($repositoryDir);
+        $apps = LocalApplication::getApplications($projectRoot);
         if (!count($apps)) {
-            $this->stdErr->writeln(sprintf('No applications found in directory: %s', $repositoryDir));
+            $this->stdErr->writeln(sprintf('No applications found in directory: %s', $projectRoot));
             return 1;
         }
 
         $multiApp = count($apps) > 1;
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $items = [];
         foreach ($apps as $app) {
             $appId = $app->getId();
@@ -88,11 +86,12 @@ class ServerStartCommand extends ServerCommandBase
                 );
                 if ($result != 0) {
                     $this->stdErr->writeln(sprintf('Failed to get SSH tunnel information for the app <error>%s</error>', $appId));
+                    $this->stdErr->writeln('Run <comment>' . self::$config->get('application.executable') . ' tunnel:open</comment> to create tunnels.');
                     unset($items[$appId]);
                     continue;
                 }
                 $relationships = $bufferedOutput->fetch();
-                $items[$appId]['env']['PLATFORM_RELATIONSHIPS'] = $relationships;
+                $items[$appId]['env'][self::$config->get('application.env_prefix') . 'RELATIONSHIPS'] = $relationships;
             }
         }
 
@@ -100,7 +99,7 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        $logFile = $input->getOption('log') ?: $projectRoot . '/local-server.log';
+        $logFile = $input->getOption('log') ?: $projectRoot . '/' . self::$config->get('local.local_dir') . '/server.log';
         $log = $this->openLog($logFile);
         if (!$log) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: <error>%s</error>', $logFile));
@@ -200,7 +199,7 @@ class ServerStartCommand extends ServerCommandBase
 
         if (count($processes)) {
             $this->stdErr->writeln(sprintf('Logs are written to: %s', $logFile));
-            $this->stdErr->writeln('Use <comment>platform server:stop</comment> to stop server(s)');
+            $this->stdErr->writeln('Use <comment>' . self::$config->get('application.executable') . ' server:stop</comment> to stop server(s)');
         }
 
         // The terminal has received all necessary output, so we can stop the
