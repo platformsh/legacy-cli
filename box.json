@@ -5,12 +5,16 @@
     "src"
   ],
   "files": [
-    "platform",
-    "platform.rc",
+    "constants.php",
+    "shell-config.rc",
     "vendor/autoload.php",
     "vendor/symfony/console/Resources/bin/hiddeninput.exe"
   ],
   "finder": [
+    {
+      "in": "bin",
+      "name": "*"
+    },
     {
       "in": "vendor",
       "name": "*.php",
@@ -21,7 +25,7 @@
       ]
     }
   ],
-  "main": "platform",
+  "main": "bin/platform",
   "output": "platform.phar",
   "stub": true
 }

@@ -60,7 +60,7 @@ class EnvironmentCheckoutCommand extends CommandBase
                 }
             }
             if (!count($environmentList)) {
-                $this->stdErr->writeln("Use <info>platform branch</info> to create an environment.");
+                $this->stdErr->writeln("Use <info>" . CLI_EXECUTABLE . " branch</info> to create an environment.");
 
                 return 1;
             }
@@ -87,7 +87,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         $projectRoot = $this->getProjectRoot();
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $projectRoot . '/' . CLI_LOCAL_REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
         $gitHelper->setDefaultRepositoryDir($repositoryDir);
@@ -113,7 +113,7 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
-        $upstreamRemote = 'platform';
+        $upstreamRemote = CLI_GIT_REMOTE_NAME;
         if ($gitHelper->getConfig('remote.origin.url') && $gitHelper->remoteBranchExists('origin', $branch)) {
             $upstreamRemote = 'origin';
         }

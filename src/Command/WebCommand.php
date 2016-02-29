@@ -13,7 +13,7 @@ class WebCommand extends UrlCommandBase
         parent::configure();
         $this
             ->setName('web')
-            ->setDescription('Open the Platform.sh Web UI');
+            ->setDescription('Open the Web UI');
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -30,7 +30,7 @@ class WebCommand extends UrlCommandBase
 
         $project = $this->hasSelectedProject() ? $this->getSelectedProject() : false;
 
-        $url = 'https://accounts.platform.sh/';
+        $url = CLI_SERVICE_ACCOUNTS_URL;
         if ($project) {
             $url = $project->getLink('#ui');
             if ($this->hasSelectedEnvironment()) {

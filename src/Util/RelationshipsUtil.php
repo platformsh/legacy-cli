@@ -60,7 +60,7 @@ class RelationshipsUtil
      */
     public function getRelationships($sshUrl)
     {
-        $args = ['ssh', $sshUrl, 'echo $PLATFORM_RELATIONSHIPS'];
+        $args = ['ssh', $sshUrl, 'echo $' . CLI_REMOTE_ENV_PREFIX . 'RELATIONSHIPS'];
         $result = $this->shellHelper->execute($args, null, true);
 
         return json_decode(base64_decode($result), true);

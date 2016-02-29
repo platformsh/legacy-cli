@@ -10,10 +10,10 @@ class ComposerTest extends BaseToolstackTest
     public function testBuildComposer()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/composer');
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/vendor/psr/log/README.md');
 
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $projectRoot . '/' . CLI_LOCAL_REPOSITORY_DIR;
         $this->assertFileExists($repositoryDir . '/.gitignore');
     }
 

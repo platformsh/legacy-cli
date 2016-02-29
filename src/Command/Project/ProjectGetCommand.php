@@ -126,7 +126,7 @@ class ProjectGetCommand extends CommandBase
         if (file_exists($directory)) {
             $existed = true;
             $this->stdErr->writeln("The directory <error>$directory</error> already exists");
-            if (file_exists($directory . '/' . LocalProject::PROJECT_CONFIG) && $questionHelper->confirm("Overwrite?", $input, $this->stdErr, false)) {
+            if (file_exists($directory . '/' . CLI_LOCAL_PROJECT_CONFIG) && $questionHelper->confirm("Overwrite?", $input, $this->stdErr, false)) {
                 $fsHelper->remove($directory);
             }
             else {
@@ -155,7 +155,7 @@ class ProjectGetCommand extends CommandBase
 
         // Prepare to talk to the Platform.sh repository.
         $gitUrl = $project->getGitUrl();
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $projectRoot . '/' . CLI_LOCAL_REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
         $gitHelper->ensureInstalled();
@@ -165,7 +165,7 @@ class ProjectGetCommand extends CommandBase
         if ($repoHead === false) {
             // The ls-remote command failed.
             $cleanUp();
-            $this->stdErr->writeln('<error>Failed to connect to the Platform.sh Git server</error>');
+            $this->stdErr->writeln('<error>Failed to connect to the ' . CLI_CLOUD_SERVICE . ' Git server</error>');
 
             // Suggest SSH key commands.
             $sshKeys = [];
@@ -179,10 +179,10 @@ class ProjectGetCommand extends CommandBase
             if (!empty($sshKeys)) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please check your SSH credentials');
-                $this->stdErr->writeln('You can list your keys with: <comment>platform ssh-keys</comment>');
+                $this->stdErr->writeln('You can list your keys with: <comment>' . CLI_EXECUTABLE . ' ssh-keys</comment>');
             }
             else {
-                $this->stdErr->writeln('You probably need to add an SSH key, with: <comment>platform ssh-key:add</comment>');
+                $this->stdErr->writeln('You probably need to add an SSH key, with: <comment>' . CLI_EXECUTABLE . ' ssh-key:add</comment>');
             }
 
             return 1;
@@ -193,25 +193,25 @@ class ProjectGetCommand extends CommandBase
             // Initialize the repo and attach our remotes.
             $this->stdErr->writeln("Initializing empty project repository");
             $gitHelper->execute(['init'], $repositoryDir, true);
-            $this->stdErr->writeln("Adding Platform.sh Git remote");
+            $this->stdErr->writeln("Adding Git remote");
             $local->ensureGitRemote($repositoryDir, $gitUrl);
-            $this->stdErr->writeln("Your repository has been initialized and connected to <info>Platform.sh</info>!");
+            $this->stdErr->writeln("Your repository has been initialized and connected to <info>" . CLI_CLOUD_SERVICE . "</info>!");
             $this->stdErr->writeln(
-                "Commit and push to the <info>$environment</info> branch and Platform.sh will build your project automatically"
+                "Commit and push to the <info>$environment</info> branch and " . CLI_CLOUD_SERVICE . " will build your project automatically"
             );
 
             return 0;
         }
 
         // We have a repo! Yay. Clone it.
-        $cloneArgs = ['--branch', $environment, '--origin', 'platform'];
+        $cloneArgs = ['--branch', $environment, '--origin', CLI_GIT_REMOTE_NAME];
         $cloned = $gitHelper->cloneRepo($gitUrl, $repositoryDir, $cloneArgs);
         if (!$cloned) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $cleanUp();
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
-            $this->stdErr->writeln('Please check your SSH credentials or contact Platform.sh support');
+            $this->stdErr->writeln('Please check your SSH credentials or contact ' . CLI_CLOUD_SERVICE . ' support');
 
             return 1;
         }
@@ -229,7 +229,7 @@ class ProjectGetCommand extends CommandBase
         }
 
         // Ensure that Drush aliases are created.
-        if (Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+        if (Drupal::isDrupal($projectRoot . '/' . CLI_LOCAL_REPOSITORY_DIR)) {
             $this->stdErr->writeln('');
             $this->runOtherCommand(
                 'local:drush-aliases',
@@ -246,7 +246,7 @@ class ProjectGetCommand extends CommandBase
         if ($input->getOption('build')) {
             // Launch the first build.
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('Building the project locally for the first time. Run <info>platform build</info> to repeat this.');
+            $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . CLI_EXECUTABLE . ' build</info> to repeat this.');
             $options = ['environmentId' => $environment, 'noClean' => true];
             $builder = new LocalBuild($options, $output);
             $success = $builder->buildProject($projectRoot);
@@ -255,7 +255,7 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln(
                 "\nYou can build the project with: "
                 . "\n    cd $directory"
-                . "\n    platform build"
+                . "\n    " . CLI_EXECUTABLE . " build"
             );
         }
 

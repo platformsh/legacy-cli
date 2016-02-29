@@ -29,7 +29,7 @@ class FilesystemHelper extends Helper
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->fs = $fs ?: new Filesystem();
-        $this->copyOnWindows = (bool) getenv('PLATFORMSH_CLI_COPY_ON_WINDOWS');
+        $this->copyOnWindows = (bool) getenv(CLI_ENV_PREFIX . 'COPY_ON_WINDOWS');
     }
 
     /**
@@ -103,8 +103,9 @@ class FilesystemHelper extends Helper
      *
      * @param string $source
      * @param string $destination
+     * @param array $skip
      */
-    public function copyAll($source, $destination)
+    public function copyAll($source, $destination, array $skip = [])
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -113,7 +114,9 @@ class FilesystemHelper extends Helper
         }
 
         if (is_dir($source)) {
-            $skip = ['.', '..', '.git'];
+            $skip[] = '.';
+            $skip[] = '..';
+            $skip[] = '.git';
 
             // Prevent infinite recursion when the destination is inside the
             // source.

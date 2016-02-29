@@ -24,7 +24,7 @@ class CacheUtil
     public static function getCache()
     {
         if (!isset(self::$cache)) {
-            if (getenv('PLATFORMSH_CLI_DISABLE_CACHE')) {
+            if (getenv(CLI_ENV_PREFIX . 'DISABLE_CACHE')) {
                 self::$cache = new VoidCache();
             }
             else {

@@ -54,8 +54,8 @@ class LocalBuild
     public function buildProject($projectRoot, $sourceDir = null, $destination = null)
     {
         $this->settings['projectRoot'] = $projectRoot;
-        $sourceDir = $sourceDir ?: $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        $destination = $destination ?: $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $sourceDir = $sourceDir ?: $projectRoot . '/' . CLI_LOCAL_REPOSITORY_DIR;
+        $destination = $destination ?: $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
 
         return $this->build($sourceDir, $destination);
     }
@@ -97,7 +97,7 @@ class LocalBuild
                 $this->cleanArchives($this->settings['projectRoot']);
             }
             else {
-                $buildsDir = $sourceDir . '/' . LocalProject::BUILD_DIR;
+                $buildsDir = $sourceDir . '/' . CLI_LOCAL_BUILD_DIR;
                 if (is_dir($buildsDir)) {
                     $this->output->writeln("Cleaning up...");
                     $this->cleanDirectory($buildsDir);
@@ -128,12 +128,12 @@ class LocalBuild
         if ($tree === false) {
             return false;
         }
-        $tree = preg_replace('#^|\n[^\n]+?\.platform\n|$#', "\n", $tree);
+        $tree = preg_replace('#^|\n[^\n]+?' . preg_quote(CLI_PROJECT_CONFIG_DIR) . '\n|$#', "\n", $tree);
         $hashes[] = sha1($tree);
 
         // Include the hashes of untracked and modified files.
         $others = $this->gitHelper->execute(
-            ['ls-files', '--modified', '--others', '--exclude-standard', '-x .platform', '.'],
+            ['ls-files', '--modified', '--others', '--exclude-standard', '-x ' . CLI_PROJECT_CONFIG_DIR, '.'],
             $appRoot
         );
         if ($others === false) {
@@ -198,13 +198,13 @@ class LocalBuild
             $buildName .= '--' . str_replace('/', '-', $appId);
         }
         if (!empty($this->settings['projectRoot'])) {
-            $buildDir = $this->settings['projectRoot'] . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+            $buildDir = $this->settings['projectRoot'] . '/' . CLI_LOCAL_BUILD_DIR . '/' . $buildName;
         }
         else {
-            $buildDir = $sourceDir . '/' . LocalProject::BUILD_DIR . '/' . $buildName;
+            $buildDir = $sourceDir . '/' . CLI_LOCAL_BUILD_DIR . '/' . $buildName;
             // As the build directory is inside the source directory, ensure it
             // isn't copied or symlinked into the build.
-            $toolstack->addIgnoredFiles([LocalProject::BUILD_DIR]);
+            $toolstack->addIgnoredFiles([CLI_LOCAL_BUILD_DIR]);
         }
 
         // If the destination is inside the source directory, ensure it isn't
@@ -243,7 +243,7 @@ class LocalBuild
                 if ($verbose) {
                     $this->output->writeln("Tree ID: $treeId");
                 }
-                $archive = $this->settings['projectRoot'] . '/' . LocalProject::ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
+                $archive = $this->settings['projectRoot'] . '/' . CLI_LOCAL_ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -377,7 +377,7 @@ class LocalBuild
         }
 
         return $this->cleanDirectory(
-            $projectRoot . '/' . LocalProject::BUILD_DIR,
+            $projectRoot . '/' . CLI_LOCAL_BUILD_DIR,
             $maxAge,
             $keepMax,
             $blacklist,
@@ -395,7 +395,7 @@ class LocalBuild
      */
     protected function getActiveBuilds($projectRoot)
     {
-        $www = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $www = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         if (!file_exists($www)) {
             return [];
         }
@@ -410,7 +410,7 @@ class LocalBuild
             }
         }
         $activeBuilds = [];
-        $buildsDir = $projectRoot . '/' . LocalProject::BUILD_DIR;
+        $buildsDir = $projectRoot . '/' . CLI_LOCAL_BUILD_DIR;
         foreach ($links as $link) {
             if (is_link($link) && ($target = readlink($link))) {
                 // Make the target into an absolute path.
@@ -451,7 +451,7 @@ class LocalBuild
     public function cleanArchives($projectRoot, $maxAge = null, $keepMax = 10, $quiet = true)
     {
         return $this->cleanDirectory(
-            $projectRoot . '/' . LocalProject::ARCHIVE_DIR,
+            $projectRoot . '/' . CLI_LOCAL_ARCHIVE_DIR,
             $maxAge,
             $keepMax,
             [],

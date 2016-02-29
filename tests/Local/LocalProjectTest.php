@@ -28,7 +28,7 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
         mkdir("$testDir/1/2/3/4/5", 0755, true);
 
         $expectedRoot = "$testDir/1";
-        touch("$expectedRoot/.platform-project");
+        touch("$expectedRoot/" . CLI_LOCAL_PROJECT_CONFIG);
 
         chdir($testDir);
         $this->assertFalse(LocalProject::getProjectRoot());

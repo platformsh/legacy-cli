@@ -14,7 +14,7 @@ class LoginCommand extends CommandBase
     {
         $this
             ->setName('login')
-            ->setDescription('Log in to Platform.sh');
+            ->setDescription('Log in to ' . CLI_CLOUD_SERVICE);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -28,7 +28,7 @@ class LoginCommand extends CommandBase
             throw new \Exception('Non-interactive login not supported');
         }
 
-        $this->stdErr->writeln("Please log in using your <info>Platform.sh</info> account\n");
+        $this->stdErr->writeln("Please log in using your <info>" . CLI_CLOUD_SERVICE . "</info> account\n");
         $this->configureAccount($input, $this->stdErr);
         $this->clearCache();
         $this->stdErr->writeln("\n<info>Thank you, you are all set.</info>\n");
@@ -56,7 +56,7 @@ class LoginCommand extends CommandBase
 
         $pendingInvitation = false;
         if ($pendingInvitation) {
-            $resendInviteText = "\nThis email address is associated with a Platform.sh account, \n";
+            $resendInviteText = "\nThis email address is associated with a " . CLI_CLOUD_SERVICE . " account, \n";
             $resendInviteText .= "but you haven't verified your email address yet. \n";
             $resendInviteText .= "Please click on the link in the email we sent you. \n";
             $resendInviteText .= "Do you want us to send you the email again?";
@@ -120,7 +120,7 @@ class LoginCommand extends CommandBase
             elseif ($e->getResponse()->getStatusCode() === 401) {
                 $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
                 $output->writeln("Forgot your password? Or don't have a password yet? Visit:");
-                $output->writeln("  <comment>https://accounts.platform.sh/user/password</comment>\n");
+                $output->writeln("  <comment>" . CLI_SERVICE_ACCOUNTS_URL . "/user/password</comment>\n");
                 $this->configureAccount($input, $output);
             }
             else {

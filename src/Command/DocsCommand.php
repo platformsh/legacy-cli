@@ -14,14 +14,14 @@ class DocsCommand extends UrlCommandBase
         parent::configure();
         $this
             ->setName('docs')
-            ->setDescription('Open the Platform.sh online documentation')
+            ->setDescription('Open the online documentation')
             ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
         $this->addExample('Search for information about the CLI', 'CLI');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $url = 'https://docs.platform.sh';
+        $url = CLI_SERVICE_DOCS_URL;
 
         $search = $input->getArgument('search');
         if ($search) {
@@ -31,8 +31,9 @@ class DocsCommand extends UrlCommandBase
             //$url .= '/search?q=' . urlencode($term);
 
             // Use Google search.
+            $hostname = parse_url(CLI_SERVICE_DOCS_URL, PHP_URL_HOST);
             $url = 'https://www.google.com/search?q='
-                . urlencode('site:docs.platform.sh ' . $query);
+                . urlencode('site:' . $hostname . ' ' . $query);
         }
 
         $this->openUrl($url, $input, $output);
