@@ -67,7 +67,7 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => 'github'],
-                'description' => 'GitHub: sync all branches to Platform.sh',
+                'description' => 'GitHub: sync all branches',
             ]),
             'room' => new Field('Hipchat room ID', [
                 'conditions' => ['type' => 'hipchat'],

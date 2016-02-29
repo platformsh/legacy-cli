@@ -108,9 +108,9 @@ class EnvironmentDrushCommand extends CommandBase
             // Fall back to the PLATFORM_DOCUMENT_ROOT environment variable,
             // which is usually correct, except where the document_root was
             // specified as '/'.
-            $drupalRoot = '${PLATFORM_DOCUMENT_ROOT:-/app/public}';
+            $drupalRoot = '${' . CLI_REMOTE_ENV_PREFIX . 'DOCUMENT_ROOT:-/app/public}';
 
-            $this->debug('<comment>Warning:</comment> using $PLATFORM_DOCUMENT_ROOT for the Drupal root. This fails in cases where the document_root is /.');
+            $this->debug('<comment>Warning:</comment> using $' . CLI_REMOTE_ENV_PREFIX . 'DOCUMENT_ROOT for the Drupal root. This fails in cases where the document_root is /.');
         }
 
         $dimensions = $this->getApplication()

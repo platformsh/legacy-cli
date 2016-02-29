@@ -15,7 +15,7 @@ class LogoutCommand extends CommandBase
         $this
             ->setName('logout')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
-            ->setDescription('Log out of Platform.sh');
+            ->setDescription('Log out of ' . CLI_CLOUD_SERVICE);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -27,7 +27,7 @@ class LogoutCommand extends CommandBase
 
         if (!$this->isLoggedIn() && !$input->getOption('all')) {
             $this->stdErr->writeln(
-                "You are not currently logged in to the Platform.sh CLI"
+                "You are not currently logged in"
             );
 
             return 0;
@@ -38,7 +38,7 @@ class LogoutCommand extends CommandBase
                         ->confirm("Are you sure you wish to log out?", $input, $this->stdErr);
 
         if (!$confirm) {
-            $this->stdErr->writeln("You remain logged in to the Platform.sh CLI.");
+            $this->stdErr->writeln("You remain logged in");
 
             return 1;
         }
@@ -47,7 +47,7 @@ class LogoutCommand extends CommandBase
              ->getConnector()
              ->logOut();
         $this->clearCache();
-        $this->stdErr->writeln("You have been logged out of the Platform.sh CLI.");
+        $this->stdErr->writeln("You are now logged out");
 
         if ($input->getOption('all')) {
             if (file_exists($this->getSessionsDir())) {

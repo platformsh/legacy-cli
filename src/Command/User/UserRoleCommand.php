@@ -101,11 +101,11 @@ class UserRoleCommand extends CommandBase
         elseif ($role && $level == 'environment') {
             $environment = $this->getSelectedEnvironment();
             if ($role == 'none') {
-                if ($environmentAccess) {
+                if ($environmentAccess instanceof EnvironmentAccess) {
                     $result = $environmentAccess->delete();
                 }
             }
-            elseif ($environmentAccess) {
+            elseif ($environmentAccess instanceof EnvironmentAccess) {
                 $result = $environmentAccess->update(['role' => $role]);
             }
             else {

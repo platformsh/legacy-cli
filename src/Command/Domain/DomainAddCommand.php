@@ -19,7 +19,6 @@ class DomainAddCommand extends DomainCommandBase
             ->setDescription('Add a new domain to the project');
         $this->addProjectOption()->addNoWaitOption();
         $this->addDomainOptions();
-        $this->setHelp('See https://docs.platform.sh/use-platform/going-live.html#1-domains');
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
             'Add the domain secure.example.com with SSL enabled',
