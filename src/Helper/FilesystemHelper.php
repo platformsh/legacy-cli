@@ -132,7 +132,7 @@ class FilesystemHelper extends Helper
                     continue;
                 } elseif (is_dir($source . '/' . $file)) {
                     $this->copyAll($source . '/' . $file, $destination . '/' . $file);
-                } else {
+                } elseif (is_file($source . '/' . $file)) {
                     $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }

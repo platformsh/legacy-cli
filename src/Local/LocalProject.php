@@ -87,13 +87,11 @@ class LocalProject
      * @throws \RuntimeException If the URL is not a Platform.sh Git URL.
      *
      * @param string $gitUrl
-     *
-     * @return string|false
      */
     protected function getProjectId($gitUrl)
     {
         if (!preg_match('/^([a-z0-9]{12,})@git\.([a-z\-]+\.' . preg_quote(CLI_PROJECT_GIT_DOMAIN) . '):\1\.git$/', $gitUrl, $matches)) {
-            return false;
+            throw new \RuntimeException("Not a Platform.sh Git URL: $gitUrl");
         }
 
         return $matches[1];
