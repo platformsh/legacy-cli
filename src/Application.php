@@ -8,6 +8,7 @@ use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\PlatformQuestionHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ParentApplication;
+use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputArgument;
@@ -20,6 +21,10 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
 {
+    /**
+     * @var ConsoleCommand|null
+     */
+    protected $currentCommand;
 
     /**
      * {@inheritdoc}
@@ -207,6 +212,17 @@ class Application extends ParentApplication
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
+    {
+        // There is a runningCommand property, but it is private.
+        $this->currentCommand = $command;
+
+        return parent::doRunCommand($command, $input, $output);
+    }
+
+    /**
      * Set the default timezone.
      *
      * PHP 5.4 has removed the autodetection of the system timezone,
@@ -238,6 +254,82 @@ class Application extends ParentApplication
         }
 
         date_default_timezone_set($timezone);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function renderException($e, $output)
+    {
+        $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+
+        do {
+            $exceptionName = get_class($e);
+            if (($pos = strrpos($exceptionName, '\\')) !== false) {
+                $exceptionName = substr($exceptionName, $pos + 1);
+            }
+            $title = sprintf('  [%s]  ', $exceptionName);
+
+            $len = strlen($title);
+
+            $width = $this->getTerminalWidth() ? $this->getTerminalWidth() - 1 : PHP_INT_MAX;
+            // HHVM only accepts 32 bits integer in str_split, even when PHP_INT_MAX is a 64 bit integer: https://github.com/facebook/hhvm/issues/1327
+            if (defined('HHVM_VERSION') && $width > 1 << 31) {
+                $width = 1 << 31;
+            }
+            $formatter = $output->getFormatter();
+            $lines = array();
+            foreach (preg_split('/\r?\n/', $e->getMessage()) as $line) {
+                foreach (str_split($line, $width - 4) as $line) {
+                    // pre-format lines to get the right string length
+                    $lineLength = strlen(preg_replace('/\[[^m]*m/', '', $formatter->format($line))) + 4;
+                    $lines[] = array($line, $lineLength);
+
+                    $len = max($lineLength, $len);
+                }
+            }
+
+            $messages = array();
+            $messages[] = $emptyLine = $formatter->format(sprintf('<error>%s</error>', str_repeat(' ', $len)));
+            $messages[] = $formatter->format(sprintf('<error>%s%s</error>', $title, str_repeat(' ', max(0, $len - strlen($title)))));
+            foreach ($lines as $line) {
+                $messages[] = $formatter->format(sprintf('<error>  %s  %s</error>', $line[0], str_repeat(' ', $len - $line[1])));
+            }
+            $messages[] = $emptyLine;
+            $messages[] = '';
+
+            $output->writeln($messages, OutputInterface::OUTPUT_RAW | OutputInterface::VERBOSITY_QUIET);
+
+            if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
+                $output->writeln('<comment>Exception trace:</comment>', OutputInterface::VERBOSITY_QUIET);
+
+                // exception related properties
+                $trace = $e->getTrace();
+                array_unshift($trace, array(
+                    'function' => '',
+                    'file' => $e->getFile() !== null ? $e->getFile() : 'n/a',
+                    'line' => $e->getLine() !== null ? $e->getLine() : 'n/a',
+                    'args' => array(),
+                ));
+
+                for ($i = 0, $count = count($trace); $i < $count; ++$i) {
+                    $class = isset($trace[$i]['class']) ? $trace[$i]['class'] : '';
+                    $type = isset($trace[$i]['type']) ? $trace[$i]['type'] : '';
+                    $function = $trace[$i]['function'];
+                    $file = isset($trace[$i]['file']) ? $trace[$i]['file'] : 'n/a';
+                    $line = isset($trace[$i]['line']) ? $trace[$i]['line'] : 'n/a';
+
+                    $output->writeln(sprintf(' %s%s%s() at <info>%s:%s</info>', $class, $type, $function, $file, $line), OutputInterface::VERBOSITY_QUIET);
+                }
+
+                $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+            }
+        } while ($e = $e->getPrevious());
+
+        if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
+            $output->writeln(sprintf('Usage: <info>%s</info>', sprintf($this->currentCommand->getSynopsis(), $this->getName())), OutputInterface::VERBOSITY_QUIET);
+            $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+        }
     }
 
 }
