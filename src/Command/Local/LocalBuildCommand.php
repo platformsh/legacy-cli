@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Local;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalBuild;
-use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -38,7 +37,7 @@ class LocalBuildCommand extends CommandBase
                 'destination',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'The destination, to which the web root of each app will be symlinked. Default: ' . LocalProject::WEB_ROOT
+                'The destination, to which the web root of each app will be symlinked. Default: ' . CLI_LOCAL_WEB_ROOT
             )
             ->addOption(
                 'copy',
@@ -115,7 +114,7 @@ class LocalBuildCommand extends CommandBase
             }
             // Sensible handling if the user provides a project root as the
             // source directory.
-            elseif (file_exists($sourceDir . '/.platform-project')) {
+            elseif (file_exists($sourceDir . CLI_LOCAL_PROJECT_CONFIG)) {
                 $projectRoot = $sourceDir;
                 $sourceDir = $projectRoot;
             }
@@ -143,7 +142,7 @@ class LocalBuildCommand extends CommandBase
             throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
         }
         else {
-            $destination = $projectRoot . '/' . LocalProject::WEB_ROOT;
+            $destination = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         }
 
         // Ensure no conflicts between source and destination.

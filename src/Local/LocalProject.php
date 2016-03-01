@@ -9,13 +9,6 @@ use Symfony\Component\Yaml\Parser;
 class LocalProject
 {
 
-    const LOCAL_DIR = '.platform/local';
-    const ARCHIVE_DIR = '.platform/local/build-archives';
-    const BUILD_DIR = '.platform/local/builds';
-    const PROJECT_CONFIG = '.platform/local/project.yaml';
-    const SHARED_DIR = '.platform/local/shared';
-    const WEB_ROOT = 'www';
-
     /**
      * Initialize a project in a directory.
      *
@@ -43,7 +36,7 @@ class LocalProject
             throw new \RuntimeException('The directory is not a Git repository');
         }
 
-        if (file_exists($dir . '/' . self::PROJECT_CONFIG)) {
+        if (file_exists($dir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
             throw new \RuntimeException("The project is already initialized");
         }
 
@@ -72,7 +65,7 @@ class LocalProject
      */
     protected function getProjectId($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.([a-z\-]+\.platform\.sh):\1\.git$/', $gitUrl, $matches)) {
+        if (!preg_match('/^([a-z0-9]{12,})@git\.([a-z\-]+\.' . preg_quote(CLI_PROJECT_GIT_DOMAIN) . '):\1\.git$/', $gitUrl, $matches)) {
             return false;
         }
 
@@ -92,7 +85,7 @@ class LocalProject
     {
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
-        foreach (['platform', 'origin'] as $remote) {
+        foreach ([CLI_GIT_REMOTE_NAME, 'origin'] as $remote) {
             if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
@@ -114,12 +107,12 @@ class LocalProject
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
         $gitHelper->setDefaultRepositoryDir($dir);
-        $platformUrl = $gitHelper->getConfig("remote.platform.url", $dir);
+        $platformUrl = $gitHelper->getConfig("remote." . CLI_GIT_REMOTE_NAME . ".url", $dir);
         if (!$platformUrl) {
-            $gitHelper->execute(['remote', 'add', 'platform', $url], $dir, true);
+            $gitHelper->execute(['remote', 'add', CLI_GIT_REMOTE_NAME, $url], $dir, true);
         }
         elseif ($platformUrl != $url) {
-            $gitHelper->execute(['remote', 'set-url', 'platform', $url], $dir, true);
+            $gitHelper->execute(['remote', 'set-url', CLI_GIT_REMOTE_NAME, $url], $dir, true);
         }
         // Add an origin remote too.
         if (!$gitHelper->getConfig("remote.origin.url", $dir)) {
@@ -181,7 +174,7 @@ class LocalProject
      */
     public static function getLegacyProjectRoot()
     {
-        return self::findTopDirectoryContaining('.platform-project');
+        return self::findTopDirectoryContaining(CLI_LOCAL_PROJECT_CONFIG_LEGACY);
     }
 
     /**
@@ -193,7 +186,7 @@ class LocalProject
     {
         // Backwards compatibility - if in an old-style project root, change
         // directory to the repository.
-        if (file_exists('.platform-project') && is_dir('repository')) {
+        if (file_exists(CLI_LOCAL_PROJECT_CONFIG_LEGACY) && is_dir('repository')) {
             $cwd = getcwd();
             chdir('repository');
         }
@@ -201,7 +194,7 @@ class LocalProject
         // The project root is a Git repository, which contains a PROJECT_CONFIG
         // configuration file, and/or contains a Platform.sh Git remote.
         $dir = $this->findTopDirectoryContaining('.git', function ($dir) {
-            if (file_exists($dir . '/' . self::PROJECT_CONFIG)) {
+            if (file_exists($dir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
                 return true;
             }
             $projectId = $this->getProjectId($this->getGitRemoteUrl($dir));
@@ -210,8 +203,8 @@ class LocalProject
             }
             // Backwards compatibility: copy old project config to new
             // location.
-            if (file_exists($dir . '/../.platform-project')) {
-                copy($dir . '/../.platform-project', $dir . '/' . self::PROJECT_CONFIG);
+            if (file_exists($dir . '/../' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
+                copy($dir . '/../' . CLI_LOCAL_PROJECT_CONFIG_LEGACY, $dir . '/' . CLI_LOCAL_PROJECT_CONFIG);
             }
             $this->writeCurrentProjectConfig($projectId, $dir);
             return true;
@@ -236,9 +229,9 @@ class LocalProject
     {
         $projectRoot = $projectRoot ?: self::getProjectRoot();
         $projectConfig = null;
-        if ($projectRoot && file_exists($projectRoot . '/' . self::PROJECT_CONFIG)) {
+        if ($projectRoot && file_exists($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
             $yaml = new Parser();
-            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . self::PROJECT_CONFIG));
+            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG));
         }
         elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $projectId = $this->getProjectId($this->getGitRemoteUrl($projectRoot));
@@ -268,7 +261,7 @@ class LocalProject
             throw new \Exception('Project root not found');
         }
         $this->ensureLocalDir($projectRoot);
-        $file = $projectRoot . '/' . self::PROJECT_CONFIG;
+        $file = $projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG;
         $projectConfig = self::getProjectConfig($projectRoot) ?: [];
         $projectConfig = array_merge($projectConfig, $config);
         $dumper = new Dumper();
@@ -284,21 +277,23 @@ class LocalProject
      */
     public function ensureLocalDir($projectRoot)
     {
-        $dir = $projectRoot . '/' . self::LOCAL_DIR;
+        $dir = $projectRoot . '/' . CLI_LOCAL_DIR;
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
             $this->writeGitExclude($projectRoot);
         }
         if (!file_exists($dir . '/README.txt')) {
+            $cliName = CLI_NAME;
+            $localDir = CLI_LOCAL_DIR;
             file_put_contents($dir . '/README.txt', <<<EOF
-.platform/local
+{$localDir}
 ===============
 
-This directory is where the Platform.sh CLI stores configuration files, builds,
-and other data to help work with your project locally.
+This directory is where the {$cliName} stores configuration files, builds, and
+other data to help work with your project locally.
 
-It is not used on Platform.sh remote environments at all - the directory is
-excluded from your Git repository (via .git/info/exclude).
+It is not used on remote environments at all - the directory is excluded from
+your Git repository (via .git/info/exclude).
 
 EOF
             );
@@ -312,16 +307,16 @@ EOF
      */
     public function writeGitExclude($dir)
     {
-        $filesToExclude = ['/' . self::LOCAL_DIR, '/' . self::WEB_ROOT];
+        $filesToExclude = ['/' . CLI_LOCAL_DIR, '/' . CLI_LOCAL_WEB_ROOT];
         $excludeFilename = $dir . '/.git/info/exclude';
         $existing = '';
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
-            if (strpos($existing, 'Platform.sh CLI') !== false) {
+            if (strpos($existing, CLI_NAME) !== false) {
                 return;
             }
         }
-        $content = "# Automatically added by the Platform.sh CLI\n"
+        $content = "# Automatically added by the " . CLI_NAME . "\n"
             . implode("\n", $filesToExclude)
             . "\n";
         if (!empty($existing)) {

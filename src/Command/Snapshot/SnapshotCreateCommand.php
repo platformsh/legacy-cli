@@ -21,7 +21,6 @@ class SnapshotCreateCommand extends CommandBase
              ->addEnvironmentOption()
              ->addNoWaitOption('Do not wait for the snapshot to complete');
         $this->setHiddenAliases(['environment:backup']);
-        $this->setHelp('See https://docs.platform.sh/use-platform/backup-and-restore.html');
         $this->addExample('Make a snapshot of the current environment');
     }
 

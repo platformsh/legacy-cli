@@ -11,7 +11,7 @@ class VanillaTest extends BaseToolstackTest
     public function testBuildVanilla()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla');
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
     }
 
@@ -22,7 +22,7 @@ class VanillaTest extends BaseToolstackTest
     {
         $sourceDir = 'tests/data/apps/vanilla';
         $projectRoot = $this->assertBuildSucceeds($sourceDir, ['copy' => true]);
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
         $this->assertTrue(is_dir($webRoot), 'Web root is an actual directory');
     }
@@ -33,10 +33,10 @@ class VanillaTest extends BaseToolstackTest
     public function testBuildCustomWebRoot()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot');
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot', ['copy' => true]);
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
     }
 
@@ -63,7 +63,7 @@ class VanillaTest extends BaseToolstackTest
         $this->assertFileExists($destination . '/index.html');
 
         // Remove the builds directory.
-        exec('rm -R ' . escapeshellarg($sourceDir . '/' . LocalProject::BUILD_DIR));
+        exec('rm -R ' . escapeshellarg($sourceDir . '/' . CLI_LOCAL_BUILD_DIR));
     }
 
     /**

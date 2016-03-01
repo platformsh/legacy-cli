@@ -97,7 +97,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
 
         // Add required Git config before committing.
         shell_exec('git config user.email test@example.com');
-        shell_exec('git config user.name "Platform.sh CLI Test"');
+        shell_exec('git config user.name "Test"');
 
         // Make a dummy commit so that there is a HEAD.
         touch($repository . '/README.txt');

@@ -133,9 +133,9 @@ class TunnelOpenCommand extends TunnelCommandBase
 
         if (!$error) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln("List tunnels with: <info>platform tunnels</info>");
-            $this->stdErr->writeln("View tunnel details with: <info>platform tunnel:info</info>");
-            $this->stdErr->writeln("Close tunnels with: <info>platform tunnel:close</info>");
+            $this->stdErr->writeln("List tunnels with: <info>" . CLI_EXECUTABLE . " tunnels</info>");
+            $this->stdErr->writeln("View tunnel details with: <info>" . CLI_EXECUTABLE . " tunnel:info</info>");
+            $this->stdErr->writeln("Close tunnels with: <info>" . CLI_EXECUTABLE . " tunnel:close</info>");
         }
 
         $processManager->killParent($error);

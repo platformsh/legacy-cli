@@ -25,8 +25,8 @@ class SelfUpdateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $manifestUrl = $input->getOption('manifest') ?: 'https://platform.sh/cli/manifest.json';
-        $currentVersion = $input->getOption('current-version') ?: $this->getApplication()->getVersion();
+        $manifestUrl = $input->getOption('manifest') ?: CLI_UPDATE_MANIFEST_URL;
+        $currentVersion = $input->getOption('current-version') ?: CLI_VERSION;
         $allowMajor = $input->getOption('major');
         $allowUnstable = $input->getOption('unstable');
 
@@ -37,8 +37,8 @@ class SelfUpdateCommand extends CommandBase
             if (file_exists(CLI_ROOT . '/../../autoload.php')) {
                 $this->stdErr->writeln("Update using:\n\n  composer global update");
                 $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>):\n");
-                $this->stdErr->writeln("  composer global remove platformsh/cli");
-                $this->stdErr->writeln("  curl -sS https://platform.sh/cli/installer | php\n");
+                $this->stdErr->writeln("  composer global remove " . CLI_PACKAGE_NAME);
+                $this->stdErr->writeln("  curl -sS " . CLI_INSTALLER_URL . " | php\n");
             }
             return 1;
         }

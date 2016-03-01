@@ -106,8 +106,8 @@ class EnvironmentBranchCommand extends CommandBase
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot && $force) {
             $this->stdErr->writeln(
-                "<comment>This command was run from outside your local project root, so the new Platform.sh branch cannot be checked out in your local Git repository."
-                . " Make sure to run 'platform checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
+                "<comment>This command was run from outside your local project root, so the new " . CLI_CLOUD_SERVICE . " branch cannot be checked out in your local Git repository."
+                . " Make sure to run '" . CLI_EXECUTABLE . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
             );
         } elseif (!$projectRoot) {
             $this->stdErr->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
