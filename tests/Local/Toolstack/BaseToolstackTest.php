@@ -97,7 +97,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         $local->createProjectFiles($projectRoot, 'testProjectId');
 
         // Make a dummy repository.
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $projectRoot . '/' . CLI_LOCAL_REPOSITORY_DIR;
         mkdir($repositoryDir);
         $fsHelper = new FilesystemHelper();
         $fsHelper->copyAll($sourceDir, $repositoryDir);

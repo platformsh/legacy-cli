@@ -6,7 +6,6 @@ use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Helper\ShellHelperInterface;
-use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class ToolstackBase implements ToolstackInterface
@@ -178,7 +177,7 @@ abstract class ToolstackBase implements ToolstackInterface
         if (empty($this->settings['projectRoot'])) {
             return false;
         }
-        $shared = $this->settings['projectRoot'] . '/' . LocalProject::SHARED_DIR;
+        $shared = $this->settings['projectRoot'] . '/' . CLI_LOCAL_SHARED_DIR;
         if (!empty($this->settings['multiApp']) && !empty($this->settings['appName'])) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->settings['appName']);
         }
@@ -264,7 +263,7 @@ abstract class ToolstackBase implements ToolstackInterface
         if (!file_exists($source) || empty($this->settings['projectRoot'])) {
             return;
         }
-        $repositoryDir = $this->settings['projectRoot'] . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $this->settings['projectRoot'] . '/' . CLI_LOCAL_REPOSITORY_DIR;
         $repositoryGitIgnore = "$repositoryDir/.gitignore";
         $appGitIgnore = $this->appRoot . '/.gitignore';
         if (!file_exists($appGitIgnore) && !file_exists($repositoryGitIgnore)) {

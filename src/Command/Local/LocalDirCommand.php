@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -32,11 +31,11 @@ class LocalDirCommand extends CommandBase
         $dir = $projectRoot;
 
         $subDirs = [
-            'shared' => LocalProject::SHARED_DIR,
-            'repo' => LocalProject::REPOSITORY_DIR,
-            'repository' => LocalProject::REPOSITORY_DIR,
-            'web' => LocalProject::WEB_ROOT,
-            'web_root' => LocalProject::WEB_ROOT,
+            'shared' => CLI_LOCAL_SHARED_DIR,
+            'repo' => CLI_LOCAL_REPOSITORY_DIR,
+            'repository' => CLI_LOCAL_REPOSITORY_DIR,
+            'web' => CLI_LOCAL_WEB_ROOT,
+            'web_root' => CLI_LOCAL_WEB_ROOT,
         ];
 
         $subDir = $input->getArgument('subdir');

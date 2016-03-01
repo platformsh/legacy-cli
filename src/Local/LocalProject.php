@@ -10,13 +10,6 @@ use Symfony\Component\Yaml\Parser;
 class LocalProject
 {
 
-    const ARCHIVE_DIR = '.build-archives';
-    const BUILD_DIR = 'builds';
-    const PROJECT_CONFIG = '.platform-project';
-    const REPOSITORY_DIR = 'repository';
-    const SHARED_DIR = 'shared';
-    const WEB_ROOT = 'www';
-
     /**
      * Create the default files for a project.
      *
@@ -26,8 +19,8 @@ class LocalProject
      */
     public function createProjectFiles($projectRoot, $projectId, $host = null)
     {
-        mkdir($projectRoot . '/' . self::BUILD_DIR);
-        mkdir($projectRoot . '/' . self::SHARED_DIR);
+        mkdir($projectRoot . '/' . CLI_LOCAL_BUILD_DIR);
+        mkdir($projectRoot . '/' . CLI_LOCAL_SHARED_DIR);
 
         // Create the .platform-project file.
         $projectConfig = ['id' => $projectId];
@@ -35,7 +28,7 @@ class LocalProject
             $projectConfig['host'] = $host;
         }
         $dumper = new Dumper();
-        file_put_contents($projectRoot . '/' . self::PROJECT_CONFIG, $dumper->dump($projectConfig, 2));
+        file_put_contents($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG, $dumper->dump($projectConfig, 2));
     }
 
     /**
@@ -65,7 +58,7 @@ class LocalProject
             throw new \RuntimeException('The directory is not a Git repository');
         }
 
-        if (file_exists($dir . '/../' . self::PROJECT_CONFIG)) {
+        if (file_exists($dir . '/../' . CLI_LOCAL_PROJECT_CONFIG)) {
             throw new \RuntimeException("The project is already initialized");
         }
 
@@ -77,7 +70,7 @@ class LocalProject
 
         // Move the directory into a 'repository' subdirectory.
         $backupDir = $this->getBackupDir($dir);
-        $repositoryDir = $dir . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $dir . '/' . CLI_LOCAL_REPOSITORY_DIR;
         $fs = new Filesystem();
         $fs->rename($dir, $backupDir);
         $fs->mkdir($dir, 0755);
@@ -97,7 +90,7 @@ class LocalProject
      */
     protected function getProjectId($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.[a-z\-]+\.platform\.sh:\1\.git$/', $gitUrl, $matches)) {
+        if (!preg_match('/^([a-z0-9]{12,})@git\.([a-z\-]+\.' . preg_quote(CLI_PROJECT_GIT_DOMAIN) . '):\1\.git$/', $gitUrl, $matches)) {
             throw new \RuntimeException("Not a Platform.sh Git URL: $gitUrl");
         }
 
@@ -117,7 +110,7 @@ class LocalProject
     {
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
-        foreach (['platform', 'origin'] as $remote) {
+        foreach ([CLI_GIT_REMOTE_NAME, 'origin'] as $remote) {
             if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
@@ -139,12 +132,12 @@ class LocalProject
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
         $gitHelper->setDefaultRepositoryDir($dir);
-        $platformUrl = $gitHelper->getConfig("remote.platform.url", $dir);
+        $platformUrl = $gitHelper->getConfig("remote." . CLI_GIT_REMOTE_NAME . ".url", $dir);
         if (!$platformUrl) {
-            $gitHelper->execute(['remote', 'add', 'platform', $url], $dir, true);
+            $gitHelper->execute(['remote', 'add', CLI_GIT_REMOTE_NAME, $url], $dir, true);
         }
         elseif ($platformUrl != $url) {
-            $gitHelper->execute(['remote', 'set-url', 'platform', $url], $dir, true);
+            $gitHelper->execute(['remote', 'set-url', CLI_GIT_REMOTE_NAME, $url], $dir, true);
         }
         // Add an origin remote too.
         if (!$gitHelper->getConfig("remote.origin.url", $dir)) {
@@ -198,7 +191,7 @@ class LocalProject
 
         $currentDir = $cwd;
         while (!$projectRoot) {
-            if (file_exists($currentDir . '/' . self::PROJECT_CONFIG)) {
+            if (file_exists($currentDir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
                 $projectRoot = $currentDir;
                 break;
             }
@@ -226,9 +219,9 @@ class LocalProject
     {
         $projectConfig = null;
         $projectRoot = $projectRoot ?: self::getProjectRoot();
-        if ($projectRoot && file_exists($projectRoot . '/' . self::PROJECT_CONFIG)) {
+        if ($projectRoot && file_exists($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
             $yaml = new Parser();
-            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . self::PROJECT_CONFIG));
+            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG));
         }
 
         return $projectConfig;
@@ -256,14 +249,17 @@ class LocalProject
         if (!$projectConfig) {
             throw new \Exception('Current project configuration not found');
         }
-        $file = $projectRoot . '/' . self::PROJECT_CONFIG;
+        $file = $projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG;
         if (!is_writable($file)) {
             throw new \Exception('Project config file not writable');
         }
-        $dumper = new Dumper();
         $projectConfig[$key] = $value;
-        file_put_contents($file, $dumper->dump($projectConfig, 2));
+        $dumper = new Dumper();
+        if (file_put_contents($file, $dumper->dump($projectConfig, 10)) === false) {
+            throw new \Exception('Failed to write project config file: ' . $file);
+        }
 
         return $projectConfig;
     }
+
 }

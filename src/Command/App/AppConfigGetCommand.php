@@ -35,7 +35,7 @@ class AppConfigGetCommand extends CommandBase
 
         $sshUrl = $this->getSelectedEnvironment()
             ->getSshUrl($this->selectApp($input));
-        $args = ['ssh', $sshUrl, 'echo $PLATFORM_APPLICATION'];
+        $args = ['ssh', $sshUrl, 'echo $' . CLI_REMOTE_ENV_PREFIX . 'APPLICATION'];
         $result = $shellHelper->execute($args, null, true);
         $appConfig = json_decode(base64_decode($result), true);
         $value = $appConfig;

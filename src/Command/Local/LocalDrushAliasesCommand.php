@@ -31,7 +31,7 @@ class LocalDrushAliasesCommand extends CommandBase
         // Hide this command in the list if the project is not Drupal.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
-            if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+            if (!Drupal::isDrupal($projectRoot . '/' . CLI_LOCAL_REPOSITORY_DIR)) {
                 return true;
             }
         }

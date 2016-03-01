@@ -67,14 +67,14 @@ class SelfBuildCommand extends CommandBase
             // Default output: platform.phar in the current directory.
             $cwd = getcwd();
             if ($cwd && $cwd !== CLI_ROOT) {
-                $config['output'] = getcwd() . '/platform.phar';
+                $config['output'] = getcwd() . '/' . CLI_PHAR;
             }
         }
         if ($keyFilename) {
             $config['key'] = realpath($keyFilename);
         }
 
-        $phar = isset($config['output']) ? $config['output'] : CLI_ROOT . '/platform.phar';
+        $phar = isset($config['output']) ? $config['output'] : CLI_ROOT . '/' . CLI_PHAR;
         if (file_exists($phar)) {
             /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
@@ -130,7 +130,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         $sha1 = sha1_file($phar);
-        $version = $this->getApplication()->getVersion();
+        $version = CLI_VERSION;
         $size = filesize($phar);
 
         $output->writeln("Package built: <info>$phar</info>");

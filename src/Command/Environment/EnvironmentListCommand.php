@@ -178,32 +178,32 @@ class EnvironmentListCommand extends CommandBase
 
         $currentEnvironment = $this->currentEnvironment;
 
-        $this->stdErr->writeln("Check out a different environment by running <info>platform checkout [id]</info>");
+        $this->stdErr->writeln("Check out a different environment by running <info>" . CLI_EXECUTABLE . " checkout [id]</info>");
 
         if ($currentEnvironment->operationAvailable('branch')) {
             $this->stdErr->writeln(
-                "Branch a new environment by running <info>platform environment:branch [new-name]</info>"
+                "Branch a new environment by running <info>" . CLI_EXECUTABLE . " environment:branch [new-name]</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('activate')) {
             $this->stdErr->writeln(
-                "Activate the current environment by running <info>platform environment:activate</info>"
+                "Activate the current environment by running <info>" . CLI_EXECUTABLE . " environment:activate</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('delete')) {
-            $this->stdErr->writeln("Delete the current environment by running <info>platform environment:delete</info>");
+            $this->stdErr->writeln("Delete the current environment by running <info>" . CLI_EXECUTABLE . " environment:delete</info>");
         }
         if ($currentEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-                "Make a snapshot of the current environment by running <info>platform snapshot:create</info>"
+                "Make a snapshot of the current environment by running <info>" . CLI_EXECUTABLE . " snapshot:create</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {
-            $this->stdErr->writeln("Merge the current environment by running <info>platform environment:merge</info>");
+            $this->stdErr->writeln("Merge the current environment by running <info>" . CLI_EXECUTABLE . " environment:merge</info>");
         }
         if ($currentEnvironment->operationAvailable('synchronize')) {
             $this->stdErr->writeln(
-                "Sync the current environment by running <info>platform environment:synchronize</info>"
+                "Sync the current environment by running <info>" . CLI_EXECUTABLE . " environment:synchronize</info>"
             );
         }
     }

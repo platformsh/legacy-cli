@@ -95,9 +95,9 @@ class SshKeyAddCommand extends CommandBase
             // Check whether the public key already exists in the user's account.
             if (isset($fingerprint) && $this->keyExistsByFingerprint($fingerprint)) {
                 $this->stdErr->writeln(
-                    'An SSH key already exists in your Platform.sh account with the same fingerprint: ' . $fingerprint
+                    'An SSH key already exists in your ' . CLI_CLOUD_SERVICE . ' account with the same fingerprint: ' . $fingerprint
                 );
-                $this->stdErr->writeln("List your SSH keys with: <info>platform ssh-keys</info>");
+                $this->stdErr->writeln("List your SSH keys with: <info>" . CLI_EXECUTABLE . " ssh-keys</info>");
 
                 return 0;
             }
@@ -122,7 +122,7 @@ class SshKeyAddCommand extends CommandBase
         $this->getClient()->addSshKey($publicKey, $name);
 
         $this->stdErr->writeln(
-            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your Platform.sh account.'
+            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . CLI_CLOUD_SERVICE . ' account.'
         );
 
         return 0;
@@ -150,20 +150,17 @@ class SshKeyAddCommand extends CommandBase
      * Find the path for a new SSH key.
      *
      * If the file already exists, this will recurse to find a new filename. The
-     * first will be "id_rsa", the second "platform_sh.key", the third
-     * "platform_sh.2.key", and so on.
+     * first will be "id_rsa", the second "id_rsa2", the third "id_rsa3", and so
+     * on.
      *
      * @param int $number
      *
      * @return string
      */
-    protected function getNewKeyPath($number = 0)
+    protected function getNewKeyPath($number = 1)
     {
-        $basename = 'platform_sh.key';
-        if ($number === 0) {
-            $basename = self::DEFAULT_BASENAME;
-        }
-        elseif ($number > 1) {
+        $basename = self::DEFAULT_BASENAME;
+        if ($number > 1) {
             $basename = strpos($basename, '.key') ? str_replace('.key', ".$number.key", $basename) : "$basename.$number";
         }
         $filename = $this->getHomeDir() . '/.ssh/' . $basename;

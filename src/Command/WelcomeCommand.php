@@ -14,12 +14,12 @@ class WelcomeCommand extends CommandBase
     {
         $this
             ->setName('welcome')
-            ->setDescription('Welcome to Platform.sh');
+            ->setDescription('Welcome to ' . CLI_CLOUD_SERVICE);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->stdErr->writeln("Welcome to Platform.sh!\n");
+        $this->stdErr->writeln("Welcome to " . CLI_CLOUD_SERVICE . "!\n");
 
         // Ensure the user is logged in in this parent command, because the
         // delegated commands below will not have interactive input.
@@ -32,15 +32,15 @@ class WelcomeCommand extends CommandBase
             $this->stdErr->writeln("Project ID: <info>{$project->id}</info>");
             $this->stdErr->writeln("Project dashboard: <info>$projectUri</info>\n");
             $this->runOtherCommand('environments', ['--refresh' => 0]);
-            $this->stdErr->writeln("\nYou can list other projects by running <info>platform projects</info>\n");
+            $this->stdErr->writeln("\nYou can list other projects by running <info>" . CLI_EXECUTABLE . " projects</info>\n");
         } else {
             // The project is not known. Show all projects.
             $this->runOtherCommand('projects', ['--refresh' => 0]);
         }
 
-        $this->stdErr->writeln("Manage your SSH keys by running <info>platform ssh-keys</info>\n");
+        $this->stdErr->writeln("Manage your SSH keys by running <info>" . CLI_EXECUTABLE . " ssh-keys</info>\n");
 
-        $this->stdErr->writeln("Type <info>platform list</info> to see all available commands.");
+        $this->stdErr->writeln("Type <info>" . CLI_EXECUTABLE . " list</info> to see all available commands.");
     }
 
 }

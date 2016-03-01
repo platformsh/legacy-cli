@@ -1,17 +1,15 @@
 #!/usr/bin/env php
 <?php
 
-define('CLI_ROOT', __DIR__);
-
 // Ensure that errors are only reported once.
 ini_set('display_errors', 1);
 ini_set('log_errors', 0);
 
-if (file_exists(CLI_ROOT . '/vendor/autoload.php')) {
-    require CLI_ROOT . '/vendor/autoload.php';
-} elseif (file_exists(CLI_ROOT . '/../../autoload.php')) {
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require __DIR__ . '/../vendor/autoload.php';
+} elseif (file_exists(__DIR__ . '/../../../autoload.php')) {
     // we are globally installed via Composer
-    require CLI_ROOT . '/../../autoload.php';
+    require __DIR__ . '/../../../autoload.php';
 } else {
     echo "Composer autoload file not found.\n";
     echo "You need to run 'composer install'.\n";

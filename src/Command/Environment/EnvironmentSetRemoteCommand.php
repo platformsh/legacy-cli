@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -41,7 +40,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
         }
 
         $projectRoot = $this->getProjectRoot();
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+        $repositoryDir = $projectRoot . '/' . CLI_LOCAL_REPOSITORY_DIR;
 
         $gitHelper = new GitHelper(new ShellHelper($output));
         $gitHelper->setDefaultRepositoryDir($repositoryDir);
