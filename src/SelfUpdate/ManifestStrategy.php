@@ -30,6 +30,12 @@ class ManifestStrategy implements StrategyInterface
     /** @var array */
     private static $requiredKeys = ['sha1', 'version', 'url'];
 
+    /** @var int */
+    private $manifestTimeout = 10;
+
+    /** @var int */
+    private $downloadTimeout = 60;
+
     /**
      * ManifestStrategy constructor.
      *
@@ -49,6 +55,14 @@ class ManifestStrategy implements StrategyInterface
         $this->manifestUrl = $manifestUrl;
         $this->allowMajor = $allowMajor;
         $this->allowUnstable = $allowUnstable;
+    }
+
+    /**
+     * @param int $manifestTimeout
+     */
+    public function setManifestTimeout($manifestTimeout)
+    {
+        $this->manifestTimeout = $manifestTimeout;
     }
 
     /**
@@ -96,7 +110,8 @@ class ManifestStrategy implements StrategyInterface
             throw new \RuntimeException(sprintf('Failed to find manifest item for version %s', $version));
         }
 
-        $fileContents = file_get_contents($versionInfo[$version]['url']);
+        $context = stream_context_create(['http' => ['timeout' => $this->downloadTimeout]]);
+        $fileContents = file_get_contents($versionInfo[$version]['url'], false, $context);
         if ($fileContents === false) {
             throw new HttpRequestException(sprintf('Failed to download file from URL: %s', $versionInfo[$version]['url']));
         }
@@ -149,7 +164,8 @@ class ManifestStrategy implements StrategyInterface
     private function getManifest()
     {
         if (!isset($this->manifest)) {
-            $manifestContents = file_get_contents($this->manifestUrl);
+            $context = stream_context_create(['http' => ['timeout' => $this->manifestTimeout]]);
+            $manifestContents = file_get_contents($this->manifestUrl, false, $context);
             if ($manifestContents === false) {
                 throw new \RuntimeException(sprintf('Failed to download manifest: %s', $this->manifestUrl));
             }
