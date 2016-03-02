@@ -19,7 +19,8 @@ class SelfUpdateCommand extends CommandBase
             ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
             ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to a new unstable version, if available')
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
-            ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version');
+            ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version')
+            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'A timeout for the version check', 30);
         $this->setHiddenAliases(['update']);
     }
 
@@ -47,6 +48,7 @@ class SelfUpdateCommand extends CommandBase
 
         $updater = new Updater(null, false);
         $strategy = new ManifestStrategy($currentVersion, $manifestUrl, $allowMajor, $allowUnstable);
+        $strategy->setManifestTimeout((int) $input->getOption('timeout'));
         $updater->setStrategyObject($strategy);
 
         if (!$updater->hasUpdate()) {
