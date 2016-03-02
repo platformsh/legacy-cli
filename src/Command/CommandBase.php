@@ -347,7 +347,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $config['updates']['check'] = true;
         $config['updates']['last_checked'] = $timestamp;
         $this->writeGlobalConfig($config);
-        $this->runOtherCommand('self-update');
+        $this->runOtherCommand('self-update', ['--timeout' => 10]);
         $this->stdErr->writeln('');
     }
 
