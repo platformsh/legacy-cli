@@ -370,9 +370,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function writeGlobalConfig(array $config)
     {
-        $configFile = $this->getConfigDir() . '/config.yaml';
-        if (file_put_contents($configFile, Yaml::dump($config)) === false) {
-            trigger_error(sprintf('Failed to write global config to: %s', $configFile), E_USER_NOTICE);
+        $configDir = $this->getConfigDir();
+        if (!is_dir($configDir) && !mkdir($configDir, 0700, true)) {
+            trigger_error('Failed to create config directory: ' . $configDir, E_USER_WARNING);
+        }
+        $configFile = $configDir . '/config.yaml';
+        if (file_put_contents($configFile, Yaml::dump($config, 10)) === false) {
+            trigger_error('Failed to write config to: ' . $configFile, E_USER_WARNING);
         }
     }
 
