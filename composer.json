@@ -3,7 +3,7 @@
     "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
-        "doctrine/cache": "~1.5",
+        "doctrine/cache": "~1.5 <1.6",
         "guzzlehttp/ringphp": "^1.1",
         "platformsh/console-form": "0.0.7",
         "platformsh/client": "0.4.4",
