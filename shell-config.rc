@@ -9,34 +9,6 @@ if HOOK=$(platform _completion -g -p platform 2>/dev/null); then
     source <(echo "$HOOK") 2>/dev/null
 fi
 
-# Run Git commands in the project repository, from any working directory.
-function platform_local_git {
-    local ROOT
-    ROOT="$(platform dir 2>/dev/null)"
-    # Test the return code of 'platform dir' (it may have written an error
-    # message to STDOUT).
-    CODE=$?
-    if [ "$CODE" = 2 ]; then
-        echo $0': This can only be run from inside a project directory' >&2
-        return "$CODE"
-    elif [ ! "$CODE" = 0 ] || [ ! -d "$ROOT" ]; then
-        echo $0': Project root not found' >&2
-        return "$CODE"
-    fi
-    cd "$ROOT"
-    # Run Git with 'status' as the default command.
-    if [ -z $1 ]; then
-        git status
-    else
-        git $@
-    fi
-    local GIT_CODE=$?
-    # Change back to the previous working directory.
-    cd - 1>/dev/null
-    return "$GIT_CODE"
-}
-alias plgit=platform_local_git
-
 # Run Drush commands on the local environment, from any working directory.
 function platform_local_drush {
     local GROUP
