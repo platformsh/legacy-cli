@@ -280,10 +280,10 @@ class Application extends ParentApplication
             $formatter = $output->getFormatter();
             $lines = array();
             foreach (preg_split('/\r?\n/', $e->getMessage()) as $line) {
-                foreach (str_split($line, $width - 4) as $line) {
+                foreach (str_split($line, $width - 4) as $chunk) {
                     // pre-format lines to get the right string length
-                    $lineLength = strlen(preg_replace('/\[[^m]*m/', '', $formatter->format($line))) + 4;
-                    $lines[] = array($line, $lineLength);
+                    $lineLength = strlen(preg_replace('/\[[^m]*m/', '', $formatter->format($chunk))) + 4;
+                    $lines[] = array($chunk, $lineLength);
 
                     $len = max($lineLength, $len);
                 }
