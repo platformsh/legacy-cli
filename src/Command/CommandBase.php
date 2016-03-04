@@ -736,7 +736,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
             $client = $connector->getClient();
             foreach ((array) $cached as $id => $data) {
-                $environments[$id] = new Environment($data, $endpoint, $client);
+                $environments[$id] = new Environment($data, $endpoint, $client, true);
             }
         }
 
