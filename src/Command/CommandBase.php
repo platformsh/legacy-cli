@@ -420,7 +420,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function getUserAgent()
     {
-        $version = CLI_VERSION;
         $agent = sprintf('%s/%s', str_replace(' ', '-', CLI_NAME), CLI_VERSION);
         if (!empty(CLI_SOURCE_URL)) {
             $agent .= sprintf(' (+%s)', CLI_SOURCE_URL);
