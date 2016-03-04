@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Tests;
 use org\bovigo\vfs\vfsStream;
 use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 

@@ -2,8 +2,6 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
-use Platformsh\Cli\Local\LocalProject;
-
 class ComposerTest extends BaseToolstackTest
 {
 
