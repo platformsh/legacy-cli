@@ -117,10 +117,10 @@ class Drupal extends ToolstackBase
      */
     protected function checkIgnored($filename, $suggestion = null)
     {
-        if (empty($this->settings['projectRoot'])) {
+        if (empty($this->settings['sourceDir']) || !$this->gitHelper->isRepository($this->settings['sourceDir'])) {
             return;
         }
-        $repositoryDir = $this->settings['projectRoot'];
+        $repositoryDir = $this->settings['sourceDir'];
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
         if (!$this->gitHelper->execute(['check-ignore', $relative], $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;

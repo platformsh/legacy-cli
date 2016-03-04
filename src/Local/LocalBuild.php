@@ -42,25 +42,6 @@ class LocalBuild
     }
 
     /**
-     * Build a normal Platform.sh project.
-     *
-     * @param string $projectRoot The absolute path to the project root.
-     * @param string $sourceDir   The absolute path to the source directory.
-     * @param string $destination Where the web root(s) will be linked (absolute
-     *                            path).
-     *
-     * @return bool
-     */
-    public function buildProject($projectRoot, $sourceDir = null, $destination = null)
-    {
-        $this->settings['projectRoot'] = $projectRoot;
-        $sourceDir = $sourceDir ?: $projectRoot;
-        $destination = $destination ?: $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
-
-        return $this->build($sourceDir, $destination);
-    }
-
-    /**
      * Build a project from any source directory, targeting any destination.
      *
      * @param string $sourceDir   The absolute path to the source directory.
@@ -72,7 +53,7 @@ class LocalBuild
      *
      * @return bool
      */
-    public function build($sourceDir, $destination, array $apps = [])
+    public function build($sourceDir, $destination = null, array $apps = [])
     {
         $success = true;
         $ids = [];
@@ -160,10 +141,11 @@ class LocalBuild
      *
      * @return bool
      */
-    protected function buildApp($app, $sourceDir, $destination)
+    protected function buildApp($app, $sourceDir, $destination = null)
     {
         $verbose = $this->output->isVerbose();
 
+        $destination = $destination ?: $sourceDir . '/' . CLI_LOCAL_WEB_ROOT;
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
         $multiApp = $appRoot != $sourceDir;
@@ -225,6 +207,7 @@ class LocalBuild
         $buildSettings = $this->settings + [
                 'multiApp' => $multiApp,
                 'appName' => $appName,
+                'sourceDir' => $sourceDir,
             ];
         $toolstack->prepare($buildDir, $documentRoot, $appRoot, $buildSettings);
 

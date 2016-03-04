@@ -297,7 +297,7 @@ class DrushHelper extends Helper
         $userDefined = '';
         foreach ($aliases as $name => $alias) {
             if (!empty($alias[$autoRemoveKey])) {
-                // This is probably for a deleted Platform.sh environment.
+                // This is probably for a deleted environment.
                 continue;
             }
             $userDefined .= $this->exportAlias($name, $alias) . "\n";

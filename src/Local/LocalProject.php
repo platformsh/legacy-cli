@@ -192,7 +192,8 @@ class LocalProject
         }
 
         // The project root is a Git repository, which contains a PROJECT_CONFIG
-        // configuration file, and/or contains a Platform.sh Git remote.
+        // configuration file, and/or contains a CLI_PROJECT_GIT_DOMAIN Git
+        // remote.
         $dir = $this->findTopDirectoryContaining('.git', function ($dir) {
             if (file_exists($dir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
                 return true;

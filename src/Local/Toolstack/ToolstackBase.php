@@ -174,15 +174,15 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     protected function getSharedDir()
     {
-        if (empty($this->settings['projectRoot'])) {
+        if (empty($this->settings['sourceDir'])) {
             return false;
         }
-        $shared = $this->settings['projectRoot'] . '/' . CLI_LOCAL_SHARED_DIR;
+        $shared = $this->settings['sourceDir'] . '/' . CLI_LOCAL_SHARED_DIR;
         if (!empty($this->settings['multiApp']) && !empty($this->settings['appName'])) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->settings['appName']);
         }
         if (!is_dir($shared)) {
-            mkdir($shared);
+            mkdir($shared, 0755, true);
         }
 
         return $shared;
@@ -260,13 +260,11 @@ abstract class ToolstackBase implements ToolstackInterface
     protected function copyGitIgnore($source)
     {
         $source = CLI_ROOT . '/resources/' . $source;
-        if (!file_exists($source) || empty($this->settings['projectRoot'])) {
+        if (!file_exists($source) || empty($this->settings['sourceDir']) || !!$this->gitHelper->isRepository($this->settings['sourceDir'])) {
             return;
         }
-        $repositoryDir = $this->settings['projectRoot'];
-        $repositoryGitIgnore = $repositoryDir . '/.gitignore';
         $appGitIgnore = $this->appRoot . '/.gitignore';
-        if (!file_exists($appGitIgnore) && !file_exists($repositoryGitIgnore)) {
+        if (!file_exists($appGitIgnore) && !file_exists($this->settings['sourceDir'] . '/.gitignore')) {
             $this->output->writeln("Creating a .gitignore file");
             copy($source, $appGitIgnore);
         }

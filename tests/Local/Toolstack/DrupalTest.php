@@ -69,12 +69,12 @@ class DrupalTest extends BaseToolstackTest
         $this->assertNotEmpty($treeId);
 
         // Build. This should create an archive.
-        $this->builder->buildProject($projectRoot);
+        $this->builder->build($projectRoot);
         $archive = $projectRoot . '/' . CLI_LOCAL_ARCHIVE_DIR  .'/' . $treeId . '.tar.gz';
         $this->assertFileExists($archive);
 
         // Build again. This will extract the archive.
-        $success = $this->builder->buildProject($projectRoot);
+        $success = $this->builder->build($projectRoot);
         $this->assertTrue($success);
     }
 

@@ -104,7 +104,8 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
-            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr);
+            $default = file_exists('.platform.app.yaml') || is_dir('.git') ? '.' : null;
+            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr, $default);
         }
 
         if ($sourceDirOption) {
@@ -130,7 +131,8 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
-            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr);
+            $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd() ? CLI_LOCAL_WEB_ROOT : null;
+            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr, $default);
         }
 
         if ($destination) {

@@ -131,7 +131,7 @@ class ProjectGetCommand extends CommandBase
 
         $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
 
-        // Prepare to talk to the Platform.sh repository.
+        // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
@@ -226,7 +226,7 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . CLI_EXECUTABLE . ' build</info> to repeat this.');
             $options = ['environmentId' => $environment, 'noClean' => true];
             $builder = new LocalBuild($options, $output);
-            $success = $builder->buildProject($projectRoot);
+            $success = $builder->build($projectRoot);
         }
         else {
             $this->stdErr->writeln(

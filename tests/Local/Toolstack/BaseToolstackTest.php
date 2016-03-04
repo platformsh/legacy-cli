@@ -70,7 +70,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         $builder = $buildSettings
             ? new LocalBuild($buildSettings + $this->buildSettings, self::$output)
             : $this->builder;
-        $success = $builder->buildProject($projectRoot);
+        $success = $builder->build($projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
 
         return $projectRoot;

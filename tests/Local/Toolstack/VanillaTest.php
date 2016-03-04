@@ -81,7 +81,7 @@ class VanillaTest extends BaseToolstackTest
         $destination = $projectRoot . '/web';
 
         $builder = new LocalBuild($this->buildSettings, self::$output);
-        $builder->buildProject($projectRoot, null, $destination);
+        $builder->build($projectRoot, $destination);
         $this->assertFileExists($destination . '/index.html');
     }
 }
