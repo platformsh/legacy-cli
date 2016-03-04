@@ -21,7 +21,7 @@ class Bot extends ConsoleAnimation
         // The frames are the contents of each file, with each line indented.
         $frames = array_map(function ($filename) {
             return preg_replace('/^/m', '    ', file_get_contents($filename))
-                . "\n    <info>Platform.sh</info>";
+                . "\n    <info>" . CLI_CLOUD_SERVICE . "</info>";
         }, $filenames);
 
         parent::__construct($output, $frames);
