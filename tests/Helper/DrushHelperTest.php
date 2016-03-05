@@ -36,14 +36,15 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
         $this->project = new Project([
             'id' => 'test',
             'title' => 'Test project title',
-        ]);
+        ], null, null, true);
         $this->environments[] = new Environment([
             'id' => 'master',
+            'title' => 'master',
             '_links' => [
                 'public-url' => ['href' => 'http://example.com'],
                 'ssh' => ['href' => 'ssh://user@example.com'],
             ],
-        ]);
+        ], null, null, true);
     }
 
     public function testCreateAliases()
