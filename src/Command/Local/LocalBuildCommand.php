@@ -104,7 +104,7 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
-            $default = file_exists('.platform.app.yaml') || is_dir('.git') ? '.' : null;
+            $default = file_exists(CLI_APP_CONFIG_FILE) || is_dir('.git') ? '.' : null;
             $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr, $default);
         }
 
