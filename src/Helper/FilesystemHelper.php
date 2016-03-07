@@ -319,13 +319,10 @@ class FilesystemHelper extends Helper
         if (!file_exists($archive)) {
             throw new \InvalidArgumentException("Archive not found: $archive");
         }
-        if (!is_writable(dirname($destination))) {
-            throw new \InvalidArgumentException("Destination not writable: $destination");
+        if (!file_exists($destination) && !mkdir($destination, 0755, true)) {
+            throw new \InvalidArgumentException("Could not create destination directory: $destination");
         }
         $tar = $this->getTarExecutable();
-        if (!file_exists($destination)) {
-            mkdir($destination);
-        }
         $destination = $this->fixTarPath($destination);
         $archive = $this->fixTarPath($archive);
         $this->shellHelper->execute([$tar, '-xzp', '-C' . $destination, '-f' . $archive], null, true);
