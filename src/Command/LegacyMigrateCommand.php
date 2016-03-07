@@ -37,10 +37,12 @@ class LegacyMigrateCommand extends CommandBase
 
         $repositoryDir = $legacyRoot . '/repository';
         if (!is_dir($repositoryDir)) {
-            throw new \RuntimeException('Directory not found: ' . $repositoryDir);
+            $this->stdErr->writeln('Directory not found: <error>' . $repositoryDir . '</error>');
+            return 1;
         }
         elseif (!is_dir($repositoryDir . '/.git')) {
-            throw new \RuntimeException('Not a Git repository: ' . $repositoryDir);
+            $this->stdErr->writeln('Not a Git repository: <error>' . $repositoryDir . '</error>');
+            return 1;
         }
 
         if (file_exists($legacyRoot . '/builds')) {
@@ -87,14 +89,26 @@ class LegacyMigrateCommand extends CommandBase
 
         if (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
             $fsHelper->copy($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY, $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG);
-            $fsHelper->remove($legacyRoot . '/ ' . CLI_LOCAL_PROJECT_CONFIG_LEGACY);
+            $fsHelper->remove($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY);
         }
 
-        if ($cwd !== $legacyRoot) {
+        $success = true;
+
+        if (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
+            $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY . '</error>');
+            $success = false;
+        }
+
+        if (!is_dir($legacyRoot . '/.git')) {
+            $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');
+            $success = false;
+        }
+
+        if (strpos($cwd, $repositoryDir) === 0) {
             $this->stdErr->writeln('Type this to refresh your shell:');
             $this->stdErr->writeln('    cd ' . $legacyRoot);
         }
 
-        exit;
+        return $success ? 0 : 1;
     }
 }

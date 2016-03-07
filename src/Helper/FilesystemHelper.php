@@ -105,7 +105,7 @@ class FilesystemHelper extends Helper
      * @param string $destination
      * @param array $skip
      */
-    public function copyAll($source, $destination, array $skip = [])
+    public function copyAll($source, $destination, array $skip = ['.git', CLI_PROJECT_CONFIG_DIR])
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -114,11 +114,6 @@ class FilesystemHelper extends Helper
         }
 
         if (is_dir($source)) {
-            $skip[] = '.';
-            $skip[] = '..';
-            $skip[] = '.git';
-            $skip[] = CLI_PROJECT_CONFIG_DIR;
-
             // Prevent infinite recursion when the destination is inside the
             // source.
             if (strpos($destination, $source) === 0) {
@@ -129,11 +124,16 @@ class FilesystemHelper extends Helper
 
             $sourceDirectory = opendir($source);
             while ($file = readdir($sourceDirectory)) {
-                if (in_array($file, $skip) || is_link($source . '/' . $file)) {
+                // Skip symlinks, '.' and '..', and files in $skip.
+                if ($file === '.' || $file === '..' || in_array($file, $skip) || is_link($source . '/' . $file)) {
                     continue;
-                } elseif (is_dir($source . '/' . $file)) {
-                    $this->copyAll($source . '/' . $file, $destination . '/' . $file);
-                } elseif (is_file($source . '/' . $file)) {
+                }
+                // Recurse into directories.
+                elseif (is_dir($source . '/' . $file)) {
+                    $this->copyAll($source . '/' . $file, $destination . '/' . $file, $skip);
+                }
+                // Perform the copy.
+                elseif (is_file($source . '/' . $file)) {
                     $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }

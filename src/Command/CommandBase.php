@@ -255,7 +255,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
                 $questionHelper = $this->getHelper('question');
                 if ($questionHelper->confirm('Migrate to the new structure?', $input, $this->stdErr)) {
-                    $this->runOtherCommand('legacy-migrate');
+                    $code = $this->runOtherCommand('legacy-migrate');
+                    exit($code);
                 }
             }
             else {
