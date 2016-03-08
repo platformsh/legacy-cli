@@ -246,15 +246,41 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         $this->_deleteOldCaches();
+        $this->promptLegacyMigrate();
+    }
 
-        // Migrate from the legacy file structure.
+    /**
+     * Prompt the user to migrate from the legacy project file structure.
+     *
+     * If the input is interactive, the user will be asked to migrate up to once
+     * per hour. The time they were last asked will be stored in the project
+     * configuration. If the input is not interactive, the user will be warned
+     * (on every command run) that they should run the 'legacy-migrate' command.
+     */
+    protected function promptLegacyMigrate()
+    {
         if ($this->localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !self::$legacyMigrateAsked) {
             self::$legacyMigrateAsked = true;
+
+            $projectRoot = $this->getProjectRoot();
+            $timestamp = time();
+            $promptMigrate = true;
+            if ($projectRoot) {
+                $config = $this->getProjectConfig($projectRoot);
+                if (isset($config['migrate']['3.x']['last_asked']) && $config['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
+                    $promptMigrate = false;
+                }
+            }
+
             $this->stdErr->writeln('You are in a project using an old file structure, from previous versions of the ' . CLI_NAME .'.');
-            if ($input->isInteractive()) {
+            if ($this->input->isInteractive() && $promptMigrate) {
+                if ($projectRoot && isset($config)) {
+                    $config['migrate']['3.x']['last_asked'] = $timestamp;
+                    $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
+                }
                 /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
                 $questionHelper = $this->getHelper('question');
-                if ($questionHelper->confirm('Migrate to the new structure?', $input, $this->stdErr)) {
+                if ($questionHelper->confirm('Migrate to the new structure?', $this->input, $this->stdErr)) {
                     $code = $this->runOtherCommand('legacy-migrate');
                     exit($code);
                 }
@@ -867,6 +893,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     public function getProjectRoot()
     {
         if (empty(self::$projectRoot)) {
+            $this->debug('Finding the project root based on the CWD');
             self::$projectRoot = $this->localProject->getProjectRoot();
         }
 
