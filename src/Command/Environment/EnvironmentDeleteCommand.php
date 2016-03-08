@@ -28,6 +28,15 @@ class EnvironmentDeleteCommand extends CommandBase
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with "master"', '--merged master');
+        $service = CLI_CLOUD_SERVICE;
+        $this->setHelp(<<<EOF
+When a {$service} environment is deleted, it will become "inactive": it will
+exist only as a Git branch, containing code but no services, databases nor
+files.
+
+This command allows you to delete environment(s) as well as their Git branches.
+EOF
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
