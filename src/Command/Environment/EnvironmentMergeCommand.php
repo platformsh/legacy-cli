@@ -21,6 +21,7 @@ class EnvironmentMergeCommand extends CommandBase
              ->addEnvironmentOption()
              ->addNoWaitOption();
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
+        $this->setHelp('This command will initiate a Git merge of the specified environment into its parent environment.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
