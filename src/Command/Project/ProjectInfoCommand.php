@@ -43,7 +43,7 @@ class ProjectInfoCommand extends CommandBase
         $this->formatter = new PropertyFormatter();
 
         if ($input->getOption('refresh')) {
-            $this->getProjects(true);
+            $project->refresh();
         }
 
         $property = $input->getArgument('property');
@@ -85,7 +85,7 @@ class ProjectInfoCommand extends CommandBase
 
         $headings = [];
         $values = [];
-        foreach ($project->getProperties() as $key => $value) {
+        foreach ($project->getProperties(false) as $key => $value) {
             if (!in_array($key, $blacklist)) {
                 $value = $this->formatter->format($value, $key);
                 $value = wordwrap($value, 50, "\n", true);

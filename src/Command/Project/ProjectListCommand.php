@@ -56,8 +56,8 @@ class ProjectListCommand extends CommandBase
 
         $table->render($rows, $header);
 
-        $this->stdErr->writeln("\nGet a project by running <info>platform get [id]</info>");
-        $this->stdErr->writeln("List a project's environments by running <info>platform environments</info>");
+        $this->stdErr->writeln("\nGet a project by running <info>" . CLI_EXECUTABLE . " get [id]</info>");
+        $this->stdErr->writeln("List a project's environments by running <info>" . CLI_EXECUTABLE . " environments</info>");
 
         return 0;
     }

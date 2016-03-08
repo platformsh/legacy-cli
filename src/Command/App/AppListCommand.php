@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\App;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -33,8 +32,7 @@ class AppListCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $repository = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        $apps = LocalApplication::getApplications($repository);
+        $apps = LocalApplication::getApplications($projectRoot);
 
         $rows = [];
         foreach ($apps as $app) {

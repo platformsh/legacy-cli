@@ -13,7 +13,7 @@ class BotCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('bot')->setDescription('The Platform.sh Bot');
+        $this->setName('bot')->setDescription('The ' . CLI_CLOUD_SERVICE . ' Bot');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

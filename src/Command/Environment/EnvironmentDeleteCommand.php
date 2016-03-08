@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
@@ -29,6 +28,15 @@ class EnvironmentDeleteCommand extends CommandBase
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with "master"', '--merged master');
+        $service = CLI_CLOUD_SERVICE;
+        $this->setHelp(<<<EOF
+When a {$service} environment is deleted, it will become "inactive": it will
+exist only as a Git branch, containing code but no services, databases nor
+files.
+
+This command allows you to delete environment(s) as well as their Git branches.
+EOF
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -98,7 +106,7 @@ class EnvironmentDeleteCommand extends CommandBase
         }
         $environments = $this->getEnvironments($this->getSelectedProject(), true);
         $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $gitHelper->setDefaultRepositoryDir($projectRoot);
         $gitHelper->execute(['fetch', 'origin']);
         $mergedBranches = $gitHelper->getMergedBranches($base);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));

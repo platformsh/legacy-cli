@@ -20,7 +20,7 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
         $this->root = vfsStream::setup(__CLASS__);
     }
 
-    public function testGetProjectRoot()
+    public function testGetLegacyProjectRoot()
     {
         $tempDir = $this->root->getName();
         $testDir = tempnam($tempDir, '');
@@ -28,16 +28,17 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
         mkdir("$testDir/1/2/3/4/5", 0755, true);
 
         $expectedRoot = "$testDir/1";
-        touch("$expectedRoot/.platform-project");
+        touch("$expectedRoot/" . CLI_LOCAL_PROJECT_CONFIG_LEGACY);
 
         chdir($testDir);
-        $this->assertFalse(LocalProject::getProjectRoot());
+        $localProject = new LocalProject();
+        $this->assertFalse($localProject->getLegacyProjectRoot());
 
         chdir($expectedRoot);
-        $this->assertEquals($expectedRoot, LocalProject::getProjectRoot());
+        $this->assertEquals($expectedRoot, $localProject->getLegacyProjectRoot());
 
         chdir("$testDir/1/2/3/4/5");
-        $this->assertEquals($expectedRoot, LocalProject::getProjectRoot());
+        $this->assertEquals($expectedRoot, $localProject->getLegacyProjectRoot());
     }
 
 }

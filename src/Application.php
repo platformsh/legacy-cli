@@ -8,6 +8,7 @@ use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\PlatformQuestionHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ParentApplication;
+use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,18 +16,21 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Shell;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
 {
+    /**
+     * @var ConsoleCommand|null
+     */
+    protected $currentCommand;
 
     /**
      * {@inheritdoc}
      */
     public function __construct()
     {
-        parent::__construct('Platform.sh CLI', '2.13.0');
+        parent::__construct(CLI_NAME, CLI_VERSION);
 
         $this->setDefaultTimezone();
 
@@ -53,7 +57,6 @@ class Application extends ParentApplication
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
             new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts'),
             new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
-            new InputOption('--shell', '-s', InputOption::VALUE_NONE, 'Launch the shell'),
         ]);
     }
 
@@ -96,6 +99,7 @@ class Application extends ParentApplication
         $commands[] = new Command\ClearCacheCommand();
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\DocsCommand();
+        $commands[] = new Command\LegacyMigrateCommand();
         $commands[] = new Command\Activity\ActivityListCommand();
         $commands[] = new Command\Activity\ActivityLogCommand();
         $commands[] = new Command\App\AppConfigGetCommand();
@@ -131,7 +135,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Local\LocalCleanCommand();
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
         $commands[] = new Command\Local\LocalDirCommand();
-        $commands[] = new Command\Local\LocalInitCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
         $commands[] = new Command\Project\ProjectGetCommand();
         $commands[] = new Command\Project\ProjectListCommand();
@@ -195,15 +198,20 @@ class Application extends ParentApplication
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y']) || $input->hasParameterOption(['--no', '-n'])) {
             $input->setInteractive(false);
-        } // Enable the shell.
-        elseif ($input->hasParameterOption(['--shell', '-s'])) {
-            $shell = new Shell($this);
-            $shell->run();
-
-            return 0;
         }
 
         return parent::doRun($input, $output);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
+    {
+        // There is a runningCommand property, but it is private.
+        $this->currentCommand = $command;
+
+        return parent::doRunCommand($command, $input, $output);
     }
 
     /**
@@ -238,6 +246,82 @@ class Application extends ParentApplication
         }
 
         date_default_timezone_set($timezone);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function renderException(\Exception $e, OutputInterface $output)
+    {
+        $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+
+        do {
+            $exceptionName = get_class($e);
+            if (($pos = strrpos($exceptionName, '\\')) !== false) {
+                $exceptionName = substr($exceptionName, $pos + 1);
+            }
+            $title = sprintf('  [%s]  ', $exceptionName);
+
+            $len = strlen($title);
+
+            $width = $this->getTerminalWidth() ? $this->getTerminalWidth() - 1 : PHP_INT_MAX;
+            // HHVM only accepts 32 bits integer in str_split, even when PHP_INT_MAX is a 64 bit integer: https://github.com/facebook/hhvm/issues/1327
+            if (defined('HHVM_VERSION') && $width > 1 << 31) {
+                $width = 1 << 31;
+            }
+            $formatter = $output->getFormatter();
+            $lines = array();
+            foreach (preg_split('/\r?\n/', $e->getMessage()) as $line) {
+                foreach (str_split($line, $width - 4) as $chunk) {
+                    // pre-format lines to get the right string length
+                    $lineLength = strlen(preg_replace('/\[[^m]*m/', '', $formatter->format($chunk))) + 4;
+                    $lines[] = array($chunk, $lineLength);
+
+                    $len = max($lineLength, $len);
+                }
+            }
+
+            $messages = array();
+            $messages[] = $emptyLine = $formatter->format(sprintf('<error>%s</error>', str_repeat(' ', $len)));
+            $messages[] = $formatter->format(sprintf('<error>%s%s</error>', $title, str_repeat(' ', max(0, $len - strlen($title)))));
+            foreach ($lines as $line) {
+                $messages[] = $formatter->format(sprintf('<error>  %s  %s</error>', $line[0], str_repeat(' ', $len - $line[1])));
+            }
+            $messages[] = $emptyLine;
+            $messages[] = '';
+
+            $output->writeln($messages, OutputInterface::OUTPUT_RAW | OutputInterface::VERBOSITY_QUIET);
+
+            if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
+                $output->writeln('<comment>Exception trace:</comment>', OutputInterface::VERBOSITY_QUIET);
+
+                // exception related properties
+                $trace = $e->getTrace();
+                array_unshift($trace, array(
+                    'function' => '',
+                    'file' => $e->getFile() !== null ? $e->getFile() : 'n/a',
+                    'line' => $e->getLine() !== null ? $e->getLine() : 'n/a',
+                    'args' => array(),
+                ));
+
+                for ($i = 0, $count = count($trace); $i < $count; ++$i) {
+                    $class = isset($trace[$i]['class']) ? $trace[$i]['class'] : '';
+                    $type = isset($trace[$i]['type']) ? $trace[$i]['type'] : '';
+                    $function = $trace[$i]['function'];
+                    $file = isset($trace[$i]['file']) ? $trace[$i]['file'] : 'n/a';
+                    $line = isset($trace[$i]['line']) ? $trace[$i]['line'] : 'n/a';
+
+                    $output->writeln(sprintf(' %s%s%s() at <info>%s:%s</info>', $class, $type, $function, $file, $line), OutputInterface::VERBOSITY_QUIET);
+                }
+
+                $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+            }
+        } while ($e = $e->getPrevious());
+
+        if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
+            $output->writeln(sprintf('Usage: <info>%s</info>', sprintf($this->currentCommand->getSynopsis(), $this->getName())), OutputInterface::VERBOSITY_QUIET);
+            $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+        }
     }
 
 }

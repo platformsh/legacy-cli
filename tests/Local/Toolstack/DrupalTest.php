@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Tests\Toolstack;
 
 use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Local\LocalProject;
 
 class DrupalTest extends BaseToolstackTest
 {
@@ -11,8 +10,8 @@ class DrupalTest extends BaseToolstackTest
     public function testBuildDrupalInProjectMode()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/project');
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
-        $shared = $projectRoot . '/' . LocalProject::SHARED_DIR;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
+        $shared = $projectRoot . '/' . CLI_LOCAL_SHARED_DIR;
 
         // Test build results.
         $this->assertFileExists($webRoot . '/index.php');
@@ -37,7 +36,7 @@ class DrupalTest extends BaseToolstackTest
     public function testBuildDrupalInProfileMode()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/profile');
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.php');
         $this->assertFileExists($webRoot . '/sites/default/settings.php');
         $this->assertFileExists($webRoot . '/profiles/test/test.profile');
@@ -50,8 +49,7 @@ class DrupalTest extends BaseToolstackTest
         $sourceDir = 'tests/data/apps/drupal/8';
         self::$output->writeln("\nTesting build (with --lock) for directory: " . $sourceDir);
         $projectRoot = $this->assertBuildSucceeds($sourceDir, ['drushUpdateLock' => true]);
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        $this->assertFileExists("$repositoryDir/project.make.yml.lock");
+        $this->assertFileExists($projectRoot . '/project.make.yml.lock');
     }
 
     /**
@@ -64,20 +62,19 @@ class DrupalTest extends BaseToolstackTest
         $projectRoot = $this->createDummyProject('tests/data/apps/drupal/project');
 
         // Archiving only works if the repository is a genuine Git directory.
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        chdir($repositoryDir);
+        chdir($projectRoot);
         exec('git init');
 
-        $treeId = $this->builder->getTreeId($repositoryDir);
+        $treeId = $this->builder->getTreeId($projectRoot);
         $this->assertNotEmpty($treeId);
 
         // Build. This should create an archive.
-        $this->builder->buildProject($projectRoot);
-        $archive = $projectRoot . '/' . LocalProject::ARCHIVE_DIR  .'/' . $treeId . '.tar.gz';
+        $this->builder->build($projectRoot);
+        $archive = $projectRoot . '/' . CLI_LOCAL_ARCHIVE_DIR  .'/' . $treeId . '.tar.gz';
         $this->assertFileExists($archive);
 
         // Build again. This will extract the archive.
-        $success = $this->builder->buildProject($projectRoot);
+        $success = $this->builder->build($projectRoot);
         $this->assertTrue($success);
     }
 

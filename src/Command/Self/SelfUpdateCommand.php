@@ -16,18 +16,19 @@ class SelfUpdateCommand extends CommandBase
             ->setName('self:update')
             ->setAliases(['self-update'])
             ->setDescription('Update the CLI to the latest version')
-            ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
+            ->addOption('no-major', null, InputOption::VALUE_NONE, 'Only update between minor or patch versions')
             ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to a new unstable version, if available')
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
-            ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version');
+            ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version')
+            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'A timeout for the version check', 30);
         $this->setHiddenAliases(['update']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $manifestUrl = $input->getOption('manifest') ?: 'https://platform.sh/cli/manifest.json';
-        $currentVersion = $input->getOption('current-version') ?: $this->getApplication()->getVersion();
-        $allowMajor = $input->getOption('major');
+        $manifestUrl = $input->getOption('manifest') ?: CLI_UPDATE_MANIFEST_URL;
+        $currentVersion = $input->getOption('current-version') ?: CLI_VERSION;
+        $allowMajor = !$input->getOption('no-major');
         $allowUnstable = $input->getOption('unstable');
 
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
@@ -37,8 +38,8 @@ class SelfUpdateCommand extends CommandBase
             if (file_exists(CLI_ROOT . '/../../autoload.php')) {
                 $this->stdErr->writeln("Update using:\n\n  composer global update");
                 $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>):\n");
-                $this->stdErr->writeln("  composer global remove platformsh/cli");
-                $this->stdErr->writeln("  curl -sS https://platform.sh/cli/installer | php\n");
+                $this->stdErr->writeln("  composer global remove " . CLI_PACKAGE_NAME);
+                $this->stdErr->writeln("  curl -sS " . CLI_INSTALLER_URL . " | php\n");
             }
             return 1;
         }
@@ -47,6 +48,7 @@ class SelfUpdateCommand extends CommandBase
 
         $updater = new Updater(null, false);
         $strategy = new ManifestStrategy($currentVersion, $manifestUrl, $allowMajor, $allowUnstable);
+        $strategy->setManifestTimeout((int) $input->getOption('timeout'));
         $updater->setStrategyObject($strategy);
 
         if (!$updater->hasUpdate()) {
@@ -55,6 +57,14 @@ class SelfUpdateCommand extends CommandBase
         }
 
         $newVersionString = $updater->getNewVersion();
+
+        if ($notes = $strategy->getReleaseNotes($updater)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Release notes:', $newVersionString));
+            $this->stdErr->writeln(preg_replace('/^/m', '  ', $notes));
+            $this->stdErr->writeln('');
+        }
+
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
         if (!$questionHelper->confirm(sprintf('Update to version %s?', $newVersionString), $input, $output)) {

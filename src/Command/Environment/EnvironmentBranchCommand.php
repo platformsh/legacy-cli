@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
@@ -107,8 +106,8 @@ class EnvironmentBranchCommand extends CommandBase
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot && $force) {
             $this->stdErr->writeln(
-                "<comment>This command was run from outside your local project root, the new Platform.sh branch cannot be checked out in your local Git repository."
-                . " Make sure to run 'platform checkout' or 'git checkout' in your repository directory to switch to the branch you are expecting.</comment>"
+                "<comment>This command was run from outside your local project root, so the new " . CLI_CLOUD_SERVICE . " branch cannot be checked out in your local Git repository."
+                . " Make sure to run '" . CLI_EXECUTABLE . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
             );
         } elseif (!$projectRoot) {
             $this->stdErr->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
@@ -127,7 +126,7 @@ class EnvironmentBranchCommand extends CommandBase
 
         if ($projectRoot) {
             $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
-            $gitHelper->setDefaultRepositoryDir($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+            $gitHelper->setDefaultRepositoryDir($projectRoot);
 
             // If the Git branch already exists locally, just check it out.
             $existsLocally = $gitHelper->branchExists($machineName);

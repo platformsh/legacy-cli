@@ -82,15 +82,16 @@ class LocalApplication
     {
         if (!isset($this->config)) {
             $this->config = [];
-            if (file_exists($this->appRoot . '/.platform.app.yaml')) {
+            $file = $this->appRoot . '/' . CLI_APP_CONFIG_FILE;
+            if (file_exists($file)) {
                 try {
                     $parser = new Parser();
-                    $config = (array) $parser->parse(file_get_contents($this->appRoot . '/.platform.app.yaml'));
+                    $config = (array) $parser->parse(file_get_contents($file));
                     $this->config = $this->normalizeConfig($config);
                 }
                 catch (ParseException $e) {
                     throw new InvalidConfigException(
-                        "Parse error in file '{$this->appRoot}/.platform.app.yaml'. \n" . $e->getMessage()
+                        "Parse error in file '$file': \n" . $e->getMessage()
                     );
                 }
             }
@@ -194,8 +195,9 @@ class LocalApplication
         $finder = new Finder();
         $finder->in($directory)
                ->ignoreDotFiles(false)
+               ->name(CLI_APP_CONFIG_FILE)
                ->notPath('builds')
-               ->name('.platform.app.yaml')
+               ->notPath(CLI_LOCAL_DIR)
                ->depth('> 0')
                ->depth('< 5');
 

@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Local;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalBuild;
-use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -32,13 +31,13 @@ class LocalBuildCommand extends CommandBase
                 'source',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'The source directory. Default: ' . LocalProject::REPOSITORY_DIR
+                'The source directory. Defaults to the current project root.'
             )
             ->addOption(
                 'destination',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'The destination, to which the web root of each app will be symlinked. Default: ' . LocalProject::WEB_ROOT
+                'The destination, to which the web root of each app will be symlinked. Default: ' . CLI_LOCAL_WEB_ROOT
             )
             ->addOption(
                 'copy',
@@ -105,7 +104,8 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
-            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr);
+            $default = file_exists(CLI_APP_CONFIG_FILE) || is_dir('.git') ? '.' : null;
+            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr, $default);
         }
 
         if ($sourceDirOption) {
@@ -115,23 +115,24 @@ class LocalBuildCommand extends CommandBase
             }
             // Sensible handling if the user provides a project root as the
             // source directory.
-            elseif (file_exists($sourceDir . '/.platform-project')) {
+            elseif (file_exists($sourceDir . CLI_LOCAL_PROJECT_CONFIG)) {
                 $projectRoot = $sourceDir;
-                $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+                $sourceDir = $projectRoot;
             }
         }
         elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
         }
         else {
-            $sourceDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
+            $sourceDir = $projectRoot;
         }
 
         $destination = $input->getOption('destination');
 
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
-            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr);
+            $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd() ? CLI_LOCAL_WEB_ROOT : null;
+            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr, $default);
         }
 
         if ($destination) {
@@ -143,7 +144,7 @@ class LocalBuildCommand extends CommandBase
             throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
         }
         else {
-            $destination = $projectRoot . '/' . LocalProject::WEB_ROOT;
+            $destination = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         }
 
         // Ensure no conflicts between source and destination.

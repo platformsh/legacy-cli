@@ -2,8 +2,8 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
+use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalBuild;
-use Platformsh\Cli\Local\LocalProject;
 
 class VanillaTest extends BaseToolstackTest
 {
@@ -11,7 +11,7 @@ class VanillaTest extends BaseToolstackTest
     public function testBuildVanilla()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla');
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
     }
 
@@ -22,7 +22,7 @@ class VanillaTest extends BaseToolstackTest
     {
         $sourceDir = 'tests/data/apps/vanilla';
         $projectRoot = $this->assertBuildSucceeds($sourceDir, ['copy' => true]);
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
         $this->assertTrue(is_dir($webRoot), 'Web root is an actual directory');
     }
@@ -33,10 +33,10 @@ class VanillaTest extends BaseToolstackTest
     public function testBuildCustomWebRoot()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot');
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot', ['copy' => true]);
-        $webRoot = $projectRoot . '/' . LocalProject::WEB_ROOT;
+        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
         $this->assertFileExists($webRoot . '/index.html');
     }
 
@@ -45,10 +45,15 @@ class VanillaTest extends BaseToolstackTest
      */
     public function testBuildCustomSourceDestination()
     {
-        // N.B. the source directory and destination must be absolute for this
-        // to work.
-        $sourceDir = realpath('tests/data/apps/vanilla');
+        // Copy the 'vanilla' app to a temporary directory.
+        $tempDir = self::$root->getName();
+        $sourceDir = tempnam($tempDir, '');
+        unlink($sourceDir);
+        mkdir($sourceDir);
+        $fsHelper = new FilesystemHelper();
+        $fsHelper->copyAll('tests/data/apps/vanilla', $sourceDir);
 
+        // Create another temporary directory.
         $tempDir = self::$root->getName();
         $destination = tempnam($tempDir, '');
 
@@ -62,8 +67,8 @@ class VanillaTest extends BaseToolstackTest
         $builder->build($sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 
-        // Remove the builds directory.
-        exec('rm -R ' . escapeshellarg($sourceDir . '/' . LocalProject::BUILD_DIR));
+        // Remove the temporary files.
+        exec('rm -R ' . escapeshellarg($destination) . ' ' . escapeshellarg($sourceDir));
     }
 
     /**
@@ -76,7 +81,7 @@ class VanillaTest extends BaseToolstackTest
         $destination = $projectRoot . '/web';
 
         $builder = new LocalBuild($this->buildSettings, self::$output);
-        $builder->buildProject($projectRoot, null, $destination);
+        $builder->build($projectRoot, $destination);
         $this->assertFileExists($destination . '/index.html');
     }
 }

@@ -79,6 +79,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     private static $environments = [];
 
+    /** @var bool */
+    private static $legacyMigrateAsked = false;
+
     /** @var OutputInterface|null */
     protected $output;
 
@@ -93,6 +96,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
     protected $hiddenInList = false;
     protected $local = false;
+
+    /** @var LocalProject */
+    protected $localProject;
 
     /** @var InputInterface|null */
     private $input;
@@ -129,25 +135,27 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     {
         parent::__construct($name);
 
-        $this->projectsTtl = getenv('PLATFORMSH_CLI_PROJECTS_TTL') ?: 3600;
-        $this->environmentsTtl = getenv('PLATFORMSH_CLI_ENVIRONMENTS_TTL') ?: 600;
-        $this->usersTtl = getenv('PLATFORMSH_CLI_USERS_TTL') ?: 3600;
+        $this->projectsTtl = getenv(CLI_ENV_PREFIX . 'PROJECTS_TTL') ?: 3600;
+        $this->environmentsTtl = getenv(CLI_ENV_PREFIX . 'ENVIRONMENTS_TTL') ?: 600;
+        $this->usersTtl = getenv(CLI_ENV_PREFIX . 'USERS_TTL') ?: 3600;
 
-        if (getenv('PLATFORMSH_CLI_SESSION_ID')) {
-            self::$sessionId = getenv('PLATFORMSH_CLI_SESSION_ID');
+        if (getenv(CLI_ENV_PREFIX . 'SESSION_ID')) {
+            self::$sessionId = getenv(CLI_ENV_PREFIX . 'SESSION_ID');
         }
         if (!isset(self::$apiToken)) {
             // Exchangeable API tokens.
-            if (getenv('PLATFORMSH_CLI_TOKEN')) {
-                self::$apiToken = getenv('PLATFORMSH_CLI_TOKEN');
+            if (getenv(CLI_ENV_PREFIX . 'TOKEN')) {
+                self::$apiToken = getenv(CLI_ENV_PREFIX . 'TOKEN');
                 self::$apiTokenType = 'exchange';
             }
             // Permanent, personal access token (deprecated).
-            elseif (getenv('PLATFORMSH_CLI_API_TOKEN')) {
-                self::$apiToken = getenv('PLATFORMSH_CLI_API_TOKEN');
+            elseif (getenv(CLI_ENV_PREFIX . 'API_TOKEN')) {
+                self::$apiToken = getenv(CLI_ENV_PREFIX . 'API_TOKEN');
                 self::$apiTokenType = 'access';
             }
         }
+
+        $this->localProject = new LocalProject();
 
         // Initialize the local file-based cache.
         CacheUtil::setCacheDir($this->getConfigDir() . '/cache');
@@ -172,12 +180,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     {
         if (!isset(self::$client)) {
             $connectorOptions = [];
-            if (getenv('PLATFORMSH_CLI_ACCOUNTS_SITE')) {
-                $connectorOptions['accounts'] = getenv('PLATFORMSH_CLI_ACCOUNTS_SITE');
-            }
-            $connectorOptions['verify'] = !getenv('PLATFORMSH_CLI_SKIP_SSL');
-            $connectorOptions['debug'] = (bool) getenv('PLATFORMSH_CLI_DEBUG');
-            $connectorOptions['client_id'] = 'platform-cli';
+            $connectorOptions['accounts'] = getenv(CLI_ENV_PREFIX . 'ACCOUNTS_API') ?: CLI_SERVICE_ACCOUNTS_API_URL;
+            $connectorOptions['verify'] = !getenv(CLI_ENV_PREFIX . 'SKIP_SSL');
+            $connectorOptions['debug'] = (bool) getenv(CLI_ENV_PREFIX . 'DEBUG');
+            $connectorOptions['client_id'] = CLI_OAUTH_CLIENT_ID;
             $connectorOptions['user_agent'] = $this->getUserAgent();
             $connectorOptions['api_token'] = self::$apiToken;
             $connectorOptions['api_token_type'] = self::$apiTokenType;
@@ -224,7 +230,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         self::$interactive = $input->isInteractive();
 
-        if (getenv('PLATFORMSH_CLI_DEBUG')) {
+        if (getenv(CLI_ENV_PREFIX . 'DEBUG')) {
             $this->stdErr->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
 
@@ -240,6 +246,24 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         $this->_deleteOldCaches();
+
+        // Migrate from the legacy file structure.
+        if ($this->localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !self::$legacyMigrateAsked) {
+            self::$legacyMigrateAsked = true;
+            $this->stdErr->writeln('You are in a project using an old file structure, from previous versions of the ' . CLI_NAME .'.');
+            if ($input->isInteractive()) {
+                /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+                $questionHelper = $this->getHelper('question');
+                if ($questionHelper->confirm('Migrate to the new structure?', $input, $this->stdErr)) {
+                    $code = $this->runOtherCommand('legacy-migrate');
+                    exit($code);
+                }
+            }
+            else {
+                $this->stdErr->writeln('Fix this with: <comment>' . CLI_EXECUTABLE . ' legacy-migrate</comment>');
+            }
+            $this->stdErr->writeln('');
+        }
     }
 
     /**
@@ -300,7 +324,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function getConfigDir()
     {
-        return $this->getHomeDir() . '/.platformsh';
+        return $this->getHomeDir() . '/' . CLI_CONFIG_DIR;
     }
 
     /**
@@ -349,7 +373,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $config['updates']['check'] = true;
         $config['updates']['last_checked'] = $timestamp;
         $this->writeGlobalConfig($config);
-        $this->runOtherCommand('self-update');
+        $this->runOtherCommand('self-update', ['--timeout' => 10]);
         $this->stdErr->writeln('');
     }
 
@@ -372,9 +396,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function writeGlobalConfig(array $config)
     {
-        $configFile = $this->getConfigDir() . '/config.yaml';
-        if (file_put_contents($configFile, Yaml::dump($config)) === false) {
-            trigger_error(sprintf('Failed to write global config to: %s', $configFile), E_USER_NOTICE);
+        $configDir = $this->getConfigDir();
+        if (!is_dir($configDir) && !mkdir($configDir, 0700, true)) {
+            trigger_error('Failed to create config directory: ' . $configDir, E_USER_WARNING);
+        }
+        $configFile = $configDir . '/config.yaml';
+        if (file_put_contents($configFile, Yaml::dump($config, 10)) === false) {
+            trigger_error('Failed to write config to: ' . $configFile, E_USER_WARNING);
         }
     }
 
@@ -393,12 +421,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function getUserAgent()
     {
-        $application = $this->getApplication();
-        $version = $application ? $application->getVersion() : 'dev';
-        $name = 'Platform.sh-CLI';
-        $url = 'https://github.com/platformsh/platformsh-cli';
+        $agent = sprintf('%s/%s', str_replace(' ', '-', CLI_NAME), CLI_VERSION);
+        if (!empty(CLI_SOURCE_URL)) {
+            $agent .= sprintf(' (+%s)', CLI_SOURCE_URL);
+        }
 
-        return "$name/$version (+$url)";
+        return $agent;
     }
 
     /**
@@ -479,17 +507,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             $project = $this->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
             if (!$project) {
-                $filename = LocalProject::getProjectRoot() . '/' . LocalProject::PROJECT_CONFIG;
+                $filename = $projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG;
                 if (isset($config['host'])) {
                     $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
                     $message = "Project not found: " . $projectUrl
-                        . "\nThe project probably no longer exists."
-                        . "\nThe project's hostname and ID were determined from the file: " . $filename;
+                        . "\nThe project probably no longer exists.";
                 }
                 else {
                     $message = "Project not found: " . $config['id']
-                        . "\nEither you do not have access to the project on Platform.sh, or the project no longer exists."
-                        . "\nThe project ID was determined from the file: " . $filename;
+                        . "\nEither you do not have access to the project or it no longer exists.";
                 }
                 throw new ProjectNotFoundException($message);
             }
@@ -511,23 +537,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     {
         if (!isset(self::$projectConfig[$projectRoot])) {
             $this->debug('Loading project config for ' . $projectRoot);
-            self::$projectConfig[$projectRoot] = LocalProject::getProjectConfig($projectRoot) ?: [];
+            self::$projectConfig[$projectRoot] = $this->localProject->getProjectConfig($projectRoot) ?: [];
         }
 
         return self::$projectConfig[$projectRoot];
-    }
-
-    /**
-     * Set a value in the project configuration.
-     *
-     * @param string $key
-     * @param mixed $value
-     * @param string $projectRoot
-     */
-    protected function setProjectConfig($key, $value, $projectRoot)
-    {
-        unset(self::$projectConfig[$projectRoot]);
-        LocalProject::writeCurrentProjectConfig($key, $value, $projectRoot);
     }
 
     /**
@@ -548,7 +561,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot() . '/' . LocalProject::REPOSITORY_DIR);
+        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot());
         $currentBranch = $gitHelper->getCurrentBranch();
 
         // Check if there is a manual mapping set for the current branch.
@@ -562,7 +575,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                 }
                 else {
                     unset($config['mapping'][$currentBranch]);
-                    $this->setProjectConfig('mapping', $config['mapping'], $projectRoot);
+                    $this->localProject->writeCurrentProjectConfig(['mapping' => $config['mapping']], $projectRoot);
                 }
             }
         }
@@ -724,7 +737,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
             $client = $connector->getClient();
             foreach ((array) $cached as $id => $data) {
-                $environments[$id] = new Environment($data, $endpoint, $client);
+                $environments[$id] = new Environment($data, $endpoint, $client, true);
             }
         }
 
@@ -827,7 +840,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             return;
         }
         // Ignore the project if it doesn't contain a Drupal application.
-        if (!Drupal::isDrupal($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+        if (!Drupal::isDrupal($projectRoot)) {
             return;
         }
         $this->debug('Updating Drush aliases');
@@ -854,7 +867,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     public function getProjectRoot()
     {
         if (empty(self::$projectRoot)) {
-            self::$projectRoot = LocalProject::getProjectRoot();
+            self::$projectRoot = $this->localProject->getProjectRoot();
         }
 
         return self::$projectRoot;
@@ -1028,13 +1041,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             return $appName;
         }
         $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot || !$this->selectedProjectIsCurrent() || !is_dir($projectRoot . '/' . LocalProject::REPOSITORY_DIR)) {
+        if (!$projectRoot || !$this->selectedProjectIsCurrent()) {
             return null;
         }
 
         $this->debug('Searching for applications in local repository');
         /** @var LocalApplication[] $apps */
-        $apps = LocalApplication::getApplications($projectRoot . '/' . LocalProject::REPOSITORY_DIR);
+        $apps = LocalApplication::getApplications($projectRoot);
 
         if ($filter) {
             $apps = array_filter($apps, $filter);
@@ -1088,7 +1101,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         $host = parse_url($url, PHP_URL_HOST);
         $path = parse_url($url, PHP_URL_PATH);
-        if ((!$path || $path === '/') && preg_match('/\-\w+\.[a-z]{2}\.platform\.sh$/', $host)) {
+        if ((!$path || $path === '/') && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote(CLI_PROJECT_API_DOMAIN) . '$/', $host)) {
             list($env_project_app, $result['host']) = explode('.', $host, 2);
             if (($doubleDashPos = strrpos($env_project_app, '--')) !== false) {
                 $env_project = substr($env_project_app, 0, $doubleDashPos);

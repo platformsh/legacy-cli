@@ -29,7 +29,7 @@ class FilesystemHelper extends Helper
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->fs = $fs ?: new Filesystem();
-        $this->copyOnWindows = (bool) getenv('PLATFORMSH_CLI_COPY_ON_WINDOWS');
+        $this->copyOnWindows = (bool) getenv(CLI_ENV_PREFIX . 'COPY_ON_WINDOWS');
     }
 
     /**
@@ -103,8 +103,9 @@ class FilesystemHelper extends Helper
      *
      * @param string $source
      * @param string $destination
+     * @param array $skip
      */
-    public function copyAll($source, $destination)
+    public function copyAll($source, $destination, array $skip = ['.git', CLI_PROJECT_CONFIG_DIR])
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -113,8 +114,6 @@ class FilesystemHelper extends Helper
         }
 
         if (is_dir($source)) {
-            $skip = ['.', '..', '.git'];
-
             // Prevent infinite recursion when the destination is inside the
             // source.
             if (strpos($destination, $source) === 0) {
@@ -125,11 +124,16 @@ class FilesystemHelper extends Helper
 
             $sourceDirectory = opendir($source);
             while ($file = readdir($sourceDirectory)) {
-                if (in_array($file, $skip) || is_link($source . '/' . $file)) {
+                // Skip symlinks, '.' and '..', and files in $skip.
+                if ($file === '.' || $file === '..' || in_array($file, $skip) || is_link($source . '/' . $file)) {
                     continue;
-                } elseif (is_dir($source . '/' . $file)) {
-                    $this->copyAll($source . '/' . $file, $destination . '/' . $file);
-                } else {
+                }
+                // Recurse into directories.
+                elseif (is_dir($source . '/' . $file)) {
+                    $this->copyAll($source . '/' . $file, $destination . '/' . $file, $skip);
+                }
+                // Perform the copy.
+                elseif (is_file($source . '/' . $file)) {
                     $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
                 }
             }
@@ -315,13 +319,10 @@ class FilesystemHelper extends Helper
         if (!file_exists($archive)) {
             throw new \InvalidArgumentException("Archive not found: $archive");
         }
-        if (!is_writable(dirname($destination))) {
-            throw new \InvalidArgumentException("Destination not writable: $destination");
+        if (!file_exists($destination) && !mkdir($destination, 0755, true)) {
+            throw new \InvalidArgumentException("Could not create destination directory: $destination");
         }
         $tar = $this->getTarExecutable();
-        if (!file_exists($destination)) {
-            mkdir($destination);
-        }
         $destination = $this->fixTarPath($destination);
         $archive = $this->fixTarPath($archive);
         $this->shellHelper->execute([$tar, '-xzp', '-C' . $destination, '-f' . $archive], null, true);

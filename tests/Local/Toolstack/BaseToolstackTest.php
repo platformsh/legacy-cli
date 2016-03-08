@@ -70,7 +70,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         $builder = $buildSettings
             ? new LocalBuild($buildSettings + $this->buildSettings, self::$output)
             : $this->builder;
-        $success = $builder->buildProject($projectRoot);
+        $success = $builder->build($projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
 
         return $projectRoot;
@@ -92,15 +92,19 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         unlink($projectRoot);
         mkdir($projectRoot);
 
-        // Set up the project files.
-        $local = new LocalProject();
-        $local->createProjectFiles($projectRoot, 'testProjectId');
-
-        // Make a dummy repository.
-        $repositoryDir = $projectRoot . '/' . LocalProject::REPOSITORY_DIR;
-        mkdir($repositoryDir);
+        // Set up the project.
         $fsHelper = new FilesystemHelper();
-        $fsHelper->copyAll($sourceDir, $repositoryDir);
+        $fsHelper->copyAll($sourceDir, $projectRoot);
+
+        // @todo perhaps make some of these steps unnecessary
+        $local = new LocalProject();
+        $cwd = getcwd();
+        chdir($projectRoot);
+        exec('git init');
+        chdir($cwd);
+        $local->ensureGitRemote($projectRoot, 'testProjectId');
+        $local->writeGitExclude($projectRoot);
+        $local->writeCurrentProjectConfig(['id' => 'testProjectId'], $projectRoot);
 
         return $projectRoot;
     }

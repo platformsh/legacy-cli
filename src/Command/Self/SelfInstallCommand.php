@@ -14,8 +14,9 @@ class SelfInstallCommand extends CommandBase
         $this->setName('self:install')
              ->setDescription('Install or update CLI configuration files');
         $this->setHiddenAliases(['local:install']);
+        $cliName = CLI_NAME;
         $this->setHelp(<<<EOT
-This command automatically installs shell configuration for the Platform.sh CLI,
+This command automatically installs shell configuration for the {$cliName},
 adding autocompletion support and handy aliases. Bash and ZSH are supported.
 EOT
         );
@@ -26,13 +27,13 @@ EOT
         $homeDir = $this->getHomeDir();
         $configDir = $this->getConfigDir();
 
-        $platformRc = file_get_contents(CLI_ROOT . '/platform.rc');
+        $platformRc = file_get_contents(CLI_ROOT . '/shell-config.rc');
         if ($platformRc === false) {
-            $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/platform.rc'));
+            $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/shell-config.rc'));
             return 1;
         }
 
-        $platformRcDestination = $configDir . DIRECTORY_SEPARATOR . 'platform.rc';
+        $platformRcDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
         if (file_put_contents($platformRcDestination, $platformRc) === false) {
             $this->stdErr->writeln(sprintf('Failed to write file: %s', $platformRcDestination));
             return 1;
@@ -60,7 +61,7 @@ EOT
         $questionHelper = $this->getHelper('question');
         if (!$questionHelper->confirm('Do you want to update the file automatically?', $input, $this->stdErr)) {
             $suggestedShellConfig = PHP_EOL
-                . '# Platform.sh CLI configuration'
+                . '# ' . CLI_NAME . ' configuration'
                 . PHP_EOL
                 . $suggestedShellConfig;
 
@@ -71,7 +72,7 @@ EOT
 
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
             . PHP_EOL . PHP_EOL
-            . '# Automatically added by the Platform.sh CLI'
+            . '# Automatically added by the ' . CLI_NAME
             . PHP_EOL . $suggestedShellConfig;
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');
