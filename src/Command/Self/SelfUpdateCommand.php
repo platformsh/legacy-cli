@@ -57,6 +57,14 @@ class SelfUpdateCommand extends CommandBase
         }
 
         $newVersionString = $updater->getNewVersion();
+
+        if ($notes = $strategy->getReleaseNotes($updater)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Release notes:', $newVersionString));
+            $this->stdErr->writeln(preg_replace('/^/m', '  ', $notes));
+            $this->stdErr->writeln('');
+        }
+
         /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
         if (!$questionHelper->confirm(sprintf('Update to version %s?', $newVersionString), $input, $output)) {

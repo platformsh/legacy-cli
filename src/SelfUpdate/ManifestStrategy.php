@@ -36,6 +36,9 @@ class ManifestStrategy implements StrategyInterface
     /** @var int */
     private $downloadTimeout = 60;
 
+    /** @var bool */
+    private $ignorePhpReq = false;
+
     /**
      * ManifestStrategy constructor.
      *
@@ -82,6 +85,9 @@ class ManifestStrategy implements StrategyInterface
         if (!$this->allowMajor) {
             $versions = $this->filterByLocalMajorVersion($versions);
         }
+        if (!$this->ignorePhpReq) {
+            $versions = $this->filterByPhpVersion($versions);
+        }
 
         $versionParser = new VersionParser($versions);
 
@@ -94,6 +100,32 @@ class ManifestStrategy implements StrategyInterface
         }
 
         return version_compare($mostRecent, $this->localVersion, '>') ? $mostRecent : false;
+    }
+
+    /**
+     * Find release notes for the new remote version.
+     *
+     * @param Updater $updater
+     *
+     * @return string|false
+     *   A string if release notes are found, or false otherwise.
+     */
+    public function getReleaseNotes(Updater $updater)
+    {
+        $localVersion = $this->getCurrentLocalVersion($updater);
+        $remoteVersion = $this->getCurrentRemoteVersion($updater);
+        if (!$remoteVersion) {
+            return false;
+        }
+        $versionInfo = $this->getAvailableVersions();
+        if (!isset($versionInfo[$remoteVersion])) {
+            throw new \RuntimeException(sprintf('Failed to find manifest item for version %s', $remoteVersion));
+        }
+        elseif (!isset($versionInfo[$remoteVersion]['notes']) || empty($versionInfo[$remoteVersion]['notes'])) {
+            return false;
+        }
+
+        return $versionInfo[$remoteVersion]['notes'];
     }
 
     /**
@@ -197,5 +229,28 @@ class ManifestStrategy implements StrategyInterface
             return $majorVersion === $localMajorVersion;
         });
 
+    }
+
+    /**
+     * Filter a list of versions to those that allow the current PHP version.
+     *
+     * @param string[] $versions
+     *
+     * @return string[]
+     */
+    private function filterByPhpVersion(array $versions)
+    {
+        $versionInfo = $this->getAvailableVersions();
+
+        return array_filter($versions, function ($version) use ($versionInfo) {
+            if (isset($versionInfo[$version]['php']['min']) && version_compare(PHP_VERSION, $versionInfo[$version]['php']['min'], '<')) {
+                return false;
+            }
+            elseif (isset($versionInfo[$version]['php']['max']) && version_compare(PHP_VERSION, $versionInfo[$version]['php']['max'], '>')) {
+                return false;
+            }
+
+            return true;
+        });
     }
 }
