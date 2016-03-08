@@ -67,4 +67,4 @@ define('CLI_LOCAL_BUILD_DIR', CLI_LOCAL_DIR . '/builds');
 define('CLI_LOCAL_PROJECT_CONFIG', CLI_LOCAL_DIR . '/project.yaml');
 define('CLI_LOCAL_PROJECT_CONFIG_LEGACY', '.platform-project');
 define('CLI_LOCAL_SHARED_DIR', CLI_LOCAL_DIR . '/shared');
-define('CLI_LOCAL_WEB_ROOT', 'www');
+define('CLI_LOCAL_WEB_ROOT', '.www');
