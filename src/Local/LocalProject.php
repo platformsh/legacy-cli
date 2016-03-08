@@ -205,6 +205,7 @@ class LocalProject
             // Backwards compatibility: copy old project config to new
             // location.
             if (file_exists($dir . '/../' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
+                $this->ensureLocalDir($dir);
                 copy($dir . '/../' . CLI_LOCAL_PROJECT_CONFIG_LEGACY, $dir . '/' . CLI_LOCAL_PROJECT_CONFIG);
             }
             $this->writeCurrentProjectConfig($projectId, $dir);
