@@ -86,7 +86,7 @@ EOF
             $this->stdErr->writeln('Moving ".build-archives" directory');
             if (is_dir($repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR)) {
                 $fsHelper->copyAll($legacyRoot . '/.build-archives', $repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR);
-                $fsHelper->remove($legacyRoot . '/shared');
+                $fsHelper->remove($legacyRoot . '/.build-archives');
             }
             else {
                 rename($legacyRoot . '/.build-archives', $repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR);
