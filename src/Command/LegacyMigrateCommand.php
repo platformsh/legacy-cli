@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -13,6 +14,17 @@ class LegacyMigrateCommand extends CommandBase
         $this
             ->setName('legacy-migrate')
             ->setDescription('Migrate from the legacy file structure');
+        $cliName = CLI_NAME;
+        $localDir = CLI_LOCAL_DIR;
+        $this->setHelp(<<<EOF
+Before version 3.x, the {$cliName} required a project to have a "repository"
+directory containing the Git repository, "builds", "shared" and others. From
+version 3, the Git repository itself is treated as the project. Metadata is
+stored inside the repository (in {$localDir}) and ignored by Git.
+
+This command will migrate from the old file structure to the new one.
+EOF
+        );
     }
 
     public function hideInList()
@@ -24,8 +36,12 @@ class LegacyMigrateCommand extends CommandBase
     {
         $legacyRoot = $this->localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {
-            $this->stdErr->writeln('Legacy project root not found.');
-            return 1;
+            if ($this->getProjectRoot()) {
+                $this->stdErr->writeln('This project is already compatible with the ' . CLI_NAME . ' version 3.x.');
+
+                return 0;
+            }
+            throw new RootNotFoundException();
         }
 
         $cwd = getcwd();
@@ -92,23 +108,22 @@ class LegacyMigrateCommand extends CommandBase
             $fsHelper->remove($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY);
         }
 
-        $success = true;
-
-        if (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
-            $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY . '</error>');
-            $success = false;
-        }
-
         if (!is_dir($legacyRoot . '/.git')) {
             $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');
-            $success = false;
+            return 1;
         }
+        elseif (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
+            $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY . '</error>');
+            return 1;
+        }
+
+        $this->stdErr->writeln('Migration complete');
 
         if (strpos($cwd, $repositoryDir) === 0) {
             $this->stdErr->writeln('Type this to refresh your shell:');
             $this->stdErr->writeln('    cd ' . $legacyRoot);
         }
 
-        return $success ? 0 : 1;
+        return 0;
     }
 }
