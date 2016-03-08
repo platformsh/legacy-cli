@@ -16,7 +16,7 @@ class SelfUpdateCommand extends CommandBase
             ->setName('self:update')
             ->setAliases(['self-update'])
             ->setDescription('Update the CLI to the latest version')
-            ->addOption('major', null, InputOption::VALUE_NONE, 'Update to a new major version, if available')
+            ->addOption('no-major', null, InputOption::VALUE_NONE, 'Only update between minor or patch versions')
             ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to a new unstable version, if available')
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
             ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version')
@@ -28,7 +28,7 @@ class SelfUpdateCommand extends CommandBase
     {
         $manifestUrl = $input->getOption('manifest') ?: CLI_UPDATE_MANIFEST_URL;
         $currentVersion = $input->getOption('current-version') ?: CLI_VERSION;
-        $allowMajor = $input->getOption('major');
+        $allowMajor = !$input->getOption('no-major');
         $allowUnstable = $input->getOption('unstable');
 
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
