@@ -70,11 +70,7 @@ EOF
         $this->stdErr->writeln('Backing up entire project to: ' . $backup);
         $fsHelper->archiveDir($legacyRoot, $backup);
 
-        if (file_exists($legacyRoot . '/builds')) {
-            $this->stdErr->writeln('Removing old "builds" directory.');
-            $fsHelper->remove($legacyRoot . '/builds');
-        }
-
+        $this->stdErr->writeln('Creating directory: ' . CLI_LOCAL_DIR);
         $this->localProject->ensureLocalDir($repositoryDir);
 
         if (file_exists($legacyRoot . '/shared')) {
@@ -88,29 +84,29 @@ EOF
             }
         }
 
-        if (file_exists($legacyRoot . '/.build-archives')) {
-            $this->stdErr->writeln('Moving ".build-archives" directory.');
-            if (is_dir($repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR)) {
-                $fsHelper->copyAll($legacyRoot . '/.build-archives', $repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR);
-                $fsHelper->remove($legacyRoot . '/.build-archives');
-            }
-            else {
-                rename($legacyRoot . '/.build-archives', $repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR);
-            }
-        }
-
         if (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
             $this->stdErr->writeln('Moving project config file.');
             $fsHelper->copy($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY, $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG);
             $fsHelper->remove($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY);
         }
 
-        if (file_exists($legacyRoot . '/www') && is_link($legacyRoot . '/www')) {
+        if (file_exists($legacyRoot . '/.build-archives')) {
+            $this->stdErr->writeln('Removing old build archives.');
+            $fsHelper->remove($legacyRoot . '/.build-archives');
+        }
+
+        if (file_exists($legacyRoot . '/builds')) {
+            $this->stdErr->writeln('Removing old builds.');
+            $fsHelper->remove($legacyRoot . '/builds');
+        }
+
+        if (is_link($legacyRoot . '/www')) {
+            $this->stdErr->writeln('Removing old "www" symlink.');
             $fsHelper->remove($legacyRoot . '/www');
         }
 
         $this->stdErr->writeln('Moving repository to be the new project root (this could take some time)...');
-        $fsHelper->copyAll($repositoryDir, $legacyRoot, []);
+        $fsHelper->copyAll($repositoryDir, $legacyRoot, [], true);
         $fsHelper->remove($repositoryDir);
 
         if (!is_dir($legacyRoot . '/.git')) {
