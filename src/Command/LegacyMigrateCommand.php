@@ -54,16 +54,20 @@ EOF
         $repositoryDir = $legacyRoot . '/repository';
         if (!is_dir($repositoryDir)) {
             $this->stdErr->writeln('Directory not found: <error>' . $repositoryDir . '</error>');
+
             return 1;
         }
         elseif (!is_dir($repositoryDir . '/.git')) {
             $this->stdErr->writeln('Not a Git repository: <error>' . $repositoryDir . '</error>');
+
             return 1;
         }
 
         $backup = rtrim($legacyRoot, '\\/') . '-backup.tar.gz';
         if (file_exists($backup)) {
             $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
+            $this->stdErr->writeln('Move (or delete) the backup, then run <comment>' . CLI_EXECUTABLE . ' legacy-migrate</comment> to continue.');
+
             return 1;
         }
 
@@ -111,10 +115,12 @@ EOF
 
         if (!is_dir($legacyRoot . '/.git')) {
             $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');
+
             return 1;
         }
         elseif (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
             $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY . '</error>');
+
             return 1;
         }
 
