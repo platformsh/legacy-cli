@@ -54,27 +54,27 @@ EOF
         $repositoryDir = $legacyRoot . '/repository';
         if (!is_dir($repositoryDir)) {
             $this->stdErr->writeln('Directory not found: <error>' . $repositoryDir . '</error>');
+
             return 1;
         }
         elseif (!is_dir($repositoryDir . '/.git')) {
             $this->stdErr->writeln('Not a Git repository: <error>' . $repositoryDir . '</error>');
+
             return 1;
         }
 
         $backup = rtrim($legacyRoot, '\\/') . '-backup.tar.gz';
         if (file_exists($backup)) {
             $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
+            $this->stdErr->writeln('Move (or delete) the backup, then run <comment>' . CLI_EXECUTABLE . ' legacy-migrate</comment> to continue.');
+
             return 1;
         }
 
         $this->stdErr->writeln('Backing up entire project to: ' . $backup);
         $fsHelper->archiveDir($legacyRoot, $backup);
 
-        if (file_exists($legacyRoot . '/builds')) {
-            $this->stdErr->writeln('Removing old "builds" directory.');
-            $fsHelper->remove($legacyRoot . '/builds');
-        }
-
+        $this->stdErr->writeln('Creating directory: ' . CLI_LOCAL_DIR);
         $this->localProject->ensureLocalDir($repositoryDir);
 
         if (file_exists($legacyRoot . '/shared')) {
@@ -88,37 +88,39 @@ EOF
             }
         }
 
-        if (file_exists($legacyRoot . '/.build-archives')) {
-            $this->stdErr->writeln('Moving ".build-archives" directory.');
-            if (is_dir($repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR)) {
-                $fsHelper->copyAll($legacyRoot . '/.build-archives', $repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR);
-                $fsHelper->remove($legacyRoot . '/.build-archives');
-            }
-            else {
-                rename($legacyRoot . '/.build-archives', $repositoryDir . '/' . CLI_LOCAL_ARCHIVE_DIR);
-            }
-        }
-
         if (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
             $this->stdErr->writeln('Moving project config file.');
             $fsHelper->copy($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY, $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG);
             $fsHelper->remove($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY);
         }
 
-        if (file_exists($legacyRoot . '/www') && is_link($legacyRoot . '/www')) {
+        if (file_exists($legacyRoot . '/.build-archives')) {
+            $this->stdErr->writeln('Removing old build archives.');
+            $fsHelper->remove($legacyRoot . '/.build-archives');
+        }
+
+        if (file_exists($legacyRoot . '/builds')) {
+            $this->stdErr->writeln('Removing old builds.');
+            $fsHelper->remove($legacyRoot . '/builds');
+        }
+
+        if (is_link($legacyRoot . '/www')) {
+            $this->stdErr->writeln('Removing old "www" symlink.');
             $fsHelper->remove($legacyRoot . '/www');
         }
 
         $this->stdErr->writeln('Moving repository to be the new project root (this could take some time)...');
-        $fsHelper->copyAll($repositoryDir, $legacyRoot, []);
+        $fsHelper->copyAll($repositoryDir, $legacyRoot, [], true);
         $fsHelper->remove($repositoryDir);
 
         if (!is_dir($legacyRoot . '/.git')) {
             $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');
+
             return 1;
         }
         elseif (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
             $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY . '</error>');
+
             return 1;
         }
 

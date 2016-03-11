@@ -103,9 +103,10 @@ class FilesystemHelper extends Helper
      *
      * @param string $source
      * @param string $destination
-     * @param array $skip
+     * @param array  $skip
+     * @param bool   $override
      */
-    public function copyAll($source, $destination, array $skip = ['.git', CLI_PROJECT_CONFIG_DIR])
+    public function copyAll($source, $destination, array $skip = ['.git', CLI_PROJECT_CONFIG_DIR], $override = false)
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -130,17 +131,17 @@ class FilesystemHelper extends Helper
                 }
                 // Recurse into directories.
                 elseif (is_dir($source . '/' . $file)) {
-                    $this->copyAll($source . '/' . $file, $destination . '/' . $file, $skip);
+                    $this->copyAll($source . '/' . $file, $destination . '/' . $file, $skip, $override);
                 }
                 // Perform the copy.
                 elseif (is_file($source . '/' . $file)) {
-                    $this->fs->copy($source . '/' . $file, $destination . '/' . $file);
+                    $this->fs->copy($source . '/' . $file, $destination . '/' . $file, $override);
                 }
             }
             closedir($sourceDirectory);
         }
         else {
-            $this->fs->copy($source, $destination);
+            $this->fs->copy($source, $destination, $override);
         }
     }
 
