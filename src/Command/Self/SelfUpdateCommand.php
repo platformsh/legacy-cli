@@ -58,9 +58,9 @@ class SelfUpdateCommand extends CommandBase
 
         $newVersionString = $updater->getNewVersion();
 
-        if ($notes = $strategy->getReleaseNotes($updater)) {
+        if ($notes = $strategy->getUpdateNotes($updater)) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Release notes:', $newVersionString));
+            $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Update notes:', $newVersionString));
             $this->stdErr->writeln(preg_replace('/^/m', '  ', $notes));
             $this->stdErr->writeln('');
         }
