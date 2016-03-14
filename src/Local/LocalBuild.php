@@ -34,7 +34,7 @@ class LocalBuild
         $this->shellHelper = $shellHelper ?: new ShellHelper($output);
         $this->fsHelper = $fsHelper ?: new FilesystemHelper($this->shellHelper);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
-        $this->gitHelper = $gitHelper ?: new GitHelper();
+        $this->gitHelper = $gitHelper ?: new GitHelper($this->shellHelper);
 
         if ($output !== null && !isset($this->settings['verbosity'])) {
             $this->settings['verbosity'] = $output->getVerbosity();
