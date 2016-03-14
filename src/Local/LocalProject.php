@@ -10,53 +10,6 @@ class LocalProject
 {
 
     /**
-     * Initialize a project in a directory.
-     *
-     * @param string $dir
-     *   The existing repository directory.
-     * @param string $projectId
-     *   The project ID (optional). If no project is specified, the project ID
-     *   and git URL will be automatically detected from the repository.
-     * @param string $gitUrl
-     *   The project's git URL (optional).
-     *
-     * @throws \RuntimeException
-     *
-     * @return string The absolute path to the project.
-     */
-    public function initialize($dir, $projectId = null, $gitUrl = null)
-    {
-        $realPath = realpath($dir);
-        if (!$realPath) {
-            throw new \RuntimeException("Directory not readable: $dir");
-        }
-
-        $dir = $realPath;
-        if (!file_exists("$dir/.git")) {
-            throw new \RuntimeException('The directory is not a Git repository');
-        }
-
-        if (file_exists($dir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
-            throw new \RuntimeException("The project is already initialized");
-        }
-
-        // Get the project ID from the Git repository.
-        if ($projectId === null || $gitUrl === null) {
-            $gitUrl = $this->getGitRemoteUrl($dir);
-            if (!$gitUrl || !($projectId = $this->getProjectId($gitUrl))) {
-                throw new \InvalidArgumentException('Project ID not found for directory: ' . $dir);
-            }
-        }
-
-        // Set up the project.
-        $this->writeGitExclude($dir);
-        $this->writeCurrentProjectConfig($projectId, $dir);
-        $this->ensureGitRemote($dir, $gitUrl);
-
-        return $dir;
-    }
-
-    /**
      * @param string $gitUrl
      *
      * @return array|false
