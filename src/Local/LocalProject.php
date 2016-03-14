@@ -43,8 +43,7 @@ class LocalProject
         // Get the project ID from the Git repository.
         if ($projectId === null || $gitUrl === null) {
             $gitUrl = $this->getGitRemoteUrl($dir);
-            $projectId = $this->getProjectId($gitUrl);
-            if (!$projectId) {
+            if (!$gitUrl || !($projectId = $this->getProjectId($gitUrl))) {
                 throw new \InvalidArgumentException('Project ID not found for directory: ' . $dir);
             }
         }
@@ -78,7 +77,7 @@ class LocalProject
      * @throws \RuntimeException
      *   If no remote can be found.
      *
-     * @return string
+     * @return string|false
      *   The Git remote URL.
      */
     protected function getGitRemoteUrl($dir)
@@ -90,7 +89,8 @@ class LocalProject
                 return $url;
             }
         }
-        throw new \RuntimeException("Git remote URL not found");
+
+        return false;
     }
 
     /**
@@ -152,8 +152,8 @@ class LocalProject
             if (file_exists($currentDir . '/' . $file)) {
                 if ($callback === null || $callback($currentDir)) {
                     $root = $currentDir;
+                    break;
                 }
-                break;
             }
 
             // The file was not found, go one directory up.
@@ -198,8 +198,8 @@ class LocalProject
             if (file_exists($dir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
                 return true;
             }
-            $projectId = $this->getProjectId($this->getGitRemoteUrl($dir));
-            if (!$projectId) {
+            $gitUrl = $this->getGitRemoteUrl($dir);
+            if (!$gitUrl || !($projectId = $this->getProjectId($gitUrl))) {
                 return false;
             }
             // Backwards compatibility: copy old project config to new
@@ -236,8 +236,8 @@ class LocalProject
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG));
         }
         elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
-            $projectId = $this->getProjectId($this->getGitRemoteUrl($projectRoot));
-            if ($projectId) {
+            $gitUrl = $this->getGitRemoteUrl($projectRoot);
+            if ($gitUrl && ($projectId = $this->getProjectId($gitUrl))) {
                 $projectConfig = $projectId;
             }
         }
