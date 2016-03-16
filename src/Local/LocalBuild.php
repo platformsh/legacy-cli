@@ -16,25 +16,31 @@ class LocalBuild
     const BUILD_VERSION = 3;
 
     protected $settings;
+
+    /** @var OutputInterface */
     protected $output;
+
+    /** @var FilesystemHelper */
     protected $fsHelper;
+
+    /** @var GitHelper */
     protected $gitHelper;
+
+    /** @var ShellHelper */
     protected $shellHelper;
 
     /**
      * @param array           $settings
-     * @param OutputInterface $output
-     * @param object          $fsHelper
-     * @param object          $gitHelper
+     * @param OutputInterface|null $output
      */
-    public function __construct(array $settings = [], OutputInterface $output = null, $fsHelper = null, $gitHelper = null, $shellHelper = null)
+    public function __construct(array $settings = [], OutputInterface $output = null)
     {
         $this->settings = $settings;
         $this->output = $output ?: new NullOutput();
-        $this->shellHelper = $shellHelper ?: new ShellHelper($output);
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper($this->shellHelper);
+        $this->shellHelper = new ShellHelper($this->output);
+        $this->fsHelper = new FilesystemHelper($this->shellHelper);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
-        $this->gitHelper = $gitHelper ?: new GitHelper($this->shellHelper);
+        $this->gitHelper = new GitHelper($this->shellHelper);
 
         if ($output !== null && !isset($this->settings['verbosity'])) {
             $this->settings['verbosity'] = $output->getVerbosity();

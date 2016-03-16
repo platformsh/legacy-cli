@@ -57,9 +57,9 @@ EOT
         $suggestedShellConfig = "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
             . '. ' . escapeshellarg($platformRcDestination) . " 2>/dev/null";
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
-        if (!$questionHelper->confirm('Do you want to update the file automatically?', $input, $this->stdErr)) {
+        if (!$questionHelper->confirm('Do you want to update the file automatically?')) {
             $suggestedShellConfig = PHP_EOL
                 . '# ' . CLI_NAME . ' configuration'
                 . PHP_EOL

@@ -31,9 +31,9 @@ class TunnelOpenCommand extends TunnelCommandBase
         $environment = $this->getSelectedEnvironment();
 
         if ($environment->id === 'master') {
-            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
-            if (!$questionHelper->confirm('Are you sure you want to open SSH tunnel(s) to the <comment>master</comment> (production) environment?', $input, $output, false)) {
+            if (!$questionHelper->confirm('Are you sure you want to open SSH tunnel(s) to the <comment>master</comment> (production) environment?', false)) {
                 return 1;
             }
         }

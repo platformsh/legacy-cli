@@ -52,9 +52,9 @@ class EnvironmentUrlCommand extends UrlCommandBase
         }
 
         // Allow the user to choose a URL to open.
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
-        $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to choose a URL', $input, $output, $urls[0]);
+        $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to choose a URL', $urls[0]);
 
         $this->openUrl($url, $input, $output);
 

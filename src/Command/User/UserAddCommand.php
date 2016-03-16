@@ -29,7 +29,7 @@ class UserAddCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
         $email = $input->getArgument('email');
@@ -105,7 +105,7 @@ class UserAddCommand extends CommandBase
         $this->stdErr->writeln("<comment>Adding users can result in additional charges.</comment>");
 
         if ($input->isInteractive()) {
-            if (!$questionHelper->confirm("Are you sure you want to add this user?", $input, $this->stdErr)) {
+            if (!$questionHelper->confirm("Are you sure you want to add this user?")) {
                 return 1;
             }
         }

@@ -2,11 +2,13 @@
 
 namespace Platformsh\Cli\Helper;
 
+use Platformsh\Cli\Console\OutputAwareInterface;
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
-class FilesystemHelper extends Helper
+class FilesystemHelper extends Helper implements OutputAwareInterface
 {
 
     protected $relative = false;
@@ -23,13 +25,23 @@ class FilesystemHelper extends Helper
 
     /**
      * @param ShellHelperInterface $shellHelper
-     * @param object               $fs
+     * @param OutputInterface      $fs
      */
     public function __construct(ShellHelperInterface $shellHelper = null, $fs = null)
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->fs = $fs ?: new Filesystem();
         $this->copyOnWindows = (bool) getenv(CLI_ENV_PREFIX . 'COPY_ON_WINDOWS');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setOutput(OutputInterface $output)
+    {
+        if ($this->shellHelper instanceof OutputAwareInterface) {
+            $this->shellHelper->setOutput($output);
+        }
     }
 
     /**

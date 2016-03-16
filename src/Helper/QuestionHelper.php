@@ -6,49 +6,85 @@
 
 namespace Platformsh\Cli\Helper;
 
-use Symfony\Component\Console\Helper\QuestionHelper;
+use Platformsh\Cli\Console\OutputAwareInterface;
+use Symfony\Component\Console\Helper\QuestionHelper as BaseQuestionHelper;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputAwareInterface;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 
-class PlatformQuestionHelper extends QuestionHelper
+class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface, InputAwareInterface
 {
+    /** @var InputInterface */
+    private $input;
+    /** @var OutputInterface */
+    private $output;
+
+    /**
+     * QuestionHelper constructor.
+     *
+     * @param InputInterface|null  $input
+     * @param OutputInterface|null $output
+     */
+    public function __construct(InputInterface $input = null, OutputInterface $output = null)
+    {
+        $this->input = $input ?: new ArgvInput();
+        $this->output = $output ?: new ConsoleOutput();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setInput(InputInterface $input)
+    {
+        $this->input = $input;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setOutput(OutputInterface $output)
+    {
+        if ($output instanceof ConsoleOutputInterface) {
+            $output = $output->getErrorOutput();
+        }
+        $this->output = $output;
+    }
 
     /**
      * Ask the user to confirm an action.
      *
      * @param string          $questionText
-     * @param InputInterface  $input
-     * @param OutputInterface $output
      * @param bool            $default
      *
      * @return bool
      */
-    public function confirm($questionText, InputInterface $input, OutputInterface $output, $default = true)
+    public function confirm($questionText, $default = true)
     {
         $questionText .= ' <question>' . ($default ? '[Y/n]' : '[y/N]') . '</question> ';
 
-        $yes = $input->hasOption('yes') && $input->getOption('yes');
-        $no = $input->hasOption('no') && $input->getOption('no');
+        $yes = $this->input->hasOption('yes') && $this->input->getOption('yes');
+        $no = $this->input->hasOption('no') && $this->input->getOption('no');
         if ($yes && !$no) {
-            $output->writeln($questionText . 'y');
+            $this->output->writeln($questionText . 'y');
             return true;
         } elseif ($no && !$yes) {
-            $output->writeln($questionText . 'n');
+            $this->output->writeln($questionText . 'n');
             return false;
         }
         $question = new ConfirmationQuestion($questionText, $default);
 
-        return $this->ask($input, $output, $question);
+        return $this->ask($this->input, $this->output, $question);
     }
 
     /**
      * @param array           $items   An associative array of choices.
      * @param string          $text    Some text to precede the choices.
-     * @param InputInterface  $input
-     * @param OutputInterface $output
      * @param mixed           $default A default (as a key in $items).
      *
      * @throws \RuntimeException on failure
@@ -56,7 +92,7 @@ class PlatformQuestionHelper extends QuestionHelper
      * @return mixed
      *   The chosen item (as a key in $items).
      */
-    public function choose(array $items, $text = 'Enter a number to choose an item:', InputInterface $input, OutputInterface $output, $default = null)
+    public function choose(array $items, $text = 'Enter a number to choose an item:', $default = null)
     {
         if (count($items) === 1) {
             return key($items);
@@ -70,7 +106,7 @@ class PlatformQuestionHelper extends QuestionHelper
         // completed to '20', etc.
         $question->setAutocompleterValues(null);
 
-        $choice = $this->ask($input, $output, $question);
+        $choice = $this->ask($this->input, $this->output, $question);
         $choiceKey = array_search($choice, $items);
         if ($choiceKey === false) {
             throw new \RuntimeException("Invalid value: $choice");
@@ -83,14 +119,12 @@ class PlatformQuestionHelper extends QuestionHelper
      * Ask a simple question which requires input.
      *
      * @param string          $questionText
-     * @param InputInterface  $input
-     * @param OutputInterface $output
      * @param mixed           $default
      *
      * @return string
      *   The user's answer.
      */
-    public function askInput($questionText, InputInterface $input, OutputInterface $output, $default = null)
+    public function askInput($questionText, $default = null)
     {
         if ($default !== null) {
             $questionText .= ' <question>[' . $default . ']</question>';
@@ -98,6 +132,6 @@ class PlatformQuestionHelper extends QuestionHelper
         $questionText .= ': ';
         $question = new Question($questionText, $default);
 
-        return $this->ask($input, $output, $question);
+        return $this->ask($this->input, $this->output, $question);
     }
 }

@@ -103,9 +103,9 @@ class ProjectGetCommand extends CommandBase
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
-            $directory = $questionHelper->askInput('Directory', $input, $this->stdErr, $directory);
+            $directory = $questionHelper->askInput('Directory', $directory);
         }
 
         if ($projectRoot = $this->getProjectRoot()) {

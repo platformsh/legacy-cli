@@ -218,7 +218,7 @@ class Drupal extends ToolstackBase
     {
         static $drushHelper;
         if (!isset($drushHelper)) {
-            $drushHelper = new DrushHelper($this->output);
+            $drushHelper = new DrushHelper($this->shellHelper);
         }
 
         return $drushHelper;
