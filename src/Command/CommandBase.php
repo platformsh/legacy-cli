@@ -464,6 +464,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             throw new LoginRequiredException();
         }
         $exitCode = $this->runOtherCommand('login');
+        $this->stdErr->writeln('');
         if ($exitCode) {
             throw new \Exception('Login failed');
         }
