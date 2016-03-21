@@ -288,40 +288,52 @@ class Drupal extends ToolstackBase
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
         $drushFlags = $this->getDrushFlags();
+        $updateLock = version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['drushUpdateLock']);
 
         $projectMake = $this->findDrushMakeFile(true);
         $projectCoreMake = $this->findDrushMakeFile(true, true);
 
         $drupalRoot = $this->getWebRoot();
 
-        $args = array_merge(
-            ['make', $projectCoreMake, $drupalRoot],
-            $drushFlags
-        );
-
-        // Create a lock file automatically.
-        $updateLock = version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['drushUpdateLock']);
-        if (!strpos($projectCoreMake, '.lock') && $updateLock) {
-            $args[] = "--lock=$projectCoreMake.lock";
-        }
-
-        $drushHelper->execute($args, dirname($projectCoreMake), true, false);
+        $this->output->writeln("Building profile <info>$profileName</info>");
 
         $profileDir = $drupalRoot . '/profiles/' . $profileName;
 
-        $this->output->writeln("Building the profile: <info>$profileName</info>");
+        if ($projectMake) {
+            $tempProfileDir = tempnam($this->buildDir, 'make');
+            if (!$tempProfileDir || !unlink($tempProfileDir) || !mkdir($tempProfileDir)) {
+                throw new \RuntimeException('Failed to create temporary directory in: ' . $this->buildDir);
+            }
+            $args = array_merge(
+                ['make', '--no-core', '--contrib-destination=.', $projectMake, $tempProfileDir],
+                $drushFlags
+            );
 
-        $args = array_merge(
-            ['make', '--no-core', '--contrib-destination=.', $projectMake, $profileDir],
-            $drushFlags
-        );
+            // Create a lock file automatically.
+            if (!strpos($projectMake, '.lock') && $updateLock) {
+                $args[] = "--lock=$projectMake.lock";
+            }
 
-        // Create a lock file automatically.
-        if (!strpos($projectMake, '.lock') && $updateLock) {
-            $args[] = "--lock=$projectMake.lock";
+            $drushHelper->execute($args, dirname($projectMake), true, false);
         }
 
-        $drushHelper->execute($args, dirname($projectMake), true, false);
+        if ($projectCoreMake) {
+            $args = array_merge(
+                ['make', $projectCoreMake, $drupalRoot],
+                $drushFlags
+            );
+
+            // Create a lock file automatically.
+            if (!strpos($projectCoreMake, '.lock') && $updateLock) {
+                $args[] = "--lock=$projectCoreMake.lock";
+            }
+
+            $drushHelper->execute($args, dirname($projectCoreMake), true, false);
+        }
+
+        if (!empty($tempProfileDir) && !rename($tempProfileDir, $profileDir)) {
+            throw new \RuntimeException('Failed to move profile directory to: ' . $profileDir);
+        }
 
         if ($this->copy) {
             $this->output->writeln("Copying existing app files to the profile");
