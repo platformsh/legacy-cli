@@ -29,7 +29,7 @@ class ProjectDeleteCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
         $confirmQuestion = "You are about to delete the project:"
@@ -39,13 +39,13 @@ class ProjectDeleteCommand extends CommandBase
             . "\n * All data associated with this project will be deleted, including backups."
             . "\n * You will be charged at the end of the month for any remaining project costs."
             . "\n\nAre you sure you want to delete this project?";
-        if (!$questionHelper->confirm($confirmQuestion, $input, $output, false)) {
+        if (!$questionHelper->confirm($confirmQuestion, false)) {
             return 1;
         }
 
         $title = $project->title;
         if ($input->isInteractive() && strlen($title)) {
-            $confirmName = $questionHelper->askInput("Type the project title to confirm", $input, $this->stdErr);
+            $confirmName = $questionHelper->askInput("Type the project title to confirm");
             if ($confirmName !== $title) {
                 $this->stdErr->writeln("Incorrect project title (expected: $title)");
                 return 1;

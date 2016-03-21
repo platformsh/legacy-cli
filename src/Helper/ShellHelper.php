@@ -2,14 +2,16 @@
 
 namespace Platformsh\Cli\Helper;
 
+use Platformsh\Cli\Console\OutputAwareInterface;
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\ProcessBuilder;
 
-class ShellHelper extends Helper implements ShellHelperInterface
+class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInterface
 {
 
     /** @var OutputInterface */
@@ -27,8 +29,14 @@ class ShellHelper extends Helper implements ShellHelperInterface
         $this->output = $output ?: new NullOutput();
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function setOutput(OutputInterface $output)
     {
+        if ($output instanceof ConsoleOutputInterface) {
+            $output = $output->getErrorOutput();
+        }
         $this->output = $output;
     }
 

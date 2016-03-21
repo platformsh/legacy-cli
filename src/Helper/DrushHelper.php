@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Helper;
 
+use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Exception\DependencyVersionMismatchException;
 use Platformsh\Cli\Local\LocalApplication;
@@ -10,17 +11,13 @@ use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
-class DrushHelper extends Helper
+class DrushHelper extends Helper implements OutputAwareInterface
 {
 
     protected $homeDir = '~';
-
-    /** @var OutputInterface */
-    protected $output;
 
     /** @var ShellHelperInterface */
     protected $shellHelper;
@@ -34,16 +31,23 @@ class DrushHelper extends Helper
     }
 
     /**
-     * @param OutputInterface      $output
      * @param ShellHelperInterface $shellHelper
      * @param object               $fs
      */
-    public function __construct(OutputInterface $output = null, ShellHelperInterface $shellHelper = null, $fs = null)
+    public function __construct(ShellHelperInterface $shellHelper = null, $fs = null)
     {
-        $this->output = $output ?: new NullOutput();
         $this->shellHelper = $shellHelper ?: new ShellHelper();
-        $this->shellHelper->setOutput($this->output);
         $this->fs = $fs ?: new Filesystem();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setOutput(OutputInterface $output)
+    {
+        if ($this->shellHelper instanceof OutputAwareInterface) {
+            $this->shellHelper->setOutput($output);
+        }
     }
 
     /**

@@ -29,11 +29,6 @@ interface ShellHelperInterface
     public function __construct(OutputInterface $output = null);
 
     /**
-     * @param OutputInterface $output
-     */
-    public function setOutput(OutputInterface $output);
-
-    /**
      * Check whether a shell command exists.
      *
      * @param string $command

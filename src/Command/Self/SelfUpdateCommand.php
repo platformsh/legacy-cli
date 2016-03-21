@@ -65,9 +65,9 @@ class SelfUpdateCommand extends CommandBase
             $this->stdErr->writeln('');
         }
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
-        if (!$questionHelper->confirm(sprintf('Update to version %s?', $newVersionString), $input, $output)) {
+        if (!$questionHelper->confirm(sprintf('Update to version %s?', $newVersionString))) {
             return 1;
         }
 

@@ -43,7 +43,6 @@ class SelfBuildCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
         $shellHelper = $this->getHelper('shell');
-        $shellHelper->setOutput($output);
         if (!$shellHelper->commandExists('box')) {
             $this->stdErr->writeln('Command not found: <error>box</error>');
             $this->stdErr->writeln('The Box utility is required to build new CLI packages. Try:');
@@ -76,9 +75,9 @@ class SelfBuildCommand extends CommandBase
 
         $phar = isset($config['output']) ? $config['output'] : CLI_ROOT . '/' . CLI_PHAR;
         if (file_exists($phar)) {
-            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
-            if (!$questionHelper->confirm("File exists: <comment>$phar</comment>. Overwrite?", $input, $this->stdErr)) {
+            if (!$questionHelper->confirm("File exists: <comment>$phar</comment>. Overwrite?")) {
                 return 1;
             }
         }

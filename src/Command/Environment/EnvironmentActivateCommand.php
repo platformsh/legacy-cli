@@ -72,7 +72,7 @@ class EnvironmentActivateCommand extends CommandBase
                 continue;
             }
             $question = "Are you sure you want to activate the environment <info>$environmentId</info>?";
-            if (!$questionHelper->confirm($question, $input, $output)) {
+            if (!$questionHelper->confirm($question)) {
                 continue;
             }
             $process[$environmentId] = $environment;

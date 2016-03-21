@@ -58,7 +58,8 @@ class LocalDrushAliasesCommand extends CommandBase
 
         $homeDir = $this->getHomeDir();
 
-        $drushHelper = new DrushHelper($output);
+        /** @var DrushHelper $drushHelper */
+        $drushHelper = $this->getHelper('drush');
         $drushHelper->ensureInstalled();
         $drushHelper->setHomeDir($homeDir);
 
@@ -74,7 +75,7 @@ class LocalDrushAliasesCommand extends CommandBase
                 $existing = $drushHelper->getAliases($new_group);
                 if ($existing && $new_group != $current_group) {
                     $question = "The Drush alias group <info>@$new_group</info> already exists. Overwrite?";
-                    if (!$questionHelper->confirm($question, $input, $output, false)) {
+                    if (!$questionHelper->confirm($question, false)) {
                         return 1;
                     }
                 }
@@ -88,7 +89,7 @@ class LocalDrushAliasesCommand extends CommandBase
                 $drushDir = $homeDir . '/.drush';
                 $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
                 if (file_exists($oldFile)) {
-                    if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?", $input, $this->stdErr)) {
+                    if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
                         unlink($oldFile);
                     }
                 }

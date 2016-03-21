@@ -76,9 +76,7 @@ class EnvironmentBranchCommand extends CommandBase
         if ($environment = $this->getEnvironment($machineName, $selectedProject)) {
             $checkout = $this->getHelper('question')
                              ->confirm(
-                                 "The environment <comment>$machineName</comment> already exists. Check out?",
-                                 $input,
-                                 $this->stdErr
+                                 "The environment <comment>$machineName</comment> already exists. Check out?"
                              );
             if ($checkout) {
                 return $this->runOtherCommand(

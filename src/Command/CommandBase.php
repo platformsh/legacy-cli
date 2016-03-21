@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -18,6 +19,7 @@ use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputAwareInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -278,9 +280,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
                     $config['migrate']['3.x']['last_asked'] = $timestamp;
                     $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
                 }
-                /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+                /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
                 $questionHelper = $this->getHelper('question');
-                if ($questionHelper->confirm('Migrate to the new structure?', $this->input, $this->stdErr)) {
+                if ($questionHelper->confirm('Migrate to the new structure?')) {
                     $code = $this->runOtherCommand('legacy-migrate');
                     exit($code);
                 }
@@ -1087,13 +1089,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         if (count($apps) > 1 && $input->isInteractive()) {
-            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
             $choices = [];
             foreach ($apps as $app) {
                 $choices[$app->getName()] = $app->getName();
             }
-            $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:', $input, $this->stdErr);
+            $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:');
         }
 
         $input->setOption('app', $appName);
@@ -1362,5 +1364,21 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if (isset($this->stdErr) && $this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getHelper($name)
+    {
+        $helper = parent::getHelper($name);
+        if ($this->input !== null && $helper instanceof InputAwareInterface) {
+            $helper->setInput($this->input);
+        }
+        if ($this->output !== null && $helper instanceof OutputAwareInterface) {
+            $helper->setOutput($this->output);
+        }
+
+        return $helper;
     }
 }

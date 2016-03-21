@@ -43,7 +43,7 @@ class LoginCommand extends CommandBase
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)
     {
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $helper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $helper */
         $helper = $this->getHelper('question');
 
         $question = new Question('Your email address: ');
@@ -67,7 +67,7 @@ class LoginCommand extends CommandBase
             $resendInviteText .= "but you haven't verified your email address yet. \n";
             $resendInviteText .= "Please click on the link in the email we sent you. \n";
             $resendInviteText .= "Do you want us to send you the email again?";
-            $resendInvite = $helper->confirm($resendInviteText, $input, $output, false);
+            $resendInvite = $helper->confirm($resendInviteText, false);
             if ($resendInvite) {
                 // @todo
             }
