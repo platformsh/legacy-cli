@@ -28,10 +28,17 @@ class LoginCommand extends CommandBase
             throw new \Exception('Non-interactive login not supported');
         }
 
-        $this->stdErr->writeln("Please log in using your <info>" . CLI_CLOUD_SERVICE . "</info> account\n");
+        $this->stdErr->writeln('Please log in using your <info>' . CLI_CLOUD_SERVICE . '</info> account.');
+        $this->stdErr->writeln('');
         $this->configureAccount($input, $this->stdErr);
+
         $this->clearCache();
-        $this->stdErr->writeln("\n<info>Thank you, you are all set.</info>\n");
+
+        $info = $this->getClient(false)->getAccountInfo();
+        if (isset($info['mail'])) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('You are logged in as <info>' . $info['mail'] . '</info>.');
+        }
     }
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)
