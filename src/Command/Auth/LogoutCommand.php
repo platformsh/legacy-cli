@@ -38,7 +38,7 @@ class LogoutCommand extends CommandBase
                         ->confirm("Are you sure you wish to log out?", $input, $this->stdErr);
 
         if (!$confirm) {
-            $this->stdErr->writeln("You remain logged in");
+            $this->stdErr->writeln('You remain logged in.');
 
             return 1;
         }
@@ -47,7 +47,7 @@ class LogoutCommand extends CommandBase
              ->getConnector()
              ->logOut();
         $this->clearCache();
-        $this->stdErr->writeln("You are now logged out");
+        $this->stdErr->writeln('You are now logged out.');
 
         if ($input->getOption('all')) {
             if (file_exists($this->getSessionsDir())) {

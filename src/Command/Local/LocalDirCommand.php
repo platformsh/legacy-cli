@@ -18,7 +18,7 @@ class LocalDirCommand extends CommandBase
             ->setName('local:dir')
             ->setAliases(['dir'])
             ->setDescription('Find the local project root')
-            ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('repo', 'web', or 'shared')");
+            ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('local', 'web' or 'shared')");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -31,6 +31,7 @@ class LocalDirCommand extends CommandBase
         $dir = $projectRoot;
 
         $subDirs = [
+            'local' => CLI_LOCAL_DIR,
             'shared' => CLI_LOCAL_SHARED_DIR,
             'web' => CLI_LOCAL_WEB_ROOT,
             'web_root' => CLI_LOCAL_WEB_ROOT,

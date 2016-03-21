@@ -107,7 +107,7 @@ EOF
         $environments = $this->getEnvironments($this->getSelectedProject(), true);
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot);
-        $gitHelper->execute(['fetch', 'origin']);
+        $gitHelper->execute(['fetch', CLI_GIT_REMOTE_NAME]);
         $mergedBranches = $gitHelper->getMergedBranches($base);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
         unset($mergedEnvironments[$base], $mergedEnvironments['master']);

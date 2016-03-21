@@ -211,6 +211,11 @@ class Application extends ParentApplication
         // There is a runningCommand property, but it is private.
         $this->currentCommand = $command;
 
+        // Build the command synopsis early, so it doesn't include default
+        // options and arguments (such as --help and <command>).
+        // @todo find a better solution for this?
+        $this->currentCommand->getSynopsis();
+
         return parent::doRunCommand($command, $input, $output);
     }
 
@@ -319,7 +324,9 @@ class Application extends ParentApplication
         } while ($e = $e->getPrevious());
 
         if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
-            $output->writeln(sprintf('Usage: <info>%s</info>', sprintf($this->currentCommand->getSynopsis(), $this->getName())), OutputInterface::VERBOSITY_QUIET);
+            $output->writeln(sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()), OutputInterface::VERBOSITY_QUIET);
+            $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+            $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', CLI_EXECUTABLE, $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
         }
     }

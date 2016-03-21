@@ -464,6 +464,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             throw new LoginRequiredException();
         }
         $exitCode = $this->runOtherCommand('login');
+        $this->stdErr->writeln('');
         if ($exitCode) {
             throw new \Exception('Login failed');
         }
@@ -562,7 +563,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected function getProjectConfig($projectRoot)
     {
         if (!isset(self::$projectConfig[$projectRoot])) {
-            $this->debug('Loading project config for ' . $projectRoot);
+            $this->debug('Loading project config');
             self::$projectConfig[$projectRoot] = $this->localProject->getProjectConfig($projectRoot) ?: [];
         }
 
@@ -895,6 +896,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if (empty(self::$projectRoot)) {
             $this->debug('Finding the project root based on the CWD');
             self::$projectRoot = $this->localProject->getProjectRoot();
+            $this->debug(
+                self::$projectRoot
+                    ? 'Project root found: ' . self::$projectRoot
+                    : 'Project root not found'
+            );
         }
 
         return self::$projectRoot;
@@ -1208,10 +1214,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         $this->debug('Validated input');
-        $this->debug('Selected project: ' . $this->project->id);
-        if ($this->environment) {
-            $this->debug('Selected environment: ' . $this->environment->id);
-        }
     }
 
     /**

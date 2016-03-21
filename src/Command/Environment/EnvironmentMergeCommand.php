@@ -39,14 +39,9 @@ class EnvironmentMergeCommand extends CommandBase
 
         $parentId = $selectedEnvironment->parent;
 
-        if (!$this->getHelper('question')
-                  ->confirm(
-                      "Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?",
-                      $input,
-                      $this->stdErr
-                  )
-        ) {
-            return 0;
+        $confirmText = "Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?";
+        if (!$this->getHelper('question')->confirm($confirmText, $input, $this->stdErr)) {
+            return 1;
         }
 
         $this->stdErr->writeln("Merging <info>$environmentId</info> with <info>$parentId</info>");

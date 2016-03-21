@@ -103,29 +103,35 @@ class ManifestStrategy implements StrategyInterface
     }
 
     /**
-     * Find release notes for the new remote version.
+     * Find update/upgrade notes for the new remote version.
      *
      * @param Updater $updater
      *
      * @return string|false
-     *   A string if release notes are found, or false otherwise.
+     *   A string if notes are found, or false otherwise.
      */
-    public function getReleaseNotes(Updater $updater)
+    public function getUpdateNotes(Updater $updater)
     {
+        $versionInfo = $this->getRemoteVersionInfo($updater);
+        if (empty($versionInfo['updating'])) {
+            return false;
+        }
         $localVersion = $this->getCurrentLocalVersion($updater);
-        $remoteVersion = $this->getCurrentRemoteVersion($updater);
-        if (!$remoteVersion) {
-            return false;
-        }
-        $versionInfo = $this->getAvailableVersions();
-        if (!isset($versionInfo[$remoteVersion])) {
-            throw new \RuntimeException(sprintf('Failed to find manifest item for version %s', $remoteVersion));
-        }
-        elseif (!isset($versionInfo[$remoteVersion]['notes']) || empty($versionInfo[$remoteVersion]['notes'])) {
-            return false;
+        $items = isset($versionInfo['updating'][0]) ? $versionInfo['updating'] : [$versionInfo['updating']];
+        foreach ($items as $updating) {
+            if (!isset($updating['notes'])) {
+                continue;
+            }
+            elseif (isset($updating['hide from']) && version_compare($localVersion, $updating['hide from'], '>=')) {
+                continue;
+            }
+            elseif (isset($updating['show from']) && version_compare($localVersion, $updating['show from'], '<')) {
+                continue;
+            }
+            return $updating['notes'];
         }
 
-        return $versionInfo[$remoteVersion]['notes'];
+        return false;
     }
 
     /**
@@ -133,19 +139,12 @@ class ManifestStrategy implements StrategyInterface
      */
     public function download(Updater $updater)
     {
-        $version = $this->getCurrentRemoteVersion($updater);
-        if ($version === false) {
-            throw new \RuntimeException('No remote versions found');
-        }
-        $versionInfo = $this->getAvailableVersions();
-        if (!isset($versionInfo[$version])) {
-            throw new \RuntimeException(sprintf('Failed to find manifest item for version %s', $version));
-        }
+        $versionInfo = $this->getRemoteVersionInfo($updater);
 
         $context = stream_context_create(['http' => ['timeout' => $this->downloadTimeout]]);
-        $fileContents = file_get_contents($versionInfo[$version]['url'], false, $context);
+        $fileContents = file_get_contents($versionInfo['url'], false, $context);
         if ($fileContents === false) {
-            throw new HttpRequestException(sprintf('Failed to download file from URL: %s', $versionInfo[$version]['url']));
+            throw new HttpRequestException(sprintf('Failed to download file from URL: %s', $versionInfo['url']));
         }
 
         $tmpFilename = $updater->getTempPharFile();
@@ -154,12 +153,12 @@ class ManifestStrategy implements StrategyInterface
         }
 
         $tmpSha = sha1_file($tmpFilename);
-        if ($tmpSha !== $versionInfo[$version]['sha1']) {
+        if ($tmpSha !== $versionInfo['sha1']) {
             unlink($tmpFilename);
             throw new \RuntimeException(
                 sprintf(
                     'SHA-1 verification failed: expected %s, actual %s',
-                    $versionInfo[$version]['sha1'],
+                    $versionInfo['sha1'],
                     $tmpSha
                 )
             );
@@ -186,6 +185,27 @@ class ManifestStrategy implements StrategyInterface
         }
 
         return $this->availableVersions;
+    }
+
+    /**
+     * Get version information for the latest remote version.
+     *
+     * @param Updater $updater
+     *
+     * @return array
+     */
+    private function getRemoteVersionInfo(Updater $updater)
+    {
+        $version = $this->getCurrentRemoteVersion($updater);
+        if ($version === false) {
+            throw new \RuntimeException('No remote versions found');
+        }
+        $versionInfo = $this->getAvailableVersions();
+        if (!isset($versionInfo[$version])) {
+            throw new \RuntimeException(sprintf('Failed to find manifest item for version %s', $version));
+        }
+
+        return $versionInfo[$version];
     }
 
     /**

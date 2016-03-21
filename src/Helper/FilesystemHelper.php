@@ -106,7 +106,7 @@ class FilesystemHelper extends Helper
      * @param array  $skip
      * @param bool   $override
      */
-    public function copyAll($source, $destination, array $skip = ['.git', CLI_PROJECT_CONFIG_DIR], $override = false)
+    public function copyAll($source, $destination, array $skip = ['.git', '.DS_Store', CLI_PROJECT_CONFIG_DIR], $override = false)
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -191,7 +191,9 @@ class FilesystemHelper extends Helper
 
         // The symlink won't work if $source is a relative path.
         $source = realpath($source);
-        $skip = ['.', '..', '.git'];
+
+        // Files to always skip.
+        $skip = ['.git', '.DS_Store', CLI_PROJECT_CONFIG_DIR];
 
         // Go through the blacklist, adding files to $skip.
         foreach ($blacklist as $pattern) {
@@ -206,38 +208,40 @@ class FilesystemHelper extends Helper
 
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
-            if (!in_array($file, $skip)) {
-                $sourceFile = $source . '/' . $file;
-                $linkFile = $destination . '/' . $file;
+            // Skip symlinks, '.' and '..', and files in $skip.
+            if ($file === '.' || $file === '..' || in_array($file, $skip) || is_link($source . '/' . $file)) {
+                continue;
+            }
+            $sourceFile = $source . '/' . $file;
+            $linkFile = $destination . '/' . $file;
 
-                if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
-                    // Note: the blacklist is not used recursively.
-                    $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, [], $copy);
+            if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
+                // Note: the blacklist is not used recursively.
+                $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, [], $copy);
+                continue;
+            }
+            elseif (file_exists($linkFile)) {
+                if ($skipExisting) {
                     continue;
+                } else {
+                    throw new \Exception('File exists: ' . $linkFile);
                 }
-                elseif (file_exists($linkFile)) {
-                    if ($skipExisting) {
-                        continue;
-                    } else {
-                        throw new \Exception('File exists: ' . $linkFile);
-                    }
-                }
-                elseif (is_link($linkFile)) {
-                    // This is a broken link. Remove it.
-                    $this->remove($linkFile);
+            }
+            elseif (is_link($linkFile)) {
+                // This is a broken link. Remove it.
+                $this->remove($linkFile);
+            }
+
+            if ($copy) {
+                $this->copyAll($sourceFile, $linkFile);
+            }
+            else {
+                if ($this->relative) {
+                    $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
+                    chdir($destination);
                 }
 
-                if ($copy) {
-                    $this->copyAll($sourceFile, $linkFile);
-                }
-                else {
-                    if ($this->relative) {
-                        $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
-                        chdir($destination);
-                    }
-
-                    $this->fs->symlink($sourceFile, $linkFile, $this->copyOnWindows);
-                }
+                $this->fs->symlink($sourceFile, $linkFile, $this->copyOnWindows);
             }
         }
         closedir($sourceDirectory);

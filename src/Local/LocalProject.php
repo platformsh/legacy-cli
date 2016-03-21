@@ -10,54 +10,6 @@ class LocalProject
 {
 
     /**
-     * Initialize a project in a directory.
-     *
-     * @param string $dir
-     *   The existing repository directory.
-     * @param string $projectId
-     *   The project ID (optional). If no project is specified, the project ID
-     *   and git URL will be automatically detected from the repository.
-     * @param string $gitUrl
-     *   The project's git URL (optional).
-     *
-     * @throws \RuntimeException
-     *
-     * @return string The absolute path to the project.
-     */
-    public function initialize($dir, $projectId = null, $gitUrl = null)
-    {
-        $realPath = realpath($dir);
-        if (!$realPath) {
-            throw new \RuntimeException("Directory not readable: $dir");
-        }
-
-        $dir = $realPath;
-        if (!file_exists("$dir/.git")) {
-            throw new \RuntimeException('The directory is not a Git repository');
-        }
-
-        if (file_exists($dir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
-            throw new \RuntimeException("The project is already initialized");
-        }
-
-        // Get the project ID from the Git repository.
-        if ($projectId === null || $gitUrl === null) {
-            $gitUrl = $this->getGitRemoteUrl($dir);
-            $projectId = $this->getProjectId($gitUrl);
-            if (!$projectId) {
-                throw new \InvalidArgumentException('Project ID not found for directory: ' . $dir);
-            }
-        }
-
-        // Set up the project.
-        $this->writeGitExclude($dir);
-        $this->writeCurrentProjectConfig($projectId, $dir);
-        $this->ensureGitRemote($dir, $gitUrl);
-
-        return $dir;
-    }
-
-    /**
      * @param string $gitUrl
      *
      * @return array|false
@@ -78,7 +30,7 @@ class LocalProject
      * @throws \RuntimeException
      *   If no remote can be found.
      *
-     * @return string
+     * @return string|false
      *   The Git remote URL.
      */
     protected function getGitRemoteUrl($dir)
@@ -90,7 +42,8 @@ class LocalProject
                 return $url;
             }
         }
-        throw new \RuntimeException("Git remote URL not found");
+
+        return false;
     }
 
     /**
@@ -152,8 +105,8 @@ class LocalProject
             if (file_exists($currentDir . '/' . $file)) {
                 if ($callback === null || $callback($currentDir)) {
                     $root = $currentDir;
+                    break;
                 }
-                break;
             }
 
             // The file was not found, go one directory up.
@@ -198,8 +151,8 @@ class LocalProject
             if (file_exists($dir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
                 return true;
             }
-            $projectId = $this->getProjectId($this->getGitRemoteUrl($dir));
-            if (!$projectId) {
+            $gitUrl = $this->getGitRemoteUrl($dir);
+            if (!$gitUrl || !($projectId = $this->getProjectId($gitUrl))) {
                 return false;
             }
             // Backwards compatibility: copy old project config to new
@@ -236,8 +189,8 @@ class LocalProject
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG));
         }
         elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
-            $projectId = $this->getProjectId($this->getGitRemoteUrl($projectRoot));
-            if ($projectId) {
+            $gitUrl = $this->getGitRemoteUrl($projectRoot);
+            if ($gitUrl && ($projectId = $this->getProjectId($gitUrl))) {
                 $projectConfig = $projectId;
             }
         }

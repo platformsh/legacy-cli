@@ -65,14 +65,9 @@ EOT
             }
             $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
             $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
-            if (!$questionHelper->confirm(
-                "Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?",
-                $input,
-                $this->stdErr,
-                false
-            )
-            ) {
-                return 0;
+            $confirmText = "Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?";
+            if (!$questionHelper->confirm($confirmText, $input, $this->stdErr)) {
+                return 1;
             }
         } else {
             $syncCode = $questionHelper->confirm(
