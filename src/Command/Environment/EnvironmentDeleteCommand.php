@@ -154,17 +154,15 @@ EOF
             }
             if ($environment->isActive()) {
                 $output->writeln("The environment <comment>$environmentId</comment> is currently active: deleting it will delete all associated data.");
-                $question = "Are you sure you want to delete the environment <comment>$environmentId</comment>?";
-                if ($questionHelper->confirm($question, $input, $output)) {
+                if ($questionHelper->confirm("Are you sure you want to delete the environment <comment>$environmentId</comment>?")) {
                     $deactivate[$environmentId] = $environment;
-                    if ($input->getOption('delete-branch') || ($input->isInteractive() && $questionHelper->confirm("Delete the remote Git branch too?", $input, $output))) {
+                    if ($input->getOption('delete-branch') || ($input->isInteractive() && $questionHelper->confirm("Delete the remote Git branch too?"))) {
                         $delete[$environmentId] = $environment;
                     }
                 }
             }
             elseif ($environment->status === 'inactive') {
-                $question = "Are you sure you want to delete the remote Git branch <comment>$environmentId</comment>?";
-                if ($questionHelper->confirm($question, $input, $output)) {
+                if ($questionHelper->confirm("Are you sure you want to delete the remote Git branch <comment>$environmentId</comment>?")) {
                     $delete[$environmentId] = $environment;
                 }
             }

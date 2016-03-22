@@ -37,7 +37,7 @@ class TunnelCloseCommand extends TunnelCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
         $error = false;
@@ -48,7 +48,7 @@ class TunnelCloseCommand extends TunnelCommandBase
                 $appString .= '--' . $tunnel['appName'];
             }
             $questionText = sprintf("Close tunnel to relationship <comment>%s</comment> on %s?", $relationshipString, $appString);
-            if ($questionHelper->confirm($questionText, $input, $this->stdErr)) {
+            if ($questionHelper->confirm($questionText)) {
                 if ($this->closeTunnel($tunnel)) {
                     $this->stdErr->writeln(sprintf('Closed tunnel to <info>%s</info> on %s', $relationshipString, $appString));
                 }

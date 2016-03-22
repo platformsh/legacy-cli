@@ -48,7 +48,7 @@ EOF
 
         /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
         $fsHelper = $this->getHelper('fs');
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
         $repositoryDir = $legacyRoot . '/repository';
@@ -107,6 +107,10 @@ EOF
         if (is_link($legacyRoot . '/www')) {
             $this->stdErr->writeln('Removing old "www" symlink.');
             $fsHelper->remove($legacyRoot . '/www');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('After running <comment>platform build</comment>, your web root will be at: <comment>' . CLI_LOCAL_WEB_ROOT . '</comment>');
+            $this->stdErr->writeln('You may need to update your local web server configuration.');
+            $this->stdErr->writeln('');
         }
 
         $this->stdErr->writeln('Moving repository to be the new project root (this could take some time)...');

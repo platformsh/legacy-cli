@@ -97,7 +97,7 @@ class LocalBuildCommand extends CommandBase
     {
         $projectRoot = $this->getProjectRoot();
 
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
         $sourceDirOption = $input->getOption('source');
@@ -105,7 +105,7 @@ class LocalBuildCommand extends CommandBase
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
             $default = file_exists(CLI_APP_CONFIG_FILE) || is_dir('.git') ? '.' : null;
-            $sourceDirOption = $questionHelper->askInput('Source directory', $input, $this->stdErr, $default);
+            $sourceDirOption = $questionHelper->askInput('Source directory', $default);
         }
 
         if ($sourceDirOption) {
@@ -132,7 +132,7 @@ class LocalBuildCommand extends CommandBase
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
             $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd() ? CLI_LOCAL_WEB_ROOT : null;
-            $destination = $questionHelper->askInput('Build destination', $input, $this->stdErr, $default);
+            $destination = $questionHelper->askInput('Build destination', $default);
         }
 
         if ($destination) {
@@ -160,7 +160,7 @@ class LocalBuildCommand extends CommandBase
                 return 1;
             }
             $default = is_link($destination);
-            if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $input, $this->stdErr, $default)) {
+            if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $default)) {
                 return 1;
             }
         }

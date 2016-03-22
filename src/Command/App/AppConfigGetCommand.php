@@ -31,7 +31,6 @@ class AppConfigGetCommand extends CommandBase
     {
         $this->validateInput($input);
         $shellHelper = $this->getHelper('shell');
-        $shellHelper->setOutput($this->stdErr);
 
         $sshUrl = $this->getSelectedEnvironment()
             ->getSshUrl($this->selectApp($input));

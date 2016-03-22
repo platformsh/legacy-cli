@@ -2,10 +2,12 @@
 
 namespace Platformsh\Cli\Helper;
 
+use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Console\Output\OutputInterface;
 
-class GitHelper extends Helper
+class GitHelper extends Helper implements OutputAwareInterface
 {
 
     /** @var string */
@@ -22,9 +24,24 @@ class GitHelper extends Helper
         return 'git';
     }
 
+    /**
+     * Constructor.
+     *
+     * @param ShellHelperInterface|null $shellHelper
+     */
     public function __construct(ShellHelperInterface $shellHelper = null)
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setOutput(OutputInterface $output)
+    {
+        if ($this->shellHelper instanceof OutputAwareInterface) {
+            $this->shellHelper->setOutput($output);
+        }
     }
 
     /**

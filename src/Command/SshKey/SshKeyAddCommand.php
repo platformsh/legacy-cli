@@ -23,11 +23,10 @@ class SshKeyAddCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
         /** @var \Platformsh\Cli\Helper\ShellHelperInterface $shellHelper */
         $shellHelper = $this->getHelper('shell');
-        $shellHelper->setOutput($this->stdErr);
 
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
@@ -36,12 +35,11 @@ class SshKeyAddCommand extends CommandBase
 
             // Look for an existing local key.
             if (file_exists($defaultPublicKeyPath)
-                && $questionHelper->confirm("Use existing local key <info>" . basename($defaultPublicKeyPath) . "</info>?", $input, $output)) {
+                && $questionHelper->confirm("Use existing local key <info>" . basename($defaultPublicKeyPath) . "</info>?")) {
                 $publicKeyPath = $defaultPublicKeyPath;
             }
             // Offer to generate a key.
-            elseif ($shellHelper->commandExists('ssh-keygen')
-                && $questionHelper->confirm("Generate a new key?", $input, $this->stdErr)) {
+            elseif ($shellHelper->commandExists('ssh-keygen') && $questionHelper->confirm("Generate a new key?")) {
                 $newKeyPath = $this->getNewKeyPath();
                 $args = ['ssh-keygen', '-t', 'rsa', '-f', $newKeyPath, '-N', ''];
                 $shellHelper->execute($args, null, true);
@@ -115,7 +113,7 @@ class SshKeyAddCommand extends CommandBase
         $name = $input->getOption('name');
         if (!$name) {
             $defaultName = gethostname() ?: null;
-            $name = $questionHelper->askInput('Enter a name for the key', $input, $this->stdErr, $defaultName);
+            $name = $questionHelper->askInput('Enter a name for the key', $defaultName);
         }
 
         // Add the new key.

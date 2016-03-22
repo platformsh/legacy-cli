@@ -34,10 +34,7 @@ class LogoutCommand extends CommandBase
         }
 
         // Ask for a confirmation.
-        $confirm = $this->getHelper('question')
-                        ->confirm("Are you sure you wish to log out?", $input, $this->stdErr);
-
-        if (!$confirm) {
+        if (!$this->getHelper('question')->confirm("Are you sure you wish to log out?")) {
             $this->stdErr->writeln('You remain logged in.');
 
             return 1;

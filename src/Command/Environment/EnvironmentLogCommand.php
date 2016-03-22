@@ -50,11 +50,10 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         }
         // Offer a choice of log files, if possible.
         else {
-            /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
             /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
             $shellHelper = $this->getHelper('shell');
-            $shellHelper->setOutput($this->stdErr);
 
             $result = $shellHelper->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
             if ($result) {
@@ -70,7 +69,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
                 ];
             }
 
-            $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ', $input, $this->stdErr);
+            $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 
         $command = sprintf('tail -n %d %s', $input->getOption('lines'), escapeshellarg($logFilename));

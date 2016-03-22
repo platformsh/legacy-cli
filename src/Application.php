@@ -5,7 +5,7 @@ use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\PlatformQuestionHelper;
+use Platformsh\Cli\Helper\QuestionHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
@@ -67,7 +67,7 @@ class Application extends ParentApplication
     {
         return new HelperSet([
             new FormatterHelper(),
-            new PlatformQuestionHelper(),
+            new QuestionHelper(),
             new FilesystemHelper(),
             new ShellHelper(),
             new DrushHelper(),

@@ -73,9 +73,9 @@ class EnvironmentSqlDumpCommand extends CommandBase
 
         if (isset($dumpFile)) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Helper\PlatformQuestionHelper $questionHelper */
+                /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
                 $questionHelper = $this->getHelper('question');
-                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", $input, $this->stdErr, false)) {
+                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
                     return 1;
                 }
             }

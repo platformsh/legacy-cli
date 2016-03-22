@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Util;
 
-use Platformsh\Cli\Helper\PlatformQuestionHelper;
+use Platformsh\Cli\Helper\QuestionHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Helper\ShellHelperInterface;
 use Symfony\Component\Console\Input\InputInterface;
@@ -38,12 +38,12 @@ class RelationshipsUtil
             return false;
         }
         elseif (count($relationships['database']) > 1) {
-            $questionHelper = new PlatformQuestionHelper();
+            $questionHelper = new QuestionHelper($input, $this->output);
             $choices = [];
             foreach ($relationships['database'] as $key => $database) {
                 $choices[$key] = $database['host'] . '/' . $database['path'];
             }
-            $key = $questionHelper->choose($choices, 'Enter a number to choose a database', $input, $this->output);
+            $key = $questionHelper->choose($choices, 'Enter a number to choose a database');
             $database = $relationships['database'][$key];
         }
         else {
