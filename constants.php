@@ -14,7 +14,7 @@ define('CLI_CLOUD_SERVICE', 'Platform.sh');
 define('CLI_NAME', 'Platform.sh CLI');
 
 // The version.
-define('CLI_VERSION', '3.0.3');
+define('CLI_VERSION', '3.0.4');
 
 // Other metadata about the program (also set in box.json and composer.json
 // files and described in the README.md).
