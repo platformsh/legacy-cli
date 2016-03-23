@@ -15,6 +15,10 @@ class LoginCommand extends CommandBase
         $this
             ->setName('login')
             ->setDescription('Log in to ' . CLI_CLOUD_SERVICE);
+        $help = 'Use this command to log in to your ' . CLI_CLOUD_SERVICE . ' account.'
+            . "\n\nYou can create an account at:\n    <info>" . CLI_SERVICE_ACCOUNTS_URL . '</info>'
+            . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>" . CLI_SERVICE_ACCOUNTS_URL . '/user/password</info>';
+        $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
