@@ -100,8 +100,8 @@ class EnvironmentDrushCommand extends CommandBase
 
         // Use the local application configuration (if available) to determine
         // the correct Drupal root.
-        if (isset($app) && isset($app->getConfig()['web']['document_root'])) {
-            $documentRoot = trim($app->getConfig()['web']['document_root'], '/') ?: 'public';
+        if (isset($app) && isset($app->getConfig()['web']['locations']['/']['root'])) {
+            $documentRoot = trim($app->getConfig()['web']['locations']['/']['root'], '/') ?: 'public';
             $drupalRoot = '/app/' . $documentRoot;
         }
         else {

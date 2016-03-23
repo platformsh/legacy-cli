@@ -388,8 +388,8 @@ class DrushHelper extends Helper implements OutputAwareInterface
 
         $appConfig = $app->getConfig();
         $documentRoot = '/public';
-        if (isset($appConfig['web']['document_root']) && $appConfig['web']['document_root'] !== '/') {
-            $documentRoot = $appConfig['web']['document_root'];
+        if (isset($appConfig['web']['locations']['/']['root']) && $appConfig['web']['locations']['/']['root'] !== '/') {
+            $documentRoot = $appConfig['web']['locations']['/']['root'];
         }
 
         return [

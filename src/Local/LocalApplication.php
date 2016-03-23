@@ -109,13 +109,27 @@ class LocalApplication
      */
     protected function normalizeConfig(array $config)
     {
-        // Backwards compatibility with old config format: toolstack is changed
-        // to application type and build['flavor'].
+        // Backwards compatibility with old config format: `toolstack` is
+        // changed to application `type` and `build`.`flavor`.
         if (isset($config['toolstack'])) {
             if (!strpos($config['toolstack'], ':')) {
                 throw new InvalidConfigException("Invalid value for 'toolstack'");
             }
             list($config['type'], $config['build']['flavor']) = explode(':', $config['toolstack'], 2);
+        }
+
+        // The `web` section has changed to `web`.`locations`.
+        if (isset($config['web']) && !isset($config['web']['locations'])) {
+            $map = [
+                'document_root' => 'root',
+                'expires' => 'expires',
+                'passthru' => 'passthru',
+            ];
+            foreach ($map as $key => $newKey) {
+                if (array_key_exists($key, $config['web'])) {
+                    $config['web']['locations']['/'][$newKey] = $config['web'][$key];
+                }
+            }
         }
 
         return $config;
