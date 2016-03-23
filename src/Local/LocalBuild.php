@@ -297,9 +297,10 @@ class LocalBuild
         // The default document root is '/public'. This is used if the root is
         // not set, if it is empty, or if it is set to '/'.
         $documentRoot = '/public';
-        if (!empty($appConfig['web']['document_root']) && $appConfig['web']['document_root'] !== '/') {
-            $documentRoot = $appConfig['web']['document_root'];
+        if (!empty($appConfig['web']['locations']['/']['root']) && $appConfig['web']['locations']['/']['root'] !== '/') {
+            $documentRoot = $appConfig['web']['locations']['/']['root'];
         }
+
         return ltrim($documentRoot, '/');
     }
 
