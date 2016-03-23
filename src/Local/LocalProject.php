@@ -265,12 +265,28 @@ EOF
         $filesToExclude = ['/' . CLI_LOCAL_DIR, '/' . CLI_LOCAL_WEB_ROOT];
         $excludeFilename = $dir . '/.git/info/exclude';
         $existing = '';
+
+        // Skip writing anything if the contents already include the
+        // CLI_NAME.
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
             if (strpos($existing, CLI_NAME) !== false) {
+
+                // Backwards compatibility between versions 3.0.0 and 3.0.2.
+                $newRoot = "\n" . '/' . CLI_LOCAL_WEB_ROOT . "\n";
+                $oldRoot = "\n" . '/.www' . "\n";
+                if (strpos($existing, $oldRoot) !== false && strpos($existing, $newRoot) === false) {
+                    file_put_contents($excludeFilename, str_replace($oldRoot, $newRoot, $existing));
+                }
+                if (is_link($dir . '/.www')) {
+                    unlink($dir . '/.www');
+                }
+                // End backwards compatibility block.
+
                 return;
             }
         }
+
         $content = "# Automatically added by the " . CLI_NAME . "\n"
             . implode("\n", $filesToExclude)
             . "\n";
