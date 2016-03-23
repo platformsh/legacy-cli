@@ -201,7 +201,7 @@ class ProjectGetCommand extends CommandBase
         $this->stdErr->writeln("\nThe project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");
 
         // Return early if there is no code in the repository.
-        if (!glob($projectRoot . '/*')) {
+        if (!glob($projectRoot . '/*', GLOB_NOSORT)) {
             return 0;
         }
 

@@ -300,9 +300,9 @@ class Drupal extends ToolstackBase
         $profileDir = $drupalRoot . '/profiles/' . $profileName;
 
         if ($projectMake) {
-            $tempProfileDir = tempnam($this->buildDir, 'make');
-            if (!$tempProfileDir || !unlink($tempProfileDir) || !mkdir($tempProfileDir)) {
-                throw new \RuntimeException('Failed to create temporary directory in: ' . $this->buildDir);
+            $tempProfileDir = $this->buildDir . '/tmp-' . $profileName;
+            if (!$tempProfileDir || !mkdir($tempProfileDir, 0755, true)) {
+                throw new \RuntimeException('Failed to create directory: ' . $tempProfileDir);
             }
             $args = array_merge(
                 ['make', '--no-core', '--contrib-destination=.', $projectMake, $tempProfileDir],
@@ -331,7 +331,7 @@ class Drupal extends ToolstackBase
             $drushHelper->execute($args, dirname($projectCoreMake), true, false);
         }
 
-        if (!empty($tempProfileDir) && !rename($tempProfileDir, $profileDir)) {
+        if (!empty($tempProfileDir) && is_dir($tempProfileDir) && !rename($tempProfileDir, $profileDir)) {
             throw new \RuntimeException('Failed to move profile directory to: ' . $profileDir);
         }
 
