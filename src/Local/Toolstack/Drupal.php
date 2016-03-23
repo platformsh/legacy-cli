@@ -89,17 +89,9 @@ class Drupal extends ToolstackBase
         } else {
             $this->output->writeln("Building in vanilla mode: you are missing out!");
 
-            $this->buildInPlace = true;
+            $this->copyToBuildDir();
 
-            if ($this->copy) {
-                if (file_exists($this->appRoot . '/' . $this->documentRoot)) {
-                    $this->fsHelper->copyAll($this->appRoot, $this->buildDir);
-                }
-                else {
-                    $this->fsHelper->copyAll($this->appRoot, $this->getWebRoot());
-                }
-            }
-            else {
+            if (!$this->copy) {
                 $this->copyGitIgnore('drupal/gitignore-vanilla');
                 $this->checkIgnored('sites/default/settings.local.php');
                 $this->checkIgnored('sites/default/files');

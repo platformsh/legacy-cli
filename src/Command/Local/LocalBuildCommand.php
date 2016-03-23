@@ -23,25 +23,25 @@ class LocalBuildCommand extends CommandBase
             ->setDescription('Build the current project locally')
             ->addOption(
                 'abslinks',
-                null,
+                'a',
                 InputOption::VALUE_NONE,
                 'Use absolute links'
             )
             ->addOption(
                 'source',
-                null,
+                's',
                 InputOption::VALUE_REQUIRED,
                 'The source directory. Defaults to the current project root.'
             )
             ->addOption(
                 'destination',
-                null,
+                'd',
                 InputOption::VALUE_REQUIRED,
                 'The destination, to which the web root of each app will be symlinked. Default: ' . CLI_LOCAL_WEB_ROOT
             )
             ->addOption(
                 'copy',
-                null,
+                'c',
                 InputOption::VALUE_NONE,
                 'Copy to a build directory, instead of symlinking from the source'
             )
