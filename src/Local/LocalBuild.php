@@ -241,7 +241,7 @@ class LocalBuild
 
             $toolstack->build();
 
-            if ($this->runPostBuildHooks($appConfig, $toolstack->getAppRoot()) === false) {
+            if ($this->runPostBuildHooks($appConfig, $toolstack->getAppDir()) === false) {
                 // The user may not care if build hooks fail, but we should
                 // not archive the result.
                 $archive = false;

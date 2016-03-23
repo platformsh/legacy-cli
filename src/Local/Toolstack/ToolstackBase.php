@@ -34,8 +34,6 @@ abstract class ToolstackBase implements ToolstackInterface
     protected $documentRoot;
     protected $buildDir;
     protected $copy = false;
-    protected $absoluteLinks = false;
-    protected $buildInPlace = false;
 
     /** @var OutputInterface */
     protected $output;
@@ -48,6 +46,13 @@ abstract class ToolstackBase implements ToolstackInterface
 
     /** @var ShellHelperInterface */
     protected $shellHelper;
+
+    /**
+     * Whether all app files have just been symlinked or copied to the build.
+     *
+     * @var bool
+     */
+    private $buildInPlace = false;
 
     /**
      * @param object               $fsHelper
@@ -95,11 +100,10 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->settings = $settings;
 
         $this->buildDir = $buildDir;
-        $this->documentRoot = $documentRoot;
+        $this->documentRoot = ltrim($documentRoot, '/');
 
-        $this->absoluteLinks = !empty($settings['absoluteLinks']);
         $this->copy = !empty($settings['copy']);
-        $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
+        $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
     }
 
     /**
@@ -193,38 +197,38 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function getWebRoot()
     {
-        if ($this->buildInPlace && !$this->copy) {
-            if ($this->documentRoot === 'public') {
-                return $this->appRoot;
-            }
-            return $this->appRoot . '/' . $this->documentRoot;
-        }
-
         return $this->buildDir . '/' . $this->documentRoot;
     }
 
     /**
      * @return string
      */
-    protected function getBuildDir()
+    public function getAppDir()
     {
-        if ($this->buildInPlace && !$this->copy) {
-            return $this->appRoot;
-        }
-
         return $this->buildDir;
     }
 
     /**
+     * Copy, or symlink, files from the app root to the build directory.
+     *
      * @return string
+     *   The absolute path to the build directory where files have been copied.
      */
-    public function getAppRoot()
+    protected function copyToBuildDir()
     {
-        if ($this->buildInPlace && !$this->copy) {
-            return $this->appRoot;
+        $this->buildInPlace = true;
+        $buildDir = $this->buildDir;
+        if ($this->documentRoot === 'public' && !file_exists($this->appRoot . '/' . $this->documentRoot)) {
+            $buildDir .= '/' . $this->documentRoot;
+        }
+        if ($this->copy) {
+            $this->fsHelper->copyAll($this->appRoot, $buildDir, $this->ignoredFiles, true);
+        }
+        else {
+            $this->fsHelper->symLink($this->appRoot, $buildDir);
         }
 
-        return $this->buildDir;
+        return $buildDir;
     }
 
     /**

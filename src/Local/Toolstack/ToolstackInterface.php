@@ -69,7 +69,7 @@ interface ToolstackInterface
      *
      * @return string
      */
-    public function getAppRoot();
+    public function getAppDir();
 
     /**
      * Find whether the build may be archived.
