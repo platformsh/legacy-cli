@@ -6,6 +6,7 @@ use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Helper\ShellHelperInterface;
+use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class ToolstackBase implements ToolstackInterface
@@ -29,13 +30,17 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     protected $specialDestinations = [];
 
+    /** @var LocalApplication */
+    protected $app;
+
+    /** @var array */
     protected $settings = [];
-    protected $appRoot;
-    protected $documentRoot;
+
+    /** @var string  */
     protected $buildDir;
+
+    /** @var bool */
     protected $copy = false;
-    protected $absoluteLinks = false;
-    protected $buildInPlace = false;
 
     /** @var OutputInterface */
     protected $output;
@@ -48,6 +53,19 @@ abstract class ToolstackBase implements ToolstackInterface
 
     /** @var ShellHelperInterface */
     protected $shellHelper;
+
+    /** @var string */
+    private $appRoot;
+
+    /** @var string */
+    private $documentRoot;
+
+    /**
+     * Whether all app files have just been symlinked or copied to the build.
+     *
+     * @var bool
+     */
+    private $buildInPlace = false;
 
     /**
      * @param object               $fsHelper
@@ -89,17 +107,17 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, $documentRoot, $appRoot, array $settings)
+    public function prepare($buildDir, LocalApplication $app, array $settings = [])
     {
-        $this->appRoot = $appRoot;
+        $this->app = $app;
+        $this->appRoot = $app->getRoot();
+        $this->documentRoot = $app->getDocumentRoot();
         $this->settings = $settings;
 
         $this->buildDir = $buildDir;
-        $this->documentRoot = $documentRoot;
 
-        $this->absoluteLinks = !empty($settings['absoluteLinks']);
         $this->copy = !empty($settings['copy']);
-        $this->fsHelper->setRelativeLinks(!$this->absoluteLinks);
+        $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
     }
 
     /**
@@ -178,8 +196,8 @@ abstract class ToolstackBase implements ToolstackInterface
             return false;
         }
         $shared = $this->settings['sourceDir'] . '/' . CLI_LOCAL_SHARED_DIR;
-        if (!empty($this->settings['multiApp']) && !empty($this->settings['appName'])) {
-            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->settings['appName']);
+        if (!empty($this->settings['multiApp'])) {
+            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->app->getName());
         }
         if (!is_dir($shared)) {
             mkdir($shared, 0755, true);
@@ -193,38 +211,38 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function getWebRoot()
     {
-        if ($this->buildInPlace && !$this->copy) {
-            if ($this->documentRoot === 'public') {
-                return $this->appRoot;
-            }
-            return $this->appRoot . '/' . $this->documentRoot;
-        }
-
         return $this->buildDir . '/' . $this->documentRoot;
     }
 
     /**
      * @return string
      */
-    protected function getBuildDir()
+    public function getAppDir()
     {
-        if ($this->buildInPlace && !$this->copy) {
-            return $this->appRoot;
-        }
-
         return $this->buildDir;
     }
 
     /**
+     * Copy, or symlink, files from the app root to the build directory.
+     *
      * @return string
+     *   The absolute path to the build directory where files have been copied.
      */
-    public function getAppRoot()
+    protected function copyToBuildDir()
     {
-        if ($this->buildInPlace && !$this->copy) {
-            return $this->appRoot;
+        $this->buildInPlace = true;
+        $buildDir = $this->buildDir;
+        if ($this->app->shouldMoveToRoot()) {
+            $buildDir .= '/' . $this->documentRoot;
+        }
+        if ($this->copy) {
+            $this->fsHelper->copyAll($this->appRoot, $buildDir, $this->ignoredFiles, true);
+        }
+        else {
+            $this->fsHelper->symLink($this->appRoot, $buildDir);
         }
 
-        return $this->buildDir;
+        return $buildDir;
     }
 
     /**

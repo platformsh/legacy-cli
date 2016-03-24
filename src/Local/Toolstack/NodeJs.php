@@ -20,16 +20,7 @@ class NodeJs extends ToolstackBase
 
     public function build()
     {
-        $this->buildInPlace = true;
-
-        $buildDir = $this->getBuildDir();
-
-        if ($this->copy) {
-            if (!file_exists($this->appRoot . '/' . $this->documentRoot)) {
-                $buildDir = $this->getWebRoot();
-            }
-            $this->fsHelper->copyAll($this->appRoot, $buildDir);
-        }
+        $buildDir = $this->copyToBuildDir();
 
         if (file_exists($buildDir . '/package.json')) {
             $this->output->writeln("Found a package.json file, installing dependencies");

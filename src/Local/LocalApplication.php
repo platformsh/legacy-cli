@@ -109,13 +109,27 @@ class LocalApplication
      */
     protected function normalizeConfig(array $config)
     {
-        // Backwards compatibility with old config format: toolstack is changed
-        // to application type and build['flavor'].
+        // Backwards compatibility with old config format: `toolstack` is
+        // changed to application `type` and `build`.`flavor`.
         if (isset($config['toolstack'])) {
             if (!strpos($config['toolstack'], ':')) {
                 throw new InvalidConfigException("Invalid value for 'toolstack'");
             }
             list($config['type'], $config['build']['flavor']) = explode(':', $config['toolstack'], 2);
+        }
+
+        // The `web` section has changed to `web`.`locations`.
+        if (isset($config['web']) && !isset($config['web']['locations'])) {
+            $map = [
+                'document_root' => 'root',
+                'expires' => 'expires',
+                'passthru' => 'passthru',
+            ];
+            foreach ($map as $key => $newKey) {
+                if (array_key_exists($key, $config['web'])) {
+                    $config['web']['locations']['/'][$newKey] = $config['web'][$key];
+                }
+            }
         }
 
         return $config;
@@ -214,5 +228,40 @@ class LocalApplication
         }
 
         return $applications;
+    }
+
+    /**
+     * Get the configured document root for the application, as a relative path.
+     *
+     * @return string
+     */
+    public function getDocumentRoot()
+    {
+        $config = $this->getConfig();
+
+        // The default document root is '/public'. This is used if the root is
+        // not set, if it is empty, or if it is set to '/'.
+        $documentRoot = '/public';
+        if (!empty($appConfig['web']['locations']['/']['root']) && $appConfig['web']['locations']['/']['root'] !== '/') {
+            $documentRoot = $appConfig['web']['locations']['/']['root'];
+        }
+
+        return ltrim($documentRoot, '/');
+    }
+
+    /**
+     * Check whether the whole app should be moved into the document root.
+     *
+     * @return string
+     */
+    public function shouldMoveToRoot()
+    {
+        $config = $this->getConfig();
+
+        if (isset($config['move_to_root']) && $config['move_to_root'] === true) {
+            return true;
+        }
+
+        return $this->getDocumentRoot() === 'public' && !is_dir($this->getRoot() . '/public');
     }
 }

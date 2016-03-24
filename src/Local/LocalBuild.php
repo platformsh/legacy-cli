@@ -155,11 +155,7 @@ class LocalBuild
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
         $multiApp = $appRoot != $sourceDir;
-        $appName = $app->getName();
         $appId = $app->getId();
-
-        // Get the configured document root.
-        $documentRoot = $this->getDocumentRoot($appConfig);
 
         $toolstack = $app->getToolstack();
         if (!$toolstack) {
@@ -211,11 +207,10 @@ class LocalBuild
         $toolstack->setOutput($this->output);
 
         $buildSettings = $this->settings + [
-                'multiApp' => $multiApp,
-                'appName' => $appName,
-                'sourceDir' => $sourceDir,
-            ];
-        $toolstack->prepare($buildDir, $documentRoot, $appRoot, $buildSettings);
+            'multiApp' => $multiApp,
+            'sourceDir' => $sourceDir,
+        ];
+        $toolstack->prepare($buildDir, $app, $buildSettings);
 
         $archive = false;
         if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
@@ -241,7 +236,7 @@ class LocalBuild
 
             $toolstack->build();
 
-            if ($this->runPostBuildHooks($appConfig, $toolstack->getAppRoot()) === false) {
+            if ($this->runPostBuildHooks($appConfig, $toolstack->getAppDir()) === false) {
                 // The user may not care if build hooks fail, but we should
                 // not archive the result.
                 $archive = false;
@@ -281,26 +276,6 @@ class LocalBuild
         $this->output->writeln("Web root: $destination\n");
 
         return true;
-    }
-
-    /**
-     * Get the configured document root for the application.
-     *
-     * @link https://docs.platform.sh/reference/configuration-files
-     *
-     * @param array $appConfig
-     *
-     * @return string
-     */
-    protected function getDocumentRoot(array $appConfig)
-    {
-        // The default document root is '/public'. This is used if the root is
-        // not set, if it is empty, or if it is set to '/'.
-        $documentRoot = '/public';
-        if (!empty($appConfig['web']['document_root']) && $appConfig['web']['document_root'] !== '/') {
-            $documentRoot = $appConfig['web']['document_root'];
-        }
-        return ltrim($documentRoot, '/');
     }
 
     /**

@@ -16,16 +16,7 @@ class Composer extends ToolstackBase
 
     public function build()
     {
-        $this->buildInPlace = true;
-
-        $buildDir = $this->getBuildDir();
-
-        if ($this->copy) {
-            if (!file_exists($this->appRoot . '/' . $this->documentRoot)) {
-                $buildDir = $this->getWebRoot();
-            }
-            $this->fsHelper->copyAll($this->appRoot, $buildDir);
-        }
+        $buildDir = $this->copyToBuildDir();
 
         // The composer.json file may not exist at this stage, if the user has
         // manually specified a Composer toolstack (e.g. php:symfony).

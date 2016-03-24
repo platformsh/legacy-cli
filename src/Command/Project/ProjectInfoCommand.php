@@ -57,7 +57,16 @@ class ProjectInfoCommand extends CommandBase
             return $this->setProperty($property, $value, $project, $input->getOption('no-wait'));
         }
 
-        $output->writeln($this->formatter->format($project->getProperty($property), $property));
+        switch ($property) {
+            case 'git':
+                $value = $project->getGitUrl(false);
+                break;
+
+            default:
+                $value = $project->getProperty($property);
+        }
+
+        $output->writeln($this->formatter->format($value, $property));
 
         return 0;
     }

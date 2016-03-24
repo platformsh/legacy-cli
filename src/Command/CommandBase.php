@@ -665,7 +665,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             foreach ($projects as $id => $project) {
                 $cachedProjects[$id] = $project->getData();
                 $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
-                $cachedProjects[$id]['git'] = $project->getGitUrl();
             }
 
             $cache->save($cacheKey, $cachedProjects, $this->projectsTtl);
