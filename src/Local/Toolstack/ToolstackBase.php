@@ -55,7 +55,7 @@ abstract class ToolstackBase implements ToolstackInterface
     protected $shellHelper;
 
     /** @var string */
-    private $appRoot;
+    protected $appRoot;
 
     /** @var string */
     private $documentRoot;
