@@ -85,6 +85,7 @@ class EnvironmentDrushCommand extends CommandBase
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot && $this->selectedProjectIsCurrent()) {
             $apps = LocalApplication::getApplications($projectRoot);
+            /** @var LocalApplication $app */
             if (count($apps) === 1 && $appName === null) {
                 $app = reset($apps);
             }
@@ -100,9 +101,8 @@ class EnvironmentDrushCommand extends CommandBase
 
         // Use the local application configuration (if available) to determine
         // the correct Drupal root.
-        if (isset($app) && isset($app->getConfig()['web']['locations']['/']['root'])) {
-            $documentRoot = trim($app->getConfig()['web']['locations']['/']['root'], '/') ?: 'public';
-            $drupalRoot = '/app/' . $documentRoot;
+        if (isset($app)) {
+            $drupalRoot = '/app/' . $app->getDocumentRoot();
         }
         else {
             // Fall back to the PLATFORM_DOCUMENT_ROOT environment variable,

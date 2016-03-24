@@ -229,4 +229,39 @@ class LocalApplication
 
         return $applications;
     }
+
+    /**
+     * Get the configured document root for the application, as a relative path.
+     *
+     * @return string
+     */
+    public function getDocumentRoot()
+    {
+        $config = $this->getConfig();
+
+        // The default document root is '/public'. This is used if the root is
+        // not set, if it is empty, or if it is set to '/'.
+        $documentRoot = '/public';
+        if (!empty($appConfig['web']['locations']['/']['root']) && $appConfig['web']['locations']['/']['root'] !== '/') {
+            $documentRoot = $appConfig['web']['locations']['/']['root'];
+        }
+
+        return ltrim($documentRoot, '/');
+    }
+
+    /**
+     * Check whether the whole app should be moved into the document root.
+     *
+     * @return string
+     */
+    public function shouldMoveToRoot()
+    {
+        $config = $this->getConfig();
+
+        if (isset($config['move_to_root']) && $config['move_to_root'] === true) {
+            return true;
+        }
+
+        return $this->getDocumentRoot() === 'public' && !is_dir($this->getRoot() . '/public');
+    }
 }

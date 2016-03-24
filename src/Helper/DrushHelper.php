@@ -386,17 +386,11 @@ class DrushHelper extends Helper implements OutputAwareInterface
             }
         }
 
-        $appConfig = $app->getConfig();
-        $documentRoot = '/public';
-        if (isset($appConfig['web']['locations']['/']['root']) && $appConfig['web']['locations']['/']['root'] !== '/') {
-            $documentRoot = $appConfig['web']['locations']['/']['root'];
-        }
-
         return [
             'uri' => $uri,
             'remote-host' => $sshUrl['host'],
             'remote-user' => $sshUser,
-            'root' => '/app/' . ltrim($documentRoot, '/'),
+            'root' => '/app/' . $app->getDocumentRoot(),
             $this->getAutoRemoveKey() => true,
             'command-specific' => [
                 'site-install' => [

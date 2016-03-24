@@ -6,6 +6,7 @@ use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Helper\ShellHelperInterface;
+use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class ToolstackBase implements ToolstackInterface
@@ -29,10 +30,16 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     protected $specialDestinations = [];
 
+    /** @var LocalApplication */
+    protected $app;
+
+    /** @var array */
     protected $settings = [];
-    protected $appRoot;
-    protected $documentRoot;
+
+    /** @var string  */
     protected $buildDir;
+
+    /** @var bool */
     protected $copy = false;
 
     /** @var OutputInterface */
@@ -46,6 +53,12 @@ abstract class ToolstackBase implements ToolstackInterface
 
     /** @var ShellHelperInterface */
     protected $shellHelper;
+
+    /** @var string */
+    private $appRoot;
+
+    /** @var string */
+    private $documentRoot;
 
     /**
      * Whether all app files have just been symlinked or copied to the build.
@@ -94,13 +107,14 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, $documentRoot, $appRoot, array $settings)
+    public function prepare($buildDir, LocalApplication $app, array $settings = [])
     {
-        $this->appRoot = $appRoot;
+        $this->app = $app;
+        $this->appRoot = $app->getRoot();
+        $this->documentRoot = $app->getDocumentRoot();
         $this->settings = $settings;
 
         $this->buildDir = $buildDir;
-        $this->documentRoot = ltrim($documentRoot, '/');
 
         $this->copy = !empty($settings['copy']);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
@@ -182,8 +196,8 @@ abstract class ToolstackBase implements ToolstackInterface
             return false;
         }
         $shared = $this->settings['sourceDir'] . '/' . CLI_LOCAL_SHARED_DIR;
-        if (!empty($this->settings['multiApp']) && !empty($this->settings['appName'])) {
-            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->settings['appName']);
+        if (!empty($this->settings['multiApp'])) {
+            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->app->getName());
         }
         if (!is_dir($shared)) {
             mkdir($shared, 0755, true);
@@ -218,7 +232,7 @@ abstract class ToolstackBase implements ToolstackInterface
     {
         $this->buildInPlace = true;
         $buildDir = $this->buildDir;
-        if ($this->documentRoot === 'public' && !file_exists($this->appRoot . '/' . $this->documentRoot)) {
+        if ($this->app->shouldMoveToRoot()) {
             $buildDir .= '/' . $this->documentRoot;
         }
         if ($this->copy) {

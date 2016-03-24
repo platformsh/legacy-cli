@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
+use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Output\OutputInterface;
 
 interface ToolstackInterface
@@ -35,15 +36,12 @@ interface ToolstackInterface
      *
      * This function should be isometric and not affect the file system.
      *
-     * @param string $buildDir     The directory in which the app should be
-     *                             built.
-     * @param string $documentRoot The document root for the app - a file path
-     *                             relative to the build directory.
-     * @param string $appRoot      The root of the application's source code
-     *                             (in the repository).
-     * @param array  $settings     Additional settings for the build.
+     * @param string $buildDir      The directory in which the app should be
+     *                              built.
+     * @param LocalApplication $app The app to build.
+     * @param array  $settings      Additional settings for the build.
      */
-    public function prepare($buildDir, $documentRoot, $appRoot, array $settings);
+    public function prepare($buildDir, LocalApplication $app, array $settings = []);
 
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and
