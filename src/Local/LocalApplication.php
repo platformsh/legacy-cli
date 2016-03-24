@@ -242,8 +242,8 @@ class LocalApplication
         // The default document root is '/public'. This is used if the root is
         // not set, if it is empty, or if it is set to '/'.
         $documentRoot = '/public';
-        if (!empty($appConfig['web']['locations']['/']['root']) && $appConfig['web']['locations']['/']['root'] !== '/') {
-            $documentRoot = $appConfig['web']['locations']['/']['root'];
+        if (!empty($config['web']['locations']['/']['root']) && $config['web']['locations']['/']['root'] !== '/') {
+            $documentRoot = $config['web']['locations']['/']['root'];
         }
 
         return ltrim($documentRoot, '/');
