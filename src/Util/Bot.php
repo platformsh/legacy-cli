@@ -18,10 +18,14 @@ class Bot extends ConsoleAnimation
             CLI_ROOT . '/resources/bot/bot4',
         ];
 
+        $indent = '    ';
+        $signatureIndent = str_repeat(' ', strlen($indent) + 6 - ceil(strlen(CLI_CLOUD_SERVICE) / 2));
+        $signature = "\n" . $signatureIndent . '<info>' . CLI_CLOUD_SERVICE . '</info>';
+
         // The frames are the contents of each file, with each line indented.
-        $frames = array_map(function ($filename) {
-            return preg_replace('/^/m', '    ', file_get_contents($filename))
-                . "\n    <info>" . CLI_CLOUD_SERVICE . "</info>";
+        $frames = array_map(function ($filename) use ($indent, $signature) {
+            return preg_replace('/^/m', $indent, file_get_contents($filename))
+                . $signature;
         }, $filenames);
 
         parent::__construct($output, $frames);
