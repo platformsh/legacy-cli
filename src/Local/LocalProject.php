@@ -17,7 +17,7 @@ class LocalProject
      */
     protected function getProjectId($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.([a-z\-]+\.' . preg_quote(CLI_PROJECT_GIT_DOMAIN) . '):\1\.git$/', $gitUrl, $matches)) {
+        if (!preg_match('/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote(CLI_PROJECT_GIT_DOMAIN) . '):\1\.git$/', $gitUrl, $matches)) {
             return false;
         }
 
