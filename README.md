@@ -1,11 +1,12 @@
 The **Platform.sh CLI** is the official command-line interface for [Platform.sh](https://platform.sh). Use this tool to interact with your [Platform.sh](https://platform.sh) projects, and to build them locally for development purposes.
 
-[![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli) [![Latest Stable Version](https://poser.pugx.org/platformsh/cli/v/stable)](https://github.com/platformsh/platformsh-cli/releases) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/master/LICENSE)
 
 ## Requirements
 
 * Operating system: Linux, OS X, Windows Vista, Windows 7, Windows 8 Pro, or Windows 10 (Windows 8 Standard does not work due to an issue with symlink permissions)
-* PHP 5.5 or higher, with cURL support
+* PHP 5.5.9 or higher, with cURL support
+* Git
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
   * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
@@ -14,29 +15,11 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 ### Installing on OS X or Linux
 
-Simply use this command:
+This is the recommended installation method. Simply use this command:
 
     curl -sS https://platform.sh/cli/installer | php
 
-### Installing on Windows
-
-1. Install Composer using [Composer-Setup.exe](https://getcomposer.org/doc/00-intro.md#installation-windows).
-
-2. Install the CLI, in your preferred terminal application (e.g. in Git Bash):
-
-        composer global require platformsh/cli:@stable
-
-3. Make sure the Composer `vendor/bin` directory is in your PATH. Use this
-  command from a Command Prompt (cmd.exe):
-
-        setx PATH "%PATH%;%APPDATA%\Composer\vendor\bin"
-
-  Start a new terminal before continuing.
-
 ### Installing manually
-
-Installing manually is not recommended, unless you are confident you know what
-you are doing.
 
 1. Download the latest stable package from the
   [Releases page](https://github.com/platformsh/platformsh-cli/releases)
