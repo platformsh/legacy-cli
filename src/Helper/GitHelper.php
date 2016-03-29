@@ -141,9 +141,12 @@ class GitHelper extends Helper implements OutputAwareInterface
      * @param bool         $quiet
      *   Suppress command output.
      *
-     * @throws \RuntimeException If the repository directory is invalid.
+     * @throws \Symfony\Component\Process\Exception\ProcessFailedException
+     *   If the command fails and $mustRun is enabled.
      *
      * @return string|bool
+     *   The command output, true if there is no output, or false if the command
+     *   fails.
      */
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
     {
@@ -185,6 +188,23 @@ class GitHelper extends Helper implements OutputAwareInterface
         }
 
         return (bool) $this->execute(['init'], $dir, $mustRun, false);
+    }
+
+    /**
+     * Check whether a remote repository exists.
+     *
+     * @param string $url
+     *
+     * @throws \Symfony\Component\Process\Exception\ProcessFailedException
+     *   If the Git command fails.
+     *
+     * @return bool
+     */
+    public function remoteRepoExists($url)
+    {
+        $result = $this->execute(['ls-remote', $url, 'HEAD'], false, true);
+
+        return !is_bool($result) && strlen($result) > 0;
     }
 
     /**

@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class ProjectGetCommand extends CommandBase
 {
@@ -138,8 +139,10 @@ class ProjectGetCommand extends CommandBase
         $gitHelper->ensureInstalled();
 
         // First check if the repo actually exists.
-        $repoHead = $gitHelper->execute(['ls-remote', $gitUrl, 'HEAD'], false);
-        if ($repoHead === false) {
+        try {
+            $exists = $gitHelper->remoteRepoExists($gitUrl, true);
+        }
+        catch (ProcessFailedException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln('<error>Failed to connect to the ' . CLI_CLOUD_SERVICE . ' Git server</error>');
 
@@ -162,19 +165,28 @@ class ProjectGetCommand extends CommandBase
             }
 
             return 1;
-        } elseif (is_bool($repoHead)) {
-            // The repository doesn't have a HEAD, which means it is empty.
-            // We need to create the folder, run git init, and attach the remote.
-            mkdir($projectRoot);
+        }
+
+        // If the remote repository exists, then locally we need to create the
+        // folder, run git init, and attach the remote.
+        if (!$exists) {
+            $this->stdErr->writeln('Creating project directory: <info>' . $directory . '</info>');
+            if (mkdir($projectRoot) === false) {
+                $this->stdErr->writeln('Failed to create the project directory.');
+
+                return 1;
+            }
+
             // Initialize the repo and attach our remotes.
-            $this->stdErr->writeln("Initializing empty project repository");
-            $gitHelper->execute(['init'], $projectRoot, true);
-            $this->stdErr->writeln("Adding Git remote");
+            $this->debug('Initializing the repository');
+            $gitHelper->init($projectRoot, true);
+            $this->debug('Adding Git remote(s)');
             $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
-            $this->stdErr->writeln("Your repository has been initialized and connected to <info>" . CLI_CLOUD_SERVICE . "</info>!");
-            $this->stdErr->writeln(
-                "Commit and push to the <info>$environment</info> branch and " . CLI_CLOUD_SERVICE . " will build your project automatically"
-            );
+
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Your project has been initialized and connected to <info>' . CLI_CLOUD_SERVICE . '</info>!');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Commit and push to the <info>master</info> branch of the <info>' . CLI_GIT_REMOTE_NAME . '</info> Git remote, and ' . CLI_CLOUD_SERVICE . ' will build your project automatically.');
 
             return 0;
         }
@@ -183,7 +195,7 @@ class ProjectGetCommand extends CommandBase
         $this->stdErr->writeln(sprintf('Downloading project <info>%s</info>', $project->title ?: $projectId));
         $cloneArgs = ['--branch', $environment, '--origin', CLI_GIT_REMOTE_NAME];
         $cloned = $gitHelper->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
-        if (!$cloned) {
+        if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
