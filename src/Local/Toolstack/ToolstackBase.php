@@ -134,7 +134,7 @@ abstract class ToolstackBase implements ToolstackInterface
                 continue;
             }
 
-            // On Platform these replacements would be a bit different.
+            // On Platform.sh these replacements would be a bit different.
             $absDestination = str_replace(
                 ['{webroot}', '{approot}'],
                 [$this->getWebRoot(), $this->buildDir],

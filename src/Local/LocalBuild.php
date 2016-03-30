@@ -101,7 +101,7 @@ class LocalBuild
         $hashes = [];
 
         // Get a hash representing all the files in the application, excluding
-        // the .platform folder.
+        // the project config folder (CLI_PROJECT_CONFIG_DIR).
         $tree = $this->gitHelper->execute(['ls-files', '-s'], $appRoot);
         if ($tree === false) {
             return false;

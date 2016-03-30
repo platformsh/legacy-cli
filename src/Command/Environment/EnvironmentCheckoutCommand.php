@@ -70,8 +70,8 @@ class EnvironmentCheckoutCommand extends CommandBase
                 $chooseEnvironmentText = "Enter a number to check out another environment:";
                 $specifiedBranch = $helper->choose($environmentList, $chooseEnvironmentText);
             }
-            // If there's only one choice, PlatformQuestionHelper::choose() does
-            // not interact. But we still need interactive confirmation at this
+            // If there's only one choice, QuestionHelper::choose() does not
+            // interact. But we still need interactive confirmation at this
             // point.
             elseif ($helper->confirm(sprintf('Check out environment <info>%s</info>?', reset($environmentList)))) {
                 $specifiedBranch = key($environmentList);

@@ -63,7 +63,7 @@ class SelfBuildCommand extends CommandBase
             $config['output'] = $fsHelper->makePathAbsolute($outputFilename);
         }
         else {
-            // Default output: platform.phar in the current directory.
+            // Default output: CLI_PHAR in the current directory.
             $cwd = getcwd();
             if ($cwd && $cwd !== CLI_ROOT) {
                 $config['output'] = getcwd() . '/' . CLI_PHAR;

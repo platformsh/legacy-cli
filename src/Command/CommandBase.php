@@ -485,8 +485,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     }
 
     /**
-     * Is this command used to work with your local environment or send
-     * commands to the Platform remote environment? Defaults to FALSE.
+     * Is this a local command? (if it does not make API requests)
      *
      * @return bool
      */
@@ -609,8 +608,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             }
         }
 
-        // Check whether the user has a Git upstream set to a Platform
-        // environment ID.
+        // Check whether the user has a Git upstream set to a remote environment
+        // ID.
         $upstream = $gitHelper->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
@@ -621,8 +620,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             }
         }
 
-        // There is no Git remote set, or it's set to a non-Platform URL.
-        // Fall back to trying the current branch name.
+        // There is no Git remote set. Fall back to trying the current branch
+        // name.
         if ($currentBranch) {
             $currentBranchSanitized = Environment::sanitizeId($currentBranch);
             $environment = $this->getEnvironment($currentBranchSanitized, $project, $refresh);
