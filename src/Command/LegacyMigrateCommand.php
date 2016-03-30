@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class LegacyMigrateCommand extends CommandBase
@@ -13,7 +14,8 @@ class LegacyMigrateCommand extends CommandBase
     {
         $this
             ->setName('legacy-migrate')
-            ->setDescription('Migrate from the legacy file structure');
+            ->setDescription('Migrate from the legacy file structure')
+            ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
         $cliName = CLI_NAME;
         $localDir = CLI_LOCAL_DIR;
         $this->setHelp(<<<EOF
@@ -63,16 +65,18 @@ EOF
             return 1;
         }
 
-        $backup = rtrim($legacyRoot, '\\/') . '-backup.tar.gz';
-        if (file_exists($backup)) {
-            $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
-            $this->stdErr->writeln('Move (or delete) the backup, then run <comment>' . CLI_EXECUTABLE . ' legacy-migrate</comment> to continue.');
+        if (!$input->getOption('no-backup')) {
+            $backup = rtrim($legacyRoot, '\\/') . '-backup.tar.gz';
+            if (file_exists($backup)) {
+                $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
+                $this->stdErr->writeln('Move (or delete) the backup, then run <comment>' . CLI_EXECUTABLE . ' legacy-migrate</comment> to continue.');
 
-            return 1;
+                return 1;
+            }
+
+            $this->stdErr->writeln('Backing up entire project to: ' . $backup);
+            $fsHelper->archiveDir($legacyRoot, $backup);
         }
-
-        $this->stdErr->writeln('Backing up entire project to: ' . $backup);
-        $fsHelper->archiveDir($legacyRoot, $backup);
 
         $this->stdErr->writeln('Creating directory: ' . CLI_LOCAL_DIR);
         $this->localProject->ensureLocalDir($repositoryDir);
