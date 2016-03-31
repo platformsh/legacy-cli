@@ -60,15 +60,15 @@ class LocalProject
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
         $gitHelper->setDefaultRepositoryDir($dir);
-        $platformUrl = $gitHelper->getConfig("remote." . CLI_GIT_REMOTE_NAME . ".url", $dir);
-        if (!$platformUrl) {
+        $currentUrl = $gitHelper->getConfig("remote." . CLI_GIT_REMOTE_NAME . ".url", $dir);
+        if (!$currentUrl) {
             $gitHelper->execute(['remote', 'add', CLI_GIT_REMOTE_NAME, $url], $dir, true);
         }
-        elseif ($platformUrl != $url) {
+        elseif ($currentUrl != $url) {
             $gitHelper->execute(['remote', 'set-url', CLI_GIT_REMOTE_NAME, $url], $dir, true);
         }
         // Add an origin remote too.
-        if (!$gitHelper->getConfig("remote.origin.url", $dir)) {
+        if (CLI_GIT_REMOTE_NAME !== 'origin' && !$gitHelper->getConfig("remote.origin.url", $dir)) {
             $gitHelper->execute(['remote', 'add', 'origin', $url]);
         }
     }

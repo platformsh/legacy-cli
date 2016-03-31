@@ -10,7 +10,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
 {
 
     /** @var CommandBase */
-    protected $platformCommand;
+    protected $welcomeCommand;
 
     /**
      * A list of the user's projects.
@@ -31,9 +31,9 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
      */
     protected function setUp()
     {
-        $this->platformCommand = new WelcomeCommand();
-        $this->platformCommand->setApplication($this->getApplication());
-        $this->projects = $this->platformCommand->getProjects(false);
+        $this->welcomeCommand = new WelcomeCommand();
+        $this->welcomeCommand->setApplication($this->getApplication());
+        $this->projects = $this->welcomeCommand->getProjects(false);
     }
 
     /**
@@ -142,16 +142,16 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
      */
     public function getEnvironmentsForCheckout()
     {
-        $project = $this->platformCommand->getCurrentProject();
+        $project = $this->welcomeCommand->getCurrentProject();
         if (!$project) {
             return [];
         }
         try {
-            $currentEnvironment = $this->platformCommand->getCurrentEnvironment($project, false);
+            $currentEnvironment = $this->welcomeCommand->getCurrentEnvironment($project, false);
         } catch (\Exception $e) {
             $currentEnvironment = false;
         }
-        $environments = $this->platformCommand->getEnvironments($project, false, false);
+        $environments = $this->welcomeCommand->getEnvironments($project, false, false);
         if ($currentEnvironment) {
             $environments = array_filter(
                 $environments,
@@ -172,7 +172,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     public function getAppNames()
     {
         $apps = [];
-        if ($projectRoot = $this->platformCommand->getProjectRoot()) {
+        if ($projectRoot = $this->welcomeCommand->getProjectRoot()) {
             foreach (LocalApplication::getApplications($projectRoot) as $app) {
                 $name = $app->getName();
                 if ($name !== null) {
@@ -201,7 +201,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         $commandLine = $this->handler->getContext()
                                      ->getCommandLine();
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
-        if (!$currentProjectId && ($currentProject = $this->platformCommand->getCurrentProject())) {
+        if (!$currentProjectId && ($currentProject = $this->welcomeCommand->getCurrentProject())) {
             $project = $currentProject;
         } elseif (isset($this->projects[$currentProjectId])) {
             $project = $this->projects[$currentProjectId];
@@ -209,7 +209,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
             return [];
         }
 
-        $environments = $this->platformCommand->getEnvironments($project, false, false);
+        $environments = $this->welcomeCommand->getEnvironments($project, false, false);
 
         return array_keys($environments);
     }

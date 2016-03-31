@@ -167,7 +167,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
      *   The final symlink target, which could be a relative path, depending on
      *   $this->relative.
      */
-    public function symLink($target, $link)
+    public function symlink($target, $link)
     {
         if ($target === $link) {
             throw new \InvalidArgumentException("Cannot symlink $link to itself");

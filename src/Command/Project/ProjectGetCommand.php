@@ -140,7 +140,7 @@ class ProjectGetCommand extends CommandBase
 
         // First check if the repo actually exists.
         try {
-            $exists = $gitHelper->remoteRepoExists($gitUrl, true);
+            $exists = $gitHelper->remoteRepoExists($gitUrl);
         }
         catch (ProcessFailedException $e) {
             // The ls-remote command failed.

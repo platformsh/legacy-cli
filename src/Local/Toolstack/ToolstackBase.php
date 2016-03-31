@@ -239,7 +239,7 @@ abstract class ToolstackBase implements ToolstackInterface
             $this->fsHelper->copyAll($this->appRoot, $buildDir, $this->ignoredFiles, true);
         }
         else {
-            $this->fsHelper->symLink($this->appRoot, $buildDir);
+            $this->fsHelper->symlink($this->appRoot, $buildDir);
         }
 
         return $buildDir;

@@ -82,7 +82,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
     {
         $testTarget = $this->tempDir();
         $testLink = $this->tempDir() . '/link';
-        $this->filesystemHelper->symLink($testTarget, $testLink);
+        $this->filesystemHelper->symlink($testTarget, $testLink);
         $this->assertTrue(is_link($testLink));
         touch($testTarget . '/test-file');
         $this->assertFileExists($testLink . '/test-file');

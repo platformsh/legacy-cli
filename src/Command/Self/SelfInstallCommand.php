@@ -27,19 +27,19 @@ EOT
         $homeDir = $this->getHomeDir();
         $configDir = $this->getConfigDir();
 
-        $platformRc = file_get_contents(CLI_ROOT . '/shell-config.rc');
-        if ($platformRc === false) {
+        $shellConfig = file_get_contents(CLI_ROOT . '/shell-config.rc');
+        if ($shellConfig === false) {
             $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/shell-config.rc'));
             return 1;
         }
 
-        $platformRcDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
-        if (file_put_contents($platformRcDestination, $platformRc) === false) {
-            $this->stdErr->writeln(sprintf('Failed to write file: %s', $platformRcDestination));
+        $shellConfigDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
+        if (file_put_contents($shellConfigDestination, $shellConfig) === false) {
+            $this->stdErr->writeln(sprintf('Failed to write file: %s', $shellConfigDestination));
             return 1;
         }
 
-        $this->stdErr->writeln(sprintf('Successfully copied CLI configuration to: %s', $platformRcDestination));
+        $this->stdErr->writeln(sprintf('Successfully copied CLI configuration to: %s', $shellConfigDestination));
 
         if (!$shellConfigFile = $this->findShellConfigFile($homeDir)) {
             $this->stdErr->writeln('Failed to find a shell configuration file.');
@@ -55,7 +55,7 @@ EOT
         }
 
         $suggestedShellConfig = "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-            . '. ' . escapeshellarg($platformRcDestination) . " 2>/dev/null";
+            . '. ' . escapeshellarg($shellConfigDestination) . " 2>/dev/null";
 
         /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');

@@ -54,7 +54,7 @@ class LoginCommand extends CommandBase
         $question->setValidator(
             function ($answer) {
                 if (empty($answer) || !filter_var($answer, FILTER_VALIDATE_EMAIL)) {
-                    throw new \RunTimeException(
+                    throw new \RuntimeException(
                         'Please provide a valid email address.'
                     );
                 }

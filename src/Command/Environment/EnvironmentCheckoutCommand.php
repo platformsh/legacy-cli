@@ -121,7 +121,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         $gitHelper->execute(['fetch', $upstreamRemote, $branch]);
 
         // Create the new branch, and set the correct upstream.
-        $success = $gitHelper->checkoutNew($branch, $upstreamRemote . '/' . $branch);
+        $success = $gitHelper->checkOutNew($branch, $upstreamRemote . '/' . $branch);
 
         return $success ? 0 : 1;
     }
