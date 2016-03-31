@@ -142,7 +142,7 @@ class ProjectGetCommand extends CommandBase
         try {
             $exists = $gitHelper->remoteRepoExists($gitUrl);
         }
-        catch (ProcessFailedException $e) {
+        catch (\Exception $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln('<error>Failed to connect to the ' . CLI_CLOUD_SERVICE . ' Git server</error>');
 

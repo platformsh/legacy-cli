@@ -141,7 +141,7 @@ class GitHelper extends Helper implements OutputAwareInterface
      * @param bool         $quiet
      *   Suppress command output.
      *
-     * @throws \Symfony\Component\Process\Exception\ProcessFailedException
+     * @throws \Exception
      *   If the command fails and $mustRun is enabled.
      *
      * @return string|bool
@@ -195,7 +195,7 @@ class GitHelper extends Helper implements OutputAwareInterface
      *
      * @param string $url
      *
-     * @throws \Symfony\Component\Process\Exception\ProcessFailedException
+     * @throws \Exception
      *   If the Git command fails.
      *
      * @return bool
