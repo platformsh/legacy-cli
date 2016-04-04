@@ -14,13 +14,13 @@ class IntegrationGetCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:get')
+            ->setName('integration:list')
             ->setAliases(['integrations'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to list integrations')
             ->setDescription('View project integration(s)');
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
-        $this->setHiddenAliases(['integration:list']);
+        $this->setHiddenAliases(['integration:get']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
