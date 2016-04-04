@@ -31,12 +31,6 @@ class EnvironmentBranchCommand extends CommandBase
                 null,
                 InputOption::VALUE_NONE,
                 "Create the new environment even if the branch cannot be checked out locally"
-            )
-            ->addOption(
-                'build',
-                null,
-                InputOption::VALUE_NONE,
-                "Build the new environment locally"
             );
         $this->addProjectOption()
              ->addEnvironmentOption()
