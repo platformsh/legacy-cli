@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Tests\Toolstack;
 
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
@@ -18,6 +19,9 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     /** @var \Symfony\Component\Console\Output\OutputInterface */
     protected static $output;
 
+    /** @var CliConfig */
+    protected static $config;
+
     /** @var LocalBuild */
     protected $builder;
 
@@ -30,6 +34,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     {
         self::$root = vfsStream::setup(__CLASS__);
         self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
+        self::$config = new CliConfig();
     }
 
     /**
@@ -39,6 +44,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     {
         $this->builder = new LocalBuild(
             $this->buildSettings,
+            null,
             self::$output
         );
     }
@@ -68,7 +74,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         $projectRoot = $this->createDummyProject($sourceDir);
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
         $builder = $buildSettings
-            ? new LocalBuild($buildSettings + $this->buildSettings, self::$output)
+            ? new LocalBuild($buildSettings + $this->buildSettings, null, self::$output)
             : $this->builder;
         $success = $builder->build($projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);

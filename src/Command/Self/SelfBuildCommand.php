@@ -56,24 +56,24 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        $config = [];
+        $boxConfig = [];
         if ($outputFilename) {
             /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
             $fsHelper = $this->getHelper('fs');
-            $config['output'] = $fsHelper->makePathAbsolute($outputFilename);
+            $boxConfig['output'] = $fsHelper->makePathAbsolute($outputFilename);
         }
         else {
             // Default output: CLI_PHAR in the current directory.
             $cwd = getcwd();
             if ($cwd && $cwd !== CLI_ROOT) {
-                $config['output'] = getcwd() . '/' . CLI_PHAR;
+                $boxConfig['output'] = getcwd() . '/' . self::$config->get('application.phar');
             }
         }
         if ($keyFilename) {
-            $config['key'] = realpath($keyFilename);
+            $boxConfig['key'] = realpath($keyFilename);
         }
 
-        $phar = isset($config['output']) ? $config['output'] : CLI_ROOT . '/' . CLI_PHAR;
+        $phar = isset($boxConfig['output']) ? $boxConfig['output'] : CLI_ROOT . '/' . self::$config->get('application.phar');
         if (file_exists($phar)) {
             /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
@@ -102,12 +102,12 @@ class SelfBuildCommand extends CommandBase
         $boxArgs = [$shellHelper->resolveCommand('box'), 'build', '--no-interaction'];
 
         // Create a temporary box.json file for this build.
-        if (!empty($config)) {
+        if (!empty($boxConfig)) {
             $originalConfig = json_decode(file_get_contents(CLI_ROOT . '/box.json'), true);
-            $config = array_merge($originalConfig, $config);
-            $config['base-path'] = CLI_ROOT;
+            $boxConfig = array_merge($originalConfig, $boxConfig);
+            $boxConfig['base-path'] = CLI_ROOT;
             $tmpJson = tempnam('/tmp', 'box_json');
-            file_put_contents($tmpJson, json_encode($config));
+            file_put_contents($tmpJson, json_encode($boxConfig));
             $boxArgs[] = '--configuration=' . $tmpJson;
         }
 
@@ -129,7 +129,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         $sha1 = sha1_file($phar);
-        $version = CLI_VERSION;
+        $version = self::$config->get('application.version');
         $size = filesize($phar);
 
         $output->writeln("Package built: <info>$phar</info>");

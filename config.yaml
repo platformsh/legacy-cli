@@ -1,0 +1,41 @@
+application:
+  name: 'Platform.sh CLI'
+  version: '3.x-dev'
+  executable: 'platform'
+  phar: 'platform.phar'
+  package_name: 'platformsh/cli'
+  source_url: 'https://github.com/platformsh/platformsh-cli'
+  installer_url: 'https://platform.sh/cli/installer'
+  manifest_url: 'https://platform.sh/cli/manifest.json'
+  user_config_dir: '.platformsh'
+  env_prefix: 'PLATFORMSH_CLI_'
+api:
+  oauth2_client_id: 'platform-cli'
+  disable_cache: false
+  skip_ssl: false
+  token: null
+  projects_ttl: 3600
+  environments_ttl: 600
+  users_ttl: 3600
+  debug: false
+  session_id: 'default'
+local:
+  local_dir: '.platform/local'
+  archive_dir: '.platform/local/build-archives'
+  build_dir: '.platform/local/builds'
+  project_config: '.platform/local/project.yaml'
+  project_config_legacy: '.platform-project'
+  shared_dir: '.platform/local/shared'
+  web_root: '_www'
+  copy_on_windows: false
+service:
+  name: 'Platform.sh'
+  env_prefix: 'PLATFORM_'
+  docs_url: 'https://docs.platform.sh'
+  app_config_file: '.platform.app.yaml'
+  project_config_dir: '.platform'
+  accounts_url: 'https://accounts.platform.sh/api/platform/'
+detection:
+  git_remote_name: 'platform'
+  git_domain: 'platform.sh'
+  api_domain: 'platform.sh'

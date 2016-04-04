@@ -84,7 +84,7 @@ class EnvironmentDrushCommand extends CommandBase
         // available.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot && $this->selectedProjectIsCurrent()) {
-            $apps = LocalApplication::getApplications($projectRoot);
+            $apps = LocalApplication::getApplications($projectRoot, self::$config);
             /** @var LocalApplication $app */
             if (count($apps) === 1 && $appName === null) {
                 $app = reset($apps);
@@ -108,9 +108,10 @@ class EnvironmentDrushCommand extends CommandBase
             // Fall back to the PLATFORM_DOCUMENT_ROOT environment variable,
             // which is usually correct, except where the document_root was
             // specified as '/'.
-            $drupalRoot = '${' . CLI_REMOTE_ENV_PREFIX . 'DOCUMENT_ROOT:-/app/public}';
+            $documentRootEnvVar = self::$config->get('service.env_prefix') . 'DOCUMENT_ROOT';
+            $drupalRoot = '${' . $documentRootEnvVar . ':-/app/public}';
 
-            $this->debug('<comment>Warning:</comment> using $' . CLI_REMOTE_ENV_PREFIX . 'DOCUMENT_ROOT for the Drupal root. This fails in cases where the document_root is /.');
+            $this->debug('<comment>Warning:</comment> using $' . $documentRootEnvVar . ' for the Drupal root. This fails in cases where the document_root is /.');
         }
 
         $dimensions = $this->getApplication()

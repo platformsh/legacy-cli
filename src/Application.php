@@ -25,12 +25,16 @@ class Application extends ParentApplication
      */
     protected $currentCommand;
 
+    /** @var CliConfig */
+    protected $cliConfig;
+
     /**
      * {@inheritdoc}
      */
     public function __construct()
     {
-        parent::__construct(CLI_NAME, CLI_VERSION);
+        $this->cliConfig = new CliConfig();
+        parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
 
         $this->setDefaultTimezone();
 
@@ -70,7 +74,7 @@ class Application extends ParentApplication
             new QuestionHelper(),
             new FilesystemHelper(),
             new ShellHelper(),
-            new DrushHelper(),
+            new DrushHelper($this->cliConfig),
             new GitHelper(),
         ]);
     }
@@ -326,7 +330,7 @@ class Application extends ParentApplication
         if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
             $output->writeln(sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-            $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', CLI_EXECUTABLE, $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);
+            $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', $this->cliConfig->get('application.executable'), $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
         }
     }

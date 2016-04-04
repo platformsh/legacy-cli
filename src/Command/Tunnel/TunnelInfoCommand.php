@@ -48,7 +48,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             $this->stdErr->writeln('No tunnels found.');
 
             if (count($tunnels) > count($relationships)) {
-                $this->stdErr->writeln("List all tunnels with: <info>" . CLI_EXECUTABLE . " tunnels --all</info>");
+                $this->stdErr->writeln("List all tunnels with: <info>" . self::$config->get('application.executable') . " tunnels --all</info>");
             }
 
             return 1;

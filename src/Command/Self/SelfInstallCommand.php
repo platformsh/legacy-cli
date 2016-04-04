@@ -14,7 +14,7 @@ class SelfInstallCommand extends CommandBase
         $this->setName('self:install')
              ->setDescription('Install or update CLI configuration files');
         $this->setHiddenAliases(['local:install']);
-        $cliName = CLI_NAME;
+        $cliName = self::$config->get('application.name');
         $this->setHelp(<<<EOT
 This command automatically installs shell configuration for the {$cliName},
 adding autocompletion support and handy aliases. Bash and ZSH are supported.
@@ -25,7 +25,7 @@ EOT
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $homeDir = $this->getHomeDir();
-        $configDir = $this->getConfigDir();
+        $configDir = $this->getUserConfigDir();
 
         $shellConfig = file_get_contents(CLI_ROOT . '/shell-config.rc');
         if ($shellConfig === false) {
@@ -61,7 +61,7 @@ EOT
         $questionHelper = $this->getHelper('question');
         if (!$questionHelper->confirm('Do you want to update the file automatically?')) {
             $suggestedShellConfig = PHP_EOL
-                . '# ' . CLI_NAME . ' configuration'
+                . '# ' . self::$config->get('application.name') . ' configuration'
                 . PHP_EOL
                 . $suggestedShellConfig;
 
@@ -72,7 +72,7 @@ EOT
 
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
             . PHP_EOL . PHP_EOL
-            . '# Automatically added by the ' . CLI_NAME
+            . '# Automatically added by the ' . self::$config->get('application.name')
             . PHP_EOL . $suggestedShellConfig;
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');

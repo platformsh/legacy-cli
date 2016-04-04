@@ -45,7 +45,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
         $gitHelper->setDefaultRepositoryDir($projectRoot);
 
         $specifiedEnvironmentId = $input->getArgument('environment');
-        if ($specifiedEnvironmentId != '0' && !$specifiedEnvironment = $this->getEnvironment($specifiedEnvironmentId, $project)) {
+        if ($specifiedEnvironmentId != '0' && !$specifiedEnvironment = $this->api->getEnvironment($specifiedEnvironmentId, $project)) {
             $this->stdErr->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
             return 1;
         }
@@ -78,23 +78,23 @@ class EnvironmentSetRemoteCommand extends CommandBase
         }
 
         // Perform the mapping or unmapping.
-        $config = $this->getProjectConfig($projectRoot);
-        $config += ['mapping' => []];
+        $projectConfig = $this->getProjectConfig($projectRoot);
+        $projectConfig += ['mapping' => []];
         if ($mappedByDefault || $specifiedEnvironmentId == '0') {
-            unset($config['mapping'][$specifiedBranch]);
-            $this->localProject->writeCurrentProjectConfig(['mapping' => $config['mapping']], $projectRoot);
+            unset($projectConfig['mapping'][$specifiedBranch]);
+            $this->localProject->writeCurrentProjectConfig(['mapping' => $projectConfig['mapping']], $projectRoot);
         }
         else {
-            if (isset($config['mapping']) && ($current = array_search($specifiedEnvironmentId, $config['mapping'])) !== false) {
-                unset($config['mapping'][$current]);
+            if (isset($projectConfig['mapping']) && ($current = array_search($specifiedEnvironmentId, $projectConfig['mapping'])) !== false) {
+                unset($projectConfig['mapping'][$current]);
             }
-            $config['mapping'][$specifiedBranch] = $specifiedEnvironmentId;
-            $this->localProject->writeCurrentProjectConfig(['mapping' => $config['mapping']], $projectRoot);
+            $projectConfig['mapping'][$specifiedBranch] = $specifiedEnvironmentId;
+            $this->localProject->writeCurrentProjectConfig(['mapping' => $projectConfig['mapping']], $projectRoot);
         }
 
         // Check the success of the operation.
-        if (isset($config['mapping'][$specifiedBranch])) {
-            $actualRemoteEnvironment = $config['mapping'][$specifiedBranch];
+        if (isset($projectConfig['mapping'][$specifiedBranch])) {
+            $actualRemoteEnvironment = $projectConfig['mapping'][$specifiedBranch];
             $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is mapped to the remote environment <info>$actualRemoteEnvironment</info>");
         }
         elseif ($mappedByDefault) {

@@ -189,7 +189,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
                 // Patch the environment with the changes.
                 $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
-                $this->clearEnvironmentsCache();
+                $this->api->clearEnvironmentsCache($selectedEnvironment->project);
 
                 $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 

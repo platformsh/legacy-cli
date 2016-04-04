@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
+use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -39,9 +40,10 @@ interface ToolstackInterface
      * @param string $buildDir      The directory in which the app should be
      *                              built.
      * @param LocalApplication $app The app to build.
+     * @param CliConfig $config     CLI configuration.
      * @param array  $settings      Additional settings for the build.
      */
-    public function prepare($buildDir, LocalApplication $app, array $settings = []);
+    public function prepare($buildDir, LocalApplication $app, CliConfig $config, array $settings = []);
 
     /**
      * Build this application. Acquire dependencies, plugins, libraries, and

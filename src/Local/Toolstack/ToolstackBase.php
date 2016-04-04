@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
+use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
@@ -54,6 +55,9 @@ abstract class ToolstackBase implements ToolstackInterface
     /** @var ShellHelperInterface */
     protected $shellHelper;
 
+    /** @var CliConfig */
+    protected $config;
+
     /** @var string */
     protected $appRoot;
 
@@ -84,7 +88,7 @@ abstract class ToolstackBase implements ToolstackInterface
         ];
 
         // Platform.sh has '.platform.app.yaml', but we need to be stricter.
-        $this->ignoredFiles = ['.*'];
+        $this->ignoredFiles = ['.*', ];
     }
 
     /**
@@ -107,12 +111,18 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, LocalApplication $app, array $settings = [])
+    public function prepare($buildDir, LocalApplication $app, CliConfig $config, array $settings = [])
     {
         $this->app = $app;
         $this->appRoot = $app->getRoot();
         $this->documentRoot = $app->getDocumentRoot();
         $this->settings = $settings;
+        $this->config = $config;
+
+        if ($this->config->get('local.copy_on_windows')) {
+            $this->fsHelper->setCopyOnWindows(true);
+        }
+        $this->ignoredFiles[] = $this->config->get('local.web_root');
 
         $this->buildDir = $buildDir;
 
@@ -195,7 +205,7 @@ abstract class ToolstackBase implements ToolstackInterface
         if (empty($this->settings['sourceDir'])) {
             return false;
         }
-        $shared = $this->settings['sourceDir'] . '/' . CLI_LOCAL_SHARED_DIR;
+        $shared = $this->settings['sourceDir'] . '/' . $this->config->get('local.shared_dir');
         if (!empty($this->settings['multiApp'])) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->app->getName());
         }
