@@ -231,7 +231,9 @@ abstract class TunnelCommandBase extends CommandBase
             return $tunnels;
         }
 
-        $this->validateInput($input, true);
+        if (!$this->hasSelectedProject()) {
+            $this->validateInput($input, true);
+        }
         $project = $this->getSelectedProject();
         $environment = $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null;
         $appName = $this->selectApp($input);
