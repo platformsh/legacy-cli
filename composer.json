@@ -1,6 +1,4 @@
 {
-    "name": "platformsh/cli",
-    "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
         "doctrine/cache": "~1.5",

@@ -113,7 +113,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentBranchCommand();
         $commands[] = new Command\Environment\EnvironmentCheckoutCommand();
         $commands[] = new Command\Environment\EnvironmentDeleteCommand();
-        $commands[] = new Command\Environment\EnvironmentDrushCommand();
         $commands[] = new Command\Environment\EnvironmentHttpAccessCommand();
         $commands[] = new Command\Environment\EnvironmentListCommand();
         $commands[] = new Command\Environment\EnvironmentLogCommand();
@@ -133,7 +132,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Integration\IntegrationUpdateCommand();
         $commands[] = new Command\Local\LocalBuildCommand();
         $commands[] = new Command\Local\LocalCleanCommand();
-        $commands[] = new Command\Local\LocalDrushAliasesCommand();
         $commands[] = new Command\Local\LocalDirCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
         $commands[] = new Command\Project\ProjectGetCommand();

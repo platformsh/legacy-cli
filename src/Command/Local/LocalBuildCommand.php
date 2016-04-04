@@ -68,25 +68,6 @@ class LocalBuildCommand extends CommandBase
                 null,
                 InputOption::VALUE_NONE,
                 'Do not run post-build hooks'
-            )
-            ->addOption(
-                'working-copy',
-                null,
-                InputOption::VALUE_NONE,
-                'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version'
-            )
-            ->addOption(
-                'concurrency',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Drush: set the number of concurrent projects that will be processed at the same time',
-                $this->defaultDrushConcurrency
-            )
-            ->addOption(
-                'lock',
-                null,
-                InputOption::VALUE_NONE,
-                'Drush: create or update a lock file (only available with Drush version 7+)'
             );
         $this->addExample('Build the current project');
         $this->addExample('Build the app "example" without symlinking the source files', 'example --copy');

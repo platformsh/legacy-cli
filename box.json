@@ -26,6 +26,6 @@
     }
   ],
   "main": "bin/platform",
-  "output": "platform.phar",
+  "output": "magento-cloud.phar",
   "stub": true
 }

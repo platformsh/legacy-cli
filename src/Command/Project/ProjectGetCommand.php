@@ -217,19 +217,6 @@ class ProjectGetCommand extends CommandBase
             return 0;
         }
 
-        // Ensure that Drush aliases are created.
-        if (Drupal::isDrupal($projectRoot)) {
-            $this->stdErr->writeln('');
-            $this->runOtherCommand(
-                'local:drush-aliases',
-                [
-                    // The default Drush alias group is the final part of the
-                    // directory path.
-                    '--group' => basename($directory),
-                ]
-            );
-        }
-
         // Launch the first build.
         $success = true;
         if ($input->getOption('build')) {

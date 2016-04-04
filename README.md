@@ -1,6 +1,4 @@
-The **Platform.sh CLI** is the official command-line interface for [Platform.sh](https://platform.sh). Use this tool to interact with your [Platform.sh](https://platform.sh) projects, and to build them locally for development purposes.
-
-[![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/master/LICENSE)
+The **Magento Cloud CLI** is the official command-line interface for [Magento Cloud](https://magento.cloud). Use this tool to interact with your Magento Cloud projects, and to build them locally for development purposes.
 
 ## Requirements
 
@@ -9,7 +7,6 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 * Git
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
-  * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
 
 ## Installation
 
@@ -17,43 +14,42 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 This is the recommended installation method. Simply use this command:
 
-    curl -sS https://platform.sh/cli/installer | php
+    curl -sS https://accounts.magento.cloud/cli/installer | php
 
 ### Installing manually
 
-1. Download the latest stable package from the
-  [Releases page](https://github.com/platformsh/platformsh-cli/releases)
-  (look for the latest `platform.phar` file).
+1. Download the latest stable package from the Releases page
+  (look for the latest `magento-cloud.phar` file).
 
-2. Rename the file to `platform`, ensure it is executable, and move it into a
-  directory in your PATH (use `echo $PATH` to see your options).
+2. Rename the file to `magento-cloud`, ensure it is executable, and move it into
+  a directory in your PATH (use `echo $PATH` to see your options).
 
 3. Enable autocompletion and shell aliases:
 
-        platform self:install
+        magento-cloud self:install
 
 ## Updating
 
 New releases of the CLI are made regularly. Update with this command:
 
-    platform self:update
+    magento-cloud self:update
 
 ## Usage
 
-You can run the Platform.sh CLI in your shell by typing `platform`.
+You can run the Magento Cloud CLI in your shell by typing:
 
-    platform
+    magento-cloud
 
 Use the 'list' command to get a list of available options and commands:
 
-    platform list
+    magento-cloud list
 
 ### Commands
 
-The current output of `platform list` is as follows:
+The current output of `magento-cloud list` is as follows:
 
 ```
-Platform.sh CLI
+Magento Cloud CLI
 
 Global options:
   --help           -h Display this help message
@@ -62,16 +58,15 @@ Global options:
   --version        -V Display this application version
   --yes            -y Answer "yes" to all prompts
   --no             -n Answer "no" to all prompts
-  --shell          -s Launch the shell
 
 Available commands:
   clear-cache (clearcache, cc)              Clear the CLI cache
-  docs                                      Open the Platform.sh online documentation
+  docs                                      Open the Magento Cloud online documentation
   help                                      Displays help for a command
   list                                      Lists commands
-  login                                     Log in to Platform.sh
-  logout                                    Log out of Platform.sh
-  web                                       Open the Platform.sh Web UI
+  login                                     Log in to Magento Cloud
+  logout                                    Log out of Magento Cloud
+  web                                       Open the Magento Cloud Web UI
 activity
   activity:list (activities)                Get the most recent activities for an environment
   activity:log                              Display the log for an environment activity
@@ -87,7 +82,6 @@ environment
   environment:branch (branch)               Branch an environment
   environment:checkout (checkout)           Check out an environment
   environment:delete                        Delete an environment
-  environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
   environment:info                          Read or set properties for an environment
   environment:list (environments)           Get a list of all environments
@@ -108,7 +102,6 @@ integration
 local
   local:build (build)                       Build the current project locally
   local:clean (clean)                       Remove old project builds
-  local:drush-aliases (drush-aliases)       Find the project's Drush aliases
 project
   project:delete                            Delete a project
   project:get (get)                         Clone and build a project locally
@@ -147,21 +140,15 @@ variable
 
 The CLI caches details of your projects and their environments, and some other
 information. These caches could become out-of-date. You can clear caches with
-the command `platform clear-cache` (or `platform cc` for short).
+the command `magento-cloud clear-cache` (or `magento-cloud cc` for short).
 
 ## Customization
 
 You can configure the CLI via these environment variables:
 
-* `PLATFORMSH_CLI_TOKEN`: an API token to use for non-interactive login (not yet available)
-* `PLATFORMSH_CLI_COPY_ON_WINDOWS`: set to 1 to avoid some Windows symlink issues
-* `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
-* `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
-* `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')
-* `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
-* `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
-* ~~`PLATFORMSH_CLI_API_TOKEN`: a 'personal access token' to authenticate all requests~~ (deprecated)
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute to the CLI.
+* `MAGENTO_CLOUD_CLI_TOKEN`: an API token to use for non-interactive login (not yet available)
+* `MAGENTO_CLOUD_CLI_COPY_ON_WINDOWS`: set to 1 to avoid some Windows symlink issues
+* `MAGENTO_CLOUD_CLI_DEBUG`: set to 1 to enable cURL debugging
+* `MAGENTO_CLOUD_CLI_DISABLE_CACHE`: set to 1 to disable caching
+* `MAGENTO_CLOUD_CLI_SESSION_ID`: change user session (default 'default')
+* `http_proxy` or `https_proxy`: specify a proxy for connecting to Magento Cloud
