@@ -14,13 +14,14 @@ class CliConfig
     protected static $config = [];
 
     /**
-     * @param array|null $env
-     * @param string     $defaultsFile
-     * @param bool       $reset
+     * @param array|null  $env
+     * @param string|null $defaultsFile
+     * @param bool        $reset
      */
-    public function __construct(array $env = null, $defaultsFile = CLI_ROOT . '/config.yaml', $reset = false)
+    public function __construct(array $env = null, $defaultsFile = null, $reset = false)
     {
         if (empty(self::$config) || $reset) {
+            $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
             $defaults = Yaml::parse(file_get_contents($defaultsFile));
             self::$config = $this->resolve(
                 $defaults,
