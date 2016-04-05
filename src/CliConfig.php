@@ -65,7 +65,7 @@ class CliConfig
             'DRUSH' => 'local.drush_executable',
             'SESSION_ID' => 'api.session_id',
             'SKIP_SSL' => 'api.skip_ssl',
-            'ACCOUNTS_API' => 'service.accounts_url',
+            'ACCOUNTS_API' => 'api.accounts_api_url',
         ];
         $config = $defaults;
         $prefix = isset($config['application']['env_prefix']) ? $config['application']['env_prefix'] : '';

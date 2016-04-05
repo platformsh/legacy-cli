@@ -111,7 +111,7 @@ class Api
     {
         if (!isset(self::$client)) {
             $connectorOptions = [];
-            $connectorOptions['accounts'] = $this->config->get('service.accounts_url');
+            $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
             $connectorOptions['debug'] = $this->config->get('api.debug');
             $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
