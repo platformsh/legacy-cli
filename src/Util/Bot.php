@@ -8,8 +8,9 @@ class Bot extends ConsoleAnimation
 {
     /**
      * @param OutputInterface $output
+     * @param string          $signature
      */
-    public function __construct(OutputInterface $output)
+    public function __construct(OutputInterface $output, $signature = '')
     {
         $filenames = [
             CLI_ROOT . '/resources/bot/bot1',
@@ -19,8 +20,10 @@ class Bot extends ConsoleAnimation
         ];
 
         $indent = '    ';
-        $signatureIndent = str_repeat(' ', strlen($indent) + 6 - ceil(strlen(CLI_CLOUD_SERVICE) / 2));
-        $signature = "\n" . $signatureIndent . '<info>' . CLI_CLOUD_SERVICE . '</info>';
+        if (strlen($signature) > 0) {
+            $signatureIndent = str_repeat(' ', strlen($indent) + 5 - floor(strlen($signature) / 2));
+            $signature = "\n" . $signatureIndent . '<info>' . $signature . '</info>';
+        }
 
         // The frames are the contents of each file, with each line indented.
         $frames = array_map(function ($filename) use ($indent, $signature) {

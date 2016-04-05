@@ -37,7 +37,7 @@ class SubscriptionInfoCommand extends CommandBase
         $this->validateInput($input);
 
         $project = $this->getSelectedProject();
-        $subscription = $this->getClient()
+        $subscription = $this->api->getClient()
                              ->getSubscription($project->getSubscriptionId());
         if (!$subscription) {
             $this->stdErr->writeln("Subscription not found");

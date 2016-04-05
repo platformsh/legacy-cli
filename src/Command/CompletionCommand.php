@@ -2,12 +2,17 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Api;
+use Platformsh\Cli\Application;
 use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
 
 class CompletionCommand extends ParentCompletionCommand implements CanHideInListInterface
 {
+
+    /** @var Api */
+    protected $api;
 
     /** @var CommandBase */
     protected $welcomeCommand;
@@ -16,7 +21,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
      * A list of the user's projects.
      * @var array
      */
-    protected $projects;
+    protected $projects = [];
 
     /**
      * {@inheritdoc}
@@ -31,9 +36,10 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
      */
     protected function setUp()
     {
-        $this->welcomeCommand = new WelcomeCommand();
-        $this->welcomeCommand->setApplication($this->getApplication());
-        $this->projects = $this->welcomeCommand->getProjects(false);
+        $this->api = new Api();
+        $this->projects = $this->api->getProjects(false);
+        $this->welcomeCommand = new WelcomeCommand('welcome');
+        $this->welcomeCommand->setApplication(new Application());
     }
 
     /**
@@ -151,7 +157,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         } catch (\Exception $e) {
             $currentEnvironment = false;
         }
-        $environments = $this->welcomeCommand->getEnvironments($project, false, false);
+        $environments = $this->api->getEnvironments($project, false, false);
         if ($currentEnvironment) {
             $environments = array_filter(
                 $environments,
@@ -209,7 +215,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
             return [];
         }
 
-        $environments = $this->welcomeCommand->getEnvironments($project, false, false);
+        $environments = $this->api->getEnvironments($project, false, false);
 
         return array_keys($environments);
     }

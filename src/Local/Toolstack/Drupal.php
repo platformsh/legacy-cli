@@ -210,7 +210,7 @@ class Drupal extends ToolstackBase
     {
         static $drushHelper;
         if (!isset($drushHelper)) {
-            $drushHelper = new DrushHelper($this->shellHelper);
+            $drushHelper = new DrushHelper($this->config, $this->shellHelper);
         }
 
         return $drushHelper;
@@ -430,7 +430,7 @@ class Drupal extends ToolstackBase
         // time.
         if ($shared && is_dir($sitesDefault)) {
             $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
-            $this->fsHelper->symlinkAll($shared, $sitesDefault);
+            $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, ['.*']);
         }
     }
 

@@ -5,6 +5,7 @@
     "src"
   ],
   "files": [
+    "config.yaml",
     "constants.php",
     "shell-config.rc",
     "vendor/autoload.php",

@@ -46,7 +46,7 @@ class LocalCleanCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $builder = new LocalBuild([], $this->stdErr);
+        $builder = new LocalBuild([], self::$config, $this->stdErr);
         $result = $builder->cleanBuilds(
             $projectRoot,
             $input->getOption('max-age'),

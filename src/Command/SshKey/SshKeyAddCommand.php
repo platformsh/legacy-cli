@@ -93,9 +93,9 @@ class SshKeyAddCommand extends CommandBase
             // Check whether the public key already exists in the user's account.
             if (isset($fingerprint) && $this->keyExistsByFingerprint($fingerprint)) {
                 $this->stdErr->writeln(
-                    'An SSH key already exists in your ' . CLI_CLOUD_SERVICE . ' account with the same fingerprint: ' . $fingerprint
+                    'An SSH key already exists in your ' . self::$config->get('application.name') . ' account with the same fingerprint: ' . $fingerprint
                 );
-                $this->stdErr->writeln("List your SSH keys with: <info>" . CLI_EXECUTABLE . " ssh-keys</info>");
+                $this->stdErr->writeln("List your SSH keys with: <info>" . self::$config->get('application.executable') . " ssh-keys</info>");
 
                 return 0;
             }
@@ -117,10 +117,10 @@ class SshKeyAddCommand extends CommandBase
         }
 
         // Add the new key.
-        $this->getClient()->addSshKey($publicKey, $name);
+        $this->api->getClient()->addSshKey($publicKey, $name);
 
         $this->stdErr->writeln(
-            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . CLI_CLOUD_SERVICE . ' account.'
+            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . self::$config->get('application.name') . ' account.'
         );
 
         return 0;
@@ -135,7 +135,7 @@ class SshKeyAddCommand extends CommandBase
      */
     protected function keyExistsByFingerprint($fingerprint)
     {
-        foreach ($this->getClient()->getSshKeys() as $existingKey) {
+        foreach ($this->api->getClient()->getSshKeys() as $existingKey) {
             if ($existingKey->fingerprint === $fingerprint) {
                 return true;
             }

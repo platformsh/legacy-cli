@@ -97,7 +97,7 @@ environment
 integration
   integration:add                           Add an integration to the project
   integration:delete                        Delete an integration from a project
-  integration:get (integrations)            View project integration(s)
+  integration:list (integrations)           View project integration(s)
   integration:update                        Update an integration
 local
   local:build (build)                       Build the current project locally

@@ -32,7 +32,7 @@ class AppListCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $apps = LocalApplication::getApplications($projectRoot);
+        $apps = LocalApplication::getApplications($projectRoot, self::$config);
 
         $rows = [];
         foreach ($apps as $app) {

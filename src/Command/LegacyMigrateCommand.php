@@ -16,8 +16,8 @@ class LegacyMigrateCommand extends CommandBase
             ->setName('legacy-migrate')
             ->setDescription('Migrate from the legacy file structure')
             ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
-        $cliName = CLI_NAME;
-        $localDir = CLI_LOCAL_DIR;
+        $cliName = self::$config->get('application.name');
+        $localDir = self::$config->get('local.local_dir');
         $this->setHelp(<<<EOF
 Before version 3.x, the {$cliName} required a project to have a "repository"
 directory containing the Git repository, "builds", "shared" and others. From
@@ -39,7 +39,7 @@ EOF
         $legacyRoot = $this->localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {
             if ($this->getProjectRoot()) {
-                $this->stdErr->writeln('This project is already compatible with the ' . CLI_NAME . ' version 3.x.');
+                $this->stdErr->writeln('This project is already compatible with the ' . self::$config->get('application.name') . ' version 3.x.');
 
                 return 0;
             }
@@ -69,7 +69,7 @@ EOF
             $backup = rtrim($legacyRoot, '\\/') . '-backup.tar.gz';
             if (file_exists($backup)) {
                 $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
-                $this->stdErr->writeln('Move (or delete) the backup, then run <comment>' . CLI_EXECUTABLE . ' legacy-migrate</comment> to continue.');
+                $this->stdErr->writeln('Move (or delete) the backup, then run <comment>' . self::$config->get('application.executable') . ' legacy-migrate</comment> to continue.');
 
                 return 1;
             }
@@ -78,24 +78,24 @@ EOF
             $fsHelper->archiveDir($legacyRoot, $backup);
         }
 
-        $this->stdErr->writeln('Creating directory: ' . CLI_LOCAL_DIR);
+        $this->stdErr->writeln('Creating directory: ' . self::$config->get('local.local_dir'));
         $this->localProject->ensureLocalDir($repositoryDir);
 
         if (file_exists($legacyRoot . '/shared')) {
             $this->stdErr->writeln('Moving "shared" directory.');
-            if (is_dir($repositoryDir . '/' . CLI_LOCAL_SHARED_DIR)) {
-                $fsHelper->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . CLI_LOCAL_SHARED_DIR);
+            if (is_dir($repositoryDir . '/' . self::$config->get('local.shared_dir'))) {
+                $fsHelper->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . self::$config->get('local.shared_dir'));
                 $fsHelper->remove($legacyRoot . '/shared');
             }
             else {
-                rename($legacyRoot . '/shared', $repositoryDir . '/' . CLI_LOCAL_SHARED_DIR);
+                rename($legacyRoot . '/shared', $repositoryDir . '/' . self::$config->get('local.shared_dir'));
             }
         }
 
-        if (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
+        if (file_exists($legacyRoot . '/' . self::$config->get('local.project_config_legacy'))) {
             $this->stdErr->writeln('Moving project config file.');
-            $fsHelper->copy($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY, $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG);
-            $fsHelper->remove($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY);
+            $fsHelper->copy($legacyRoot . '/' . self::$config->get('local.project_config_legacy'), $legacyRoot . '/' . self::$config->get('local.project_config'));
+            $fsHelper->remove($legacyRoot . '/' . self::$config->get('local.project_config_legacy'));
         }
 
         if (file_exists($legacyRoot . '/.build-archives')) {
@@ -112,7 +112,7 @@ EOF
             $this->stdErr->writeln('Removing old "www" symlink.');
             $fsHelper->remove($legacyRoot . '/www');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('After running <comment>' . CLI_EXECUTABLE . ' build</comment>, your web root will be at: <comment>' . CLI_LOCAL_WEB_ROOT . '</comment>');
+            $this->stdErr->writeln('After running <comment>' . self::$config->get('application.executable') . ' build</comment>, your web root will be at: <comment>' . self::$config->get('local.web_root') . '</comment>');
             $this->stdErr->writeln('You may need to update your local web server configuration.');
             $this->stdErr->writeln('');
         }
@@ -126,8 +126,8 @@ EOF
 
             return 1;
         }
-        elseif (file_exists($legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
-            $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . CLI_LOCAL_PROJECT_CONFIG_LEGACY . '</error>');
+        elseif (file_exists($legacyRoot . '/' . self::$config->get('local.project_config_legacy'))) {
+            $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . self::$config->get('local.project_config_legacy') . '</error>');
 
             return 1;
         }

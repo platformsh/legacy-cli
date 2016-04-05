@@ -37,7 +37,7 @@ class LocalBuildCommand extends CommandBase
                 'destination',
                 'd',
                 InputOption::VALUE_REQUIRED,
-                'The destination, to which the web root of each app will be symlinked. Default: ' . CLI_LOCAL_WEB_ROOT
+                'The destination, to which the web root of each app will be symlinked. Default: ' . self::$config->get('local.web_root')
             )
             ->addOption(
                 'copy',
@@ -85,7 +85,7 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
-            $default = file_exists(CLI_APP_CONFIG_FILE) || is_dir('.git') ? '.' : null;
+            $default = file_exists(self::$config->get('service.app_config_file')) || is_dir('.git') ? '.' : null;
             $sourceDirOption = $questionHelper->askInput('Source directory', $default);
         }
 
@@ -96,7 +96,7 @@ class LocalBuildCommand extends CommandBase
             }
             // Sensible handling if the user provides a project root as the
             // source directory.
-            elseif (file_exists($sourceDir . CLI_LOCAL_PROJECT_CONFIG)) {
+            elseif (file_exists($sourceDir . self::$config->get('local.project_config'))) {
                 $projectRoot = $sourceDir;
                 $sourceDir = $projectRoot;
             }
@@ -112,7 +112,7 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
-            $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd() ? CLI_LOCAL_WEB_ROOT : null;
+            $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd() ? self::$config->get('local.web_root') : null;
             $destination = $questionHelper->askInput('Build destination', $default);
         }
 
@@ -125,7 +125,7 @@ class LocalBuildCommand extends CommandBase
             throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
         }
         else {
-            $destination = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
+            $destination = $projectRoot . '/' . self::$config->get('local.web_root');
         }
 
         // Ensure no conflicts between source and destination.
@@ -171,7 +171,7 @@ class LocalBuildCommand extends CommandBase
 
         $apps = $input->getArgument('app');
 
-        $builder = new LocalBuild($settings, $this->stdErr);
+        $builder = new LocalBuild($settings, self::$config, $this->stdErr);
         $success = $builder->build($sourceDir, $destination, $apps);
 
         return $success ? 0 : 1;

@@ -41,7 +41,7 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText('<comment>Usage:</comment>', $options);
         $this->writeText("\n");
-        $this->writeText(' ' . CLI_EXECUTABLE . ' ' . $command->getSynopsis(), $options);
+        $this->writeText(' ' . basename($_SERVER['PHP_SELF']) . ' ' . $command->getSynopsis(), $options);
         $this->writeText("\n");
 
         if ($definition = $command->getNativeDefinition()) {
@@ -63,7 +63,7 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText('<comment>Examples:</comment>', $options);
             $name = $command->getName();
             foreach ($examples as $arguments => $description) {
-                $this->writeText("\n $description:\n   <info>" . CLI_EXECUTABLE . " $name $arguments</info>\n");
+                $this->writeText("\n $description:\n   <info>" . basename($_SERVER['PHP_SELF']) . " $name $arguments</info>\n");
             }
         }
     }

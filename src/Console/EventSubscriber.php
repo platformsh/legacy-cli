@@ -4,12 +4,13 @@ namespace Platformsh\Cli\Console;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Api;
 use Platformsh\Cli\Exception\ConnectionFailedException;
 use Platformsh\Cli\Exception\HttpException;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\PermissionDeniedException;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleExceptionEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -20,7 +21,7 @@ class EventSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return ['console.exception' => 'onException'];
+        return [ConsoleEvents::EXCEPTION => 'onException'];
     }
 
     /**
@@ -86,10 +87,8 @@ class EventSubscriber implements EventSubscriberInterface
         // When an environment is found to be in the wrong state, perhaps our
         // cache is old - we should invalidate it.
         if ($exception instanceof EnvironmentStateException) {
-            $command = $event->getCommand();
-            if ($command instanceof CommandBase) {
-                $command->clearEnvironmentsCache();
-            }
+            $api = new Api();
+            $api->clearEnvironmentsCache($exception->getEnvironment()->project);
         }
     }
 }
