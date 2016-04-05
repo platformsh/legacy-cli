@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Finder\Finder;
@@ -13,16 +14,19 @@ class LocalApplication
     protected $appRoot;
     protected $config;
     protected $sourceDir;
+    protected $cliConfig;
 
     /**
-     * @param string $appRoot
-     * @param string $sourceDir
+     * @param string         $appRoot
+     * @param CliConfig|null $cliConfig
+     * @param string|null    $sourceDir
      */
-    public function __construct($appRoot, $sourceDir = null)
+    public function __construct($appRoot, CliConfig $cliConfig = null, $sourceDir = null)
     {
         if (!is_dir($appRoot)) {
             throw new \InvalidArgumentException("Application directory not found: $appRoot");
         }
+        $this->cliConfig = $cliConfig ?: new CliConfig();
         $this->appRoot = $appRoot;
         $this->sourceDir = $sourceDir ?: $appRoot;
     }
@@ -82,7 +86,7 @@ class LocalApplication
     {
         if (!isset($this->config)) {
             $this->config = [];
-            $file = $this->appRoot . '/' . CLI_APP_CONFIG_FILE;
+            $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
             if (file_exists($file)) {
                 try {
                     $parser = new Parser();
@@ -198,32 +202,36 @@ class LocalApplication
     /**
      * Get a list of applications in a directory.
      *
-     * @param string $directory The absolute path to a directory.
+     * @param string $directory
+     *     The absolute path to a directory.
+     * @param CliConfig|null $config
+     *     CLI configuration.
      *
      * @return static[]
      */
-    public static function getApplications($directory)
+    public static function getApplications($directory, CliConfig $config = null)
     {
         // Finder can be extremely slow with a deep directory structure. The
         // search depth is limited to safeguard against this.
         $finder = new Finder();
+        $config = $config ?: new CliConfig();
         $finder->in($directory)
                ->ignoreDotFiles(false)
-               ->name(CLI_APP_CONFIG_FILE)
+               ->name($config->get('service.app_config_file'))
                ->notPath('builds')
-               ->notPath(CLI_LOCAL_DIR)
+               ->notPath($config->get('local.local_dir'))
                ->depth('> 0')
                ->depth('< 5');
 
         $applications = [];
         if ($finder->count() == 0) {
-            $applications[$directory] = new LocalApplication($directory, $directory);
+            $applications[$directory] = new LocalApplication($directory, $config, $directory);
         }
         else {
             /** @var \Symfony\Component\Finder\SplFileInfo $file */
             foreach ($finder as $file) {
                 $appRoot = dirname($file->getRealPath());
-                $applications[$appRoot] = new LocalApplication($appRoot, $directory);
+                $applications[$appRoot] = new LocalApplication($appRoot, $config, $directory);
             }
         }
 

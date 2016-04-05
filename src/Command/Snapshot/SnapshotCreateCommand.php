@@ -35,7 +35,7 @@ class SnapshotCreateCommand extends CommandBase
                 "Operation not available: cannot create a snapshot of <error>$environmentId</error>"
             );
             if ($selectedEnvironment->is_dirty) {
-                $this->clearEnvironmentsCache();
+                $this->api->clearEnvironmentsCache($selectedEnvironment->project);
             }
 
             return 1;

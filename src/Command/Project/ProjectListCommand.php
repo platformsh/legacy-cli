@@ -25,7 +25,7 @@ class ProjectListCommand extends CommandBase
     {
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
-        $projects = $this->getProjects($refresh ? true : null);
+        $projects = $this->api->getProjects($refresh ? true : null);
 
         if ($input->getOption('pipe')) {
             $output->writeln(array_keys($projects));
@@ -56,8 +56,8 @@ class ProjectListCommand extends CommandBase
 
         $table->render($rows, $header);
 
-        $this->stdErr->writeln("\nGet a project by running <info>" . CLI_EXECUTABLE . " get [id]</info>");
-        $this->stdErr->writeln("List a project's environments by running <info>" . CLI_EXECUTABLE . " environments</info>");
+        $this->stdErr->writeln("\nGet a project by running <info>" . self::$config->get('application.executable') . " get [id]</info>");
+        $this->stdErr->writeln("List a project's environments by running <info>" . self::$config->get('application.executable') . " environments</info>");
 
         return 0;
     }

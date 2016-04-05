@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\CacheUtil;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Platformsh\Cli\Util\Util;
@@ -41,7 +40,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $cacheKey = implode('-', ['relationships', $environment->id . $environment->project . $app]);
-        $cache = CacheUtil::getCache();
+        $cache = $this->api->getCache();
         $relationships = $cache->fetch($cacheKey);
         if (empty($relationships) || $input->getOption('refresh')) {
             $util = new RelationshipsUtil($this->stdErr);

@@ -21,7 +21,7 @@ class DocsCommand extends UrlCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $url = CLI_SERVICE_DOCS_URL;
+        $url = self::$config->get('service.docs_url');
 
         $search = $input->getArgument('search');
         if ($search) {
@@ -31,7 +31,7 @@ class DocsCommand extends UrlCommandBase
             //$url .= '/search?q=' . urlencode($term);
 
             // Use Google search.
-            $hostname = parse_url(CLI_SERVICE_DOCS_URL, PHP_URL_HOST);
+            $hostname = parse_url(self::$config->get('service.docs_url'), PHP_URL_HOST);
             $url = 'https://www.google.com/search?q='
                 . urlencode('site:' . $hostname . ' ' . $query);
         }

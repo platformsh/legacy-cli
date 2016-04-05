@@ -30,7 +30,7 @@ class WebCommand extends UrlCommandBase
 
         $project = $this->hasSelectedProject() ? $this->getSelectedProject() : false;
 
-        $url = CLI_SERVICE_ACCOUNTS_URL;
+        $url = self::$config->get('service.accounts_url');
         if ($project) {
             $url = $project->getLink('#ui');
             if ($this->hasSelectedEnvironment()) {

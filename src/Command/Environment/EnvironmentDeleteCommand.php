@@ -28,7 +28,7 @@ class EnvironmentDeleteCommand extends CommandBase
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with "master"', '--merged master');
-        $service = CLI_CLOUD_SERVICE;
+        $service = self::$config->get('application.name');
         $this->setHelp(<<<EOF
 When a {$service} environment is deleted, it will become "inactive": it will
 exist only as a Git branch, containing code but no services, databases nor
@@ -43,7 +43,7 @@ EOF
     {
         $this->validateInput($input, true);
 
-        $environments = $this->getEnvironments();
+        $environments = $this->api->getEnvironments($this->getSelectedProject());
 
         if ($input->getOption('inactive')) {
             $toDelete = array_filter(
@@ -104,10 +104,10 @@ EOF
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
-        $environments = $this->getEnvironments($this->getSelectedProject(), true);
+        $environments = $this->api->getEnvironments($this->getSelectedProject(), true);
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot);
-        $gitHelper->execute(['fetch', CLI_GIT_REMOTE_NAME]);
+        $gitHelper->execute(['fetch', self::$config->get('detection.git_remote_name')]);
         $mergedBranches = $gitHelper->getMergedBranches($base);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
         unset($mergedEnvironments[$base], $mergedEnvironments['master']);
@@ -142,7 +142,7 @@ EOF
             }
             // Check that the environment does not have children.
             // @todo remove this check when Platform's behavior is fixed
-            foreach ($this->getEnvironments() as $potentialChild) {
+            foreach ($this->api->getEnvironments($this->getSelectedProject()) as $potentialChild) {
                 if ($potentialChild->parent == $environment->id) {
                     $output->writeln(
                         "The environment <error>$environmentId</error> has children and therefore can't be deleted."
@@ -215,7 +215,7 @@ EOF
         }
 
         if ($deleted || $deactivated || $error) {
-            $this->clearEnvironmentsCache();
+            $this->api->clearEnvironmentsCache($environment->project);
         }
 
         return !$error;

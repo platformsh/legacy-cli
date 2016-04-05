@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests;
 
+use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Local\LocalProject;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
@@ -28,7 +29,8 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
         mkdir("$testDir/1/2/3/4/5", 0755, true);
 
         $expectedRoot = "$testDir/1";
-        touch("$expectedRoot/" . CLI_LOCAL_PROJECT_CONFIG_LEGACY);
+        $config = new CliConfig();
+        touch("$expectedRoot/" . $config->get('local.project_config_legacy'));
 
         chdir($testDir);
         $localProject = new LocalProject();

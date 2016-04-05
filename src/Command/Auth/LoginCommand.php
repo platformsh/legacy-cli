@@ -14,17 +14,17 @@ class LoginCommand extends CommandBase
     {
         $this
             ->setName('login')
-            ->setDescription('Log in to ' . CLI_CLOUD_SERVICE);
-        $help = 'Use this command to log in to your ' . CLI_CLOUD_SERVICE . ' account.'
-            . "\n\nYou can create an account at:\n    <info>" . CLI_SERVICE_ACCOUNTS_URL . '</info>'
-            . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>" . CLI_SERVICE_ACCOUNTS_URL . '/user/password</info>';
+            ->setDescription('Log in to ' . self::$config->get('application.name'));
+        $help = 'Use this command to log in to your ' . self::$config->get('application.name') . ' account.'
+            . "\n\nYou can create an account at:\n    <info>" . self::$config->get('service.accounts_url') . '</info>'
+            . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>" . self::$config->get('service.accounts_url') . '/user/password</info>';
         $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Disable the API token for this command.
-        if (isset(self::$apiToken)) {
+        if ($this->api->hasApiToken()) {
             throw new \Exception('Cannot log in: an API token is set');
         }
         // Login can only happen during interactive use.
@@ -32,13 +32,13 @@ class LoginCommand extends CommandBase
             throw new \Exception('Non-interactive login not supported');
         }
 
-        $this->stdErr->writeln('Please log in using your <info>' . CLI_CLOUD_SERVICE . '</info> account.');
+        $this->stdErr->writeln('Please log in using your <info>' . self::$config->get('application.name') . '</info> account.');
         $this->stdErr->writeln('');
         $this->configureAccount($input, $this->stdErr);
 
-        $this->clearCache();
+        $this->api->clearCache();
 
-        $info = $this->getClient(false)->getAccountInfo();
+        $info = $this->api->getClient(false)->getAccountInfo();
         if (isset($info['mail'])) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('You are logged in as <info>' . $info['mail'] . '</info>.');
@@ -67,7 +67,7 @@ class LoginCommand extends CommandBase
 
         $pendingInvitation = false;
         if ($pendingInvitation) {
-            $resendInviteText = "\nThis email address is associated with a " . CLI_CLOUD_SERVICE . " account, \n";
+            $resendInviteText = "\nThis email address is associated with a " . self::$config->get('application.name') . " account, \n";
             $resendInviteText .= "but you haven't verified your email address yet. \n";
             $resendInviteText .= "Please click on the link in the email we sent you. \n";
             $resendInviteText .= "Do you want us to send you the email again?";
@@ -94,7 +94,9 @@ class LoginCommand extends CommandBase
         $password = $helper->ask($input, $output, $question);
 
         try {
-            $this->authenticateUser($email, $password);
+            $this->api->getClient(false)
+                ->getConnector()
+                ->logIn($email, $password, true);
         } catch (BadResponseException $e) {
             // If a two-factor authentication challenge is received, then ask
             // the user for their TOTP code, and then retry authenticateUser().
@@ -105,7 +107,9 @@ class LoginCommand extends CommandBase
                         throw new \RuntimeException("The code cannot be empty.");
                     }
                     try {
-                        $this->authenticateUser($email, $password, $answer);
+                        $this->api->getClient(false)
+                            ->getConnector()
+                            ->logIn($email, $password, true, $answer);
                     }
                     catch (BadResponseException $e) {
                         // If there is a two-factor authentication error, show
@@ -131,7 +135,7 @@ class LoginCommand extends CommandBase
             elseif ($e->getResponse()->getStatusCode() === 401) {
                 $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
                 $output->writeln("Forgot your password? Or don't have a password yet? Visit:");
-                $output->writeln("  <comment>" . CLI_SERVICE_ACCOUNTS_URL . "/user/password</comment>\n");
+                $output->writeln("  <comment>" . self::$config->get('service.accounts_url') . "/user/password</comment>\n");
                 $this->configureAccount($input, $output);
             }
             else {

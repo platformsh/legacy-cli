@@ -32,7 +32,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             );
         }
 
-        $this->write("## Usage:\n\n```\n" . CLI_EXECUTABLE . " " . $command->getSynopsis() . "\n```\n\n");
+        $this->write("## Usage:\n\n```\n" . basename($_SERVER['PHP_SELF']) . " " . $command->getSynopsis() . "\n```\n\n");
 
         if ($help = $command->getProcessedHelp()) {
             $this->write($help);
@@ -49,7 +49,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write("\n");
             $name = $command->getName();
             foreach ($examples as $arguments => $description) {
-                $this->write("\n* $description:  \n  ```\n  " . CLI_EXECUTABLE . " $name $arguments\n  ```\n");
+                $this->write("\n* $description:  \n  ```\n  " . basename($_SERVER['PHP_SELF']) . " $name $arguments\n  ```\n");
             }
             $this->write("\n");
         }

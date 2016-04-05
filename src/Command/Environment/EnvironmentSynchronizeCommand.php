@@ -47,7 +47,7 @@ EOT
                 "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
             if ($selectedEnvironment->is_dirty) {
-                $this->clearEnvironmentsCache();
+                $this->api->clearEnvironmentsCache($selectedEnvironment->project);
             }
 
             return 1;

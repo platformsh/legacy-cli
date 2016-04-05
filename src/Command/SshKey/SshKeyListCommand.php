@@ -20,11 +20,11 @@ class SshKeyListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $keys = $this->getClient()
+        $keys = $this->api->getClient()
                      ->getSshKeys();
 
         if (empty($keys)) {
-            $this->stdErr->writeln("You do not yet have any SSH public keys in your " . CLI_CLOUD_SERVICE . " account");
+            $this->stdErr->writeln("You do not yet have any SSH public keys in your " . self::$config->get('application.name') . " account");
         } else {
             $table = new Table($input, $output);
             $headers = ['ID', 'Title', 'Fingerprint'];
@@ -44,8 +44,8 @@ class SshKeyListCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $this->stdErr->writeln("Add a new SSH key with: <info>" . CLI_EXECUTABLE . " ssh-key:add</info>");
-        $this->stdErr->writeln("Delete an SSH key with: <info>" . CLI_EXECUTABLE . " ssh-key:delete [id]</info>");
+        $this->stdErr->writeln("Add a new SSH key with: <info>" . self::$config->get('application.executable') . " ssh-key:add</info>");
+        $this->stdErr->writeln("Delete an SSH key with: <info>" . self::$config->get('application.executable') . " ssh-key:delete [id]</info>");
 
         return !empty($keys) ? 0 : 1;
     }
