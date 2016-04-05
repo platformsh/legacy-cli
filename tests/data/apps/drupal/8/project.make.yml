@@ -3,4 +3,3 @@ core: 8.x
 projects:
   drupal:
     type: core
-    version: 8.0.5
