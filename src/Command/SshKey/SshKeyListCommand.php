@@ -24,7 +24,7 @@ class SshKeyListCommand extends CommandBase
                      ->getSshKeys();
 
         if (empty($keys)) {
-            $this->stdErr->writeln("You do not yet have any SSH public keys in your " . self::$config->get('application.name') . " account");
+            $this->stdErr->writeln("You do not yet have any SSH public keys in your " . self::$config->get('service.name') . " account");
         } else {
             $table = new Table($input, $output);
             $headers = ['ID', 'Title', 'Fingerprint'];

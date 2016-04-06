@@ -15,7 +15,7 @@ class LogoutCommand extends CommandBase
         $this
             ->setName('logout')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
-            ->setDescription('Log out of ' . self::$config->get('application.name'));
+            ->setDescription('Log out of ' . self::$config->get('service.name'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

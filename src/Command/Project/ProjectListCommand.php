@@ -52,12 +52,17 @@ class ProjectListCommand extends CommandBase
             return 0;
         }
 
-        $this->stdErr->writeln("Your projects are: ");
+        if (!count($projects)) {
+            $this->stdErr->writeln('You do not have any ' . self::$config->get('service.name') . ' projects yet.');
+        }
+        else {
+            $this->stdErr->writeln("Your projects are: ");
 
-        $table->render($rows, $header);
+            $table->render($rows, $header);
 
-        $this->stdErr->writeln("\nGet a project by running <info>" . self::$config->get('application.executable') . " get [id]</info>");
-        $this->stdErr->writeln("List a project's environments by running <info>" . self::$config->get('application.executable') . " environments</info>");
+            $this->stdErr->writeln("\nGet a project by running <info>" . self::$config->get('application.executable') . " get [id]</info>");
+            $this->stdErr->writeln("List a project's environments by running <info>" . self::$config->get('application.executable') . " environments</info>");
+        }
 
         return 0;
     }

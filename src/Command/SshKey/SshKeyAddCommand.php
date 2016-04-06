@@ -93,7 +93,7 @@ class SshKeyAddCommand extends CommandBase
             // Check whether the public key already exists in the user's account.
             if (isset($fingerprint) && $this->keyExistsByFingerprint($fingerprint)) {
                 $this->stdErr->writeln(
-                    'An SSH key already exists in your ' . self::$config->get('application.name') . ' account with the same fingerprint: ' . $fingerprint
+                    'An SSH key already exists in your ' . self::$config->get('service.name') . ' account with the same fingerprint: ' . $fingerprint
                 );
                 $this->stdErr->writeln("List your SSH keys with: <info>" . self::$config->get('application.executable') . " ssh-keys</info>");
 
@@ -120,7 +120,7 @@ class SshKeyAddCommand extends CommandBase
         $this->api->getClient()->addSshKey($publicKey, $name);
 
         $this->stdErr->writeln(
-            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . self::$config->get('application.name') . ' account.'
+            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . self::$config->get('service.name') . ' account.'
         );
 
         return 0;

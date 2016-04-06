@@ -98,7 +98,7 @@ class EnvironmentBranchCommand extends CommandBase
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot && $force) {
             $this->stdErr->writeln(
-                "<comment>This command was run from outside your local project root, so the new " . self::$config->get('application.name') . " branch cannot be checked out in your local Git repository."
+                "<comment>This command was run from outside your local project root, so the new " . self::$config->get('service.name') . " branch cannot be checked out in your local Git repository."
                 . " Make sure to run '" . self::$config->get('application.executable') . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
             );
         } elseif (!$projectRoot) {

@@ -36,6 +36,7 @@ class WelcomeCommand extends CommandBase
         } else {
             // The project is not known. Show all projects.
             $this->runOtherCommand('projects', ['--refresh' => 0]);
+            $this->stdErr->writeln('');
         }
 
         $this->stdErr->writeln("Manage your SSH keys by running <info>" . self::$config->get('application.executable') . " ssh-keys</info>\n");

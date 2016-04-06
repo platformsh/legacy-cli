@@ -28,7 +28,7 @@ class EnvironmentDeleteCommand extends CommandBase
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with "master"', '--merged master');
-        $service = self::$config->get('application.name');
+        $service = self::$config->get('service.name');
         $this->setHelp(<<<EOF
 When a {$service} environment is deleted, it will become "inactive": it will
 exist only as a Git branch, containing code but no services, databases nor
