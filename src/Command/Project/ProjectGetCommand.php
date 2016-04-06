@@ -143,7 +143,7 @@ class ProjectGetCommand extends CommandBase
         }
         catch (\Exception $e) {
             // The ls-remote command failed.
-            $this->stdErr->writeln('<error>Failed to connect to the ' . self::$config->get('application.name') . ' Git server</error>');
+            $this->stdErr->writeln('<error>Failed to connect to the ' . self::$config->get('service.name') . ' Git server</error>');
 
             // Suggest SSH key commands.
             $sshKeys = [];
@@ -183,7 +183,7 @@ class ProjectGetCommand extends CommandBase
             $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
 
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('Your project has been initialized and connected to <info>' . self::$config->get('application.name') . '</info>!');
+            $this->stdErr->writeln('Your project has been initialized and connected to <info>' . self::$config->get('service.name') . '</info>!');
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Commit and push to the <info>master</info> branch of the <info>' . self::$config->get('detection.git_remote_name') . '</info> Git remote, and ' . self::$config->get('application.name') . ' will build your project automatically.');
 
@@ -198,7 +198,7 @@ class ProjectGetCommand extends CommandBase
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
-            $this->stdErr->writeln('Please check your SSH credentials or contact ' . self::$config->get('application.name') . ' support');
+            $this->stdErr->writeln('Please check your SSH credentials or contact ' . self::$config->get('service.name') . ' support');
 
             return 1;
         }

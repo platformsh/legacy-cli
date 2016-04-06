@@ -40,7 +40,7 @@ class SshKeyDeleteCommand extends CommandBase
 
         $key->delete();
 
-        $this->stdErr->writeln("The SSH key <info>$id</info> has been deleted from your " . self::$config->get('application.name') . " account.");
+        $this->stdErr->writeln("The SSH key <info>$id</info> has been deleted from your " . self::$config->get('service.name') . " account.");
 
         return 0;
     }

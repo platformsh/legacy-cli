@@ -14,8 +14,8 @@ class LoginCommand extends CommandBase
     {
         $this
             ->setName('login')
-            ->setDescription('Log in to ' . self::$config->get('application.name'));
-        $help = 'Use this command to log in to your ' . self::$config->get('application.name') . ' account.'
+            ->setDescription('Log in to ' . self::$config->get('service.name'));
+        $help = 'Use this command to log in to your ' . self::$config->get('service.name') . ' account.'
             . "\n\nYou can create an account at:\n    <info>" . self::$config->get('service.accounts_url') . '</info>'
             . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>" . self::$config->get('service.accounts_url') . '/user/password</info>';
         $this->setHelp($help);
@@ -32,7 +32,7 @@ class LoginCommand extends CommandBase
             throw new \Exception('Non-interactive login not supported');
         }
 
-        $this->stdErr->writeln('Please log in using your <info>' . self::$config->get('application.name') . '</info> account.');
+        $this->stdErr->writeln('Please log in using your <info>' . self::$config->get('service.name') . '</info> account.');
         $this->stdErr->writeln('');
         $this->configureAccount($input, $this->stdErr);
 
@@ -67,7 +67,7 @@ class LoginCommand extends CommandBase
 
         $pendingInvitation = false;
         if ($pendingInvitation) {
-            $resendInviteText = "\nThis email address is associated with a " . self::$config->get('application.name') . " account, \n";
+            $resendInviteText = "\nThis email address is associated with a " . self::$config->get('service.name') . " account, \n";
             $resendInviteText .= "but you haven't verified your email address yet. \n";
             $resendInviteText .= "Please click on the link in the email we sent you. \n";
             $resendInviteText .= "Do you want us to send you the email again?";

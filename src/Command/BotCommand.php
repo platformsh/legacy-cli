@@ -13,7 +13,7 @@ class BotCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('bot')->setDescription('The ' . self::$config->get('application.name') . ' Bot');
+        $this->setName('bot')->setDescription('The ' . self::$config->get('service.name') . ' Bot');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
