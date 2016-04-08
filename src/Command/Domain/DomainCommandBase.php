@@ -195,7 +195,9 @@ abstract class DomainCommandBase extends CommandBase
             $project->ensureFull();
             $data = $project->getData();
             if (!$project->hasLink('#manage-domains') && !empty($data['subscription']['plan']) && $data['subscription']['plan'] === 'development') {
-                $this->stdErr->writeln('This project is on a Development plan. Upgrade the plan to add domains.');
+                // For the time being, 'development' plans on MC are Enterprise
+                // and should throw a different error.
+                $this->stdErr->writeln('Domains cannot be used with development environments. To add a domain to your Magento Cloud production cluster, please create a support ticket.');
             }
         }
         else {
