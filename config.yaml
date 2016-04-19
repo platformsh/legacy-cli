@@ -20,6 +20,8 @@ local:
   project_config_legacy: '.platform-project'
   shared_dir: '.platform/local/shared'
   web_root: '_www'
+
+  # Overridden by {application.env_prefix}COPY_ON_WINDOWS env var.
   copy_on_windows: false
 
 # Details about the cloud service that the CLI works with.
@@ -33,16 +35,28 @@ service:
 
 # Configuration relating to API calls.
 api:
-  accounts_api_url: 'https://accounts.platform.sh/api/platform/'
   oauth2_client_id: 'platform-cli'
-  disable_cache: false
-  skip_ssl: false
-  token: null
   projects_ttl: 3600
   environments_ttl: 600
   users_ttl: 3600
+
+  # Overridden by {application.env_prefix}ACCOUNTS_API env var.
+  accounts_api_url: 'https://accounts.platform.sh/api/platform/'
+
+  # Overridden by {application.env_prefix}DEBUG env var.
   debug: false
+
+  # Overridden by {application.env_prefix}DISABLE_CACHE env var.
+  disable_cache: false
+
+  # Overridden by {application.env_prefix}SKIP_SSL env var.
+  skip_ssl: false
+
+  # Overridden by {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
+
+  # Overridden by {application.env_prefix}TOKEN env var.
+  token: null
 
 # How the CLI detects and configures Git repositories as projects.
 detection:
