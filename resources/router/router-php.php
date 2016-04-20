@@ -4,6 +4,8 @@
  * Router for the PHP built-in web server.
  */
 
+$variables_prefix = isset($_ENV['_PLATFORM_VARIABLES_PREFIX']) ? $_ENV['_PLATFORM_VARIABLES_PREFIX'] : 'PLATFORM_';
+
 // Define a callback for running a PHP file (usually the passthru script).
 $run_php = function ($filename) {
     register_shutdown_function(function () {
@@ -33,12 +35,12 @@ $run_php = function ($filename) {
 };
 
 // Get the application configuration from the environment.
-if (!isset($_ENV['PLATFORM_APPLICATION'])) {
+if (!isset($_ENV[$variables_prefix . 'APPLICATION'])) {
     http_response_code(500);
-    error_log('Environment variable not found: PLATFORM_APPLICATION', 4);
+    error_log('Environment variable not found: ' . $variables_prefix . 'APPLICATION', 4);
     exit;
 }
-$app = json_decode(base64_decode($_ENV['PLATFORM_APPLICATION']), true);
+$app = json_decode(base64_decode($_ENV[$variables_prefix . 'APPLICATION']), true);
 
 // Support for Drupal features.
 // See: https://www.drupal.org/node/1543858

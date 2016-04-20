@@ -358,6 +358,7 @@ abstract class ServerCommandBase extends CommandBase
         $realDocRoot = realpath($docRoot);
         $envPrefix = self::$config->get('application.env_prefix');
         $env = [
+            '_PLATFORM_VARIABLES_PREFIX' => $envPrefix,
             $envPrefix . 'ENVIRONMENT' => '_local',
             $envPrefix . 'APPLICATION' => base64_encode(json_encode($appConfig)),
             $envPrefix . 'APPLICATION_NAME' => isset($appConfig['name']) ? $appConfig['name'] : '',
