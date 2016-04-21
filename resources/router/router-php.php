@@ -52,10 +52,28 @@ if (!empty($app['is_drupal'])) {
     $_GET['q'] = $_REQUEST['q'] = ltrim($url['path'], '/');
 }
 
+// Find the correct location.
+$locations = isset($app['web']['locations']) ? $app['web']['locations'] : ['/' => $app['web']];
+foreach ($locations as $path => $location_candidate) {
+    if ($path === '/' && $_SERVER['REQUEST_URI'] === '/') {
+        $location = $location_candidate;
+    }
+    elseif (preg_match('#^' . preg_quote(ltrim($path, '/'), '#') . '#', $_SERVER['REQUEST_URI'])) {
+        $location = $location_candidate;
+    }
+}
+if (!isset($location)) {
+    $location = isset($locations['/']) ? $locations['/'] : [
+        // @todo define a default location config
+        'allow' => true,
+        'passthru' => 'index.php',
+    ];
+}
+
 // Determine which passthru script, if any, should be used.
 $passthru = null;
-if (!empty($app['web']['passthru'])) {
-    $passthru = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . ltrim($app['web']['passthru'], '/');
+if (!empty($location['passthru'])) {
+    $passthru = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . ltrim($location['passthru'], '/');
     if (!file_exists($passthru)) {
         http_response_code(500);
         error_log(sprintf('Passthru file not found: %s', $passthru), 4);
@@ -70,8 +88,8 @@ $requested_file = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . ltrim($_SERV
 // server asks for 'index.php' if it exists).
 if (basename($requested_file) === 'index.php' || is_dir($requested_file)) {
     $index_files = ['index.php'];
-    if (isset($app['web']['index_files'])) {
-        $index_files = (array) $app['web']['index_files'];
+    if (isset($location['index_files'])) {
+        $index_files = (array) $location['index_files'];
     }
     $directory = is_dir($requested_file)
       ? rtrim($requested_file, DIRECTORY_SEPARATOR)
