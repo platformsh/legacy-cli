@@ -125,7 +125,7 @@ class ProcessManager
                 $output = $log instanceof ConsoleOutputInterface && $type === Process::ERR
                     ? $log->getErrorOutput()
                     : $log;
-                $output->writeln($buffer);
+                $output->write($buffer);
             });
         } catch (\Exception $e) {
             unset($this->processes[$pidFile]);
