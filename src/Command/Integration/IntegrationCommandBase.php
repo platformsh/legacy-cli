@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\Table;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
@@ -9,6 +10,8 @@ use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class IntegrationCommandBase extends CommandBase
 {
@@ -33,22 +36,29 @@ abstract class IntegrationCommandBase extends CommandBase
     private function getFields()
     {
         return [
-            'type' => new OptionsField('Integration type', [
-                'name' => 'Integration type',
+            'type' => new OptionsField('Type', [
                 'optionName' => 'type',
                 'description' => "The integration type ('github', 'hipchat', or 'webhook')",
-                'options' => ['github', 'hipchat', 'webhook'],
+                'options' => [
+                    'github',
+                    'hipchat',
+                    'webhook',
+                ],
             ]),
             'token' => new Field('Token', [
-                'conditions' => ['type' => ['github', 'hipchat']],
-                'name' => 'Token',
+                'conditions' => ['type' => [
+                    'github',
+                    'hipchat',
+                ]],
                 'description' => 'GitHub or HipChat: An OAuth token for the integration',
                 'validator' => function ($string) {
                     return base64_decode($string, true) !== false;
                 },
             ]),
             'repository' => new Field('Repository', [
-                'conditions' => ['type' => 'github'],
+                'conditions' => ['type' => [
+                    'github',
+                ]],
                 'description' => 'GitHub: the repository to track (the URL, e.g. \'https://github.com/user/repo\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
@@ -62,35 +72,53 @@ abstract class IntegrationCommandBase extends CommandBase
                 },
             ]),
             'build_pull_requests' => new BooleanField('Build pull requests', [
-                'conditions' => ['type' => 'github'],
+                'conditions' => ['type' => [
+                    'github',
+                ]],
                 'description' => 'GitHub: build pull requests as environments',
             ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
-                'conditions' => ['type' => 'github'],
+                'conditions' => ['type' => [
+                    'github',
+                ]],
                 'description' => 'GitHub: sync all branches',
             ]),
             'room' => new Field('Hipchat room ID', [
-                'conditions' => ['type' => 'hipchat'],
+                'conditions' => ['type' => [
+                    'hipchat',
+                ]],
                 'validator' => 'is_numeric',
-                'optionName' => 'room',
                 'name' => 'HipChat room ID',
             ]),
+            'url' => new UrlField('URL', [
+                'conditions' => ['type' => [
+                    'webhook',
+                ]],
+                'description' => 'Generic webhook: a URL to receive JSON data',
+            ]),
             'events' => new ArrayField('Events to report', [
-                'conditions' => ['type' => ['hipchat', 'webhook']],
-                'optionName' => 'events',
+                'conditions' => ['type' => [
+                    'hipchat',
+                    'webhook',
+                ]],
                 'default' => ['*'],
                 'description' => 'Events to report, e.g. environment.push',
             ]),
             'states' => new ArrayField('States to report', [
-                'conditions' => ['type' => ['hipchat', 'webhook']],
-                'optionName' => 'states',
+                'conditions' => ['type' => [
+                    'hipchat',
+                    'webhook',
+                ]],
                 'name' => 'States to report',
                 'default' => ['complete'],
                 'description' => 'States to report, e.g. pending, in_progress, complete',
             ]),
-            'url' => new UrlField('URL', [
-                'conditions' => ['type' => 'webhook'],
-                'description' => 'Generic webhook: a URL to receive JSON data',
+            'environments' => new ArrayField('Environments', [
+                'conditions' => ['type' => [
+                    'webhook',
+                ]],
+                'default' => ['*'],
+                'description' => 'Generic webhook: the environments relevant to the hook',
             ]),
         ];
     }
@@ -98,38 +126,72 @@ abstract class IntegrationCommandBase extends CommandBase
     /**
      * @param Integration $integration
      *
-     * @return string
+     * @return array
      */
-    protected function formatIntegrationData(Integration $integration)
+    protected function formatIntegrationTable(Integration $integration)
     {
-        $properties = $integration->getProperties();
         $info = [];
-        if ($properties['type'] == 'github') {
-            $info["Repository"] = $properties['repository'];
-            $info["Build PRs"] = $properties['build_pull_requests'] ? 'yes' : 'no';
-            $info["Fetch branches"] = $properties['fetch_branches'] ? 'yes' : 'no';
-            $info["Payload URL"] = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
-        } elseif ($properties['type'] == 'bitbucket') {
-            $info["Repository"] = $properties['repository'];
-            $info["Fetch branches"] = $properties['fetch_branches'] ? 'yes' : 'no';
-            $info["Prune branches"] = $properties['prune_branches'] ? 'yes' : 'no';
-            $info["Payload URL"] = $integration->hasLink('#hook') ? $integration->getLink('#hook', true) : '[unknown]';
-        } elseif ($properties['type'] == 'hipchat') {
-            $info["Room ID"] = $properties['room'];
-            $info["Events"] = implode(', ', $properties['events']);
-            $info["States"] = implode(', ', $properties['states']);
-        } elseif ($properties['type'] == 'webhook') {
-            $info["URL"] = $properties['url'];
-            $info["Events"] = implode(', ', $properties['events']);
-            $info["States"] = implode(', ', $properties['states']);
+        $fields = $this->getFields();
+        $info['ID'] = $integration->id;
+        $info['Type'] = $integration->type;
+        foreach ($integration->getProperties() as $property => $value) {
+            if ($property === 'id' || $property === 'type') {
+                continue;
+            }
+            if (isset($fields[$property])) {
+                $propertyName = $fields[$property]->getName();
+            }
+            else {
+                $propertyName = ucfirst($property);
+            }
+
+            $data = is_string($value) ? $value : json_encode($value);
+            $info[$propertyName] = $data;
+        }
+        if ($integration->hasLink('#hook')) {
+            $info['Hook URL'] = $integration->getLink('#hook');
         }
 
-        $output = '';
-        foreach ($info as $label => $value) {
-            $output .= "$label: $value\n";
+        return $info;
+    }
+
+    /**
+     * @param Integration     $integration
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     */
+    protected function displayIntegration(Integration $integration, InputInterface $input, OutputInterface $output)
+    {
+        $table = new Table($input, $output);
+
+        $info = [];
+        $fields = $this->getFields();
+        $info['ID'] = $integration->id;
+        $info['Type'] = $integration->type;
+        foreach ($integration->getProperties() as $property => $value) {
+            if ($property === 'id' || $property === 'type') {
+                continue;
+            }
+            if (isset($fields[$property])) {
+                $propertyName = $fields[$property]->getName();
+            }
+            else {
+                $propertyName = ucfirst($property);
+            }
+
+            $info[$propertyName] = is_string($value) ? $value : json_encode($value);
+        }
+        if ($integration->hasLink('#hook')) {
+            $info['Hook URL'] = $integration->getLink('#hook');
         }
 
-        return rtrim($output);
+        if (!$table->formatIsMachineReadable()) {
+            $info = array_map(function ($value) {
+                return wordwrap($value, 82, "\n", true);
+            }, $info);
+        }
+
+        $table->renderSimple(array_values($info), array_keys($info));
     }
 
 }
