@@ -44,7 +44,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
             $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
         }
 
-        $output->writeln($this->formatIntegrationData($integration));
+        $this->displayIntegration($integration, $input, $this->stdErr);
 
         return $success ? 0 : 1;
     }
