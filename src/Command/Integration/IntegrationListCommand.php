@@ -44,8 +44,9 @@ class IntegrationListCommand extends IntegrationCommandBase
         $table->render($rows, $header);
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('Add a new integration with: <info>' . self::$config->get('application.executable') . ' integration:add</info>');
         $this->stdErr->writeln('View integration details with: <info>' . self::$config->get('application.executable') . ' integration:get [id]</info>');
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Add a new integration with: <info>' . self::$config->get('application.executable') . ' integration:add</info>');
         $this->stdErr->writeln('Delete an integration with: <info>' . self::$config->get('application.executable') . ' integration:delete [id]</info>');
 
         return 0;
@@ -65,6 +66,9 @@ class IntegrationListCommand extends IntegrationCommandBase
             case 'github':
             case 'bitbucket':
                 $summary = sprintf('Repository: %s', $details['repository']);
+                if ($integration->hasLink('#hook')) {
+                    $summary .= "\n" . sprintf('Hook URL: %s', $integration->getLink('#hook'));
+                }
                 break;
 
             case 'hipchat':
@@ -82,7 +86,7 @@ class IntegrationListCommand extends IntegrationCommandBase
         if (strlen($summary) > 240) {
             $summary = substr($summary, 0, 237) . '...';
         }
-        $summary = wordwrap($summary, 75, "\n", true);
+        $summary = wordwrap($summary, 84, "\n", true);
 
         return $summary;
     }
