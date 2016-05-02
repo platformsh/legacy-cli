@@ -13,6 +13,13 @@ abstract class ServerCommandBase extends CommandBase
     protected $serverInfo;
     protected $local = true;
 
+    public function isEnabled()
+    {
+        return self::$config->has('experimental.enable_local_server')
+            && self::$config->get('experimental.enable_local_server')
+            && parent::isEnabled();
+    }
+
     /**
      * Check whether another server is running for an app.
      *
@@ -82,7 +89,7 @@ abstract class ServerCommandBase extends CommandBase
     {
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
-            $filename = $this->getUserConfigDir() . '/local-servers.json';
+            $filename = self::$config->getUserConfigDir() . '/local-servers.json';
             if (file_exists($filename)) {
                 $this->serverInfo = (array) json_decode(file_get_contents($filename), TRUE);
             }
@@ -104,7 +111,7 @@ abstract class ServerCommandBase extends CommandBase
 
     protected function saveServerInfo()
     {
-        $filename = $this->getUserConfigDir() . '/local-servers.json';
+        $filename = self::$config->getUserConfigDir() . '/local-servers.json';
         if (!empty($this->serverInfo)) {
             if (!file_put_contents($filename, json_encode($this->serverInfo))) {
                 throw new \RuntimeException('Failed to write server info to: ' . $filename);
@@ -187,7 +194,7 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function getPidFile($address)
     {
-        return $this->getUserConfigDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
+        return self::$config->getUserConfigDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
     }
 
     /**
