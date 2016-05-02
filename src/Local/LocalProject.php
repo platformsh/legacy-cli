@@ -22,7 +22,7 @@ class LocalProject
      * @return array|false
      *   An array containing 'id' and 'host', or false on failure.
      */
-    protected function getProjectId($gitUrl)
+    protected function parseGitUrl($gitUrl)
     {
         if (!preg_match('/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($this->config->get('detection.api_domain')) . '):\1\.git$/', $gitUrl, $matches)) {
             return false;
@@ -157,21 +157,9 @@ class LocalProject
         // configuration file, and/or contains a Git remote with the appropriate
         // domain.
         $dir = $this->findTopDirectoryContaining('.git', function ($dir) use ($configFilename, $legacyConfigFilename) {
-            if (file_exists($dir . '/' . $configFilename)) {
-                return true;
-            }
-            $gitUrl = $this->getGitRemoteUrl($dir);
-            if (!$gitUrl || !($projectId = $this->getProjectId($gitUrl))) {
-                return false;
-            }
-            // Backwards compatibility: copy old project config to new
-            // location.
-            if (file_exists($dir . '/../' . $legacyConfigFilename)) {
-                $this->ensureLocalDir($dir);
-                copy($dir . '/../' . $legacyConfigFilename, $dir . '/' . $configFilename);
-            }
-            $this->writeCurrentProjectConfig($projectId, $dir);
-            return true;
+            $config = $this->getProjectConfig($dir);
+
+            return !empty($config);
         });
 
         if (isset($cwd)) {
@@ -191,16 +179,17 @@ class LocalProject
      */
     public function getProjectConfig($projectRoot = null)
     {
-        $projectRoot = $projectRoot ?: self::getProjectRoot();
+        $projectRoot = $projectRoot ?: $this->getProjectRoot();
         $projectConfig = null;
-        if ($projectRoot && file_exists($projectRoot . '/' . $this->config->get('local.project_config'))) {
+        $configFilename = $this->config->get('local.project_config');
+        if ($projectRoot && file_exists($projectRoot . '/' . $configFilename)) {
             $yaml = new Parser();
-            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $this->config->get('local.project_config')));
+            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
         }
         elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $gitUrl = $this->getGitRemoteUrl($projectRoot);
-            if ($gitUrl && ($projectId = $this->getProjectId($gitUrl))) {
-                $projectConfig = $projectId;
+            if ($gitUrl && ($projectConfig = $this->parseGitUrl($gitUrl))) {
+                $this->writeConfigToFile($projectRoot . '/' . $configFilename, $projectConfig);
             }
         }
 
@@ -220,20 +209,31 @@ class LocalProject
      */
     public function writeCurrentProjectConfig(array $config, $projectRoot = null)
     {
-        $projectRoot = $projectRoot ?: self::getProjectRoot();
+        $projectRoot = $projectRoot ?: $this->getProjectRoot();
         if (!$projectRoot) {
             throw new \Exception('Project root not found');
         }
         $this->ensureLocalDir($projectRoot);
         $file = $projectRoot . '/' . $this->config->get('local.project_config');
-        $projectConfig = self::getProjectConfig($projectRoot) ?: [];
+        $projectConfig = $this->getProjectConfig($projectRoot) ?: [];
         $projectConfig = array_merge($projectConfig, $config);
-        $dumper = new Dumper();
-        if (file_put_contents($file, $dumper->dump($projectConfig, 10)) === false) {
-            throw new \Exception('Failed to write project config file: ' . $file);
-        }
+        $this->writeConfigToFile($file, $projectConfig);
 
         return $projectConfig;
+    }
+
+    /**
+     * @param string $filename
+     * @param array $config
+     *
+     * @throws \Exception on failure
+     */
+    protected function writeConfigToFile($filename, array $config)
+    {
+        $dumper = new Dumper();
+        if (file_put_contents($filename, $dumper->dump($config, 10)) === false) {
+            throw new \Exception('Failed to write config file: ' . $filename);
+        }
     }
 
     /**

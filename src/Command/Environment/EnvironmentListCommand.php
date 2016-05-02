@@ -93,7 +93,7 @@ class EnvironmentListCommand extends CommandBase
             if ($indent) {
                 $id = str_repeat('   ', $indentAmount) . $id;
             }
-            if ($indicateCurrent && $environment->id == $this->currentEnvironment->id) {
+            if ($indicateCurrent && $this->currentEnvironment && $environment->id == $this->currentEnvironment->id) {
                 $id .= "<info>*</info>";
             }
             $row[] = $id;
