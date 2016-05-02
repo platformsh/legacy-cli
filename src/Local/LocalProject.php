@@ -170,7 +170,7 @@ class LocalProject
                 $this->ensureLocalDir($dir);
                 copy($dir . '/../' . $legacyConfigFilename, $dir . '/' . $configFilename);
             }
-            $this->writeCurrentProjectConfig($projectId, $dir);
+            $this->writeCurrentProjectConfig(['id' => $projectId], $dir);
             return true;
         });
 
