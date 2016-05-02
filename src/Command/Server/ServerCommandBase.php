@@ -13,6 +13,12 @@ abstract class ServerCommandBase extends CommandBase
     protected $serverInfo;
     protected $local = true;
 
+    public function isEnabled()
+    {
+        return !empty(self::$config->get('experimental.enable_local_server'))
+            && parent::isEnabled();
+    }
+
     /**
      * Check whether another server is running for an app.
      *

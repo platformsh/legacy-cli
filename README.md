@@ -117,11 +117,6 @@ project
 self
   self:install                              Install or update CLI configuration files
   self:update                               Update the CLI to the latest version
-server
-  server:list                               List running local project web server(s)
-  server:run                                Run a local PHP web server
-  server:start                              Run PHP web server(s) for the local project
-  server:stop                               Stop local project web server(s)
 snapshot
   snapshot:create (backup)                  Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment
@@ -164,6 +159,7 @@ You can configure the CLI via these environment variables:
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
+* `PLATFORMSH_CLI_ENABLE_LOCAL_SERVER`: set to 1 to enable experimental local server commands
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 * ~~`PLATFORMSH_CLI_API_TOKEN`: a 'personal access token' to authenticate all requests~~ (deprecated)
 
