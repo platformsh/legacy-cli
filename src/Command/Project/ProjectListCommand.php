@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\Table;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,8 +17,9 @@ class ProjectListCommand extends CommandBase
             ->setName('project:list')
             ->setAliases(['projects'])
             ->setDescription('Get a list of all active projects')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs.')
-            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1);
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs')
+            ->addOption('host', null, InputOption::VALUE_OPTIONAL, 'Filter by region hostname')
+            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1);
         Table::addFormatOption($this->getDefinition());
     }
 
@@ -25,7 +27,15 @@ class ProjectListCommand extends CommandBase
     {
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
+        // Fetch the list of projects.
         $projects = $this->api->getProjects($refresh ? true : null);
+
+        // Filter the projects by hostname.
+        if ($host = $input->getOption('host')) {
+            $projects = array_filter($projects, function (Project $project) use ($host) {
+                return $host === parse_url($project->getUri(), PHP_URL_HOST);
+            });
+        }
 
         if ($input->getOption('pipe')) {
             $output->writeln(array_keys($projects));
