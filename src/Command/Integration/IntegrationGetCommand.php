@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Integration;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationGetCommand extends IntegrationCommandBase
@@ -16,6 +17,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
         $this
             ->setName('integration:get')
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
+            ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view')
             ->setDescription('View details of an integration');
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
@@ -51,6 +53,24 @@ class IntegrationGetCommand extends IntegrationCommandBase
             $this->stdErr->writeln("Integration not found: <error>$id</error>");
 
             return 1;
+        }
+
+        if ($property = $input->getOption('property')) {
+            if ($property === 'hook_url' && $integration->hasLink('#hook')) {
+                $value = $integration->getLink('#hook');
+            }
+            elseif (!$integration->hasProperty($property)) {
+                $this->stdErr->writeln("Integration property not found: <error>$property</error>");
+
+                return 1;
+            }
+            else {
+                $value = $integration->getProperty($property);
+            }
+
+            $output->writeln($this->propertyFormatter->format($value, $property));
+
+            return 0;
         }
 
         $this->displayIntegration($integration, $input, $output);

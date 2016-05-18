@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
@@ -17,6 +18,15 @@ abstract class IntegrationCommandBase extends CommandBase
 {
     /** @var Form */
     private $form;
+
+    /** @var PropertyFormatter */
+    protected $propertyFormatter;
+
+    public function __construct($name = null)
+    {
+        parent::__construct($name);
+        $this->propertyFormatter = new PropertyFormatter();
+    }
 
     /**
      * @return Form
@@ -124,38 +134,6 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
-     * @param Integration $integration
-     *
-     * @return array
-     */
-    protected function formatIntegrationTable(Integration $integration)
-    {
-        $info = [];
-        $fields = $this->getFields();
-        $info['ID'] = $integration->id;
-        $info['Type'] = $integration->type;
-        foreach ($integration->getProperties() as $property => $value) {
-            if ($property === 'id' || $property === 'type') {
-                continue;
-            }
-            if (isset($fields[$property])) {
-                $propertyName = $fields[$property]->getName();
-            }
-            else {
-                $propertyName = ucfirst($property);
-            }
-
-            $data = is_string($value) ? $value : json_encode($value);
-            $info[$propertyName] = $data;
-        }
-        if ($integration->hasLink('#hook')) {
-            $info['Hook URL'] = $integration->getLink('#hook');
-        }
-
-        return $info;
-    }
-
-    /**
      * @param Integration     $integration
      * @param InputInterface  $input
      * @param OutputInterface $output
@@ -166,23 +144,12 @@ abstract class IntegrationCommandBase extends CommandBase
 
         $info = [];
         $fields = $this->getFields();
-        $info['ID'] = $integration->id;
-        $info['Type'] = $integration->type;
+        $formatter = new PropertyFormatter();
         foreach ($integration->getProperties() as $property => $value) {
-            if ($property === 'id' || $property === 'type') {
-                continue;
-            }
-            if (isset($fields[$property])) {
-                $propertyName = $fields[$property]->getName();
-            }
-            else {
-                $propertyName = ucfirst($property);
-            }
-
-            $info[$propertyName] = is_string($value) ? $value : json_encode($value);
+            $info[$property] = $formatter->format($value, $property);
         }
         if ($integration->hasLink('#hook')) {
-            $info['Hook URL'] = $integration->getLink('#hook');
+            $info['hook_url'] = $integration->getLink('#hook');
         }
 
         if (!$table->formatIsMachineReadable()) {

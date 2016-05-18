@@ -22,6 +22,10 @@ class PropertyFormatter
                 $value = $this->formatHttpAccess($value);
                 break;
 
+            case 'token':
+                $value = '******';
+                break;
+
             case 'created_at':
             case 'updated_at':
                 $value = $this->formatDate($value);
