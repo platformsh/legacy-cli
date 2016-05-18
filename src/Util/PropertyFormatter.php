@@ -19,17 +19,14 @@ class PropertyFormatter
     {
         switch ($property) {
             case 'http_access':
-                $value = $this->formatHttpAccess($value);
-                break;
+                return $this->formatHttpAccess($value);
 
             case 'token':
-                $value = '******';
-                break;
+                return '******';
 
             case 'created_at':
             case 'updated_at':
-                $value = $this->formatDate($value);
-                break;
+                return $this->formatDate($value);
         }
 
         if (!is_string($value)) {
@@ -67,8 +64,6 @@ class PropertyFormatter
             return '******';
         }, $info['basic_auth']);
 
-        return "Enabled: " . json_encode($info['is_enabled'])
-        . "\nAccess: " . json_encode($info['addresses'])
-        . "\nAuth: " . json_encode($info['basic_auth']);
+        return $this->format($info);
     }
 }

@@ -143,13 +143,11 @@ abstract class IntegrationCommandBase extends CommandBase
         $table = new Table($input, $output);
 
         $info = [];
-        $fields = $this->getFields();
-        $formatter = new PropertyFormatter();
         foreach ($integration->getProperties() as $property => $value) {
-            $info[$property] = $formatter->format($value, $property);
+            $info[$property] = $this->propertyFormatter->format($value, $property);
         }
         if ($integration->hasLink('#hook')) {
-            $info['hook_url'] = $integration->getLink('#hook');
+            $info['hook_url'] = $this->propertyFormatter->format($integration->getLink('#hook'));
         }
 
         if (!$table->formatIsMachineReadable()) {

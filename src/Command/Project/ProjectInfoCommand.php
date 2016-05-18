@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -49,7 +50,7 @@ class ProjectInfoCommand extends CommandBase
         $property = $input->getArgument('property');
 
         if (!$property) {
-            return $this->listProperties($project, new Table($input, $output));
+            return $this->listProperties($project->getProperties(), new Table($input, $output));
         }
 
         $value = $input->getArgument('value');
@@ -63,7 +64,19 @@ class ProjectInfoCommand extends CommandBase
                 break;
 
             default:
-                $value = $project->getProperty($property);
+                $data = $project->getProperties(false);
+                $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
+                if (!$exists) {
+                    // Add data from the main resource and try again.
+                    $data = array_merge($data, $project->getProperties(true));
+                }
+
+                $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
+                if (!$exists) {
+                    $this->stdErr->writeln('Property not found: <error>' . $property . '</error>');
+
+                    return 1;
+                }
         }
 
         $output->writeln($this->formatter->format($value, $property));
@@ -72,12 +85,12 @@ class ProjectInfoCommand extends CommandBase
     }
 
     /**
-     * @param Project $project
-     * @param Table   $table
+     * @param array $properties
+     * @param Table $table
      *
      * @return int
      */
-    protected function listProperties(Project $project, Table $table)
+    protected function listProperties(array $properties, Table $table)
     {
         // Properties not to display, as they are internal, deprecated, or
         // otherwise confusing.
@@ -85,19 +98,20 @@ class ProjectInfoCommand extends CommandBase
             'name',
             'cluster',
             'cluster_label',
+            'description',
             'license_id',
             'plan',
             '_endpoint',
-            'repository',
-            'subscription',
         ];
 
         $headings = [];
         $values = [];
-        foreach ($project->getProperties(false) as $key => $value) {
+        foreach ($properties as $key => $value) {
             if (!in_array($key, $blacklist)) {
                 $value = $this->formatter->format($value, $key);
-                $value = wordwrap($value, 50, "\n", true);
+                if (!$table->formatIsMachineReadable()) {
+                    $value = wordwrap($value, 50, "\n", true);
+                }
                 $headings[] = $key;
                 $values[] = $value;
             }

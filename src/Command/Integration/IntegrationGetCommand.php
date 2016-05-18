@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Util\Util;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -59,13 +60,14 @@ class IntegrationGetCommand extends IntegrationCommandBase
             if ($property === 'hook_url' && $integration->hasLink('#hook')) {
                 $value = $integration->getLink('#hook');
             }
-            elseif (!$integration->hasProperty($property)) {
-                $this->stdErr->writeln("Integration property not found: <error>$property</error>");
-
-                return 1;
-            }
             else {
-                $value = $integration->getProperty($property);
+                $data = $integration->getProperties();
+                $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
+                if (!$exists) {
+                    $this->stdErr->writeln("Integration property not found: <error>$property</error>");
+
+                    return 1;
+                }
             }
 
             $output->writeln($this->propertyFormatter->format($value, $property));

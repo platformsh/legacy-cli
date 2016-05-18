@@ -65,11 +65,8 @@ class TunnelInfoCommand extends TunnelCommandBase
         }
 
         $value = $relationships;
-        $key = null;
         if ($property = $input->getOption('property')) {
-            $parents = explode('.', $property);
-            $key = end($parents);
-            $value = Util::getNestedArrayValue($relationships, $parents, $key_exists);
+            $value = Util::getNestedArrayValue($relationships, explode('.', $property), $key_exists);
             if (!$key_exists) {
                 $this->stdErr->writeln("Property not found: <error>$property</error>");
 
@@ -79,7 +76,7 @@ class TunnelInfoCommand extends TunnelCommandBase
 
         $formatter = new PropertyFormatter();
         $formatter->yamlInline = 10;
-        $output->writeln($formatter->format($value, $key));
+        $output->writeln($formatter->format($value, $property));
 
         return 0;
     }
