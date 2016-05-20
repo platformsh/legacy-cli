@@ -4,16 +4,19 @@ namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Helper\GitHelper;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
 
 class LocalProject
 {
     protected $config;
+    protected $fs;
 
     public function __construct(CliConfig $config = null)
     {
         $this->config = $config ?: new CliConfig();
+        $this->fs = new Filesystem();
     }
 
     /**
@@ -226,14 +229,12 @@ class LocalProject
      * @param string $filename
      * @param array $config
      *
-     * @throws \Exception on failure
+     * @throws \Symfony\Component\Filesystem\Exception\IOException on failure
      */
     protected function writeConfigToFile($filename, array $config)
     {
         $dumper = new Dumper();
-        if (file_put_contents($filename, $dumper->dump($config, 10)) === false) {
-            throw new \Exception('Failed to write config file: ' . $filename);
-        }
+        $this->fs->dumpFile($filename, $dumper->dump($config, 10));
     }
 
     /**
@@ -285,7 +286,7 @@ EOF
                 $newRoot = "\n" . '/' . $this->config->get('application.name') . "\n";
                 $oldRoot = "\n" . '/.www' . "\n";
                 if (strpos($existing, $oldRoot) !== false && strpos($existing, $newRoot) === false) {
-                    file_put_contents($excludeFilename, str_replace($oldRoot, $newRoot, $existing));
+                    $this->fs->dumpFile($excludeFilename, str_replace($oldRoot, $newRoot, $existing));
                 }
                 if (is_link($dir . '/.www')) {
                     unlink($dir . '/.www');
@@ -302,8 +303,6 @@ EOF
         if (!empty($existing)) {
             $content = $existing . "\n" . $content;
         }
-        if (file_put_contents($excludeFilename, $content) === false) {
-            throw new \RuntimeException("Failed to write to Git exclude file: " . $excludeFilename);
-        }
+        $this->fs->dumpFile($excludeFilename, $content);
     }
 }
