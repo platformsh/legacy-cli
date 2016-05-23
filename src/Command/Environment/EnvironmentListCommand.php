@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
@@ -106,6 +107,7 @@ class EnvironmentListCommand extends CommandBase
             }
 
             $row[] = $this->formatEnvironmentStatus($environment->status);
+            $row[] = $this->formatDatetime($environment->updated_at);
 
             $rows[] = $row;
             $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment->id], $indent, $indicateCurrent, $indentAmount + 1));
@@ -156,7 +158,7 @@ class EnvironmentListCommand extends CommandBase
             $this->children['master'] = [];
         }
 
-        $headers = ['ID', 'Name', 'Status'];
+        $headers = ['ID', 'Name', 'Status', 'Last Update'];
 
         $table = new Table($input, $output);
 
@@ -219,5 +221,10 @@ class EnvironmentListCommand extends CommandBase
         }
 
         return ucfirst($status);
+    }
+
+    protected function formatDatetime($datetime) {
+        $formatter = new PropertyFormatter();
+        return $formatter->format($datetime, 'updated_at');
     }
 }
