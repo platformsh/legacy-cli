@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
@@ -89,7 +90,7 @@ class EnvironmentInfoCommand extends CommandBase
         $headings = [];
         $values = [];
         foreach ($environment->getProperties() as $key => $value) {
-            $headings[] = $key;
+            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
         $table->renderSimple($values, $headings);
