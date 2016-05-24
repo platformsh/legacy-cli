@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
@@ -48,7 +49,7 @@ class ProjectListCommand extends CommandBase
         $rows = [];
         foreach ($projects as $project) {
             $rows[] = [
-                $project->id,
+                new AdaptiveTableCell($project->id, ['wrap' => false]),
                 $project->title,
                 $project->getLink('#ui'),
             ];

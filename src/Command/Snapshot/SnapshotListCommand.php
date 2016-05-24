@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -57,7 +58,7 @@ class SnapshotListCommand extends CommandBase
             $rows[] = [
                 date('Y-m-d H:i:s', strtotime($result->created_at)),
                 $result->getCompletionPercent(),
-                $snapshot_name,
+                new AdaptiveTableCell($snapshot_name, ['wrap' => false]),
             ];
         }
 

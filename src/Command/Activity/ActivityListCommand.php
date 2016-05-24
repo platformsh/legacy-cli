@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -54,14 +55,10 @@ class ActivityListCommand extends CommandBase
 
         $rows = [];
         foreach ($activities as $activity) {
-            $description = $activity->getDescription();
-            if (!$table->formatIsMachineReadable()) {
-                $description = wordwrap($description, 40);
-            }
             $rows[] = [
-                $activity->id,
+                new AdaptiveTableCell($activity->id, ['wrap' => false]),
                 date('Y-m-d H:i:s', strtotime($activity['created_at'])),
-                $description,
+                $activity->getDescription(),
                 $activity->getCompletionPercent(),
                 ActivityUtil::formatState($activity->state),
             ];
