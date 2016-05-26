@@ -776,7 +776,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      * @param InputInterface  $input
      * @param bool $envNotRequired
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = null)
+    protected function validateInput(InputInterface $input, $envNotRequired = false)
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
