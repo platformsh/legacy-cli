@@ -112,7 +112,6 @@ class AdaptiveTable extends Table
         // Go through all headers and rows, wrapping their cells until each
         // column meets the max column width.
         $maxColumnWidths = $this->getMaxColumnWidths();
-        $this->setHeaders($this->adaptCells($this->headersCopy, $maxColumnWidths));
         $this->setRows($this->adaptCells($this->rowsCopy, $maxColumnWidths));
     }
 
@@ -170,10 +169,12 @@ class AdaptiveTable extends Table
 
                 // Find the minimum width of the cell. The default is configured
                 // in minColumnWidth, but this is overridden for non-wrapping
-                // cells and very narrow cells.
+                // cells and very narrow cells. Additionally, table headers are
+                // never wrapped.
                 $minCellWidth = $this->minColumnWidth;
                 if ($cellWidth < $this->minColumnWidth
-                    || ($cell instanceof AdaptiveTableCell && !$cell->canWrap())) {
+                    || ($cell instanceof AdaptiveTableCell && !$cell->canWrap())
+                    || !isset($this->rowsCopy[$rowNum])) {
                     $minCellWidth = $cellWidth;
                 }
 
