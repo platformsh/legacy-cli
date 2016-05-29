@@ -25,6 +25,7 @@ class TunnelInfoCommand extends TunnelCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->checkSupport();
         $this->validateInput($input);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
