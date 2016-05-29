@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\Util;
@@ -77,10 +78,7 @@ class SubscriptionInfoCommand extends CommandBase
         $headings = [];
         $values = [];
         foreach ($subscription->getProperties() as $key => $value) {
-            if (!$table->formatIsMachineReadable()) {
-                $value = wordwrap($value, 50, "\n", true);
-            }
-            $headings[] = $key;
+            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
         $table->renderSimple($values, $headings);

@@ -150,12 +150,6 @@ abstract class IntegrationCommandBase extends CommandBase
             $info['hook_url'] = $this->propertyFormatter->format($integration->getLink('#hook'));
         }
 
-        if (!$table->formatIsMachineReadable()) {
-            $info = array_map(function ($value) {
-                return wordwrap($value, 82, "\n", true);
-            }, $info);
-        }
-
         $table->renderSimple(array_values($info), array_keys($info));
     }
 

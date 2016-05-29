@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
@@ -108,12 +109,8 @@ class ProjectInfoCommand extends CommandBase
         $values = [];
         foreach ($properties as $key => $value) {
             if (!in_array($key, $blacklist)) {
-                $value = $this->formatter->format($value, $key);
-                if (!$table->formatIsMachineReadable()) {
-                    $value = wordwrap($value, 50, "\n", true);
-                }
-                $headings[] = $key;
-                $values[] = $value;
+                $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
+                $values[] = $this->formatter->format($value, $key);
             }
         }
         $table->renderSimple($values, $headings);

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
@@ -38,7 +39,11 @@ class IntegrationListCommand extends IntegrationCommandBase
         $rows = [];
 
         foreach ($integrations as $integration) {
-            $rows[] = [$integration->id, $integration->type, $this->getIntegrationSummary($integration)];
+            $rows[] = [
+                new AdaptiveTableCell($integration->id, ['wrap' => false]),
+                $integration->type,
+                $this->getIntegrationSummary($integration),
+            ];
         }
 
         $table->render($rows, $header);
@@ -86,7 +91,6 @@ class IntegrationListCommand extends IntegrationCommandBase
         if (strlen($summary) > 240) {
             $summary = substr($summary, 0, 237) . '...';
         }
-        $summary = wordwrap($summary, 84, "\n", true);
 
         return $summary;
     }
