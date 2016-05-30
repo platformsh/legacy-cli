@@ -32,7 +32,7 @@ class SshKeyDeleteCommand extends CommandBase
             return 1;
         }
 
-        $key = $this->api->getClient()
+        $key = $this->api()->getClient()
                     ->getSshKey($id);
         if (!$key) {
             $this->stdErr->writeln("SSH key not found: <error>$id</error>");

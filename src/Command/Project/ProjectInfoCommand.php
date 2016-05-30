@@ -149,7 +149,7 @@ class ProjectInfoCommand extends CommandBase
         $result = $project->update([$property => $value]);
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
 
-        $this->api->clearProjectsCache();
+        $this->api()->clearProjectsCache();
 
         $success = true;
         if (!$noWait) {

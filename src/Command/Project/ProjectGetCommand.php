@@ -59,7 +59,7 @@ class ProjectGetCommand extends CommandBase
         $environmentOption = $input->getOption('environment');
         $hostOption = $input->getOption('host');
         if (empty($projectId)) {
-            if ($input->isInteractive() && ($projects = $this->api->getProjects(true))) {
+            if ($input->isInteractive() && ($projects = $this->api()->getProjects(true))) {
                 $projectId = $this->offerProjectChoice($projects, $input);
             } else {
                 $this->stdErr->writeln("<error>You must specify a project.</error>");
@@ -74,18 +74,18 @@ class ProjectGetCommand extends CommandBase
             $environmentOption = $environmentOption ?: $result['environmentId'];
         }
 
-        $project = $this->api->getProject($projectId, $hostOption, true);
+        $project = $this->api()->getProject($projectId, $hostOption, true);
         if (!$project) {
             $this->stdErr->writeln("<error>Project not found: $projectId</error>");
 
             return 1;
         }
 
-        $environments = $this->api->getEnvironments($project);
+        $environments = $this->api()->getEnvironments($project);
         if ($environmentOption) {
             if (!isset($environments[$environmentOption])) {
                 // Reload the environments list.
-                $environments = $this->api->getEnvironments($project, true);
+                $environments = $this->api()->getEnvironments($project, true);
                 if (!isset($environments[$environmentOption])) {
                     $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
                 }
@@ -148,7 +148,7 @@ class ProjectGetCommand extends CommandBase
             // Suggest SSH key commands.
             $sshKeys = [];
             try {
-                $sshKeys = $this->api->getClient(false)->getSshKeys();
+                $sshKeys = $this->api()->getClient(false)->getSshKeys();
             }
             catch (\Exception $e) {
                 // Ignore exceptions.

@@ -37,7 +37,7 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         $specifiedBranch = $input->getArgument('id');
         if (empty($specifiedBranch) && $input->isInteractive()) {
-            $environments = $this->api->getEnvironments($project);
+            $environments = $this->api()->getEnvironments($project);
             $currentEnvironment = $this->getCurrentEnvironment($project);
             if ($currentEnvironment) {
                 $this->stdErr->writeln("The current environment is <info>{$currentEnvironment->title}</info>.");
@@ -146,7 +146,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
         // Check if the environment exists by title or ID. This is usually faster
         // than running 'git ls-remote'.
-        $environments = $this->api->getEnvironments($project);
+        $environments = $this->api()->getEnvironments($project);
         foreach ($environments as $environment) {
             if ($environment->title == $branch || $environment->id == $branch) {
                 return $environment->id;

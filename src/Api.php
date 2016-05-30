@@ -54,7 +54,7 @@ class Api
     {
         $this->config = $config ?: new CliConfig();
         $this->dispatcher = $dispatcher;
-        $this->userConfigDir = FilesystemHelper::getHomeDirectory() . '/' . $config->get('application.user_config_dir');
+        $this->userConfigDir = FilesystemHelper::getHomeDirectory() . '/' . $this->config->get('application.user_config_dir');
 
         self::$sessionId = $this->config->get('api.session_id') ?: 'default';
 

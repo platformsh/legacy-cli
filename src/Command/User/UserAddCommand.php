@@ -47,7 +47,7 @@ class UserAddCommand extends CommandBase
 
         $users = $project->getUsers();
         foreach ($users as $projectAccess) {
-            if ($this->api->getAccount($projectAccess)['email'] === $email) {
+            if ($this->api()->getAccount($projectAccess)['email'] === $email) {
                 $this->stdErr->writeln("The user already exists: <comment>$email</comment>");
                 return 1;
             }
@@ -73,7 +73,7 @@ class UserAddCommand extends CommandBase
         $environmentRoles = [];
         $environments = [];
         if ($projectRole !== 'admin') {
-            $environments = $this->api->getEnvironments($project);
+            $environments = $this->api()->getEnvironments($project);
             if ($input->isInteractive()) {
                 $this->stdErr->writeln("The user's environment-level roles can be 'viewer', 'contributor', 'admin', or 'none'.");
             }

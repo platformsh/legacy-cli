@@ -64,7 +64,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected $localProject;
 
     /** @var Api|null */
-    protected $api;
+    private $api;
 
     /** @var InputInterface|null */
     private $input;
@@ -114,7 +114,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /**
      * {@inheritdoc}
      */
-    public function hideInList() {
+    public function isHiddenInList() {
         return $this->hiddenInList;
     }
 
@@ -145,13 +145,24 @@ abstract class CommandBase extends Command implements CanHideInListInterface
             error_reporting(E_PARSE);
         }
 
-        // Set up the API object.
-        $dispatcher = new EventDispatcher();
-        $dispatcher->addListener('login_required', [$this, 'login']);
-        $dispatcher->addListener('environments_changed', [$this, 'updateDrushAliases']);
-        $this->api = new Api(self::$config, $dispatcher);
-
         $this->promptLegacyMigrate();
+    }
+
+    /**
+     * Set up the API object.
+     *
+     * @return Api
+     */
+    protected function api()
+    {
+        if (!isset($this->api)) {
+            $dispatcher = new EventDispatcher();
+            $dispatcher->addListener('login_required', [$this, 'login']);
+            $dispatcher->addListener('environments_changed', [$this, 'updateDrushAliases']);
+            $this->api = new Api(self::$config, $dispatcher);
+        }
+
+        return $this->api;
     }
 
     /**
@@ -307,6 +318,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
     /**
      * Log in the user.
+     *
+     * This is called via the 'login_required' event.
+     *
+     * @see Api::getClient()
      */
     public function login()
     {
@@ -327,7 +342,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function isLoggedIn()
     {
-        return $this->api
+        return $this->api()
                     ->getClient(false)
                     ->getConnector()
                     ->isLoggedIn();
@@ -362,7 +377,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $project = false;
         $config = $this->getProjectConfig($projectRoot);
         if ($config) {
-            $project = $this->api->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
+            $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
             if (!$project) {
                 if (isset($config['host'])) {
@@ -422,7 +437,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         if ($currentBranch) {
             $config = $this->getProjectConfig($projectRoot);
             if (!empty($config['mapping'][$currentBranch])) {
-                $environment = $this->api->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
+                $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
                 if ($environment) {
                     $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
                     return $environment;
@@ -439,7 +454,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         $upstream = $gitHelper->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
-            $environment = $this->api->getEnvironment($potentialEnvironment, $project, $refresh);
+            $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
                 $this->debug('Selected environment ' . $potentialEnvironment . ', based on Git upstream: ' . $upstream);
                 return $environment;
@@ -450,7 +465,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         // name.
         if ($currentBranch) {
             $currentBranchSanitized = Environment::sanitizeId($currentBranch);
-            $environment = $this->api->getEnvironment($currentBranchSanitized, $project, $refresh);
+            $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
             if ($environment) {
                 $this->debug('Selected environment ' . $currentBranchSanitized . ', based on branch name:' . $currentBranch);
                 return $environment;
@@ -461,9 +476,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     }
 
     /**
-     * @param EnvironmentsChangedEvent $event
+     * Update the user's local Drush aliases.
      *
-     * @throws \Exception
+     * This is called via the 'environments_changed' event.
+     *
+     * @see Api::getEnvironments()
+     *
+     * @param EnvironmentsChangedEvent $event
      */
     public function updateDrushAliases(EnvironmentsChangedEvent $event)
     {
@@ -617,7 +636,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected function selectProject($projectId = null, $host = null)
     {
         if (!empty($projectId)) {
-            $project = $this->api->getProject($projectId, $host);
+            $project = $this->api()->getProject($projectId, $host);
             if (!$project) {
                 throw new \RuntimeException('Specified project not found: ' . $projectId);
             }
@@ -642,7 +661,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected function selectEnvironment($environmentId = null)
     {
         if (!empty($environmentId)) {
-            $environment = $this->api->getEnvironment($environmentId, $this->project);
+            $environment = $this->api()->getEnvironment($environmentId, $this->project);
             if (!$environment) {
                 throw new \RuntimeException("Specified environment not found: " . $environmentId);
             }

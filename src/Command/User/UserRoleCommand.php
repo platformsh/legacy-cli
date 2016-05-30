@@ -45,7 +45,7 @@ class UserRoleCommand extends CommandBase
 
         $email = $input->getArgument('email');
         foreach ($project->getUsers() as $user) {
-            $account = $this->api->getAccount($user);
+            $account = $this->api()->getAccount($user);
             if ($account['email'] === $email) {
                 $selectedUser = $user;
                 break;

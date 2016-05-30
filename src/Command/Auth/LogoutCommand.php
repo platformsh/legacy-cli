@@ -21,7 +21,7 @@ class LogoutCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Ignore API tokens for this command.
-        if ($this->api->hasApiToken()) {
+        if ($this->api()->hasApiToken()) {
             $this->stdErr->writeln('<comment>Warning: an API token is set</comment>');
         }
 
@@ -40,10 +40,10 @@ class LogoutCommand extends CommandBase
             return 1;
         }
 
-        $this->api->getClient(false)
+        $this->api()->getClient(false)
              ->getConnector()
              ->logOut();
-        $this->api->clearCache();
+        $this->api()->clearCache();
         $this->stdErr->writeln('You are now logged out.');
 
         if ($input->getOption('all')) {

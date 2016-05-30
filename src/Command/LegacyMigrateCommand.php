@@ -29,7 +29,7 @@ EOF
         );
     }
 
-    public function hideInList()
+    public function isHiddenInList()
     {
         return $this->localProject->getLegacyProjectRoot() ? false : true;
     }

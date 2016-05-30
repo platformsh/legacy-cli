@@ -26,7 +26,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     /**
      * {@inheritdoc}
      */
-    public function hideInList()
+    public function isHiddenInList()
     {
         return true;
     }

@@ -21,7 +21,7 @@ class ProjectDeleteCommand extends CommandBase
     {
         $this->validateInput($input);
         $project = $this->getSelectedProject();
-        $client = $this->api->getClient();
+        $client = $this->api()->getClient();
 
         $account = $client->getAccountInfo();
         if ($account['uuid'] != $project->owner) {
@@ -56,7 +56,7 @@ class ProjectDeleteCommand extends CommandBase
         $subscription = $client->getSubscription($subscriptionId);
 
         $subscription->delete();
-        $this->api->clearProjectsCache();
+        $this->api()->clearProjectsCache();
 
         $this->stdErr->writeln("\nThe project " . $this->getProjectLabel($project) . ' was deleted.');
         return 0;

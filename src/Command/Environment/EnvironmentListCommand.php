@@ -123,7 +123,7 @@ class EnvironmentListCommand extends CommandBase
 
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
-        $environments = $this->api->getEnvironments($this->getSelectedProject(), $refresh ? true : null);
+        $environments = $this->api()->getEnvironments($this->getSelectedProject(), $refresh ? true : null);
 
         if ($input->getOption('no-inactive')) {
             $environments = array_filter($environments, function ($environment) {

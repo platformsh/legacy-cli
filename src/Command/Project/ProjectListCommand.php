@@ -29,7 +29,7 @@ class ProjectListCommand extends CommandBase
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
         // Fetch the list of projects.
-        $projects = $this->api->getProjects($refresh ? true : null);
+        $projects = $this->api()->getProjects($refresh ? true : null);
 
         // Filter the projects by hostname.
         if ($host = $input->getOption('host')) {
