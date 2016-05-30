@@ -22,7 +22,6 @@ class IntegrationGetCommand extends IntegrationCommandBase
             ->setDescription('View details of an integration');
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
-        $this->setHiddenAliases(['integration:get']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
