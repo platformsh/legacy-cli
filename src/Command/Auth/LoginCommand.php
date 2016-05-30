@@ -65,20 +65,6 @@ class LoginCommand extends CommandBase
         $question->setMaxAttempts(5);
         $email = $helper->ask($input, $output, $question);
 
-        $pendingInvitation = false;
-        if ($pendingInvitation) {
-            $resendInviteText = "\nThis email address is associated with a " . self::$config->get('service.name') . " account, \n";
-            $resendInviteText .= "but you haven't verified your email address yet. \n";
-            $resendInviteText .= "Please click on the link in the email we sent you. \n";
-            $resendInviteText .= "Do you want us to send you the email again?";
-            $resendInvite = $helper->confirm($resendInviteText, false);
-            if ($resendInvite) {
-                // @todo
-            }
-
-            return;
-        }
-
         $question = new Question('Your password: ');
         $question->setValidator(
             function ($answer) {
