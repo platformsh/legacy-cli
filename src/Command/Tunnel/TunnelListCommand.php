@@ -23,6 +23,7 @@ class TunnelListCommand extends TunnelCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->checkSupport();
         $tunnels = $this->getTunnelInfo();
         $allTunnelsCount = count($tunnels);
         if (!$allTunnelsCount) {

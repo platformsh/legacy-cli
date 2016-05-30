@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PortUtil;
-use Platformsh\Cli\Util\ProcessManager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
@@ -15,9 +14,17 @@ abstract class TunnelCommandBase extends CommandBase
 
     protected $tunnelInfo;
 
-    public function isEnabled()
+    public function checkSupport()
     {
-        return ProcessManager::supported() && parent::isEnabled();
+        $messages = [];
+        foreach (['pcntl', 'posix'] as $extension) {
+            if (!extension_loaded($extension)) {
+                $messages[] = sprintf('The "%s" extension is required.', $extension);
+            }
+        }
+        if (count($messages)) {
+            throw new \RuntimeException(implode("\n", $messages));
+        }
     }
 
     /**
