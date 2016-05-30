@@ -27,9 +27,6 @@ class TunnelInfoCommand extends TunnelCommandBase
     {
         $this->checkSupport();
         $this->validateInput($input);
-        $project = $this->getSelectedProject();
-        $environment = $this->getSelectedEnvironment();
-        $appName = $this->selectApp($input);
 
         $tunnels = $this->getTunnelInfo();
         $relationships = [];

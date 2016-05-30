@@ -40,7 +40,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $cacheKey = implode('-', ['relationships', $environment->id . $environment->project . $app]);
-        $cache = $this->api->getCache();
+        $cache = $this->api()->getCache();
         $relationships = $cache->fetch($cacheKey);
         if (empty($relationships) || $input->getOption('refresh')) {
             $util = new RelationshipsUtil($this->stdErr);

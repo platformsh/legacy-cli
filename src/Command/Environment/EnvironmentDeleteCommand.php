@@ -43,7 +43,7 @@ EOF
     {
         $this->validateInput($input, true);
 
-        $environments = $this->api->getEnvironments($this->getSelectedProject());
+        $environments = $this->api()->getEnvironments($this->getSelectedProject());
 
         if ($input->getOption('inactive')) {
             $toDelete = array_filter(
@@ -104,7 +104,7 @@ EOF
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
-        $environments = $this->api->getEnvironments($this->getSelectedProject(), true);
+        $environments = $this->api()->getEnvironments($this->getSelectedProject(), true);
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot);
         $gitHelper->execute(['fetch', self::$config->get('detection.git_remote_name')]);
@@ -142,7 +142,7 @@ EOF
             }
             // Check that the environment does not have children.
             // @todo remove this check when Platform's behavior is fixed
-            foreach ($this->api->getEnvironments($this->getSelectedProject()) as $potentialChild) {
+            foreach ($this->api()->getEnvironments($this->getSelectedProject()) as $potentialChild) {
                 if ($potentialChild->parent == $environment->id) {
                     $output->writeln(
                         "The environment <error>$environmentId</error> has children and therefore can't be deleted."
@@ -214,8 +214,8 @@ EOF
             $error = true;
         }
 
-        if ($deleted || $deactivated || $error) {
-            $this->api->clearEnvironmentsCache($environment->project);
+        if (($deleted || $deactivated || $error) && isset($environment)) {
+            $this->api()->clearEnvironmentsCache($environment->project);
         }
 
         return !$error;

@@ -48,8 +48,7 @@ class EnvironmentInfoCommand extends CommandBase
 
         $environment = $this->getSelectedEnvironment();
         if ($input->getOption('refresh')) {
-            $project = $this->getSelectedProject();
-            $environment = $this->api->getEnvironment($environment->id, $project, true);
+            $environment->refresh();
         }
 
         $property = $input->getArgument('property');
@@ -127,7 +126,7 @@ class EnvironmentInfoCommand extends CommandBase
         $result = $environment->update([$property => $value]);
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment->$property, $property));
 
-        $this->api->clearEnvironmentsCache($environment->project);
+        $this->api()->clearEnvironmentsCache($environment->project);
 
         $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
@@ -186,7 +185,7 @@ class EnvironmentInfoCommand extends CommandBase
                 } elseif ($value === $selectedEnvironment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
-                } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $this->getCurrentProject())) {
+                } elseif (!$parentEnvironment = $this->api()->getEnvironment($value, $this->getCurrentProject())) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
                 } elseif ($parentEnvironment->parent === $selectedEnvironment->id) {

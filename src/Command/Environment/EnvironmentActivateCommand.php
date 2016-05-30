@@ -30,7 +30,7 @@ class EnvironmentActivateCommand extends CommandBase
         if ($this->hasSelectedEnvironment()) {
             $toActivate = [$this->getSelectedEnvironment()];
         } else {
-            $environments = $this->api->getEnvironments($this->getSelectedProject());
+            $environments = $this->api()->getEnvironments($this->getSelectedProject());
             $environmentIds = $input->getArgument('environment');
             $toActivate = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
@@ -94,7 +94,7 @@ class EnvironmentActivateCommand extends CommandBase
             if (!$input->getOption('no-wait')) {
                 $success = ActivityUtil::waitMultiple($activities, $output);
             }
-            $this->api->clearEnvironmentsCache($this->getSelectedProject()->id);
+            $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
         }
 
         return $processed >= $count && $success;

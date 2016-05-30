@@ -25,7 +25,7 @@ class LocalDrushAliasesCommand extends CommandBase
         $this->addExample('Change the alias group to @example', '-g example');
     }
 
-    public function hideInList()
+    public function isHiddenInList()
     {
         // Hide this command in the list if the project is not Drupal.
         $projectRoot = $this->getProjectRoot();
@@ -33,7 +33,7 @@ class LocalDrushAliasesCommand extends CommandBase
             return true;
         }
 
-        return parent::hideInList();
+        return parent::isHiddenInList();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -82,7 +82,7 @@ class LocalDrushAliasesCommand extends CommandBase
                 $this->localProject->writeCurrentProjectConfig(['alias-group' => $new_group], $projectRoot);
             }
 
-            $environments = $this->api->getEnvironments($project, true, false);
+            $environments = $this->api()->getEnvironments($project, true, false);
             $drushHelper->createAliases($project, $projectRoot, $environments, $current_group);
 
             if ($new_group != $current_group) {

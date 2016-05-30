@@ -45,7 +45,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
         $gitHelper->setDefaultRepositoryDir($projectRoot);
 
         $specifiedEnvironmentId = $input->getArgument('environment');
-        if ($specifiedEnvironmentId != '0' && !$specifiedEnvironment = $this->api->getEnvironment($specifiedEnvironmentId, $project)) {
+        if ($specifiedEnvironmentId != '0' && !$specifiedEnvironment = $this->api()->getEnvironment($specifiedEnvironmentId, $project)) {
             $this->stdErr->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
             return 1;
         }

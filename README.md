@@ -103,6 +103,7 @@ environment
 integration
   integration:add                           Add an integration to the project
   integration:delete                        Delete an integration from a project
+  integration:get                           View details of an integration
   integration:list (integrations)           View a list of project integration(s)
   integration:update                        Update an integration
 local

@@ -23,7 +23,7 @@ class WelcomeCommand extends CommandBase
 
         // Ensure the user is logged in in this parent command, because the
         // delegated commands below will not have interactive input.
-        $this->api->getClient();
+        $this->api()->getClient();
 
         if ($project = $this->getCurrentProject()) {
             // The project is known. Show the environments.
