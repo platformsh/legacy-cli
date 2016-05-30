@@ -50,8 +50,6 @@ EOF
 
         /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
         $fsHelper = $this->getHelper('fs');
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
 
         $repositoryDir = $legacyRoot . '/repository';
         if (!is_dir($repositoryDir)) {

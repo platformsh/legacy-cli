@@ -214,7 +214,7 @@ EOF
             $error = true;
         }
 
-        if ($deleted || $deactivated || $error) {
+        if (($deleted || $deactivated || $error) && isset($environment)) {
             $this->api()->clearEnvironmentsCache($environment->project);
         }
 

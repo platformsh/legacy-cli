@@ -116,9 +116,6 @@ class ProjectGetCommand extends CommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-        $fsHelper = $this->getHelper('fs');
-
         // Create the directory structure.
         if (file_exists($directory)) {
             $this->stdErr->writeln("The directory <error>$directory</error> already exists");
@@ -128,8 +125,6 @@ class ProjectGetCommand extends CommandBase
             throw new \Exception("Not a directory: " . dirname($directory));
         }
         $projectRoot = $parent . '/' . basename($directory);
-
-        $hostname = parse_url($project->getUri(), PHP_URL_HOST) ?: null;
 
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();

@@ -70,13 +70,12 @@ class ProjectInfoCommand extends CommandBase
                 if (!$exists) {
                     // Add data from the main resource and try again.
                     $data = array_merge($data, $project->getProperties(true));
-                }
+                    $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
+                    if (!$exists) {
+                        $this->stdErr->writeln('Property not found: <error>' . $property . '</error>');
 
-                $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
-                if (!$exists) {
-                    $this->stdErr->writeln('Property not found: <error>' . $property . '</error>');
-
-                    return 1;
+                        return 1;
+                    }
                 }
         }
 

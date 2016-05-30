@@ -86,7 +86,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     /**
      * The current project, based on the CWD.
      *
-     * @var Project|null
+     * @var Project|false|null
      */
     private $currentProject;
 

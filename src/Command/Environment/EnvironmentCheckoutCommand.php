@@ -31,7 +31,8 @@ class EnvironmentCheckoutCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $project = $this->getCurrentProject();
-        if (!$project) {
+        $projectRoot = $this->getProjectRoot();
+        if (!$project || !$projectRoot) {
             throw new RootNotFoundException();
         }
 
@@ -49,7 +50,7 @@ class EnvironmentCheckoutCommand extends CommandBase
                 }
                 $environmentList[$id] = $environment->title;
             }
-            $projectConfig = $this->getProjectConfig($this->getProjectRoot());
+            $projectConfig = $this->getProjectConfig($projectRoot);
             if (!empty($projectConfig['mapping'])) {
                 foreach ($projectConfig['mapping'] as $branch => $id) {
                     if (isset($environmentList[$id]) && isset($environmentList[$branch])) {
@@ -84,8 +85,6 @@ class EnvironmentCheckoutCommand extends CommandBase
 
             return 1;
         }
-
-        $projectRoot = $this->getProjectRoot();
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
         $gitHelper->setDefaultRepositoryDir($projectRoot);

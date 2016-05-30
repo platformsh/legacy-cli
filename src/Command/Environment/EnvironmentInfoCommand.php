@@ -48,8 +48,7 @@ class EnvironmentInfoCommand extends CommandBase
 
         $environment = $this->getSelectedEnvironment();
         if ($input->getOption('refresh')) {
-            $project = $this->getSelectedProject();
-            $environment = $this->api()->getEnvironment($environment->id, $project, true);
+            $environment->refresh();
         }
 
         $property = $input->getArgument('property');
