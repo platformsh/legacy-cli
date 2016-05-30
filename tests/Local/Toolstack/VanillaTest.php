@@ -11,7 +11,7 @@ class VanillaTest extends BaseToolstackTest
     public function testBuildVanilla()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla');
-        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $this->assertFileExists($webRoot . '/index.html');
     }
 
@@ -22,7 +22,7 @@ class VanillaTest extends BaseToolstackTest
     {
         $sourceDir = 'tests/data/apps/vanilla';
         $projectRoot = $this->assertBuildSucceeds($sourceDir, ['copy' => true]);
-        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $this->assertFileExists($webRoot . '/index.html');
         $this->assertTrue(is_dir($webRoot), 'Web root is an actual directory');
     }
@@ -33,10 +33,10 @@ class VanillaTest extends BaseToolstackTest
     public function testBuildCustomWebRoot()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot');
-        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $this->assertFileExists($webRoot . '/index.html');
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot', ['copy' => true]);
-        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $this->assertFileExists($webRoot . '/index.html');
     }
 
@@ -58,12 +58,12 @@ class VanillaTest extends BaseToolstackTest
         $destination = tempnam($tempDir, '');
 
         // Test with symlinking.
-        $builder = new LocalBuild(['absoluteLinks' => true], self::$output);
+        $builder = new LocalBuild(['absoluteLinks' => true], null, self::$output);
         $builder->build($sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 
         // Test with copying.
-        $builder = new LocalBuild(['copy' => true, 'absoluteLinks' => true], self::$output);
+        $builder = new LocalBuild(['copy' => true, 'absoluteLinks' => true], null, self::$output);
         $builder->build($sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 
@@ -80,7 +80,7 @@ class VanillaTest extends BaseToolstackTest
 
         $destination = $projectRoot . '/web';
 
-        $builder = new LocalBuild($this->buildSettings, self::$output);
+        $builder = new LocalBuild($this->buildSettings, null, self::$output);
         $builder->build($projectRoot, $destination);
         $this->assertFileExists($destination . '/index.html');
     }

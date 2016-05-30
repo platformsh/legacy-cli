@@ -37,7 +37,7 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         $specifiedBranch = $input->getArgument('id');
         if (empty($specifiedBranch) && $input->isInteractive()) {
-            $environments = $this->getEnvironments($project);
+            $environments = $this->api->getEnvironments($project);
             $currentEnvironment = $this->getCurrentEnvironment($project);
             if ($currentEnvironment) {
                 $this->stdErr->writeln("The current environment is <info>{$currentEnvironment->title}</info>.");
@@ -49,9 +49,9 @@ class EnvironmentCheckoutCommand extends CommandBase
                 }
                 $environmentList[$id] = $environment->title;
             }
-            $config = $this->getProjectConfig($this->getProjectRoot());
-            if (!empty($config['mapping'])) {
-                foreach ($config['mapping'] as $branch => $id) {
+            $projectConfig = $this->getProjectConfig($this->getProjectRoot());
+            if (!empty($projectConfig['mapping'])) {
+                foreach ($projectConfig['mapping'] as $branch => $id) {
                     if (isset($environmentList[$id]) && isset($environmentList[$branch])) {
                         unset($environmentList[$id]);
                         $environmentList[$branch] = sprintf('%s (%s)', $environments[$id]->title, $branch);
@@ -59,7 +59,7 @@ class EnvironmentCheckoutCommand extends CommandBase
                 }
             }
             if (!count($environmentList)) {
-                $this->stdErr->writeln("Use <info>" . CLI_EXECUTABLE . " branch</info> to create an environment.");
+                $this->stdErr->writeln("Use <info>" . self::$config->get('application.executable') . " branch</info> to create an environment.");
 
                 return 1;
             }
@@ -70,8 +70,8 @@ class EnvironmentCheckoutCommand extends CommandBase
                 $chooseEnvironmentText = "Enter a number to check out another environment:";
                 $specifiedBranch = $helper->choose($environmentList, $chooseEnvironmentText);
             }
-            // If there's only one choice, PlatformQuestionHelper::choose() does
-            // not interact. But we still need interactive confirmation at this
+            // If there's only one choice, QuestionHelper::choose() does not
+            // interact. But we still need interactive confirmation at this
             // point.
             elseif ($helper->confirm(sprintf('Check out environment <info>%s</info>?', reset($environmentList)))) {
                 $specifiedBranch = key($environmentList);
@@ -110,7 +110,7 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
-        $upstreamRemote = CLI_GIT_REMOTE_NAME;
+        $upstreamRemote = self::$config->get('detection.git_remote_name');
         if ($gitHelper->getConfig('remote.origin.url') && $gitHelper->remoteBranchExists('origin', $branch)) {
             $upstreamRemote = 'origin';
         }
@@ -121,7 +121,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         $gitHelper->execute(['fetch', $upstreamRemote, $branch]);
 
         // Create the new branch, and set the correct upstream.
-        $success = $gitHelper->checkoutNew($branch, $upstreamRemote . '/' . $branch);
+        $success = $gitHelper->checkOutNew($branch, $upstreamRemote . '/' . $branch);
 
         return $success ? 0 : 1;
     }
@@ -146,7 +146,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
         // Check if the environment exists by title or ID. This is usually faster
         // than running 'git ls-remote'.
-        $environments = $this->getEnvironments($project);
+        $environments = $this->api->getEnvironments($project);
         foreach ($environments as $environment) {
             if ($environment->title == $branch || $environment->id == $branch) {
                 return $environment->id;

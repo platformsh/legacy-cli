@@ -31,12 +31,6 @@ class EnvironmentBranchCommand extends CommandBase
                 null,
                 InputOption::VALUE_NONE,
                 "Create the new environment even if the branch cannot be checked out locally"
-            )
-            ->addOption(
-                'build',
-                null,
-                InputOption::VALUE_NONE,
-                "Build the new environment locally"
             );
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -73,7 +67,7 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        if ($environment = $this->getEnvironment($machineName, $selectedProject)) {
+        if ($environment = $this->api->getEnvironment($machineName, $selectedProject)) {
             $checkout = $this->getHelper('question')
                              ->confirm(
                                  "The environment <comment>$machineName</comment> already exists. Check out?"
@@ -93,7 +87,7 @@ class EnvironmentBranchCommand extends CommandBase
                 "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
             );
             if ($parentEnvironment->is_dirty) {
-                $this->clearEnvironmentsCache();
+                $this->api->clearEnvironmentsCache($selectedProject->id);
             }
 
             return 1;
@@ -104,8 +98,8 @@ class EnvironmentBranchCommand extends CommandBase
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot && $force) {
             $this->stdErr->writeln(
-                "<comment>This command was run from outside your local project root, so the new " . CLI_CLOUD_SERVICE . " branch cannot be checked out in your local Git repository."
-                . " Make sure to run '" . CLI_EXECUTABLE . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
+                "<comment>This command was run from outside your local project root, so the new " . self::$config->get('service.name') . " branch cannot be checked out in your local Git repository."
+                . " Make sure to run '" . self::$config->get('application.executable') . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
             );
         } elseif (!$projectRoot) {
             $this->stdErr->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
@@ -120,7 +114,7 @@ class EnvironmentBranchCommand extends CommandBase
         $activity = $parentEnvironment->branch($branchName, $machineName);
 
         // Clear the environments cache, as branching has started.
-        $this->clearEnvironmentsCache($selectedProject);
+        $this->api->clearEnvironmentsCache($selectedProject->id);
 
         if ($projectRoot) {
             $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
@@ -162,7 +156,7 @@ class EnvironmentBranchCommand extends CommandBase
             );
         }
 
-        $this->clearEnvironmentsCache();
+        $this->api->clearEnvironmentsCache($this->getSelectedProject()->id);
 
         return $remoteSuccess ? 0 : 1;
     }

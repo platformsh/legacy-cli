@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -68,18 +69,9 @@ class VariableGetCommand extends CommandBase
         $header = ['ID', 'Value', 'Inherited', 'JSON'];
         $rows = [];
         foreach ($results as $variable) {
-            $value = $variable->value;
-            if (!$table->formatIsMachineReadable()) {
-                // Truncate long values.
-                if (strlen($value) > 60) {
-                    $value = substr($value, 0, 57) . '...';
-                }
-                // Wrap long values.
-                $value = wordwrap($value, 30, "\n", true);
-            }
             $rows[] = [
-                $variable->id,
-                $value,
+                new AdaptiveTableCell($variable->id, ['wrap' => false]),
+                $variable->value,
                 $variable->inherited ? 'Yes' : 'No',
                 $variable->is_json ? 'Yes' : 'No',
             ];

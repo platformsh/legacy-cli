@@ -23,6 +23,7 @@ class TunnelListCommand extends TunnelCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->checkSupport();
         $tunnels = $this->getTunnelInfo();
         $allTunnelsCount = count($tunnels);
         if (!$allTunnelsCount) {
@@ -58,11 +59,11 @@ class TunnelListCommand extends TunnelCommandBase
             $this->stdErr->writeln('');
 
             if (!$input->getOption('all') && count($tunnels) < $allTunnelsCount) {
-                $this->stdErr->writeln('List all tunnels with: <info>' . CLI_EXECUTABLE . ' tunnel:list --all</info>');
+                $this->stdErr->writeln('List all tunnels with: <info>' . self::$config->get('application.executable') . ' tunnel:list --all</info>');
             }
 
-            $this->stdErr->writeln("View tunnel details with: <info>" . CLI_EXECUTABLE . " tunnel:info</info>");
-            $this->stdErr->writeln("Close tunnels with: <info>" . CLI_EXECUTABLE . " tunnel:close</info>");
+            $this->stdErr->writeln("View tunnel details with: <info>" . self::$config->get('application.executable') . " tunnel:info</info>");
+            $this->stdErr->writeln("Close tunnels with: <info>" . self::$config->get('application.executable') . " tunnel:close</info>");
         }
 
         return 0;

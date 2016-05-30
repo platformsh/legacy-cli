@@ -62,7 +62,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $result = $integration->update($values);
         $this->stdErr->writeln("Integration <info>$id</info> (<info>{$integration->type}</info>) updated");
 
-        $output->writeln($this->formatIntegrationData($integration));
+        $this->displayIntegration($integration, $input, $this->stdErr);
 
         if (!$input->getOption('no-wait')) {
             ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);

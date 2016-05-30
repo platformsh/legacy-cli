@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Util;
 
-use Symfony\Component\Console\Helper\Table as ConsoleTable;
+use Platformsh\Cli\Console\AdaptiveTable;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -141,7 +141,7 @@ class Table
      */
     protected function renderTable(array $rows, array $header)
     {
-        $table = new ConsoleTable($this->output);
+        $table = new AdaptiveTable($this->output);
         $table->setHeaders($header);
         $table->setRows($rows);
         $table->render();

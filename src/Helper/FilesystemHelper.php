@@ -31,7 +31,6 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     {
         $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->fs = $fs ?: new Filesystem();
-        $this->copyOnWindows = (bool) getenv(CLI_ENV_PREFIX . 'COPY_ON_WINDOWS');
     }
 
     /**
@@ -42,6 +41,14 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
         if ($this->shellHelper instanceof OutputAwareInterface) {
             $this->shellHelper->setOutput($output);
         }
+    }
+
+    /**
+     * @param bool $copyOnWindows
+     */
+    public function setCopyOnWindows($copyOnWindows = true)
+    {
+        $this->copyOnWindows = $copyOnWindows;
     }
 
     /**
@@ -80,7 +87,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     /**
      * @return string The absolute path to the user's home directory.
      */
-    public function getHomeDirectory()
+    public static function getHomeDirectory()
     {
         $home = getenv('HOME');
         if (empty($home)) {
@@ -118,7 +125,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
      * @param array  $skip
      * @param bool   $override
      */
-    public function copyAll($source, $destination, array $skip = ['.git', '.DS_Store', CLI_PROJECT_CONFIG_DIR], $override = false)
+    public function copyAll($source, $destination, array $skip = ['.git', '.DS_Store'], $override = false)
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -167,7 +174,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
      *   The final symlink target, which could be a relative path, depending on
      *   $this->relative.
      */
-    public function symLink($target, $link)
+    public function symlink($target, $link)
     {
         if ($target === $link) {
             throw new \InvalidArgumentException("Cannot symlink $link to itself");
@@ -205,7 +212,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
         $source = realpath($source);
 
         // Files to always skip.
-        $skip = ['.git', '.DS_Store', CLI_PROJECT_CONFIG_DIR];
+        $skip = ['.git', '.DS_Store'];
 
         // Go through the blacklist, adding files to $skip.
         foreach ($blacklist as $pattern) {
@@ -228,8 +235,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
             $linkFile = $destination . '/' . $file;
 
             if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
-                // Note: the blacklist is not used recursively.
-                $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, [], $copy);
+                $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, $blacklist, $copy);
                 continue;
             }
             elseif (file_exists($linkFile)) {
@@ -245,7 +251,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
             }
 
             if ($copy) {
-                $this->copyAll($sourceFile, $linkFile);
+                $this->copyAll($sourceFile, $linkFile, $blacklist);
             }
             else {
                 if ($this->relative) {

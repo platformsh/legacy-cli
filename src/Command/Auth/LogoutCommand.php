@@ -15,13 +15,13 @@ class LogoutCommand extends CommandBase
         $this
             ->setName('logout')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
-            ->setDescription('Log out of ' . CLI_CLOUD_SERVICE);
+            ->setDescription('Log out of ' . self::$config->get('service.name'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Ignore API tokens for this command.
-        if (isset(self::$apiToken)) {
+        if ($this->api->hasApiToken()) {
             $this->stdErr->writeln('<comment>Warning: an API token is set</comment>');
         }
 
@@ -40,10 +40,10 @@ class LogoutCommand extends CommandBase
             return 1;
         }
 
-        $this->getClient(false)
+        $this->api->getClient(false)
              ->getConnector()
              ->logOut();
-        $this->clearCache();
+        $this->api->clearCache();
         $this->stdErr->writeln('You are now logged out.');
 
         if ($input->getOption('all')) {

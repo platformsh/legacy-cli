@@ -28,7 +28,7 @@ class UserDeleteCommand extends CommandBase
 
         $email = $input->getArgument('email');
         foreach ($project->getUsers() as $user) {
-            if ($this->getAccount($user)['email'] === $email) {
+            if ($this->api->getAccount($user)['email'] === $email) {
                 $selectedUser = $user;
                 break;
             }
@@ -61,9 +61,9 @@ class UserDeleteCommand extends CommandBase
 
         // If the user was deleting themselves from the project, then invalidate
         // the projects cache.
-        $account = $this->getClient()->getAccountInfo();
+        $account = $this->api->getClient()->getAccountInfo();
         if ($account['uuid'] === $selectedUser->id) {
-            $this->clearProjectsCache();
+            $this->api->clearProjectsCache();
         }
 
         return 0;

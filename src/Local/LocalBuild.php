@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
@@ -29,12 +30,17 @@ class LocalBuild
     /** @var ShellHelper */
     protected $shellHelper;
 
+    /** @var CliConfig */
+    protected $config;
+
     /**
-     * @param array           $settings
+     * @param array                $settings
+     * @param CliConfig|null       $config
      * @param OutputInterface|null $output
      */
-    public function __construct(array $settings = [], OutputInterface $output = null)
+    public function __construct(array $settings = [], CliConfig $config = null, OutputInterface $output = null)
     {
+        $this->config = $config ?: new CliConfig();
         $this->settings = $settings;
         $this->output = $output ?: new NullOutput();
         $this->shellHelper = new ShellHelper($this->output);
@@ -63,7 +69,7 @@ class LocalBuild
     {
         $success = true;
         $ids = [];
-        foreach (LocalApplication::getApplications($sourceDir) as $app) {
+        foreach (LocalApplication::getApplications($sourceDir, $this->config) as $app) {
             $id = $app->getId();
             $ids[] = $id;
             if ($apps && !in_array($id, $apps)) {
@@ -101,17 +107,17 @@ class LocalBuild
         $hashes = [];
 
         // Get a hash representing all the files in the application, excluding
-        // the .platform folder.
+        // the project config folder (CLI_PROJECT_CONFIG_DIR).
         $tree = $this->gitHelper->execute(['ls-files', '-s'], $appRoot);
         if ($tree === false) {
             return false;
         }
-        $tree = preg_replace('#^|\n[^\n]+?' . preg_quote(CLI_PROJECT_CONFIG_DIR) . '\n|$#', "\n", $tree);
+        $tree = preg_replace('#^|\n[^\n]+?' . preg_quote($this->config->get('service.project_config_dir')) . '\n|$#', "\n", $tree);
         $hashes[] = sha1($tree);
 
         // Include the hashes of untracked and modified files.
         $others = $this->gitHelper->execute(
-            ['ls-files', '--modified', '--others', '--exclude-standard', '-x ' . CLI_PROJECT_CONFIG_DIR, '.'],
+            ['ls-files', '--modified', '--others', '--exclude-standard', '-x ' . $this->config->get('service.project_config_dir'), '.'],
             $appRoot
         );
         if ($others === false) {
@@ -151,7 +157,7 @@ class LocalBuild
     {
         $verbose = $this->output->isVerbose();
 
-        $destination = $destination ?: $sourceDir . '/' . CLI_LOCAL_WEB_ROOT;
+        $destination = $destination ?: $sourceDir . '/' . $this->config->get('local.web_root');
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
         $multiApp = $appRoot != $sourceDir;
@@ -167,7 +173,7 @@ class LocalBuild
         // Find the right build directory.
         $buildName = $multiApp ? str_replace('/', '-', $appId) : 'default';
 
-        $buildDir = $sourceDir . '/' . CLI_LOCAL_BUILD_DIR . '/' . $buildName;
+        $buildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName;
 
         if (file_exists($sourceDir . '/.git')) {
             $localProject = new LocalProject();
@@ -210,7 +216,7 @@ class LocalBuild
             'multiApp' => $multiApp,
             'sourceDir' => $sourceDir,
         ];
-        $toolstack->prepare($buildDir, $app, $buildSettings);
+        $toolstack->prepare($buildDir, $app, $this->config, $buildSettings);
 
         $archive = false;
         if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
@@ -219,7 +225,7 @@ class LocalBuild
                 if ($verbose) {
                     $this->output->writeln("Tree ID: $treeId");
                 }
-                $archive = $sourceDir . '/' . CLI_LOCAL_ARCHIVE_DIR . '/' . $treeId . '.tar.gz';
+                $archive = $sourceDir . '/' . $this->config->get('local.archive_dir') . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -335,7 +341,7 @@ class LocalBuild
         }
 
         return $this->cleanDirectory(
-            $projectRoot . '/' . CLI_LOCAL_BUILD_DIR,
+            $projectRoot . '/' . $this->config->get('local.build_dir'),
             $maxAge,
             $keepMax,
             $blacklist,
@@ -353,7 +359,7 @@ class LocalBuild
      */
     protected function getActiveBuilds($projectRoot)
     {
-        $www = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
+        $www = $projectRoot . '/' . $this->config->get('local.web_root');
         if (!file_exists($www)) {
             return [];
         }
@@ -368,7 +374,7 @@ class LocalBuild
             }
         }
         $activeBuilds = [];
-        $buildsDir = $projectRoot . '/' . CLI_LOCAL_BUILD_DIR;
+        $buildsDir = $projectRoot . '/' . $this->config->get('local.build_dir');
         foreach ($links as $link) {
             if (is_link($link) && ($target = readlink($link))) {
                 // Make the target into an absolute path.
@@ -409,7 +415,7 @@ class LocalBuild
     public function cleanArchives($projectRoot, $maxAge = null, $keepMax = 10, $quiet = true)
     {
         return $this->cleanDirectory(
-            $projectRoot . '/' . CLI_LOCAL_ARCHIVE_DIR,
+            $projectRoot . '/' . $this->config->get('local.archive_dir'),
             $maxAge,
             $keepMax,
             [],

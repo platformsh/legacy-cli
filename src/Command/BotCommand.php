@@ -13,12 +13,12 @@ class BotCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('bot')->setDescription('The ' . CLI_CLOUD_SERVICE . ' Bot');
+        $this->setName('bot')->setDescription('The ' . self::$config->get('service.name') . ' Bot');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $bot = new Bot($output);
+        $bot = new Bot($output, self::$config->get('service.name'));
 
         if (!$output->isDecorated()) {
             $bot->render();

@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Api;
+use Platformsh\Cli\Application;
 use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
@@ -9,14 +11,17 @@ use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as Parent
 class CompletionCommand extends ParentCompletionCommand implements CanHideInListInterface
 {
 
+    /** @var Api */
+    protected $api;
+
     /** @var CommandBase */
-    protected $platformCommand;
+    protected $welcomeCommand;
 
     /**
      * A list of the user's projects.
      * @var array
      */
-    protected $projects;
+    protected $projects = [];
 
     /**
      * {@inheritdoc}
@@ -31,9 +36,10 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
      */
     protected function setUp()
     {
-        $this->platformCommand = new WelcomeCommand();
-        $this->platformCommand->setApplication($this->getApplication());
-        $this->projects = $this->platformCommand->getProjects(false);
+        $this->api = new Api();
+        $this->projects = $this->api->getProjects(false);
+        $this->welcomeCommand = new WelcomeCommand('welcome');
+        $this->welcomeCommand->setApplication(new Application());
     }
 
     /**
@@ -142,16 +148,16 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
      */
     public function getEnvironmentsForCheckout()
     {
-        $project = $this->platformCommand->getCurrentProject();
+        $project = $this->welcomeCommand->getCurrentProject();
         if (!$project) {
             return [];
         }
         try {
-            $currentEnvironment = $this->platformCommand->getCurrentEnvironment($project, false);
+            $currentEnvironment = $this->welcomeCommand->getCurrentEnvironment($project, false);
         } catch (\Exception $e) {
             $currentEnvironment = false;
         }
-        $environments = $this->platformCommand->getEnvironments($project, false, false);
+        $environments = $this->api->getEnvironments($project, false, false);
         if ($currentEnvironment) {
             $environments = array_filter(
                 $environments,
@@ -172,7 +178,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     public function getAppNames()
     {
         $apps = [];
-        if ($projectRoot = $this->platformCommand->getProjectRoot()) {
+        if ($projectRoot = $this->welcomeCommand->getProjectRoot()) {
             foreach (LocalApplication::getApplications($projectRoot) as $app) {
                 $name = $app->getName();
                 if ($name !== null) {
@@ -201,7 +207,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         $commandLine = $this->handler->getContext()
                                      ->getCommandLine();
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
-        if (!$currentProjectId && ($currentProject = $this->platformCommand->getCurrentProject())) {
+        if (!$currentProjectId && ($currentProject = $this->welcomeCommand->getCurrentProject())) {
             $project = $currentProject;
         } elseif (isset($this->projects[$currentProjectId])) {
             $project = $this->projects[$currentProjectId];
@@ -209,7 +215,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
             return [];
         }
 
-        $environments = $this->platformCommand->getEnvironments($project, false, false);
+        $environments = $this->api->getEnvironments($project, false, false);
 
         return array_keys($environments);
     }

@@ -1,11 +1,12 @@
 The **Platform.sh CLI** is the official command-line interface for [Platform.sh](https://platform.sh). Use this tool to interact with your [Platform.sh](https://platform.sh) projects, and to build them locally for development purposes.
 
-[![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli) [![Latest Stable Version](https://poser.pugx.org/platformsh/cli/v/stable)](https://github.com/platformsh/platformsh-cli/releases) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/platformsh/platformsh-cli.svg)](https://travis-ci.org/platformsh/platformsh-cli) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/master/LICENSE)
 
 ## Requirements
 
 * Operating system: Linux, OS X, Windows Vista, Windows 7, Windows 8 Pro, or Windows 10 (Windows 8 Standard does not work due to an issue with symlink permissions)
-* PHP 5.5 or higher, with cURL support
+* PHP 5.5.9 or higher, with cURL support
+* Git
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
   * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
@@ -14,29 +15,11 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 ### Installing on OS X or Linux
 
-Simply use this command:
+This is the recommended installation method. Simply use this command:
 
     curl -sS https://platform.sh/cli/installer | php
 
-### Installing on Windows
-
-1. Install Composer using [Composer-Setup.exe](https://getcomposer.org/doc/00-intro.md#installation-windows).
-
-2. Install the CLI, in your preferred terminal application (e.g. in Git Bash):
-
-        composer global require platformsh/cli:@stable
-
-3. Make sure the Composer `vendor/bin` directory is in your PATH. Use this
-  command from a Command Prompt (cmd.exe):
-
-        setx PATH "%PATH%;%APPDATA%\Composer\vendor\bin"
-
-  Start a new terminal before continuing.
-
 ### Installing manually
-
-Installing manually is not recommended, unless you are confident you know what
-you are doing.
 
 1. Download the latest stable package from the
   [Releases page](https://github.com/platformsh/platformsh-cli/releases)
@@ -83,17 +66,17 @@ Global options:
 
 Available commands:
   clear-cache (clearcache, cc)              Clear the CLI cache
-  docs                                      Open the Platform.sh online documentation
+  docs                                      Open the online documentation
   help                                      Displays help for a command
   list                                      Lists commands
   login                                     Log in to Platform.sh
   logout                                    Log out of Platform.sh
-  web                                       Open the Platform.sh Web UI
+  web                                       Open the Web UI
 activity
-  activity:list (activities)                Get the most recent activities for an environment
-  activity:log                              Display the log for an environment activity
+  activity:list (activities)                Get a list of activities for an environment or project
+  activity:log                              Display the log for an activity
 app
-  app:config-get                            Get the configuration of an app
+  app:config-get                            View the configuration of an app
   app:list (apps)                           Get a list of all apps in the local repository
 domain
   domain:add                                Add a new domain to the project
@@ -107,20 +90,20 @@ environment
   environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
   environment:info                          Read or set properties for an environment
-  environment:list (environments)           Get a list of all environments
+  environment:list (environments)           Get a list of environments
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
-  environment:relationships (relationships) List an environment's relationships
+  environment:relationships (relationships)   Show an environment's relationships
   environment:routes (routes)               List an environment's routes
   environment:sql (sql)                     Run SQL on the remote database
   environment:sql-dump (sql-dump)           Create a local dump of the remote database
   environment:ssh (ssh)                     SSH to the current environment
-  environment:synchronize (sync)            Synchronize an environment
-  environment:url (url)                     Get the public URL of an environment
+  environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
+  environment:url (url)                     Get the public URLs of an environment
 integration
   integration:add                           Add an integration to the project
   integration:delete                        Delete an integration from a project
-  integration:get (integrations)            View project integration(s)
+  integration:list (integrations)           View a list of project integration(s)
   integration:update                        Update an integration
 local
   local:build (build)                       Build the current project locally
@@ -128,12 +111,12 @@ local
   local:drush-aliases (drush-aliases)       Find the project's Drush aliases
 project
   project:delete                            Delete a project
-  project:get (get)                         Clone and build a project locally
+  project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
 self
   self:install                              Install or update CLI configuration files
-  self:update                               Update the CLI to the latest version
+  self:update (self-update)                 Update the CLI to the latest version
 snapshot
   snapshot:create (backup)                  Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment
@@ -154,7 +137,7 @@ user
   user:role                                 View or change a user's role
 variable
   variable:delete                           Delete a variable from an environment
-  variable:get (variables, vget)            Get a variable for an environment
+  variable:get (variables, vget)            View variable(s) for an environment
   variable:set (vset)                       Set a variable for an environment
 ```
 

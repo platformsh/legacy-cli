@@ -59,7 +59,7 @@ class ProjectGetCommand extends CommandBase
         $environmentOption = $input->getOption('environment');
         $hostOption = $input->getOption('host');
         if (empty($projectId)) {
-            if ($input->isInteractive() && ($projects = $this->getProjects(true))) {
+            if ($input->isInteractive() && ($projects = $this->api->getProjects(true))) {
                 $projectId = $this->offerProjectChoice($projects, $input);
             } else {
                 $this->stdErr->writeln("<error>You must specify a project.</error>");
@@ -74,18 +74,18 @@ class ProjectGetCommand extends CommandBase
             $environmentOption = $environmentOption ?: $result['environmentId'];
         }
 
-        $project = $this->getProject($projectId, $hostOption, true);
+        $project = $this->api->getProject($projectId, $hostOption, true);
         if (!$project) {
             $this->stdErr->writeln("<error>Project not found: $projectId</error>");
 
             return 1;
         }
 
-        $environments = $this->getEnvironments($project);
+        $environments = $this->api->getEnvironments($project);
         if ($environmentOption) {
             if (!isset($environments[$environmentOption])) {
                 // Reload the environments list.
-                $environments = $this->getEnvironments($project, true);
+                $environments = $this->api->getEnvironments($project, true);
                 if (!isset($environments[$environmentOption])) {
                     $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
                 }
@@ -138,15 +138,17 @@ class ProjectGetCommand extends CommandBase
         $gitHelper->ensureInstalled();
 
         // First check if the repo actually exists.
-        $repoHead = $gitHelper->execute(['ls-remote', $gitUrl, 'HEAD'], false);
-        if ($repoHead === false) {
+        try {
+            $exists = $gitHelper->remoteRepoExists($gitUrl);
+        }
+        catch (\Exception $e) {
             // The ls-remote command failed.
-            $this->stdErr->writeln('<error>Failed to connect to the ' . CLI_CLOUD_SERVICE . ' Git server</error>');
+            $this->stdErr->writeln('<error>Failed to connect to the ' . self::$config->get('service.name') . ' Git server</error>');
 
             // Suggest SSH key commands.
             $sshKeys = [];
             try {
-                $sshKeys = $this->getClient(false)->getSshKeys();
+                $sshKeys = $this->api->getClient(false)->getSshKeys();
             }
             catch (\Exception $e) {
                 // Ignore exceptions.
@@ -155,39 +157,48 @@ class ProjectGetCommand extends CommandBase
             if (!empty($sshKeys)) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please check your SSH credentials');
-                $this->stdErr->writeln('You can list your keys with: <comment>' . CLI_EXECUTABLE . ' ssh-keys</comment>');
+                $this->stdErr->writeln('You can list your keys with: <comment>' . self::$config->get('application.executable') . ' ssh-keys</comment>');
             }
             else {
-                $this->stdErr->writeln('You probably need to add an SSH key, with: <comment>' . CLI_EXECUTABLE . ' ssh-key:add</comment>');
+                $this->stdErr->writeln('You probably need to add an SSH key, with: <comment>' . self::$config->get('application.executable') . ' ssh-key:add</comment>');
             }
 
             return 1;
-        } elseif (is_bool($repoHead)) {
-            // The repository doesn't have a HEAD, which means it is empty.
-            // We need to create the folder, run git init, and attach the remote.
-            mkdir($projectRoot);
+        }
+
+        // If the remote repository exists, then locally we need to create the
+        // folder, run git init, and attach the remote.
+        if (!$exists) {
+            $this->stdErr->writeln('Creating project directory: <info>' . $directory . '</info>');
+            if (mkdir($projectRoot) === false) {
+                $this->stdErr->writeln('Failed to create the project directory.');
+
+                return 1;
+            }
+
             // Initialize the repo and attach our remotes.
-            $this->stdErr->writeln("Initializing empty project repository");
-            $gitHelper->execute(['init'], $projectRoot, true);
-            $this->stdErr->writeln("Adding Git remote");
+            $this->debug('Initializing the repository');
+            $gitHelper->init($projectRoot, true);
+            $this->debug('Adding Git remote(s)');
             $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
-            $this->stdErr->writeln("Your repository has been initialized and connected to <info>" . CLI_CLOUD_SERVICE . "</info>!");
-            $this->stdErr->writeln(
-                "Commit and push to the <info>$environment</info> branch and " . CLI_CLOUD_SERVICE . " will build your project automatically"
-            );
+
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Your project has been initialized and connected to <info>' . self::$config->get('service.name') . '</info>!');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Commit and push to the <info>master</info> branch of the <info>' . self::$config->get('detection.git_remote_name') . '</info> Git remote, and ' . self::$config->get('application.name') . ' will build your project automatically.');
 
             return 0;
         }
 
         // We have a repo! Yay. Clone it.
         $this->stdErr->writeln(sprintf('Downloading project <info>%s</info>', $project->title ?: $projectId));
-        $cloneArgs = ['--branch', $environment, '--origin', CLI_GIT_REMOTE_NAME];
+        $cloneArgs = ['--branch', $environment, '--origin', self::$config->get('detection.git_remote_name')];
         $cloned = $gitHelper->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
-        if (!$cloned) {
+        if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
-            $this->stdErr->writeln('Please check your SSH credentials or contact ' . CLI_CLOUD_SERVICE . ' support');
+            $this->stdErr->writeln('Please check your SSH credentials or contact ' . self::$config->get('service.name') . ' support');
 
             return 1;
         }
@@ -223,16 +234,16 @@ class ProjectGetCommand extends CommandBase
         if ($input->getOption('build')) {
             // Launch the first build.
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . CLI_EXECUTABLE . ' build</info> to repeat this.');
+            $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . self::$config->get('application.executable') . ' build</info> to repeat this.');
             $options = ['environmentId' => $environment, 'noClean' => true];
-            $builder = new LocalBuild($options, $output);
+            $builder = new LocalBuild($options, self::$config, $output);
             $success = $builder->build($projectRoot);
         }
         else {
             $this->stdErr->writeln(
                 "\nYou can build the project with: "
                 . "\n    cd $directory"
-                . "\n    " . CLI_EXECUTABLE . " build"
+                . "\n    " . self::$config->get('application.executable') . " build"
             );
         }
 

@@ -10,8 +10,8 @@ class DrupalTest extends BaseToolstackTest
     public function testBuildDrupalInProjectMode()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/project');
-        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
-        $shared = $projectRoot . '/' . CLI_LOCAL_SHARED_DIR;
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $shared = $projectRoot . '/' . self::$config->get('local.shared_dir');
 
         // Test build results.
         $this->assertFileExists($webRoot . '/index.php');
@@ -36,7 +36,7 @@ class DrupalTest extends BaseToolstackTest
     public function testBuildDrupalInProfileMode()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/profile');
-        $webRoot = $projectRoot . '/' . CLI_LOCAL_WEB_ROOT;
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $this->assertFileExists($webRoot . '/index.php');
         $this->assertFileExists($webRoot . '/sites/default/settings.php');
         $this->assertFileExists($webRoot . '/profiles/test/test.profile');
@@ -70,7 +70,7 @@ class DrupalTest extends BaseToolstackTest
 
         // Build. This should create an archive.
         $this->builder->build($projectRoot);
-        $archive = $projectRoot . '/' . CLI_LOCAL_ARCHIVE_DIR  .'/' . $treeId . '.tar.gz';
+        $archive = $projectRoot . '/' . self::$config->get('local.archive_dir')  .'/' . $treeId . '.tar.gz';
         $this->assertFileExists($archive);
 
         // Build again. This will extract the archive.

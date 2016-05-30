@@ -2,8 +2,10 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -37,7 +39,7 @@ class SubscriptionInfoCommand extends CommandBase
         $this->validateInput($input);
 
         $project = $this->getSelectedProject();
-        $subscription = $this->getClient()
+        $subscription = $this->api->getClient()
                              ->getSubscription($project->getSubscriptionId());
         if (!$subscription) {
             $this->stdErr->writeln("Subscription not found");
@@ -52,12 +54,15 @@ class SubscriptionInfoCommand extends CommandBase
             return $this->listProperties($subscription, new Table($input, $output));
         }
 
-        $output->writeln(
-            $this->formatter->format(
-                $subscription->getProperty($property),
-                $property
-            )
-        );
+        $data = $subscription->getProperties();
+        $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
+        if (!$exists) {
+            $this->stdErr->writeln('Property not found: <error>' . $property . '</error>');
+
+            return 1;
+        }
+
+        $output->writeln($this->formatter->format($value, $property));
 
         return 0;
     }
@@ -73,10 +78,8 @@ class SubscriptionInfoCommand extends CommandBase
         $headings = [];
         $values = [];
         foreach ($subscription->getProperties() as $key => $value) {
-            $value = $this->formatter->format($value, $key);
-            $value = wordwrap($value, 50, "\n", true);
-            $headings[] = $key;
-            $values[] = $value;
+            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
+            $values[] = $this->formatter->format($value, $key);
         }
         $table->renderSimple($values, $headings);
 

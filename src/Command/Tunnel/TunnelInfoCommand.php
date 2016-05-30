@@ -25,6 +25,7 @@ class TunnelInfoCommand extends TunnelCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->checkSupport();
         $this->validateInput($input);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
@@ -48,7 +49,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             $this->stdErr->writeln('No tunnels found.');
 
             if (count($tunnels) > count($relationships)) {
-                $this->stdErr->writeln("List all tunnels with: <info>" . CLI_EXECUTABLE . " tunnels --all</info>");
+                $this->stdErr->writeln("List all tunnels with: <info>" . self::$config->get('application.executable') . " tunnels --all</info>");
             }
 
             return 1;
@@ -65,11 +66,8 @@ class TunnelInfoCommand extends TunnelCommandBase
         }
 
         $value = $relationships;
-        $key = null;
         if ($property = $input->getOption('property')) {
-            $parents = explode('.', $property);
-            $key = end($parents);
-            $value = Util::getNestedArrayValue($relationships, $parents, $key_exists);
+            $value = Util::getNestedArrayValue($relationships, explode('.', $property), $key_exists);
             if (!$key_exists) {
                 $this->stdErr->writeln("Property not found: <error>$property</error>");
 
@@ -79,7 +77,7 @@ class TunnelInfoCommand extends TunnelCommandBase
 
         $formatter = new PropertyFormatter();
         $formatter->yamlInline = 10;
-        $output->writeln($formatter->format($value, $key));
+        $output->writeln($formatter->format($value, $property));
 
         return 0;
     }

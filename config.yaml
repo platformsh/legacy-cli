@@ -1,0 +1,65 @@
+# Metadata about the CLI application itself.
+application:
+  name: 'Platform.sh CLI'
+  version: '3.x-dev'
+  executable: 'platform'
+  phar: 'platform.phar'
+  package_name: 'platformsh/cli'
+  source_url: 'https://github.com/platformsh/platformsh-cli'
+  installer_url: 'https://platform.sh/cli/installer'
+  manifest_url: 'https://platform.sh/cli/manifest.json'
+  user_config_dir: '.platformsh'
+  env_prefix: 'PLATFORMSH_CLI_'
+
+# Configuration for working with projects locally.
+local:
+  local_dir: '.platform/local'
+  archive_dir: '.platform/local/build-archives'
+  build_dir: '.platform/local/builds'
+  project_config: '.platform/local/project.yaml'
+  project_config_legacy: '.platform-project'
+  shared_dir: '.platform/local/shared'
+  web_root: '_www'
+
+  # Overridden by {application.env_prefix}COPY_ON_WINDOWS env var.
+  copy_on_windows: false
+
+# Details about the cloud service that the CLI works with.
+service:
+  name: 'Platform.sh'
+  env_prefix: 'PLATFORM_'
+  app_config_file: '.platform.app.yaml'
+  project_config_dir: '.platform'
+  docs_url: 'https://docs.platform.sh'
+  accounts_url: 'https://accounts.platform.sh'
+
+# Configuration relating to API calls.
+api:
+  oauth2_client_id: 'platform-cli'
+  projects_ttl: 3600
+  environments_ttl: 600
+  users_ttl: 3600
+
+  # Overridden by {application.env_prefix}ACCOUNTS_API env var.
+  accounts_api_url: 'https://accounts.platform.sh/api/platform/'
+
+  # Overridden by {application.env_prefix}DEBUG env var.
+  debug: false
+
+  # Overridden by {application.env_prefix}DISABLE_CACHE env var.
+  disable_cache: false
+
+  # Overridden by {application.env_prefix}SKIP_SSL env var.
+  skip_ssl: false
+
+  # Overridden by {application.env_prefix}SESSION_ID env var.
+  session_id: 'default'
+
+  # Overridden by {application.env_prefix}TOKEN env var.
+  token: null
+
+# How the CLI detects and configures Git repositories as projects.
+detection:
+  git_remote_name: 'platform'
+  git_domain: 'platform.sh'
+  api_domain: 'platform.sh'

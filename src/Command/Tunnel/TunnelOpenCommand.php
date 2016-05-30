@@ -26,6 +26,7 @@ class TunnelOpenCommand extends TunnelCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->checkSupport();
         $this->validateInput($input);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
@@ -48,7 +49,7 @@ class TunnelOpenCommand extends TunnelCommandBase
             return 1;
         }
 
-        $logFile = $this->getConfigDir() . '/tunnels.log';
+        $logFile = $this->getUserConfigDir() . '/tunnels.log';
         if (!$log = $this->openLog($logFile)) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: %s', $logFile));
             return 1;
@@ -133,9 +134,9 @@ class TunnelOpenCommand extends TunnelCommandBase
 
         if (!$error) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln("List tunnels with: <info>" . CLI_EXECUTABLE . " tunnels</info>");
-            $this->stdErr->writeln("View tunnel details with: <info>" . CLI_EXECUTABLE . " tunnel:info</info>");
-            $this->stdErr->writeln("Close tunnels with: <info>" . CLI_EXECUTABLE . " tunnel:close</info>");
+            $this->stdErr->writeln("List tunnels with: <info>" . self::$config->get('application.executable') . " tunnels</info>");
+            $this->stdErr->writeln("View tunnel details with: <info>" . self::$config->get('application.executable') . " tunnel:info</info>");
+            $this->stdErr->writeln("Close tunnels with: <info>" . self::$config->get('application.executable') . " tunnel:close</info>");
         }
 
         $processManager->killParent($error);

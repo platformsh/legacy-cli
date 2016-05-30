@@ -2,12 +2,22 @@
 
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Helper\GitHelper;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
 
 class LocalProject
 {
+    protected $config;
+    protected $fs;
+
+    public function __construct(CliConfig $config = null)
+    {
+        $this->config = $config ?: new CliConfig();
+        $this->fs = new Filesystem();
+    }
 
     /**
      * @param string $gitUrl
@@ -15,9 +25,9 @@ class LocalProject
      * @return array|false
      *   An array containing 'id' and 'host', or false on failure.
      */
-    protected function getProjectId($gitUrl)
+    protected function parseGitUrl($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.([a-z\-]+\.' . preg_quote(CLI_PROJECT_GIT_DOMAIN) . '):\1\.git$/', $gitUrl, $matches)) {
+        if (!preg_match('/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($this->config->get('detection.api_domain')) . '):\1\.git$/', $gitUrl, $matches)) {
             return false;
         }
 
@@ -37,7 +47,7 @@ class LocalProject
     {
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
-        foreach ([CLI_GIT_REMOTE_NAME, 'origin'] as $remote) {
+        foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
             if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
@@ -60,15 +70,15 @@ class LocalProject
         $gitHelper = new GitHelper();
         $gitHelper->ensureInstalled();
         $gitHelper->setDefaultRepositoryDir($dir);
-        $platformUrl = $gitHelper->getConfig("remote." . CLI_GIT_REMOTE_NAME . ".url", $dir);
-        if (!$platformUrl) {
-            $gitHelper->execute(['remote', 'add', CLI_GIT_REMOTE_NAME, $url], $dir, true);
+        $currentUrl = $gitHelper->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);
+        if (!$currentUrl) {
+            $gitHelper->execute(['remote', 'add', $this->config->get('detection.git_remote_name'), $url], $dir, true);
         }
-        elseif ($platformUrl != $url) {
-            $gitHelper->execute(['remote', 'set-url', CLI_GIT_REMOTE_NAME, $url], $dir, true);
+        elseif ($currentUrl != $url) {
+            $gitHelper->execute(['remote', 'set-url', $this->config->get('detection.git_remote_name'), $url], $dir, true);
         }
         // Add an origin remote too.
-        if (!$gitHelper->getConfig("remote.origin.url", $dir)) {
+        if ($this->config->get('detection.git_remote_name') !== 'origin' && !$gitHelper->getConfig("remote.origin.url", $dir)) {
             $gitHelper->execute(['remote', 'add', 'origin', $url]);
         }
     }
@@ -125,9 +135,9 @@ class LocalProject
      *
      * @return string|false
      */
-    public static function getLegacyProjectRoot()
+    public function getLegacyProjectRoot()
     {
-        return self::findTopDirectoryContaining(CLI_LOCAL_PROJECT_CONFIG_LEGACY);
+        return $this->findTopDirectoryContaining($this->config->get('local.project_config_legacy'));
     }
 
     /**
@@ -139,30 +149,20 @@ class LocalProject
     {
         // Backwards compatibility - if in an old-style project root, change
         // directory to the repository.
-        if (file_exists(CLI_LOCAL_PROJECT_CONFIG_LEGACY) && is_dir('repository')) {
+        $configFilename = $this->config->get('local.project_config');
+        $legacyConfigFilename = $this->config->get('local.project_config');
+        if (is_dir('repository') && file_exists($legacyConfigFilename)) {
             $cwd = getcwd();
             chdir('repository');
         }
 
-        // The project root is a Git repository, which contains a PROJECT_CONFIG
-        // configuration file, and/or contains a CLI_PROJECT_GIT_DOMAIN Git
-        // remote.
-        $dir = $this->findTopDirectoryContaining('.git', function ($dir) {
-            if (file_exists($dir . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
-                return true;
-            }
-            $gitUrl = $this->getGitRemoteUrl($dir);
-            if (!$gitUrl || !($projectId = $this->getProjectId($gitUrl))) {
-                return false;
-            }
-            // Backwards compatibility: copy old project config to new
-            // location.
-            if (file_exists($dir . '/../' . CLI_LOCAL_PROJECT_CONFIG_LEGACY)) {
-                $this->ensureLocalDir($dir);
-                copy($dir . '/../' . CLI_LOCAL_PROJECT_CONFIG_LEGACY, $dir . '/' . CLI_LOCAL_PROJECT_CONFIG);
-            }
-            $this->writeCurrentProjectConfig($projectId, $dir);
-            return true;
+        // The project root is a Git repository, which contains a project
+        // configuration file, and/or contains a Git remote with the appropriate
+        // domain.
+        $dir = $this->findTopDirectoryContaining('.git', function ($dir) use ($configFilename, $legacyConfigFilename) {
+            $config = $this->getProjectConfig($dir);
+
+            return !empty($config);
         });
 
         if (isset($cwd)) {
@@ -182,16 +182,17 @@ class LocalProject
      */
     public function getProjectConfig($projectRoot = null)
     {
-        $projectRoot = $projectRoot ?: self::getProjectRoot();
+        $projectRoot = $projectRoot ?: $this->getProjectRoot();
         $projectConfig = null;
-        if ($projectRoot && file_exists($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG)) {
+        $configFilename = $this->config->get('local.project_config');
+        if ($projectRoot && file_exists($projectRoot . '/' . $configFilename)) {
             $yaml = new Parser();
-            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG));
+            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
         }
         elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $gitUrl = $this->getGitRemoteUrl($projectRoot);
-            if ($gitUrl && ($projectId = $this->getProjectId($gitUrl))) {
-                $projectConfig = $projectId;
+            if ($gitUrl && ($projectConfig = $this->parseGitUrl($gitUrl))) {
+                $this->writeConfigToFile($projectRoot . '/' . $configFilename, $projectConfig);
             }
         }
 
@@ -211,20 +212,29 @@ class LocalProject
      */
     public function writeCurrentProjectConfig(array $config, $projectRoot = null)
     {
-        $projectRoot = $projectRoot ?: self::getProjectRoot();
+        $projectRoot = $projectRoot ?: $this->getProjectRoot();
         if (!$projectRoot) {
             throw new \Exception('Project root not found');
         }
         $this->ensureLocalDir($projectRoot);
-        $file = $projectRoot . '/' . CLI_LOCAL_PROJECT_CONFIG;
-        $projectConfig = self::getProjectConfig($projectRoot) ?: [];
+        $file = $projectRoot . '/' . $this->config->get('local.project_config');
+        $projectConfig = $this->getProjectConfig($projectRoot) ?: [];
         $projectConfig = array_merge($projectConfig, $config);
-        $dumper = new Dumper();
-        if (file_put_contents($file, $dumper->dump($projectConfig, 10)) === false) {
-            throw new \Exception('Failed to write project config file: ' . $file);
-        }
+        $this->writeConfigToFile($file, $projectConfig);
 
         return $projectConfig;
+    }
+
+    /**
+     * @param string $filename
+     * @param array $config
+     *
+     * @throws \Symfony\Component\Filesystem\Exception\IOException on failure
+     */
+    protected function writeConfigToFile($filename, array $config)
+    {
+        $dumper = new Dumper();
+        $this->fs->dumpFile($filename, $dumper->dump($config, 10));
     }
 
     /**
@@ -232,16 +242,16 @@ class LocalProject
      */
     public function ensureLocalDir($projectRoot)
     {
-        $dir = $projectRoot . '/' . CLI_LOCAL_DIR;
+        $localDirRelative = $this->config->get('local.local_dir');
+        $dir = $projectRoot . '/' . $localDirRelative;
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
             $this->writeGitExclude($projectRoot);
         }
         if (!file_exists($dir . '/README.txt')) {
-            $cliName = CLI_NAME;
-            $localDir = CLI_LOCAL_DIR;
+            $cliName = $this->config->get('application.name');
             file_put_contents($dir . '/README.txt', <<<EOF
-{$localDir}
+{$localDirRelative}
 ===============
 
 This directory is where the {$cliName} stores configuration files, builds, and
@@ -262,21 +272,21 @@ EOF
      */
     public function writeGitExclude($dir)
     {
-        $filesToExclude = ['/' . CLI_LOCAL_DIR, '/' . CLI_LOCAL_WEB_ROOT];
+        $filesToExclude = ['/' . $this->config->get('local.local_dir'), '/' . $this->config->get('local.web_root')];
         $excludeFilename = $dir . '/.git/info/exclude';
         $existing = '';
 
         // Skip writing anything if the contents already include the
-        // CLI_NAME.
+        // application.name.
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
-            if (strpos($existing, CLI_NAME) !== false) {
+            if (strpos($existing, $this->config->get('application.name')) !== false) {
 
                 // Backwards compatibility between versions 3.0.0 and 3.0.2.
-                $newRoot = "\n" . '/' . CLI_LOCAL_WEB_ROOT . "\n";
+                $newRoot = "\n" . '/' . $this->config->get('application.name') . "\n";
                 $oldRoot = "\n" . '/.www' . "\n";
                 if (strpos($existing, $oldRoot) !== false && strpos($existing, $newRoot) === false) {
-                    file_put_contents($excludeFilename, str_replace($oldRoot, $newRoot, $existing));
+                    $this->fs->dumpFile($excludeFilename, str_replace($oldRoot, $newRoot, $existing));
                 }
                 if (is_link($dir . '/.www')) {
                     unlink($dir . '/.www');
@@ -287,14 +297,12 @@ EOF
             }
         }
 
-        $content = "# Automatically added by the " . CLI_NAME . "\n"
+        $content = "# Automatically added by the " . $this->config->get('application.name') . "\n"
             . implode("\n", $filesToExclude)
             . "\n";
         if (!empty($existing)) {
             $content = $existing . "\n" . $content;
         }
-        if (file_put_contents($excludeFilename, $content) === false) {
-            throw new \RuntimeException("Failed to write to Git exclude file: " . $excludeFilename);
-        }
+        $this->fs->dumpFile($excludeFilename, $content);
     }
 }

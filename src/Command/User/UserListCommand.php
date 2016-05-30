@@ -29,7 +29,7 @@ class UserListCommand extends CommandBase
         $i = 0;
         $table = new Table($input, $output);
         foreach ($project->getUsers() as $user) {
-            $account = $this->getAccount($user);
+            $account = $this->api->getAccount($user);
             $role = $user['role'];
             $weight = $i++;
             if ($project->owner === $user->id) {

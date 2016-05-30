@@ -93,7 +93,7 @@ class EnvironmentListCommand extends CommandBase
             if ($indent) {
                 $id = str_repeat('   ', $indentAmount) . $id;
             }
-            if ($indicateCurrent && $environment->id == $this->currentEnvironment->id) {
+            if ($indicateCurrent && $this->currentEnvironment && $environment->id == $this->currentEnvironment->id) {
                 $id .= "<info>*</info>";
             }
             $row[] = $id;
@@ -123,7 +123,7 @@ class EnvironmentListCommand extends CommandBase
 
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
-        $environments = $this->getEnvironments(null, $refresh ? true : null);
+        $environments = $this->api->getEnvironments($this->getSelectedProject(), $refresh ? true : null);
 
         if ($input->getOption('no-inactive')) {
             $environments = array_filter($environments, function ($environment) {
@@ -141,9 +141,9 @@ class EnvironmentListCommand extends CommandBase
         $this->currentEnvironment = $this->getCurrentEnvironment($project);
 
         if (($currentProject = $this->getCurrentProject()) && $currentProject == $project) {
-            $config = $this->getProjectConfig($this->getProjectRoot());
-            if (isset($config['mapping'])) {
-                $this->mapping = $config['mapping'];
+            $projectConfig = $this->getProjectConfig($this->getProjectRoot());
+            if (isset($projectConfig['mapping'])) {
+                $this->mapping = $projectConfig['mapping'];
             }
         }
 
@@ -178,32 +178,32 @@ class EnvironmentListCommand extends CommandBase
 
         $currentEnvironment = $this->currentEnvironment;
 
-        $this->stdErr->writeln("Check out a different environment by running <info>" . CLI_EXECUTABLE . " checkout [id]</info>");
+        $this->stdErr->writeln("Check out a different environment by running <info>" . self::$config->get('application.executable') . " checkout [id]</info>");
 
         if ($currentEnvironment->operationAvailable('branch')) {
             $this->stdErr->writeln(
-                "Branch a new environment by running <info>" . CLI_EXECUTABLE . " environment:branch [new-name]</info>"
+                "Branch a new environment by running <info>" . self::$config->get('application.executable') . " environment:branch [new-name]</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('activate')) {
             $this->stdErr->writeln(
-                "Activate the current environment by running <info>" . CLI_EXECUTABLE . " environment:activate</info>"
+                "Activate the current environment by running <info>" . self::$config->get('application.executable') . " environment:activate</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('delete')) {
-            $this->stdErr->writeln("Delete the current environment by running <info>" . CLI_EXECUTABLE . " environment:delete</info>");
+            $this->stdErr->writeln("Delete the current environment by running <info>" . self::$config->get('application.executable') . " environment:delete</info>");
         }
         if ($currentEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-                "Make a snapshot of the current environment by running <info>" . CLI_EXECUTABLE . " snapshot:create</info>"
+                "Make a snapshot of the current environment by running <info>" . self::$config->get('application.executable') . " snapshot:create</info>"
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {
-            $this->stdErr->writeln("Merge the current environment by running <info>" . CLI_EXECUTABLE . " environment:merge</info>");
+            $this->stdErr->writeln("Merge the current environment by running <info>" . self::$config->get('application.executable') . " environment:merge</info>");
         }
         if ($currentEnvironment->operationAvailable('synchronize')) {
             $this->stdErr->writeln(
-                "Sync the current environment by running <info>" . CLI_EXECUTABLE . " environment:synchronize</info>"
+                "Sync the current environment by running <info>" . self::$config->get('application.executable') . " environment:synchronize</info>"
             );
         }
     }
