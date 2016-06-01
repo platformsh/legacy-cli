@@ -293,9 +293,7 @@ class Drupal extends ToolstackBase
 
         if ($projectMake) {
             $tempProfileDir = $this->buildDir . '/tmp-' . $profileName;
-            if (!$tempProfileDir || !mkdir($tempProfileDir, 0755, true)) {
-                throw new \RuntimeException('Failed to create directory: ' . $tempProfileDir);
-            }
+            $this->fsHelper->mkdir($tempProfileDir);
             $args = array_merge(
                 ['make', '--no-core', '--contrib-destination=.', $projectMake, $tempProfileDir],
                 $drushFlags
@@ -420,9 +418,8 @@ class Drupal extends ToolstackBase
         if ($shared && !file_exists($sharedFiles)) {
             $this->output->writeln("Creating directory: <info>$sharedFiles</info>");
             $this->output->writeln('This is where Drupal can store public files.');
-            mkdir($sharedFiles);
             // Group write access is potentially useful and probably harmless.
-            chmod($sharedFiles, 0775);
+            $this->fsHelper->mkdir($sharedFiles, 0775);
         }
 
         // Symlink all files and folders from shared. The "copy" option is

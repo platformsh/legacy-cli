@@ -103,6 +103,15 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     }
 
     /**
+     * @param string $dir
+     * @param int $mode
+     */
+    public function mkdir($dir, $mode = 0755)
+    {
+        $this->fs->mkdir($dir, $mode);
+    }
+
+    /**
      * Copy a file, if it is newer than the destination.
      *
      * @param string $source
