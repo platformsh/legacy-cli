@@ -24,7 +24,6 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\Yaml\Yaml;
 
 abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
 {
@@ -224,14 +223,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * @return string
-     */
-    protected function getUserConfigDir()
-    {
-        return $this->getHomeDir() . '/' . self::$config->get('application.user_config_dir');
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function interact(InputInterface $input, OutputInterface $output)
@@ -266,7 +257,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $timestamp = time();
 
-        $config = $this->getGlobalConfig();
+        $config = self::$config->getUserConfig();
         if (isset($config['updates']['check']) && $config['updates']['check'] == false) {
             return;
         }
@@ -276,38 +267,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $config['updates']['check'] = true;
         $config['updates']['last_checked'] = $timestamp;
-        $this->writeUserConfig($config);
+        self::$config->writeUserConfig($config);
         $this->runOtherCommand('self-update', ['--timeout' => 10]);
         $this->stdErr->writeln('');
-    }
-
-    /**
-     * @return array
-     */
-    protected function getGlobalConfig()
-    {
-        $configFile = $this->getUserConfigDir() . '/config.yaml';
-        if (file_exists($configFile)) {
-            $this->debug('Loading config from file: ' . $configFile);
-            return Yaml::parse(file_get_contents($configFile));
-        }
-
-        return [];
-    }
-
-    /**
-     * @param array $config
-     */
-    protected function writeUserConfig(array $config)
-    {
-        $dir = $this->getUserConfigDir();
-        if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
-            trigger_error('Failed to create user config directory: ' . $dir, E_USER_WARNING);
-        }
-        $configFile = $dir . '/config.yaml';
-        if (file_put_contents($configFile, Yaml::dump($config, 10)) === false) {
-            trigger_error('Failed to write user config to: ' . $configFile, E_USER_WARNING);
-        }
     }
 
     /**
@@ -315,7 +277,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function getSessionsDir()
     {
-        return $this->getUserConfigDir() . '/.session';
+        return self::$config->getUserConfigDir() . '/.session';
     }
 
     /**
