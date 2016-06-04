@@ -109,14 +109,18 @@ class GitHelper extends Helper implements OutputAwareInterface
      * Get a list of branches merged with a specific ref.
      *
      * @param string $ref
+     * @param bool   $remote
      * @param null   $dir
      * @param bool   $mustRun
      *
      * @return string[]
      */
-    public function getMergedBranches($ref = 'HEAD', $dir = null, $mustRun = false)
+    public function getMergedBranches($ref = 'HEAD', $remote = false, $dir = null, $mustRun = false)
     {
         $args = ['branch', '--list', '--merged', $ref];
+        if ($remote) {
+            $args[] = '--remote';
+        }
         $mergedBranches = $this->execute($args, $dir, $mustRun);
         $array = array_map(
             function ($element) {
