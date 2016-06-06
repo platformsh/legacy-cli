@@ -91,12 +91,14 @@ class Api
      */
     protected function getUserAgent()
     {
-        $agent = sprintf('%s/%s', str_replace(' ', '-', $this->config->get('application.name')), $this->config->get('application.version'));
-        if ($this->config->has('application.source_url')) {
-            $agent .= sprintf(' (+%s)', $this->config->get('application.source_url'));
-        }
-
-        return $agent;
+        return sprintf(
+            '%s/%s (%s; %s; PHP %s)',
+            str_replace(' ', '-', $this->config->get('application.name')),
+            $this->config->get('application.version'),
+            php_uname('s'),
+            php_uname('r'),
+            PHP_VERSION
+        );
     }
 
     /**
