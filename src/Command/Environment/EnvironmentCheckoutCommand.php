@@ -114,13 +114,15 @@ class EnvironmentCheckoutCommand extends CommandBase
             $upstreamRemote = 'origin';
         }
 
-        $this->stdErr->writeln("Creating branch $branch based on upstream $upstreamRemote/$branch");
-
         // Fetch the branch from the upstream remote.
-        $gitHelper->execute(['fetch', $upstreamRemote, $branch]);
+        $gitHelper->fetch($upstreamRemote, $branch);
+
+        $upstream = $upstreamRemote . '/' . $branch;
+
+        $this->stdErr->writeln("Creating branch $branch based on upstream $upstream");
 
         // Create the new branch, and set the correct upstream.
-        $success = $gitHelper->checkOutNew($branch, $upstreamRemote . '/' . $branch);
+        $success = $gitHelper->checkOutNew($branch, null, $upstream);
 
         return $success ? 0 : 1;
     }

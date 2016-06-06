@@ -113,7 +113,7 @@ EOF
         $remoteName = self::$config->get('detection.git_remote_name');
 
         // Find a list of branches merged on the remote.
-        $gitHelper->execute(['fetch', $remoteName]);
+        $gitHelper->fetch($remoteName);
         $mergedBranches = $gitHelper->getMergedBranches($remoteName . '/' . $base, true);
         $mergedBranches = array_filter($mergedBranches, function ($mergedBranch) use ($remoteName, $base) {
             return strpos($mergedBranch, $remoteName) === 0;

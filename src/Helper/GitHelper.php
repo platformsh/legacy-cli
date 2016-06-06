@@ -251,20 +251,43 @@ class GitHelper extends Helper implements OutputAwareInterface
     /**
      * Create a new branch and check it out.
      *
-     * @param string $name
-     * @param string $parent
-     * @param string $dir
-     *   The path to a Git repository.
-     * @param bool   $mustRun
-     *   Enable exceptions if the Git command fails.
+     * @param string      $name
+     * @param string|null $parent
+     * @param string|null $upstream
+     * @param string|null $dir      The path to a Git repository.
+     * @param bool        $mustRun  Enable exceptions if the Git command fails.
      *
      * @return bool
      */
-    public function checkOutNew($name, $parent = null, $dir = null, $mustRun = false)
+    public function checkOutNew($name, $parent = null, $upstream = null, $dir = null, $mustRun = false)
     {
         $args = ['checkout', '-b', $name];
-        if ($parent) {
+        if ($parent !== null) {
             $args[] = $parent;
+        }
+        elseif ($upstream !== null) {
+            $args[] = '--track';
+            $args[] = $upstream;
+        }
+
+        return (bool) $this->execute($args, $dir, $mustRun, false);
+    }
+
+    /**
+     * Fetch from the Git remote.
+     *
+     * @param string      $remote
+     * @param string|null $branch
+     * @param string|null $dir
+     * @param bool        $mustRun
+     *
+     * @return bool
+     */
+    public function fetch($remote, $branch = null, $dir = null, $mustRun = false)
+    {
+        $args = ['fetch', $remote];
+        if ($branch !== null) {
+            $args[] = $branch;
         }
 
         return (bool) $this->execute($args, $dir, $mustRun, false);
