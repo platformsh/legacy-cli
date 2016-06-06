@@ -13,6 +13,7 @@ abstract class TunnelCommandBase extends CommandBase
     const LOCAL_IP = '127.0.0.1';
 
     protected $tunnelInfo;
+    protected $canBeRunMultipleTimes = false;
 
     public function checkSupport()
     {

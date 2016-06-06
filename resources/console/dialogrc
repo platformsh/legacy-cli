@@ -1,0 +1,3 @@
+use_shadow = OFF
+use_colors = ON
+screen_color = (WHITE,DEFAULT,OFF)

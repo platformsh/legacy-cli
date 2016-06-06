@@ -104,6 +104,7 @@ class Application extends ParentApplication
         $commands[] = new Command\CompletionCommand();
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\LegacyMigrateCommand();
+        $commands[] = new Command\MultiCommand();
         $commands[] = new Command\Activity\ActivityListCommand();
         $commands[] = new Command\Activity\ActivityLogCommand();
         $commands[] = new Command\App\AppConfigGetCommand();
@@ -213,8 +214,7 @@ class Application extends ParentApplication
      */
     public function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
     {
-        // There is a runningCommand property, but it is private.
-        $this->currentCommand = $command;
+        $this->setCurrentCommand($command);
 
         // Build the command synopsis early, so it doesn't include default
         // options and arguments (such as --help and <command>).
@@ -222,6 +222,18 @@ class Application extends ParentApplication
         $this->currentCommand->getSynopsis();
 
         return parent::doRunCommand($command, $input, $output);
+    }
+
+    /**
+     * Set the current command. This is used for error handling.
+     *
+     * @param ConsoleCommand|null $command
+     */
+    public function setCurrentCommand(ConsoleCommand $command = null)
+    {
+        // The parent class has a similar (private) property named
+        // $runningCommand.
+        $this->currentCommand = $command;
     }
 
     /**
@@ -328,7 +340,7 @@ class Application extends ParentApplication
             }
         } while ($e = $e->getPrevious());
 
-        if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
+        if (null !== $this->currentCommand) {
             $output->writeln(sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
             $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', $this->cliConfig->get('application.executable'), $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);
