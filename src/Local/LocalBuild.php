@@ -181,12 +181,14 @@ class LocalBuild
         }
 
         if (file_exists($buildDir)) {
-            $previousBuildDir = dirname($buildDir) . '/' . basename($buildDir) . '.bak';
-            $this->output->writeln("Backing up previous build to: " . $previousBuildDir);
-            if (file_exists($previousBuildDir)) {
-                $this->fsHelper->remove($previousBuildDir);
+            $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
+            $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
+            $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
+            if (!$this->fsHelper->remove($buildDir)) {
+                $this->output->writeln(sprintf('Failed to remove directory <error>%s</error>', $buildDir));
+
+                return false;
             }
-            rename($buildDir, $previousBuildDir);
         }
 
         // If the destination is inside the source directory, ensure it isn't

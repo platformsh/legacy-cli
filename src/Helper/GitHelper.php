@@ -7,6 +7,9 @@ use Platformsh\Cli\Exception\DependencyMissingException;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Helper class which runs Git CLI commands and interprets the results.
+ */
 class GitHelper extends Helper implements OutputAwareInterface
 {
 
@@ -17,7 +20,7 @@ class GitHelper extends Helper implements OutputAwareInterface
     protected $shellHelper;
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getName()
     {
@@ -45,18 +48,15 @@ class GitHelper extends Helper implements OutputAwareInterface
     }
 
     /**
-     * @throws DependencyMissingException
+     * Get the installed version of the Git CLI.
      *
      * @return string|false
+     *   The version number, or false on failure.
      */
     public function getVersion()
     {
         static $version;
         if (!$version) {
-            if (!$this->shellHelper->commandExists('git')) {
-                throw new DependencyMissingException('Git must be installed');
-            }
-
             $version = false;
             $string = $this->execute(['--version'], false);
             if ($string && preg_match('/(^| )([0-9]+[^ ]*)/', $string, $matches)) {
@@ -68,11 +68,15 @@ class GitHelper extends Helper implements OutputAwareInterface
     }
 
     /**
+     * Ensure that the Git CLI is installed.
+     *
      * @throws DependencyMissingException
      */
     public function ensureInstalled()
     {
-        $this->getVersion();
+        if (!$this->shellHelper->commandExists('git')) {
+            throw new DependencyMissingException('Git must be installed');
+        }
     }
 
     /**
@@ -109,14 +113,18 @@ class GitHelper extends Helper implements OutputAwareInterface
      * Get a list of branches merged with a specific ref.
      *
      * @param string $ref
+     * @param bool   $remote
      * @param null   $dir
      * @param bool   $mustRun
      *
      * @return string[]
      */
-    public function getMergedBranches($ref = 'HEAD', $dir = null, $mustRun = false)
+    public function getMergedBranches($ref = 'HEAD', $remote = false, $dir = null, $mustRun = false)
     {
-        $args = ['branch', '--list', '--merged', $ref];
+        $args = ['branch', '--list', '--no-column', '--merged', $ref];
+        if ($remote) {
+            $args[] = '--remote';
+        }
         $mergedBranches = $this->execute($args, $dir, $mustRun);
         $array = array_map(
             function ($element) {
@@ -247,20 +255,42 @@ class GitHelper extends Helper implements OutputAwareInterface
     /**
      * Create a new branch and check it out.
      *
-     * @param string $name
-     * @param string $parent
-     * @param string $dir
-     *   The path to a Git repository.
-     * @param bool   $mustRun
-     *   Enable exceptions if the Git command fails.
+     * @param string      $name
+     * @param string|null $parent
+     * @param string|null $upstream
+     * @param string|null $dir     The path to a Git repository.
+     * @param bool        $mustRun Enable exceptions if the Git command fails.
      *
      * @return bool
      */
-    public function checkOutNew($name, $parent = null, $dir = null, $mustRun = false)
+    public function checkOutNew($name, $parent = null, $upstream = null, $dir = null, $mustRun = false)
     {
         $args = ['checkout', '-b', $name];
-        if ($parent) {
+        if ($parent !== null) {
             $args[] = $parent;
+        } elseif ($upstream !== null) {
+            $args[] = '--track';
+            $args[] = $upstream;
+        }
+
+        return (bool) $this->execute($args, $dir, $mustRun, false);
+    }
+
+    /**
+     * Fetch from the Git remote.
+     *
+     * @param string      $remote
+     * @param string|null $branch
+     * @param string|null $dir
+     * @param bool        $mustRun
+     *
+     * @return bool
+     */
+    public function fetch($remote, $branch = null, $dir = null, $mustRun = false)
+    {
+        $args = ['fetch', $remote];
+        if ($branch !== null) {
+            $args[] = $branch;
         }
 
         return (bool) $this->execute($args, $dir, $mustRun, false);
@@ -269,28 +299,32 @@ class GitHelper extends Helper implements OutputAwareInterface
     /**
      * Check out a branch.
      *
-     * @param string $name
-     * @param string $dir
+     * @param string      $name
+     * @param string|null $dir
      *   The path to a Git repository.
-     * @param bool   $mustRun
+     * @param bool        $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return bool
      */
     public function checkOut($name, $dir = null, $mustRun = false)
     {
-        return (bool) $this->execute(['checkout', $name], $dir, $mustRun, false);
+        return (bool) $this->execute([
+            'checkout',
+            $name,
+        ], $dir, $mustRun, false
+        );
     }
 
     /**
      * Get the upstream for a branch.
      *
-     * @param string $branch
+     * @param string      $branch
      *   The name of the branch to get the upstream for. Defaults to the current
      *   branch.
-     * @param string $dir
+     * @param string|null $dir
      *   The path to a Git repository.
-     * @param bool   $mustRun
+     * @param bool        $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return string|false
@@ -319,9 +353,9 @@ class GitHelper extends Helper implements OutputAwareInterface
      *
      * @param string|false $upstream
      *   The upstream name, or false to unset the upstream.
-     * @param string $dir
+     * @param string|null  $dir
      *   The path to a Git repository.
-     * @param bool $mustRun
+     * @param bool         $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return bool
@@ -356,7 +390,7 @@ class GitHelper extends Helper implements OutputAwareInterface
      *   The Git repository URL.
      * @param string $destination
      *   A directory name to clone into.
-     * @param array $args
+     * @param array  $args
      *   Extra arguments for the Git command.
      * @param bool   $mustRun
      *   Enable exceptions if the Git command fails.
@@ -376,11 +410,11 @@ class GitHelper extends Helper implements OutputAwareInterface
     /**
      * Update and/or initialize submodules.
      *
-     * @param bool $recursive
+     * @param bool        $recursive
      *   Whether to recurse into nested submodules.
-     * @param string $dir
+     * @param string|null $dir
      *   The path to a Git repository.
-     * @param bool   $mustRun
+     * @param bool        $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return bool
@@ -398,11 +432,11 @@ class GitHelper extends Helper implements OutputAwareInterface
     /**
      * Read a configuration item.
      *
-     * @param string $key
+     * @param string      $key
      *   A Git configuration key.
-     * @param string $dir
+     * @param string|null $dir
      *   The path to a Git repository.
-     * @param bool   $mustRun
+     * @param bool        $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return string|false

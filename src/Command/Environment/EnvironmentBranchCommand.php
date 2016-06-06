@@ -131,11 +131,8 @@ class EnvironmentBranchCommand extends CommandBase
                     }
                 }
             } else {
-                // Create a new branch, using the current or specified environment as the parent if it exists locally.
-                $parent = $this->getSelectedEnvironment()->id;
-                if (!$gitHelper->branchExists($parent)) {
-                    $parent = null;
-                }
+                // Create a new branch, using the parent if it exists locally.
+                $parent = $gitHelper->branchExists($parentEnvironment->id) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$machineName</info>");
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
