@@ -212,7 +212,7 @@ class Application extends ParentApplication
     /**
      * {@inheritdoc}
      */
-    public function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
+    protected function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
     {
         $this->setCurrentCommand($command);
 
