@@ -147,6 +147,10 @@ class Application extends ParentApplication
         $commands[] = new Command\Self\SelfBuildCommand();
         $commands[] = new Command\Self\SelfInstallCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
+        $commands[] = new Command\Server\ServerRunCommand();
+        $commands[] = new Command\Server\ServerStartCommand();
+        $commands[] = new Command\Server\ServerListCommand();
+        $commands[] = new Command\Server\ServerStopCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
         $commands[] = new Command\Snapshot\SnapshotListCommand();
         $commands[] = new Command\Snapshot\SnapshotRestoreCommand();

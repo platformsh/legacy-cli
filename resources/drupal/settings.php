@@ -21,7 +21,13 @@ ini_set('session.cookie_lifetime', 2000000);
 ini_set('pcre.backtrack_limit', 200000);
 ini_set('pcre.recursion_limit', 200000);
 
-// Local settings. These are required for Platform.sh.
+// Platform.sh settings.
+$platformsh_settings = dirname(__FILE__) . '/settings.platformsh.php';
+if (file_exists($platformsh_settings)) {
+  include $platformsh_settings;
+}
+
+// Local settings.
 $local_settings = dirname(__FILE__) . '/settings.local.php';
 if (file_exists($local_settings)) {
   include $local_settings;

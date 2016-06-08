@@ -67,6 +67,7 @@ class CliConfig
             'SESSION_ID' => 'api.session_id',
             'SKIP_SSL' => 'api.skip_ssl',
             'ACCOUNTS_API' => 'api.accounts_api_url',
+            'ENABLE_LOCAL_SERVER' => 'experimental.enable_local_server',
         ];
         $config = $defaults;
         $prefix = isset($config['application']['env_prefix']) ? $config['application']['env_prefix'] : '';

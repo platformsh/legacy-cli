@@ -122,7 +122,7 @@ class ProcessManager
 
         try {
             $process->start(function ($type, $buffer) use ($log) {
-                $log->writeln($buffer);
+                $log->write($buffer);
             });
         }
         catch (\Exception $e) {

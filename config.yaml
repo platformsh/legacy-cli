@@ -62,3 +62,7 @@ detection:
   git_remote_name: 'platform'
   git_domain: 'platform.sh'
   api_domain: 'platform.sh'
+
+# Experimental feature flags.
+experimental:
+  enable_local_server: false

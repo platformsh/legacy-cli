@@ -392,16 +392,23 @@ class Drupal extends ToolstackBase
         $shared = $this->getSharedDir();
 
         $defaultSettingsPhp = 'settings.php';
+        $defaultSettingsPlatformsh = 'settings.platformsh.php';
         $defaultSettingsLocal = 'settings.local.php';
 
         // Override settings.php for Drupal 8.
         if ($this->isDrupal8($webRoot)) {
             $defaultSettingsPhp = '8/settings.php';
+            $defaultSettingsPlatformsh = '8/settings.platformsh.php';
         }
 
         // Create a settings.php if it is missing.
         if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.php')) {
             $this->fsHelper->copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
+        }
+
+        // Create a settings.platformsh.php if it is missing.
+        if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.platformsh.php')) {
+            $this->fsHelper->copy($resources . '/' . $defaultSettingsPlatformsh, $sitesDefault . '/settings.platformsh.php');
         }
 
         // Create the shared/settings.local.php if it doesn't exist. Everything
