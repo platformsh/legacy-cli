@@ -393,7 +393,7 @@ class Drupal extends ToolstackBase
 
         // Create a settings.php file in sites/default if there isn't one.
         if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.php')) {
-            $this->fsHelper->copy($resources . '/settings.php', $sitesDefault . '/settings.php');
+            $this->fsHelper->copy($resources . '/settings.php.dist', $sitesDefault . '/settings.php');
         }
 
         // Create the shared/settings.local.php if it doesn't exist. Everything
@@ -402,7 +402,7 @@ class Drupal extends ToolstackBase
         $settingsLocal = $shared . '/settings.local.php';
         if ($shared && !file_exists($settingsLocal)) {
             $this->output->writeln("Creating file: <info>$settingsLocal</info>");
-            $this->fsHelper->copy($resources . '/settings.local.php', $settingsLocal);
+            $this->fsHelper->copy($resources . '/settings.local.php.dist', $settingsLocal);
             $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
         }
 
