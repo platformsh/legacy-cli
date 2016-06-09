@@ -1,6 +1,11 @@
 <?php
+/**
+ * @file
+ * An example settings.local.php file for Drupal.
+ */
 
-// Database configuration.
+// Add your database configuration here.
+/*
 $databases['default']['default'] = array(
   'driver' => 'mysql',
   'host' => '127.0.0.1',
@@ -9,3 +14,4 @@ $databases['default']['default'] = array(
   'database' => '',
   'prefix' => '',
 );
+*/
