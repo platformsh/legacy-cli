@@ -35,7 +35,7 @@ class ActivityListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, !$input->getOption('all'));
+        $this->validateInput($input, $input->getOption('all'));
 
         $project = $this->getSelectedProject();
 
