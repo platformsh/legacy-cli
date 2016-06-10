@@ -29,8 +29,8 @@ class EnvironmentListCommand extends CommandBase
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
-            ->addOption('sort', 's', InputOption::VALUE_REQUIRED, 'A property to sort by')
-            ->addOption('reverse', 'r', InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
+            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
     }
