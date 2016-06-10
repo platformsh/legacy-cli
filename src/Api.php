@@ -391,10 +391,20 @@ class Api
     public static function sortResources(array &$resources, $propertyName)
     {
         uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyName) {
-            $valueA = $a->getProperty($propertyName);
-            $valueB = $b->getProperty($propertyName);
+            $valueA = $a->getProperty($propertyName, true, false);
+            $valueB = $b->getProperty($propertyName, true, false);
 
-            return gettype($valueA) === 'string' ? strcmp($valueA, $valueB) : $valueA - $valueB;
+            switch (gettype($valueA)) {
+                case 'string':
+                    return strcasecmp($valueA, $valueB);
+
+                case 'integer':
+                case 'double':
+                case 'boolean':
+                    return $valueA - $valueB;
+            }
+
+            return 0;
         });
 
         return $resources;
