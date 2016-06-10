@@ -11,6 +11,7 @@ use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
+use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -377,5 +378,25 @@ class Api
     public function getCache()
     {
         return self::$cache;
+    }
+
+    /**
+     * Sort resources.
+     *
+     * @param ApiResource[] &$resources
+     * @param string        $propertyName
+     *
+     * @return ApiResource[]
+     */
+    public static function sortResources(array &$resources, $propertyName)
+    {
+        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyName) {
+            $valueA = $a->getProperty($propertyName);
+            $valueB = $b->getProperty($propertyName);
+
+            return gettype($valueA) === 'string' ? strcmp($valueA, $valueB) : $valueA - $valueB;
+        });
+
+        return $resources;
     }
 }
