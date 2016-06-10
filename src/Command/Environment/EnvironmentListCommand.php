@@ -26,25 +26,11 @@ class EnvironmentListCommand extends CommandBase
             ->setName('environment:list')
             ->setAliases(['environments'])
             ->setDescription('Get a list of environments')
-            ->addOption(
-                'no-inactive',
-                'I',
-                InputOption::VALUE_NONE,
-                'Do not show inactive environments'
-            )
-            ->addOption(
-                'pipe',
-                null,
-                InputOption::VALUE_NONE,
-                'Output a simple list of environment IDs.'
-            )
-            ->addOption(
-                'refresh',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Whether to refresh the list.',
-                1
-            );
+            ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
+            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
+            ->addOption('sort', 's', InputOption::VALUE_REQUIRED, 'A property to sort by')
+            ->addOption('reverse', 'r', InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
     }
@@ -129,6 +115,13 @@ class EnvironmentListCommand extends CommandBase
             $environments = array_filter($environments, function ($environment) {
                 return $environment->status !== 'inactive';
             });
+        }
+
+        if ($input->getOption('sort')) {
+            $this->api()->sortResources($environments, $input->getOption('sort'));
+        }
+        if ($input->getOption('reverse')) {
+            $environments = array_reverse($environments, true);
         }
 
         if ($input->getOption('pipe')) {
