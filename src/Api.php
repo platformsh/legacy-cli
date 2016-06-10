@@ -396,5 +396,7 @@ class Api
 
             return gettype($valueA) === 'string' ? strcmp($valueA, $valueB) : $valueA - $valueB;
         });
+
+        return $resources;
     }
 }
