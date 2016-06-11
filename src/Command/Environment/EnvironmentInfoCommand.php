@@ -6,7 +6,6 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -64,13 +63,7 @@ class EnvironmentInfoCommand extends CommandBase
             return $this->setProperty($property, $value, $environment, $input->getOption('no-wait'));
         }
 
-        $data = $environment->getProperties();
-        $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
-        if (!$exists) {
-            $this->stdErr->writeln("Property not found: <error>$property</error>");
-
-            return 1;
-        }
+        $value = $this->api()->getNestedProperty($environment, $property);
 
         $output->writeln($this->formatter->format($value, $property));
 

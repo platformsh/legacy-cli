@@ -26,7 +26,7 @@ use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Yaml\Yaml;
 
-abstract class CommandBase extends Command implements CanHideInListInterface
+abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
 {
     use HasExamplesTrait;
 
@@ -56,6 +56,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected $envArgName = 'environment';
     protected $hiddenInList = false;
     protected $local = false;
+    protected $canBeRunMultipleTimes = true;
+    protected $runningViaMulti = false;
 
     /** @var CliConfig */
     protected static $config;
@@ -915,8 +917,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function runOtherCommand($name, array $arguments = [], OutputInterface $output = null)
     {
-        /** @var CommandBase $command */
-        $command = $this->getApplication()->find($name);
+        /** @var \Platformsh\Cli\Application $application */
+        $application = $this->getApplication();
+        $command = $application->find($name);
 
         // Pass on interactivity arguments to the other command.
         if (isset($this->input)) {
@@ -931,7 +934,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         $this->debug('Running command: ' . $name);
 
-        return $command->run($cmdInput, $output ?: $this->output);
+        $application->setCurrentCommand($command);
+        $result = $command->run($cmdInput, $output ?: $this->output);
+        $application->setCurrentCommand($this);
+
+        return $result;
     }
 
     /**
@@ -1007,5 +1014,21 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         return $helper;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function canBeRunMultipleTimes()
+    {
+        return $this->canBeRunMultipleTimes;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setRunningViaMulti($runningViaMulti = true)
+    {
+        $this->runningViaMulti = $runningViaMulti;
     }
 }

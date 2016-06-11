@@ -6,7 +6,6 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -65,18 +64,7 @@ class ProjectInfoCommand extends CommandBase
                 break;
 
             default:
-                $data = $project->getProperties(false);
-                $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
-                if (!$exists) {
-                    // Add data from the main resource and try again.
-                    $data = array_merge($data, $project->getProperties(true));
-                    $value = Util::getNestedArrayValue($data, explode('.', $property), $exists);
-                    if (!$exists) {
-                        $this->stdErr->writeln('Property not found: <error>' . $property . '</error>');
-
-                        return 1;
-                    }
-                }
+                $value = $this->api()->getNestedProperty($project, $property);
         }
 
         $output->writeln($this->formatter->format($value, $property));
