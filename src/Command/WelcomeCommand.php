@@ -31,7 +31,7 @@ class WelcomeCommand extends CommandBase
             $this->stdErr->writeln("Project title: <info>{$project->title}</info>");
             $this->stdErr->writeln("Project ID: <info>{$project->id}</info>");
             $this->stdErr->writeln("Project dashboard: <info>$projectUri</info>\n");
-            $this->runOtherCommand('environments', ['--refresh' => 0]);
+            $this->runOtherCommand('environments');
             $this->stdErr->writeln("\nYou can list other projects by running <info>" . self::$config->get('application.executable') . " projects</info>\n");
         } else {
             // The project is not known. Show all projects.
