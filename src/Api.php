@@ -7,6 +7,7 @@ use Doctrine\Common\Cache\FilesystemCache;
 use Doctrine\Common\Cache\VoidCache;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -384,15 +385,15 @@ class Api
      * Sort resources.
      *
      * @param ApiResource[] &$resources
-     * @param string        $propertyName
+     * @param string        $propertyPath
      *
      * @return ApiResource[]
      */
-    public static function sortResources(array &$resources, $propertyName)
+    public static function sortResources(array &$resources, $propertyPath)
     {
-        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyName) {
-            $valueA = $a->getProperty($propertyName, true, false);
-            $valueB = $b->getProperty($propertyName, true, false);
+        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath) {
+            $valueA = static::getNestedProperty($a, $propertyPath, false);
+            $valueB = static::getNestedProperty($b, $propertyPath, false);
 
             switch (gettype($valueA)) {
                 case 'string':
@@ -408,5 +409,36 @@ class Api
         });
 
         return $resources;
+    }
+
+    /**
+     * Get a nested property of a resource, via a dot-separated string path.
+     *
+     * @param ApiResource $resource
+     * @param string      $propertyPath
+     * @param bool        $lazyLoad
+     *
+     * @throws \InvalidArgumentException if the property is not found.
+     *
+     * @return mixed
+     */
+    public static function getNestedProperty(ApiResource $resource, $propertyPath, $lazyLoad = true)
+    {
+        if (!strpos($propertyPath, '.')) {
+            return $resource->getProperty($propertyPath, true, $lazyLoad);
+        }
+
+        $parents = explode('.', $propertyPath);
+        $propertyName = array_shift($parents);
+        $property = $resource->getProperty($propertyName, true, $lazyLoad);
+        if (!is_array($property)) {
+            throw new \InvalidArgumentException(sprintf('Invalid path "%s": the property "%s" is not an array.', $propertyPath, $propertyName));
+        }
+        $value = Util::getNestedArrayValue($property, $parents, $keyExists);
+        if (!$keyExists) {
+            throw new \InvalidArgumentException('Property not found: ' . $propertyPath);
+        }
+
+        return $value;
     }
 }
