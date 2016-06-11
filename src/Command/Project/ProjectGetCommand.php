@@ -176,6 +176,7 @@ class ProjectGetCommand extends CommandBase
             $gitHelper->init($projectRoot, true);
             $this->debug('Adding Git remote(s)');
             $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
+            $this->localProject->writeGitExclude($projectRoot);
 
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Your project has been initialized and connected to <info>' . self::$config->get('service.name') . '</info>!');
