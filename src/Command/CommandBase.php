@@ -42,9 +42,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * @see self::getProjectRoot()
      * @see self::setProjectRoot()
      *
-     * @var string|false
+     * @var string|false|null
      */
-    private static $projectRoot = false;
+    private static $projectRoot = null;
 
     /** @var OutputInterface|null */
     protected $output;
@@ -486,7 +486,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function getProjectRoot()
     {
-        if (empty(self::$projectRoot)) {
+        if (!isset(self::$projectRoot)) {
             $this->debug('Finding the project root based on the CWD');
             self::$projectRoot = $this->localProject->getProjectRoot();
             $this->debug(
