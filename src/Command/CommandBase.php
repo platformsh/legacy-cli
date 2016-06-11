@@ -625,13 +625,18 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function selectEnvironment($environmentId = null)
     {
         if (!empty($environmentId)) {
+            $this->debug('Selecting environment based on ID: ' . $environmentId);
             $environment = $this->api()->getEnvironment($environmentId, $this->project);
             if (!$environment) {
                 throw new \RuntimeException("Specified environment not found: " . $environmentId);
             }
         } else {
             $environment = $this->getCurrentEnvironment($this->project);
-            if (!$environment) {
+            if (!$environment && ($master = $this->api()->getEnvironment('master', $this->project))) {
+                $this->debug('Falling back to using master environment.');
+                $environment = $master;
+            }
+            elseif (!$environment) {
                 $message = "Could not determine the current environment.";
                 if ($this->getProjectRoot()) {
                     throw new \RuntimeException(
