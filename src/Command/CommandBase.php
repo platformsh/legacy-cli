@@ -57,6 +57,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected $hiddenInList = false;
     protected $local = false;
     protected $canBeRunMultipleTimes = true;
+    protected $runningViaMulti = false;
 
     /** @var CliConfig */
     protected static $config;
@@ -1021,5 +1022,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     public function canBeRunMultipleTimes()
     {
         return $this->canBeRunMultipleTimes;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setRunningViaMulti($runningViaMulti = true)
+    {
+        $this->runningViaMulti = $runningViaMulti;
     }
 }

@@ -63,10 +63,13 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         ));
         foreach ($projects as $project) {
             $output->writeln('');
-            $output->writeln('Project: <options=reverse>' . $project->id . '</>' . ($project->title ? ' (' . $project->title . ')' : ''));
+            $output->writeln('<options=reverse>*</> Project: ' . $project->id . ($project->title ? ' (' . $project->title . ')' : ''));
             try {
                 $application->setCurrentCommand($command);
                 $commandInput = new StringInput($commandLine . ' --project ' . escapeshellarg($project->id));
+                if ($command instanceof MultiAwareInterface) {
+                    $command->setRunningViaMulti(true);
+                }
                 $returnCode = $command->run($commandInput, $this->output);
                 $application->setCurrentCommand($this);
                 if ($returnCode !== 0) {
