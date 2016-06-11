@@ -33,7 +33,7 @@ class ConsoleAnimation
      *
      * If the output is capable of using ANSI escape codes, this will attempt to
      * overwrite the previous frame. But if the output is not ANSI-compatible,
-     * frames will be displayed one after the other. So, to display an endless
+     * this will display the $placeholder instead. So, to display an endless
      * animation only where it's safe, use:
      *
      * <code>
@@ -42,8 +42,10 @@ class ConsoleAnimation
      *         $animation->render();
      *     } while ($output->isDecorated());
      * </code>
+     *
+     * @param string $placeholder
      */
-    public function render()
+    public function render($placeholder = '.')
     {
         // Ensure that at least $this->interval microseconds have passed since
         // the last frame.
@@ -54,8 +56,15 @@ class ConsoleAnimation
             }
         }
 
-        // Move the cursor up to overwrite the last frame.
-        if ($this->lastFrame !== null && $this->output->isDecorated()) {
+        if ($this->lastFrame !== null) {
+            // If overwriting is not possible, just output the placeholder.
+            if (!$this->output->isDecorated()) {
+                $this->output->write($placeholder);
+                $this->lastFrameTime = microtime(true);
+                return;
+            }
+
+            // Move the cursor up to overwrite the previous frame.
             $lastFrameHeight = substr_count($this->frames[$this->lastFrame], "\n") + 1;
             $this->output->write(sprintf("\033[%dA", $lastFrameHeight));
         }

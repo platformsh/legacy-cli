@@ -6,7 +6,6 @@ use Doctrine\Common\Cache\CacheProvider;
 use Doctrine\Common\Cache\FilesystemCache;
 use Doctrine\Common\Cache\VoidCache;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
@@ -24,9 +23,6 @@ class Api
 {
     /** @var CliConfig */
     protected $config;
-
-    /** @var string */
-    protected $userConfigDir;
 
     /** @var null|EventDispatcherInterface */
     protected $dispatcher;
@@ -56,7 +52,6 @@ class Api
     {
         $this->config = $config ?: new CliConfig();
         $this->dispatcher = $dispatcher;
-        $this->userConfigDir = FilesystemHelper::getHomeDirectory() . '/' . $this->config->get('application.user_config_dir');
 
         self::$sessionId = $this->config->get('api.session_id') ?: 'default';
 
@@ -141,7 +136,7 @@ class Api
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
             $session->setId('cli-' . self::$sessionId);
-            $session->setStorage(new File($this->userConfigDir . '/.session'));
+            $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
 
             self::$client = new PlatformClient($connector);
 
@@ -160,7 +155,7 @@ class Api
                 self::$cache = new VoidCache();
             } else {
                 self::$cache = new FilesystemCache(
-                    $this->userConfigDir . '/cache',
+                    $this->config->getUserConfigDir() . '/cache',
                     FilesystemCache::EXTENSION,
                     0077 // Remove all permissions from the group and others.
                 );
