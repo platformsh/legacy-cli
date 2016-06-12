@@ -64,8 +64,8 @@ class TunnelInfoCommand extends TunnelCommandBase
 
         $value = $relationships;
         if ($property = $input->getOption('property')) {
-            $value = Util::getNestedArrayValue($relationships, explode('.', $property), $key_exists);
-            if (!$key_exists) {
+            $value = Util::getNestedArrayValue($relationships, explode('.', $property), $keyExists);
+            if (!$keyExists) {
                 $this->stdErr->writeln("Property not found: <error>$property</error>");
 
                 return 1;
