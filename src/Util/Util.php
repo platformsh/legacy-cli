@@ -28,7 +28,7 @@ class Util
                 return $null;
             }
         }
-        $keyExists = false;
+        $keyExists = true;
 
         return $ref;
     }
