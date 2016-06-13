@@ -110,8 +110,6 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             $command .= sprintf(' %s %s off', escapeshellarg($tag), escapeshellarg($option));
         }
 
-        $env = null;
-
         $dialogRc = file_get_contents(CLI_ROOT . '/resources/console/dialogrc');
         $dialogRcFile = self::$config->getUserConfigDir() . '/dialogrc';
         if ($dialogRc !== false && (file_exists($dialogRcFile) || file_put_contents($dialogRcFile, $dialogRc))) {
@@ -121,7 +119,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $pipes = [2 => null];
         $process = proc_open($command, [
             2 => array('pipe', 'w'),
-        ], $pipes, null, $env);
+        ], $pipes);
 
         // Wait for and read result.
         $result = array_filter(explode("\n", trim(stream_get_contents($pipes[2]))));
