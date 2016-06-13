@@ -12,17 +12,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MultiCommand extends CommandBase implements CompletionAwareInterface
 {
-    protected $hiddenInList = true;
     protected $canBeRunMultipleTimes = false;
 
     protected function configure()
     {
-        $this
-            ->setName('multi')
+        $this->setName('multi')
             ->setDescription('Execute a command on multiple projects')
             ->addArgument('cmd', InputArgument::REQUIRED, 'The command to execute')
             ->addOption('projects', 'p', InputOption::VALUE_REQUIRED, 'A list of project IDs, separated by commas and/or whitespace')
-            ->addOption('continue', 'c', InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
+            ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property by which to sort the list of project options', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the order of project options');
         $this->addExample('List variables on the "master" environment for multiple projects', "--projects l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx 'variable:get --environment master'");
