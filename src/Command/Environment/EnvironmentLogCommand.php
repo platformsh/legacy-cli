@@ -35,6 +35,10 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
     {
         $this->validateInput($input);
 
+        if ($input->getOption('tail') && $this->runningViaMulti) {
+            throw new \InvalidArgumentException('The --tail option cannot be used with "multi"');
+        }
+
         $selectedEnvironment = $this->getSelectedEnvironment();
         $appName = $this->selectApp($input);
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
@@ -74,7 +78,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         $command = sprintf('tail -n %d %s', $input->getOption('lines'), escapeshellarg($logFilename));
         if ($input->getOption('tail')) {
-             $command .= ' -f';
+            $command .= ' -f';
         }
 
         $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $sshUrl, $logFilename));

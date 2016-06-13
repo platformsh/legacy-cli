@@ -6,11 +6,12 @@ use Doctrine\Common\Cache\CacheProvider;
 use Doctrine\Common\Cache\FilesystemCache;
 use Doctrine\Common\Cache\VoidCache;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
+use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -22,9 +23,6 @@ class Api
 {
     /** @var CliConfig */
     protected $config;
-
-    /** @var string */
-    protected $userConfigDir;
 
     /** @var null|EventDispatcherInterface */
     protected $dispatcher;
@@ -54,7 +52,6 @@ class Api
     {
         $this->config = $config ?: new CliConfig();
         $this->dispatcher = $dispatcher;
-        $this->userConfigDir = FilesystemHelper::getHomeDirectory() . '/' . $this->config->get('application.user_config_dir');
 
         self::$sessionId = $this->config->get('api.session_id') ?: 'default';
 
@@ -139,7 +136,7 @@ class Api
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
             $session->setId('cli-' . self::$sessionId);
-            $session->setStorage(new File($this->userConfigDir . '/.session'));
+            $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
 
             self::$client = new PlatformClient($connector);
 
@@ -158,7 +155,7 @@ class Api
                 self::$cache = new VoidCache();
             } else {
                 self::$cache = new FilesystemCache(
-                    $this->userConfigDir . '/cache',
+                    $this->config->getUserConfigDir() . '/cache',
                     FilesystemCache::EXTENSION,
                     0077 // Remove all permissions from the group and others.
                 );
@@ -377,5 +374,66 @@ class Api
     public function getCache()
     {
         return self::$cache;
+    }
+
+    /**
+     * Sort resources.
+     *
+     * @param ApiResource[] &$resources
+     * @param string        $propertyPath
+     *
+     * @return ApiResource[]
+     */
+    public static function sortResources(array &$resources, $propertyPath)
+    {
+        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath) {
+            $valueA = static::getNestedProperty($a, $propertyPath, false);
+            $valueB = static::getNestedProperty($b, $propertyPath, false);
+
+            switch (gettype($valueA)) {
+                case 'string':
+                    return strcasecmp($valueA, $valueB);
+
+                case 'integer':
+                case 'double':
+                case 'boolean':
+                    return $valueA - $valueB;
+            }
+
+            return 0;
+        });
+
+        return $resources;
+    }
+
+    /**
+     * Get a nested property of a resource, via a dot-separated string path.
+     *
+     * @param ApiResource $resource
+     * @param string      $propertyPath
+     * @param bool        $lazyLoad
+     *
+     * @throws \InvalidArgumentException if the property is not found.
+     *
+     * @return mixed
+     */
+    public static function getNestedProperty(ApiResource $resource, $propertyPath, $lazyLoad = true)
+    {
+        if (!strpos($propertyPath, '.')) {
+            return $resource->getProperty($propertyPath, true, $lazyLoad);
+        }
+
+        $parents = explode('.', $propertyPath);
+        $propertyName = array_shift($parents);
+        $property = $resource->getProperty($propertyName, true, $lazyLoad);
+        if (!is_array($property)) {
+            throw new \InvalidArgumentException(sprintf('Invalid path "%s": the property "%s" is not an array.', $propertyPath, $propertyName));
+        }
+        $value = Util::getNestedArrayValue($property, $parents, $keyExists);
+        if (!$keyExists) {
+            throw new \InvalidArgumentException('Property not found: ' . $propertyPath);
+        }
+
+        return $value;
     }
 }

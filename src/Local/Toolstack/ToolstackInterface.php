@@ -46,6 +46,13 @@ interface ToolstackInterface
     public function prepare($buildDir, LocalApplication $app, CliConfig $config, array $settings = []);
 
     /**
+     * Set the build directory.
+     *
+     * @param string $buildDir
+     */
+    public function setBuildDir($buildDir);
+
+    /**
      * Build this application. Acquire dependencies, plugins, libraries, and
      * submodules.
      */

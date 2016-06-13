@@ -1,0 +1,10 @@
+application:
+  name: 'Mock CLI'
+  version: '1.0.0'
+  executable: 'mock-cli'
+  phar: 'mock.phar'
+  env_prefix: 'MOCK_CLI_'
+  user_config_dir: 'mock-cli-user-config'
+
+service:
+  name: 'Mock Service'

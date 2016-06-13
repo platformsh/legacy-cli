@@ -62,3 +62,9 @@ detection:
   git_remote_name: 'platform'
   git_domain: 'platform.sh'
   api_domain: 'platform.sh'
+
+# Automatic updates.
+updates:
+  check: true
+  last_checked: null
+  check_interval: 86400

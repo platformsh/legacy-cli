@@ -124,10 +124,18 @@ abstract class ToolstackBase implements ToolstackInterface
         }
         $this->ignoredFiles[] = $this->config->get('local.web_root');
 
-        $this->buildDir = $buildDir;
+        $this->setBuildDir($buildDir);
 
         $this->copy = !empty($settings['copy']);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setBuildDir($buildDir)
+    {
+        $this->buildDir = $buildDir;
     }
 
     /**

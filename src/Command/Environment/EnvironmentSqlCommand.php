@@ -26,6 +26,9 @@ class EnvironmentSqlCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        if (!$input->getArgument('query') && $this->runningViaMulti) {
+            throw new \InvalidArgumentException('The query argument is required when running via "multi"');
+        }
 
         $sshOptions = '';
 

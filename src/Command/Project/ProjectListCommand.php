@@ -20,7 +20,9 @@ class ProjectListCommand extends CommandBase
             ->setDescription('Get a list of all active projects')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs')
             ->addOption('host', null, InputOption::VALUE_OPTIONAL, 'Filter by region hostname')
-            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1);
+            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
+            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
         Table::addFormatOption($this->getDefinition());
     }
 
@@ -36,6 +38,14 @@ class ProjectListCommand extends CommandBase
             $projects = array_filter($projects, function (Project $project) use ($host) {
                 return $host === parse_url($project->getUri(), PHP_URL_HOST);
             });
+        }
+
+        // Sort the list of projects.
+        if ($input->getOption('sort')) {
+            $this->api()->sortResources($projects, $input->getOption('sort'));
+        }
+        if ($input->getOption('reverse')) {
+            $projects = array_reverse($projects, true);
         }
 
         if ($input->getOption('pipe')) {

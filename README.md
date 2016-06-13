@@ -71,6 +71,7 @@ Available commands:
   list                                      Lists commands
   login                                     Log in to Platform.sh
   logout                                    Log out of Platform.sh
+  multi                                     Execute a command on multiple projects
   web                                       Open the Web UI
 activity
   activity:list (activities)                Get a list of activities for an environment or project

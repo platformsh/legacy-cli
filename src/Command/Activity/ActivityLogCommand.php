@@ -70,7 +70,7 @@ class ActivityLogCommand extends CommandBase
         );
 
         $refresh = $input->getOption('refresh');
-        if ($refresh > 0 && $this->isTerminal($output) && !$activity->isComplete()) {
+        if ($refresh > 0 && !$this->runningViaMulti && $this->isTerminal($output) && !$activity->isComplete()) {
             $activity->wait(
                 null,
                 function ($log) use ($output) {

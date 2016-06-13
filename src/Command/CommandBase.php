@@ -24,9 +24,8 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\Yaml\Yaml;
 
-abstract class CommandBase extends Command implements CanHideInListInterface
+abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
 {
     use HasExamplesTrait;
 
@@ -43,9 +42,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      * @see self::getProjectRoot()
      * @see self::setProjectRoot()
      *
-     * @var string|false
+     * @var string|false|null
      */
-    private static $projectRoot = false;
+    private static $projectRoot = null;
 
     /** @var OutputInterface|null */
     protected $output;
@@ -56,6 +55,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     protected $envArgName = 'environment';
     protected $hiddenInList = false;
     protected $local = false;
+    protected $canBeRunMultipleTimes = true;
+    protected $runningViaMulti = false;
 
     /** @var CliConfig */
     protected static $config;
@@ -222,14 +223,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface
     }
 
     /**
-     * @return string
-     */
-    protected function getUserConfigDir()
-    {
-        return $this->getHomeDir() . '/' . self::$config->get('application.user_config_dir');
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function interact(InputInterface $input, OutputInterface $output)
@@ -264,48 +257,22 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         $timestamp = time();
 
-        $config = $this->getGlobalConfig();
-        if (isset($config['updates']['check']) && $config['updates']['check'] == false) {
+        if (!self::$config->get('updates.check')) {
             return;
         }
-        elseif (!$reset && isset($config['updates']['last_checked']) && $config['updates']['last_checked'] > $timestamp - 86400) {
+        elseif (!$reset && self::$config->get('updates.last_checked') > $timestamp - self::$config->get('updates.check_interval')) {
             return;
         }
 
-        $config['updates']['check'] = true;
-        $config['updates']['last_checked'] = $timestamp;
-        $this->writeUserConfig($config);
+        self::$config->writeUserConfig([
+            'updates' => [
+                'check' => true,
+                'last_checked' => $timestamp,
+            ],
+        ]);
+
         $this->runOtherCommand('self-update', ['--timeout' => 10]);
         $this->stdErr->writeln('');
-    }
-
-    /**
-     * @return array
-     */
-    protected function getGlobalConfig()
-    {
-        $configFile = $this->getUserConfigDir() . '/config.yaml';
-        if (file_exists($configFile)) {
-            $this->debug('Loading config from file: ' . $configFile);
-            return Yaml::parse(file_get_contents($configFile));
-        }
-
-        return [];
-    }
-
-    /**
-     * @param array $config
-     */
-    protected function writeUserConfig(array $config)
-    {
-        $dir = $this->getUserConfigDir();
-        if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
-            trigger_error('Failed to create user config directory: ' . $dir, E_USER_WARNING);
-        }
-        $configFile = $dir . '/config.yaml';
-        if (file_put_contents($configFile, Yaml::dump($config, 10)) === false) {
-            trigger_error('Failed to write user config to: ' . $configFile, E_USER_WARNING);
-        }
     }
 
     /**
@@ -313,7 +280,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function getSessionsDir()
     {
-        return $this->getUserConfigDir() . '/.session';
+        return self::$config->getUserConfigDir() . '/.session';
     }
 
     /**
@@ -522,7 +489,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     public function getProjectRoot()
     {
-        if (empty(self::$projectRoot)) {
+        if (!isset(self::$projectRoot)) {
             $this->debug('Finding the project root based on the CWD');
             self::$projectRoot = $this->localProject->getProjectRoot();
             $this->debug(
@@ -915,8 +882,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface
      */
     protected function runOtherCommand($name, array $arguments = [], OutputInterface $output = null)
     {
-        /** @var CommandBase $command */
-        $command = $this->getApplication()->find($name);
+        /** @var \Platformsh\Cli\Application $application */
+        $application = $this->getApplication();
+        $command = $application->find($name);
 
         // Pass on interactivity arguments to the other command.
         if (isset($this->input)) {
@@ -931,7 +899,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface
 
         $this->debug('Running command: ' . $name);
 
-        return $command->run($cmdInput, $output ?: $this->output);
+        $application->setCurrentCommand($command);
+        $result = $command->run($cmdInput, $output ?: $this->output);
+        $application->setCurrentCommand($this);
+
+        return $result;
     }
 
     /**
@@ -1007,5 +979,21 @@ abstract class CommandBase extends Command implements CanHideInListInterface
         }
 
         return $helper;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function canBeRunMultipleTimes()
+    {
+        return $this->canBeRunMultipleTimes;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setRunningViaMulti($runningViaMulti = true)
+    {
+        $this->runningViaMulti = $runningViaMulti;
     }
 }
