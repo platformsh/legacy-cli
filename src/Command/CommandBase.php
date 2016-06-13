@@ -257,17 +257,20 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $timestamp = time();
 
-        $config = self::$config->getUserConfig();
-        if (isset($config['updates']['check']) && $config['updates']['check'] == false) {
+        if (!self::$config->get('updates.check')) {
             return;
         }
-        elseif (!$reset && isset($config['updates']['last_checked']) && $config['updates']['last_checked'] > $timestamp - 86400) {
+        elseif (!$reset && self::$config->get('updates.last_checked') > $timestamp - self::$config->get('updates.check_interval')) {
             return;
         }
 
-        $config['updates']['check'] = true;
-        $config['updates']['last_checked'] = $timestamp;
-        self::$config->writeUserConfig($config);
+        self::$config->writeUserConfig([
+            'updates' => [
+                'check' => true,
+                'last_checked' => $timestamp,
+            ],
+        ]);
+
         $this->runOtherCommand('self-update', ['--timeout' => 10]);
         $this->stdErr->writeln('');
     }

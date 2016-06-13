@@ -15,6 +15,8 @@ class CliConfig
 
     protected $env = [];
 
+    protected $userConfig = null;
+
     /**
      * @param array|null  $env
      * @param string|null $defaultsFile
@@ -109,16 +111,20 @@ class CliConfig
      */
     public function getUserConfig()
     {
-        $userConfig = [];
-        $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
-        if (file_exists($userConfigFile)) {
-            $userConfig = $this->loadConfigFromFile($userConfigFile);
+        if (!isset($this->userConfig)) {
+            $this->userConfig = [];
+            $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
+            if (file_exists($userConfigFile)) {
+                $this->userConfig = $this->loadConfigFromFile($userConfigFile);
+            }
         }
 
-        return $userConfig;
+        return $this->userConfig;
     }
 
     /**
+     * Update user configuration.
+     *
      * @param array $config
      */
     public function writeUserConfig(array $config)
@@ -127,10 +133,13 @@ class CliConfig
         if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
             trigger_error('Failed to create user config directory: ' . $dir, E_USER_WARNING);
         }
+        $existingConfig = $this->getUserConfig();
+        $config = array_replace_recursive($existingConfig, $config);
         $configFile = $dir . '/config.yaml';
         if (file_put_contents($configFile, Yaml::dump($config, 10)) === false) {
             trigger_error('Failed to write user config to: ' . $configFile, E_USER_WARNING);
         }
+        $this->userConfig = $config;
     }
 
     protected function applyUserConfigOverrides()
@@ -138,6 +147,7 @@ class CliConfig
         // A whitelist of allowed overrides.
         $overrideMap = [
             'experimental' => 'experimental',
+            'updates' => 'updates',
         ];
 
         $userConfig = $this->getUserConfig();
@@ -148,7 +158,7 @@ class CliConfig
                     $configParents = explode('.', $configKey);
                     $default = Util::getNestedArrayValue(self::$config, $configParents, $defaultExists);
                     if ($defaultExists && is_array($default)) {
-                        $value = array_merge_recursive($default, $value);
+                        $value = array_replace_recursive($default, $value);
                     }
                     Util::setNestedArrayValue(self::$config, $configParents, $value, true);
                 }
