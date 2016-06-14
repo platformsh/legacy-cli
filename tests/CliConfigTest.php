@@ -24,11 +24,12 @@ class CliConfigTest extends \PHPUnit_Framework_TestCase
     {
         $config = new CliConfig([], __DIR__ . '/data/mock-cli-config.yaml', true);
         $this->assertFalse($config->has('api.debug'));
+        putenv('MOCK_CLI_DISABLE_CACHE=1');
         $config = new CliConfig([
             'MOCK_CLI_APPLICATION_NAME' => 'Attempted override',
             'MOCK_CLI_DEBUG' => 1,
         ], __DIR__ . '/data/mock-cli-config.yaml', true);
-        $this->assertTrue($config->has('api.debug'));
+        $this->assertNotEmpty($config->get('api.disable_cache'));
         $this->assertNotEmpty($config->get('api.debug'));
         $this->assertNotEquals($config->get('application.name'), 'Attempted override');
     }
