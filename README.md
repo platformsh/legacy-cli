@@ -68,7 +68,6 @@ Available commands:
   logout                                    Log out of Magento Cloud
   multi                                     Execute a command on multiple projects
   web                                       Open the Web UI
->>>>>>> development
 activity
   activity:list (activities)                Get a list of activities for an environment or project
   activity:log                              Display the log for an activity
