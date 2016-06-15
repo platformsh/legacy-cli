@@ -98,7 +98,6 @@ class CliConfig
             'ACCOUNTS_API' => 'api.accounts_api_url',
         ];
 
-        $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
         foreach ($overrideMap as $var => $key) {
             $value = $this->getEnv($var);
             if ($value !== false) {
