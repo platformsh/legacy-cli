@@ -61,17 +61,19 @@ Global options:
 
 Available commands:
   clear-cache (clearcache, cc)              Clear the CLI cache
-  docs                                      Open the Magento Cloud online documentation
+  docs                                      Open the online documentation
   help                                      Displays help for a command
   list                                      Lists commands
   login                                     Log in to Magento Cloud
   logout                                    Log out of Magento Cloud
-  web                                       Open the Magento Cloud Web UI
+  multi                                     Execute a command on multiple projects
+  web                                       Open the Web UI
+>>>>>>> development
 activity
-  activity:list (activities)                Get the most recent activities for an environment
-  activity:log                              Display the log for an environment activity
+  activity:list (activities)                Get a list of activities for an environment or project
+  activity:log                              Display the log for an activity
 app
-  app:config-get                            Get the configuration of an app
+  app:config-get                            View the configuration of an app
   app:list (apps)                           Get a list of all apps in the local repository
 domain
   domain:add                                Add a new domain to the project
@@ -84,32 +86,33 @@ environment
   environment:delete                        Delete an environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
   environment:info                          Read or set properties for an environment
-  environment:list (environments)           Get a list of all environments
+  environment:list (environments)           Get a list of environments
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
-  environment:relationships (relationships) List an environment's relationships
+  environment:relationships (relationships)   Show an environment's relationships
   environment:routes (routes)               List an environment's routes
   environment:sql (sql)                     Run SQL on the remote database
   environment:sql-dump (sql-dump)           Create a local dump of the remote database
   environment:ssh (ssh)                     SSH to the current environment
-  environment:synchronize (sync)            Synchronize an environment
-  environment:url (url)                     Get the public URL of an environment
+  environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
+  environment:url (url)                     Get the public URLs of an environment
 integration
   integration:add                           Add an integration to the project
   integration:delete                        Delete an integration from a project
-  integration:list (integrations)           View project integration(s)
+  integration:get                           View details of an integration
+  integration:list (integrations)           View a list of project integration(s)
   integration:update                        Update an integration
 local
   local:build (build)                       Build the current project locally
   local:clean (clean)                       Remove old project builds
 project
   project:delete                            Delete a project
-  project:get (get)                         Clone and build a project locally
+  project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
 self
   self:install                              Install or update CLI configuration files
-  self:update                               Update the CLI to the latest version
+  self:update (self-update)                 Update the CLI to the latest version
 snapshot
   snapshot:create (backup)                  Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment
@@ -130,7 +133,7 @@ user
   user:role                                 View or change a user's role
 variable
   variable:delete                           Delete a variable from an environment
-  variable:get (variables, vget)            Get a variable for an environment
+  variable:get (variables, vget)            View variable(s) for an environment
   variable:set (vset)                       Set a variable for an environment
 ```
 

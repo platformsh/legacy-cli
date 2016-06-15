@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
@@ -46,8 +47,7 @@ class EnvironmentInfoCommand extends CommandBase
 
         $environment = $this->getSelectedEnvironment();
         if ($input->getOption('refresh')) {
-            $project = $this->getSelectedProject();
-            $environment = $this->api->getEnvironment($environment->id, $project, true);
+            $environment->refresh();
         }
 
         $property = $input->getArgument('property');
@@ -63,7 +63,9 @@ class EnvironmentInfoCommand extends CommandBase
             return $this->setProperty($property, $value, $environment, $input->getOption('no-wait'));
         }
 
-        $output->writeln($this->formatter->format($environment->getProperty($property), $property));
+        $value = $this->api()->getNestedProperty($environment, $property);
+
+        $output->writeln($this->formatter->format($value, $property));
 
         return 0;
     }
@@ -80,7 +82,7 @@ class EnvironmentInfoCommand extends CommandBase
         $headings = [];
         $values = [];
         foreach ($environment->getProperties() as $key => $value) {
-            $headings[] = $key;
+            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
         $table->renderSimple($values, $headings);
@@ -117,7 +119,7 @@ class EnvironmentInfoCommand extends CommandBase
         $result = $environment->update([$property => $value]);
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment->$property, $property));
 
-        $this->api->clearEnvironmentsCache($environment->project);
+        $this->api()->clearEnvironmentsCache($environment->project);
 
         $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
@@ -176,7 +178,7 @@ class EnvironmentInfoCommand extends CommandBase
                 } elseif ($value === $selectedEnvironment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
-                } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $this->getCurrentProject())) {
+                } elseif (!$parentEnvironment = $this->api()->getEnvironment($value, $this->getCurrentProject())) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
                 } elseif ($parentEnvironment->parent === $selectedEnvironment->id) {

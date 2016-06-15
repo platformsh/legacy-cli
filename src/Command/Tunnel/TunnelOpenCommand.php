@@ -26,6 +26,7 @@ class TunnelOpenCommand extends TunnelCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->checkSupport();
         $this->validateInput($input);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
@@ -48,7 +49,7 @@ class TunnelOpenCommand extends TunnelCommandBase
             return 1;
         }
 
-        $logFile = $this->getUserConfigDir() . '/tunnels.log';
+        $logFile = self::$config->getUserConfigDir() . '/tunnels.log';
         if (!$log = $this->openLog($logFile)) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: %s', $logFile));
             return 1;

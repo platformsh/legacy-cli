@@ -173,20 +173,19 @@ class LocalBuild
         // Find the right build directory.
         $buildName = $multiApp ? str_replace('/', '-', $appId) : 'default';
 
-        $buildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName;
+        $tmpBuildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName . '-tmp';
 
         if (file_exists($sourceDir . '/.git')) {
             $localProject = new LocalProject();
             $localProject->writeGitExclude($sourceDir);
         }
 
-        if (file_exists($buildDir)) {
-            $previousBuildDir = dirname($buildDir) . '/' . basename($buildDir) . '.bak';
-            $this->output->writeln("Backing up previous build to: " . $previousBuildDir);
-            if (file_exists($previousBuildDir)) {
-                $this->fsHelper->remove($previousBuildDir);
+        if (file_exists($tmpBuildDir)) {
+            if (!$this->fsHelper->remove($tmpBuildDir)) {
+                $this->output->writeln(sprintf('Failed to remove directory <error>%s</error>', $tmpBuildDir));
+
+                return false;
             }
-            rename($buildDir, $previousBuildDir);
         }
 
         // If the destination is inside the source directory, ensure it isn't
@@ -216,7 +215,7 @@ class LocalBuild
             'multiApp' => $multiApp,
             'sourceDir' => $sourceDir,
         ];
-        $toolstack->prepare($buildDir, $app, $this->config, $buildSettings);
+        $toolstack->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
 
         $archive = false;
         if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
@@ -232,7 +231,7 @@ class LocalBuild
         if ($archive && file_exists($archive)) {
             $message = "Extracting archive for application <info>$appId</info>";
             $this->output->writeln($message);
-            $this->fsHelper->extractArchive($archive, $buildDir);
+            $this->fsHelper->extractArchive($archive, $tmpBuildDir);
         } else {
             $message = "Building application <info>$appId</info>";
             if (isset($appConfig['type'])) {
@@ -253,10 +252,30 @@ class LocalBuild
                 if (!is_dir(dirname($archive))) {
                     mkdir(dirname($archive));
                 }
-                $this->fsHelper->archiveDir($buildDir, $archive);
+                $this->fsHelper->archiveDir($tmpBuildDir, $archive);
             }
         }
 
+        // The build is complete. Move the directory.
+        $this->output->writeln('Moving build into place');
+        $buildDir = substr($tmpBuildDir, 0, strlen($tmpBuildDir) - 4);
+        if (file_exists($buildDir)) {
+            $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
+            $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
+            $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
+            if (!$this->fsHelper->remove($buildDir)) {
+                $this->output->writeln(sprintf('Failed to remove directory <error>%s</error>', $buildDir));
+
+                return false;
+            }
+        }
+        if (!rename($tmpBuildDir, $buildDir)) {
+            $this->output->writeln(sprintf('Failed to move temporary build directory into <error>%s</error>', $buildDir));
+
+            return false;
+        }
+
+        $toolstack->setBuildDir($buildDir);
         $toolstack->install();
 
         $webRoot = $toolstack->getWebRoot();

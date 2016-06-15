@@ -43,7 +43,7 @@ EOF
     {
         $this->validateInput($input, true);
 
-        $environments = $this->api->getEnvironments($this->getSelectedProject());
+        $environments = $this->api()->getEnvironments($this->getSelectedProject());
 
         if ($input->getOption('inactive')) {
             $toDelete = array_filter(
@@ -104,11 +104,31 @@ EOF
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
-        $environments = $this->api->getEnvironments($this->getSelectedProject(), true);
+
+        /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot);
-        $gitHelper->execute(['fetch', self::$config->get('detection.git_remote_name')]);
-        $mergedBranches = $gitHelper->getMergedBranches($base);
+        $this->localProject->ensureGitRemote($projectRoot, $this->getSelectedProject()->getGitUrl());
+
+        $remoteName = self::$config->get('detection.git_remote_name');
+
+        // Find a list of branches merged on the remote.
+        $gitHelper->fetch($remoteName);
+        $mergedBranches = $gitHelper->getMergedBranches($remoteName . '/' . $base, true);
+        $mergedBranches = array_filter($mergedBranches, function ($mergedBranch) use ($remoteName, $base) {
+            return strpos($mergedBranch, $remoteName) === 0;
+        });
+        $stripLength = strlen($remoteName . '/');
+        $mergedBranches = array_map(function ($mergedBranch) use ($stripLength) {
+            return substr($mergedBranch, $stripLength);
+        }, $mergedBranches);
+
+        if (empty($mergedBranches)) {
+            return [];
+        }
+
+        // Reconcile this with the list of environments from the API.
+        $environments = $this->api()->getEnvironments($this->getSelectedProject(), true);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
         unset($mergedEnvironments[$base], $mergedEnvironments['master']);
         $parent = $environments[$base]['parent'];
@@ -142,7 +162,7 @@ EOF
             }
             // Check that the environment does not have children.
             // @todo remove this check when Platform's behavior is fixed
-            foreach ($this->api->getEnvironments($this->getSelectedProject()) as $potentialChild) {
+            foreach ($this->api()->getEnvironments($this->getSelectedProject()) as $potentialChild) {
                 if ($potentialChild->parent == $environment->id) {
                     $output->writeln(
                         "The environment <error>$environmentId</error> has children and therefore can't be deleted."
@@ -214,8 +234,8 @@ EOF
             $error = true;
         }
 
-        if ($deleted || $deactivated || $error) {
-            $this->api->clearEnvironmentsCache($environment->project);
+        if (($deleted || $deactivated || $error) && isset($environment)) {
+            $this->api()->clearEnvironmentsCache($environment->project);
         }
 
         return !$error;

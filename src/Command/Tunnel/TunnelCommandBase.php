@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PortUtil;
-use Platformsh\Cli\Util\ProcessManager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
@@ -14,10 +13,19 @@ abstract class TunnelCommandBase extends CommandBase
     const LOCAL_IP = '127.0.0.1';
 
     protected $tunnelInfo;
+    protected $canBeRunMultipleTimes = false;
 
-    public function isEnabled()
+    public function checkSupport()
     {
-        return ProcessManager::supported() && parent::isEnabled();
+        $messages = [];
+        foreach (['pcntl', 'posix'] as $extension) {
+            if (!extension_loaded($extension)) {
+                $messages[] = sprintf('The "%s" extension is required.', $extension);
+            }
+        }
+        if (count($messages)) {
+            throw new \RuntimeException(implode("\n", $messages));
+        }
     }
 
     /**
@@ -55,7 +63,7 @@ abstract class TunnelCommandBase extends CommandBase
     {
         if (!isset($this->tunnelInfo)) {
             $this->tunnelInfo = [];
-            $filename = $this->getUserConfigDir() . '/tunnel-info.json';
+            $filename = self::$config->getUserConfigDir() . '/tunnel-info.json';
             if (file_exists($filename)) {
                 $this->debug(sprintf('Loading tunnel info from %s', $filename));
                 $this->tunnelInfo = (array) json_decode(file_get_contents($filename), TRUE);
@@ -81,7 +89,7 @@ abstract class TunnelCommandBase extends CommandBase
 
     protected function saveTunnelInfo()
     {
-        $filename = $this->getUserConfigDir() . '/tunnel-info.json';
+        $filename = self::$config->getUserConfigDir() . '/tunnel-info.json';
         if (!empty($this->tunnelInfo)) {
             $this->debug('Saving tunnel info to: ' . $filename);
             if (!file_put_contents($filename, json_encode($this->tunnelInfo))) {
@@ -189,7 +197,7 @@ abstract class TunnelCommandBase extends CommandBase
     protected function getPidFile(array $tunnel)
     {
         $key = $this->getTunnelKey($tunnel);
-        $dir = $this->getUserConfigDir() . '/.tunnels';
+        $dir = self::$config->getUserConfigDir() . '/.tunnels';
         if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $dir);
         }

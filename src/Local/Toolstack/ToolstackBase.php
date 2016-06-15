@@ -124,10 +124,18 @@ abstract class ToolstackBase implements ToolstackInterface
         }
         $this->ignoredFiles[] = $this->config->get('local.web_root');
 
-        $this->buildDir = $buildDir;
+        $this->setBuildDir($buildDir);
 
         $this->copy = !empty($settings['copy']);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setBuildDir($buildDir)
+    {
+        $this->buildDir = $buildDir;
     }
 
     /**
@@ -209,9 +217,7 @@ abstract class ToolstackBase implements ToolstackInterface
         if (!empty($this->settings['multiApp'])) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->app->getName());
         }
-        if (!is_dir($shared)) {
-            mkdir($shared, 0755, true);
-        }
+        $this->fsHelper->mkdir($shared);
 
         return $shared;
     }

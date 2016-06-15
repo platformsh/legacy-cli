@@ -67,7 +67,7 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        if ($environment = $this->api->getEnvironment($machineName, $selectedProject)) {
+        if ($environment = $this->api()->getEnvironment($machineName, $selectedProject)) {
             $checkout = $this->getHelper('question')
                              ->confirm(
                                  "The environment <comment>$machineName</comment> already exists. Check out?"
@@ -87,7 +87,7 @@ class EnvironmentBranchCommand extends CommandBase
                 "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
             );
             if ($parentEnvironment->is_dirty) {
-                $this->api->clearEnvironmentsCache($selectedProject->id);
+                $this->api()->clearEnvironmentsCache($selectedProject->id);
             }
 
             return 1;
@@ -114,7 +114,7 @@ class EnvironmentBranchCommand extends CommandBase
         $activity = $parentEnvironment->branch($branchName, $machineName);
 
         // Clear the environments cache, as branching has started.
-        $this->api->clearEnvironmentsCache($selectedProject->id);
+        $this->api()->clearEnvironmentsCache($selectedProject->id);
 
         if ($projectRoot) {
             $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
@@ -131,11 +131,8 @@ class EnvironmentBranchCommand extends CommandBase
                     }
                 }
             } else {
-                // Create a new branch, using the current or specified environment as the parent if it exists locally.
-                $parent = $this->getSelectedEnvironment()->id;
-                if (!$gitHelper->branchExists($parent)) {
-                    $parent = null;
-                }
+                // Create a new branch, using the parent if it exists locally.
+                $parent = $gitHelper->branchExists($parentEnvironment->id) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$machineName</info>");
                 if (!$gitHelper->checkOutNew($machineName, $parent)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
@@ -156,7 +153,7 @@ class EnvironmentBranchCommand extends CommandBase
             );
         }
 
-        $this->api->clearEnvironmentsCache($this->getSelectedProject()->id);
+        $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
 
         return $remoteSuccess ? 0 : 1;
     }

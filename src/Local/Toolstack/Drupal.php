@@ -169,7 +169,8 @@ class Drupal extends ToolstackBase
      * @return string|false
      *   The absolute filename of the make file.
      */
-    protected function findDrushMakeFile($required = false, $core = false) {
+    protected function findDrushMakeFile($required = false, $core = false)
+    {
         $candidates = [
             'project.make.yml',
             'project.make',
@@ -293,9 +294,7 @@ class Drupal extends ToolstackBase
 
         if ($projectMake) {
             $tempProfileDir = $this->buildDir . '/tmp-' . $profileName;
-            if (!$tempProfileDir || !mkdir($tempProfileDir, 0755, true)) {
-                throw new \RuntimeException('Failed to create directory: ' . $tempProfileDir);
-            }
+            $this->fsHelper->mkdir($tempProfileDir);
             $args = array_merge(
                 ['make', '--no-core', '--contrib-destination=.', $projectMake, $tempProfileDir],
                 $drushFlags
@@ -391,27 +390,19 @@ class Drupal extends ToolstackBase
         $webRoot = $this->getWebRoot();
         $sitesDefault = $webRoot . '/sites/default';
         $resources = CLI_ROOT . '/resources/drupal';
-        $shared = $this->getSharedDir();
 
-        $defaultSettingsPhp = 'settings.php';
-        $defaultSettingsLocal = 'settings.local.php';
-
-        // Override settings.php for Drupal 8.
-        if ($this->isDrupal8($webRoot)) {
-            $defaultSettingsPhp = '8/settings.php';
-        }
-
-        // Create a settings.php if it is missing.
+        // Create a settings.php file in sites/default if there isn't one.
         if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.php')) {
-            $this->fsHelper->copy($resources . '/' . $defaultSettingsPhp, $sitesDefault . '/settings.php');
+            $this->fsHelper->copy($resources . '/settings.php.dist', $sitesDefault . '/settings.php');
         }
 
         // Create the shared/settings.local.php if it doesn't exist. Everything
         // in shared will be symlinked into sites/default.
+        $shared = $this->getSharedDir();
         $settingsLocal = $shared . '/settings.local.php';
         if ($shared && !file_exists($settingsLocal)) {
             $this->output->writeln("Creating file: <info>$settingsLocal</info>");
-            $this->fsHelper->copy($resources . '/' . $defaultSettingsLocal, $settingsLocal);
+            $this->fsHelper->copy($resources . '/settings.local.php.dist', $settingsLocal);
             $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
         }
 
@@ -420,9 +411,8 @@ class Drupal extends ToolstackBase
         if ($shared && !file_exists($sharedFiles)) {
             $this->output->writeln("Creating directory: <info>$sharedFiles</info>");
             $this->output->writeln('This is where Drupal can store public files.');
-            mkdir($sharedFiles);
             // Group write access is potentially useful and probably harmless.
-            chmod($sharedFiles, 0775);
+            $this->fsHelper->mkdir($sharedFiles, 0775);
         }
 
         // Symlink all files and folders from shared. The "copy" option is
@@ -432,17 +422,5 @@ class Drupal extends ToolstackBase
             $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
             $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, ['.*']);
         }
-    }
-
-    /**
-     * Detect whether the site is Drupal 8.
-     *
-     * @param string $drupalRoot
-     *
-     * @return bool
-     */
-    protected function isDrupal8($drupalRoot)
-    {
-        return file_exists($drupalRoot . '/core/includes/bootstrap.inc');
     }
 }

@@ -8,5 +8,5 @@ interface CanHideInListInterface
      *
      * @return bool
      */
-    public function hideInList();
+    public function isHiddenInList();
 }

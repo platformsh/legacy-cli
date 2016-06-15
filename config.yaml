@@ -5,7 +5,6 @@ application:
   executable: 'magento-cloud'
   phar: 'magento-cloud.phar'
   package_name: null
-  source_url: null
   installer_url: 'https://accounts.magento.cloud/cli/installer'
   manifest_url: 'https://accounts.magento.cloud/cli/manifest.json'
   user_config_dir: '.magento-cloud'
@@ -20,6 +19,8 @@ local:
   project_config_legacy: '.magento-project'
   shared_dir: '.magento/local/shared'
   web_root: '_www'
+
+  # Overridden by {application.env_prefix}COPY_ON_WINDOWS env var.
   copy_on_windows: false
 
 # Details about the cloud service that the CLI works with.
@@ -33,19 +34,37 @@ service:
 
 # Configuration relating to API calls.
 api:
-  accounts_api_url: 'https://accounts.magento.cloud/api/v1/'
   oauth2_client_id: 'magento-cloud-cli'
-  disable_cache: false
-  skip_ssl: false
-  token: null
   projects_ttl: 3600
   environments_ttl: 600
   users_ttl: 3600
+
+  # Overridden by {application.env_prefix}ACCOUNTS_API env var.
+  accounts_api_url: 'https://accounts.magento.cloud/api/v1/'
+
+  # Overridden by {application.env_prefix}DEBUG env var.
   debug: false
+
+  # Overridden by {application.env_prefix}DISABLE_CACHE env var.
+  disable_cache: false
+
+  # Overridden by {application.env_prefix}SKIP_SSL env var.
+  skip_ssl: false
+
+  # Overridden by {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
+
+  # Overridden by {application.env_prefix}TOKEN env var.
+  token: null
 
 # How the CLI detects and configures Git repositories as projects.
 detection:
   git_remote_name: 'magento'
   git_domain: 'magento.cloud'
   api_domain: 'magento.cloud'
+
+# Automatic updates.
+updates:
+  check: true
+  last_checked: null
+  check_interval: 86400

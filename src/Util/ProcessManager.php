@@ -150,17 +150,22 @@ class ProcessManager
     {
         while (count($this->processes)) {
             sleep(1);
-            foreach (array_keys($this->processes) as $pidFile) {
+            foreach ($this->processes as $pidFile => $process) {
+                // The user can delete the PID file in order to stop the
+                // process deliberately.
                 if (!file_exists($pidFile)) {
-                    $log->writeln(sprintf('Process stopped: %s', $this->processes[$pidFile]->getCommandLine()));
-                    $this->processes[$pidFile]->stop();
+                    $log->writeln(sprintf('Process stopped: %s', $process->getCommandLine()));
+                    $process->stop();
                     unset($this->processes[$pidFile]);
-                } elseif (!$this->processes[$pidFile]->isRunning()) {
-                    $exitCode = $this->processes[$pidFile]->getExitCode();
+                }
+                // If the process has been stopped via another method, remove it
+                // from the list, and log a message.
+                elseif (!$process->isRunning()) {
+                    $exitCode = $process->getExitCode();
                     if ($exitCode === 143 || $exitCode === 147) {
-                        $log->writeln(sprintf('Process killed: %s', $this->processes[$pidFile]->getCommandLine()));
+                        $log->writeln(sprintf('Process killed: %s', $process->getCommandLine()));
                     } elseif ($exitCode > 0) {
-                        $log->writeln(sprintf('Process stopped unexpectedly with exit code %s: %s', $exitCode, $this->processes[$pidFile]->getCommandLine()));
+                        $log->writeln(sprintf('Process stopped unexpectedly with exit code %s: %s', $exitCode, $process->getCommandLine()));
                     }
                     unlink($pidFile);
                     unset($this->processes[$pidFile]);

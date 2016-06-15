@@ -43,8 +43,8 @@ class AppConfigGetCommand extends CommandBase
         if ($property = $input->getOption('property')) {
             $parents = explode('.', $property);
             $key = end($parents);
-            $value = Util::getNestedArrayValue($appConfig, $parents, $key_exists);
-            if (!$key_exists) {
+            $value = Util::getNestedArrayValue($appConfig, $parents, $keyExists);
+            if (!$keyExists) {
                 $this->stdErr->writeln("Configuration property not found: <error>$property</error>");
 
                 return 1;

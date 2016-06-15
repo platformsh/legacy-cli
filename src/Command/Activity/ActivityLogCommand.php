@@ -26,19 +26,21 @@ class ActivityLogCommand extends CommandBase
                 1
             )
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
-            ->setDescription('Display the log for an environment activity');
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check activities on all environments')
+            ->setDescription('Display the log for an activity');
         $this->addProjectOption()
              ->addEnvironmentOption();
-        $this->addExample('Display the log for the last push', '--type environment.push');
+        $this->addExample('Display the log for the last push on the current environment', '--type environment.push')
+            ->addExample('Display the log for the last activity on the current project', '--all');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, !$input->getOption('all'));
 
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = $this->getSelectedEnvironment()
+            $activity = $this->getSelectedProject()
                              ->getActivity($id);
             if (!$activity) {
                 $this->stdErr->writeln("Activity not found: <error>$id</error>");
@@ -46,8 +48,14 @@ class ActivityLogCommand extends CommandBase
                 return 1;
             }
         } else {
-            $activities = $this->getSelectedEnvironment()
-                               ->getActivities(1, $input->getOption('type'));
+            if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
+                $activities = $this->getSelectedEnvironment()
+                    ->getActivities(1, $input->getOption('type'));
+            }
+            else {
+                $activities = $this->getSelectedProject()
+                    ->getActivities(1, $input->getOption('type'));
+            }
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
@@ -62,7 +70,7 @@ class ActivityLogCommand extends CommandBase
         );
 
         $refresh = $input->getOption('refresh');
-        if ($refresh > 0 && $this->isTerminal($output) && !$activity->isComplete()) {
+        if ($refresh > 0 && !$this->runningViaMulti && $this->isTerminal($output) && !$activity->isComplete()) {
             $activity->wait(
                 null,
                 function ($log) use ($output) {

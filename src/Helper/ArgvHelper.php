@@ -6,6 +6,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\StringInput;
 
 class ArgvHelper extends Helper
 {
@@ -25,10 +26,7 @@ class ArgvHelper extends Helper
     public function getPassedCommand(Command $command, ArgvInput $input, array $args = null)
     {
         if ($args === null) {
-            if (empty($GLOBALS['argv'])) {
-                return '';
-            }
-            $args = $GLOBALS['argv'];
+            $args = $this->tokenize($input->__toString());
         }
         $args = $this->stripArguments($args, $input);
         $args = $this->stripOptions($args, $command);
@@ -41,6 +39,41 @@ class ArgvHelper extends Helper
         $command = implode(' ', $args);
 
         return $command;
+    }
+
+    /**
+     * Tokenizes a string. Copied from StringInput::tokenize().
+     *
+     * @see StringInput::tokenize()
+     *
+     * @param string $input The input to tokenize
+     *
+     * @return array An array of tokens
+     */
+    private function tokenize($input)
+    {
+        $tokens = [];
+        $length = strlen($input);
+        $cursor = 0;
+        while ($cursor < $length) {
+            if (preg_match('/\s+/A', $input, $match, null, $cursor)) {
+                continue;
+            }
+
+            if (preg_match('/([^="\'\s]+?)(=?)(' . StringInput::REGEX_QUOTED_STRING . '+)/A', $input, $match, null, $cursor)) {
+                $tokens[] = $match[1] . $match[2] . stripcslashes(str_replace(['"\'', '\'"', '\'\'', '""',], '', substr($match[3], 1, strlen($match[3]) - 2)));
+            } elseif (preg_match('/' . StringInput::REGEX_QUOTED_STRING . '/A', $input, $match, null, $cursor)) {
+                $tokens[] = stripcslashes(substr($match[0], 1, strlen($match[0]) - 2));
+            } elseif (preg_match('/' . StringInput::REGEX_STRING . '/A', $input, $match, null, $cursor)) {
+                $tokens[] = stripcslashes($match[1]);
+            } else {
+                throw new \InvalidArgumentException(sprintf('Unable to parse input near "... %s ..."', substr($input, $cursor, 10)));
+            }
+
+            $cursor += strlen($match[0]);
+        }
+
+        return $tokens;
     }
 
     /**

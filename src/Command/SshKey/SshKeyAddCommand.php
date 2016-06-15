@@ -117,7 +117,7 @@ class SshKeyAddCommand extends CommandBase
         }
 
         // Add the new key.
-        $this->api->getClient()->addSshKey($publicKey, $name);
+        $this->api()->getClient()->addSshKey($publicKey, $name);
 
         $this->stdErr->writeln(
             'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . self::$config->get('service.name') . ' account.'
@@ -135,7 +135,7 @@ class SshKeyAddCommand extends CommandBase
      */
     protected function keyExistsByFingerprint($fingerprint)
     {
-        foreach ($this->api->getClient()->getSshKeys() as $existingKey) {
+        foreach ($this->api()->getClient()->getSshKeys() as $existingKey) {
             if ($existingKey->fingerprint === $fingerprint) {
                 return true;
             }

@@ -11,11 +11,11 @@ class Util
      *
      * @param array $array
      * @param array $parents
-     * @param bool  $key_exists
+     * @param bool  $keyExists
      *
      * @return mixed
      */
-    public static function &getNestedArrayValue(array &$array, array $parents, &$key_exists = NULL)
+    public static function &getNestedArrayValue(array &$array, array $parents, &$keyExists = false)
     {
         $ref = &$array;
         foreach ($parents as $parent) {
@@ -23,12 +23,12 @@ class Util
                 $ref = &$ref[$parent];
             }
             else {
-                $key_exists = FALSE;
-                $null = NULL;
+                $keyExists = false;
+                $null = null;
                 return $null;
             }
         }
-        $key_exists = TRUE;
+        $keyExists = true;
 
         return $ref;
     }
@@ -43,13 +43,14 @@ class Util
      * @param mixed $value
      * @param bool  $force
      */
-    public static function setNestedArrayValue(array &$array, array $parents, $value, $force = FALSE) {
+    public static function setNestedArrayValue(array &$array, array $parents, $value, $force = false)
+    {
         $ref = &$array;
         foreach ($parents as $parent) {
             // PHP auto-creates container arrays and NULL entries without error if $ref
             // is NULL, but throws an error if $ref is set, but not an array.
             if ($force && isset($ref) && !is_array($ref)) {
-                $ref = array();
+                $ref = [];
             }
             $ref = &$ref[$parent];
         }

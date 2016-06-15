@@ -28,11 +28,6 @@ class DrupalTest extends BaseToolstackTest
         $this->assertFileExists($webRoot . '/test.txt');
     }
 
-    public function testBuildDrupal8()
-    {
-        $this->assertBuildSucceeds('tests/data/apps/drupal/8');
-    }
-
     public function testBuildDrupalInProfileMode()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/profile');
@@ -46,7 +41,7 @@ class DrupalTest extends BaseToolstackTest
 
     public function testBuildUpdateLock()
     {
-        $sourceDir = 'tests/data/apps/drupal/8';
+        $sourceDir = 'tests/data/apps/drupal/yaml';
         self::$output->writeln("\nTesting build (with --lock) for directory: " . $sourceDir);
         $projectRoot = $this->assertBuildSucceeds($sourceDir, ['drushUpdateLock' => true]);
         $this->assertFileExists($projectRoot . '/project.make.yml.lock');

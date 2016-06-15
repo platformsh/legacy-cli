@@ -26,25 +26,11 @@ class EnvironmentListCommand extends CommandBase
             ->setName('environment:list')
             ->setAliases(['environments'])
             ->setDescription('Get a list of environments')
-            ->addOption(
-                'no-inactive',
-                'I',
-                InputOption::VALUE_NONE,
-                'Do not show inactive environments'
-            )
-            ->addOption(
-                'pipe',
-                null,
-                InputOption::VALUE_NONE,
-                'Output a simple list of environment IDs.'
-            )
-            ->addOption(
-                'refresh',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Whether to refresh the list.',
-                1
-            );
+            ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
+            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
+            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
     }
@@ -93,7 +79,7 @@ class EnvironmentListCommand extends CommandBase
             if ($indent) {
                 $id = str_repeat('   ', $indentAmount) . $id;
             }
-            if ($indicateCurrent && $environment->id == $this->currentEnvironment->id) {
+            if ($indicateCurrent && $this->currentEnvironment && $environment->id == $this->currentEnvironment->id) {
                 $id .= "<info>*</info>";
             }
             $row[] = $id;
@@ -123,12 +109,19 @@ class EnvironmentListCommand extends CommandBase
 
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
-        $environments = $this->api->getEnvironments($this->getSelectedProject(), $refresh ? true : null);
+        $environments = $this->api()->getEnvironments($this->getSelectedProject(), $refresh ? true : null);
 
         if ($input->getOption('no-inactive')) {
             $environments = array_filter($environments, function ($environment) {
                 return $environment->status !== 'inactive';
             });
+        }
+
+        if ($input->getOption('sort')) {
+            $this->api()->sortResources($environments, $input->getOption('sort'));
+        }
+        if ($input->getOption('reverse')) {
+            $environments = array_reverse($environments, true);
         }
 
         if ($input->getOption('pipe')) {

@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Util\Table;
 use Platformsh\Cli\Util\PropertyFormatter;
@@ -49,7 +50,7 @@ class ProjectInfoCommand extends CommandBase
         $property = $input->getArgument('property');
 
         if (!$property) {
-            return $this->listProperties($project, new Table($input, $output));
+            return $this->listProperties($project->getProperties(), new Table($input, $output));
         }
 
         $value = $input->getArgument('value');
@@ -63,7 +64,7 @@ class ProjectInfoCommand extends CommandBase
                 break;
 
             default:
-                $value = $project->getProperty($property);
+                $value = $this->api()->getNestedProperty($project, $property);
         }
 
         $output->writeln($this->formatter->format($value, $property));
@@ -72,12 +73,12 @@ class ProjectInfoCommand extends CommandBase
     }
 
     /**
-     * @param Project $project
-     * @param Table   $table
+     * @param array $properties
+     * @param Table $table
      *
      * @return int
      */
-    protected function listProperties(Project $project, Table $table)
+    protected function listProperties(array $properties, Table $table)
     {
         // Properties not to display, as they are internal, deprecated, or
         // otherwise confusing.
@@ -85,21 +86,18 @@ class ProjectInfoCommand extends CommandBase
             'name',
             'cluster',
             'cluster_label',
+            'description',
             'license_id',
             'plan',
             '_endpoint',
-            'repository',
-            'subscription',
         ];
 
         $headings = [];
         $values = [];
-        foreach ($project->getProperties(false) as $key => $value) {
+        foreach ($properties as $key => $value) {
             if (!in_array($key, $blacklist)) {
-                $value = $this->formatter->format($value, $key);
-                $value = wordwrap($value, 50, "\n", true);
-                $headings[] = $key;
-                $values[] = $value;
+                $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
+                $values[] = $this->formatter->format($value, $key);
             }
         }
         $table->renderSimple($values, $headings);
@@ -138,7 +136,7 @@ class ProjectInfoCommand extends CommandBase
         $result = $project->update([$property => $value]);
         $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
 
-        $this->api->clearProjectsCache();
+        $this->api()->clearProjectsCache();
 
         $success = true;
         if (!$noWait) {

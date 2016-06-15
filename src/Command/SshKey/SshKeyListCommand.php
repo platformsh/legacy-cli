@@ -20,7 +20,7 @@ class SshKeyListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $keys = $this->api->getClient()
+        $keys = $this->api()->getClient()
                      ->getSshKeys();
 
         if (empty($keys)) {

@@ -40,7 +40,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $cacheKey = implode('-', ['relationships', $environment->id . $environment->project . $app]);
-        $cache = $this->api->getCache();
+        $cache = $this->api()->getCache();
         $relationships = $cache->fetch($cacheKey);
         if (empty($relationships) || $input->getOption('refresh')) {
             $util = new RelationshipsUtil($this->stdErr);
@@ -59,8 +59,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
         if ($property = $input->getOption('property')) {
             $parents = explode('.', $property);
             $key = end($parents);
-            $value = Util::getNestedArrayValue($relationships, $parents, $key_exists);
-            if (!$key_exists) {
+            $value = Util::getNestedArrayValue($relationships, $parents, $keyExists);
+            if (!$keyExists) {
                 $this->stdErr->writeln("Relationship property not found: <error>$property</error>");
 
                 return 1;

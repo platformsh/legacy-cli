@@ -2,7 +2,9 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\Table;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,8 +18,11 @@ class ProjectListCommand extends CommandBase
             ->setName('project:list')
             ->setAliases(['projects'])
             ->setDescription('Get a list of all active projects')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs.')
-            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1);
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs')
+            ->addOption('host', null, InputOption::VALUE_OPTIONAL, 'Filter by region hostname')
+            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
+            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
         Table::addFormatOption($this->getDefinition());
     }
 
@@ -25,7 +30,23 @@ class ProjectListCommand extends CommandBase
     {
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
-        $projects = $this->api->getProjects($refresh ? true : null);
+        // Fetch the list of projects.
+        $projects = $this->api()->getProjects($refresh ? true : null);
+
+        // Filter the projects by hostname.
+        if ($host = $input->getOption('host')) {
+            $projects = array_filter($projects, function (Project $project) use ($host) {
+                return $host === parse_url($project->getUri(), PHP_URL_HOST);
+            });
+        }
+
+        // Sort the list of projects.
+        if ($input->getOption('sort')) {
+            $this->api()->sortResources($projects, $input->getOption('sort'));
+        }
+        if ($input->getOption('reverse')) {
+            $projects = array_reverse($projects, true);
+        }
 
         if ($input->getOption('pipe')) {
             $output->writeln(array_keys($projects));
@@ -38,7 +59,7 @@ class ProjectListCommand extends CommandBase
         $rows = [];
         foreach ($projects as $project) {
             $rows[] = [
-                $project->id,
+                new AdaptiveTableCell($project->id, ['wrap' => false]),
                 $project->title,
                 $project->getLink('#ui'),
             ];

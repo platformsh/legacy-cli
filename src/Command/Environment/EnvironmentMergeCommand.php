@@ -46,7 +46,7 @@ class EnvironmentMergeCommand extends CommandBase
 
         $this->stdErr->writeln("Merging <info>$environmentId</info> with <info>$parentId</info>");
 
-        $this->api->clearEnvironmentsCache($selectedEnvironment->project);
+        $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
 
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {

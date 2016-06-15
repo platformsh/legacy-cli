@@ -23,11 +23,27 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->root = '/tmp/pshCliTests/git';
-        $repositoryDir = $this->root . '/repo';
-        if (!is_dir($repositoryDir) && !mkdir($repositoryDir, 0755, true)) {
+        $repository = $this->getRepositoryDir();
+        if (!is_dir($repository) && !mkdir($repository, 0755, true)) {
             throw new \Exception("Failed to create directories.");
         }
+
         $this->gitHelper = new GitHelper();
+        $this->gitHelper->init($repository, true);
+        $this->gitHelper->setDefaultRepositoryDir($repository);
+        chdir($repository);
+
+        // Ensure we are on the master branch.
+        $this->gitHelper->checkOut('master');
+
+        // Add required Git config before committing.
+        shell_exec('git config user.email test@example.com');
+        shell_exec('git config user.name "Test"');
+        shell_exec('git config commit.gpgsign false');
+
+        // Make a dummy commit so that there is a HEAD.
+        touch($repository . '/README.txt');
+        shell_exec('git add -A && git commit -qm "Initial commit"');
     }
 
     /**
@@ -35,7 +51,8 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function tearDown()
     {
-        exec('rm -rf /tmp/pshCliTests/git/repo');
+        $repository = $this->getRepositoryDir();
+        exec('rm -rf ' . escapeshellarg($repository));
     }
 
     /**
@@ -43,12 +60,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testEnsureInstalled()
     {
-        try {
-            $this->gitHelper->ensureInstalled();
-        }
-        catch (\Exception $e) {
-            $this->fail();
-        }
+        $this->gitHelper->ensureInstalled();
     }
 
     /**
@@ -68,10 +80,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     protected function getRepositoryDir()
     {
-        $repositoryDir = $this->root . '/repo';
-        $this->gitHelper->init($repositoryDir, true);
-
-        return $repositoryDir;
+        return $this->root . '/repo';
     }
 
     /**
@@ -79,9 +88,8 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testCheckOutNew()
     {
-        $repository = $this->getRepositoryDir();
-        $this->gitHelper->setDefaultRepositoryDir($repository);
         $this->assertTrue($this->gitHelper->checkOutNew('new'));
+        $this->gitHelper->checkOut('master');
     }
 
     /**
@@ -89,21 +97,32 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testBranchExists()
     {
-        $repository = $this->getRepositoryDir();
-        chdir($repository);
+        $this->gitHelper->checkOutNew('existent');
+        $this->assertTrue($this->gitHelper->branchExists('existent'));
+        $this->assertFalse($this->gitHelper->branchExists('nonexistent'));
+    }
 
-        // Create a branch.
-        shell_exec('git checkout -q -b new');
+    /**
+     * Test GitHelper::getCurrentBranch().
+     */
+    public function testGetCurrentBranch()
+    {
+        $this->gitHelper->checkOutNew('test');
+        $this->assertEquals('test', $this->gitHelper->getCurrentBranch());
+    }
 
-        // Add required Git config before committing.
-        shell_exec('git config user.email test@example.com');
-        shell_exec('git config user.name "Test"');
-
-        // Make a dummy commit so that there is a HEAD.
-        touch($repository . '/README.txt');
-        shell_exec('git add -A && git commit -qm "Initial commit"');
-
-        $this->assertTrue($this->gitHelper->branchExists('new', $repository));
+    /**
+     * Test GitHelper::getMergedBranches().
+     */
+    public function testGetMergedBranches()
+    {
+        $this->gitHelper->checkOutNew('branch1');
+        $this->gitHelper->checkOutNew('branch2');
+        $this->assertEquals([
+            'branch1',
+            'branch2',
+            'master',
+        ], $this->gitHelper->getMergedBranches('master'));
     }
 
     /**
@@ -111,12 +130,8 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetConfig()
     {
-        $email = 'test@example.com';
-        $repository = $this->getRepositoryDir();
-        chdir($repository);
-        shell_exec('git config user.email ' . $email);
-        $config = $this->gitHelper->getConfig('user.email', $repository);
-        $this->assertEquals($email, $config);
+        $config = $this->gitHelper->getConfig('user.email');
+        $this->assertEquals('test@example.com', $config);
     }
 
 }

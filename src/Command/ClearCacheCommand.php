@@ -19,7 +19,7 @@ class ClearCacheCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->api->clearCache();
+        $this->api()->clearCache();
         $this->stdErr->writeln("All caches have been cleared");
     }
 }

@@ -24,7 +24,7 @@ class LoginCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Disable the API token for this command.
-        if ($this->api->hasApiToken()) {
+        if ($this->api()->hasApiToken()) {
             throw new \Exception('Cannot log in: an API token is set');
         }
         // Login can only happen during interactive use.
@@ -36,9 +36,9 @@ class LoginCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->configureAccount($input, $this->stdErr);
 
-        $this->api->clearCache();
+        $this->api()->clearCache();
 
-        $info = $this->api->getClient(false)->getAccountInfo();
+        $info = $this->api()->getClient(false)->getAccountInfo();
         if (isset($info['mail'])) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('You are logged in as <info>' . $info['mail'] . '</info>.');
@@ -65,20 +65,6 @@ class LoginCommand extends CommandBase
         $question->setMaxAttempts(5);
         $email = $helper->ask($input, $output, $question);
 
-        $pendingInvitation = false;
-        if ($pendingInvitation) {
-            $resendInviteText = "\nThis email address is associated with a " . self::$config->get('service.name') . " account, \n";
-            $resendInviteText .= "but you haven't verified your email address yet. \n";
-            $resendInviteText .= "Please click on the link in the email we sent you. \n";
-            $resendInviteText .= "Do you want us to send you the email again?";
-            $resendInvite = $helper->confirm($resendInviteText, false);
-            if ($resendInvite) {
-                // @todo
-            }
-
-            return;
-        }
-
         $question = new Question('Your password: ');
         $question->setValidator(
             function ($answer) {
@@ -94,7 +80,7 @@ class LoginCommand extends CommandBase
         $password = $helper->ask($input, $output, $question);
 
         try {
-            $this->api->getClient(false)
+            $this->api()->getClient(false)
                 ->getConnector()
                 ->logIn($email, $password, true);
         } catch (BadResponseException $e) {
@@ -107,7 +93,7 @@ class LoginCommand extends CommandBase
                         throw new \RuntimeException("The code cannot be empty.");
                     }
                     try {
-                        $this->api->getClient(false)
+                        $this->api()->getClient(false)
                             ->getConnector()
                             ->logIn($email, $password, true, $answer);
                     }

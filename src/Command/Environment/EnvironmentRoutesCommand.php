@@ -42,20 +42,13 @@ class EnvironmentRoutesCommand extends CommandBase
         $header = ['Route', 'Type', 'To', 'Cache', 'SSI'];
         $rows = [];
         foreach ($routes as $route) {
-            $row = [
+            $rows[] = [
                 $route->id,
                 $route->type,
                 $route->type == 'upstream' ? $route->upstream : $route->to,
+                json_encode($route->cache),
+                json_encode($route->ssi),
             ];
-            if ($table->formatIsMachineReadable()) {
-                $row[] = json_encode($route->cache);
-                $row[] = json_encode($route->ssi);
-            }
-            else {
-                $row[] = wordwrap(json_encode($route->cache), 30, "\n", true);
-                $row[] = wordwrap(json_encode($route->ssi), 30, "\n", true);
-            }
-            $rows[] = $row;
         }
 
         if (!$table->formatIsMachineReadable()) {
