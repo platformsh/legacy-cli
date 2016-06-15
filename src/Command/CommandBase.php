@@ -948,7 +948,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $name = $this->getName();
 
         $placeholders = ['%command.name%', '%command.full_name%'];
-        $replacements = [$name, basename($_SERVER['PHP_SELF']) . ' ' . $name];
+        $replacements = [$name, self::$config->get('application.executable') . ' ' . $name];
 
         return str_replace($placeholders, $replacements, $help);
     }

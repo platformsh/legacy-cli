@@ -16,6 +16,16 @@ use Symfony\Component\Console\Descriptor\TextDescriptor;
 
 class CustomTextDescriptor extends TextDescriptor
 {
+    protected $cliExecutableName;
+
+    /**
+     * @param string|null $cliExecutableName
+     *   The name of the CLI command.
+     */
+    public function __construct($cliExecutableName = null)
+    {
+        $this->cliExecutableName = $cliExecutableName ?: basename($_SERVER['PHP_SELF']);
+    }
 
     /**
      * @inheritdoc
@@ -41,7 +51,7 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText('<comment>Usage:</comment>', $options);
         $this->writeText("\n");
-        $this->writeText(' ' . basename($_SERVER['PHP_SELF']) . ' ' . $command->getSynopsis(), $options);
+        $this->writeText(' ' . $this->cliExecutableName . ' ' . $command->getSynopsis(), $options);
         $this->writeText("\n");
 
         if ($definition = $command->getNativeDefinition()) {
@@ -63,7 +73,7 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText('<comment>Examples:</comment>', $options);
             $name = $command->getName();
             foreach ($examples as $arguments => $description) {
-                $this->writeText("\n $description:\n   <info>" . basename($_SERVER['PHP_SELF']) . " $name $arguments</info>\n");
+                $this->writeText("\n $description:\n   <info>" . $this->cliExecutableName . " $name $arguments</info>\n");
             }
         }
     }
