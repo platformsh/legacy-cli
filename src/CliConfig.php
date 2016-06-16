@@ -98,12 +98,31 @@ class CliConfig
             'ACCOUNTS_API' => 'api.accounts_api_url',
         ];
 
-        $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
         foreach ($overrideMap as $var => $key) {
-            if (array_key_exists($prefix . $var, $this->env)) {
-                Util::setNestedArrayValue(self::$config, explode('.', $key), $this->env[$prefix . $var], true);
+            $value = $this->getEnv($var);
+            if ($value !== false) {
+                Util::setNestedArrayValue(self::$config, explode('.', $key), $value, true);
             }
         }
+    }
+
+    /**
+     * Get an environment variable
+     *
+     * @param string $name
+     *   The variable name. The configured prefix will be prepended.
+     *
+     * @return mixed|false
+     *   The value of the environment variable, or false if it is not set.
+     */
+    protected function getEnv($name)
+    {
+        $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
+        if (array_key_exists($prefix . $name, $this->env)) {
+            return $this->env[$prefix . $name];
+        }
+
+        return getenv($prefix . $name);
     }
 
     /**

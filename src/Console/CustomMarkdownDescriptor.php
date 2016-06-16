@@ -9,6 +9,16 @@ use Symfony\Component\Console\Input\InputOption;
 
 class CustomMarkdownDescriptor extends MarkdownDescriptor
 {
+    protected $cliExecutableName;
+
+    /**
+     * @param string|null $cliExecutableName
+     *   The name of the CLI command.
+     */
+    public function __construct($cliExecutableName = null)
+    {
+        $this->cliExecutableName = $cliExecutableName ?: basename($_SERVER['PHP_SELF']);
+    }
 
     /**
      * @inheritdoc
@@ -32,7 +42,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             );
         }
 
-        $this->write("## Usage:\n\n```\n" . basename($_SERVER['PHP_SELF']) . " " . $command->getSynopsis() . "\n```\n\n");
+        $this->write("## Usage:\n\n```\n" . $this->cliExecutableName . " " . $command->getSynopsis() . "\n```\n\n");
 
         if ($help = $command->getProcessedHelp()) {
             $this->write($help);
@@ -49,7 +59,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write("\n");
             $name = $command->getName();
             foreach ($examples as $arguments => $description) {
-                $this->write("\n* $description:  \n  ```\n  " . basename($_SERVER['PHP_SELF']) . " $name $arguments\n  ```\n");
+                $this->write("\n* $description:  \n  ```\n  " . $this->cliExecutableName . " $name $arguments\n  ```\n");
             }
             $this->write("\n");
         }
