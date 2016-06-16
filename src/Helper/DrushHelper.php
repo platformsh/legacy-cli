@@ -85,6 +85,7 @@ class DrushHelper extends Helper implements OutputAwareInterface
 
         // Parse the version from the Drush output. It should be a string a bit
         // like " Drush Version   :  8.0.0-beta14 ".
+        $drushVersion = array_filter($drushVersion);
         if (!preg_match('/[:\s]\s*([0-9]+\.[a-z0-9\-\.]+)\s*$/', $drushVersion[0], $matches)) {
             throw new \Exception("Unexpected output from command '$command': \n" . implode("\n", $drushVersion));
         }
