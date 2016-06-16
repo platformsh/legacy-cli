@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Helper;
 use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Exception\DependencyMissingException;
-use Platformsh\Cli\Exception\DependencyVersionMismatchException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
@@ -61,10 +60,9 @@ class DrushHelper extends Helper implements OutputAwareInterface
      *
      * @param bool $reset
      *
-     * @return string
+     * @return string|false
+     *   The Drush version, or false if it cannot be determined.
      *
-     * @throws \Exception
-     *   If the version can't be found.
      * @throws DependencyMissingException
      *   If Drush is not installed.
      */
@@ -75,19 +73,20 @@ class DrushHelper extends Helper implements OutputAwareInterface
             return $version;
         }
         $command = $this->getDrushExecutable() . ' --version';
-        exec($command, $drushVersion, $returnCode);
+        exec($command, $output, $returnCode);
         if ($returnCode > 0) {
             if ($returnCode === 127) {
                 throw new DependencyMissingException('Drush is not installed');
             }
-            throw new \Exception("Error finding Drush version using command '$command'");
+
+            return false;
         }
 
         // Parse the version from the Drush output. It should be a string a bit
         // like " Drush Version   :  8.0.0-beta14 ".
-        $drushVersion = array_filter($drushVersion);
-        if (!preg_match('/[:\s]\s*([0-9]+\.[a-z0-9\-\.]+)\s*$/', $drushVersion[0], $matches)) {
-            throw new \Exception("Unexpected output from command '$command': \n" . implode("\n", $drushVersion));
+        $lines = array_filter($output);
+        if (!preg_match('/[:\s]\s*([0-9]+\.[a-z0-9\-\.]+)\s*$/', reset($lines), $matches)) {
+            return false;
         }
         $version = $matches[1];
 
@@ -95,18 +94,12 @@ class DrushHelper extends Helper implements OutputAwareInterface
     }
 
     /**
-     * @param string $minVersion
-     * @param bool   $reset
-     *
-     * @throws DependencyVersionMismatchException
+     * @throws DependencyMissingException
      */
-    public function ensureInstalled($minVersion = '6', $reset = false)
+    public function ensureInstalled()
     {
-        $version = $this->getVersion($reset);
-        if ($minVersion && version_compare($version, $minVersion, '<')) {
-            throw new DependencyVersionMismatchException(
-                sprintf('Drush version %s found, but %s (or later) is required', $version, $minVersion)
-            );
+        if (!$this->shellHelper->commandExists($this->getDrushExecutable())) {
+            throw new DependencyMissingException('Drush is not installed');
         }
     }
 
