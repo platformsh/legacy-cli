@@ -54,7 +54,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         // workaround: at the moment a PATCH with only the changed values will
         // cause a 500 error.
         foreach ($currentValues as $key => $currentValue) {
-            if ($key !== 'id' && !array_keyExists($key, $values)) {
+            if ($key !== 'id' && !array_key_exists($key, $values)) {
                 $values[$key] = $currentValue;
             }
         }
