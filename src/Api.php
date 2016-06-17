@@ -5,6 +5,8 @@ namespace Platformsh\Cli;
 use Doctrine\Common\Cache\CacheProvider;
 use Doctrine\Common\Cache\FilesystemCache;
 use Doctrine\Common\Cache\VoidCache;
+use GuzzleHttp\Event\CompleteEvent;
+use GuzzleHttp\Pool;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Connection\Connector;
@@ -173,32 +175,43 @@ class Api
     public function getProjects($refresh = null)
     {
         $cacheKey = sprintf('%s:projects', self::$sessionId);
-
-        /** @var Project[] $projects */
-        $projects = [];
-
         $cached = self::$cache->fetch($cacheKey);
 
         if ($refresh === false && !$cached) {
             return [];
         }
-        elseif ($refresh || !$cached) {
+
+        /** @var Project[] $projects */
+        $projects = [];
+
+        $guzzleClient = $this->getClient()->getConnector()->getClient();
+
+        if ($refresh || !$cached) {
+            // Load the list of the user's projects. This originates from the
+            // central Accounts API, and as such, contains a minimal amount of
+            // data about each project.
+            $requests = [];
             foreach ($this->getClient()->getProjects() as $project) {
-                $projects[$project->id] = $project;
+                $requests[] = $guzzleClient->createRequest('get', $project->getUri());
             }
 
-            $cachedProjects = [];
-            foreach ($projects as $id => $project) {
-                $cachedProjects[$id] = $project->getData();
-                $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
-            }
+            // Load data from each project's API endpoint, concurrently, and
+            // save it into $cachedProjects.
+            $cached = [];
+            Pool::send($guzzleClient, $requests, [
+                'complete' => function (CompleteEvent $event) use (&$cached, $guzzleClient) {
+                    $data = $event->getResponse()->json();
+                    $cached[$data['id']] = $data;
+                    $cached[$data['id']]['_endpoint'] = $event->getRequest()->getUrl();
+                },
+                'pool_size' => 8,
+            ]);
 
-            self::$cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
-        } else {
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
-            foreach ((array) $cached as $id => $data) {
-                $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
-            }
+            self::$cache->save($cacheKey, $cached, $this->config->get('api.projects_ttl'));
+        }
+
+        foreach ((array) $cached as $id => $data) {
+            $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient, true);
         }
 
         return $projects;
