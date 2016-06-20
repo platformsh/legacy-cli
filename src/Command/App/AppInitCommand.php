@@ -91,12 +91,19 @@ class AppInitCommand extends CommandBase
         else {
             $configFileAbsolute = sprintf('%s/%s', $projectRoot, $configFile);
         }
+
         $this->stdErr->writeln('Creating config file: ' . $configFileAbsolute);
+
+        if (file_exists($configFileAbsolute) && !$questionHelper->confirm('The config file already exists. Overwrite?')) {
+            return 1;
+        }
 
         $appConfig = $options;
         unset($appConfig['directory'], $appConfig['subdir']);
 
         $fs = new Filesystem();
         $fs->dumpFile($configFileAbsolute, Yaml::dump($appConfig, 10));
+
+        return 0;
     }
 }
