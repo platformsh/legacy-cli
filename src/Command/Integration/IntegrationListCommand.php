@@ -80,6 +80,10 @@ class IntegrationListCommand extends IntegrationCommandBase
                 $summary = sprintf('Room ID: %s', $details['room']);
                 break;
 
+            case 'slack':
+                $summary = sprintf('Channel: %s', $details['channel']);
+                break;
+
             case 'webhook':
                 $summary = sprintf('URL: %s', $details['url']);
                 break;
