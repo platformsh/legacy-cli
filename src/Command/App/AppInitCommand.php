@@ -54,8 +54,9 @@ class AppInitCommand extends CommandBase
                 ],
                 'default' => 'php:7.0',
             ]),
-            'subdir' => new BooleanField('Create the application in a subdirectory?', [
+            'subdir' => new BooleanField('Create the application in a subdirectory', [
                 'optionName' => 'subdir',
+                'default' => false,
             ]),
             'directory' => new Field('Directory name', [
                 'conditions' => ['subdir' => true],
