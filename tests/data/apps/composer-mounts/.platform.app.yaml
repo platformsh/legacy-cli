@@ -1,0 +1,12 @@
+name: composer-mounts
+type: php:7.0
+build:
+  flavor: composer
+web:
+  locations:
+    "/":
+      root: "/web"
+mounts:
+  "/web/js": "shared:files/assets/js"
+  "/web/css": "shared:files/assets/css"
+  "/cache": "shared:files/cache"

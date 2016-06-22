@@ -9,16 +9,29 @@ class DrupalTest extends BaseToolstackTest
 
     public function testBuildDrupalInProjectMode()
     {
-        $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/project');
+        $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/project', [
+            'absoluteLinks' => true,
+        ]);
         $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $shared = $projectRoot . '/' . self::$config->get('local.shared_dir');
+        $buildDir = $projectRoot . '/' . self::$config->get('local.build_dir') . '/default';
 
         // Test build results.
         $this->assertFileExists($webRoot . '/index.php');
 
-        // Test installation results.
+        // Test installation results: firstly, the mounts.
+        $this->assertFileExists($webRoot . '/sites/default/files');
+        $this->assertFileExists($buildDir . '/tmp');
+        $this->assertFileExists($buildDir . '/private');
+        $this->assertFileExists($buildDir . '/drush-backups');
+        $this->assertEquals($shared . '/files', readlink($webRoot . '/sites/default/files'));
+        $this->assertEquals($shared . '/tmp', readlink($buildDir . '/tmp'));
+        $this->assertEquals($shared . '/private', readlink($buildDir . '/private'));
+        $this->assertEquals($shared . '/drush-backups', readlink($buildDir . '/drush-backups'));
+
+        // And secondly, the special Drupal settings files.
         $this->assertFileExists($webRoot . '/sites/default/settings.php');
-        $this->assertFileExists($shared . '/settings.local.php');
+        $this->assertFileExists($webRoot . '/sites/default/settings.local.php');
 
         // Test custom build hooks' results.
         // Build hooks are not Drupal-specific, but they can only run if the

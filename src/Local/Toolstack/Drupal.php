@@ -387,6 +387,8 @@ class Drupal extends ToolstackBase
 
     public function install()
     {
+        parent::install();
+
         $webRoot = $this->getWebRoot();
         $sitesDefault = $webRoot . '/sites/default';
         $resources = CLI_ROOT . '/resources/drupal';
@@ -406,21 +408,15 @@ class Drupal extends ToolstackBase
             $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
         }
 
-        // Create a shared/files directory.
-        $sharedFiles = "$shared/files";
-        if ($shared && !file_exists($sharedFiles)) {
-            $this->output->writeln("Creating directory: <info>$sharedFiles</info>");
-            $this->output->writeln('This is where Drupal can store public files.');
-            // Group write access is potentially useful and probably harmless.
-            $this->fsHelper->mkdir($sharedFiles, 0775);
-        }
-
-        // Symlink all files and folders from shared. The "copy" option is
-        // ignored, to avoid copying a huge sites/default/files directory every
-        // time.
+        // Symlink all files and folders from shared into sites/default.
         if ($shared && is_dir($sitesDefault)) {
-            $this->output->writeln("Symlinking files from the 'shared' directory to sites/default");
-            $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, ['.*']);
+            // Hidden files and files defined in "mounts" are skipped.
+            $skip = ['.*'];
+            foreach ($this->app->getSharedFileMounts() as $mount) {
+                list($skip[], ) = explode('/', $mount, 2);
+            }
+
+            $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, $skip);
         }
     }
 }

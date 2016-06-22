@@ -22,6 +22,24 @@ class ComposerTest extends BaseToolstackTest
         $this->assertBuildSucceeds('tests/data/apps/hhvm37');
     }
 
+    public function testBuildComposerMounts()
+    {
+        $projectRoot = $this->assertBuildSucceeds('tests/data/apps/composer-mounts', [
+            'copy' => true,
+            'absoluteLinks' => true,
+        ]);
+        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $shared = $projectRoot . '/' . self::$config->get('local.shared_dir');
+        $buildDir = $projectRoot . '/' . self::$config->get('local.build_dir') . '/default';
+
+        $this->assertFileExists($webRoot . '/js');
+        $this->assertFileExists($webRoot . '/css');
+        $this->assertFileExists($buildDir . '/cache');
+        $this->assertEquals($shared . '/assets/js', readlink($webRoot . '/js'));
+        $this->assertEquals($shared . '/assets/css', readlink($webRoot . '/css'));
+        $this->assertEquals($shared . '/cache', readlink($buildDir . '/cache'));
+    }
+
     /**
      * Test the case where a user has specified "php:symfony" as the toolstack,
      * for an application which does not contain a composer.json file. The build

@@ -40,6 +40,7 @@ class Composer extends ToolstackBase
 
     public function install()
     {
+        parent::install();
         $this->copyGitIgnore('gitignore-composer');
     }
 }
