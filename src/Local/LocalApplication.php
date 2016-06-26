@@ -105,6 +105,28 @@ class LocalApplication
     }
 
     /**
+     * Get a list of shared file mounts configured for the app.
+     *
+     * @return array
+     *     An array of shared file mount paths, keyed by the path in the app.
+     *     Leading and trailing slashes are stripped.
+     */
+    public function getSharedFileMounts()
+    {
+        $sharedFileMounts = [];
+        $appConfig = $this->getConfig();
+        if (!empty($appConfig['mounts'])) {
+            foreach ($appConfig['mounts'] as $path => $uri) {
+                if (preg_match('#^shared:files/(.+)$#', $uri, $matches)) {
+                    $sharedFileMounts[trim($path, '/')] = trim($matches[1], '/');
+                }
+            }
+        }
+
+        return $sharedFileMounts;
+    }
+
+    /**
      * Normalize an application's configuration.
      *
      * @param array $config

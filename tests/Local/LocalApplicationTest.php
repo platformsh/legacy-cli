@@ -91,4 +91,17 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('nested1', $app->getName());
         $this->assertEquals('nested1', $app->getId());
     }
+
+    public function testGetSharedFileMounts()
+    {
+        $appRoot = 'tests/data/apps/drupal/project';
+        $app = new LocalApplication($appRoot);
+        $this->assertEquals([
+            'public/sites/default/files' => 'files',
+            'tmp' => 'tmp',
+            'private' => 'private',
+            'drush-backups' => 'drush-backups',
+        ], $app->getSharedFileMounts());
+
+    }
 }

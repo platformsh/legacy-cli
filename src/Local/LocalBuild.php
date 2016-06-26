@@ -257,7 +257,6 @@ class LocalBuild
         }
 
         // The build is complete. Move the directory.
-        $this->output->writeln('Moving build into place');
         $buildDir = substr($tmpBuildDir, 0, strlen($tmpBuildDir) - 4);
         if (file_exists($buildDir)) {
             $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
@@ -298,7 +297,7 @@ class LocalBuild
 
         $message = "\nBuild complete for application <info>$appId</info>";
         $this->output->writeln($message);
-        $this->output->writeln("Web root: $destination\n");
+        $this->output->writeln("Web root: <info>$destination</info>\n");
 
         return true;
     }

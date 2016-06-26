@@ -266,7 +266,50 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function install()
     {
-        // Override to define install steps.
+        $this->processSharedFileMounts();
+    }
+
+    /**
+     * Process shared file mounts in the application.
+     *
+     * For each "mount", this creates a corresponding directory in the project's
+     * shared files directory, and symlinks it into the appropriate path in the
+     * build.
+     */
+    protected function processSharedFileMounts()
+    {
+        $sharedDir = $this->getSharedDir();
+        if (empty($sharedDir)) {
+            return;
+        }
+
+        // If the build directory is a symlink, then skip, so that we don't risk
+        // modifying the user's repository.
+        if (is_link($this->buildDir)) {
+            return;
+        }
+
+        $sharedFileMounts = $this->app->getSharedFileMounts();
+        if (empty($sharedFileMounts)) {
+            return;
+        }
+
+        $sharedDirRelative = $this->config->get('local.shared_dir');
+        $this->output->writeln('Creating symbolic links to mimic shared file mounts');
+        foreach ($sharedFileMounts as $appPath => $sharedPath) {
+            $target = $sharedDir . '/' . $sharedPath;
+            $targetRelative = $sharedDirRelative . '/' . $sharedPath;
+            $link = $this->buildDir . '/' . $appPath;
+            if (file_exists($link) && !is_link($link)) {
+                $this->output->writeln('  Failed to symlink <comment>' . $appPath . '</comment> to <comment>' . $targetRelative . '</comment> (the source already exists in the build)');
+                continue;
+            }
+            if (!file_exists($target)) {
+                $this->fsHelper->mkdir($target, 0775);
+            }
+            $this->output->writeln('  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>');
+            $this->fsHelper->symlink($target, $link);
+        }
     }
 
     /**
