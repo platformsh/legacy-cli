@@ -109,7 +109,7 @@ integration
   integration:update                        Update an integration
 local
   local:build (build)                       Build the current project locally
-  local:clean (clean)                       Remove old project builds
+  local:dir (dir)                           Find the local project root
   local:drush-aliases (drush-aliases)       Find the project's Drush aliases
 project
   project:delete                            Delete a project
