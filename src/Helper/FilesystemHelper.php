@@ -202,7 +202,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
             $sourceDirectory = opendir($source);
             while ($file = readdir($sourceDirectory)) {
                 // Skip symlinks, '.' and '..', and files in $skip.
-                if ($file === '.' || $file === '..' || in_array($file, $skip) || is_link($source . '/' . $file)) {
+                if ($file === '.' || $file === '..' || $this->inBlacklist($file, $skip) || is_link($source . '/' . $file)) {
                     continue;
                 }
                 // Recurse into directories.
@@ -248,6 +248,25 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     }
 
     /**
+     * Check if a filename is in the blacklist.
+     *
+     * @param string   $filename
+     * @param string[] $blacklist
+     *
+     * @return bool
+     */
+    protected function inBlacklist($filename, array $blacklist)
+    {
+        foreach ($blacklist as $pattern) {
+            if (fnmatch($pattern, $filename, FNM_PATHNAME | FNM_CASEFOLD)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Symlink or copy all files and folders between two directories.
      *
      * @param string   $source
@@ -270,22 +289,12 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
 
         // Files to always skip.
         $skip = ['.git', '.DS_Store'];
-
-        // Go through the blacklist, adding files to $skip.
-        foreach ($blacklist as $pattern) {
-            $matched = glob($source . '/' . $pattern, GLOB_NOSORT);
-            if ($matched) {
-                foreach ($matched as $filename) {
-                    $relative = str_replace($source . '/', '', $filename);
-                    $skip[$relative] = $relative;
-                }
-            }
-        }
+        $skip = array_merge($skip, $blacklist);
 
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
             // Skip symlinks, '.' and '..', and files in $skip.
-            if ($file === '.' || $file === '..' || in_array($file, $skip) || is_link($source . '/' . $file)) {
+            if ($file === '.' || $file === '..' || $this->inBlacklist($file, $skip) || is_link($source . '/' . $file)) {
                 continue;
             }
             $sourceFile = $source . '/' . $file;
