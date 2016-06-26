@@ -279,7 +279,7 @@ abstract class ToolstackBase implements ToolstackInterface
     protected function processSharedFileMounts()
     {
         $sharedDir = $this->getSharedDir();
-        if (empty($sharedDir)) {
+        if ($sharedDir === false) {
             return;
         }
 
@@ -309,6 +309,32 @@ abstract class ToolstackBase implements ToolstackInterface
             }
             $this->output->writeln('  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>');
             $this->fsHelper->symlink($target, $link);
+        }
+    }
+
+    /**
+     * Create a settings.local.php for a Drupal site.
+     *
+     * This helps with database setup, etc.
+     */
+    protected function installDrupalSettingsLocal()
+    {
+        $sitesDefault = $this->getWebRoot() . '/sites/default';
+        $shared = $this->getSharedDir();
+        $settingsLocal = $sitesDefault . '/settings.local.php';
+
+        if ($shared !== false && is_dir($sitesDefault) && !file_exists($settingsLocal)) {
+            $sharedSettingsLocal = $shared . '/settings.local.php';
+            $relative = $this->config->get('local.shared_dir') . '/settings.local.php';
+            if (!file_exists($sharedSettingsLocal)) {
+                $this->output->writeln("Creating file: <info>$relative</info>");
+                $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);
+                $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
+            }
+            else {
+                $this->output->writeln("Symlinking <info>$relative</info> into sites/default");
+            }
+            $this->fsHelper->symlink($sharedSettingsLocal, $settingsLocal);
         }
     }
 
