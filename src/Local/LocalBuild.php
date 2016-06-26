@@ -262,7 +262,7 @@ class LocalBuild
             $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
             $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
             $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
-            if (!$this->fsHelper->remove($buildDir)) {
+            if (!$this->fsHelper->remove($buildDir, true)) {
                 $this->output->writeln(sprintf('Failed to remove directory <error>%s</error>', $buildDir));
 
                 return false;
