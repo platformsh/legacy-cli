@@ -42,5 +42,9 @@ class Composer extends ToolstackBase
     {
         parent::install();
         $this->copyGitIgnore('gitignore-composer');
+
+        if (Drupal::isDrupal($this->getWebRoot())) {
+            $this->installDrupalSettingsLocal();
+        }
     }
 }

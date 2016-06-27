@@ -387,33 +387,23 @@ class Drupal extends ToolstackBase
 
     public function install()
     {
-        parent::install();
-
-        $webRoot = $this->getWebRoot();
-        $sitesDefault = $webRoot . '/sites/default';
-        $resources = CLI_ROOT . '/resources/drupal';
+        $this->processSharedFileMounts();
 
         // Create a settings.php file in sites/default if there isn't one.
+        $sitesDefault = $this->getWebRoot() . '/sites/default';
         if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.php')) {
-            $this->fsHelper->copy($resources . '/settings.php.dist', $sitesDefault . '/settings.php');
+            $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.php.dist', $sitesDefault . '/settings.php');
         }
 
-        // Create the shared/settings.local.php if it doesn't exist. Everything
-        // in shared will be symlinked into sites/default.
-        $shared = $this->getSharedDir();
-        $settingsLocal = $shared . '/settings.local.php';
-        if ($shared && !file_exists($settingsLocal)) {
-            $this->output->writeln("Creating file: <info>$settingsLocal</info>");
-            $this->fsHelper->copy($resources . '/settings.local.php.dist', $settingsLocal);
-            $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
-        }
+        $this->installDrupalSettingsLocal();
 
         // Symlink all files and folders from shared into sites/default.
-        if ($shared && is_dir($sitesDefault)) {
+        $shared = $this->getSharedDir();
+        if ($shared !== false && is_dir($sitesDefault)) {
             // Hidden files and files defined in "mounts" are skipped.
             $skip = ['.*'];
             foreach ($this->app->getSharedFileMounts() as $mount) {
-                list($skip[], ) = explode('/', $mount, 2);
+                list($skip[],) = explode('/', $mount, 2);
             }
 
             $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, $skip);
