@@ -56,14 +56,16 @@ class Api
         self::$sessionId = $this->config->get('api.session_id') ?: 'default';
 
         if (!isset(self::$apiToken)) {
-            // Exchangeable API tokens.
+            // Exchangeable API tokens: a token which is exchanged for a
+            // temporary access token.
             if ($this->config->has('api.token')) {
                 self::$apiToken = $this->config->get('api.token');
                 self::$apiTokenType = 'exchange';
             }
-            // Permanent, personal access token (deprecated).
-            elseif ($this->config->has('api.permanent_access_token')) {
-                self::$apiToken = $this->config->get('api.permanent_access_token');
+            // Permanent, personal access token (deprecated) - an OAuth 2.0
+            // bearer token which is used directly in API requests.
+            elseif ($this->config->has('api.access_token')) {
+                self::$apiToken = $this->config->get('api.access_token');
                 self::$apiTokenType = 'access';
             }
         }
