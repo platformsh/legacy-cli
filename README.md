@@ -153,10 +153,19 @@ the command `platform clear-cache` (or `platform cc` for short).
 
 ## Customization
 
-You can configure the CLI via these environment variables:
+You can configure the CLI via the user configuration file `~/.platformsh/config.yaml`:
 
-* `PLATFORMSH_CLI_TOKEN`: an API token to use for non-interactive login (not yet available)
-* `PLATFORMSH_CLI_COPY_ON_WINDOWS`: set to 1 to avoid some Windows symlink issues
+```yaml
+api:
+  token: null # An API token to use for non-interactive login
+local:
+  copy_on_windows: false # Set true to avoid some Windows symlink issues
+updates:
+  check: true # Whether to check for automatic updates
+```
+
+Other customization is available via environment variables:
+
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')

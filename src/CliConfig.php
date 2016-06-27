@@ -173,6 +173,7 @@ class CliConfig
         $overrideMap = [
             'api.token' => 'api.token',
             'api.access_token' => 'api.access_token',
+            'local.copy_on_windows' => 'local.copy_on_windows',
             'experimental' => 'experimental',
             'updates' => 'updates',
         ];
