@@ -172,9 +172,7 @@ class CliConfig
     {
         // A whitelist of allowed overrides.
         $overrideMap = [
-            'api.token' => 'api.token_file',
             'api.token_file' => 'api.token_file',
-            'api.access_token' => 'api.access_token',
             'api.access_token_file' => 'api.access_token_file',
             'local.copy_on_windows' => 'local.copy_on_windows',
             'experimental' => 'experimental',
