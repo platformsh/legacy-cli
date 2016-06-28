@@ -157,11 +157,16 @@ You can configure the CLI via the user configuration file `~/.platformsh/config.
 
 ```yaml
 api:
-  token_file: null # The path to a file containing an API token
+  # The path (relative or absolute) to a file containing an API token.
+  token_file: null
 local:
-  copy_on_windows: false # Set true to avoid some Windows symlink issues
+  # Set this to true to avoid some Windows symlink issues.
+  copy_on_windows: false
 updates:
-  check: true # Whether to check for automatic updates
+  # Whether to check for automatic updates.
+  check: true
+  # The interval between checking for updates (seconds).
+  check_interval: 86400
 ```
 
 Other customization is available via environment variables:
