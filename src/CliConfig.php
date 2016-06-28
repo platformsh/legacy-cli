@@ -88,7 +88,7 @@ class CliConfig
     {
         $overrideMap = [
             'TOKEN' => 'api.token',
-            'API_TOKEN' => 'api.permanent_access_token', // Deprecated
+            'API_TOKEN' => 'api.access_token', // Deprecated
             'COPY_ON_WINDOWS' => 'local.copy_on_windows',
             'DEBUG' => 'api.debug',
             'DISABLE_CACHE' => 'api.disable_cache',
@@ -165,6 +165,8 @@ class CliConfig
     {
         // A whitelist of allowed overrides.
         $overrideMap = [
+            'api.token_file' => 'api.token_file',
+            'api.access_token_file' => 'api.access_token_file',
             'experimental' => 'experimental',
             'updates' => 'updates',
         ];
