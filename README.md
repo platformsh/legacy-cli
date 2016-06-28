@@ -157,14 +157,20 @@ You can configure the CLI via the user configuration file `~/.platformsh/config.
 
 ```yaml
 api:
-  # The path (relative or absolute) to a file containing an API token.
+  # A path (relative or absolute) to a file containing an API token.
   token_file: null
+
 local:
   # Set this to true to avoid some Windows symlink issues.
   copy_on_windows: false
+
+  # Configure the Drush executable to use (defaults to 'drush').
+  drush_executable: null
+
 updates:
   # Whether to check for automatic updates.
   check: true
+
   # The interval between checking for updates (seconds).
   check_interval: 86400
 ```
@@ -173,10 +179,8 @@ Other customization is available via environment variables:
 
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
-* `PLATFORMSH_CLI_DRUSH`: configure the Drush executable to use (default 'drush')
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
-* ~~`PLATFORMSH_CLI_API_TOKEN`: a 'personal access token' to authenticate all requests~~ (deprecated)
 
 ## Contributing
 

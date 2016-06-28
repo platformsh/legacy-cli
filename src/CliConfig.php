@@ -29,8 +29,8 @@ class CliConfig
         if (empty(self::$config) || $reset) {
             $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
             self::$config = $this->loadConfigFromFile($defaultsFile);
-            $this->applyEnvironmentOverrides();
             $this->applyUserConfigOverrides();
+            $this->applyEnvironmentOverrides();
         }
     }
 
@@ -172,9 +172,9 @@ class CliConfig
     {
         // A whitelist of allowed overrides.
         $overrideMap = [
-            'api.token_file' => 'api.token_file',
-            'api.access_token_file' => 'api.access_token_file',
+            'api' => 'api',
             'local.copy_on_windows' => 'local.copy_on_windows',
+            'local.drush_executable' => 'local.drush_executable',
             'experimental' => 'experimental',
             'updates' => 'updates',
         ];
