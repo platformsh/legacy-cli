@@ -72,13 +72,10 @@ class DrushHelper extends Helper implements OutputAwareInterface
         if (!$reset && isset($version)) {
             return $version;
         }
+        $this->ensureInstalled();
         $command = $this->getDrushExecutable() . ' --version';
         exec($command, $output, $returnCode);
         if ($returnCode > 0) {
-            if ($returnCode === 127) {
-                throw new DependencyMissingException('Drush is not installed');
-            }
-
             return false;
         }
 
@@ -98,9 +95,11 @@ class DrushHelper extends Helper implements OutputAwareInterface
      */
     public function ensureInstalled()
     {
-        if (!$this->shellHelper->commandExists($this->getDrushExecutable())) {
-            throw new DependencyMissingException('Drush is not installed');
+        static $installed;
+        if (empty($installed) && !$this->shellHelper->commandExists($this->getDrushExecutable())) {
+            throw new DependencyMissingException('Drush is not installed (command attempted: ' . $this->getDrushExecutable() . ')');
         }
+        $installed = true;
     }
 
     /**
@@ -141,8 +140,8 @@ class DrushHelper extends Helper implements OutputAwareInterface
      */
     public function getDrushExecutable()
     {
-        if (getenv($this->config->get('application.env_prefix') . 'DRUSH')) {
-            return getenv($this->config->get('application.env_prefix') . 'DRUSH');
+        if ($this->config->has('local.drush_executable')) {
+            return $this->config->get('local.drush_executable');
         }
 
         return $this->shellHelper->resolveCommand('drush');
