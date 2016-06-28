@@ -157,7 +157,7 @@ You can configure the CLI via the user configuration file `~/.platformsh/config.
 
 ```yaml
 api:
-  token: null # An API token to use for non-interactive login
+  token_file: null # The path to a file containing an API token
 local:
   copy_on_windows: false # Set true to avoid some Windows symlink issues
 updates:
