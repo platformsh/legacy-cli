@@ -81,7 +81,7 @@ class CliConfig
             throw new \RuntimeException('Failed to read config file: ' . $filename);
         }
 
-        return Yaml::parse($contents);
+        return (array) Yaml::parse($contents);
     }
 
     protected function applyEnvironmentOverrides()
