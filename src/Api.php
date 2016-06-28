@@ -100,7 +100,7 @@ class Api
             throw new \RuntimeException('Failed to read file: ' . $filename);
         }
 
-        return $content;
+        return trim($content);
     }
 
     /**
