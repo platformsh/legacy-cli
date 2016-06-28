@@ -9,7 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalDirCommand extends CommandBase
 {
-    protected $hiddenInList = true;
     protected $local = true;
 
     protected function configure()
@@ -31,6 +30,7 @@ class LocalDirCommand extends CommandBase
         $dir = $projectRoot;
 
         $subDirs = [
+            'builds' => self::$config->get('local.build_dir'),
             'local' => self::$config->get('local.local_dir'),
             'shared' => self::$config->get('local.shared_dir'),
             'web' => self::$config->get('local.web_root'),

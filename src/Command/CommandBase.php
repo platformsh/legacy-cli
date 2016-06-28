@@ -143,7 +143,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             error_reporting(false);
         }
         else {
-            error_reporting(E_PARSE);
+            error_reporting(E_PARSE | E_ERROR);
         }
 
         $this->promptLegacyMigrate();

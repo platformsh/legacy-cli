@@ -45,22 +45,24 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     private function getFields()
     {
+        $types = [
+            'github',
+            'hipchat',
+            'webhook',
+        ];
+
         return [
             'type' => new OptionsField('Type', [
                 'optionName' => 'type',
-                'description' => "The integration type ('github', 'hipchat', or 'webhook')",
-                'options' => [
-                    'github',
-                    'hipchat',
-                    'webhook',
-                ],
+                'description' => 'The integration type (\'' . implode('\', \'', $types) . '\')',
+                'options' => $types,
             ]),
             'token' => new Field('Token', [
                 'conditions' => ['type' => [
                     'github',
                     'hipchat',
                 ]],
-                'description' => 'GitHub or HipChat: An OAuth token for the integration',
+                'description' => 'An OAuth token for the integration',
                 'validator' => function ($string) {
                     return base64_decode($string, true) !== false;
                 },
@@ -93,7 +95,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'GitHub: sync all branches',
             ]),
-            'room' => new Field('Hipchat room ID', [
+            'room' => new Field('HipChat room ID', [
                 'conditions' => ['type' => [
                     'hipchat',
                 ]],

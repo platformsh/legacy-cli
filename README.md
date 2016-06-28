@@ -103,7 +103,7 @@ integration
   integration:update                        Update an integration
 local
   local:build (build)                       Build the current project locally
-  local:clean (clean)                       Remove old project builds
+  local:dir (dir)                           Find the local project root
 project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally
@@ -146,10 +146,27 @@ the command `magento-cloud clear-cache` (or `magento-cloud cc` for short).
 
 ## Customization
 
-You can configure the CLI via these environment variables:
+You can configure the CLI via the user configuration file `~/.magento-cloud/config.yaml`:
 
-* `MAGENTO_CLOUD_CLI_TOKEN`: an API token to use for non-interactive login (not yet available)
-* `MAGENTO_CLOUD_CLI_COPY_ON_WINDOWS`: set to 1 to avoid some Windows symlink issues
+```yaml
+api:
+  # A path (relative or absolute) to a file containing an API token.
+  token_file: null
+
+local:
+  # Set this to true to avoid some Windows symlink issues.
+  copy_on_windows: false
+
+updates:
+  # Whether to check for automatic updates.
+  check: true
+
+  # The interval between checking for updates (seconds).
+  check_interval: 86400
+```
+
+Other customization is available via environment variables:
+
 * `MAGENTO_CLOUD_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `MAGENTO_CLOUD_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `MAGENTO_CLOUD_CLI_SESSION_ID`: change user session (default 'default')

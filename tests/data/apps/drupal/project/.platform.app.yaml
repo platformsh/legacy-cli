@@ -8,3 +8,10 @@ hooks:
         cd public
         rm robots.txt
         touch test.txt
+
+# Test mounts
+mounts:
+    "/public/sites/default/files": "shared:files/files"
+    "/tmp": "shared:files/tmp"
+    "/private": "shared:files/private"
+    "/drush-backups": "shared:files/drush-backups"

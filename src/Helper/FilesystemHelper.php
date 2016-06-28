@@ -68,20 +68,68 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     /**
      * Delete a file or directory.
      *
-     * @param string $filename
+     * @param string|array|\Traversable $files
+     *   A filename, an array of files, or a \Traversable instance to delete.
+     * @param bool   $retryWithChmod
+     *   Whether to retry deleting on error, after recursively changing file
+     *   modes to add read/write/exec permissions. A bit like 'rm -rf'.
      *
      * @return bool
      */
-    public function remove($filename)
+    public function remove($files, $retryWithChmod = false)
     {
         try {
-            $this->fs->remove($filename);
+            $this->fs->remove($files);
         } catch (IOException $e) {
+            if ($retryWithChmod && $this->unprotect($files, true)) {
+                return $this->remove($files, false);
+            }
             trigger_error($e->getMessage(), E_USER_WARNING);
+
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Make files writable by the current user.
+     *
+     * @param string|array|\Traversable $files
+     *   A filename, an array of files, or a \Traversable instance.
+     * @param bool $recursive
+     *   Whether to change the mode recursively or not.
+     *
+     * @return bool
+     *   True on success, false on failure.
+     */
+    protected function unprotect($files, $recursive = false)
+    {
+        if (!$files instanceof \Traversable) {
+            $files = new \ArrayObject(is_array($files) ? $files : array($files));
+        }
+
+        $success = true;
+
+        foreach ($files as $file) {
+            if (is_link($file)) {
+                continue;
+            }
+            elseif (is_dir($file)) {
+                if ((!is_executable($file) || !is_writable($file))
+                    && true !== chmod($file, 0700)) {
+                    $success = false;
+                }
+                if ($recursive) {
+                    $success = $success && $this->unprotect(new \FilesystemIterator($file), true);
+                }
+            }
+            elseif (!is_writable($file) && true !== chmod($file, 0600)) {
+                $success = false;
+            }
+        }
+
+        return $success;
     }
 
     /**
@@ -154,7 +202,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
             $sourceDirectory = opendir($source);
             while ($file = readdir($sourceDirectory)) {
                 // Skip symlinks, '.' and '..', and files in $skip.
-                if ($file === '.' || $file === '..' || in_array($file, $skip) || is_link($source . '/' . $file)) {
+                if ($file === '.' || $file === '..' || $this->inBlacklist($file, $skip) || is_link($source . '/' . $file)) {
                     continue;
                 }
                 // Recurse into directories.
@@ -200,6 +248,25 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     }
 
     /**
+     * Check if a filename is in the blacklist.
+     *
+     * @param string   $filename
+     * @param string[] $blacklist
+     *
+     * @return bool
+     */
+    protected function inBlacklist($filename, array $blacklist)
+    {
+        foreach ($blacklist as $pattern) {
+            if (fnmatch($pattern, $filename, FNM_PATHNAME | FNM_CASEFOLD)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Symlink or copy all files and folders between two directories.
      *
      * @param string   $source
@@ -222,22 +289,12 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
 
         // Files to always skip.
         $skip = ['.git', '.DS_Store'];
-
-        // Go through the blacklist, adding files to $skip.
-        foreach ($blacklist as $pattern) {
-            $matched = glob($source . '/' . $pattern, GLOB_NOSORT);
-            if ($matched) {
-                foreach ($matched as $filename) {
-                    $relative = str_replace($source . '/', '', $filename);
-                    $skip[$relative] = $relative;
-                }
-            }
-        }
+        $skip = array_merge($skip, $blacklist);
 
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
             // Skip symlinks, '.' and '..', and files in $skip.
-            if ($file === '.' || $file === '..' || in_array($file, $skip) || is_link($source . '/' . $file)) {
+            if ($file === '.' || $file === '..' || $this->inBlacklist($file, $skip) || is_link($source . '/' . $file)) {
                 continue;
             }
             $sourceFile = $source . '/' . $file;

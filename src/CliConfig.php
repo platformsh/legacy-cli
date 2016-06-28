@@ -29,21 +29,22 @@ class CliConfig
         if (empty(self::$config) || $reset) {
             $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
             self::$config = $this->loadConfigFromFile($defaultsFile);
-            $this->applyEnvironmentOverrides();
             $this->applyUserConfigOverrides();
+            $this->applyEnvironmentOverrides();
         }
     }
 
     /**
      * @param string $name
+     * @param bool   $notNull
      *
      * @return bool
      */
-    public function has($name)
+    public function has($name, $notNull = true)
     {
-        Util::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = Util::getNestedArrayValue(self::$config, explode('.', $name), $exists);
 
-        return $exists;
+        return $exists && (!$notNull || $value !== null);
     }
 
     /**
@@ -81,14 +82,14 @@ class CliConfig
             throw new \RuntimeException('Failed to read config file: ' . $filename);
         }
 
-        return Yaml::parse($contents);
+        return (array) Yaml::parse($contents);
     }
 
     protected function applyEnvironmentOverrides()
     {
         $overrideMap = [
             'TOKEN' => 'api.token',
-            'API_TOKEN' => 'api.permanent_access_token', // Deprecated
+            'API_TOKEN' => 'api.access_token', // Deprecated
             'COPY_ON_WINDOWS' => 'local.copy_on_windows',
             'DEBUG' => 'api.debug',
             'DISABLE_CACHE' => 'api.disable_cache',
@@ -155,8 +156,14 @@ class CliConfig
         $existingConfig = $this->getUserConfig();
         $config = array_replace_recursive($existingConfig, $config);
         $configFile = $dir . '/config.yaml';
+        $new = !file_exists($configFile);
         if (file_put_contents($configFile, Yaml::dump($config, 10)) === false) {
             trigger_error('Failed to write user config to: ' . $configFile, E_USER_WARNING);
+        }
+        // If the config file was newly created, then chmod to be r/w only by
+        // the user.
+        if ($new) {
+            chmod($configFile, 0600);
         }
         $this->userConfig = $config;
     }
@@ -165,6 +172,9 @@ class CliConfig
     {
         // A whitelist of allowed overrides.
         $overrideMap = [
+            'api' => 'api',
+            'local.copy_on_windows' => 'local.copy_on_windows',
+            'local.drush_executable' => 'local.drush_executable',
             'experimental' => 'experimental',
             'updates' => 'updates',
         ];
