@@ -24,6 +24,7 @@ class Symfony extends Composer
 
     public function install()
     {
+        parent::install();
         $this->copyGitIgnore('symfony/gitignore-standard');
     }
 

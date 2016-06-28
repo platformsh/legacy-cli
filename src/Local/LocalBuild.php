@@ -257,13 +257,12 @@ class LocalBuild
         }
 
         // The build is complete. Move the directory.
-        $this->output->writeln('Moving build into place');
         $buildDir = substr($tmpBuildDir, 0, strlen($tmpBuildDir) - 4);
         if (file_exists($buildDir)) {
             $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
             $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
             $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
-            if (!$this->fsHelper->remove($buildDir)) {
+            if (!$this->fsHelper->remove($buildDir, true)) {
                 $this->output->writeln(sprintf('Failed to remove directory <error>%s</error>', $buildDir));
 
                 return false;
@@ -298,7 +297,7 @@ class LocalBuild
 
         $message = "\nBuild complete for application <info>$appId</info>";
         $this->output->writeln($message);
-        $this->output->writeln("Web root: $destination\n");
+        $this->output->writeln("Web root: <info>$destination</info>\n");
 
         return true;
     }

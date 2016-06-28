@@ -54,9 +54,6 @@ api:
   # Overridden by {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
 
-  # Overridden by {application.env_prefix}TOKEN env var.
-  token: null
-
 # How the CLI detects and configures Git repositories as projects.
 detection:
   git_remote_name: 'platform'

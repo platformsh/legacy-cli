@@ -266,7 +266,76 @@ abstract class ToolstackBase implements ToolstackInterface
      */
     public function install()
     {
-        // Override to define install steps.
+        $this->processSharedFileMounts();
+    }
+
+    /**
+     * Process shared file mounts in the application.
+     *
+     * For each "mount", this creates a corresponding directory in the project's
+     * shared files directory, and symlinks it into the appropriate path in the
+     * build.
+     */
+    protected function processSharedFileMounts()
+    {
+        $sharedDir = $this->getSharedDir();
+        if ($sharedDir === false) {
+            return;
+        }
+
+        // If the build directory is a symlink, then skip, so that we don't risk
+        // modifying the user's repository.
+        if (is_link($this->buildDir)) {
+            return;
+        }
+
+        $sharedFileMounts = $this->app->getSharedFileMounts();
+        if (empty($sharedFileMounts)) {
+            return;
+        }
+
+        $sharedDirRelative = $this->config->get('local.shared_dir');
+        $this->output->writeln('Creating symbolic links to mimic shared file mounts');
+        foreach ($sharedFileMounts as $appPath => $sharedPath) {
+            $target = $sharedDir . '/' . $sharedPath;
+            $targetRelative = $sharedDirRelative . '/' . $sharedPath;
+            $link = $this->buildDir . '/' . $appPath;
+            if (file_exists($link) && !is_link($link)) {
+                $this->output->writeln('  Failed to symlink <comment>' . $appPath . '</comment> to <comment>' . $targetRelative . '</comment> (the source already exists in the build)');
+                continue;
+            }
+            if (!file_exists($target)) {
+                $this->fsHelper->mkdir($target, 0775);
+            }
+            $this->output->writeln('  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>');
+            $this->fsHelper->symlink($target, $link);
+        }
+    }
+
+    /**
+     * Create a settings.local.php for a Drupal site.
+     *
+     * This helps with database setup, etc.
+     */
+    protected function installDrupalSettingsLocal()
+    {
+        $sitesDefault = $this->getWebRoot() . '/sites/default';
+        $shared = $this->getSharedDir();
+        $settingsLocal = $sitesDefault . '/settings.local.php';
+
+        if ($shared !== false && is_dir($sitesDefault) && !file_exists($settingsLocal)) {
+            $sharedSettingsLocal = $shared . '/settings.local.php';
+            $relative = $this->config->get('local.shared_dir') . '/settings.local.php';
+            if (!file_exists($sharedSettingsLocal)) {
+                $this->output->writeln("Creating file: <info>$relative</info>");
+                $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);
+                $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
+            }
+            else {
+                $this->output->writeln("Symlinking <info>$relative</info> into sites/default");
+            }
+            $this->fsHelper->symlink($sharedSettingsLocal, $settingsLocal);
+        }
     }
 
     /**

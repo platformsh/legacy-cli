@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalCleanCommand extends CommandBase
 {
     protected $local = true;
+    protected $hiddenInList = true;
 
     protected function configure()
     {

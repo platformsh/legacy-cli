@@ -49,6 +49,7 @@ class NodeJs extends ToolstackBase
 
     public function install()
     {
+        parent::install();
         $this->copyGitIgnore('gitignore-nodejs');
     }
 }
