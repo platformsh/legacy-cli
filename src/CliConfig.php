@@ -36,14 +36,15 @@ class CliConfig
 
     /**
      * @param string $name
+     * @param bool   $notNull
      *
      * @return bool
      */
-    public function has($name)
+    public function has($name, $notNull = true)
     {
-        Util::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = Util::getNestedArrayValue(self::$config, explode('.', $name), $exists);
 
-        return $exists;
+        return $exists && (!$notNull || $value !== null);
     }
 
     /**
