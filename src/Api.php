@@ -468,4 +468,12 @@ class Api
 
         return $value;
     }
+
+    /**
+     * @return bool
+     */
+    public function isLoggedIn()
+    {
+        return $this->getClient(false)->getConnector()->isLoggedIn();
+    }
 }

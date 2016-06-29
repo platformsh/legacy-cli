@@ -209,7 +209,7 @@ class LocalBuildCommand extends CommandBase
     protected function determineEnvironmentId($sourceDir, $projectRoot = null)
     {
         // Find out the real environment ID, if possible.
-        if ($projectRoot && $this->isLoggedIn()) {
+        if ($projectRoot && $this->api()->isLoggedIn()) {
             try {
                 $project = $this->getCurrentProject();
                 if ($project && ($environment = $this->getCurrentEnvironment($project))) {

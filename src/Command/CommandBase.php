@@ -303,19 +303,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Check if the user is logged in.
-     *
-     * @return bool
-     */
-    protected function isLoggedIn()
-    {
-        return $this->api()
-                    ->getClient(false)
-                    ->getConnector()
-                    ->isLoggedIn();
-    }
-
-    /**
      * Is this a local command? (if it does not make API requests)
      *
      * @return bool
