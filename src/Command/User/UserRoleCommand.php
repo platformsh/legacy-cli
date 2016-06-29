@@ -56,11 +56,10 @@ class UserRoleCommand extends CommandBase
             return 1;
         }
 
-        $currentRole = false;
-        $environmentAccess = false;
-        $validRoles = ProjectAccess::$roles;
         if ($level !== 'environment') {
             $currentRole = $selectedUser->role;
+            $environmentAccess = false;
+            $validRoles = ProjectAccess::$roles;
         }
         else {
             if (!$this->hasSelectedEnvironment()) {
@@ -68,12 +67,13 @@ class UserRoleCommand extends CommandBase
                 return 1;
             }
             $environmentAccess = $this->getSelectedEnvironment()->getUser($selectedUser->id);
-            $currentRole = $environmentAccess === false ? false : $environmentAccess->role;
+            $currentRole = $environmentAccess === false ? 'none' : $environmentAccess->role;
             $validRoles = EnvironmentAccess::$roles;
+            $validRoles[] = 'none';
         }
 
         $role = $input->getOption('role');
-        if ($role && $role !== 'none' && !in_array($role, $validRoles)) {
+        if ($role && !in_array($role, $validRoles)) {
             $this->stdErr->writeln("Invalid role: $role");
             return 1;
         }
@@ -89,7 +89,7 @@ class UserRoleCommand extends CommandBase
             return 1;
         }
 
-        if ($role === $currentRole || ($role === 'none' && $currentRole === false)) {
+        if ($role === $currentRole) {
             $this->stdErr->writeln("There is nothing to change");
         }
         elseif ($role && $level !== 'environment') {
@@ -98,7 +98,7 @@ class UserRoleCommand extends CommandBase
         }
         elseif ($role && $level === 'environment') {
             $environment = $this->getSelectedEnvironment();
-            if ($role == 'none') {
+            if ($role === 'none') {
                 if ($environmentAccess instanceof EnvironmentAccess) {
                     $result = $environmentAccess->delete();
                 }
