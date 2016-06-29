@@ -24,10 +24,13 @@ class ComposerTest extends BaseToolstackTest
 
     public function testBuildComposerMounts()
     {
-        $projectRoot = $this->assertBuildSucceeds('tests/data/apps/composer-mounts', [
+        $sourceDir = 'tests/data/apps/composer-mounts';
+        copy($sourceDir . '/gitignore-dist', $sourceDir . '/.gitignore');
+        $projectRoot = $this->assertBuildSucceeds($sourceDir, [
             'copy' => true,
             'absoluteLinks' => true,
         ]);
+        unlink($sourceDir . '/.gitignore');
         $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $shared = $projectRoot . '/' . self::$config->get('local.shared_dir');
         $buildDir = $projectRoot . '/' . self::$config->get('local.build_dir') . '/default';
@@ -35,6 +38,9 @@ class ComposerTest extends BaseToolstackTest
         $this->assertFileExists($webRoot . '/js');
         $this->assertFileExists($webRoot . '/css');
         $this->assertFileExists($buildDir . '/cache');
+        $this->assertFileExists($buildDir . '/please-copy');
+        $this->assertFileNotExists($buildDir . '/please-do-not-copy');
+        $this->assertFileNotExists($buildDir . '/.platform.app.yaml');
         $this->assertEquals($shared . '/assets/js', readlink($webRoot . '/js'));
         $this->assertEquals($shared . '/assets/css', readlink($webRoot . '/css'));
         $this->assertEquals($shared . '/cache', readlink($buildDir . '/cache'));

@@ -175,12 +175,13 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     /**
      * Copy all files and folders between directories.
      *
-     * @param string $source
-     * @param string $destination
-     * @param array  $skip
-     * @param bool   $override
+     * @param string      $source
+     * @param string      $destination
+     * @param array       $skip
+     * @param bool        $override
+     * @param string|null $subPath
      */
-    public function copyAll($source, $destination, array $skip = ['.git', '.DS_Store'], $override = false)
+    public function copyAll($source, $destination, array $skip = ['.git', '.DS_Store'], $override = false, $subPath = null)
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -200,12 +201,13 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
             $sourceDirectory = opendir($source);
             while ($file = readdir($sourceDirectory)) {
                 // Skip symlinks, '.' and '..', and files in $skip.
-                if ($file === '.' || $file === '..' || $this->inBlacklist($file, $skip) || is_link($source . '/' . $file)) {
+                $relative = $subPath ? $subPath . '/' . $file : $file;
+                if ($file === '.' || $file === '..' || $this->inBlacklist($relative, $skip) || is_link($source . '/' . $file)) {
                     continue;
                 }
                 // Recurse into directories.
                 elseif (is_dir($source . '/' . $file)) {
-                    $this->copyAll($source . '/' . $file, $destination . '/' . $file, $skip, $override);
+                    $this->copyAll($source . '/' . $file, $destination . '/' . $file, $skip, $override, $relative);
                 }
                 // Perform the copy.
                 elseif (is_file($source . '/' . $file)) {
@@ -267,16 +269,17 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     /**
      * Symlink or copy all files and folders between two directories.
      *
-     * @param string   $source
-     * @param string   $destination
-     * @param bool     $skipExisting
-     * @param bool     $recursive
-     * @param string[] $blacklist
-     * @param bool     $copy
+     * @param string      $source
+     * @param string      $destination
+     * @param bool        $skipExisting
+     * @param bool        $recursive
+     * @param string[]    $blacklist
+     * @param bool        $copy
+     * @param string|null $subPath
      *
      * @throws \Exception When a conflict is discovered.
      */
-    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = [], $copy = false)
+    public function symlinkAll($source, $destination, $skipExisting = true, $recursive = false, $blacklist = [], $copy = false, $subPath = null)
     {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -292,14 +295,15 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
             // Skip symlinks, '.' and '..', and files in $skip.
-            if ($file === '.' || $file === '..' || $this->inBlacklist($file, $skip) || is_link($source . '/' . $file)) {
+            $relative = $subPath ? $subPath . '/' . $file : $file;
+            if ($file === '.' || $file === '..' || $this->inBlacklist($relative, $skip) || is_link($source . '/' . $file)) {
                 continue;
             }
             $sourceFile = $source . '/' . $file;
             $linkFile = $destination . '/' . $file;
 
             if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
-                $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, $blacklist, $copy);
+                $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, $blacklist, $copy, $relative);
                 continue;
             }
             elseif (file_exists($linkFile)) {

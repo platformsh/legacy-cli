@@ -114,7 +114,7 @@ class Drupal extends ToolstackBase
         }
         $repositoryDir = $this->settings['sourceDir'];
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
-        if (!$this->gitHelper->execute(['check-ignore', $relative], $repositoryDir)) {
+        if (!$this->gitHelper->checkIgnore($relative, $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
             $this->output->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
         }
