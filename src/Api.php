@@ -476,4 +476,24 @@ class Api
     {
         return $this->getClient(false)->getConnector()->isLoggedIn();
     }
+
+    /**
+     * Load a project user ("project access" record) by email address.
+     *
+     * @param Project $project
+     * @param string  $email
+     *
+     * @return ProjectAccess|false
+     */
+    public function loadProjectAccessByEmail(Project $project, $email)
+    {
+        foreach ($project->getUsers() as $user) {
+            $account = $this->getAccount($user);
+            if ($account['email'] === $email) {
+                return $user;
+            }
+        }
+
+        return false;
+    }
 }

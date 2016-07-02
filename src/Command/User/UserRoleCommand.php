@@ -4,11 +4,13 @@ namespace Platformsh\Cli\Command\User;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\EnvironmentAccess;
+use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class UserRoleCommand extends CommandBase
 {
@@ -33,6 +35,7 @@ class UserRoleCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $level = $input->getOption('level');
+        $role = $input->getOption('role');
         $validLevels = ['project', 'environment', null];
         if (!in_array($level, $validLevels)) {
             $this->stdErr->writeln("Invalid level: <error>$level</error>");
@@ -40,57 +43,63 @@ class UserRoleCommand extends CommandBase
         }
 
         $this->validateInput($input, true);
-
         $project = $this->getSelectedProject();
 
-        $email = $input->getArgument('email');
-        foreach ($project->getUsers() as $user) {
-            $account = $this->api()->getAccount($user);
-            if ($account['email'] === $email) {
-                $selectedUser = $user;
-                break;
-            }
+        if ($level === null && $role && $this->hasSelectedEnvironment() && $input->isInteractive()) {
+            $environment = $this->getSelectedEnvironment();
+            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
+            $question = new ChoiceQuestion('For which access level do you want to set the role?', [
+                'project' => 'The project',
+                'environment' => sprintf('The environment (%s)', $environment->id),
+            ]);
+            $level = $questionHelper->ask($input, $output, $question);
         }
-        if (empty($selectedUser)) {
-            $this->stdErr->writeln("User not found: <error>$email</error>");
+        elseif ($level === null && $role) {
+            $level = 'project';
+        }
+
+        // Validate the --role option, according to the level.
+        $validRoles = $level !== 'environment'
+            ? ProjectAccess::$roles
+            : array_merge(EnvironmentAccess::$roles, ['none']);
+        if ($role && !in_array($role, $validRoles)) {
+            $this->stdErr->writeln('Invalid ' . $level .' role: ' . $role);
+
             return 1;
         }
 
+        // Load the user.
+        $email = $input->getArgument('email');
+        $selectedUser = $this->api()->loadProjectAccessByEmail($project, $email);
+        if (!$selectedUser) {
+            $this->stdErr->writeln("User not found: <error>$email</error>");
+
+            return 1;
+        }
+
+        // Get the current role.
         if ($level !== 'environment') {
             $currentRole = $selectedUser->role;
             $environmentAccess = false;
-            $validRoles = ProjectAccess::$roles;
         }
         else {
-            if (!$this->hasSelectedEnvironment()) {
-                $this->stdErr->writeln('You must specify an environment');
-                return 1;
-            }
             $environmentAccess = $this->getSelectedEnvironment()->getUser($selectedUser->id);
             $currentRole = $environmentAccess === false ? 'none' : $environmentAccess->role;
-            $validRoles = EnvironmentAccess::$roles;
-            $validRoles[] = 'none';
         }
 
-        $role = $input->getOption('role');
-        if ($role && !in_array($role, $validRoles)) {
-            $this->stdErr->writeln("Invalid role: $role");
-            return 1;
+        if ($role === $currentRole) {
+            $this->stdErr->writeln("There is nothing to change");
         }
-
-        if ($role && $project->owner === $selectedUser->id) {
+        elseif ($role && $project->owner === $selectedUser->id) {
             $this->stdErr->writeln("The user <error>$email</error> is the owner of the project <error>{$project->title}</error>.");
             $this->stdErr->writeln("You cannot change the role of the project's owner.");
             return 1;
         }
         elseif ($role && $level === 'environment' && $selectedUser->role === ProjectAccess::ROLE_ADMIN) {
             $this->stdErr->writeln("The user <error>$email</error> is an admin on the project <error>{$project->title}</error>.");
-            $this->stdErr->writeln('You cannot change the environment-level role of a project administrator.');
+            $this->stdErr->writeln('You cannot change the environment-level role of a project admin.');
             return 1;
-        }
-
-        if ($role === $currentRole) {
-            $this->stdErr->writeln("There is nothing to change");
         }
         elseif ($role && $level !== 'environment') {
             $result = $selectedUser->update(['role' => $role]);

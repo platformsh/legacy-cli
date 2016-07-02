@@ -45,12 +45,9 @@ class UserAddCommand extends CommandBase
 
         $project = $this->getSelectedProject();
 
-        $users = $project->getUsers();
-        foreach ($users as $projectAccess) {
-            if ($this->api()->getAccount($projectAccess)['email'] === $email) {
-                $this->stdErr->writeln("The user already exists: <comment>$email</comment>");
-                return 1;
-            }
+        if ($this->api()->loadProjectAccessByEmail($project, $email)) {
+            $this->stdErr->writeln("The user already exists: <comment>$email</comment>");
+            return 1;
         }
 
         $projectRole = $input->getOption('role');

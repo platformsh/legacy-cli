@@ -27,12 +27,7 @@ class UserDeleteCommand extends CommandBase
         $project = $this->getSelectedProject();
 
         $email = $input->getArgument('email');
-        foreach ($project->getUsers() as $user) {
-            if ($this->api()->getAccount($user)['email'] === $email) {
-                $selectedUser = $user;
-                break;
-            }
-        }
+        $selectedUser = $this->api()->loadProjectAccessByEmail($project, $email);
         if (empty($selectedUser)) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
             return 1;
