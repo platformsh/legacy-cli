@@ -38,6 +38,8 @@ class LocalBuild
      *
      * @param array                $settings
      *     Possible settings:
+     *     - clone (bool, default false) Clone the repository to the build
+     *       directory before building, where possible.
      *     - copy (bool, default false) Copy files instead of symlinking them,
      *       where possible.
      *     - absoluteLinks (bool, default false) Use absolute paths in symlinks.
