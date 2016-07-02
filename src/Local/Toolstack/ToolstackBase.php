@@ -301,8 +301,7 @@ abstract class ToolstackBase implements ToolstackInterface
             $targetRelative = $sharedDirRelative . '/' . $sharedPath;
             $link = $this->buildDir . '/' . $appPath;
             if (file_exists($link) && !is_link($link)) {
-                $this->output->writeln('  Failed to symlink <comment>' . $appPath . '</comment> to <comment>' . $targetRelative . '</comment> (the source already exists in the build)');
-                continue;
+                $this->output->writeln('  Overwriting existing file <comment>' . $appPath . '</comment>');
             }
             if (!file_exists($target)) {
                 $this->fsHelper->mkdir($target, 0775);
