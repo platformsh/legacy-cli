@@ -14,7 +14,7 @@ class LocalBuild
 
     // Some changes may not be backwards-compatible with previous build
     // archives. Increment this number as breaking changes are released.
-    const BUILD_VERSION = 3;
+    const BUILD_VERSION = 4;
 
     protected $settings;
 
@@ -178,6 +178,7 @@ class LocalBuild
         if (file_exists($sourceDir . '/.git')) {
             $localProject = new LocalProject();
             $localProject->writeGitExclude($sourceDir);
+            $toolstack->addIgnoredFiles($this->getIgnoredFiles($sourceDir));
         }
 
         if (file_exists($tmpBuildDir)) {
@@ -417,6 +418,27 @@ class LocalBuild
         }
 
         return $activeBuilds;
+    }
+
+    /**
+     * Get a list of files excluded from Git within a repository.
+     *
+     * @return string[]
+     */
+    protected function getIgnoredFiles($dir)
+    {
+        $args = ['ls-files', '--others', '--ignored', '--exclude-standard', '--directory'];
+        $output = $this->gitHelper->execute($args, $dir);
+        if (!is_string($output)) {
+            return [];
+        }
+
+        $files = explode("\n", trim($output));
+        $files = array_map(function ($file) {
+            return trim($file, '/');
+        }, $files);
+
+        return $files;
     }
 
     /**

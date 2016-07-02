@@ -297,6 +297,23 @@ class GitHelper extends Helper implements OutputAwareInterface
     }
 
     /**
+     * Check if a file is excluded from Git via .gitignore or another mechanism.
+     *
+     * @param string      $path
+     * @param string|null $dir
+     * @param bool        $mustRun
+     *
+     * @return bool
+     *   True if the file is excluded, false otherwise.
+     */
+    public function checkIgnore($path, $dir = null, $mustRun = false)
+    {
+        $args = ['check-ignore', $path, '--quiet'];
+
+        return (bool) $this->execute($args, $dir, $mustRun);
+    }
+
+    /**
      * Check out a branch.
      *
      * @param string      $name

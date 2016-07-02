@@ -10,6 +10,6 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
     {
         $builder = new LocalBuild();
         $treeId = $builder->getTreeId('tests/data/apps/composer');
-        $this->assertEquals('944cb5782066b6bd501677a35a6399b6b7a7c573', $treeId);
+        $this->assertEquals('205056a25e6cef7cc71cf3ff2c1dd0eedfcc15af', $treeId);
     }
 }
