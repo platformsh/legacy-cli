@@ -188,13 +188,7 @@ class ProjectGetCommand extends CommandBase
 
         // We have a repo! Yay. Clone it.
         $this->stdErr->writeln(sprintf('Downloading project <info>%s</info>', $project->title ?: $projectId));
-        $cloneArgs = [
-            '--branch',
-            $environment,
-            '--origin',
-            self::$config->get('detection.git_remote_name'),
-            '--recursive',
-        ];
+        $cloneArgs = ['--branch', $environment, '--origin', self::$config->get('detection.git_remote_name')];
         $cloned = $gitHelper->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
@@ -204,6 +198,8 @@ class ProjectGetCommand extends CommandBase
 
             return 1;
         }
+
+        $gitHelper->updateSubmodules(true, $projectRoot);
 
         $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
         $this->localProject->writeGitExclude($projectRoot);
