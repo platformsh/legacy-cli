@@ -9,6 +9,24 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 
+/**
+ * Display a table in a format chosen by the user.
+ *
+ * Usage:
+ * <code>
+ *     // In a command's configure() method, add the --format option:
+ *     Table::addFormatOption($this->getDefinition());
+ *
+ *     // In a command's execute() method, build and display the table:
+ *     $table = new Table($input, $output);
+ *     $header = ['Column 1', 'Column 2', 'Column 3'];
+ *     $rows = [
+ *         ['Cell 1', 'Cell 2', 'Cell 3'],
+ *         ['Cell 4', 'Cell 5', 'Cell 6'],
+ *     ];
+ *     $table->render($rows, $header);
+ * </code>
+ */
 class Table
 {
     protected $output;
@@ -89,7 +107,11 @@ class Table
     }
 
     /**
+     * Find whether the user wants machine-readable output.
+     *
      * @return bool
+     *   True if the user has specified a machine-readable format via the
+     *   --format option (e.g. 'csv' or 'tsv'), false otherwise.
      */
     public function formatIsMachineReadable()
     {

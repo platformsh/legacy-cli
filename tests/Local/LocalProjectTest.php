@@ -4,28 +4,16 @@ namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Local\LocalProject;
-use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamDirectory;
 
 class LocalProjectTest extends \PHPUnit_Framework_TestCase
 {
 
-    /** @var vfsStreamDirectory */
-    protected $root;
-
-    /**
-     * @{inheritdoc}
-     */
-    public function setUp()
-    {
-        $this->root = vfsStream::setup(__CLASS__);
-    }
+    use HasTempDirTrait;
 
     public function testGetLegacyProjectRoot()
     {
-        $tempDir = $this->root->getName();
-        $testDir = tempnam($tempDir, '');
-        unlink($testDir);
+        $this->tempDirSetUp();
+        $testDir = $this->tempDir;
         mkdir("$testDir/1/2/3/4/5", 0755, true);
 
         $expectedRoot = "$testDir/1";
@@ -35,13 +23,15 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
 
         chdir($testDir);
         $localProject = new LocalProject();
+        $this->assertFalse($localProject->getProjectRoot());
         $this->assertFalse($localProject->getLegacyProjectRoot());
 
         chdir($expectedRoot);
+        $this->assertFalse($localProject->getProjectRoot());
         $this->assertEquals($expectedRoot, $localProject->getLegacyProjectRoot());
 
         chdir("$testDir/1/2/3/4/5");
+        $this->assertFalse($localProject->getProjectRoot());
         $this->assertEquals($expectedRoot, $localProject->getLegacyProjectRoot());
     }
-
 }

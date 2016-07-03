@@ -109,27 +109,25 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
             $files = new \ArrayObject(is_array($files) ? $files : array($files));
         }
 
-        $success = true;
-
         foreach ($files as $file) {
             if (is_link($file)) {
                 continue;
             }
             elseif (is_dir($file)) {
                 if ((!is_executable($file) || !is_writable($file))
-                    && true !== chmod($file, 0700)) {
-                    $success = false;
+                    && true !== @chmod($file, 0700)) {
+                    return false;
                 }
-                if ($recursive) {
-                    $success = $success && $this->unprotect(new \FilesystemIterator($file), true);
+                if ($recursive && !$this->unprotect(new \FilesystemIterator($file), true)) {
+                    return false;
                 }
             }
-            elseif (!is_writable($file) && true !== chmod($file, 0600)) {
-                $success = false;
+            elseif (!is_writable($file) && true !== @chmod($file, 0600)) {
+                return false;
             }
         }
 
-        return $success;
+        return true;
     }
 
     /**

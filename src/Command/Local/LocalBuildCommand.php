@@ -12,7 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalBuildCommand extends CommandBase
 {
     protected $local = true;
-    protected $defaultDrushConcurrency = 4;
 
     protected function configure()
     {
@@ -80,7 +79,7 @@ class LocalBuildCommand extends CommandBase
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Drush: set the number of concurrent projects that will be processed at the same time',
-                $this->defaultDrushConcurrency
+                4
             )
             ->addOption(
                 'lock',
@@ -165,18 +164,11 @@ class LocalBuildCommand extends CommandBase
             }
         }
 
-        $settings = [];
-
-        $settings['projectRoot'] = $projectRoot;
-
-        $settings['environmentId'] = $this->determineEnvironmentId($sourceDir, $projectRoot);
-
-        $settings['drushConcurrency'] = $input->hasOption('concurrency') ? $input->getOption('concurrency') : $this->defaultDrushConcurrency;
-
-        // Some simple settings flags.
+        // Map input options to build settings.
         $settingsMap = [
             'absoluteLinks' => 'abslinks',
             'copy' => 'copy',
+            'drushConcurrency' => 'concurrency',
             'drushWorkingCopy' => 'working-copy',
             'drushUpdateLock' => 'lock',
             'noArchive' => 'no-archive',
@@ -184,8 +176,11 @@ class LocalBuildCommand extends CommandBase
             'noClean' => 'no-clean',
             'noBuildHooks' => 'no-build-hooks',
         ];
+        $settings = [];
         foreach ($settingsMap as $setting => $option) {
-            $settings[$setting] = $input->hasOption($option) && $input->getOption($option);
+            if ($input->hasOption($option)) {
+                $settings[$setting] = $input->getOption($option);
+            }
         }
 
         $apps = $input->getArgument('app');
@@ -194,42 +189,5 @@ class LocalBuildCommand extends CommandBase
         $success = $builder->build($sourceDir, $destination, $apps);
 
         return $success ? 0 : 1;
-    }
-
-    /**
-     * Find out the environment ID, if possible.
-     *
-     * This is appended to the build directory name.
-     *
-     * @param string $sourceDir
-     * @param string|false $projectRoot
-     *
-     * @return string|false
-     */
-    protected function determineEnvironmentId($sourceDir, $projectRoot = null)
-    {
-        // Find out the real environment ID, if possible.
-        if ($projectRoot && $this->isLoggedIn()) {
-            try {
-                $project = $this->getCurrentProject();
-                if ($project && ($environment = $this->getCurrentEnvironment($project))) {
-                    return $environment->id;
-                }
-            }
-            catch (\Exception $e) {
-                // An exception may be thrown if the user no longer has access
-                // to the project, or perhaps if there is no network access. We
-                // can still let the user build the project locally.
-            }
-        }
-
-        // Fall back to the Git branch name.
-        if (is_dir($sourceDir . '/.git')) {
-            /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
-            $gitHelper = $this->getHelper('git');
-            return $gitHelper->getCurrentBranch($sourceDir);
-        }
-
-        return false;
     }
 }
