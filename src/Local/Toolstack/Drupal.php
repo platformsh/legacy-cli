@@ -130,15 +130,14 @@ class Drupal extends ToolstackBase
         $drushFlags = [
             '--yes',
         ];
-        if (!empty($this->settings['verbosity'])) {
-            $verbosity = $this->settings['verbosity'];
-            if ($verbosity === OutputInterface::VERBOSITY_QUIET) {
-                $drushFlags[] = '--quiet';
-            } elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
-                $drushFlags[] = '--debug';
-            } elseif ($verbosity >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-                $drushFlags[] = '--verbose';
-            }
+
+        $verbosity = $this->output->getVerbosity();
+        if ($verbosity === OutputInterface::VERBOSITY_QUIET) {
+            $drushFlags[] = '--quiet';
+        } elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
+            $drushFlags[] = '--debug';
+        } elseif ($verbosity >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            $drushFlags[] = '--verbose';
         }
 
         if (!empty($this->settings['drushWorkingCopy'])) {

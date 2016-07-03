@@ -31,7 +31,7 @@ class NodeJs extends ToolstackBase
 
             $npm = $this->shellHelper->resolveCommand('npm');
             $npmArgs = [$npm];
-            if (!empty($this->settings['verbosity']) && $this->settings['verbosity'] >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                 $npmArgs[] = '--loglevel=verbose';
             }
 
