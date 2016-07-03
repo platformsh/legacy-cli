@@ -6,7 +6,7 @@
         "doctrine/cache": "~1.5",
         "guzzlehttp/ringphp": "^1.1",
         "platformsh/console-form": "0.0.8",
-        "platformsh/client": "0.5.4",
+        "platformsh/client": "0.5.5",
         "symfony/console": "^3.0",
         "symfony/yaml": "^3.0 || ^2.6",
         "symfony/finder": "^3.0",
