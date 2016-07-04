@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\User;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\EnvironmentAccess;
-use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
