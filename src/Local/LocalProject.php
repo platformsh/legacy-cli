@@ -149,9 +149,7 @@ class LocalProject
     {
         // Backwards compatibility - if in an old-style project root, change
         // directory to the repository.
-        $configFilename = $this->config->get('local.project_config');
-        $legacyConfigFilename = $this->config->get('local.project_config');
-        if (is_dir('repository') && file_exists($legacyConfigFilename)) {
+        if (is_dir('repository') && file_exists($this->config->get('local.project_config_legacy'))) {
             $cwd = getcwd();
             chdir('repository');
         }
@@ -159,7 +157,7 @@ class LocalProject
         // The project root is a Git repository, which contains a project
         // configuration file, and/or contains a Git remote with the appropriate
         // domain.
-        $dir = $this->findTopDirectoryContaining('.git', function ($dir) use ($configFilename, $legacyConfigFilename) {
+        $dir = $this->findTopDirectoryContaining('.git', function ($dir) {
             $config = $this->getProjectConfig($dir);
 
             return !empty($config);

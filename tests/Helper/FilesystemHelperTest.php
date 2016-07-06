@@ -3,15 +3,13 @@
 namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\Helper\FilesystemHelper;
-use org\bovigo\vfs\vfsStream;
 
-class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
+class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
+{
+    use HasTempDirTrait;
 
     /** @var FilesystemHelper */
     protected $filesystemHelper;
-
-    /** @var string */
-    protected $root;
 
     /**
      * @{inheritdoc}
@@ -19,8 +17,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
     public function setUp()
     {
         $this->filesystemHelper = new FilesystemHelper();
-        $root = vfsStream::setup(__CLASS__);
-        $this->root = vfsStream::url(__CLASS__);
+        $this->tempDirSetUp();
     }
 
     /**
@@ -60,19 +57,21 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * Test FilesystemHelper::copy().
+     * Test FilesystemHelper::copyAll().
      */
-    public function testCopy()
+    public function testCopyAll()
     {
         $source = $this->tempDir(true);
         $destination = $this->tempDir();
+        touch($source . '/.donotcopy');
 
         // Copy files.
-        $this->filesystemHelper->copyAll($source, $destination);
+        $this->filesystemHelper->copyAll($source, $destination, ['.*']);
 
         // Check that they have been copied.
         $this->assertFileExists($destination . '/test-file');
         $this->assertFileExists($destination . '/test-dir/test-file');
+        $this->assertFileNotExists($destination . '/.donotcopy');
     }
 
     /**
@@ -162,9 +161,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
      */
     protected function tempDir($fill = false)
     {
-        $testDir = tempnam($this->root, '');
-        unlink($testDir);
-        mkdir($testDir);
+        $testDir = $this->createTempSubDir();
         if ($fill) {
             touch($testDir . '/test-file');
             mkdir($testDir . '/test-dir');
@@ -172,6 +169,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase {
             mkdir($testDir . '/test-nesting/1/2/3', 0755, true);
             touch($testDir . '/test-nesting/1/2/3/test-file');
         }
+
         return $testDir;
     }
 

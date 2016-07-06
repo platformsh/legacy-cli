@@ -20,7 +20,8 @@ local:
   shared_dir: '.platform/local/shared'
   web_root: '_www'
 
-  # Overridden by {application.env_prefix}COPY_ON_WINDOWS env var.
+  # This can be overridden by the {application.env_prefix}COPY_ON_WINDOWS env
+  # var, or via the user config file.
   copy_on_windows: false
 
 # Details about the cloud service that the CLI works with.
@@ -33,6 +34,7 @@ service:
   accounts_url: 'https://accounts.platform.sh'
 
 # Configuration relating to API calls.
+# This can be overridden in the user config file.
 api:
   oauth2_client_id: 'platform-cli'
   projects_ttl: 3600
@@ -54,9 +56,6 @@ api:
   # Overridden by {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
 
-  # Overridden by {application.env_prefix}TOKEN env var.
-  token: null
-
 # How the CLI detects and configures Git repositories as projects.
 detection:
   git_remote_name: 'platform'
@@ -64,6 +63,7 @@ detection:
   api_domain: 'platform.sh'
 
 # Automatic updates.
+# This can be overridden in the user config file.
 updates:
   check: true
   last_checked: null

@@ -143,7 +143,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             error_reporting(false);
         }
         else {
-            error_reporting(E_PARSE);
+            error_reporting(E_PARSE | E_ERROR);
         }
 
         $this->promptLegacyMigrate();
@@ -300,19 +300,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if ($exitCode) {
             throw new \Exception('Login failed');
         }
-    }
-
-    /**
-     * Check if the user is logged in.
-     *
-     * @return bool
-     */
-    protected function isLoggedIn()
-    {
-        return $this->api()
-                    ->getClient(false)
-                    ->getConnector()
-                    ->isLoggedIn();
     }
 
     /**

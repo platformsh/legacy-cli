@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Tests;
 
-use org\bovigo\vfs\vfsStream;
 use Platformsh\Cli\Helper\DrushHelper;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Client\Model\Environment;
@@ -10,12 +9,10 @@ use Platformsh\Client\Model\Project;
 
 class DrushHelperTest extends \PHPUnit_Framework_TestCase
 {
+    use HasTempDirTrait;
 
     /** @var DrushHelper */
     protected $drushHelper;
-
-    /** @var string */
-    protected $root;
 
     /** @var Project */
     protected $project;
@@ -28,8 +25,6 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $root = vfsStream::setup(__CLASS__);
-        $this->root = vfsStream::url(__CLASS__);
         $this->drushHelper = new DrushHelper();
 
         // Set up a dummy project with a remote environment.
@@ -45,14 +40,14 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
                 'ssh' => ['href' => 'ssh://user@example.com'],
             ],
         ], null, null, true);
+
+        $this->tempDirSetUp();
     }
 
     public function testCreateAliases()
     {
         // Set up file structure.
-        $testDir = tempnam($this->root, '');
-        unlink($testDir);
-        mkdir($testDir);
+        $testDir = $this->createTempSubDir();
         $projectRoot = "$testDir/project";
         $homeDir = "$testDir/home";
         mkdir($projectRoot);
@@ -73,9 +68,7 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
     public function testCreateAliasesMultiApp()
     {
         // Set up file structure.
-        $testDir = tempnam($this->root, '');
-        unlink($testDir);
-        mkdir($testDir);
+        $testDir = $this->createTempSubDir();
 
         $fsHelper = new FilesystemHelper();
         $fsHelper->copyAll(__DIR__ . '/../data/repositories/multiple', $testDir . '/project/repository');
@@ -102,9 +95,7 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
     public function testCreateAliasesMultiDrupal()
     {
         // Set up file structure.
-        $testDir = tempnam($this->root, '');
-        unlink($testDir);
-        mkdir($testDir);
+        $testDir = $this->createTempSubDir();
 
         $fsHelper = new FilesystemHelper();
         $fsHelper->copyAll(__DIR__ . '/../data/repositories/multi-drupal', $testDir . '/project/repository');

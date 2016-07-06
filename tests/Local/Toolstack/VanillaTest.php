@@ -7,7 +7,6 @@ use Platformsh\Cli\Local\LocalBuild;
 
 class VanillaTest extends BaseToolstackTest
 {
-
     public function testBuildVanilla()
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla');
@@ -46,16 +45,12 @@ class VanillaTest extends BaseToolstackTest
     public function testBuildCustomSourceDestination()
     {
         // Copy the 'vanilla' app to a temporary directory.
-        $tempDir = self::$root->getName();
-        $sourceDir = tempnam($tempDir, '');
-        unlink($sourceDir);
-        mkdir($sourceDir);
+        $sourceDir = $this->createTempSubDir();
         $fsHelper = new FilesystemHelper();
         $fsHelper->copyAll('tests/data/apps/vanilla', $sourceDir);
 
         // Create another temporary directory.
-        $tempDir = self::$root->getName();
-        $destination = tempnam($tempDir, '');
+        $destination = $this->createTempSubDir();
 
         // Test with symlinking.
         $builder = new LocalBuild(['absoluteLinks' => true], null, self::$output);

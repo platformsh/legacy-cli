@@ -342,7 +342,7 @@ class Application extends ParentApplication
             }
         } while ($e = $e->getPrevious());
 
-        if (null !== $this->currentCommand) {
+        if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
             $output->writeln(sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
             $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', $this->cliConfig->get('application.executable'), $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);

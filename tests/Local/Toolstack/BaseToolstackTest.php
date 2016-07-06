@@ -2,19 +2,16 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
-use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamDirectory;
 use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Tests\HasTempDirTrait;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
 {
-
-    /** @var vfsStreamDirectory */
-    protected static $root;
+    use HasTempDirTrait;
 
     /** @var \Symfony\Component\Console\Output\OutputInterface */
     protected static $output;
@@ -32,7 +29,6 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
      */
     public static function setUpBeforeClass()
     {
-        self::$root = vfsStream::setup(__CLASS__);
         self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
         self::$config = new CliConfig();
     }
@@ -47,14 +43,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
             null,
             self::$output
         );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public static function tearDownAfterClass()
-    {
-        exec('rm -Rf ' . escapeshellarg(self::$root->getName()));
+        $this->tempDirSetUp();
     }
 
     /**
@@ -93,10 +82,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
             throw new \InvalidArgumentException("Not a directory: $sourceDir");
         }
 
-        $tempDir = self::$root->getName();
-        $projectRoot = tempnam($tempDir, '');
-        unlink($projectRoot);
-        mkdir($projectRoot);
+        $projectRoot = $this->createTempSubDir('project');
 
         // Set up the project.
         $fsHelper = new FilesystemHelper();

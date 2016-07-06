@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class UserRoleCommand extends CommandBase
 {
@@ -20,7 +21,7 @@ class UserRoleCommand extends CommandBase
             ->setDescription("View or change a user's role")
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address")
             ->addOption('role', 'r', InputOption::VALUE_REQUIRED, "A new role for the user")
-            ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", 'project')
+            ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role only');
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -33,74 +34,79 @@ class UserRoleCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $level = $input->getOption('level');
-        $validLevels = ['project', 'environment'];
+        $role = $input->getOption('role');
+        $validLevels = ['project', 'environment', null];
         if (!in_array($level, $validLevels)) {
             $this->stdErr->writeln("Invalid level: <error>$level</error>");
             return 1;
         }
 
         $this->validateInput($input, true);
-
         $project = $this->getSelectedProject();
 
-        $email = $input->getArgument('email');
-        foreach ($project->getUsers() as $user) {
-            $account = $this->api()->getAccount($user);
-            if ($account['email'] === $email) {
-                $selectedUser = $user;
-                break;
-            }
-        }
-        if (empty($selectedUser)) {
-            $this->stdErr->writeln("User not found: <error>$email</error>");
-            return 1;
-        }
-
-        $currentRole = false;
-        $environmentAccess = false;
-        $validRoles = ProjectAccess::$roles;
-        if ($level == 'project') {
-            $currentRole = $selectedUser['role'];
-        }
-        elseif ($level == 'environment') {
-            if (!$this->hasSelectedEnvironment()) {
-                $this->stdErr->writeln('You must specify an environment');
-                return 1;
-            }
+        if ($level === null && $role && $this->hasSelectedEnvironment() && $input->isInteractive()) {
             $environment = $this->getSelectedEnvironment();
-            $environmentAccesses = $environment->getUsers();
-            foreach ($environmentAccesses as $candidate) {
-                if ($candidate->user === $selectedUser->id) {
-                    $environmentAccess = $candidate;
-                    $currentRole = $environmentAccess->role;
-                    break;
-                }
-            }
-            $validRoles = EnvironmentAccess::$roles;
+            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
+            $question = new ChoiceQuestion('For which access level do you want to set the role?', [
+                'project' => 'The project',
+                'environment' => sprintf('The environment (%s)', $environment->id),
+            ]);
+            $level = $questionHelper->ask($input, $output, $question);
+        }
+        elseif ($level === null && $role) {
+            $level = 'project';
         }
 
-        $role = $input->getOption('role');
-        if ($role && $role !== 'none' && !in_array($role, $validRoles)) {
-            $this->stdErr->writeln("Invalid role: $role");
+        // Validate the --role option, according to the level.
+        $validRoles = $level !== 'environment'
+            ? ProjectAccess::$roles
+            : array_merge(EnvironmentAccess::$roles, ['none']);
+        if ($role && !in_array($role, $validRoles)) {
+            $this->stdErr->writeln('Invalid ' . $level .' role: ' . $role);
+
             return 1;
         }
 
-        if ($role && $project->owner === $selectedUser->id) {
+        // Load the user.
+        $email = $input->getArgument('email');
+        $selectedUser = $this->api()->loadProjectAccessByEmail($project, $email);
+        if (!$selectedUser) {
+            $this->stdErr->writeln("User not found: <error>$email</error>");
+
+            return 1;
+        }
+
+        // Get the current role.
+        if ($level !== 'environment') {
+            $currentRole = $selectedUser->role;
+            $environmentAccess = false;
+        }
+        else {
+            $environmentAccess = $this->getSelectedEnvironment()->getUser($selectedUser->id);
+            $currentRole = $environmentAccess === false ? 'none' : $environmentAccess->role;
+        }
+
+        if ($role === $currentRole) {
+            $this->stdErr->writeln("There is nothing to change");
+        }
+        elseif ($role && $project->owner === $selectedUser->id) {
             $this->stdErr->writeln("The user <error>$email</error> is the owner of the project <error>{$project->title}</error>.");
             $this->stdErr->writeln("You cannot change the role of the project's owner.");
             return 1;
         }
-
-        if ($role === $currentRole || ($role === 'none' && $currentRole === false)) {
-            $this->stdErr->writeln("There is nothing to change");
+        elseif ($role && $level === 'environment' && $selectedUser->role === ProjectAccess::ROLE_ADMIN) {
+            $this->stdErr->writeln("The user <error>$email</error> is an admin on the project <error>{$project->title}</error>.");
+            $this->stdErr->writeln('You cannot change the environment-level role of a project admin.');
+            return 1;
         }
-        elseif ($role && $level == 'project') {
+        elseif ($role && $level !== 'environment') {
             $result = $selectedUser->update(['role' => $role]);
             $this->stdErr->writeln("User <info>$email</info> updated");
         }
-        elseif ($role && $level == 'environment') {
+        elseif ($role && $level === 'environment') {
             $environment = $this->getSelectedEnvironment();
-            if ($role == 'none') {
+            if ($role === 'none') {
                 if ($environmentAccess instanceof EnvironmentAccess) {
                     $result = $environmentAccess->delete();
                 }
@@ -119,28 +125,37 @@ class UserRoleCommand extends CommandBase
         }
 
         if ($input->getOption('pipe')) {
-            if ($level == 'project') {
+            if ($level !== 'environment') {
                 $output->writeln($selectedUser->role);
-            } elseif ($level == 'environment') {
-                $environment = $this->getSelectedEnvironment();
-                $output->writeln($selectedUser->getEnvironmentRole($environment) ?: 'none');
+            } else {
+                $access = $this->getSelectedEnvironment()->getUser($selectedUser->id);
+                $output->writeln($access ? $access->role : 'none');
             }
 
             return 0;
         }
 
-        $output->writeln("Project role: <info>{$selectedUser->role}</info>");
+        if ($level !== 'environment') {
+            $output->writeln("Project role: <info>{$selectedUser->role}</info>");
+        }
 
-        if ($this->hasSelectedEnvironment()) {
-            $environment = $this->getSelectedEnvironment();
-            $environmentAccesses = $environment->getUsers();
-            $currentEnvironmentRole = 'none';
-            foreach ($environmentAccesses as $environmentAccess) {
-                if ($selectedUser->id === $environmentAccess->user) {
-                    $currentEnvironmentRole = $environmentAccess->role;
-                }
+        $environments = [];
+        if ($level === 'environment') {
+            $environments = [$this->getSelectedEnvironment()];
+        }
+        elseif ($level === null && $selectedUser->role !== ProjectAccess::ROLE_ADMIN) {
+            $environments = $this->api()->getEnvironments($project);
+            $this->api()->sortResources($environments, 'id');
+            if ($this->hasSelectedEnvironment()) {
+                $environment = $this->getSelectedEnvironment();
+                unset($environments[$environment->id]);
+                array_splice($environments, 0, 0, [$environment->id => $environment]);
             }
-            $output->writeln("Role for environment {$environment->title}: <info>$currentEnvironmentRole</info>");
+        }
+
+        foreach ($environments as $environment) {
+            $access = $environment->getUser($selectedUser->id);
+            $output->writeln(sprintf('Role for environment %s: <info>%s</info>', $environment->id, $access ? $access->role : 'none'));
         }
 
         return 0;

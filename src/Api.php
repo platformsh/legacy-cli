@@ -56,19 +56,51 @@ class Api
         self::$sessionId = $this->config->get('api.session_id') ?: 'default';
 
         if (!isset(self::$apiToken)) {
-            // Exchangeable API tokens.
-            if ($this->config->has('api.token')) {
+            // Exchangeable API tokens: a token which is exchanged for a
+            // temporary access token.
+            if ($this->config->has('api.token_file')) {
+                self::$apiToken = $this->loadTokenFromFile($this->config->get('api.token_file'));
+                self::$apiTokenType = 'exchange';
+            }
+            elseif ($this->config->has('api.token')) {
                 self::$apiToken = $this->config->get('api.token');
                 self::$apiTokenType = 'exchange';
             }
-            // Permanent, personal access token (deprecated).
-            elseif ($this->config->has('api.permanent_access_token')) {
-                self::$apiToken = $this->config->get('api.permanent_access_token');
+            // Permanent, personal access token (deprecated) - an OAuth 2.0
+            // bearer token which is used directly in API requests.
+            elseif ($this->config->has('api.access_token_file')) {
+                self::$apiToken = $this->loadTokenFromFile($this->config->get('api.access_token_file'));
+                self::$apiTokenType = 'access';
+            }
+            elseif ($this->config->has('api.access_token')) {
+                self::$apiToken = $this->config->get('api.access_token');
                 self::$apiTokenType = 'access';
             }
         }
 
         $this->setUpCache();
+    }
+
+    /**
+     * Load an API token from a file.
+     *
+     * @param string $filename
+     *   A filename, either relative to the user config directory, or absolute.
+     *
+     * @return string
+     */
+    protected function loadTokenFromFile($filename)
+    {
+        if (strpos($filename, '/') !== 0 && strpos($filename, '\\') !== 0) {
+            $filename = $this->config->getUserConfigDir() . '/' . $filename;
+        }
+
+        $content = file_get_contents($filename);
+        if ($content === false) {
+            throw new \RuntimeException('Failed to read file: ' . $filename);
+        }
+
+        return trim($content);
     }
 
     /**
@@ -435,5 +467,33 @@ class Api
         }
 
         return $value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLoggedIn()
+    {
+        return $this->getClient(false)->getConnector()->isLoggedIn();
+    }
+
+    /**
+     * Load a project user ("project access" record) by email address.
+     *
+     * @param Project $project
+     * @param string  $email
+     *
+     * @return ProjectAccess|false
+     */
+    public function loadProjectAccessByEmail(Project $project, $email)
+    {
+        foreach ($project->getUsers() as $user) {
+            $account = $this->getAccount($user);
+            if ($account['email'] === $email) {
+                return $user;
+            }
+        }
+
+        return false;
     }
 }
