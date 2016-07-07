@@ -87,12 +87,9 @@ class AppInitCommand extends CommandBase
 
         $configFile = self::$config->get('service.app_config_file');
 
-        if (isset($options['directory'])) {
-            $configFileAbsolute = sprintf('%s/%s/%s', $projectRoot, $options['directory'], $configFile);
-        }
-        else {
-            $configFileAbsolute = sprintf('%s/%s', $projectRoot, $configFile);
-        }
+        $configFileAbsolute = isset($options['directory'])
+            ? sprintf('%s/%s/%s', $projectRoot, $options['directory'], $configFile)
+            : sprintf('%s/%s', $projectRoot, $configFile);
 
         $this->stdErr->writeln('Creating config file: ' . $configFileAbsolute);
 
@@ -101,7 +98,6 @@ class AppInitCommand extends CommandBase
         }
 
         $this->makeAppYaml($configFileAbsolute, $options);
-
         $this->makeRoutingYaml($projectRoot, $options['name']);
 
         return 0;
