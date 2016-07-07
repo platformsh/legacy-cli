@@ -100,22 +100,35 @@ class AppInitCommand extends CommandBase
             return 1;
         }
 
-        $appConfig = $options;
-        unset($appConfig['directory'], $appConfig['subdir']);
+        $this->makeAppYaml($configFileAbsolute, $options);
 
-        $fs = new Filesystem();
-        $fs->dumpFile($configFileAbsolute, Yaml::dump($appConfig, 10));
-
-        $this->makeRoutingYaml($projectRoot, $appConfig['name']);
+        $this->makeRoutingYaml($projectRoot, $options['name']);
 
         return 0;
     }
 
     /**
+     * Generates the .platform.app.yaml file, based on the user-supplied information.
+     *
+     * @param string $configFile
+     *   The absolute path to the file to create.
+     * @param array $appConfig
+     *   The user-supplied configuration information from which to generate a file.
+     */
+    protected function makeAppYaml($configFile, $appConfig)
+    {
+        unset($appConfig['directory'], $appConfig['subdir']);
+
+        (new Filesystem())->dumpFile($configFile, Yaml::dump($appConfig, 10));
+    }
+
+    /**
      * Generates a stock routing.yaml file.
      *
-     * @param $projectRoot
-     * @param $applicationName
+     * @param string $projectRoot
+     *   The absolute path to the project root.
+     * @param string $applicationName
+     *   The user-supplied name of the application.
      */
     protected function makeRoutingYaml($projectRoot, $applicationName)
     {
@@ -139,7 +152,7 @@ class AppInitCommand extends CommandBase
 
 END;
 
-        file_put_contents($projectRoot . '/.platform/routing.yaml', $routingYaml);
+        (new Filesystem())->dumpFile($projectRoot . '/.platform/routing.yaml', $routingYaml);
     }
 
     /**
