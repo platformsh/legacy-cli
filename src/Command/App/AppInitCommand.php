@@ -26,6 +26,7 @@ class AppInitCommand extends CommandBase
     protected function configure()
     {
         $this->setName('app:init')
+            ->setAliases(['init'])
             ->setDescription('Create an application in the local repository');
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
