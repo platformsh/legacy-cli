@@ -106,7 +106,40 @@ class AppInitCommand extends CommandBase
         $fs = new Filesystem();
         $fs->dumpFile($configFileAbsolute, Yaml::dump($appConfig, 10));
 
+        $this->makeRoutingYaml($projectRoot, $appConfig['name']);
+
         return 0;
+    }
+
+    /**
+     * Generates a stock routing.yaml file.
+     *
+     * @param $projectRoot
+     * @param $applicationName
+     */
+    protected function makeRoutingYaml($projectRoot, $applicationName)
+    {
+        mkdir($projectRoot . '/.platform');
+
+        $routingYaml = <<<END
+# The routing.yaml file describes how an incoming URL is going
+# to be processed by Platform.sh.  With the defaults below, all requests to
+# The the domain name configured in the UI will pass through to the application
+# and all requests to the www. prefix will be redirected to the bare domain.
+# To reverse that behavior, simply swap the definitions.
+#
+# See https://docs.platform.sh/user_guide/reference/routes-yaml.html for more information.
+
+"http://{default}/":
+  type: upstream
+  upstream: "{$applicationName}:http"
+"http://www.{default}/":
+  type: redirect
+  to: "http://{default}/"
+
+END;
+
+        file_put_contents($projectRoot . '/.platform/routing.yaml', $routingYaml);
     }
 
     /**
