@@ -77,9 +77,9 @@ class AppInitCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$projectRoot = $this->getProjectRoot()) {
-            throw new RootNotFoundException();
-        }
+        // The project root is a Git repository, as we assume there are no
+        // config files yet.
+        $projectRoot = $this->findTopDirectoryContaining('.git');
 
         /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
@@ -107,5 +107,52 @@ class AppInitCommand extends CommandBase
         $fs->dumpFile($configFileAbsolute, Yaml::dump($appConfig, 10));
 
         return 0;
+    }
+
+    /**
+     * Find the highest level directory that contains a file.
+     *
+     * @param string $file
+     *   The filename to look for.
+     * @param callable $callback
+     *   A callback to validate the directory when found. Accepts one argument
+     *   (the directory path). Return true to use the directory, or false to
+     *   continue traversing upwards.
+     *
+     * @return string|false
+     *   The path to the directory, or false if the file is not found.
+     */
+    protected static function findTopDirectoryContaining($file, callable $callback = null)
+    {
+        static $roots = [];
+        $cwd = getcwd();
+        if ($cwd === false) {
+            return false;
+        }
+        if (isset($roots[$cwd][$file])) {
+            return $roots[$cwd][$file];
+        }
+
+        $roots[$cwd][$file] = false;
+        $root = &$roots[$cwd][$file];
+
+        $currentDir = $cwd;
+        while (!$root) {
+            if (file_exists($currentDir . '/' . $file)) {
+                if ($callback === null || $callback($currentDir)) {
+                    $root = $currentDir;
+                    break;
+                }
+            }
+
+            // The file was not found, go one directory up.
+            $levelUp = dirname($currentDir);
+            if ($levelUp === $currentDir || $levelUp === '.') {
+                break;
+            }
+            $currentDir = $levelUp;
+        }
+
+        return $root;
     }
 }
