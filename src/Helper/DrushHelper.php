@@ -96,8 +96,8 @@ class DrushHelper extends Helper implements OutputAwareInterface
     public function ensureInstalled()
     {
         static $installed;
-        if (empty($installed) && !$this->shellHelper->commandExists($this->getDrushExecutable())) {
-            throw new DependencyMissingException('Drush is not installed (command attempted: ' . $this->getDrushExecutable() . ')');
+        if (empty($installed) && $this->getDrushExecutable() === 'drush' && !$this->shellHelper->commandExists('drush')) {
+            throw new DependencyMissingException('Drush is not installed');
         }
         $installed = true;
     }
@@ -137,8 +137,10 @@ class DrushHelper extends Helper implements OutputAwareInterface
      * Get the full path to the Drush executable.
      *
      * @return string
+     *   The absolute path to the executable, or 'drush' if the path is not
+     *   known.
      */
-    public function getDrushExecutable()
+    protected function getDrushExecutable()
     {
         if ($this->config->has('local.drush_executable')) {
             return $this->config->get('local.drush_executable');
