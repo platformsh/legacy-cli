@@ -39,6 +39,7 @@ class AppInitCommand extends CommandBase
     {
         $fields['name'] = new Field('Application name', [
             'optionName' => 'name',
+            'default' => 'app',
             'validator' => function ($value) {
                 return preg_match('/^[a-z0-9-]+$/', $value)
                     ? true
