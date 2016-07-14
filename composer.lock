@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "e92ba31720682d5dc0d8441aa6ceadba",
-    "content-hash": "f7336ea0c5264e5a00ab4f8afbc65e45",
+    "hash": "9214e24b143baaafc41a749dd64ffdb3",
+    "content-hash": "ef918e78cd2943c8b6b20ddc789b77b0",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -592,16 +592,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.8",
+            "version": "v0.0.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "7e9daa322d6c3d9cb939dfb7749d975e0d242205"
+                "reference": "24a67b4a5c93d9534e16832e47741669ae6493bb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/7e9daa322d6c3d9cb939dfb7749d975e0d242205",
-                "reference": "7e9daa322d6c3d9cb939dfb7749d975e0d242205",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/24a67b4a5c93d9534e16832e47741669ae6493bb",
+                "reference": "24a67b4a5c93d9534e16832e47741669ae6493bb",
                 "shasum": ""
             },
             "require": {
@@ -626,7 +626,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2016-02-25 11:38:45"
+            "time": "2016-06-19 15:18:47"
         },
         {
             "name": "react/promise",
