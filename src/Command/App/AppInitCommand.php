@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\App;
 
+use Platformsh\Cli\Command\App\Platform\Php;
+use Platformsh\Cli\Command\App\Platform\PlatformInterface;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Helper\QuestionHelper;
 use Platformsh\ConsoleForm\Field\BooleanField;
@@ -18,6 +20,10 @@ class AppInitCommand extends CommandBase
 
     /** @var Form */
     protected $form;
+
+    static $platforms = [
+        Php::class,
+    ];
 
     /**
      * {@inheritdoc}
@@ -45,6 +51,21 @@ class AppInitCommand extends CommandBase
                     : 'The application name can only consist of lower-case letters and numbers.';
             },
         ]);
+
+        /** @var PlatformInterface[] $platforms */
+        $platforms = array_map(function($class) { return new $class; }, static::$platforms);
+
+        $languages = array_map(function(PlatformInterface $platform) { return $platform->name(); }, $platforms);
+
+        $fields['type'] = new OptionsField('Application type', [
+            'optionName' => 'type',
+            'options' => $languages,
+            'default' => 'php',
+        ]);
+
+        foreach ($platforms as $platform) {
+
+        }
 
         $fields['type'] = new OptionsField('Application type', [
             'optionName' => 'type',
