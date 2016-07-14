@@ -37,39 +37,42 @@ class AppInitCommand extends CommandBase
      */
     protected function getFields()
     {
-        return [
-            'name' => new Field('Application name', [
-                'optionName' => 'name',
-                'validator' => function ($value) {
-                    return preg_match('/^[a-z0-9-]+$/', $value)
-                        ? true
-                        : 'The application name can only consist of lower-case letters and numbers.';
-                },
-            ]),
-            'type' => new OptionsField('Application type', [
-                'optionName' => 'type',
-                'options' => [
-                    'php:5.6',
-                    'php:7.0',
-                    'hhvm:3.8',
-                ],
-                'default' => 'php:7.0',
-            ]),
-            'subdir' => new BooleanField('Create the application in a subdirectory', [
-                'optionName' => 'subdir',
-                'default' => false,
-            ]),
-            'directory' => new Field('Directory name', [
-                'conditions' => ['subdir' => true],
-                'optionName' => 'directory-name',
-                'defaultCallback' => function (array $previousValues) {
-                    return $previousValues['name'];
-                },
-                'normalizer' => function ($value) {
-                    return trim($value, '/');
-                },
-            ]),
-        ];
+        $fields['name'] = new Field('Application name', [
+            'optionName' => 'name',
+            'validator' => function ($value) {
+                return preg_match('/^[a-z0-9-]+$/', $value)
+                    ? true
+                    : 'The application name can only consist of lower-case letters and numbers.';
+            },
+        ]);
+
+        $fields['type'] = new OptionsField('Application type', [
+            'optionName' => 'type',
+            'options' => [
+                'php:5.6',
+                'php:7.0',
+                'hhvm:3.8',
+            ],
+            'default' => 'php:7.0',
+        ]);
+
+        $fields['subdir'] = new BooleanField('Create the application in a subdirectory', [
+            'optionName' => 'subdir',
+            'default' => false,
+        ]);
+
+        $fields['directory'] = new Field('Directory name', [
+            'conditions' => ['subdir' => true],
+            'optionName' => 'directory-name',
+            'defaultCallback' => function (array $previousValues) {
+                return $previousValues['name'];
+            },
+            'normalizer' => function ($value) {
+                return trim($value, '/');
+            },
+        ]);
+
+        return $fields;
     }
 
     /**
