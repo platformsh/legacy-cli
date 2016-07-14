@@ -91,8 +91,6 @@ class AppInitCommand extends CommandBase
             ? sprintf('%s/%s/%s', $projectRoot, $options['directory'], $configFile)
             : sprintf('%s/%s', $projectRoot, $configFile);
 
-        $this->stdErr->writeln('Creating config file: ' . $configFileAbsolute);
-
         if (file_exists($configFileAbsolute) && !$questionHelper->confirm('The config file already exists. Overwrite?')) {
             return 1;
         }
@@ -113,6 +111,8 @@ class AppInitCommand extends CommandBase
      */
     protected function makeAppYaml($configFile, $appConfig)
     {
+        $this->stdErr->writeln('Creating config file: ' . $configFile);
+
         unset($appConfig['directory'], $appConfig['subdir']);
 
         (new Filesystem())->dumpFile($configFile, Yaml::dump($appConfig, 10));
@@ -128,6 +128,8 @@ class AppInitCommand extends CommandBase
      */
     protected function makeRoutingYaml($projectRoot, $applicationName)
     {
+        $this->stdErr->writeln('Creating routing file.');
+
         mkdir($projectRoot . '/.platform');
 
         $routingYaml = <<<END
