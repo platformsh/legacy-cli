@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\QuestionHelper;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
@@ -101,6 +100,7 @@ class AppInitCommand extends CommandBase
 
         $this->makeAppYaml($configFileAbsolute, $options);
         $this->makeRoutingYaml($projectRoot, $options['name']);
+        $this->makeServicesYaml($projectRoot);
 
         return 0;
     }
@@ -155,6 +155,44 @@ class AppInitCommand extends CommandBase
 END;
 
         (new Filesystem())->dumpFile($projectRoot . '/.platform/routing.yaml', $routingYaml);
+    }
+
+    /**
+     * Generates a stock services.yaml file.
+     *
+     * @param string $projectRoot
+     *   The absolute path to the project root.
+     */
+    protected function makeServicesYaml($projectRoot)
+    {
+        $this->stdErr->writeln('Creating services file.');
+
+        mkdir($projectRoot . '/.platform');
+
+        $routingYaml = <<<END
+# The services.yaml file defines what other services will be part of your cluster,
+# such as a database or caching server. The keys are the name of the service, which
+# you will reference in the .platform.app.yaml relationships section. The type specifies the
+# service and its version. In some cases a disk key is also available and indicates
+# the size in megabytes to reserve for that service's storage. You may also have
+# more than one service of a given type, as long as they have unique names.
+#
+# See https://docs.platform.sh/user_guide/reference/services-yaml.html for more information.
+
+#mysqldb:
+#    type: mysql:5.5
+#    disk: 2048
+
+#rediscache:
+#    type: redis:3.0
+
+#solrsearch:
+#    type: solr:3.6
+#    disk: 1024
+
+END;
+
+        (new Filesystem())->dumpFile($projectRoot . '/.platform/services.yaml', $routingYaml);
     }
 
     /**
