@@ -99,7 +99,7 @@ class AppInitCommand extends CommandBase
         }
 
         $this->makeAppYaml($configFileAbsolute, $options);
-        $this->makeRoutingYaml($projectRoot, $options['name']);
+        $this->makeRoutesYaml($projectRoot, $options['name']);
         $this->makeServicesYaml($projectRoot);
 
         return 0;
@@ -123,21 +123,21 @@ class AppInitCommand extends CommandBase
     }
 
     /**
-     * Generates a stock routing.yaml file.
+     * Generates a stock routes.yaml file.
      *
      * @param string $projectRoot
      *   The absolute path to the project root.
      * @param string $applicationName
      *   The user-supplied name of the application.
      */
-    protected function makeRoutingYaml($projectRoot, $applicationName)
+    protected function makeRoutesYaml($projectRoot, $applicationName)
     {
-        $this->stdErr->writeln('Creating routing file.');
+        $this->stdErr->writeln('Creating routes file.');
 
         mkdir($projectRoot . '/.platform');
 
         $routingYaml = <<<END
-# The routing.yaml file describes how an incoming URL is going
+# The routes.yaml file describes how an incoming URL is going
 # to be processed by Platform.sh.  With the defaults below, all requests to
 # The the domain name configured in the UI will pass through to the application
 # and all requests to the www. prefix will be redirected to the bare domain.
@@ -154,7 +154,7 @@ class AppInitCommand extends CommandBase
 
 END;
 
-        (new Filesystem())->dumpFile($projectRoot . '/.platform/routing.yaml', $routingYaml);
+        (new Filesystem())->dumpFile($projectRoot . '/.platform/routes.yaml', $routingYaml);
     }
 
     /**
