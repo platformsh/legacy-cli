@@ -63,10 +63,12 @@ class AppInitCommand extends CommandBase
             'default' => 'php',
         ]);
 
-        foreach ($platforms as $platform) {
 
-        }
+        $fields = array_reduce($platforms, function(PlatformInterface $platform, $fields) {
+            return $fields + $platform->getFields();
+        }, $fields);
 
+        /*
         $fields['type'] = new OptionsField('Application type', [
             'optionName' => 'type',
             'options' => [
@@ -76,6 +78,7 @@ class AppInitCommand extends CommandBase
             ],
             'default' => 'php:7.0',
         ]);
+        */
 
         $fields['subdir'] = new BooleanField('Create the application in a subdirectory', [
             'optionName' => 'subdir',
