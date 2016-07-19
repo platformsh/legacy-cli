@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\App;
 
+use Platformsh\Cli\Command\App\Platform\NodeJs;
 use Platformsh\Cli\Command\App\Platform\Php;
 use Platformsh\Cli\Command\App\Platform\PlatformInterface;
 use Platformsh\Cli\Command\CommandBase;
@@ -23,6 +24,7 @@ class AppInitCommand extends CommandBase
 
     static $platforms = [
         'php' => Php::class,
+        'nodejs' => NodeJs::class,
     ];
 
     /**
