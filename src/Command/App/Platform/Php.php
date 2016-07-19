@@ -41,7 +41,7 @@ class Php implements PlatformInterface {
                 if (preg_match('/^\/.*/', $value)) {
                     return 'The web root must not begin with a /. It is a directory relative to the application root.';
                 }
-                if (preg_match('/\w+/', $value)) {
+                if (preg_match('/\s+/', $value)) {
                     return 'The web root must not contain spaces.';
                 }
                 return true;
@@ -56,7 +56,7 @@ class Php implements PlatformInterface {
                 if (!preg_match('/^\/.*/', $value)) {
                     return 'The front controller must be an absolute with path to a PHP file, starting with /.';
                 }
-                if (preg_match('/^\s*\.php/', $value)) {
+                if (preg_match('/^\w*\.php/', $value)) {
                     return 'The front controller must end in .php and contain no spaces.';
                 }
                 return true;
@@ -71,7 +71,7 @@ class Php implements PlatformInterface {
         // @todo Replace this with a web service call to get a template off of GitHub.
 
         $template = <<<END
-name: {app}
+name: {name}
 type: php:{php_version}
 
 build:
@@ -86,7 +86,7 @@ web:
     locations:
         "/":
             root: "{webroot}"
-            passthru: "/{indexFile}"
+            passthru: "{indexFile}"
 
 disk: 2048
 mounts:
