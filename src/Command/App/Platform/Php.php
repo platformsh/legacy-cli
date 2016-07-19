@@ -12,11 +12,6 @@ class Php implements PlatformInterface {
         return 'php';
     }
 
-    public function versions()
-    {
-        return ['5.6', '7.0'];
-    }
-
     public function getFields()
     {
         $fields['php_version'] = new OptionsField('Version', [
