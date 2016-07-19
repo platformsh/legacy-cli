@@ -71,6 +71,12 @@ class Php implements PlatformInterface {
         // @todo Replace this with a web service call to get a template off of GitHub.
 
         $template = <<<END
+# This file defines one application within your project. Each application is rooted
+# at the directory where this file exists, and will produce a single application
+# container to run your code.  The basic file below shows the key options available,
+# but wil likely need additional customization for your application.
+# See URL for more information.
+
 name: {name}
 type: php:{php_version}
 
@@ -88,7 +94,12 @@ web:
             root: "{webroot}"
             passthru: "{indexFile}"
 
+# The size in megabytes of persistent disk space to reserve as part of this application.
 disk: 2048
+
+# Each mount is a pairint of the local path on the application container to
+# the persistent mount where it lives. At this time, only 'shared:files' is
+# a supported mount.
 mounts:
     "/public/sites/default/files": "shared:files/files"
     "/tmp": "shared:files/tmp"
