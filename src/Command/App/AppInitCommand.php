@@ -22,7 +22,7 @@ class AppInitCommand extends CommandBase
     protected $form;
 
     static $platforms = [
-        Php::class,
+        'php' => Php::class,
     ];
 
     /**
@@ -35,6 +35,17 @@ class AppInitCommand extends CommandBase
             ->setDescription('Create an application in the local repository');
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
+    }
+
+    /**
+     *
+     *
+     * @return PlatformInterface[]
+     */
+    protected function getPlatforms()
+    {
+        /** @var PlatformInterface[] $platforms */
+        return array_map(function($class) { return new $class; }, static::$platforms);
     }
 
     /**
@@ -52,8 +63,7 @@ class AppInitCommand extends CommandBase
             },
         ]);
 
-        /** @var PlatformInterface[] $platforms */
-        $platforms = array_map(function($class) { return new $class; }, static::$platforms);
+        $platforms = $this->getPlatforms();
 
         $languages = array_map(function(PlatformInterface $platform) { return $platform->name(); }, $platforms);
 
@@ -63,8 +73,7 @@ class AppInitCommand extends CommandBase
             'default' => 'php',
         ]);
 
-
-        $fields = array_reduce($platforms, function(PlatformInterface $platform, $fields) {
+        $fields = array_reduce($platforms, function($fields, PlatformInterface $platform) {
             return $fields + $platform->getFields();
         }, $fields);
 
@@ -122,7 +131,9 @@ class AppInitCommand extends CommandBase
             return 1;
         }
 
-        $this->makeAppYaml($configFileAbsolute, $options);
+        $platform = $this->getPlatforms()[$options['type']];
+
+        $this->makeAppYaml($configFileAbsolute, $platform, $options);
         $this->makeRoutesYaml($projectRoot, $options['name']);
         $this->makeServicesYaml($projectRoot);
 
@@ -134,16 +145,27 @@ class AppInitCommand extends CommandBase
      *
      * @param string $configFile
      *   The absolute path to the file to create.
+     * @param PlatformInterface $platform
+     *   The platform type we're creating.
      * @param array $appConfig
      *   The user-supplied configuration information from which to generate a file.
      */
-    protected function makeAppYaml($configFile, $appConfig)
+    protected function makeAppYaml($configFile, PlatformInterface $platform, array $appConfig)
     {
         $this->stdErr->writeln('Creating config file: ' . $configFile);
 
         unset($appConfig['directory'], $appConfig['subdir']);
 
-        (new Filesystem())->dumpFile($configFile, Yaml::dump($appConfig, 10));
+        $template = $platform->appYamlTemplate();
+
+        $replace = [];
+        foreach ($appConfig as $key => $value) {
+            $replace['{' . $key . '}'] = $value;
+        }
+
+        $file = strtr($template, $replace);
+
+        (new Filesystem())->dumpFile($configFile, $file);
     }
 
     /**
