@@ -48,7 +48,7 @@ class ProjectSshConfigCommand extends CommandBase
                 $sshUrl = parse_url($environment->getLink('ssh'));
                 $indent = str_repeat(' ', 4);
 
-                $output->writeln("$alias.{$environment->id}");
+                $output->writeln("Host $alias.{$environment->id}");
                 $output->writeln($indent . "Hostname {$sshUrl['host']}");
                 $output->writeln($indent . "User {$sshUrl['user']}");
                 $output->writeln('');
