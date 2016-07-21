@@ -18,7 +18,7 @@ class ProjectSshConfigCommand extends CommandBase
     {
         $this
             ->setName('project:ssh-config')
-            ->addOption('alias', null, InputOption::VALUE_OPTIONAL, 'Specify a custom alias the project')
+            ->addOption('alias', null, InputOption::VALUE_REQUIRED, 'Specify a custom alias the project')
             ->setAliases(['ssh-config'])
             ->setDescription('outputs OpenSSH valid configuration to connect all of the project environments');
         $this->addProjectOption();
