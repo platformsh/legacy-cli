@@ -69,11 +69,13 @@ class EnvironmentSshCommand extends CommandBase
             $command .= ' ' . escapeshellarg($remoteCommand);
         }
 
-        $this->debug("Running command: <info>$command</info>");
+        $this->stdErr->writeln("Running command: <info>$command</info>", OutputInterface::VERBOSITY_VERBOSE);
 
-        passthru($command, $returnVar);
+        $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes);
+        $status = proc_get_status($process);
+        proc_close($process);
 
-        return $returnVar;
+        return $status;
     }
 
 }

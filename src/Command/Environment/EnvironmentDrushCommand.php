@@ -127,12 +127,12 @@ class EnvironmentDrushCommand extends CommandBase
         $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sshDrushCommand);
 
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->stdErr->writeln("Running command: <info>$command</info>");
-        }
+        $this->stdErr->writeln("Running command: <info>$command</info>", OutputInterface::VERBOSITY_VERBOSE);
 
-        passthru($command, $return_var);
+        $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes);
+        $status = proc_get_status($process);
+        proc_close($process);
 
-        return $return_var;
+        return $status;
     }
 }
