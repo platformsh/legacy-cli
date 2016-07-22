@@ -181,7 +181,7 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Your project has been initialized and connected to <info>' . self::$config->get('service.name') . '</info>!');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('Commit and push to the <info>master</info> branch of the <info>' . self::$config->get('detection.git_remote_name') . '</info> Git remote, and ' . self::$config->get('application.name') . ' will build your project automatically.');
+            $this->stdErr->writeln('Commit and push to the <info>master</info> branch of the <info>' . self::$config->get('detection.git_remote_name') . '</info> Git remote, and ' . self::$config->get('service.name') . ' will build your project automatically.');
 
             return 0;
         }

@@ -25,7 +25,7 @@ class LogoutCommand extends CommandBase
             $this->stdErr->writeln('<comment>Warning: an API token is set</comment>');
         }
 
-        if (!$this->isLoggedIn() && !$input->getOption('all')) {
+        if (!$this->api()->isLoggedIn() && !$input->getOption('all')) {
             $this->stdErr->writeln(
                 "You are not currently logged in"
             );

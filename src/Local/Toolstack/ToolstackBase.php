@@ -8,6 +8,7 @@ use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Helper\ShellHelperInterface;
 use Platformsh\Cli\Local\LocalApplication;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class ToolstackBase implements ToolstackInterface
@@ -81,6 +82,7 @@ abstract class ToolstackBase implements ToolstackInterface
         $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->fsHelper = $fsHelper ?: new FilesystemHelper($this->shellHelper);
         $this->gitHelper = $gitHelper ?: new GitHelper($this->shellHelper);
+        $this->output = new NullOutput();
 
         $this->specialDestinations = [
             "favicon.ico" => "{webroot}",
@@ -301,8 +303,7 @@ abstract class ToolstackBase implements ToolstackInterface
             $targetRelative = $sharedDirRelative . '/' . $sharedPath;
             $link = $this->buildDir . '/' . $appPath;
             if (file_exists($link) && !is_link($link)) {
-                $this->output->writeln('  Failed to symlink <comment>' . $appPath . '</comment> to <comment>' . $targetRelative . '</comment> (the source already exists in the build)');
-                continue;
+                $this->output->writeln('  Overwriting existing file <comment>' . $appPath . '</comment>');
             }
             if (!file_exists($target)) {
                 $this->fsHelper->mkdir($target, 0775);

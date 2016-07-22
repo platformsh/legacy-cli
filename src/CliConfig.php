@@ -187,6 +187,9 @@ class CliConfig
                     $configParents = explode('.', $configKey);
                     $default = Util::getNestedArrayValue(self::$config, $configParents, $defaultExists);
                     if ($defaultExists && is_array($default)) {
+                        if (!is_array($value)) {
+                            continue;
+                        }
                         $value = array_replace_recursive($default, $value);
                     }
                     Util::setNestedArrayValue(self::$config, $configParents, $value, true);

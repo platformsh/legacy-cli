@@ -106,10 +106,7 @@ class DrupalTest extends BaseToolstackTest
 
     public function testDoNotSymlinkBuildsIntoSitesDefault()
     {
-        $tempDir = self::$root->getName();
-        $repository = tempnam($tempDir, '');
-        unlink($repository);
-        mkdir($repository);
+        $repository = $this->createTempSubDir('repo');
         $fsHelper = new FilesystemHelper();
         $sourceDir = 'tests/data/apps/drupal/project';
         $fsHelper->copyAll($sourceDir, $repository);

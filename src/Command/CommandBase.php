@@ -303,19 +303,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Check if the user is logged in.
-     *
-     * @return bool
-     */
-    protected function isLoggedIn()
-    {
-        return $this->api()
-                    ->getClient(false)
-                    ->getConnector()
-                    ->isLoggedIn();
-    }
-
-    /**
      * Is this a local command? (if it does not make API requests)
      *
      * @return bool
@@ -595,6 +582,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
+     * Select the project for the user, based on input or the environment.
+     *
      * @param string $projectId
      * @param string $host
      *
@@ -766,12 +755,17 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
+        $environmentId = null;
 
         // Parse the project ID.
-        $result = $this->parseProjectId($projectId);
-        $projectId = $result['projectId'];
-        $projectHost = $projectHost ?: $result['host'];
-        $environmentId = $result['environmentId'];
+        if ($projectId !== null) {
+            $result = $this->parseProjectId($projectId);
+            $projectId = $result['projectId'];
+            $projectHost = $projectHost ?: $result['host'];
+            $environmentId = $result['environmentId'];
+        }
+
+        // Set the --app option based on the parsed project URL, if relevant.
         if (isset($result['appId']) && $input->hasOption('app') && !$input->getOption('app')) {
             $input->setOption('app', $result['appId']);
         }

@@ -152,13 +152,15 @@ class Api
 
             // Proxy support with the http_proxy or https_proxy environment
             // variables.
-            $proxies = [];
-            foreach (['https', 'http'] as $scheme) {
-                $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
-            }
-            $proxies = array_filter($proxies);
-            if (count($proxies)) {
-                $connectorOptions['proxy'] = count($proxies) == 1 ? reset($proxies) : $proxies;
+            if (PHP_SAPI === 'cli') {
+                $proxies = [];
+                foreach (['https', 'http'] as $scheme) {
+                    $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
+                }
+                $proxies = array_filter($proxies);
+                if (count($proxies)) {
+                    $connectorOptions['proxy'] = count($proxies) == 1 ? reset($proxies) : $proxies;
+                }
             }
 
             $connector = new Connector($connectorOptions);
@@ -467,5 +469,33 @@ class Api
         }
 
         return $value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLoggedIn()
+    {
+        return $this->getClient(false)->getConnector()->isLoggedIn();
+    }
+
+    /**
+     * Load a project user ("project access" record) by email address.
+     *
+     * @param Project $project
+     * @param string  $email
+     *
+     * @return ProjectAccess|false
+     */
+    public function loadProjectAccessByEmail(Project $project, $email)
+    {
+        foreach ($project->getUsers() as $user) {
+            $account = $this->getAccount($user);
+            if ($account['email'] === $email) {
+                return $user;
+            }
+        }
+
+        return false;
     }
 }

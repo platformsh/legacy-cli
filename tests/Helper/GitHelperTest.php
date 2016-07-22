@@ -7,11 +7,10 @@ use Platformsh\Cli\Helper\GitHelper;
 class GitHelperTest extends \PHPUnit_Framework_TestCase
 {
 
+    use HasTempDirTrait;
+
     /** @var GitHelper */
     protected $gitHelper;
-
-    /** @var string */
-    protected $root;
 
     /**
      * @{inheritdoc}
@@ -22,7 +21,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->root = '/tmp/pshCliTests/git';
+        $this->tempDirSetUp();
         $repository = $this->getRepositoryDir();
         if (!is_dir($repository) && !mkdir($repository, 0755, true)) {
             throw new \Exception("Failed to create directories.");
@@ -47,15 +46,6 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @inheritdoc
-     */
-    public function tearDown()
-    {
-        $repository = $this->getRepositoryDir();
-        exec('rm -rf ' . escapeshellarg($repository));
-    }
-
-    /**
      * Test GitHelper::ensureInstalled().
      */
     public function testEnsureInstalled()
@@ -68,7 +58,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testIsRepository()
     {
-        $this->assertFalse($this->gitHelper->isRepository($this->root));
+        $this->assertFalse($this->gitHelper->isRepository($this->tempDir));
         $repository = $this->getRepositoryDir();
         $this->assertTrue($this->gitHelper->isRepository($repository));
     }
@@ -80,7 +70,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     protected function getRepositoryDir()
     {
-        return $this->root . '/repo';
+        return $this->tempDir . '/repo';
     }
 
     /**

@@ -149,6 +149,14 @@ class EnvironmentListCommand extends CommandBase
             $this->children['master'] = [];
         }
 
+        // Add orphaned environments (those whose parents do not exist) to the
+        // tree.
+        foreach ($environments as $id => $environment) {
+            if (!empty($environment->parent) && !isset($environments[$environment->parent])) {
+                $tree += [$id => $environment];
+            }
+        }
+
         $headers = ['ID', 'Name', 'Status'];
 
         $table = new Table($input, $output);

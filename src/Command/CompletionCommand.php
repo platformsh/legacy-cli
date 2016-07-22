@@ -37,7 +37,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     protected function setUp()
     {
         $this->api = new Api();
-        $this->projects = $this->api->getProjects(false);
+        $this->projects = $this->api->isLoggedIn() ? $this->api->getProjects(false) : [];
         $this->welcomeCommand = new WelcomeCommand('welcome');
         $this->welcomeCommand->setApplication(new Application());
     }
@@ -83,6 +83,24 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 'id',
                 Completion::TYPE_ARGUMENT,
                 [$this, 'getEnvironmentsForCheckout']
+            ),
+            new Completion(
+                'user:role',
+                'email',
+                Completion::TYPE_ARGUMENT,
+                [$this, 'getUserEmails']
+            ),
+            new Completion(
+                'user:role',
+                'level',
+                Completion::TYPE_OPTION,
+                ['project', 'environment']
+            ),
+            new Completion(
+                'user:delete',
+                'email',
+                Completion::TYPE_ARGUMENT,
+                [$this, 'getUserEmails']
             ),
             new Completion\ShellPathCompletion(
                 'ssh-key:add',
@@ -191,33 +209,67 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     }
 
     /**
-     * Get a list of environment IDs.
+     * Get the preferred project for autocompletion.
      *
      * The project is either defined by an ID that the user has specified in
      * the command (via the 'id' argument of 'get', or the '--project' option),
      * or it is determined from the current path.
      *
+     * @return \Platformsh\Client\Model\Project|false
+     */
+    protected function getProject()
+    {
+        if (!$this->projects) {
+            return false;
+        }
+
+        $commandLine = $this->handler->getContext()
+            ->getCommandLine();
+        $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
+        if (!$currentProjectId && ($currentProject = $this->welcomeCommand->getCurrentProject())) {
+            return $currentProject;
+        }
+        elseif (isset($this->projects[$currentProjectId])) {
+            return $this->projects[$currentProjectId];
+        }
+
+        return false;
+    }
+
+    /**
+     * Get a list of environment IDs.
+     *
      * @return string[]
      */
     public function getEnvironments()
     {
-        if (!$this->projects) {
-            return [];
-        }
-        $commandLine = $this->handler->getContext()
-                                     ->getCommandLine();
-        $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
-        if (!$currentProjectId && ($currentProject = $this->welcomeCommand->getCurrentProject())) {
-            $project = $currentProject;
-        } elseif (isset($this->projects[$currentProjectId])) {
-            $project = $this->projects[$currentProjectId];
-        } else {
+        $project = $this->getProject();
+        if (!$project) {
             return [];
         }
 
-        $environments = $this->api->getEnvironments($project, false, false);
+        return array_keys($this->api->getEnvironments($project, false, false));
+    }
 
-        return array_keys($environments);
+    /**
+     * Get a list of user email addresses.
+     *
+     * @return string[]
+     */
+    public function getUserEmails()
+    {
+        $project = $this->getProject();
+        if (!$project) {
+            return [];
+        }
+
+        $emails = [];
+        foreach ($project->getUsers() as $user) {
+            $account = $this->api->getAccount($user);
+            $emails[] = $account['email'];
+        }
+
+        return $emails;
     }
 
     /**

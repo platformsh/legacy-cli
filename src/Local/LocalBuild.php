@@ -34,9 +34,30 @@ class LocalBuild
     protected $config;
 
     /**
+     * LocalBuild constructor.
+     *
      * @param array                $settings
+     *     Possible settings:
+     *     - copy (bool, default false) Copy files instead of symlinking them,
+     *       where possible.
+     *     - absoluteLinks (bool, default false) Use absolute paths in symlinks.
+     *     - noArchive (bool, default false) Do not archive or use an archive of
+     *       the build.
+     *     - noCache (bool, default false) Disable the package cache (if
+     *       relevant and if the package manager supports this).
+     *     - noClean (bool, default false) Disable cleaning up old builds or old
+     *       build archives.
+     *     - noBuildHooks (bool, default false) Disable running build hooks.
+     *     - drushConcurrency (int) Specify a concurrency for Drush Make, if
+     *       applicable (when using the Drupal toolstack).
+     *     - drushWorkingCopy (bool, default false) Specify the --working-copy
+     *       option to Drush Make, if applicable.
+     *     - drushUpdateLock (bool, default false) Create or update a lock file
+     *       via Drush Make, if applicable.
      * @param CliConfig|null       $config
+     *     Optionally, inject a specific CLI configuration object.
      * @param OutputInterface|null $output
+     *     Optionally, inject a specific Symfony Console output object.
      */
     public function __construct(array $settings = [], CliConfig $config = null, OutputInterface $output = null)
     {
@@ -47,10 +68,6 @@ class LocalBuild
         $this->fsHelper = new FilesystemHelper($this->shellHelper);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
         $this->gitHelper = new GitHelper($this->shellHelper);
-
-        if ($output !== null && !isset($this->settings['verbosity'])) {
-            $this->settings['verbosity'] = $output->getVerbosity();
-        }
     }
 
     /**
@@ -136,7 +153,7 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = ['environmentId', 'appName', 'multiApp', 'noClean', 'verbosity', 'drushConcurrency', 'projectRoot'];
+        $irrelevant = ['multiApp', 'noClean', 'drushConcurrency'];
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 

@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
+use Symfony\Component\Console\Output\OutputInterface;
+
 class Composer extends ToolstackBase
 {
     public function getKey()
@@ -32,6 +34,15 @@ class Composer extends ToolstackBase
                 '--no-interaction',
                 '--no-ansi',
             ];
+            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+                $args[] = '-vvv';
+            }
+            elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+                $args[] = '-vv';
+            }
+            elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+                $args[] = '-v';
+            }
             $this->shellHelper->execute($args, $buildDir, true, false);
         }
 

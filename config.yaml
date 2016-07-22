@@ -20,7 +20,8 @@ local:
   shared_dir: '.magento/local/shared'
   web_root: '_www'
 
-  # Overridden by {application.env_prefix}COPY_ON_WINDOWS env var.
+  # This can be overridden by the {application.env_prefix}COPY_ON_WINDOWS env
+  # var, or via the user config file.
   copy_on_windows: false
 
 # Details about the cloud service that the CLI works with.
@@ -33,6 +34,7 @@ service:
   accounts_url: 'https://accounts.magento.cloud'
 
 # Configuration relating to API calls.
+# This can be overridden in the user config file.
 api:
   oauth2_client_id: 'magento-cloud-cli'
   projects_ttl: 3600
@@ -61,6 +63,7 @@ detection:
   api_domain: 'magento.cloud'
 
 # Automatic updates.
+# This can be overridden in the user config file.
 updates:
   check: true
   last_checked: null
