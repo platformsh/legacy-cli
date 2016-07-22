@@ -105,7 +105,6 @@ local
   local:build (build)                       Build the current project locally
   local:dir (dir)                           Find the local project root
 project
-  project:delete                            Delete a project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
