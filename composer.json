@@ -33,7 +33,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^4.3 <4.8",
-        "drush/drush": "^8.0"
+        "drush/drush": "^8.0",
+        "sensiolabs/security-checker": "^3.0"
     },
     "authors": [
         {
