@@ -72,10 +72,8 @@ class EnvironmentSshCommand extends CommandBase
         $this->stdErr->writeln("Running command: <info>$command</info>", OutputInterface::VERBOSITY_VERBOSE);
 
         $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes);
-        $status = proc_get_status($process);
-        proc_close($process);
 
-        return $status;
+        return proc_close($process);
     }
 
 }
