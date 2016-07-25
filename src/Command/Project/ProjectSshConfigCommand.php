@@ -104,8 +104,8 @@ class ProjectSshConfigCommand extends CommandBase
                 $indent = str_repeat(' ', 2);
 
                 $output->writeln("Host $alias.{$environment->id}");
-                $output->writeln($indent . "Hostname {$sshUrlParts[0]}");
-                $output->writeln($indent . "User {$sshUrlParts[1]}");
+                $output->writeln($indent . "Hostname {$sshUrlParts[1]}");
+                $output->writeln($indent . "User {$sshUrlParts[0]}");
 
                 $util = new RelationshipsUtil($this->stdErr);
                 $relationships = $util->getRelationships($sshUrl);
