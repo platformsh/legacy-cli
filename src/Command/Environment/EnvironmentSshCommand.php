@@ -2,8 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Helper\ArgvHelper;
-use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -46,11 +44,6 @@ class EnvironmentSshCommand extends CommandBase
         $remoteCommand = $input->getArgument('cmd');
         if (!$remoteCommand && $this->runningViaMulti) {
             throw new \InvalidArgumentException('The cmd argument is required when running via "multi"');
-        }
-
-        if ($input instanceof ArgvInput) {
-            $helper = new ArgvHelper();
-            $remoteCommand = $helper->getPassedCommand($this, $input);
         }
 
         $sshOptions = 't';

@@ -2,10 +2,8 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Helper\ArgvHelper;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\Toolstack\Drupal;
-use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -43,14 +41,7 @@ class EnvironmentDrushCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        if ($input instanceof ArgvInput) {
-            $helper = new ArgvHelper();
-            $drushCommand = $helper->getPassedCommand($this, $input);
-        }
-
-        if (empty($drushCommand)) {
-            $drushCommand = $input->getArgument('cmd');
-        }
+        $drushCommand = $input->getArgument('cmd');
 
         $sshOptions = '';
 
