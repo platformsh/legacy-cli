@@ -152,13 +152,15 @@ class Api
 
             // Proxy support with the http_proxy or https_proxy environment
             // variables.
-            $proxies = [];
-            foreach (['https', 'http'] as $scheme) {
-                $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
-            }
-            $proxies = array_filter($proxies);
-            if (count($proxies)) {
-                $connectorOptions['proxy'] = count($proxies) == 1 ? reset($proxies) : $proxies;
+            if (PHP_SAPI === 'cli') {
+                $proxies = [];
+                foreach (['https', 'http'] as $scheme) {
+                    $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
+                }
+                $proxies = array_filter($proxies);
+                if (count($proxies)) {
+                    $connectorOptions['proxy'] = count($proxies) == 1 ? reset($proxies) : $proxies;
+                }
             }
 
             $connector = new Connector($connectorOptions);
