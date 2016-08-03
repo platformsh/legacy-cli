@@ -6,7 +6,7 @@ ini_set('display_errors', 1);
 ini_set('log_errors', 0);
 
 if (version_compare(PHP_VERSION, '5.5.9', '<')) {
-    echo "The Platform.sh CLI tool requires at least PHP 5.5.9. Please upgrade your PHP version.\n";
+    echo "This tool requires at least PHP 5.5.9. Please upgrade your PHP version.\n";
     exit(1);
 }
 
