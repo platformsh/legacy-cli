@@ -190,7 +190,7 @@ class LocalProject
         elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $gitUrl = $this->getGitRemoteUrl($projectRoot);
             if ($gitUrl && ($projectConfig = $this->parseGitUrl($gitUrl))) {
-                $this->writeConfigToFile($projectRoot . '/' . $configFilename, $projectConfig);
+                $this->writeCurrentProjectConfig($projectConfig, $projectRoot);
             }
         }
 
@@ -200,15 +200,22 @@ class LocalProject
     /**
      * Write configuration for a project.
      *
-     * @param array $config The configuration.
+     * Configuration is stored as YAML, in the location configured by
+     * 'local.project_config'.
+     *
+     * @param array $config
+     *   The configuration.
      * @param string $projectRoot
+     *   The project root.
+     * @param bool   $merge
+     *   Whether to merge with existing configuration.
      *
      * @throws \Exception On failure
      *
      * @return array
      *   The updated project configuration.
      */
-    public function writeCurrentProjectConfig(array $config, $projectRoot = null)
+    public function writeCurrentProjectConfig(array $config, $projectRoot = null, $merge = false)
     {
         $projectRoot = $projectRoot ?: $this->getProjectRoot();
         if (!$projectRoot) {
@@ -216,23 +223,14 @@ class LocalProject
         }
         $this->ensureLocalDir($projectRoot);
         $file = $projectRoot . '/' . $this->config->get('local.project_config');
-        $projectConfig = $this->getProjectConfig($projectRoot) ?: [];
-        $projectConfig = array_merge($projectConfig, $config);
-        $this->writeConfigToFile($file, $projectConfig);
+        if ($merge) {
+            $projectConfig = $this->getProjectConfig($projectRoot) ?: [];
+            $config = array_merge($projectConfig, $config);
+        }
+        $yaml = (new Dumper())->dump($config, 10);
+        $this->fs->dumpFile($file, $yaml);
 
-        return $projectConfig;
-    }
-
-    /**
-     * @param string $filename
-     * @param array $config
-     *
-     * @throws \Symfony\Component\Filesystem\Exception\IOException on failure
-     */
-    protected function writeConfigToFile($filename, array $config)
-    {
-        $dumper = new Dumper();
-        $this->fs->dumpFile($filename, $dumper->dump($config, 10));
+        return $config;
     }
 
     /**
@@ -245,6 +243,9 @@ class LocalProject
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
             $this->writeGitExclude($projectRoot);
+        }
+        if (!file_exists($dir . '/.gitignore')) {
+            file_put_contents($dir . '/.gitignore', '/' . PHP_EOL);
         }
         if (!file_exists($dir . '/README.txt')) {
             $cliName = $this->config->get('application.name');
