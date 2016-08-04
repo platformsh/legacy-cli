@@ -21,9 +21,4 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     exit(1);
 }
 
-use Platformsh\Cli\Application;
-use Symfony\Component\Console\Input\ArgvInput;
-
-$input = new ArgvInput();
-$application = new Application();
-$application->run($input);
+(new \Platformsh\Cli\Application())->run();
