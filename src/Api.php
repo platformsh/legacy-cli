@@ -54,6 +54,9 @@ class Api
         $this->dispatcher = $dispatcher;
 
         self::$sessionId = $this->config->get('api.session_id') ?: 'default';
+        if (self::$sessionId === 'api-token') {
+            throw new \InvalidArgumentException('Invalid session ID: ' . self::$sessionId);
+        }
 
         if (!isset(self::$apiToken)) {
             // Exchangeable API tokens: a token which is exchanged for a
@@ -61,10 +64,12 @@ class Api
             if ($this->config->has('api.token_file')) {
                 self::$apiToken = $this->loadTokenFromFile($this->config->get('api.token_file'));
                 self::$apiTokenType = 'exchange';
+                self::$sessionId = 'api-token';
             }
             elseif ($this->config->has('api.token')) {
                 self::$apiToken = $this->config->get('api.token');
                 self::$apiTokenType = 'exchange';
+                self::$sessionId = 'api-token';
             }
             // Permanent, personal access token (deprecated) - an OAuth 2.0
             // bearer token which is used directly in API requests.
