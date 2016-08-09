@@ -2,8 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Helper\ArgvHelper;
-use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -25,7 +23,6 @@ class EnvironmentSshCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
-        $this->ignoreValidationErrors();
         $this->addExample('Read recent messages in the deploy log', "'tail /var/log/deploy.log'");
         $this->addExample('Open a shell over SSH');
     }
@@ -48,11 +45,6 @@ class EnvironmentSshCommand extends CommandBase
             throw new \InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
-        if ($input instanceof ArgvInput) {
-            $helper = new ArgvHelper();
-            $remoteCommand = $helper->getPassedCommand($this, $input);
-        }
-
         $sshOptions = 't';
 
         // Pass through the verbosity options to SSH.
@@ -69,11 +61,11 @@ class EnvironmentSshCommand extends CommandBase
             $command .= ' ' . escapeshellarg($remoteCommand);
         }
 
-        $this->debug("Running command: <info>$command</info>");
+        $this->stdErr->writeln("Running command: <info>$command</info>", OutputInterface::VERBOSITY_VERBOSE);
 
-        passthru($command, $returnVar);
+        $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes);
 
-        return $returnVar;
+        return proc_close($process);
     }
 
 }

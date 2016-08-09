@@ -85,6 +85,11 @@ class LocalBuild
     public function build($sourceDir, $destination = null, array $apps = [])
     {
         $success = true;
+
+        if (file_exists($sourceDir . '/.git')) {
+            (new LocalProject())->writeGitExclude($sourceDir);
+        }
+
         $ids = [];
         foreach (LocalApplication::getApplications($sourceDir, $this->config) as $app) {
             $id = $app->getId();
@@ -191,11 +196,6 @@ class LocalBuild
         $buildName = $multiApp ? str_replace('/', '-', $appId) : 'default';
 
         $tmpBuildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName . '-tmp';
-
-        if (file_exists($sourceDir . '/.git')) {
-            $localProject = new LocalProject();
-            $localProject->writeGitExclude($sourceDir);
-        }
 
         if (file_exists($tmpBuildDir)) {
             if (!$this->fsHelper->remove($tmpBuildDir)) {

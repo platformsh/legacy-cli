@@ -161,6 +161,14 @@ class ProjectGetCommand extends CommandBase
             return 1;
         }
 
+        $projectConfig = [
+            'id' => $projectId,
+        ];
+        $host = parse_url($project->getUri(), PHP_URL_HOST);
+        if ($host) {
+            $projectConfig['host'] = $host;
+        }
+
         // If the remote repository exists, then locally we need to create the
         // folder, run git init, and attach the remote.
         if (!$exists) {
@@ -174,9 +182,12 @@ class ProjectGetCommand extends CommandBase
             // Initialize the repo and attach our remotes.
             $this->debug('Initializing the repository');
             $gitHelper->init($projectRoot, true);
+
+            // As soon as there is a Git repo present, add the project config file.
+            $this->localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
+
             $this->debug('Adding Git remote(s)');
             $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
-            $this->localProject->writeGitExclude($projectRoot);
 
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Your project has been initialized and connected to <info>' . self::$config->get('service.name') . '</info>!');
@@ -188,7 +199,15 @@ class ProjectGetCommand extends CommandBase
 
         // We have a repo! Yay. Clone it.
         $this->stdErr->writeln(sprintf('Downloading project <info>%s</info>', $project->title ?: $projectId));
-        $cloneArgs = ['--branch', $environment, '--origin', self::$config->get('detection.git_remote_name')];
+        $cloneArgs = [
+            '--branch',
+            $environment,
+            '--origin',
+            self::$config->get('detection.git_remote_name'),
+        ];
+        if ($output->isDecorated()) {
+            $cloneArgs[] = '--progress';
+        }
         $cloned = $gitHelper->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
@@ -199,11 +218,12 @@ class ProjectGetCommand extends CommandBase
             return 1;
         }
 
-        $gitHelper->updateSubmodules(true, $projectRoot);
-
-        $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
-        $this->localProject->writeGitExclude($projectRoot);
         $this->setProjectRoot($projectRoot);
+
+        $this->localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
+        $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
+
+        $gitHelper->updateSubmodules(true, $projectRoot);
 
         $this->stdErr->writeln("\nThe project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");
 

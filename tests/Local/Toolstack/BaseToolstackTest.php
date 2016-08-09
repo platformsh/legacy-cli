@@ -95,7 +95,6 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         exec('git init');
         chdir($cwd);
         $local->ensureGitRemote($projectRoot, 'testProjectId');
-        $local->writeGitExclude($projectRoot);
         $local->writeCurrentProjectConfig(['id' => 'testProjectId'], $projectRoot);
 
         return $projectRoot;

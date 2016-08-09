@@ -5,6 +5,11 @@
 ini_set('display_errors', 1);
 ini_set('log_errors', 0);
 
+if (version_compare(PHP_VERSION, '5.5.9', '<')) {
+    printf("This tool requires at least PHP 5.5.9. You currently have %s installed. Please upgrade your PHP version.\n", PHP_VERSION);
+    exit(1);
+}
+
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require __DIR__ . '/../vendor/autoload.php';
 } elseif (file_exists(__DIR__ . '/../../../autoload.php')) {
@@ -16,9 +21,4 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     exit(1);
 }
 
-use Platformsh\Cli\Application;
-use Symfony\Component\Console\Input\ArgvInput;
-
-$input = new ArgvInput();
-$application = new Application();
-$application->run($input);
+(new \Platformsh\Cli\Application())->run();
