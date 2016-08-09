@@ -158,6 +158,7 @@ You can configure the CLI via the user configuration file `~/.platformsh/config.
 ```yaml
 api:
   # A path (relative or absolute) to a file containing an API token.
+  # Run 'platform logout --all' if you change this value.
   token_file: null
 
 local:

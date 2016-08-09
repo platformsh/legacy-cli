@@ -398,7 +398,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 }
                 else {
                     unset($config['mapping'][$currentBranch]);
-                    $this->localProject->writeCurrentProjectConfig(['mapping' => $config['mapping']], $projectRoot);
+                    $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
                 }
             }
         }

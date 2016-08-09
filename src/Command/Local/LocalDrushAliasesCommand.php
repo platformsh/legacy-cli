@@ -79,7 +79,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         return 1;
                     }
                 }
-                $this->localProject->writeCurrentProjectConfig(['alias-group' => $new_group], $projectRoot);
+                $this->localProject->writeCurrentProjectConfig(['alias-group' => $new_group], $projectRoot, true);
             }
 
             $environments = $this->api()->getEnvironments($project, true, false);
