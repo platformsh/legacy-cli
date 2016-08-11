@@ -43,6 +43,15 @@ check(
     }
 );
 
+// Check that the Phar extension is installed (needed in this script).
+check(
+    'The "phar" PHP extension is installed.',
+    'The "phar" PHP extension is required.',
+    function () {
+        return extension_loaded('phar');
+    }
+);
+
 // Check that Git is installed.
 check(
     'Git is installed.',
@@ -70,6 +79,16 @@ check(
     'Warning: the "curl" PHP extension will be needed.',
     function () {
         return extension_loaded('curl');
+    },
+    false
+);
+
+// Check that the ctype extension exists.
+check(
+    'The "ctype" PHP extension is installed.',
+    'Warning: the "ctype" PHP extension will be needed.',
+    function () {
+        return extension_loaded('ctype');
     },
     false
 );
