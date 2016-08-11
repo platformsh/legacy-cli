@@ -28,6 +28,7 @@ class EnvironmentInfoCommand extends CommandBase
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for an environment');
+        PropertyFormatter::configureInput($this->getDefinition());
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -52,7 +53,7 @@ class EnvironmentInfoCommand extends CommandBase
 
         $property = $input->getArgument('property');
 
-        $this->formatter = new PropertyFormatter();
+        $this->formatter = new PropertyFormatter($input);
 
         if (!$property) {
             return $this->listProperties($environment, new Table($input, $output));
