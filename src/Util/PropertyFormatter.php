@@ -2,12 +2,23 @@
 
 namespace Platformsh\Cli\Util;
 
+use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Yaml\Yaml;
 
 class PropertyFormatter
 {
     /** @var int */
     public $yamlInline = 2;
+
+    /** @var InputInterface|null */
+    protected $input;
+
+    public function __construct(InputInterface $input = null)
+    {
+        $this->input = $input;
+    }
 
     /**
      * @param mixed  $value
@@ -37,13 +48,30 @@ class PropertyFormatter
     }
 
     /**
+     * Add options to a command's input definition.
+     *
+     * @param InputDefinition $definition
+     */
+    public static function configureInput(InputDefinition $definition)
+    {
+        $description = 'The date format (as a PHP date format string)';
+        $option = new InputOption('date-fmt', null, InputOption::VALUE_REQUIRED, $description, 'r');
+        $definition->addOption($option);
+    }
+
+    /**
      * @param string $value
      *
      * @return string
      */
     protected function formatDate($value)
     {
-        return date('r', strtotime($value));
+        $format = null;
+        if (isset($this->input) && $this->input->hasOption('date-fmt')) {
+            $format = $this->input->getOption('date-fmt');
+        }
+
+        return date($format ?: 'r', strtotime($value));
     }
 
     /**
