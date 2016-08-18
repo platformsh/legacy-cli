@@ -28,6 +28,7 @@ class ProjectInfoCommand extends CommandBase
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for a project');
+        PropertyFormatter::configureInput($this->getDefinition());
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Read all project properties')
@@ -41,7 +42,7 @@ class ProjectInfoCommand extends CommandBase
         $this->validateInput($input);
 
         $project = $this->getSelectedProject();
-        $this->formatter = new PropertyFormatter();
+        $this->formatter = new PropertyFormatter($input);
 
         if ($input->getOption('refresh')) {
             $project->refresh();
