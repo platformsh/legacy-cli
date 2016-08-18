@@ -6,6 +6,6 @@ They are not packaged nor used directly by the CLI. Instead, they are
 copied to the main website under these URLs:
 
 ```
-https://platform.sh/cli/installer
-https://platform.sh/cli/manifest.json
+https://accounts.magento.cloud/cli/installer
+https://accounts.magento.cloud/cli/manifest.json
 ```

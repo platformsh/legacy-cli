@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * Platform.sh CLI installer.
+ * Magento Cloud CLI installer.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', 'https://platform.sh/cli/manifest.json');
-define('CLI_CONFIG_DIR', '.platformsh');
-define('CLI_EXECUTABLE', 'platform');
-define('CLI_NAME', 'Platform.sh CLI');
+define('CLI_UPDATE_MANIFEST_URL', 'https://accounts.magento.cloud/cli/manifest.json');
+define('CLI_CONFIG_DIR', '.magento-cloud');
+define('CLI_EXECUTABLE', 'magento-cloud');
+define('CLI_NAME', 'Magento Cloud CLI');
 define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
 
 set_error_handler(
@@ -240,20 +240,6 @@ if ($home = getHomeDirectory()) {
         if ($currentShellConfig === false) {
             $currentShellConfig = '';
         }
-
-        // Backwards compatibility for the old 'platform.rc'.
-        // @todo remove any time after about late 2016.
-        $oldRcLocation = str_replace('/shell-config.rc', '/platform.rc', $rcDestination);
-        if (file_exists($oldRcLocation)) {
-            @unlink($oldRcLocation);
-        }
-        if (strpos($currentShellConfig, $oldRcLocation) !== false) {
-            $currentShellConfig = str_replace($oldRcLocation, $rcDestination, $currentShellConfig);
-            if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
-                output("  Failed to configure the shell automatically.", 'warning');
-            }
-        }
-        // End backwards compatibility section.
 
         if (strpos($currentShellConfig, $configDir . "/bin") === false) {
             $currentShellConfig .= PHP_EOL . PHP_EOL
