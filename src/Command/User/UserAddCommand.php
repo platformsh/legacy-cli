@@ -158,7 +158,7 @@ class UserAddCommand extends CommandBase
      */
     public function validateRole($value)
     {
-        if (empty($value) || !in_array($value, ['admin', 'contributor', 'viewer', 'none', 'a', 'c', 'v', 'n'])) {
+        if (empty($value) || !in_array(strtolower($value), ['admin', 'contributor', 'viewer', 'none', 'a', 'c', 'v', 'n'])) {
             throw new \RuntimeException("Invalid role: $value");
         }
 
