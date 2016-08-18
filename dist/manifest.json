@@ -1,9 +1,9 @@
 [
   {
     "name": "magento-cloud.phar",
-    "sha1": "efccf6b0301cf4c9361dff36033062b2f6d2c42d",
-    "url": "https://accounts.magento.cloud/sites/default/files/magento-cloud-v1.1.0.phar",
-    "version": "1.1.0",
+    "sha1": "9af9a612fa1b7d15ca580e973c2e71f62c41a047",
+    "url": "https://accounts.magento.cloud/sites/default/files/magento-cloud-v1.1.1.phar",
+    "version": "1.1.1",
     "php": {
         "min": "5.5.9"
     }
