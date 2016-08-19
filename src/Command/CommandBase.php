@@ -418,10 +418,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         // There is no Git remote set. Fall back to trying the current branch
         // name.
         if ($currentBranch) {
-            $currentBranchSanitized = Environment::sanitizeId($currentBranch);
-            $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+            $environment = $this->api()->getEnvironment($currentBranch, $project, $refresh);
+            if (!$environment) {
+                // Try a sanitized version of the branch name too.
+                $currentBranchSanitized = Environment::sanitizeId($currentBranch);
+                $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+            }
             if ($environment) {
-                $this->debug('Selected environment ' . $currentBranchSanitized . ', based on branch name:' . $currentBranch);
+                $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
                 return $environment;
             }
         }
