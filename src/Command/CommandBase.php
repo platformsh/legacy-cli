@@ -614,35 +614,54 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * @param string $environmentId
+     * Select the current environment for the user.
+     *
+     * @throws \RuntimeException If the current environment cannot be found.
+     *
+     * @param string|null $environmentId
+     *   The environment ID specified by the user, or null to auto-detect the
+     *   environment.
      *
      * @return Environment
      */
     protected function selectEnvironment($environmentId = null)
     {
         if (!empty($environmentId)) {
-            $environment = $this->api()->getEnvironment($environmentId, $this->project);
-            if (!$environment) {
-                throw new \RuntimeException("Specified environment not found: " . $environmentId);
+            // Try the environment ID first.
+            if ($environment = $this->api()->getEnvironment($environmentId, $this->project)) {
+                $this->debug('Selecting environment ' . $environment->id . ' based on user input');
+                return $environment;
             }
-        } else {
-            $environment = $this->getCurrentEnvironment($this->project);
-            if (!$environment) {
-                $message = "Could not determine the current environment.";
-                if ($this->getProjectRoot()) {
-                    throw new \RuntimeException(
-                        $message . "\nSpecify it manually using --environment."
-                    );
-                }
-                else {
-                    throw new RootNotFoundException(
-                        $message . "\nSpecify it manually using --environment or go to a project directory."
-                    );
+
+            // The environment ID may be the machine name.
+            $environments = $this->api()->getEnvironments($this->project);
+            foreach ($environments as $environment) {
+                if ($environment->hasProperty('machine_name')
+                    && $environment->getProperty('machine_name') === $environmentId) {
+                    $this->debug('Selecting environment ' . $environment->id . ' based on the machine name ' . $environmentId);
+                    return $environment;
                 }
             }
+
+            throw new \RuntimeException('Specified environment not found: ' . $environmentId);
         }
 
-        return $environment;
+        // If no ID is specified, try to auto-detect the current environment.
+        if ($environment = $this->getCurrentEnvironment($this->project)) {
+            return $environment;
+        }
+
+        $message = "Could not determine the current environment.";
+        if ($this->getProjectRoot()) {
+            throw new \RuntimeException(
+                $message . "\nSpecify it manually using --environment."
+            );
+        }
+        else {
+            throw new RootNotFoundException(
+                $message . "\nSpecify it manually using --environment or go to a project directory."
+            );
+        }
     }
 
     /**
