@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Helper\QuestionHelper;
 use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -19,7 +20,7 @@ class DomainGetCommand extends DomainCommandBase
         $this
             ->setName('domain:get')
             ->setDescription('Show detailed information for a domain')
-            ->addArgument('name', InputArgument::REQUIRED, 'The domain name')
+            ->addArgument('name', InputArgument::OPTIONAL, 'The domain name')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
         Table::addFormatOption($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
@@ -35,6 +36,22 @@ class DomainGetCommand extends DomainCommandBase
         $project = $this->getSelectedProject();
 
         $domainName = $input->getArgument('name');
+        if (empty($domainName)) {
+            if (!$input->isInteractive()) {
+                $this->stdErr->writeln('The domain name is required.');
+                return 1;
+            }
+
+            $domains = $project->getDomains();
+            $options = [];
+            foreach ($domains as $domain) {
+                $options[$domain->name] = $domain->name;
+            }
+            /** @var QuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
+            $domainName = $questionHelper->choose($options, 'Enter a number to choose a domain:');
+        }
+
         $domain = $project->getDomain($domainName);
         if (!$domain) {
             $this->stdErr->writeln('Domain not found: <error>' . $domainName . '</error>');
