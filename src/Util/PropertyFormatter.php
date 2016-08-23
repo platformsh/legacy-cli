@@ -39,22 +39,16 @@ class PropertyFormatter
 
             case 'created_at':
             case 'updated_at':
-                return $this->formatDate($value);
-
             case 'ssl.expires_on':
-                if (substr($value, -3) === '000' && strlen($value) === 13) {
-                    $value = substr($value, 0, 10);
-                }
-
                 return $this->formatDate($value);
+
+            case 'ssl':
+                if ($property === 'ssl' && is_array($value) && isset($value['expires_on'])) {
+                    $value['expires_on'] = $this->formatDate($value['expires_on']);
+                }
         }
 
         if (!is_string($value)) {
-            if (is_array($value)) {
-                foreach ($value as $key => $value2) {
-                    $value[$key] = $this->format($value2, $property . '.' . $key);
-                }
-            }
             $value = rtrim(Yaml::dump($value, $this->yamlInline));
         }
 
@@ -84,8 +78,17 @@ class PropertyFormatter
         if (isset($this->input) && $this->input->hasOption('date-fmt')) {
             $format = $this->input->getOption('date-fmt');
         }
+        $format = $format ?: self::DEFAULT_DATE_FORMAT;
 
-        return date($format ?: self::DEFAULT_DATE_FORMAT, is_numeric($value) ? $value : strtotime($value));
+        // Workaround for the ssl.expires_on date, which is currently a
+        // timestamp in milliseconds.
+        if (substr($value, -3) === '000' && strlen($value) === 13) {
+            $value = substr($value, 0, 10);
+        }
+
+        $timestamp = is_numeric($value) ? $value : strtotime($value);
+
+        return date($format, $timestamp);
     }
 
     /**
