@@ -9,6 +9,8 @@ use Symfony\Component\Yaml\Yaml;
 
 class PropertyFormatter
 {
+    const DEFAULT_DATE_FORMAT = 'c';
+
     /** @var int */
     public $yamlInline = 2;
 
@@ -67,7 +69,7 @@ class PropertyFormatter
     public static function configureInput(InputDefinition $definition)
     {
         $description = 'The date format (as a PHP date format string)';
-        $option = new InputOption('date-fmt', null, InputOption::VALUE_REQUIRED, $description, 'r');
+        $option = new InputOption('date-fmt', null, InputOption::VALUE_REQUIRED, $description, self::DEFAULT_DATE_FORMAT);
         $definition->addOption($option);
     }
 
@@ -83,7 +85,7 @@ class PropertyFormatter
             $format = $this->input->getOption('date-fmt');
         }
 
-        return date($format ?: 'r', is_numeric($value) ? $value : strtotime($value));
+        return date($format ?: self::DEFAULT_DATE_FORMAT, is_numeric($value) ? $value : strtotime($value));
     }
 
     /**
