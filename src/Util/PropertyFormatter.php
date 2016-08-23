@@ -38,9 +38,21 @@ class PropertyFormatter
             case 'created_at':
             case 'updated_at':
                 return $this->formatDate($value);
+
+            case 'ssl.expires_on':
+                if (substr($value, -3) === '000' && strlen($value) === 13) {
+                    $value = substr($value, 0, 10);
+                }
+
+                return $this->formatDate($value);
         }
 
         if (!is_string($value)) {
+            if (is_array($value)) {
+                foreach ($value as $key => $value2) {
+                    $value[$key] = $this->format($value2, $property . '.' . $key);
+                }
+            }
             $value = rtrim(Yaml::dump($value, $this->yamlInline));
         }
 
@@ -71,7 +83,7 @@ class PropertyFormatter
             $format = $this->input->getOption('date-fmt');
         }
 
-        return date($format ?: 'r', strtotime($value));
+        return date($format ?: 'r', is_numeric($value) ? $value : strtotime($value));
     }
 
     /**
