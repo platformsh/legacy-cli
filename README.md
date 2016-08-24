@@ -82,7 +82,9 @@ app
 domain
   domain:add                                Add a new domain to the project
   domain:delete                             Delete a domain from the project
+  domain:get                                Show detailed information for a domain
   domain:list (domains)                     Get a list of all domains
+  domain:update                             Update a domain
 environment
   environment:activate                      Activate an environment
   environment:branch (branch)               Branch an environment

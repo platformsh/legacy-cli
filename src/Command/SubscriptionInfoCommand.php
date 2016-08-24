@@ -26,6 +26,7 @@ class SubscriptionInfoCommand extends CommandBase
             ->setName('subscription:info')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->setDescription('Read subscription properties');
+        PropertyFormatter::configureInput($this->getDefinition());
         Table::addFormatOption($this->getDefinition());
         $this->addProjectOption();
         $this->addExample('View all subscription properties')
@@ -45,7 +46,7 @@ class SubscriptionInfoCommand extends CommandBase
 
             return 1;
         }
-        $this->formatter = new PropertyFormatter();
+        $this->formatter = new PropertyFormatter($input);
 
         $property = $input->getArgument('property');
 
