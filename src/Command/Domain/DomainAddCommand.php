@@ -17,12 +17,12 @@ class DomainAddCommand extends DomainCommandBase
         $this
             ->setName('domain:add')
             ->setDescription('Add a new domain to the project');
-        $this->addProjectOption()->addNoWaitOption();
         $this->addDomainOptions();
+        $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
             'Add the domain secure.example.com with SSL enabled',
-            'secure.example.com --cert=/etc/ssl/private/secure-example-com.crt --key=/etc/ssl/private/secure-example-com.key'
+            'secure.example.com --cert secure-example-com.crt --key secure-example-com.key'
         );
     }
 
