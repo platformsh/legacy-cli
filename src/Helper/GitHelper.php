@@ -237,7 +237,7 @@ class GitHelper extends Helper implements OutputAwareInterface
             return trim(ltrim($line, '* '));
         }, explode("\n", $result));
 
-        return in_array($branchName, $branches);
+        return in_array($branchName, $branches, TRUE);
     }
 
     /**
