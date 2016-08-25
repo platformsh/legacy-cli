@@ -25,7 +25,7 @@ class EnvironmentCheckoutCommand extends CommandBase
                 InputArgument::OPTIONAL,
                 'The ID of the environment to check out. For example: "sprint2"'
             );
-        $this->addExample('Check out the environment "develop"', 'master');
+        $this->addExample('Check out the environment "develop"', 'develop');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -139,19 +139,16 @@ class EnvironmentCheckoutCommand extends CommandBase
     protected function branchExists($branch, Project $project, GitHelper $gitHelper)
     {
         // Check if the Git branch exists locally.
-        $candidates = array_unique([Environment::sanitizeId($branch), $branch]);
+        $candidates = array_unique([$branch, Environment::sanitizeId($branch)]);
         foreach ($candidates as $candidate) {
             if ($gitHelper->branchExists($candidate)) {
                 return $candidate;
             }
         }
-        // Check if the environment exists by title or ID. This is usually faster
-        // than running 'git ls-remote'.
-        $environments = $this->api()->getEnvironments($project);
-        foreach ($environments as $environment) {
-            if ($environment->title == $branch || $environment->id == $branch) {
-                return $environment->id;
-            }
+        // Check if the environment exists by ID. This is usually faster than
+        // running 'git ls-remote'.
+        if ($environment = $this->api()->getEnvironment($branch, $project)) {
+            return $environment->id;
         }
 
         return false;
