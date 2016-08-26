@@ -356,7 +356,7 @@ class DrushHelper extends Helper implements OutputAwareInterface
      */
     protected function exportAlias($name, array $alias)
     {
-        return "\$aliases['" . $name . "'] = " . var_export($alias, true) . ";\n";
+        return "\$aliases['" . str_replace("'", "\\'", $name) . "'] = " . var_export($alias, true) . ";\n";
     }
 
     /**

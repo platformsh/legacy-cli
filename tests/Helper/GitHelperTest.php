@@ -93,6 +93,15 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Test GitHelper::branchExists() with unicode branch names.
+     */
+    public function testBranchExistsUnicode()
+    {
+        $this->gitHelper->checkOutNew('b®åñçh-wî†h-üní¢ø∂é');
+        $this->assertTrue($this->gitHelper->branchExists('b®åñçh-wî†h-üní¢ø∂é'));
+    }
+
+    /**
      * Test GitHelper::getCurrentBranch().
      */
     public function testGetCurrentBranch()
