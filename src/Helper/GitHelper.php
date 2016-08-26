@@ -229,9 +229,15 @@ class GitHelper extends Helper implements OutputAwareInterface
      */
     public function branchExists($branchName, $dir = null, $mustRun = false)
     {
-        $args = ['show-ref', "refs/heads/$branchName"];
+        // The porcelain command 'git branch' is less strict about character
+        // encoding than (otherwise simpler) plumbing commands such as
+        // 'git show-ref'.
+        $result = $this->execute(['branch'], $dir, $mustRun);
+        $branches = array_map(function ($line) {
+            return trim(ltrim($line, '* '));
+        }, explode("\n", $result));
 
-        return (bool) $this->execute($args, $dir, $mustRun);
+        return in_array($branchName, $branches, TRUE);
     }
 
     /**
