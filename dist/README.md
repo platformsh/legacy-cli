@@ -1,11 +1,10 @@
 ### 'dist' directory
 
-This directory contains the installer and manifest files for the CLI.
+This directory contains installer script(s) for the CLI.
 
-They are not packaged nor used directly by the CLI. Instead, they are
-copied to the main website under these URLs:
+The installer is not packaged nor used directly by the CLI. Instead, it
+is copied to the main website under this URL:
 
 ```
 https://platform.sh/cli/installer
-https://platform.sh/cli/manifest.json
 ```
