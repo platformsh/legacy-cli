@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\PropertyFormatter;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -38,13 +39,18 @@ class UserListCommand extends CommandBase
                     $role .= ' (owner)';
                 }
             }
-            $rows[$weight] = [$account['email'], $account['display_name'], $role];
+            $rows[$weight] = [$account['email'], $account['display_name'], $role, $this->formatDatetime($account['created_at'])];
         }
 
         ksort($rows);
 
-        $table->render(array_values($rows), ['Email address', 'Name', 'Project role']);
+        $table->render(array_values($rows), ['Email Address', 'Name', 'Project role', 'Date added']);
         return 0;
+    }
+
+    protected function formatDatetime($datetime) {
+        $formatter = new PropertyFormatter();
+        return $formatter->format($datetime, 'created_at');
     }
 
 }
