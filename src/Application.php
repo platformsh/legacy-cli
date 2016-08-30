@@ -111,6 +111,7 @@ class Application extends ParentApplication
         $commands[] = new Command\App\AppListCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
+        $commands[] = new Command\Auth\LoginNonInteractiveCommand();
         $commands[] = new Command\Domain\DomainAddCommand();
         $commands[] = new Command\Domain\DomainDeleteCommand();
         $commands[] = new Command\Domain\DomainGetCommand();
