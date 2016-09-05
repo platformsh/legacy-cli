@@ -158,7 +158,7 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = ['multiApp', 'noClean', 'drushConcurrency'];
+        $irrelevant = ['multiApp', 'noClean', 'drushConcurrency', 'noBackup'];
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 
@@ -276,9 +276,11 @@ class LocalBuild
         // The build is complete. Move the directory.
         $buildDir = substr($tmpBuildDir, 0, strlen($tmpBuildDir) - 4);
         if (file_exists($buildDir)) {
-            $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
-            $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
-            $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
+            if (empty($this->settings['noBackup'])) {
+                $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
+                $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
+                $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
+            }
             if (!$this->fsHelper->remove($buildDir, true)) {
                 $this->output->writeln(sprintf('Failed to remove directory <error>%s</error>', $buildDir));
 

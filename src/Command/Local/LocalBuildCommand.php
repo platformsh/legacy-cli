@@ -57,6 +57,12 @@ class LocalBuildCommand extends CommandBase
                 'Do not create or use a build archive'
             )
             ->addOption(
+                'no-backup',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not back up the previous build'
+            )
+            ->addOption(
                 'no-cache',
                 null,
                 InputOption::VALUE_NONE,
@@ -172,6 +178,7 @@ class LocalBuildCommand extends CommandBase
             'drushWorkingCopy' => 'working-copy',
             'drushUpdateLock' => 'lock',
             'noArchive' => 'no-archive',
+            'noBackup' => 'no-backup',
             'noCache' => 'no-cache',
             'noClean' => 'no-clean',
             'noBuildHooks' => 'no-build-hooks',
