@@ -20,7 +20,7 @@ class ProjectListCommand extends CommandBase
             ->setDescription('Get a list of all active projects')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs')
             ->addOption('host', null, InputOption::VALUE_OPTIONAL, 'Filter by region hostname')
-            ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Filter by title')
+            ->addOption('title', null, InputOption::VALUE_OPTIONAL, 'Filter by title')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
