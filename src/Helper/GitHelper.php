@@ -169,18 +169,6 @@ class GitHelper extends Helper implements OutputAwareInterface
     }
 
     /**
-     * Check whether a directory is a Git repository.
-     *
-     * @param string $dir
-     *
-     * @return bool
-     */
-    public function isRepository($dir)
-    {
-        return is_dir($dir . '/.git');
-    }
-
-    /**
      * Create a Git repository in a directory.
      *
      * @param string $dir
@@ -191,7 +179,7 @@ class GitHelper extends Helper implements OutputAwareInterface
      */
     public function init($dir, $mustRun = false)
     {
-        if ($this->isRepository($dir)) {
+        if (is_dir($dir . '/.git')) {
             throw new \InvalidArgumentException("Already a repository: $dir");
         }
 
@@ -310,16 +298,16 @@ class GitHelper extends Helper implements OutputAwareInterface
      *   The path to a Git repository.
      * @param bool        $mustRun
      *   Enable exceptions if the Git command fails.
+     * @param bool        $quiet
      *
      * @return bool
      */
-    public function checkOut($name, $dir = null, $mustRun = false)
+    public function checkOut($name, $dir = null, $mustRun = false, $quiet = false)
     {
         return (bool) $this->execute([
             'checkout',
             $name,
-        ], $dir, $mustRun, false
-        );
+        ], $dir, $mustRun, $quiet);
     }
 
     /**
@@ -411,6 +399,19 @@ class GitHelper extends Helper implements OutputAwareInterface
         }
 
         return (bool) $this->execute($args, false, $mustRun, false);
+    }
+
+    /**
+     * Find the root of a directory in a Git repository.
+     *
+     * @param string|null $dir
+     * @param bool        $mustRun
+     *
+     * @return string|false
+     */
+    public function getRoot($dir = null, $mustRun = false)
+    {
+        return $this->execute(['rev-parse', '--show-toplevel'], $dir, $mustRun);
     }
 
     /**
