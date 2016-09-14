@@ -152,7 +152,7 @@ class AdaptiveTable extends Table
     {
         // Account for left-indented cells.
         if (strpos($contents, ' ') === 0) {
-            $trimmed = ltrim($contents);
+            $trimmed = ltrim($contents, ' ');
             $indent = strlen($contents) - strlen($trimmed);
 
             return str_repeat(' ', $indent) . wordwrap($trimmed, $width - $indent, PHP_EOL, true);
