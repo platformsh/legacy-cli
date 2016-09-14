@@ -34,7 +34,11 @@ class UserDeleteCommand extends CommandBase
         }
 
         if ($project->owner === $selectedUser->id) {
-            $this->stdErr->writeln("The user <error>$email</error> is the owner of the project <error>{$project->title}</error>.");
+            $this->stdErr->writeln(sprintf(
+                'The user <error>%s</error> is the owner of the project %s.',
+                $email,
+                $this->api()->getProjectLabel($project, 'error')
+            ));
             $this->stdErr->writeln("The project's owner cannot be deleted.");
             return 1;
         }

@@ -66,7 +66,7 @@ class DomainListCommand extends DomainCommandBase
         }
 
         if (empty($domains)) {
-            $this->stdErr->writeln("No domains found for <info>{$project->title}</info>");
+            $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
             $this->stdErr->writeln("\nAdd a domain to the project by running <info>" . self::$config->get('application.executable') . " domain:add [domain-name]</info>");
 
             return 1;
