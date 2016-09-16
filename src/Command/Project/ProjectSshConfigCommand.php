@@ -14,8 +14,7 @@ use Symfony\Component\Yaml\Yaml;
 
 class ProjectSshConfigCommand extends CommandBase
 {
-
-    protected $cmdConfig = null;
+    protected $cmdConfig = [];
 
     protected function configure()
     {
@@ -26,27 +25,6 @@ class ProjectSshConfigCommand extends CommandBase
             ->setDescription('outputs OpenSSH valid configuration to connect all of the project environments');
         $this->addProjectOption();
         $this->addAppOption();
-    }
-
-    protected function loadCommandConfig() {
-        $filename =self::$config->getUserConfigDir() . '/ssh-config.yaml';
-        if (!isset($this->cmdConfig)) {
-            $this->cmdConfig = [];
-            if (file_exists($filename)) {
-                $contents = file_get_contents($filename);
-                $this->cmdConfig = Yaml::parse($contents);
-            }
-        }
-    }
-
-    protected function writeCommandConfig($filename) {
-        $filename =self::$config->getUserConfigDir() . '/ssh-config.yaml';
-        if (!empty($this->cmdConfig)) {
-            $this->debug('Saving ssh-config confing to: ' . $filename);
-            if (!file_put_contents($filename, Yaml::dump($this->cmdConfig, 10))) {
-                throw new \RuntimeException('Failed to write ssh-config config to: ' . $filename);
-            }
-        }
     }
 
     /**
@@ -74,7 +52,11 @@ class ProjectSshConfigCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->loadCommandConfig();
+        try {
+            $this->cmdConfig = self::$config->get('commands.' . $this->getName());
+        }
+        catch (\Exception $e) {
+        }
 
         $this->validateInput($input);
         $project = $this->getSelectedProject();
@@ -124,6 +106,11 @@ class ProjectSshConfigCommand extends CommandBase
         }
 
         $this->writeCommandConfig();
+        self::$config->writeUserConfig([
+            'commands' => [
+                $this->getName() => $this->cmdConfig
+            ]
+        ]);
 
         return 0;
     }
