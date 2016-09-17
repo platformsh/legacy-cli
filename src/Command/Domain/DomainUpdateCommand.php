@@ -60,7 +60,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $result = $domain->update(['ssl' => $this->sslOptions]);
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
         }
 
         return 0;

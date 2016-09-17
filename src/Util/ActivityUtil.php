@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Util;
 
 use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -83,11 +84,12 @@ abstract class ActivityUtil
      *
      * @param Activity[]      $activities
      * @param OutputInterface $output
+     * @param Project         $project
      *
      * @return bool
      *   True if all activities succeed, false otherwise.
      */
-    public static function waitMultiple(array $activities, OutputInterface $output)
+    public static function waitMultiple(array $activities, OutputInterface $output, Project $project)
     {
         $count = count($activities);
         if ($count == 0) {
@@ -124,10 +126,20 @@ abstract class ActivityUtil
             sleep(1);
             $states = [];
             $complete = 0;
+            $projectActivities = $project->getActivities();
             foreach ($activities as $activity) {
-                if (!$activity->isComplete()) {
+                $refreshed = false;
+                foreach ($projectActivities as $projectActivity) {
+                    if ($projectActivity->id === $activity->id) {
+                        $activity = $projectActivity;
+                        $refreshed = true;
+                        break;
+                    }
+                }
+                if (!$refreshed && !$activity->isComplete()) {
                     $activity->refresh();
-                } else {
+                }
+                if ($activity->isComplete()) {
                     $complete++;
                 }
                 $state = $activity->state;

@@ -65,7 +65,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $this->displayIntegration($integration, $input, $this->stdErr);
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
         }
 
         return 0;
