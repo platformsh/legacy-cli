@@ -6,6 +6,7 @@ use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,6 +20,7 @@ class EnvironmentSqlDumpCommand extends CommandBase
             ->setName('environment:sql-dump')
             ->setAliases(['sql-dump'])
             ->setDescription('Create a local dump of the remote database')
+            ->addArgument('extra', InputArgument::OPTIONAL, 'Extra options to pass along to the database dump command. Advance usage: database service dependent.')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>--<environment ID>--dump.sql" in the project root')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
@@ -103,6 +105,11 @@ class EnvironmentSqlDumpCommand extends CommandBase
         }
 
         set_time_limit(0);
+
+        $extraOptions = $input->getArgument('extra');
+        if ($extraOptions) {
+            $dumpCommand .= ' ' . $extraOptions;
+        }
 
         $command = 'ssh -C ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($dumpCommand);
