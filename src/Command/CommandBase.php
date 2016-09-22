@@ -627,23 +627,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function selectEnvironment($environmentId = null)
     {
         if (!empty($environmentId)) {
-            // Try the environment ID first.
-            if ($environment = $this->api()->getEnvironment($environmentId, $this->project)) {
-                $this->debug('Selecting environment ' . $environment->id . ' based on user input');
-                return $environment;
+            $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
+            if (!$environment) {
+                throw new \RuntimeException('Specified environment not found: ' . $environmentId);
             }
-
-            // The environment ID may be the machine name.
-            $environments = $this->api()->getEnvironments($this->project);
-            foreach ($environments as $environment) {
-                if ($environment->hasProperty('machine_name')
-                    && $environment->getProperty('machine_name') === $environmentId) {
-                    $this->debug('Selecting environment ' . $environment->id . ' based on the machine name ' . $environmentId);
-                    return $environment;
-                }
-            }
-
-            throw new \RuntimeException('Specified environment not found: ' . $environmentId);
         }
 
         // If no ID is specified, try to auto-detect the current environment.
@@ -656,8 +643,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             throw new \RuntimeException(
                 $message . "\nSpecify it manually using --environment."
             );
-        }
-        else {
+        } else {
             throw new RootNotFoundException(
                 $message . "\nSpecify it manually using --environment or go to a project directory."
             );
