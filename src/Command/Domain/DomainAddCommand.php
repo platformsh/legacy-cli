@@ -58,7 +58,7 @@ class DomainAddCommand extends DomainCommandBase
         }
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
         }
 
         return 0;

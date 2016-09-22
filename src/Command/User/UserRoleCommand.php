@@ -129,7 +129,7 @@ class UserRoleCommand extends CommandBase
         }
 
         if (isset($result) && !$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
         }
 
         if ($input->getOption('pipe')) {

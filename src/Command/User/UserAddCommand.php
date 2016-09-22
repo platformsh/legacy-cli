@@ -143,7 +143,7 @@ class UserAddCommand extends CommandBase
         }
 
         if (!$input->getOption('no-wait')) {
-            if (!ActivityUtil::waitMultiple($activities, $this->stdErr)) {
+            if (!ActivityUtil::waitMultiple($activities, $this->stdErr, $project)) {
                 $success = false;
             }
         }

@@ -220,7 +220,7 @@ EOF
         }
 
         if (!$input->getOption('no-wait')) {
-            if (!ActivityUtil::waitMultiple($deactivateActivities, $output)) {
+            if (!ActivityUtil::waitMultiple($deactivateActivities, $output, $this->getSelectedProject())) {
                 $error = true;
             }
         }

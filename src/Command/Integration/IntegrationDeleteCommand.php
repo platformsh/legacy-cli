@@ -46,7 +46,7 @@ class IntegrationDeleteCommand extends CommandBase
         $this->stdErr->writeln("Deleted integration <info>$id</info>");
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
         }
 
         return 0;
