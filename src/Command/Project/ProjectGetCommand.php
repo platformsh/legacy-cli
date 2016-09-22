@@ -198,7 +198,8 @@ class ProjectGetCommand extends CommandBase
         }
 
         // We have a repo! Yay. Clone it.
-        $this->stdErr->writeln(sprintf('Downloading project <info>%s</info>', $project->title ?: $projectId));
+        $projectLabel = $this->api()->getProjectLabel($project);
+        $this->stdErr->writeln('Downloading project ' . $projectLabel);
         $cloneArgs = [
             '--branch',
             $environment,
@@ -225,7 +226,7 @@ class ProjectGetCommand extends CommandBase
 
         $gitHelper->updateSubmodules(true, $projectRoot);
 
-        $this->stdErr->writeln("\nThe project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");
+        $this->stdErr->writeln("\nThe project <info>$projectLabel</info> was successfully downloaded to: <info>$directory</info>");
 
         // Return early if there is no code in the repository.
         if (!glob($projectRoot . '/*', GLOB_NOSORT)) {
@@ -277,7 +278,7 @@ class ProjectGetCommand extends CommandBase
     {
         $projectList = [];
         foreach ($projects as $project) {
-            $projectList[$project->id] = $project->id . ' (' . $project->title . ')';
+            $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
         }
         $text = "Enter a number to choose which project to clone:";
 

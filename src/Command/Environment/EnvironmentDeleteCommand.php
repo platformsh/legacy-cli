@@ -21,7 +21,8 @@ class EnvironmentDeleteCommand extends CommandBase
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
             ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
-            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments');
+            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments')
+            ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environments not to delete');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -45,7 +46,14 @@ EOF
 
         $environments = $this->api()->getEnvironments($this->getSelectedProject());
 
-        if ($input->getOption('inactive')) {
+        $toDelete = [];
+
+        if ($input->getOption('inactive') && $input->getOption('merged')) {
+            $this->stdErr->writeln('Please specify either --inactive or --merged; not both.');
+
+            return 1;
+        }
+        elseif ($input->getOption('inactive')) {
             $toDelete = array_filter(
                 $environments,
                 function ($environment) {
@@ -54,27 +62,30 @@ EOF
                 }
             );
             if (!$toDelete) {
-                $this->stdErr->writeln("No inactive environments found");
+                $this->stdErr->writeln('No inactive environments found.');
 
                 return 0;
             }
-        } elseif ($input->getOption('merged')) {
+        }
+        elseif ($input->getOption('merged')) {
             if (!$this->hasSelectedEnvironment()) {
-                $this->stdErr->writeln("No base environment specified");
+                $this->stdErr->writeln('Cannot find merged environments: no base environment specified.');
 
                 return 1;
             }
             $base = $this->getSelectedEnvironment()->id;
-            $this->stdErr->writeln("Finding environments merged with <info>$base</info>");
+            $this->stdErr->writeln("Finding environments merged with <info>$base</info>.");
             $toDelete = $this->getMergedEnvironments($base);
             if (!$toDelete) {
-                $this->stdErr->writeln("No merged environments found");
+                $this->stdErr->writeln('No merged environments found.');
 
                 return 0;
             }
-        } elseif ($this->hasSelectedEnvironment()) {
+        }
+        elseif ($this->hasSelectedEnvironment()) {
             $toDelete = [$this->getSelectedEnvironment()];
-        } elseif ($environmentIds = $input->getArgument('environment')) {
+        }
+        elseif ($environmentIds = $input->getArgument('environment')) {
             $toDelete = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
             foreach ($notFound as $notFoundId) {
@@ -82,8 +93,10 @@ EOF
             }
         }
 
+        $toDelete = array_diff_key($toDelete, array_flip($input->getOption('exclude')));
+
         if (empty($toDelete)) {
-            $this->stdErr->writeln("No environment(s) specified.");
+            $this->stdErr->writeln('No environment(s) found to delete.');
 
             return 1;
         }

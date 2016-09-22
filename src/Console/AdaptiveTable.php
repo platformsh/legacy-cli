@@ -132,12 +132,33 @@ class AdaptiveTable extends Table
             foreach ($row as $column => &$cell) {
                 $cellWidth = $this->getCellWidth($cell);
                 if ($cellWidth > $maxColumnWidths[$column]) {
-                    $cell = wordwrap($cell, $maxColumnWidths[$column], PHP_EOL, true);
+                    $cell = $this->wrapCell($cell, $maxColumnWidths[$column]);
                 }
             }
         }
 
         return $rows;
+    }
+
+    /**
+     * Word-wrap the contents of a cell, so that they fit inside a max width.
+     *
+     * @param string $contents
+     * @param int    $width
+     *
+     * @return string
+     */
+    protected function wrapCell($contents, $width)
+    {
+        // Account for left-indented cells.
+        if (strpos($contents, ' ') === 0) {
+            $trimmed = ltrim($contents, ' ');
+            $indent = strlen($contents) - strlen($trimmed);
+
+            return str_repeat(' ', $indent) . wordwrap($trimmed, $width - $indent, PHP_EOL, true);
+        }
+
+        return wordwrap($contents, $width, PHP_EOL, true);
     }
 
     /**

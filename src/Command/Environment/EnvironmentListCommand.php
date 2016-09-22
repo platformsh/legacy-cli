@@ -69,7 +69,7 @@ class EnvironmentListCommand extends CommandBase
      *
      * @return array
      */
-    protected function buildEnvironmentRows($tree, $indent = true, $indicateCurrent = true, $indentAmount = 0)
+    protected function buildEnvironmentRows(array $tree, $indent = true, $indicateCurrent = true, $indentAmount = 0)
     {
         $rows = [];
         foreach ($tree as $environment) {
@@ -86,15 +86,16 @@ class EnvironmentListCommand extends CommandBase
 
             if ($branch = array_search($environment->id, $this->mapping)) {
                 $row[] = sprintf('%s (%s)', $environment->title, $branch);
-            }
-            else {
+            } else {
                 $row[] = $environment->title;
             }
 
             $row[] = $this->formatEnvironmentStatus($environment->status);
 
             $rows[] = $row;
-            $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment->id], $indent, $indicateCurrent, $indentAmount + 1));
+            if (isset($this->children[$environment->id])) {
+                $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment->id], $indent, $indicateCurrent, $indentAmount + 1));
+            }
         }
 
         return $rows;
@@ -142,19 +143,20 @@ class EnvironmentListCommand extends CommandBase
 
         $tree = $this->buildEnvironmentTree($environments);
 
-        // To make the display nicer, we move all the children of master
-        // to the top level.
-        if (isset($tree['master'])) {
-            $tree += $this->children['master'];
-            $this->children['master'] = [];
+        // Add orphaned environments (those whose parents do not exist) and
+        // their children to the tree.
+        foreach ($environments as $id => $environment) {
+            if (!isset($tree[$id]) && !empty($environment->parent) && !isset($environments[$environment->parent])) {
+                $tree[$id] = $environment;
+                $this->children[$id] = $this->buildEnvironmentTree($environments, $id);
+            }
         }
 
-        // Add orphaned environments (those whose parents do not exist) to the
-        // tree.
-        foreach ($environments as $id => $environment) {
-            if (!empty($environment->parent) && !isset($environments[$environment->parent])) {
-                $tree += [$id => $environment];
-            }
+        // To make the display nicer, we move all the children of master
+        // to the top level.
+        if (isset($this->children['master'])) {
+            $tree += $this->children['master'];
+            $this->children['master'] = [];
         }
 
         $headers = ['ID', 'Name', 'Status'];
@@ -214,7 +216,8 @@ class EnvironmentListCommand extends CommandBase
      *
      * @return string
      */
-    protected function formatEnvironmentStatus($status) {
+    protected function formatEnvironmentStatus($status)
+    {
         if ($status == 'dirty') {
             $status = 'In progress';
         }

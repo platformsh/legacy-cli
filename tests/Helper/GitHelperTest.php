@@ -56,11 +56,15 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
     /**
      * Test GitHelper::isRepository().
      */
-    public function testIsRepository()
+    public function testGetRoot()
     {
-        $this->assertFalse($this->gitHelper->isRepository($this->tempDir));
-        $repository = $this->getRepositoryDir();
-        $this->assertTrue($this->gitHelper->isRepository($repository));
+        $this->assertFalse($this->gitHelper->getRoot($this->tempDir));
+        $repositoryDir = $this->getRepositoryDir();
+        $this->assertEquals($repositoryDir, $this->gitHelper->getRoot($repositoryDir));
+        mkdir($repositoryDir . '/1/2/3/4/5', 0755, true);
+        $this->assertEquals($repositoryDir, $this->gitHelper->getRoot($repositoryDir . '/1/2/3/4/5'));
+        $this->setExpectedException('Exception', 'Not a git repository');
+        $this->gitHelper->getRoot($this->tempDir, true);
     }
 
     /**

@@ -64,7 +64,7 @@ class LocalProject
      */
     public function ensureGitRemote($dir, $url)
     {
-        if (!file_exists("$dir/.git")) {
+        if (!file_exists($dir . '/.git')) {
             throw new \InvalidArgumentException('The directory is not a Git repository');
         }
         $gitHelper = new GitHelper();

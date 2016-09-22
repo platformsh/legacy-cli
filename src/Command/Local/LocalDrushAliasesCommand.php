@@ -103,7 +103,7 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         if ($aliases) {
-            $this->stdErr->writeln("Drush aliases for <info>{$project->title}</info> ({$project->id}):");
+            $this->stdErr->writeln('Drush aliases for ' . $this->api()->getProjectLabel($project) . ':');
             foreach (explode("\n", $aliases) as $alias) {
                 $output->writeln('    @' . $alias);
             }

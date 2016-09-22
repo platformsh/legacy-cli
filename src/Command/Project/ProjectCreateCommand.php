@@ -132,6 +132,15 @@ class ProjectCreateCommand extends CommandBase
         return $response->json();
     }
 
+    protected function getAvailablePlans() {
+      if (self::$config->has('experimental.available_plans')) {
+        return self::$config->get('experimental.available_plans');
+      }
+      else {
+        return Subscription::$availablePlans;
+      }
+    }
+
     /**
      * @return Field[]
      */
@@ -151,7 +160,7 @@ class ProjectCreateCommand extends CommandBase
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
-            'options' => Subscription::$availablePlans,
+            'options' => $this->getAvailablePlans(),
             'default' => 'development',
           ]),
           'environments' => new Field('Environments', [

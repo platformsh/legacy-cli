@@ -503,4 +503,23 @@ class Api
 
         return false;
     }
+
+    /**
+     * Returns a project label.
+     *
+     * @param Project      $project
+     * @param string|false $tag
+     *
+     * @return string
+     */
+    public function getProjectLabel(Project $project, $tag = 'info')
+    {
+        $title = $project->title;
+        $pattern = $title ? '%2$s (%3$s)' : '%3$s';
+        if ($tag !== false) {
+            $pattern = $title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
+        }
+
+        return sprintf($pattern, $tag, $title, $project->id);
+    }
 }
