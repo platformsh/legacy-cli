@@ -631,6 +631,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             if (!$environment) {
                 throw new \RuntimeException('Specified environment not found: ' . $environmentId);
             }
+
+            return $environment;
         }
 
         // If no ID is specified, try to auto-detect the current environment.
