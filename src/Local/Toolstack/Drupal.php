@@ -292,7 +292,15 @@ class Drupal extends ToolstackBase
 
         if ($projectMake) {
             $tempProfileDir = $this->buildDir . '/tmp-' . $profileName;
-            $this->fsHelper->mkdir($tempProfileDir);
+
+            // To guard against Drush errors, ensure the temporary profile
+            // directory does not already exist, and ensure that its parent
+            // directory (the build directory) does exist.
+            if (file_exists($tempProfileDir)) {
+                $this->fsHelper->remove($tempProfileDir);
+            }
+            $this->fsHelper->mkdir($this->buildDir);
+
             $args = array_merge(
                 ['make', '--no-core', '--contrib-destination=.', $projectMake, $tempProfileDir],
                 $drushFlags
