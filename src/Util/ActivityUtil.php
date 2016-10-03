@@ -119,6 +119,14 @@ abstract class ActivityUtil
         $bar->setFormat("  [%bar%] %elapsed:6s% (%states%)");
         $bar->start();
 
+        // Get the most recent created date of each of the activities, as a Unix
+        // timestamp, so that they can be more efficiently refreshed.
+        $mostRecentTimestamp = 0;
+        foreach ($activities as $activity) {
+            $created = strtotime($activity->created_at);
+            $mostRecentTimestamp = $created > $mostRecentTimestamp ? $created : $mostRecentTimestamp;
+        }
+
         // Wait for the activities to complete, polling (refreshing) all of them
         // with a 1 second delay.
         $complete = 0;
@@ -126,7 +134,10 @@ abstract class ActivityUtil
             sleep(1);
             $states = [];
             $complete = 0;
-            $projectActivities = $project->getActivities();
+            // Get a list of activities on the project. Any of our activities
+            // which are not contained in this list must be refreshed
+            // individually.
+            $projectActivities = $project->getActivities(0, null, $mostRecentTimestamp ?: null);
             foreach ($activities as $activity) {
                 $refreshed = false;
                 foreach ($projectActivities as $projectActivity) {
