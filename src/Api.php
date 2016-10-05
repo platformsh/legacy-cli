@@ -334,29 +334,38 @@ class Api
     /**
      * Get a single environment.
      *
-     * @param string  $id      The environment ID to load.
-     * @param Project $project The project.
-     * @param bool|null $refresh
+     * @param string  $id          The environment ID to load.
+     * @param Project $project     The project.
+     * @param bool|null $refresh   Whether to refresh the list of environments.
+     * @param bool $tryMachineName Whether to retry, treating the ID as a
+     *                             machine name.
      *
      * @return Environment|false The environment, or false if not found.
      */
-    public function getEnvironment($id, Project $project, $refresh = null)
+    public function getEnvironment($id, Project $project, $refresh = null, $tryMachineName = false)
     {
         // Statically cache not found environments.
         static $notFound = [];
-        $cacheKey = $project->id . ':' . $id;
+        $cacheKey = $project->id . ':' . $id . ($tryMachineName ? ':mn' : '');
         if (!$refresh && isset($notFound[$cacheKey])) {
             return false;
         }
 
         $environments = $this->getEnvironments($project, $refresh);
-        if (!isset($environments[$id])) {
-            $notFound[$cacheKey] = true;
-
-            return false;
+        if (isset($environments[$id])) {
+            return $environments[$id];
+        }
+        if ($tryMachineName) {
+            foreach ($environments as $environment) {
+                if ($environment->machine_name === $id) {
+                    return $environment;
+                }
+            }
         }
 
-        return $environments[$id];
+        $notFound[$cacheKey] = true;
+
+        return false;
     }
 
     /**

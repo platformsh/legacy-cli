@@ -48,7 +48,7 @@ class DomainDeleteCommand extends CommandBase
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
         }
 
         return 0;

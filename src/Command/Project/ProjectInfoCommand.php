@@ -127,7 +127,7 @@ class ProjectInfoCommand extends CommandBase
 
         $success = true;
         if (!$noWait) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
         }
 
         return $success ? 0 : 1;

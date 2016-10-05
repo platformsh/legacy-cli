@@ -55,7 +55,7 @@ class UserDeleteCommand extends CommandBase
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
         }
 
         // If the user was deleting themselves from the project, then invalidate

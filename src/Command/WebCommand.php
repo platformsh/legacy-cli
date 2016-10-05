@@ -23,20 +23,16 @@ class WebCommand extends UrlCommandBase
         // Attempt to select the appropriate project and environment.
         try {
             $this->validateInput($input);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             // Ignore errors.
         }
 
-        $project = $this->hasSelectedProject() ? $this->getSelectedProject() : false;
-
-        $url = self::$config->get('service.accounts_url');
-        if ($project) {
-            $url = $project->getLink('#ui');
-            if ($this->hasSelectedEnvironment()) {
-                $environment = $this->getSelectedEnvironment();
-                $url .= '/environments/' . $environment->id;
-            }
+        if ($this->hasSelectedEnvironment()) {
+            $url = $this->getSelectedEnvironment()->getUri();
+        } elseif ($this->hasSelectedProject()) {
+            $url = $this->getSelectedProject()->getLink('#ui');
+        } else {
+            $url = self::$config->get('service.accounts_url');
         }
 
         $this->openUrl($url, $input, $output);

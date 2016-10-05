@@ -81,22 +81,18 @@ class ProjectGetCommand extends CommandBase
             return 1;
         }
 
-        $environments = $this->api()->getEnvironments($project);
         if ($environmentOption) {
-            if (!isset($environments[$environmentOption])) {
-                // Reload the environments list.
-                $environments = $this->api()->getEnvironments($project, true);
-                if (!isset($environments[$environmentOption])) {
-                    $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
-                }
+            $environment = $this->api()->getEnvironment($environmentOption, $project, true, true);
+            if (!$environment) {
+                $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
 
                 return 1;
             }
-            $environment = $environmentOption;
-        } elseif (count($environments) === 1) {
-            $environment = key($environments);
+            $environmentId = $environment->id;
+        } elseif (count($this->api()->getEnvironments($project)) === 1) {
+            $environmentId = key($environments);
         } else {
-            $environment = 'master';
+            $environmentId = 'master';
         }
 
         $directory = $input->getArgument('directory');
@@ -202,7 +198,7 @@ class ProjectGetCommand extends CommandBase
         $this->stdErr->writeln('Downloading project ' . $projectLabel);
         $cloneArgs = [
             '--branch',
-            $environment,
+            $environmentId,
             '--origin',
             self::$config->get('detection.git_remote_name'),
         ];
@@ -252,7 +248,7 @@ class ProjectGetCommand extends CommandBase
             // Launch the first build.
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . self::$config->get('application.executable') . ' build</info> to repeat this.');
-            $options = ['environmentId' => $environment, 'noClean' => true];
+            $options = ['environmentId' => $environmentId, 'noClean' => true];
             $builder = new LocalBuild($options, self::$config, $output);
             $success = $builder->build($projectRoot);
         }

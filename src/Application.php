@@ -205,7 +205,7 @@ class Application extends ParentApplication
     public function doRun(InputInterface $input, OutputInterface $output)
     {
         // Set the input to non-interactive if the yes or no options are used.
-        if ($input->hasParameterOption(['--yes', '-y']) || $input->hasParameterOption(['--no', '-n'])) {
+        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);
         }
 

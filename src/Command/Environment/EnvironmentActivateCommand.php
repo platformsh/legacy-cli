@@ -92,7 +92,7 @@ class EnvironmentActivateCommand extends CommandBase
         $success = true;
         if ($processed) {
             if (!$input->getOption('no-wait')) {
-                $success = ActivityUtil::waitMultiple($activities, $output);
+                ActivityUtil::waitMultiple($activities, $this->stdErr, $this->getSelectedProject());
             }
             $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
         }
