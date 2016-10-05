@@ -118,19 +118,23 @@ class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface,
     /**
      * Ask a simple question which requires input.
      *
-     * @param string          $questionText
-     * @param mixed           $default
+     * @param string $questionText
+     * @param mixed  $default
+     * @param array  $autoCompleterValues
      *
      * @return string
      *   The user's answer.
      */
-    public function askInput($questionText, $default = null)
+    public function askInput($questionText, $default = null, array $autoCompleterValues = [])
     {
         if ($default !== null) {
             $questionText .= ' <question>[' . $default . ']</question>';
         }
         $questionText .= ': ';
         $question = new Question($questionText, $default);
+        if (!empty($autoCompleterValues)) {
+            $question->setAutocompleterValues($autoCompleterValues);
+        }
 
         return $this->ask($this->input, $this->output, $question);
     }

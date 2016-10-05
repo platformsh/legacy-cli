@@ -130,6 +130,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentLogCommand();
         $commands[] = new Command\Environment\EnvironmentInfoCommand();
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
+        $commands[] = new Command\Environment\EnvironmentPushCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentRoutesCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();

@@ -106,6 +106,7 @@ environment
   environment:list (environments)           Get a list of environments
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
+  environment:push (push)                   Push code to an environment
   environment:relationships (relationships)   Show an environment's relationships
   environment:routes (routes)               List an environment's routes
   environment:ssh (ssh)                     SSH to the current environment
