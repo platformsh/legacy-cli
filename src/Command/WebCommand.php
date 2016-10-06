@@ -27,12 +27,12 @@ class WebCommand extends UrlCommandBase
             // Ignore errors.
         }
 
-        if ($this->hasSelectedEnvironment()) {
-            $url = $this->getSelectedEnvironment()->getUri();
-        } elseif ($this->hasSelectedProject()) {
+        $url = self::$config->get('service.accounts_url');
+        if ($this->hasSelectedProject()) {
             $url = $this->getSelectedProject()->getLink('#ui');
-        } else {
-            $url = self::$config->get('service.accounts_url');
+            if ($this->hasSelectedEnvironment()) {
+                $url .= '/environments/' . rawurlencode($this->getSelectedEnvironment()->id);
+            }
         }
 
         $this->openUrl($url, $input, $output);
