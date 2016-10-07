@@ -130,16 +130,7 @@ class EnvironmentBranchCommand extends CommandBase
                 $parent = $gitHelper->branchExists($parentEnvironment->id) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
 
-                // Determine the correct upstream for the new branch. If there is an
-                // 'origin' remote, then it has priority.
-                $upstreamRemote = self::$config->get('detection.git_remote_name');
-                $originRemoteUrl = $gitHelper->getConfig('remote.origin.url');
-                if ($originRemoteUrl !== $selectedProject->getGitUrl(false) && $gitHelper->remoteBranchExists('origin', $branchName)) {
-                    $upstreamRemote = 'origin';
-                }
-                $upstream = $upstreamRemote . '/' . $branchName;
-
-                if (!$gitHelper->checkOutNew($branchName, $parent, $upstream)) {
+                if (!$gitHelper->checkOutNew($branchName, $parent)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
@@ -156,6 +147,23 @@ class EnvironmentBranchCommand extends CommandBase
                 "The environment <info>$branchName</info> has been created.",
                 '<error>Branching failed</error>'
             );
+
+            if ($remoteSuccess && $projectRoot) {
+                // Determine the correct upstream for the new branch. If there is an
+                // 'origin' remote, then it has priority.
+                $upstreamRemote = self::$config->get('detection.git_remote_name');
+                $originRemoteUrl = $gitHelper->getConfig('remote.origin.url');
+                if ($originRemoteUrl !== $selectedProject->getGitUrl(false) && $gitHelper->remoteBranchExists('origin', $branchName)) {
+                    $upstreamRemote = 'origin';
+                }
+
+                // Fetch the branch from the upstream remote.
+                $gitHelper->fetch($upstreamRemote, $branchName);
+
+                $upstream = $upstreamRemote . '/' . $branchName;
+
+                $gitHelper->setUpstream($upstream);
+            }
         }
 
         $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
