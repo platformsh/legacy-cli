@@ -278,7 +278,7 @@ class LocalBuild
         // The build is complete. Move the directory.
         $buildDir = substr($tmpBuildDir, 0, strlen($tmpBuildDir) - 4);
         if (file_exists($buildDir)) {
-            if (empty($this->settings['noBackup'])) {
+            if (empty($this->settings['noBackup']) && is_dir($buildDir)) {
                 $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
                 $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
                 $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
