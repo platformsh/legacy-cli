@@ -191,7 +191,7 @@ EOF
                 if ($questionHelper->confirm("Are you sure you want to delete the environment <comment>$environmentId</comment>?")) {
                     $deactivate[$environmentId] = $environment;
                     if (!$input->getOption('no-delete-branch')) {
-                        if ($input->getOption('delete-branch') || ($input->isInteractive() && $questionHelper->confirm("Delete the remote Git branch too?", false))) {
+                        if ($input->getOption('delete-branch') || ($input->isInteractive() && $questionHelper->confirm("Delete the remote Git branch too?"))) {
                             $delete[$environmentId] = $environment;
                         }
                     }
