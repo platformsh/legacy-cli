@@ -20,6 +20,7 @@ class EnvironmentDeleteCommand extends CommandBase
             ->setDescription('Delete an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
+            ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete the remote Git branch(es)')
             ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
             ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments')
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environments not to delete');
@@ -189,8 +190,10 @@ EOF
                 $output->writeln("The environment <comment>$environmentId</comment> is currently active: deleting it will delete all associated data.");
                 if ($questionHelper->confirm("Are you sure you want to delete the environment <comment>$environmentId</comment>?")) {
                     $deactivate[$environmentId] = $environment;
-                    if ($input->getOption('delete-branch') || ($input->isInteractive() && $questionHelper->confirm("Delete the remote Git branch too?"))) {
-                        $delete[$environmentId] = $environment;
+                    if (!$input->getOption('no-delete-branch')) {
+                        if ($input->getOption('delete-branch') || ($input->isInteractive() && $questionHelper->confirm("Delete the remote Git branch too?", false))) {
+                            $delete[$environmentId] = $environment;
+                        }
                     }
                 }
             }
