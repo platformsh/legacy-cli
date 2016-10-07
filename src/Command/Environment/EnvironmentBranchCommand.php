@@ -129,7 +129,17 @@ class EnvironmentBranchCommand extends CommandBase
                 // Create a new branch, using the parent if it exists locally.
                 $parent = $gitHelper->branchExists($parentEnvironment->id) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
-                if (!$gitHelper->checkOutNew($branchName, $parent)) {
+
+                // Determine the correct upstream for the new branch. If there is an
+                // 'origin' remote, then it has priority.
+                $upstreamRemote = self::$config->get('detection.git_remote_name');
+                $originRemoteUrl = $gitHelper->getConfig('remote.origin.url');
+                if ($originRemoteUrl !== $selectedProject->getGitUrl(false) && $gitHelper->remoteBranchExists('origin', $branchName)) {
+                    $upstreamRemote = 'origin';
+                }
+                $upstream = $upstreamRemote . '/' . $branchName;
+
+                if (!$gitHelper->checkOutNew($branchName, $parent, $upstream)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
