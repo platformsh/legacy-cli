@@ -2,15 +2,11 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Cli\Util\RelationshipsUtil;
-use Platformsh\Cli\Util\Table;
-use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Yaml;
 
 class ProjectSshConfigCommand extends CommandBase
 {
@@ -36,27 +32,23 @@ class ProjectSshConfigCommand extends CommandBase
      */
     protected function getPort($project, $environment, $relationship, $default = 30000)
     {
-        if (!isset($this->cmdConfig['ports'][$project][$environment][$relationship])) {
-            $port = PortUtil::getPort(isset($this->cmdConfig['last']) ? $this->cmdConfig['last'] + 1 : $default);
-            $this->cmdConfig['last'] = $port;
+        if (!isset($this->state['ports'][$project][$environment][$relationship])) {
+            $port = PortUtil::getPort(isset($this->state['last']) ? $this->state['last'] + 1 : $default);
+            $this->state['last'] = $port;
         }
         else
         {
-            $port = $this->cmdConfig['ports'][$project][$environment][$relationship];
+            $port = $this->state['ports'][$project][$environment][$relationship];
         }
 
-        $this->cmdConfig['ports'][$project][$environment][$relationship] = $port;
+        $this->state['ports'][$project][$environment][$relationship] = $port;
 
         return $port;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        try {
-            $this->cmdConfig = self::$config->get('commands.' . $this->getName());
-        }
-        catch (\Exception $e) {
-        }
+        $this->getState();
 
         $this->validateInput($input);
         $project = $this->getSelectedProject();
@@ -82,7 +74,7 @@ class ProjectSshConfigCommand extends CommandBase
         foreach ($environments as $environment) {
             if ($environment->hasLink('ssh')) {
                 $sshUrl = $environment->getSshUrl($appName);
-                $sshUrlParts = split("@", $sshUrl);
+                $sshUrlParts = explode("@", $sshUrl);
                 $indent = str_repeat(' ', 2);
 
                 $output->writeln("Host $alias.{$environment->id}");
@@ -105,12 +97,7 @@ class ProjectSshConfigCommand extends CommandBase
             }
         }
 
-        $this->writeCommandConfig();
-        self::$config->writeUserConfig([
-            'commands' => [
-                $this->getName() => $this->cmdConfig
-            ]
-        ]);
+        $this->saveState();
 
         return 0;
     }
