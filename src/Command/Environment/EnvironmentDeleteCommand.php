@@ -49,12 +49,13 @@ EOF
 
         $toDelete = [];
 
-        if ($input->getOption('inactive') && $input->getOption('merged')) {
-            $this->stdErr->writeln('Please specify either --inactive or --merged; not both.');
-
-            return 1;
-        }
-        elseif ($input->getOption('inactive')) {
+        if ($input->getOption('inactive')) {
+            foreach (['merged', 'no-delete-branch'] as $incompatible) {
+                if ($input->getOption($incompatible)) {
+                    $this->stdErr->writeln('Please specify either --inactive or --' . $incompatible . '; not both.');
+                    return 1;
+                }
+            }
             $toDelete = array_filter(
                 $environments,
                 function ($environment) {
