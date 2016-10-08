@@ -51,6 +51,11 @@ EOF
 
         // Gather inactive environments.
         if ($input->getOption('inactive')) {
+            if ($input->getOption('no-delete-branch')) {
+                $this->stdErr->writeln('The option --no-delete-branch cannot be combined with --inactive.');
+
+                return 1;
+            }
             $inactive = array_filter(
                 $environments,
                 function ($environment) {
@@ -229,9 +234,6 @@ EOF
 
         $deleted = 0;
         foreach ($delete as $environmentId => $environment) {
-            if ($input->getOption('no-delete-branch')) {
-                continue;
-            }
             try {
                 if ($environment->status !== 'inactive') {
                     $environment->refresh();
