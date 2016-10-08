@@ -26,7 +26,13 @@ class ProjectSshConfigCommand extends CommandBase
     /**
      * Automatically determine the best port for a new tunnel.
      *
-     * @param int $default
+     * @param string $project Project ID
+     *
+     * @param string $environment Environment name
+     *
+     * @param stirng $relationship Relationship name
+     *
+     * @param int $default Default port starting number
      *
      * @return int
      */

@@ -177,7 +177,6 @@ class CliConfig
             'local.drush_executable' => 'local.drush_executable',
             'experimental' => 'experimental',
             'updates' => 'updates',
-            'commands' => 'commands',
         ];
 
         $userConfig = $this->getUserConfig();
