@@ -329,7 +329,7 @@ function output($text, $color = null, $newLine = true)
     static $ansi;
     if (!isset($ansi)) {
         global $argv;
-        if (in_array('--no-ansi', $argv)) {
+        if (in_array('--no-ansi', $argv) || $argv === null) {
             $ansi = false;
         } elseif (in_array('--ansi', $argv)) {
             $ansi = true;
