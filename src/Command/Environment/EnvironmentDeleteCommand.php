@@ -49,27 +49,28 @@ EOF
 
         $toDelete = [];
 
+        // Gather inactive environments.
         if ($input->getOption('inactive')) {
-            foreach (['merged', 'no-delete-branch'] as $incompatible) {
-                if ($input->getOption($incompatible)) {
-                    $this->stdErr->writeln('Please specify either --inactive or --' . $incompatible . '; not both.');
-                    return 1;
-                }
+            if ($input->getOption('no-delete-branch')) {
+                $this->stdErr->writeln('The option --no-delete-branch cannot be combined with --inactive.');
+
+                return 1;
             }
-            $toDelete = array_filter(
+            $inactive = array_filter(
                 $environments,
                 function ($environment) {
                     /** @var Environment $environment */
                     return $environment->status == 'inactive';
                 }
             );
-            if (!$toDelete) {
+            if (!$inactive) {
                 $this->stdErr->writeln('No inactive environments found.');
-
-                return 0;
             }
+            $toDelete = array_merge($toDelete, $inactive);
         }
-        elseif ($input->getOption('merged')) {
+
+        // Gather merged environments.
+        if ($input->getOption('merged')) {
             if (!$this->hasSelectedEnvironment()) {
                 $this->stdErr->writeln('Cannot find merged environments: no base environment specified.');
 
@@ -77,29 +78,31 @@ EOF
             }
             $base = $this->getSelectedEnvironment()->id;
             $this->stdErr->writeln("Finding environments merged with <info>$base</info>.");
-            $toDelete = $this->getMergedEnvironments($base);
-            if (!$toDelete) {
+            $merged = $this->getMergedEnvironments($base);
+            if (!$merged) {
                 $this->stdErr->writeln('No merged environments found.');
-
-                return 0;
             }
-        }
-        elseif ($this->hasSelectedEnvironment()) {
-            $toDelete = [$this->getSelectedEnvironment()];
-        }
-        elseif ($environmentIds = $input->getArgument('environment')) {
-            $toDelete = array_intersect_key($environments, array_flip($environmentIds));
-            $notFound = array_diff($environmentIds, array_keys($environments));
-            foreach ($notFound as $notFoundId) {
-                $this->stdErr->writeln("Environment not found: <error>$notFoundId</error>");
-            }
+            $toDelete = array_merge($toDelete, $merged);
         }
 
+        // If --merged and --inactive are not specified, look for the selected
+        // environment(s).
+        if (!$input->getOption('merged') && !$input->getOption('inactive')) {
+            if ($this->hasSelectedEnvironment()) {
+                $toDelete = [$this->getSelectedEnvironment()];
+            } elseif ($environmentIds = $input->getArgument('environment')) {
+                $toDelete = array_intersect_key($environments, array_flip($environmentIds));
+                $notFound = array_diff($environmentIds, array_keys($environments));
+                foreach ($notFound as $notFoundId) {
+                    $this->stdErr->writeln("Environment not found: <error>$notFoundId</error>");
+                }
+            }
+        }
+
+        // Exclude environment(s) specified in --exclude.
         $toDelete = array_diff_key($toDelete, array_flip($input->getOption('exclude')));
 
         if (empty($toDelete)) {
-            $this->stdErr->writeln('No environment(s) found to delete.');
-
             return 1;
         }
 
