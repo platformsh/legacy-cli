@@ -19,8 +19,9 @@ class ProjectListCommand extends CommandBase
             ->setAliases(['projects'])
             ->setDescription('Get a list of all active projects')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs')
-            ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname')
-            ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Filter by title')
+            ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname (exact match)')
+            ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Filter by title (case-insensitive search)')
+            ->addOption('my', null, InputOption::VALUE_NONE, 'Display only the projects you own')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
@@ -34,19 +35,18 @@ class ProjectListCommand extends CommandBase
         // Fetch the list of projects.
         $projects = $this->api()->getProjects($refresh ? true : null);
 
-        // Filter the projects by hostname.
+        // Filter the list of projects.
+        $filters = [];
         if ($host = $input->getOption('host')) {
-            $projects = array_filter($projects, function (Project $project) use ($host) {
-                return $host === parse_url($project->getUri(), PHP_URL_HOST);
-            });
+            $filters['host'] = $host;
         }
-
-        // Filter the projects by title.
         if ($title = $input->getOption('title')) {
-            $projects = array_filter($projects, function (Project $project) use ($title) {
-                return (stripos($project->title, $title) > -1);
-            });
+            $filters['title'] = $title;
         }
+        if ($input->getOption('my')) {
+            $filters['my'] = true;
+        }
+        $this->filterProjects($projects, $filters);
 
         // Sort the list of projects.
         if ($input->getOption('sort')) {
@@ -56,6 +56,7 @@ class ProjectListCommand extends CommandBase
             $projects = array_reverse($projects, true);
         }
 
+        // Display a simple list of project IDs, if --pipe is used.
         if ($input->getOption('pipe')) {
             $output->writeln(array_keys($projects));
 
@@ -75,24 +76,74 @@ class ProjectListCommand extends CommandBase
 
         $header = ['ID', 'Title', 'URL'];
 
+        // Display a simple table (and no messages) if the --format is
+        // machine-readable (e.g. csv or tsv).
         if ($table->formatIsMachineReadable()) {
             $table->render($rows, $header);
 
             return 0;
         }
 
-        if (!count($projects)) {
-            $this->stdErr->writeln('You do not have any ' . self::$config->get('service.name') . ' projects yet.');
-        }
-        else {
-            $this->stdErr->writeln("Your projects are: ");
+        // Display a message if no projects are found.
+        if (empty($projects)) {
+            if (!empty($filters)) {
+                $filtersUsed = '<comment>--'
+                    . implode('</comment>, <comment>--', array_keys($filters))
+                    . '</comment>';
+                $this->stdErr->writeln('No projects found (filters in use: ' . $filtersUsed . ').');
+            } else {
+                $this->stdErr->writeln('You do not have any ' . self::$config->get('service.name') . ' projects yet.');
+            }
 
-            $table->render($rows, $header);
-
-            $this->stdErr->writeln("\nGet a project by running <info>" . self::$config->get('application.executable') . " get [id]</info>");
-            $this->stdErr->writeln("List a project's environments by running <info>" . self::$config->get('application.executable') . " environments</info>");
+            return 0;
         }
+
+        // Display the projects.
+        if (empty($filters)) {
+            $this->stdErr->writeln('Your projects are: ');
+        }
+
+        $table->render($rows, $header);
+
+        $commandName = self::$config->get('application.executable');
+        $this->stdErr->writeln([
+            '',
+            'Get a project by running: <info>' . $commandName . ' get [id]</info>',
+            "List a project's environments by running: <info>" . $commandName . ' environments -p [id]</info>',
+        ]);
 
         return 0;
+    }
+
+    /**
+     * Filter the list of projects.
+     *
+     * @param Project[]     &$projects
+     * @param mixed[string] $filters
+     */
+    protected function filterProjects(array &$projects, array $filters)
+    {
+        foreach ($filters as $filter => $value) {
+            switch ($filter) {
+                case 'host':
+                    $projects = array_filter($projects, function (Project $project) use ($value) {
+                        return $value === parse_url($project->getUri(), PHP_URL_HOST);
+                    });
+                    break;
+
+                case 'title':
+                    $projects = array_filter($projects, function (Project $project) use ($value) {
+                        return stripos($project->title, $value) !== false;
+                    });
+                    break;
+
+                case 'my':
+                    $ownerUuid = $this->api()->getClient()->getAccountInfo()['uuid'];
+                    $projects = array_filter($projects, function (Project $project) use ($ownerUuid) {
+                        return $project->owner === $ownerUuid;
+                    });
+                    break;
+            }
+        }
     }
 }
