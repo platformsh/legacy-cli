@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * Platform.sh CLI installer.
+ * Sensio Cloud CLI installer.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', 'https://platform.sh/cli/manifest.json');
-define('CLI_CONFIG_DIR', '.platformsh');
-define('CLI_EXECUTABLE', 'platform');
-define('CLI_NAME', 'Platform.sh CLI');
+define('CLI_UPDATE_MANIFEST_URL', 'https://sensio.cloud/cli/manifest.json');
+define('CLI_CONFIG_DIR', '.sensio-cloud');
+define('CLI_EXECUTABLE', 'sensio-cloud');
+define('CLI_NAME', 'Sensio Cloud CLI');
 define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
 
 set_error_handler(

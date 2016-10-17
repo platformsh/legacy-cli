@@ -1,23 +1,23 @@
 # Metadata about the CLI application itself.
 application:
-  name: 'Platform.sh CLI'
-  version: '3.x-dev'
-  executable: 'platform'
-  phar: 'platform.phar'
-  package_name: 'platformsh/cli'
-  installer_url: 'https://platform.sh/cli/installer'
-  manifest_url: 'https://platform.sh/cli/manifest.json'
-  user_config_dir: '.platformsh'
-  env_prefix: 'PLATFORMSH_CLI_'
+  name: 'Sensio Cloud CLI'
+  version: '1.x-dev'
+  executable: 'sensio-cloud'
+  phar: 'sensio-cloud.phar'
+  package_name: ~
+  installer_url: 'https://sensio.cloud/cli/installer'
+  manifest_url: 'https://sensio.cloud/cli/manifest.json'
+  user_config_dir: '.sensio-cloud'
+  env_prefix: 'SENSIO_CLOUD_CLI_'
 
 # Configuration for working with projects locally.
 local:
-  local_dir: '.platform/local'
-  archive_dir: '.platform/local/build-archives'
-  build_dir: '.platform/local/builds'
-  project_config: '.platform/local/project.yaml'
-  project_config_legacy: '.platform-project'
-  shared_dir: '.platform/local/shared'
+  local_dir: '.sensio-cloud/local'
+  archive_dir: '.sensio-cloud/local/build-archives'
+  build_dir: '.sensio-cloud/local/builds'
+  project_config: '.sensio-cloud/local/project.yaml'
+  project_config_legacy: ~
+  shared_dir: '.sensio-cloud/local/shared'
   web_root: '_www'
 
   # This can be overridden by the {application.env_prefix}COPY_ON_WINDOWS env
@@ -26,23 +26,23 @@ local:
 
 # Details about the cloud service that the CLI works with.
 service:
-  name: 'Platform.sh'
-  env_prefix: 'PLATFORM_'
-  app_config_file: '.platform.app.yaml'
-  project_config_dir: '.platform'
-  docs_url: 'https://docs.platform.sh'
-  accounts_url: 'https://accounts.platform.sh'
+  name: 'Sensio Cloud'
+  env_prefix: 'SENSIO_CLOUD_'
+  app_config_file: '.sensio-cloud.app.yaml'
+  project_config_dir: '.sensio-cloud'
+  docs_url: 'https://docs.sensio.cloud'
+  accounts_url: 'https://accounts.sensio.cloud'
 
 # Configuration relating to API calls.
 # This can be overridden in the user config file.
 api:
-  oauth2_client_id: 'platform-cli'
+  oauth2_client_id: 'sensio-cloud-cli'
   projects_ttl: 3600
   environments_ttl: 600
   users_ttl: 3600
 
   # Overridden by {application.env_prefix}ACCOUNTS_API env var.
-  accounts_api_url: 'https://accounts.platform.sh/api/platform/'
+  accounts_api_url: 'https://accounts.sensio.cloud/api/sensio/'
 
   # Overridden by {application.env_prefix}DEBUG env var.
   debug: false
@@ -58,9 +58,9 @@ api:
 
 # How the CLI detects and configures Git repositories as projects.
 detection:
-  git_remote_name: 'platform'
-  git_domain: 'platform.sh'
-  api_domain: 'platform.sh'
+  git_remote_name: 'sensio-cloud'
+  git_domain: 'sensio.cloud'
+  api_domain: 'sensio.cloud'
 
 # Automatic updates.
 # This can be overridden in the user config file.

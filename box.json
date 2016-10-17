@@ -27,6 +27,6 @@
     }
   ],
   "main": "bin/platform",
-  "output": "platform.phar",
+  "output": "sensio-cloud.phar",
   "stub": true
 }
