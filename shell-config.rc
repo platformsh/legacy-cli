@@ -1,30 +1,10 @@
 #!/usr/bin/env bash
-# Platform.sh CLI shell configuration.
+# Sensio Cloud CLI shell configuration.
 
 # Enable auto-completion.
-if HOOK=$(platform _completion -g -p platform 2>/dev/null); then
+if HOOK=$(sensio-cloud _completion -g -p sensio-cloud 2>/dev/null); then
     # Try two commands.
     # See https://github.com/stecman/symfony-console-completion/issues/12
     echo "$HOOK" | source /dev/stdin
     source <(echo "$HOOK") 2>/dev/null
 fi
-
-# Run Drush commands on the local environment, from any working directory.
-function platform_local_drush {
-    local GROUP
-    GROUP="$(platform drush-aliases --no --pipe 2>/dev/null)"
-    CODE=$?
-    if [ "$CODE" = 2 ]; then
-        echo $0': This can only be run from inside a project directory' >&2
-        return "$CODE"
-    elif [ ! "$CODE" = 0 ]; then
-        echo $0': Drush alias group not found' >&2
-        return "$CODE"
-    fi
-    if [ -z $1 ]; then
-        drush @${GROUP}._local status
-    else
-        drush @${GROUP}._local $@
-    fi
-}
-alias pldr=platform_local_drush
