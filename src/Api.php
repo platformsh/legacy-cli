@@ -369,6 +369,25 @@ class Api
     }
 
     /**
+     * Get the current user's account info.
+     *
+     * @param bool $reset
+     *
+     * @return array
+     *   An array containing at least 'uuid', 'mail', and 'display_name'.
+     */
+    public function getMyAccount($reset = false)
+    {
+        $cacheKey = sprintf('%s:my-account', self::$sessionId);
+        if ($reset || !($info = self::$cache->fetch($cacheKey))) {
+            $info = $this->getClient()->getAccountInfo($reset);
+            self::$cache->save($cacheKey, $info, $this->config->get('api.users_ttl'));
+        }
+
+        return $info;
+    }
+
+    /**
      * Get a user's account info.
      *
      * @param ProjectAccess $user
@@ -414,6 +433,7 @@ class Api
     public function clearProjectsCache()
     {
         self::$cache->delete(sprintf('%s:projects', self::$sessionId));
+        self::$cache->delete(sprintf('%s:my-account', self::$sessionId));
     }
 
     /**
