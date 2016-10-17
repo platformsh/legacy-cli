@@ -88,9 +88,7 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
      */
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
     {
-        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->output->writeln("Running command: <info>" . $process->getCommandLine() . "</info>");
-        }
+        $this->output->writeln("Running command: <info>" . $process->getCommandLine() . "</info>", OutputInterface::VERBOSITY_VERBOSE);
 
         try {
             $process->mustRun($quiet ? null : function ($type, $buffer) {

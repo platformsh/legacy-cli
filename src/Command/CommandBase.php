@@ -965,8 +965,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function debug($message)
     {
-        if (isset($this->stdErr) && $this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
+        if (isset($this->stdErr)) {
+            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
         }
     }
 
