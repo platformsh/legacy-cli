@@ -16,7 +16,7 @@ local:
   archive_dir: '.sensio-cloud/local/build-archives'
   build_dir: '.sensio-cloud/local/builds'
   project_config: '.sensio-cloud/local/project.yaml'
-  project_config_legacy: ~
+  project_config_legacy: '.platform-project'
   shared_dir: '.sensio-cloud/local/shared'
   web_root: '_www'
 

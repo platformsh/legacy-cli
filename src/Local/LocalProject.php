@@ -137,7 +137,8 @@ class LocalProject
      */
     public function getLegacyProjectRoot()
     {
-        return $this->findTopDirectoryContaining($this->config->get('local.project_config_legacy'));
+        return $this->config->has('local.project_config_legacy')
+            && $this->findTopDirectoryContaining($this->config->get('local.project_config_legacy'));
     }
 
     /**
