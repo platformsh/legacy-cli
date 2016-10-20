@@ -69,8 +69,6 @@ Available commands:
   docs                                      Open the online documentation
   help                                      Displays help for a command
   list                                      Lists commands
-  login                                     Log in to Platform.sh
-  logout                                    Log out of Platform.sh
   multi                                     Execute a command on multiple projects
   web                                       Open the Web UI
 activity
@@ -79,6 +77,10 @@ activity
 app
   app:config-get                            View the configuration of an app
   app:list (apps)                           Get a list of all apps in the local repository
+auth
+  auth:info                                 Display your account information
+  auth:login (login)                        Log in to Platform.sh
+  auth:logout (logout)                      Log out of Platform.sh
 domain
   domain:add                                Add a new domain to the project
   domain:delete                             Delete a domain from the project
