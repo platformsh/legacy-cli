@@ -204,6 +204,10 @@ class LocalApplication
             if ($toolstackChoice === 'php:default') {
                 $toolstackChoice = 'php:composer';
             }
+
+            if ($flavor === 'none') {
+                $toolstackChoice = 'none';
+            }
         }
 
         foreach (self::getToolstacks() as $toolstack) {

@@ -242,8 +242,8 @@ class LocalProject
         $dir = $projectRoot . '/' . $localDirRelative;
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
-            $this->writeGitExclude($projectRoot);
         }
+        $this->writeGitExclude($projectRoot);
         if (!file_exists($dir . '/.gitignore')) {
             file_put_contents($dir . '/.gitignore', '/' . PHP_EOL);
         }

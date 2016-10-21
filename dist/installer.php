@@ -328,18 +328,7 @@ function output($text, $color = null, $newLine = true)
 {
     static $ansi;
     if (!isset($ansi)) {
-        global $argv;
-        if (in_array('--no-ansi', $argv)) {
-            $ansi = false;
-        } elseif (in_array('--ansi', $argv)) {
-            $ansi = true;
-        } else {
-            // On Windows, default to no ANSI, except in ANSICON and ConEmu.
-            // Everywhere else, default to ANSI if stdout is a terminal.
-            $ansi = (DIRECTORY_SEPARATOR == '\\')
-                ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
-                : (function_exists('posix_isatty') && posix_isatty(1));
-        }
+        $ansi = is_ansi();
     }
 
     static $styles = array(
@@ -361,6 +350,29 @@ function output($text, $color = null, $newLine = true)
     }
 
     printf($format, $text);
+}
+
+/**
+ * Returns whether to use ANSI escape sequences.
+ *
+ * @return bool
+ */
+function is_ansi()
+{
+    global $argv;
+    if (!empty($argv)) {
+        if (in_array('--no-ansi', $argv)) {
+            return false;
+        } elseif (in_array('--ansi', $argv)) {
+            return true;
+        }
+    }
+
+    // On Windows, default to no ANSI, except in ANSICON and ConEmu.
+    // Everywhere else, default to ANSI if stdout is a terminal.
+    return (DIRECTORY_SEPARATOR == '\\')
+        ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
+        : (function_exists('posix_isatty') && posix_isatty(1));
 }
 
 /**

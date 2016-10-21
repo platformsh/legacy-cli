@@ -98,6 +98,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     private $environment;
 
+    /**
+     * The command synopsis.
+     *
+     * @var array
+     */
+    private $synopsis = [];
+
     public function __construct($name = null)
     {
         // The config dependency is static for performance reasons: there are
@@ -965,8 +972,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function debug($message)
     {
-        if (isset($this->stdErr) && $this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
+        if (isset($this->stdErr)) {
+            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
         }
     }
 
@@ -1000,5 +1007,27 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     public function setRunningViaMulti($runningViaMulti = true)
     {
         $this->runningViaMulti = $runningViaMulti;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSynopsis($short = false)
+    {
+        $key = $short ? 'short' : 'long';
+
+        if (!isset($this->synopsis[$key])) {
+            $aliases = $this->getAliases();
+            $name = $this->getName();
+            $shortName = count($aliases) === 1 ? reset($aliases) : $name;
+            $this->synopsis[$key] = trim(sprintf(
+                '%s %s %s',
+                self::$config->get('application.executable'),
+                $shortName,
+                $this->getDefinition()->getSynopsis($short)
+            ));
+        }
+
+        return $this->synopsis[$key];
     }
 }

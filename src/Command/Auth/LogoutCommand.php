@@ -13,7 +13,8 @@ class LogoutCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('logout')
+            ->setName('auth:logout')
+            ->setAliases(['logout'])
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
             ->setDescription('Log out of ' . self::$config->get('service.name'));
     }
