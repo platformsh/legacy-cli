@@ -45,6 +45,12 @@ class LocalBuildCommand extends CommandBase
                 'Copy to a build directory, instead of symlinking from the source'
             )
             ->addOption(
+                'clone',
+                null,
+                InputOption::VALUE_NONE,
+                'Use Git to clone the current HEAD to the build directory'
+            )
+            ->addOption(
                 'no-clean',
                 null,
                 InputOption::VALUE_NONE,
@@ -55,6 +61,12 @@ class LocalBuildCommand extends CommandBase
                 null,
                 InputOption::VALUE_NONE,
                 'Do not create or use a build archive'
+            )
+            ->addOption(
+                'no-backup',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not back up the previous build'
             )
             ->addOption(
                 'no-cache',
@@ -149,10 +161,12 @@ class LocalBuildCommand extends CommandBase
         $settingsMap = [
             'absoluteLinks' => 'abslinks',
             'copy' => 'copy',
+            'clone' => 'clone',
             'drushConcurrency' => 'concurrency',
             'drushWorkingCopy' => 'working-copy',
             'drushUpdateLock' => 'lock',
             'noArchive' => 'no-archive',
+            'noBackup' => 'no-backup',
             'noCache' => 'no-cache',
             'noClean' => 'no-clean',
             'noBuildHooks' => 'no-build-hooks',

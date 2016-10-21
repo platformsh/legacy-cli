@@ -334,29 +334,57 @@ class Api
     /**
      * Get a single environment.
      *
-     * @param string  $id      The environment ID to load.
-     * @param Project $project The project.
-     * @param bool|null $refresh
+     * @param string  $id          The environment ID to load.
+     * @param Project $project     The project.
+     * @param bool|null $refresh   Whether to refresh the list of environments.
+     * @param bool $tryMachineName Whether to retry, treating the ID as a
+     *                             machine name.
      *
      * @return Environment|false The environment, or false if not found.
      */
-    public function getEnvironment($id, Project $project, $refresh = null)
+    public function getEnvironment($id, Project $project, $refresh = null, $tryMachineName = false)
     {
         // Statically cache not found environments.
         static $notFound = [];
-        $cacheKey = $project->id . ':' . $id;
+        $cacheKey = $project->id . ':' . $id . ($tryMachineName ? ':mn' : '');
         if (!$refresh && isset($notFound[$cacheKey])) {
             return false;
         }
 
         $environments = $this->getEnvironments($project, $refresh);
-        if (!isset($environments[$id])) {
-            $notFound[$cacheKey] = true;
-
-            return false;
+        if (isset($environments[$id])) {
+            return $environments[$id];
+        }
+        if ($tryMachineName) {
+            foreach ($environments as $environment) {
+                if ($environment->machine_name === $id) {
+                    return $environment;
+                }
+            }
         }
 
-        return $environments[$id];
+        $notFound[$cacheKey] = true;
+
+        return false;
+    }
+
+    /**
+     * Get the current user's account info.
+     *
+     * @param bool $reset
+     *
+     * @return array
+     *   An array containing at least 'uuid', 'mail', and 'display_name'.
+     */
+    public function getMyAccount($reset = false)
+    {
+        $cacheKey = sprintf('%s:my-account', self::$sessionId);
+        if ($reset || !($info = self::$cache->fetch($cacheKey))) {
+            $info = $this->getClient()->getAccountInfo($reset);
+            self::$cache->save($cacheKey, $info, $this->config->get('api.users_ttl'));
+        }
+
+        return $info;
     }
 
     /**
@@ -405,6 +433,7 @@ class Api
     public function clearProjectsCache()
     {
         self::$cache->delete(sprintf('%s:projects', self::$sessionId));
+        self::$cache->delete(sprintf('%s:my-account', self::$sessionId));
     }
 
     /**
@@ -502,5 +531,24 @@ class Api
         }
 
         return false;
+    }
+
+    /**
+     * Returns a project label.
+     *
+     * @param Project      $project
+     * @param string|false $tag
+     *
+     * @return string
+     */
+    public function getProjectLabel(Project $project, $tag = 'info')
+    {
+        $title = $project->title;
+        $pattern = $title ? '%2$s (%3$s)' : '%3$s';
+        if ($tag !== false) {
+            $pattern = $title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
+        }
+
+        return sprintf($pattern, $tag, $title, $project->id);
     }
 }

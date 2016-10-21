@@ -128,6 +128,10 @@ abstract class ToolstackBase implements ToolstackInterface
 
         $this->setBuildDir($buildDir);
 
+        if (!empty($settings['clone'])) {
+            $settings['copy'] = true;
+        }
+
         $this->copy = !empty($settings['copy']);
         $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
     }
@@ -253,7 +257,10 @@ abstract class ToolstackBase implements ToolstackInterface
         if ($this->app->shouldMoveToRoot()) {
             $buildDir .= '/' . $this->documentRoot;
         }
-        if ($this->copy) {
+        if (!empty($this->settings['clone'])) {
+            $this->cloneToBuildDir($buildDir);
+        }
+        elseif ($this->copy) {
             $this->fsHelper->copyAll($this->appRoot, $buildDir, $this->ignoredFiles, true);
         }
         else {
@@ -261,6 +268,32 @@ abstract class ToolstackBase implements ToolstackInterface
         }
 
         return $buildDir;
+    }
+
+    /**
+     * Clone the app to the build directory via Git.
+     *
+     * @param string $buildDir
+     */
+    private function cloneToBuildDir($buildDir)
+    {
+        $gitRoot = $this->gitHelper->getRoot($this->appRoot, true);
+        $ref = $this->gitHelper->execute(['rev-parse', 'HEAD'], $gitRoot, true);
+
+        $cloneArgs = ['--recursive', '--shared'];
+        $tmpRepo = $buildDir . '-repo';
+        if (file_exists($tmpRepo)) {
+            $this->fsHelper->remove($tmpRepo, true);
+        }
+        $this->gitHelper->cloneRepo($gitRoot, $tmpRepo, $cloneArgs, true);
+        $this->gitHelper->checkOut($ref, $tmpRepo, true, true);
+        $this->fsHelper->remove($tmpRepo . '/.git');
+
+        $appDir = $tmpRepo . '/' . substr($this->appRoot, strlen($gitRoot));
+        if (!rename($appDir, $buildDir)) {
+            throw new \RuntimeException(sprintf('Failed to move app from %s to %s', $appDir, $buildDir));
+        }
+        $this->fsHelper->remove($tmpRepo);
     }
 
     /**
@@ -364,11 +397,12 @@ abstract class ToolstackBase implements ToolstackInterface
     protected function copyGitIgnore($source)
     {
         $source = CLI_ROOT . '/resources/' . $source;
-        if (!file_exists($source) || empty($this->settings['sourceDir']) || !!$this->gitHelper->isRepository($this->settings['sourceDir'])) {
+        $gitRoot = $this->gitHelper->getRoot($this->appRoot);
+        if (!$gitRoot) {
             return;
         }
         $appGitIgnore = $this->appRoot . '/.gitignore';
-        if (!file_exists($appGitIgnore) && !file_exists($this->settings['sourceDir'] . '/.gitignore')) {
+        if (!file_exists($appGitIgnore) && !file_exists($gitRoot . '/.gitignore')) {
             $this->output->writeln("Creating a .gitignore file");
             copy($source, $appGitIgnore);
         }

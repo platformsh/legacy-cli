@@ -92,11 +92,11 @@ class ProjectGetCommand extends CommandBase
 
                 return 1;
             }
-            $environment = $environmentOption;
+            $environmentId = $environmentOption;
         } elseif (count($environments) === 1) {
-            $environment = key($environments);
+            $environmentId = key($environments);
         } else {
-            $environment = 'master';
+            $environmentId = 'master';
         }
 
         $directory = $input->getArgument('directory');
@@ -198,10 +198,11 @@ class ProjectGetCommand extends CommandBase
         }
 
         // We have a repo! Yay. Clone it.
-        $this->stdErr->writeln(sprintf('Downloading project <info>%s</info>', $project->title ?: $projectId));
+        $projectLabel = $this->api()->getProjectLabel($project);
+        $this->stdErr->writeln('Downloading project ' . $projectLabel);
         $cloneArgs = [
             '--branch',
-            $environment,
+            $environmentId,
             '--origin',
             self::$config->get('detection.git_remote_name'),
         ];
@@ -225,7 +226,7 @@ class ProjectGetCommand extends CommandBase
 
         $gitHelper->updateSubmodules(true, $projectRoot);
 
-        $this->stdErr->writeln("\nThe project <info>{$project->title}</info> was successfully downloaded to: <info>$directory</info>");
+        $this->stdErr->writeln("\nThe project <info>$projectLabel</info> was successfully downloaded to: <info>$directory</info>");
 
         // Return early if there is no code in the repository.
         if (!glob($projectRoot . '/*', GLOB_NOSORT)) {
@@ -238,7 +239,7 @@ class ProjectGetCommand extends CommandBase
             // Launch the first build.
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . self::$config->get('application.executable') . ' build</info> to repeat this.');
-            $options = ['environmentId' => $environment, 'noClean' => true];
+            $options = ['environmentId' => $environmentId, 'noClean' => true];
             $builder = new LocalBuild($options, self::$config, $output);
             $success = $builder->build($projectRoot);
         }
@@ -264,7 +265,7 @@ class ProjectGetCommand extends CommandBase
     {
         $projectList = [];
         foreach ($projects as $project) {
-            $projectList[$project->id] = $project->id . ' (' . $project->title . ')';
+            $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
         }
         $text = "Enter a number to choose which project to clone:";
 

@@ -51,7 +51,7 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText('<comment>Usage:</comment>', $options);
         $this->writeText("\n");
-        $this->writeText(' ' . $this->cliExecutableName . ' ' . $command->getSynopsis(), $options);
+        $this->writeText(' ' . $command->getSynopsis(), $options);
         $this->writeText("\n");
 
         if ($definition = $command->getNativeDefinition()) {

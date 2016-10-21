@@ -66,7 +66,7 @@ class DomainListCommand extends DomainCommandBase
         }
 
         if (empty($domains)) {
-            $this->stdErr->writeln("No domains found for <info>{$project->title}</info>");
+            $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
             $this->stdErr->writeln("\nAdd a domain to the project by running <info>" . self::$config->get('application.executable') . " domain:add [domain-name]</info>");
 
             return 1;
@@ -85,10 +85,10 @@ class DomainListCommand extends DomainCommandBase
         $this->stdErr->writeln("Your domains are: ");
         $table->render($rows, $header);
 
-        $this->stdErr->writeln("\nAdd a new domain by running <info>" . self::$config->get('application.executable') . " domain:add [domain-name]</info>");
-        $this->stdErr->writeln(
-            "Delete a domain by running <info>" . self::$config->get('application.executable') . " domain:delete [domain-name]</info>"
-        );
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('To add a new domain, run: <info>' . self::$config->get('application.executable') . ' domain:add [domain-name]</info>');
+        $this->stdErr->writeln('To view a domain, run: <info>' . self::$config->get('application.executable') . ' domain:get [domain-name]</info>');
+        $this->stdErr->writeln('To delete a domain, run: <info>' . self::$config->get('application.executable') . ' domain:delete [domain-name]</info>');
 
         return 0;
     }

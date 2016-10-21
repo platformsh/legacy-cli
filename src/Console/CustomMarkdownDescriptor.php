@@ -42,7 +42,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             );
         }
 
-        $this->write("## Usage:\n\n```\n" . $this->cliExecutableName . " " . $command->getSynopsis() . "\n```\n\n");
+        $this->write("## Usage:\n\n```\n" . $command->getSynopsis() . "\n```\n\n");
 
         if ($help = $command->getProcessedHelp()) {
             $this->write($help);

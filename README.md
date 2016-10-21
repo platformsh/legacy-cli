@@ -64,8 +64,6 @@ Available commands:
   docs                                      Open the online documentation
   help                                      Displays help for a command
   list                                      Lists commands
-  login                                     Log in to Magento Cloud
-  logout                                    Log out of Magento Cloud
   multi                                     Execute a command on multiple projects
   web                                       Open the Web UI
 activity
@@ -74,10 +72,16 @@ activity
 app
   app:config-get                            View the configuration of an app
   app:list (apps)                           Get a list of all apps in the local repository
+auth
+  auth:info                                 Display your account information
+  auth:login (login)                        Log in to Magento Cloud
+  auth:logout (logout)                      Log out of Magento Cloud
 domain
   domain:add                                Add a new domain to the project
   domain:delete                             Delete a domain from the project
+  domain:get                                Show detailed information for a domain
   domain:list (domains)                     Get a list of all domains
+  domain:update                             Update a domain
 environment
   environment:activate                      Activate an environment
   environment:branch (branch)               Branch an environment

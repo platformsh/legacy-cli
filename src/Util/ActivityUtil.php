@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Util;
 
 use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -83,11 +84,12 @@ abstract class ActivityUtil
      *
      * @param Activity[]      $activities
      * @param OutputInterface $output
+     * @param Project         $project
      *
      * @return bool
      *   True if all activities succeed, false otherwise.
      */
-    public static function waitMultiple(array $activities, OutputInterface $output)
+    public static function waitMultiple(array $activities, OutputInterface $output, Project $project)
     {
         $count = count($activities);
         if ($count == 0) {
@@ -117,6 +119,14 @@ abstract class ActivityUtil
         $bar->setFormat("  [%bar%] %elapsed:6s% (%states%)");
         $bar->start();
 
+        // Get the most recent created date of each of the activities, as a Unix
+        // timestamp, so that they can be more efficiently refreshed.
+        $mostRecentTimestamp = 0;
+        foreach ($activities as $activity) {
+            $created = strtotime($activity->created_at);
+            $mostRecentTimestamp = $created > $mostRecentTimestamp ? $created : $mostRecentTimestamp;
+        }
+
         // Wait for the activities to complete, polling (refreshing) all of them
         // with a 1 second delay.
         $complete = 0;
@@ -124,10 +134,23 @@ abstract class ActivityUtil
             sleep(1);
             $states = [];
             $complete = 0;
+            // Get a list of activities on the project. Any of our activities
+            // which are not contained in this list must be refreshed
+            // individually.
+            $projectActivities = $project->getActivities(0, null, $mostRecentTimestamp ?: null);
             foreach ($activities as $activity) {
-                if (!$activity->isComplete()) {
+                $refreshed = false;
+                foreach ($projectActivities as $projectActivity) {
+                    if ($projectActivity->id === $activity->id) {
+                        $activity = $projectActivity;
+                        $refreshed = true;
+                        break;
+                    }
+                }
+                if (!$refreshed && !$activity->isComplete()) {
                     $activity->refresh();
-                } else {
+                }
+                if ($activity->isComplete()) {
                     $complete++;
                 }
                 $state = $activity->state;

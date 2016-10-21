@@ -62,12 +62,6 @@ class Table
      */
     public function renderSimple(array $values, array $propertyNames)
     {
-        $format = $this->getFormat();
-        if ($format !== null && $format !== 'table') {
-            $this->render([$values], $propertyNames);
-            return;
-        }
-        // For the table (default) format just output 2 columns.
         $data = [];
         foreach ($propertyNames as $key => $label) {
             $data[] = [$label, $values[$key]];

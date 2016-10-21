@@ -38,6 +38,8 @@ class LocalBuild
      *
      * @param array                $settings
      *     Possible settings:
+     *     - clone (bool, default false) Clone the repository to the build
+     *       directory before building, where possible.
      *     - copy (bool, default false) Copy files instead of symlinking them,
      *       where possible.
      *     - absoluteLinks (bool, default false) Use absolute paths in symlinks.
@@ -158,7 +160,7 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = ['multiApp', 'noClean', 'drushConcurrency'];
+        $irrelevant = ['multiApp', 'noClean', 'drushConcurrency', 'noBackup'];
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 
@@ -276,9 +278,11 @@ class LocalBuild
         // The build is complete. Move the directory.
         $buildDir = substr($tmpBuildDir, 0, strlen($tmpBuildDir) - 4);
         if (file_exists($buildDir)) {
-            $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
-            $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
-            $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
+            if (empty($this->settings['noBackup']) && is_dir($buildDir)) {
+                $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
+                $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
+                $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
+            }
             if (!$this->fsHelper->remove($buildDir, true)) {
                 $this->output->writeln(sprintf('Failed to remove directory <error>%s</error>', $buildDir));
 
@@ -341,7 +345,7 @@ class LocalBuild
         $this->output->writeln("Running post-build hooks");
         $command = implode(';', (array) $appConfig['hooks']['build']);
         $code = $this->shellHelper->executeSimple($command, $buildDir);
-        if ($code !== true) {
+        if ($code !== 0) {
             $this->output->writeln("<comment>The build hook failed with the exit code: $code</comment>");
             return false;
         }

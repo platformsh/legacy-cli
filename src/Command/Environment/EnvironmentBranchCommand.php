@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -20,12 +19,9 @@ class EnvironmentBranchCommand extends CommandBase
             ->setName('environment:branch')
             ->setAliases(['branch'])
             ->setDescription('Branch an environment')
-            ->addArgument(
-                'name',
-                InputArgument::OPTIONAL,
-                'The name of the new environment. For example: "Sprint 2"'
-            )
+            ->addArgument('id', InputArgument::OPTIONAL, 'The ID (branch name) of the new environment')
             ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
+            ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')
             ->addOption(
                 'force',
                 null,
@@ -45,7 +41,7 @@ class EnvironmentBranchCommand extends CommandBase
         $selectedProject = $this->getSelectedProject();
         $parentEnvironment = $this->getSelectedEnvironment();
 
-        $branchName = $input->getArgument('name');
+        $branchName = $input->getArgument('id');
         if (empty($branchName)) {
             if ($input->isInteractive()) {
                 // List environments.
@@ -59,18 +55,16 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        $machineName = Environment::sanitizeId($branchName);
-
-        if ($machineName == $parentEnvironment->id) {
-            $this->stdErr->writeln("<comment>Already on $machineName</comment>");
+        if ($branchName === $parentEnvironment->id) {
+            $this->stdErr->writeln('Already on <comment>' . $branchName . '</comment>');
 
             return 1;
         }
 
-        if ($environment = $this->api()->getEnvironment($machineName, $selectedProject)) {
+        if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
             $checkout = $this->getHelper('question')
                              ->confirm(
-                                 "The environment <comment>$machineName</comment> already exists. Check out?"
+                                 "The environment <comment>$branchName</comment> already exists. Check out?"
                              );
             if ($checkout) {
                 return $this->runOtherCommand(
@@ -111,7 +105,8 @@ class EnvironmentBranchCommand extends CommandBase
             "Creating a new environment <info>$branchName</info>, branched from <info>{$parentEnvironment->title}</info>"
         );
 
-        $activity = $parentEnvironment->branch($branchName, $machineName);
+        $title = $input->getOption('title') ?: $branchName;
+        $activity = $parentEnvironment->branch($title, $branchName);
 
         // Clear the environments cache, as branching has started.
         $this->api()->clearEnvironmentsCache($selectedProject->id);
@@ -121,11 +116,11 @@ class EnvironmentBranchCommand extends CommandBase
             $gitHelper->setDefaultRepositoryDir($projectRoot);
 
             // If the Git branch already exists locally, just check it out.
-            $existsLocally = $gitHelper->branchExists($machineName);
+            $existsLocally = $gitHelper->branchExists($branchName);
             if ($existsLocally) {
-                $this->stdErr->writeln("Checking out <info>$machineName</info> locally");
-                if (!$gitHelper->checkOut($machineName)) {
-                    $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $machineName . '</error>');
+                $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
+                if (!$gitHelper->checkOut($branchName)) {
+                    $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
                     }
@@ -133,9 +128,10 @@ class EnvironmentBranchCommand extends CommandBase
             } else {
                 // Create a new branch, using the parent if it exists locally.
                 $parent = $gitHelper->branchExists($parentEnvironment->id) ? $parentEnvironment->id : null;
-                $this->stdErr->writeln("Creating local branch <info>$machineName</info>");
-                if (!$gitHelper->checkOutNew($machineName, $parent)) {
-                    $this->stdErr->writeln('<error>Failed to create branch locally: ' . $machineName . '</error>');
+                $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
+
+                if (!$gitHelper->checkOutNew($branchName, $parent)) {
+                    $this->stdErr->writeln('<error>Failed to create branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
                     }
@@ -148,9 +144,26 @@ class EnvironmentBranchCommand extends CommandBase
             $remoteSuccess = ActivityUtil::waitAndLog(
                 $activity,
                 $this->stdErr,
-                "The environment <info>$branchName</info> has been branched.",
+                "The environment <info>$branchName</info> has been created.",
                 '<error>Branching failed</error>'
             );
+
+            if ($remoteSuccess && $projectRoot) {
+                // Determine the correct upstream for the new branch. If there is an
+                // 'origin' remote, then it has priority.
+                $upstreamRemote = self::$config->get('detection.git_remote_name');
+                $originRemoteUrl = $gitHelper->getConfig('remote.origin.url');
+                if ($originRemoteUrl !== $selectedProject->getGitUrl(false) && $gitHelper->remoteBranchExists('origin', $branchName)) {
+                    $upstreamRemote = 'origin';
+                }
+
+                // Fetch the branch from the upstream remote.
+                $gitHelper->fetch($upstreamRemote, $branchName);
+
+                $upstream = $upstreamRemote . '/' . $branchName;
+
+                $gitHelper->setUpstream($upstream);
+            }
         }
 
         $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);

@@ -91,12 +91,20 @@ class UserRoleCommand extends CommandBase
             $this->stdErr->writeln("There is nothing to change");
         }
         elseif ($role && $project->owner === $selectedUser->id) {
-            $this->stdErr->writeln("The user <error>$email</error> is the owner of the project <error>{$project->title}</error>.");
+            $this->stdErr->writeln(sprintf(
+                'The user <error>%s</error> is the owner of the project %s.',
+                $email,
+                $this->api()->getProjectLabel($project, 'error')
+            ));
             $this->stdErr->writeln("You cannot change the role of the project's owner.");
             return 1;
         }
         elseif ($role && $level === 'environment' && $selectedUser->role === ProjectAccess::ROLE_ADMIN) {
-            $this->stdErr->writeln("The user <error>$email</error> is an admin on the project <error>{$project->title}</error>.");
+            $this->stdErr->writeln(sprintf(
+                'The user <error>%s</error> is an admin on the project %s.',
+                $email,
+                $this->api()->getProjectLabel($project, 'error')
+            ));
             $this->stdErr->writeln('You cannot change the environment-level role of a project admin.');
             return 1;
         }
@@ -121,7 +129,7 @@ class UserRoleCommand extends CommandBase
         }
 
         if (isset($result) && !$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
         }
 
         if ($input->getOption('pipe')) {

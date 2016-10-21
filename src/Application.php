@@ -109,11 +109,14 @@ class Application extends ParentApplication
         $commands[] = new Command\Activity\ActivityLogCommand();
         $commands[] = new Command\App\AppConfigGetCommand();
         $commands[] = new Command\App\AppListCommand();
+        $commands[] = new Command\Auth\AuthInfoCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
         $commands[] = new Command\Domain\DomainAddCommand();
         $commands[] = new Command\Domain\DomainDeleteCommand();
+        $commands[] = new Command\Domain\DomainGetCommand();
         $commands[] = new Command\Domain\DomainListCommand();
+        $commands[] = new Command\Domain\DomainUpdateCommand();
         $commands[] = new Command\Environment\EnvironmentActivateCommand();
         $commands[] = new Command\Environment\EnvironmentBranchCommand();
         $commands[] = new Command\Environment\EnvironmentCheckoutCommand();
@@ -200,7 +203,7 @@ class Application extends ParentApplication
     public function doRun(InputInterface $input, OutputInterface $output)
     {
         // Set the input to non-interactive if the yes or no options are used.
-        if ($input->hasParameterOption(['--yes', '-y']) || $input->hasParameterOption(['--no', '-n'])) {
+        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);
         }
 

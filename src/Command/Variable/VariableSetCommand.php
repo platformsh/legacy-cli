@@ -66,7 +66,7 @@ class VariableSetCommand extends CommandBase
             $this->rebuildWarning();
         }
         elseif (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
         }
 
         return $success ? 0 : 1;

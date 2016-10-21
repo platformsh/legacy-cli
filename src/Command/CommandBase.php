@@ -98,6 +98,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     private $environment;
 
+    /**
+     * The command synopsis.
+     *
+     * @var array
+     */
+    private $synopsis = [];
+
     public function __construct($name = null)
     {
         // The config dependency is static for performance reasons: there are
@@ -418,10 +425,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         // There is no Git remote set. Fall back to trying the current branch
         // name.
         if ($currentBranch) {
-            $currentBranchSanitized = Environment::sanitizeId($currentBranch);
-            $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+            $environment = $this->api()->getEnvironment($currentBranch, $project, $refresh);
+            if (!$environment) {
+                // Try a sanitized version of the branch name too.
+                $currentBranchSanitized = Environment::sanitizeId($currentBranch);
+                $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+            }
             if ($environment) {
-                $this->debug('Selected environment ' . $currentBranchSanitized . ', based on branch name:' . $currentBranch);
+                $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
                 return $environment;
             }
         }
@@ -610,35 +621,42 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * @param string $environmentId
+     * Select the current environment for the user.
+     *
+     * @throws \RuntimeException If the current environment cannot be found.
+     *
+     * @param string|null $environmentId
+     *   The environment ID specified by the user, or null to auto-detect the
+     *   environment.
      *
      * @return Environment
      */
     protected function selectEnvironment($environmentId = null)
     {
         if (!empty($environmentId)) {
-            $environment = $this->api()->getEnvironment($environmentId, $this->project);
+            $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
-                throw new \RuntimeException("Specified environment not found: " . $environmentId);
+                throw new \RuntimeException('Specified environment not found: ' . $environmentId);
             }
-        } else {
-            $environment = $this->getCurrentEnvironment($this->project);
-            if (!$environment) {
-                $message = "Could not determine the current environment.";
-                if ($this->getProjectRoot()) {
-                    throw new \RuntimeException(
-                        $message . "\nSpecify it manually using --environment."
-                    );
-                }
-                else {
-                    throw new RootNotFoundException(
-                        $message . "\nSpecify it manually using --environment or go to a project directory."
-                    );
-                }
-            }
+
+            return $environment;
         }
 
-        return $environment;
+        // If no ID is specified, try to auto-detect the current environment.
+        if ($environment = $this->getCurrentEnvironment($this->project)) {
+            return $environment;
+        }
+
+        $message = "Could not determine the current environment.";
+        if ($this->getProjectRoot()) {
+            throw new \RuntimeException(
+                $message . "\nSpecify it manually using --environment."
+            );
+        } else {
+            throw new RootNotFoundException(
+                $message . "\nSpecify it manually using --environment or go to a project directory."
+            );
+        }
     }
 
     /**
@@ -954,8 +972,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function debug($message)
     {
-        if (isset($this->stdErr) && $this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
+        if (isset($this->stdErr)) {
+            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
         }
     }
 
@@ -989,5 +1007,27 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     public function setRunningViaMulti($runningViaMulti = true)
     {
         $this->runningViaMulti = $runningViaMulti;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSynopsis($short = false)
+    {
+        $key = $short ? 'short' : 'long';
+
+        if (!isset($this->synopsis[$key])) {
+            $aliases = $this->getAliases();
+            $name = $this->getName();
+            $shortName = count($aliases) === 1 ? reset($aliases) : $name;
+            $this->synopsis[$key] = trim(sprintf(
+                '%s %s %s',
+                self::$config->get('application.executable'),
+                $shortName,
+                $this->getDefinition()->getSynopsis($short)
+            ));
+        }
+
+        return $this->synopsis[$key];
     }
 }

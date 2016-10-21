@@ -81,25 +81,11 @@ class ProjectInfoCommand extends CommandBase
      */
     protected function listProperties(array $properties, Table $table)
     {
-        // Properties not to display, as they are internal, deprecated, or
-        // otherwise confusing.
-        $blacklist = [
-            'name',
-            'cluster',
-            'cluster_label',
-            'description',
-            'license_id',
-            'plan',
-            '_endpoint',
-        ];
-
         $headings = [];
         $values = [];
         foreach ($properties as $key => $value) {
-            if (!in_array($key, $blacklist)) {
-                $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-                $values[] = $this->formatter->format($value, $key);
-            }
+            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
+            $values[] = $this->formatter->format($value, $key);
         }
         $table->renderSimple($values, $headings);
 
@@ -141,7 +127,7 @@ class ProjectInfoCommand extends CommandBase
 
         $success = true;
         if (!$noWait) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
         }
 
         return $success ? 0 : 1;
