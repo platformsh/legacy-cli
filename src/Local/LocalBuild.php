@@ -56,6 +56,7 @@ class LocalBuild
      *       option to Drush Make, if applicable.
      *     - drushUpdateLock (bool, default false) Create or update a lock file
      *       via Drush Make, if applicable.
+     *     - runDeployHooks (bool, default false) Run deploy hooks.
      * @param CliConfig|null       $config
      *     Optionally, inject a specific CLI configuration object.
      * @param OutputInterface|null $output
@@ -298,6 +299,8 @@ class LocalBuild
         $toolstack->setBuildDir($buildDir);
         $toolstack->install();
 
+        $this->runPostDeployHooks($appConfig, $buildDir);
+
         $webRoot = $toolstack->getWebRoot();
 
         // Symlink the built web root ($webRoot) into www or www/appId.
@@ -347,6 +350,32 @@ class LocalBuild
         $code = $this->shellHelper->executeSimple($command, $buildDir);
         if ($code !== 0) {
             $this->output->writeln("<comment>The build hook failed with the exit code: $code</comment>");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Run post-deploy hooks.
+     *
+     * @param array  $appConfig
+     * @param string $appDir
+     *
+     * @return bool|null
+     *   False if the deploy hooks fail, true if they succeed, null if not
+     *   applicable.
+     */
+    protected function runPostDeployHooks(array $appConfig, $appDir)
+    {
+        if (!isset($appConfig['hooks']['deploy']) || empty($this->settings['runDeployHooks'])) {
+            return null;
+        }
+        $this->output->writeln('Running post-deploy hooks');
+        $command = implode(';', (array) $appConfig['hooks']['deploy']);
+        $code = $this->shellHelper->executeSimple($command, $appDir);
+        if ($code !== 0) {
+            $this->output->writeln("<comment>The deploy hook failed with the exit code: $code</comment>");
             return false;
         }
 

@@ -51,6 +51,12 @@ class LocalBuildCommand extends CommandBase
                 'Use Git to clone the current HEAD to the build directory'
             )
             ->addOption(
+                'run-deploy-hooks',
+                null,
+                InputOption::VALUE_NONE,
+                'Run post-deploy hooks'
+            )
+            ->addOption(
                 'no-clean',
                 null,
                 InputOption::VALUE_NONE,
@@ -184,6 +190,7 @@ class LocalBuildCommand extends CommandBase
             'drushConcurrency' => 'concurrency',
             'drushWorkingCopy' => 'working-copy',
             'drushUpdateLock' => 'lock',
+            'runDeployHooks' => 'run-deploy-hooks',
             'noArchive' => 'no-archive',
             'noBackup' => 'no-backup',
             'noCache' => 'no-cache',
