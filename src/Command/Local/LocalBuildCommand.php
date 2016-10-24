@@ -183,25 +183,9 @@ class LocalBuildCommand extends CommandBase
         }
 
         // Map input options to build settings.
-        $settingsMap = [
-            'absoluteLinks' => 'abslinks',
-            'copy' => 'copy',
-            'clone' => 'clone',
-            'drushConcurrency' => 'concurrency',
-            'drushWorkingCopy' => 'working-copy',
-            'drushUpdateLock' => 'lock',
-            'runDeployHooks' => 'run-deploy-hooks',
-            'noArchive' => 'no-archive',
-            'noBackup' => 'no-backup',
-            'noCache' => 'no-cache',
-            'noClean' => 'no-clean',
-            'noBuildHooks' => 'no-build-hooks',
-        ];
         $settings = [];
-        foreach ($settingsMap as $setting => $option) {
-            if ($input->hasOption($option)) {
-                $settings[$setting] = $input->getOption($option);
-            }
+        foreach ($input->getOptions() as $name => $value) {
+            $settings[$name] = $value;
         }
 
         $apps = $input->getArgument('app');

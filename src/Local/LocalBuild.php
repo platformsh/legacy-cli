@@ -42,21 +42,21 @@ class LocalBuild
      *       directory before building, where possible.
      *     - copy (bool, default false) Copy files instead of symlinking them,
      *       where possible.
-     *     - absoluteLinks (bool, default false) Use absolute paths in symlinks.
-     *     - noArchive (bool, default false) Do not archive or use an archive of
+     *     - abslinks (bool, default false) Use absolute paths in symlinks.
+     *     - no-archive (bool, default false) Do not archive or use an archive of
      *       the build.
-     *     - noCache (bool, default false) Disable the package cache (if
+     *     - no-cache (bool, default false) Disable the package cache (if
      *       relevant and if the package manager supports this).
-     *     - noClean (bool, default false) Disable cleaning up old builds or old
-     *       build archives.
-     *     - noBuildHooks (bool, default false) Disable running build hooks.
-     *     - drushConcurrency (int) Specify a concurrency for Drush Make, if
+     *     - no-clean (bool, default false) Disable cleaning up old builds or
+     *       old build archives.
+     *     - no-build-hooks (bool, default false) Disable running build hooks.
+     *     - concurrency (int) Specify a concurrency for Drush Make, if
      *       applicable (when using the Drupal toolstack).
-     *     - drushWorkingCopy (bool, default false) Specify the --working-copy
+     *     - working-copy (bool, default false) Specify the --working-copy
      *       option to Drush Make, if applicable.
-     *     - drushUpdateLock (bool, default false) Create or update a lock file
-     *       via Drush Make, if applicable.
-     *     - runDeployHooks (bool, default false) Run deploy hooks.
+     *     - lock (bool, default false) Create or update a lock
+     *       file via Drush Make, if applicable.
+     *     - run-deploy-hooks (bool, default false) Run deploy hooks.
      * @param CliConfig|null       $config
      *     Optionally, inject a specific CLI configuration object.
      * @param OutputInterface|null $output
@@ -69,7 +69,7 @@ class LocalBuild
         $this->output = $output ?: new NullOutput();
         $this->shellHelper = new ShellHelper($this->output);
         $this->fsHelper = new FilesystemHelper($this->shellHelper);
-        $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
+        $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
         $this->gitHelper = new GitHelper($this->shellHelper);
     }
 
@@ -108,7 +108,7 @@ class LocalBuild
                 $this->output->writeln("Application not found: <comment>$notFound</comment>");
             }
         }
-        if (empty($this->settings['noClean'])) {
+        if (empty($this->settings['no-clean'])) {
             $this->output->writeln("Cleaning up...");
             $this->cleanBuilds($sourceDir);
             $this->cleanArchives($sourceDir);
@@ -161,7 +161,7 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = ['multiApp', 'noClean', 'drushConcurrency', 'noBackup'];
+        $irrelevant = ['multiApp', 'no-clean', 'concurrency', 'no-backup'];
         $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
         $hashes[] = serialize($settings);
 
@@ -238,7 +238,7 @@ class LocalBuild
         $toolstack->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
 
         $archive = false;
-        if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
+        if (empty($this->settings['no-archive']) && empty($this->settings['no-cache'])) {
             $treeId = $this->getTreeId($appRoot);
             if ($treeId) {
                 if ($verbose) {
@@ -279,7 +279,7 @@ class LocalBuild
         // The build is complete. Move the directory.
         $buildDir = substr($tmpBuildDir, 0, strlen($tmpBuildDir) - 4);
         if (file_exists($buildDir)) {
-            if (empty($this->settings['noBackup']) && is_dir($buildDir)) {
+            if (empty($this->settings['no-backup']) && is_dir($buildDir)) {
                 $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
                 $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
                 $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
@@ -341,11 +341,11 @@ class LocalBuild
         if (!isset($appConfig['hooks']['build'])) {
             return null;
         }
-        if (!empty($this->settings['noBuildHooks'])) {
-            $this->output->writeln("Skipping post-build hooks");
+        if (!empty($this->settings['no-build-hooks'])) {
+            $this->output->writeln('Skipping post-build hooks');
             return null;
         }
-        $this->output->writeln("Running post-build hooks");
+        $this->output->writeln('Running post-build hooks');
         $command = implode(';', (array) $appConfig['hooks']['build']);
         $code = $this->shellHelper->executeSimple($command, $buildDir);
         if ($code !== 0) {
@@ -368,7 +368,7 @@ class LocalBuild
      */
     protected function runPostDeployHooks(array $appConfig, $appDir)
     {
-        if (!isset($appConfig['hooks']['deploy']) || empty($this->settings['runDeployHooks'])) {
+        if (!isset($appConfig['hooks']['deploy']) || empty($this->settings['run-deploy-hooks'])) {
             return null;
         }
         $this->output->writeln('Running post-deploy hooks');

@@ -24,7 +24,7 @@ class DrupalTest extends BaseToolstackTest
         touch($shared . '/symlink_me');
 
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
-        $buildSettings = ['absoluteLinks' => true];
+        $buildSettings = ['abslinks' => true];
         $builder = new LocalBuild($buildSettings + $this->buildSettings, null, self::$output);
         $success = $builder->build($projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
@@ -74,7 +74,7 @@ class DrupalTest extends BaseToolstackTest
     {
         $sourceDir = 'tests/data/apps/drupal/yaml';
         self::$output->writeln("\nTesting build (with --lock) for directory: " . $sourceDir);
-        $projectRoot = $this->assertBuildSucceeds($sourceDir, ['drushUpdateLock' => true]);
+        $projectRoot = $this->assertBuildSucceeds($sourceDir, ['lock' => true]);
         $this->assertFileExists($projectRoot . '/project.make.yml.lock');
     }
 
