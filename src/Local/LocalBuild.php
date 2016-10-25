@@ -161,8 +161,8 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = ['multiApp', 'no-clean', 'concurrency', 'no-backup'];
-        $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
+        $relevant = ['abslinks', 'copy', 'clone', 'no-cache', 'working-copy', 'lock'];
+        $settings = array_intersect_key($this->settings, array_flip($relevant));
         $hashes[] = serialize($settings);
 
         $hashes[] = self::BUILD_VERSION;
