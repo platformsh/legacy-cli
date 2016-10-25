@@ -346,14 +346,8 @@ class LocalBuild
             return null;
         }
         $this->output->writeln('Running post-build hooks');
-        $command = implode(';', (array) $appConfig['hooks']['build']);
-        $code = $this->shellHelper->executeSimple($command, $buildDir);
-        if ($code !== 0) {
-            $this->output->writeln("<comment>The build hook failed with the exit code: $code</comment>");
-            return false;
-        }
 
-        return true;
+        return $this->runHook($appConfig['hooks']['build'], $buildDir);
     }
 
     /**
@@ -368,14 +362,34 @@ class LocalBuild
      */
     protected function runPostDeployHooks(array $appConfig, $appDir)
     {
-        if (!isset($appConfig['hooks']['deploy']) || empty($this->settings['run-deploy-hooks'])) {
+        if (empty($this->settings['run-deploy-hooks'])) {
+            return null;
+        }
+        if (empty($appConfig['hooks']['deploy'])) {
+            $this->output->writeln('No deploy hooks found');
             return null;
         }
         $this->output->writeln('Running post-deploy hooks');
-        $command = implode(';', (array) $appConfig['hooks']['deploy']);
-        $code = $this->shellHelper->executeSimple($command, $appDir);
+
+        return $this->runHook($appConfig['hooks']['deploy'], $appDir);
+    }
+
+    /**
+     * Run a user-defined hook.
+     *
+     * @param string|array $hook
+     * @param string       $dir
+     *
+     * @return bool
+     */
+    protected function runHook($hook, $dir)
+    {
+        $code = $this->shellHelper->executeSimple(
+            implode("\n", (array) $hook),
+            $dir
+        );
         if ($code !== 0) {
-            $this->output->writeln("<comment>The deploy hook failed with the exit code: $code</comment>");
+            $this->output->writeln("<comment>The hook failed with the exit code: $code</comment>");
             return false;
         }
 
