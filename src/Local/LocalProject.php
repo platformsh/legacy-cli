@@ -13,6 +13,8 @@ class LocalProject
     protected $config;
     protected $fs;
 
+    protected static $projectConfigs = [];
+
     public function __construct(CliConfig $config = null)
     {
         $this->config = $config ?: new CliConfig();
@@ -181,11 +183,15 @@ class LocalProject
     public function getProjectConfig($projectRoot = null)
     {
         $projectRoot = $projectRoot ?: $this->getProjectRoot();
+        if (isset(self::$projectConfigs[$projectRoot])) {
+            return self::$projectConfigs[$projectRoot];
+        }
         $projectConfig = null;
         $configFilename = $this->config->get('local.project_config');
         if ($projectRoot && file_exists($projectRoot . '/' . $configFilename)) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
+            self::$projectConfigs[$projectRoot] = $projectConfig;
         }
         elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $gitUrl = $this->getGitRemoteUrl($projectRoot);
@@ -229,6 +235,8 @@ class LocalProject
         }
         $yaml = (new Dumper())->dump($config, 10);
         $this->fs->dumpFile($file, $yaml);
+
+        self::$projectConfigs[$projectRoot] = $config;
 
         return $config;
     }

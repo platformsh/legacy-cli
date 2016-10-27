@@ -191,7 +191,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $timestamp = time();
             $promptMigrate = true;
             if ($projectRoot) {
-                $projectConfig = $this->getProjectConfig($projectRoot);
+                $projectConfig = $this->localProject->getProjectConfig($projectRoot);
                 if (isset($projectConfig['migrate']['3.x']['last_asked']) && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
                     $promptMigrate = false;
                 }
@@ -336,7 +336,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $project = false;
-        $config = $this->getProjectConfig($projectRoot);
+        $config = $this->localProject->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
@@ -360,20 +360,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Get the project configuration.
-     *
-     * @param string $projectRoot
-     *
-     * @return array
-     */
-    protected function getProjectConfig($projectRoot)
-    {
-        $this->debug('Loading project config');
-
-        return $this->localProject->getProjectConfig($projectRoot) ?: [];
-    }
-
-    /**
      * Get the current environment if the user is in a project directory.
      *
      * @param Project $expectedProject The expected project.
@@ -392,7 +378,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($this->getProjectRoot());
-        $config = $this->getProjectConfig($projectRoot);
+        $config = $this->localProject->getProjectConfig($projectRoot);
 
         // Check if there is a manual mapping set for the current branch.
         if (!empty($config['mapping'])
