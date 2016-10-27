@@ -392,21 +392,19 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($this->getProjectRoot());
-        $currentBranch = $gitHelper->getCurrentBranch();
+        $config = $this->getProjectConfig($projectRoot);
 
         // Check if there is a manual mapping set for the current branch.
-        if ($currentBranch) {
-            $config = $this->getProjectConfig($projectRoot);
-            if (!empty($config['mapping'][$currentBranch])) {
-                $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
-                if ($environment) {
-                    $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
-                    return $environment;
-                }
-                else {
-                    unset($config['mapping'][$currentBranch]);
-                    $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
-                }
+        if (!empty($config['mapping'])
+            && ($currentBranch = $gitHelper->getCurrentBranch())
+            && !empty($config['mapping'][$currentBranch])) {
+            $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
+            if ($environment) {
+                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
+                return $environment;
+            } else {
+                unset($config['mapping'][$currentBranch]);
+                $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
             }
         }
 
@@ -424,7 +422,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         // There is no Git remote set. Fall back to trying the current branch
         // name.
-        if ($currentBranch) {
+        if (!empty($currentBranch) || ($currentBranch = $gitHelper->getCurrentBranch())) {
             $environment = $this->api()->getEnvironment($currentBranch, $project, $refresh);
             if (!$environment) {
                 // Try a sanitized version of the branch name too.
