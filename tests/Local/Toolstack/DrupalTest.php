@@ -57,6 +57,10 @@ class DrupalTest extends BaseToolstackTest
         // Drupal is the only current example of this.
         $this->assertFileNotExists($webRoot . '/robots.txt');
         $this->assertFileExists($webRoot . '/test.txt');
+
+        // Test building the same project again.
+        $success2 = $builder->build($projectRoot);
+        $this->assertTrue($success2, 'Second build success for dir: ' . $sourceDir);
     }
 
     public function testBuildDrupalInProfileMode()
