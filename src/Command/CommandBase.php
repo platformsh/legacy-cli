@@ -781,7 +781,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
                 throw new \InvalidArgumentException(
                     sprintf(
-                        "You cannot use both the '%s' argument and the '--%s' option",
+                        'You cannot use both the <%s> argument and the --%s option',
                         $this->envArgName,
                         $envOptionName
                     )
