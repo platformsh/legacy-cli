@@ -71,7 +71,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     private $input;
 
     /** @var array */
-    protected $state = array();
+    protected $state = [];
 
     /**
      * @see self::setHiddenAliases()
