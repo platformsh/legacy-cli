@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Self;
 use Humbug\SelfUpdate\Updater;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\SelfUpdate\ManifestStrategy;
+use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -53,7 +54,7 @@ class SelfUpdateCommand extends CommandBase
 
         if (!$updater->hasUpdate()) {
             $this->stdErr->writeln('No updates found');
-            return 0;
+            return 1;
         }
 
         $newVersionString = $updater->getNewVersion();
@@ -71,18 +72,17 @@ class SelfUpdateCommand extends CommandBase
             return 1;
         }
 
+        // Phar cannot load any new classes after the file has been replaced.
+        // So we ensure expected classes are autoloaded before the update.
+        ConsoleTerminateEvent::class;
+
         $this->stdErr->writeln(sprintf('Updating to version %s', $newVersionString));
 
         $updater->update();
 
         $this->stdErr->writeln("Successfully updated to version <info>$newVersionString</info>");
 
-        // Errors appear if new classes are instantiated after this stage
-        // (namely, Symfony's ConsoleTerminateEvent). This suggests PHP
-        // can't read files properly from the overwritten Phar, or perhaps it's
-        // because the autoloader's name has changed. We avoid the problem by
-        // terminating now.
-        exit;
+        return 0;
     }
 
     /**

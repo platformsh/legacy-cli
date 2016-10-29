@@ -16,6 +16,7 @@ use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputAwareInterface;
 use Symfony\Component\Console\Input\InputInterface;
@@ -278,16 +279,41 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             ],
         ]);
 
+        // Autoload classes that may be needed later.
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
+        $shellHelper = $this->getHelper('shell');
+
         try {
-            $this->runOtherCommand('self-update', ['--timeout' => 10]);
+            $result = $this->runOtherCommand('self-update', ['--timeout' => 10]);
         } catch (\RuntimeException $e) {
             if (strpos($e->getMessage(), 'Failed to download') !== false) {
                 $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
+                $result = 1;
             } else {
                 throw $e;
             }
         }
         $this->stdErr->writeln('');
+
+        // If the update was successful, then prompt the user to continue after
+        // updating. This has to be done in a forked process. After that, exit.
+        if ($result === 0) {
+            if (isset($this->input)
+                && $this->input->isInteractive()
+                && $this->input instanceof ArgvInput
+                && $questionHelper->confirm('Continue?')) {
+                $commandLine = $this->input->__toString();
+                if (isset($GLOBALS['argv'][0])) {
+                    $executable = realpath($GLOBALS['argv'][0]) ?: $GLOBALS['argv'][0];
+                } else {
+                    $executable = self::$config->get('application.executable');
+                }
+                $result = $shellHelper->executeSimple(escapeshellarg($executable) . ' ' . $commandLine);
+            }
+            exit($result);
+        }
     }
 
     /**
