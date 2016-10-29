@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Project;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\Bot;
 use Platformsh\Client\Model\Subscription;
@@ -79,8 +80,17 @@ class ProjectCreateCommand extends CommandBase
         while ($subscription->isPending() && time() - $start < 300) {
             $bot->render();
             if (!isset($lastCheck) || time() - $lastCheck >= 2) {
-                $subscription->refresh(['timeout' => 5, 'exceptions' => false]);
-                $lastCheck = time();
+                try {
+                    $subscription->refresh(['timeout' => 5, 'exceptions' => false]);
+                    $lastCheck = time();
+                } catch (ConnectException $e) {
+                    if (strpos($e->getMessage(), 'timed out') !== false) {
+                        $this->stdErr->writeln('<warning>' . $e->getMessage() . '</warning>');
+                    }
+                    else {
+                        throw $e;
+                    }
+                }
             }
         }
         $this->stdErr->writeln("");
