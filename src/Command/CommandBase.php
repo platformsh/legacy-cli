@@ -278,7 +278,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             ],
         ]);
 
-        $this->runOtherCommand('self-update', ['--timeout' => 10]);
+        try {
+            $this->runOtherCommand('self-update', ['--timeout' => 10]);
+        } catch (\RuntimeException $e) {
+            if (strpos($e->getMessage(), 'Failed to download') !== false) {
+                $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
+            }
+            throw $e;
+        }
         $this->stdErr->writeln('');
     }
 
