@@ -32,9 +32,16 @@ class SelfUpdateCommand extends CommandBase
         $cliUpdater->setAllowMajor(!$input->getOption('no-major'));
         $cliUpdater->setAllowUnstable((bool) $input->getOption('unstable'));
         $cliUpdater->setTimeout($input->getOption('timeout'));
-        $result = $cliUpdater->update($manifestUrl, $currentVersion);
 
-        return $result === false ? 1 : 0;
+        $result = $cliUpdater->update($manifestUrl, $currentVersion);
+        if ($result === false) {
+            return 1;
+        }
+
+        // Phar cannot load more classes after the update has occurred. So to
+        // avoid errors from classes loaded after this (e.g.
+        // ConsoleTerminateEvent), we exit directly now.
+        exit(0);
     }
 
     /**

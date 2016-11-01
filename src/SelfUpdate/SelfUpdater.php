@@ -4,7 +4,6 @@ namespace Platformsh\Cli\SelfUpdate;
 use Platformsh\Cli\CliConfig;
 use Humbug\SelfUpdate\Updater;
 use Platformsh\Cli\Helper\QuestionHelper;
-use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -127,10 +126,6 @@ class SelfUpdater
         if (!$this->questionHelper->confirm(sprintf('Update to version %s?', $newVersionString))) {
             return false;
         }
-
-        // Phar cannot load any new classes after the file has been replaced.
-        // So we ensure expected classes are auto-loaded before the update.
-        ConsoleTerminateEvent::class;
 
         $this->stdErr->writeln(sprintf('Updating to version %s', $newVersionString));
 

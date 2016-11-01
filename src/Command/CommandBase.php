@@ -279,7 +279,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             ],
         ]);
 
-        // Autoload classes that may be needed later.
+        // Ensure classes are auto-loaded if they may be needed after the
+        // update.
         /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
         $shellHelper = $this->getHelper('shell');
         /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
@@ -301,9 +302,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
         }
 
-        // If the update was successful, then prompt the user to continue after
-        // updating. This has to be done in an external process, and only if the
-        // update was not a major one.
+        // If the update was successful, and it's not a major version change,
+        // then prompt the user to continue after updating.
         if ($newVersion !== false) {
             $exitCode = 0;
             list($currentMajorVersion,) = explode('.', $currentVersion, 2);
