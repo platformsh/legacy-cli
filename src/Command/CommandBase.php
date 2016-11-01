@@ -13,6 +13,7 @@ use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\SelfUpdate\SelfUpdater;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Command\Command;
@@ -279,20 +280,22 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         ]);
 
         // Autoload classes that may be needed later.
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
         /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
         $shellHelper = $this->getHelper('shell');
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+        $currentVersion = self::$config->get('application.version');
+
+        $cliUpdater = new SelfUpdater($this->input, $this->output, self::$config, $questionHelper);
+        $cliUpdater->setAllowMajor(true);
+        $cliUpdater->setTimeout(10);
 
         try {
-            $result = $this->runOtherCommand('self-update', [
-                '--timeout' => 10,
-                '--no-major' => true,
-            ]);
+            $newVersion = $cliUpdater->update(null, $currentVersion);
         } catch (\RuntimeException $e) {
             if (strpos($e->getMessage(), 'Failed to download') !== false) {
                 $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
-                $result = 1;
+                $newVersion = false;
             } else {
                 throw $e;
             }
@@ -300,19 +303,22 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         // If the update was successful, then prompt the user to continue after
         // updating. This has to be done in an external process, and only if the
-        // input is interactive.
-        if ($result === 0) {
-            if (isset($this->input) && $this->input->isInteractive() && isset($GLOBALS['argv'])) {
-                $command = implode(' ', array_map('escapeshellarg', $GLOBALS['argv']));
+        // update was not a major one.
+        if ($newVersion !== false) {
+            $exitCode = 0;
+            list($currentMajorVersion,) = explode('.', $currentVersion, 2);
+            list($newMajorVersion,) = explode('.', $newVersion, 2);
+            if ($newMajorVersion === $currentMajorVersion && isset($GLOBALS['argv'])) {
+                $originalCommand = implode(' ', array_map('escapeshellarg', $GLOBALS['argv']));
                 $questionText = "\n"
-                    . 'Original command: <info>' . $command . '</info>'
+                    . 'Original command: <info>' . $originalCommand . '</info>'
                     . "\n\n" . 'Continue?';
                 if ($questionHelper->confirm($questionText)) {
                     $this->stdErr->writeln('');
-                    $result = $shellHelper->executeSimple($command);
+                    $exitCode = $shellHelper->executeSimple($originalCommand);
                 }
             }
-            exit($result);
+            exit($exitCode);
         }
 
         $this->stdErr->writeln('');
