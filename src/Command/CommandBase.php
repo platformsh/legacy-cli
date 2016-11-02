@@ -13,6 +13,7 @@ use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\SelfUpdate\SelfUpdater;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Command\Command;
@@ -278,15 +279,48 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             ],
         ]);
 
+        // Ensure classes are auto-loaded if they may be needed after the
+        // update.
+        /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
+        $shellHelper = $this->getHelper('shell');
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+        $currentVersion = self::$config->get('application.version');
+
+        $cliUpdater = new SelfUpdater($this->input, $this->output, self::$config, $questionHelper);
+        $cliUpdater->setAllowMajor(true);
+        $cliUpdater->setTimeout(10);
+
         try {
-            $this->runOtherCommand('self-update', ['--timeout' => 10]);
+            $newVersion = $cliUpdater->update(null, $currentVersion);
         } catch (\RuntimeException $e) {
             if (strpos($e->getMessage(), 'Failed to download') !== false) {
                 $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
+                $newVersion = false;
             } else {
                 throw $e;
             }
         }
+
+        // If the update was successful, and it's not a major version change,
+        // then prompt the user to continue after updating.
+        if ($newVersion !== false) {
+            $exitCode = 0;
+            list($currentMajorVersion,) = explode('.', $currentVersion, 2);
+            list($newMajorVersion,) = explode('.', $newVersion, 2);
+            if ($newMajorVersion === $currentMajorVersion && isset($GLOBALS['argv'])) {
+                $originalCommand = implode(' ', array_map('escapeshellarg', $GLOBALS['argv']));
+                $questionText = "\n"
+                    . 'Original command: <info>' . $originalCommand . '</info>'
+                    . "\n\n" . 'Continue?';
+                if ($questionHelper->confirm($questionText)) {
+                    $this->stdErr->writeln('');
+                    $exitCode = $shellHelper->executeSimple($originalCommand);
+                }
+            }
+            exit($exitCode);
+        }
+
         $this->stdErr->writeln('');
     }
 
