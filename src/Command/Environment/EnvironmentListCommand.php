@@ -135,7 +135,7 @@ class EnvironmentListCommand extends CommandBase
         $this->currentEnvironment = $this->getCurrentEnvironment($project);
 
         if (($currentProject = $this->getCurrentProject()) && $currentProject == $project) {
-            $projectConfig = $this->getProjectConfig($this->getProjectRoot());
+            $projectConfig = $this->localProject->getProjectConfig($this->getProjectRoot());
             if (isset($projectConfig['mapping'])) {
                 $this->mapping = $projectConfig['mapping'];
             }

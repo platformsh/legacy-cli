@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Project;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\Bot;
 use Platformsh\Client\Model\Subscription;
@@ -22,7 +23,9 @@ class ProjectCreateCommand extends CommandBase
      */
     public function isEnabled()
     {
-        return parent::isEnabled() && self::$config->has('experimental.enable_create') && self::$config->get('experimental.enable_create');
+        return parent::isEnabled()
+            && self::$config->has('experimental.enable_create')
+            && self::$config->get('experimental.enable_create');
     }
 
     /**
@@ -61,26 +64,42 @@ class ProjectCreateCommand extends CommandBase
         }
 
         $subscription = $this->api()->getClient()
-          ->createSubscription(
-            $options['region'],
-            $options['plan'],
-            $options['title'],
-            $options['storage'] * 1024,
-            $options['environments']
-          );
+            ->createSubscription(
+                $options['region'],
+                $options['plan'],
+                $options['title'],
+                $options['storage'] * 1024,
+                $options['environments']
+            );
 
         $this->api()->clearProjectsCache();
 
-        $this->stdErr->writeln(sprintf('Your %s project has been requested (subscription ID: <comment>%s</comment>)', self::$config->get('service.name'), $subscription->id));
+        $this->stdErr->writeln(sprintf(
+            'Your %s project has been requested (subscription ID: <comment>%s</comment>)',
+            self::$config->get('service.name'),
+            $subscription->id
+        ));
 
-        $this->stdErr->writeln(sprintf("\nThe %s Bot is activating your project\n", self::$config->get('service.name')));
+        $this->stdErr->writeln(sprintf(
+            "\nThe %s Bot is activating your project\n",
+            self::$config->get('service.name')
+        ));
+
         $bot = new Bot($this->stdErr);
         $start = time();
         while ($subscription->isPending() && time() - $start < 300) {
             $bot->render();
             if (!isset($lastCheck) || time() - $lastCheck >= 2) {
-                $subscription->refresh(['timeout' => 5, 'exceptions' => false]);
-                $lastCheck = time();
+                try {
+                    $subscription->refresh(['timeout' => 5, 'exceptions' => false]);
+                    $lastCheck = time();
+                } catch (ConnectException $e) {
+                    if (strpos($e->getMessage(), 'timed out') !== false) {
+                        $this->stdErr->writeln('<warning>' . $e->getMessage() . '</warning>');
+                    } else {
+                        throw $e;
+                    }
+                }
             }
         }
         $this->stdErr->writeln("");
@@ -132,16 +151,25 @@ class ProjectCreateCommand extends CommandBase
         return $response->json();
     }
 
-    protected function getAvailablePlans() {
-      if (self::$config->has('experimental.available_plans')) {
-        return self::$config->get('experimental.available_plans');
-      }
-      else {
+    /**
+     * Return a list of plans.
+     *
+     * The default list (from the API client) can be overridden by user config.
+     *
+     * @return string[]
+     */
+    protected function getAvailablePlans()
+    {
+        if (self::$config->has('experimental.available_plans')) {
+            return self::$config->get('experimental.available_plans');
+        }
+
         return Subscription::$availablePlans;
-      }
     }
 
     /**
+     * Returns a list of ConsoleForm form fields for this command.
+     *
      * @return Field[]
      */
     protected function getFields()
