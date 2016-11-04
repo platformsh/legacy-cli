@@ -29,7 +29,7 @@ class LocalProject
      */
     protected function parseGitUrl($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($this->config->get('detection.api_domain')) . '):\1\.git$/', $gitUrl, $matches)) {
+        if (!preg_match('/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($this->config->get('detection.git_domain')) . '):\1\.git$/', $gitUrl, $matches)) {
             return false;
         }
 
