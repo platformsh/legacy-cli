@@ -44,18 +44,20 @@ class EnvironmentSqlCommand extends CommandBase
         switch ($database['scheme']) {
             case 'pgsql':
                 $sqlCommand = "psql postgresql://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
+                $queryOption = ' -c ';
                 break;
 
             default:
                 $sqlCommand = "mysql --no-auto-rehash --database={$database['path']}"
                     . " --host={$database['host']} --port={$database['port']}"
                     . " --user={$database['username']} --password={$database['password']}";
+                $queryOption = ' --execute ';
                 break;
         }
 
         $query = $input->getArgument('query');
         if ($query) {
-            $sqlCommand .= ' --execute ' . escapeshellarg($query) . ' 2>&1';
+            $sqlCommand .= $queryOption . escapeshellarg($query) . ' 2>&1';
         }
 
         // Switch on pseudo-tty allocation when there is a local tty.
