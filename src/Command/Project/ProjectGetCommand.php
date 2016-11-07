@@ -239,7 +239,7 @@ class ProjectGetCommand extends CommandBase
             // Launch the first build.
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . self::$config->get('application.executable') . ' build</info> to repeat this.');
-            $options = ['environmentId' => $environmentId, 'noClean' => true];
+            $options = ['no-clean' => true];
             $builder = new LocalBuild($options, self::$config, $output);
             $success = $builder->build($projectRoot);
         }

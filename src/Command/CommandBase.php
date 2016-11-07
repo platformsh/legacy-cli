@@ -13,6 +13,7 @@ use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\SelfUpdate\SelfUpdater;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Command\Command;
@@ -191,7 +192,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $timestamp = time();
             $promptMigrate = true;
             if ($projectRoot) {
-                $projectConfig = $this->getProjectConfig($projectRoot);
+                $projectConfig = $this->localProject->getProjectConfig($projectRoot);
                 if (isset($projectConfig['migrate']['3.x']['last_asked']) && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
                     $promptMigrate = false;
                 }
@@ -278,7 +279,48 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             ],
         ]);
 
-        $this->runOtherCommand('self-update', ['--timeout' => 10]);
+        // Ensure classes are auto-loaded if they may be needed after the
+        // update.
+        /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
+        $shellHelper = $this->getHelper('shell');
+        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+        $currentVersion = self::$config->get('application.version');
+
+        $cliUpdater = new SelfUpdater($this->input, $this->output, self::$config, $questionHelper);
+        $cliUpdater->setAllowMajor(true);
+        $cliUpdater->setTimeout(10);
+
+        try {
+            $newVersion = $cliUpdater->update(null, $currentVersion);
+        } catch (\RuntimeException $e) {
+            if (strpos($e->getMessage(), 'Failed to download') !== false) {
+                $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
+                $newVersion = false;
+            } else {
+                throw $e;
+            }
+        }
+
+        // If the update was successful, and it's not a major version change,
+        // then prompt the user to continue after updating.
+        if ($newVersion !== false) {
+            $exitCode = 0;
+            list($currentMajorVersion,) = explode('.', $currentVersion, 2);
+            list($newMajorVersion,) = explode('.', $newVersion, 2);
+            if ($newMajorVersion === $currentMajorVersion && isset($GLOBALS['argv'])) {
+                $originalCommand = implode(' ', array_map('escapeshellarg', $GLOBALS['argv']));
+                $questionText = "\n"
+                    . 'Original command: <info>' . $originalCommand . '</info>'
+                    . "\n\n" . 'Continue?';
+                if ($questionHelper->confirm($questionText)) {
+                    $this->stdErr->writeln('');
+                    $exitCode = $shellHelper->executeSimple($originalCommand);
+                }
+            }
+            exit($exitCode);
+        }
+
         $this->stdErr->writeln('');
     }
 
@@ -336,7 +378,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $project = false;
-        $config = $this->getProjectConfig($projectRoot);
+        $config = $this->localProject->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
@@ -360,20 +402,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Get the project configuration.
-     *
-     * @param string $projectRoot
-     *
-     * @return array
-     */
-    protected function getProjectConfig($projectRoot)
-    {
-        $this->debug('Loading project config');
-
-        return $this->localProject->getProjectConfig($projectRoot) ?: [];
-    }
-
-    /**
      * Get the current environment if the user is in a project directory.
      *
      * @param Project $expectedProject The expected project.
@@ -392,21 +420,19 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($this->getProjectRoot());
-        $currentBranch = $gitHelper->getCurrentBranch();
+        $config = $this->localProject->getProjectConfig($projectRoot);
 
         // Check if there is a manual mapping set for the current branch.
-        if ($currentBranch) {
-            $config = $this->getProjectConfig($projectRoot);
-            if (!empty($config['mapping'][$currentBranch])) {
-                $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
-                if ($environment) {
-                    $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
-                    return $environment;
-                }
-                else {
-                    unset($config['mapping'][$currentBranch]);
-                    $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
-                }
+        if (!empty($config['mapping'])
+            && ($currentBranch = $gitHelper->getCurrentBranch())
+            && !empty($config['mapping'][$currentBranch])) {
+            $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
+            if ($environment) {
+                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
+                return $environment;
+            } else {
+                unset($config['mapping'][$currentBranch]);
+                $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
             }
         }
 
@@ -424,7 +450,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         // There is no Git remote set. Fall back to trying the current branch
         // name.
-        if ($currentBranch) {
+        if (!empty($currentBranch) || ($currentBranch = $gitHelper->getCurrentBranch())) {
             $environment = $this->api()->getEnvironment($currentBranch, $project, $refresh);
             if (!$environment) {
                 // Try a sanitized version of the branch name too.
@@ -737,7 +763,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $host = parse_url($url, PHP_URL_HOST);
         $path = parse_url($url, PHP_URL_PATH);
-        if ((!$path || $path === '/') && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote(self::$config->get('detection.api_domain')) . '$/', $host)) {
+        if ((!$path || $path === '/') && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote(self::$config->get('detection.site_domain')) . '$/', $host)) {
             list($env_project_app, $result['host']) = explode('.', $host, 2);
             if (($doubleDashPos = strrpos($env_project_app, '--')) !== false) {
                 $env_project = substr($env_project_app, 0, $doubleDashPos);
@@ -755,7 +781,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $result['host'] = $host;
             $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
             if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
-                $result['environmentId'] = basename($matches[1]);
+                $result['environmentId'] = rawurldecode(basename($matches[1]));
             }
         }
         if (empty($result['projectId']) || preg_match('/\W/', $result['projectId'])) {
@@ -797,7 +823,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
                 throw new \InvalidArgumentException(
                     sprintf(
-                        "You cannot use both the '%s' argument and the '--%s' option",
+                        'You cannot use both the <%s> argument and the --%s option',
                         $this->envArgName,
                         $envOptionName
                     )

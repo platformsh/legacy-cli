@@ -60,7 +60,7 @@ api:
 detection:
   git_remote_name: 'magento'
   git_domain: 'magento.cloud'
-  api_domain: 'magento.cloud'
+  site_domain: 'magentosite.cloud'
 
 # Automatic updates.
 # This can be overridden in the user config file.
