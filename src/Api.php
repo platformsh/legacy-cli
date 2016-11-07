@@ -263,17 +263,15 @@ class Api
         if (isset($projects[$id])) {
             return $projects[$id];
         }
-        // Get the project directly if a hostname is specified.
-        if (!empty($host)) {
-            $scheme = 'https';
-            if (($pos = strpos($host, '//')) !== false) {
-                $scheme = parse_url($host, PHP_URL_SCHEME);
-                $host = substr($host, $pos + 2);
-            }
-            return $this->getClient()->getProjectDirect($id, $host, $scheme != 'http');
+
+        $scheme = 'https';
+        if ($host !== null && (($pos = strpos($host, '//')) !== false)) {
+            $scheme = parse_url($host, PHP_URL_SCHEME);
+            $host = substr($host, $pos + 2);
         }
 
-        return false;
+        return $this->getClient()
+            ->getProject($id, $host, $scheme !== 'http');
     }
 
     /**
