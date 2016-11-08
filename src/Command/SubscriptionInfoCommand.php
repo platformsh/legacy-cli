@@ -54,7 +54,14 @@ class SubscriptionInfoCommand extends CommandBase
             return $this->listProperties($subscription, new Table($input, $output));
         }
 
-        $value = $this->api()->getNestedProperty($subscription, $property);
+        switch ($property) {
+            case 'url':
+                $value = $subscription->getUri(true);
+                break;
+
+            default:
+                $value = $this->api()->getNestedProperty($subscription, $property);
+        }
 
         $output->writeln($this->formatter->format($value, $property));
 

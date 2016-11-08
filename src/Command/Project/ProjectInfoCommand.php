@@ -64,6 +64,10 @@ class ProjectInfoCommand extends CommandBase
                 $value = $project->getGitUrl(false);
                 break;
 
+            case 'url':
+                $value = $project->getUri(true);
+                break;
+
             default:
                 $value = $this->api()->getNestedProperty($project, $property);
         }
