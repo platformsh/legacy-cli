@@ -24,7 +24,7 @@ function platform_local_drush {
     if [ -z $1 ]; then
         drush @${GROUP}._local status
     else
-        drush @${GROUP}._local $@
+        drush @${GROUP}._local "$@"
     fi
 }
 alias pldr=platform_local_drush
