@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "692b1d2b9397e4f60e2bac0913b96e1e",
-    "content-hash": "32661292d5ac91c5d20833777ca16d6e",
+    "hash": "94d4beae9dd14d7fd18b134d899b81fa",
+    "content-hash": "587574aca57a458dafcbdf7a8f240a1a",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -114,6 +114,50 @@
             ],
             "description": "An OAuth2 plugin (subscriber) for Guzzle",
             "time": "2015-12-12 23:27:25"
+        },
+        {
+            "name": "cweagans/composer-patches",
+            "version": "1.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cweagans/composer-patches.git",
+                "reference": "8de7c73b2eae217f4e7028d7262ff2330aa4b4e8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cweagans/composer-patches/zipball/8de7c73b2eae217f4e7028d7262ff2330aa4b4e8",
+                "reference": "8de7c73b2eae217f4e7028d7262ff2330aa4b4e8",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^1.0",
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "composer/composer": "~1.0",
+                "phpunit/phpunit": "~4.6"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "class": "cweagans\\Composer\\Patches"
+            },
+            "autoload": {
+                "psr-4": {
+                    "cweagans\\Composer\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD"
+            ],
+            "authors": [
+                {
+                    "name": "Cameron Eagans",
+                    "email": "me@cweagans.net"
+                }
+            ],
+            "description": "Provides a way to patch Composer packages.",
+            "time": "2016-03-28 18:54:21"
         },
         {
             "name": "doctrine/cache",
@@ -545,21 +589,22 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.5.8",
+            "version": "v0.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "333c52a331ca166489177ff83175385489ecd2de"
+                "reference": "fb5b0f386ab192b63b990c68904836c620c763c2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/333c52a331ca166489177ff83175385489ecd2de",
-                "reference": "333c52a331ca166489177ff83175385489ecd2de",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/fb5b0f386ab192b63b990c68904836c620c763c2",
+                "reference": "fb5b0f386ab192b63b990c68904836c620c763c2",
                 "shasum": ""
             },
             "require": {
                 "cocur/slugify": "~1.0",
                 "commerceguys/guzzle-oauth2-plugin": "~2.0",
+                "cweagans/composer-patches": "~1.0",
                 "guzzlehttp/cache-subscriber": "~0.1",
                 "guzzlehttp/guzzle": "~5.3"
             },
@@ -567,6 +612,13 @@
                 "phpunit/phpunit": "~4.5"
             },
             "type": "library",
+            "extra": {
+                "patches": {
+                    "commerceguys/guzzle-oauth2-plugin": {
+                        "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch"
+                    }
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Platformsh\\Client\\": "src"
@@ -582,7 +634,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2016-09-22 16:40:05"
+            "time": "2016-11-07 15:50:22"
         },
         {
             "name": "platformsh/console-form",
@@ -2047,16 +2099,16 @@
         },
         {
             "name": "psr/log",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-fig/log.git",
-                "reference": "5277094ed527a1c4477177d102fe4c53551953e0"
+                "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/log/zipball/5277094ed527a1c4477177d102fe4c53551953e0",
-                "reference": "5277094ed527a1c4477177d102fe4c53551953e0",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
+                "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
                 "shasum": ""
             },
             "require": {
@@ -2090,7 +2142,7 @@
                 "psr",
                 "psr-3"
             ],
-            "time": "2016-09-19 16:02:08"
+            "time": "2016-10-10 12:19:37"
         },
         {
             "name": "psy/psysh",
@@ -2582,16 +2634,16 @@
         },
         {
             "name": "symfony/var-dumper",
-            "version": "v3.1.5",
+            "version": "v3.1.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/var-dumper.git",
-                "reference": "70bfe927b86ba9999aeebd829715b0bb2cd39a10"
+                "reference": "4dc2f03b480c43f1665d3317d827a04ed6ffd11e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/70bfe927b86ba9999aeebd829715b0bb2cd39a10",
-                "reference": "70bfe927b86ba9999aeebd829715b0bb2cd39a10",
+                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/4dc2f03b480c43f1665d3317d827a04ed6ffd11e",
+                "reference": "4dc2f03b480c43f1665d3317d827a04ed6ffd11e",
                 "shasum": ""
             },
             "require": {
@@ -2641,7 +2693,7 @@
                 "debug",
                 "dump"
             ],
-            "time": "2016-09-29 14:13:09"
+            "time": "2016-10-18 15:46:07"
         },
         {
             "name": "webmozart/assert",
