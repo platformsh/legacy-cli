@@ -318,6 +318,9 @@ class Api
                 $toCache[$environment->id] = $environment->getData();
             }
 
+            ksort($environments, SORT_NATURAL | SORT_FLAG_CASE);
+            ksort($toCache, SORT_NATURAL | SORT_FLAG_CASE);
+
             // Dispatch an event if the list of environments has changed.
             if (isset($this->dispatcher) && $events && (!$cached || array_diff_key($environments, $cached))) {
                 $this->dispatcher->dispatch(

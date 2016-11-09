@@ -673,6 +673,25 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return $environment;
         }
 
+        // If there is interactive input, offer the user a choice.
+        if (isset($this->input)
+            && $this->input->isInteractive()
+            && ($environments = $this->api()->getEnvironments($this->project))) {
+            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
+            $questionHelper = $this->getHelper('question');
+            $options = [];
+            foreach ($environments as $environment) {
+                $options[$environment->id] = $environment->title;
+                if ($environment->id !== $environment->title) {
+                    $options[$environment->id] .= ' (<comment>' . $environment->id . '</comment>)';
+                }
+            }
+            $default = isset($options['master']) ? 'master' : null;
+            $environmentId = $questionHelper->choose($options, 'Enter a number to choose an environment:', $default);
+
+            return $environments[$environmentId];
+        }
+
         if ($this->getProjectRoot()) {
             $message = 'Could not determine the current environment.'
                 . "\n" . 'Specify it manually using --environment (-e).';
