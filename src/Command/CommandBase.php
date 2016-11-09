@@ -673,18 +673,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return $environment;
         }
 
-        $message = "Could not determine the current environment.";
         if ($this->getProjectRoot()) {
-            throw new \RuntimeException(
-                'Could not determine the current environment.'
-                . "\n" . 'Specify it manually using --environment (-e).'
-            );
+            $message = 'Could not determine the current environment.'
+                . "\n" . 'Specify it manually using --environment (-e).';
         } else {
-            throw new \RuntimeException(
-                'No environment specified.'
-                . "\n" . 'Specify one using --environment (-e), or go to a project directory.'
-            );
+            $message = 'No environment specified.'
+                . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
         }
+        throw new \RuntimeException($message);
     }
 
     /**
