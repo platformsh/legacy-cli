@@ -5,12 +5,11 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Util\RelationshipsUtil;
-use Symfony\Component\Console\Input\InputOption;
+use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 class EnvironmentSqlSizeCommand extends CommandBase {
 
@@ -18,9 +17,9 @@ class EnvironmentSqlSizeCommand extends CommandBase {
         $this
             ->setName('environment:sql-size')
             ->setAliases(['sqls'])
-            ->setDescription('Database size check')
-            ->addOption('yaml', NULL, InputOption::VALUE_NONE, 'Format the response as YAML.');
+            ->setDescription('Estimate the disk usage of a database');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        Table::addFormatOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
@@ -87,28 +86,24 @@ class EnvironmentSqlSizeCommand extends CommandBase {
 
         $percentsUsed = $estimatedUsage * 100 / $allocatedDisk;
 
-        // @todo: yaml output
-        if ($input->getOption('yaml')) {
-            $output->writeln(
-                Yaml::dump(
-                    [
-                        'max' => (int) $allocatedDisk,
-                        'used' => (int) $estimatedUsage,
-                        'percent_used' => (int) $percentsUsed . "%"
-                    ]
-                )
-            );
-            return;
-        }
-        $io = new SymfonyStyle($input, $output);
-        $io->title('Estimated database server usage');
-        $io->listing(
-            [
-                'Allocated disk size: '. (int) $allocatedDisk . ' MB',
-                'Estimated usage: '. (int) $estimatedUsage . ' MB',
-                'Percentage of used space: '. (int) $percentsUsed . "%",
-            ]
-        );
+        $table = new Table($input, $output);
+        $propertyNames = [
+            'max',
+            'used',
+            'percent_used',
+        ];
+        $machineReadable = $table->formatIsMachineReadable();
+        $values = [
+            (int) $allocatedDisk . ($machineReadable ? '' : 'MB'),
+            (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
+            (int) $percentsUsed . '%',
+        ];
+
+        $this->stdErr->writeln('Estimated disk usage for the database: <comment>' . $dbServiceName . '</comment>');
+
+        $table->renderSimple($values, $propertyNames);
+
+        return 0;
     }
 
 
