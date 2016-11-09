@@ -37,7 +37,7 @@ class EnvironmentBranchCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->envArgName = 'parent';
-        $this->validateInput($input, true);
+        $this->validateInput($input);
         $selectedProject = $this->getSelectedProject();
         $parentEnvironment = $this->getSelectedEnvironment();
 

@@ -103,6 +103,9 @@ EOF
         $toDelete = array_diff_key($toDelete, array_flip($input->getOption('exclude')));
 
         if (empty($toDelete)) {
+            $this->stdErr->writeln('No environment(s) to delete.');
+            $this->stdErr->writeln('Use --environment (-e) to specify an environment.');
+
             return 1;
         }
 
