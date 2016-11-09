@@ -7,7 +7,6 @@ use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
@@ -32,8 +31,6 @@ class EnvironmentSqlSizeCommand extends CommandBase {
 
         /** @var ShellHelper $shellHelper */
         $shellHelper = $this->getHelper('shell');
-        $bufferedOutput = new BufferedOutput();
-        $shellHelper->setOutput($bufferedOutput);
 
         // Get and parse app config.
         $args = ['ssh', $sshUrl, 'echo $' . self::$config->get('service.env_prefix') . 'APPLICATION'];
