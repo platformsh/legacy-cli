@@ -70,6 +70,10 @@ class EnvironmentSqlSizeCommand extends CommandBase
         // Load services yaml.
         $services = Yaml::parse(file_get_contents($projectRoot . '/.platform/services.yaml'));
         $allocatedDisk = $services[$dbServiceName]['disk'];
+        if(empty($allocatedDisk)) {
+            $this->stdErr->writeln('The disk size could not be estimated.');
+            return 1;
+        }
 
         $this->stdErr->write('Querying database <comment>' . $dbServiceName . '</comment> to estimate disk usage. ');
         $this->stdErr->writeln('This might take a while.');
