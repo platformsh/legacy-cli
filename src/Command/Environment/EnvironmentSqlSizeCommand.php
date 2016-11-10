@@ -18,7 +18,10 @@ class EnvironmentSqlSizeCommand extends CommandBase
         $this
             ->setName('environment:sql-size')
             ->setAliases(['sqls'])
-            ->setDescription('Estimate the disk usage of a database');
+            ->setDescription('Estimate the disk usage of a database')
+            ->setHelp(
+                "This command provides an estimate of the database's disk usage. It is not guaranteed to be reliable."
+            );
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Table::addFormatOption($this->getDefinition());
     }
@@ -53,6 +56,9 @@ class EnvironmentSqlSizeCommand extends CommandBase
         if (empty($database)) {
             return 1;
         }
+
+        $this->stdErr->write('Querying database <comment>' . $dbServiceName . '</comment> to estimate disk usage. ');
+        $this->stdErr->writeln('This might take a while.');
 
         $command = ['ssh'];
         // Switch on pseudo-tty allocation when there is a local tty.
@@ -94,8 +100,6 @@ class EnvironmentSqlSizeCommand extends CommandBase
             (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
             (int) $percentsUsed . '%',
         ];
-
-        $this->stdErr->writeln('Estimated disk usage for the database: <comment>' . $dbServiceName . '</comment>');
 
         $table->renderSimple($values, $propertyNames);
 
