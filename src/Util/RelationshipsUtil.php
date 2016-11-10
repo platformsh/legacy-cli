@@ -54,14 +54,6 @@ class RelationshipsUtil
             return false;
         }
 
-        // If there is a single choice, return it early.
-        if (count($relationships) === 1) {
-            $relationship = reset($relationships);
-            if (count($relationship) === 1) {
-                return reset($relationship);
-            }
-        }
-
         $questionHelper = new QuestionHelper($input, $this->output);
         $choices = [];
         $separator = '.';
@@ -74,6 +66,10 @@ class RelationshipsUtil
         $choice = $questionHelper->choose($choices, 'Enter a number to choose a database:');
         list($name, $key) = explode($separator, $choice, 2);
         $database = $relationships[$name][$key];
+
+        // Add metadata about the database.
+        $database['_relationship_name'] = $name;
+        $database['_relationship_key'] = $key;
 
         return $database;
     }

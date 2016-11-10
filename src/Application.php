@@ -132,6 +132,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentSshCommand();
         $commands[] = new Command\Environment\EnvironmentSqlCommand();
         $commands[] = new Command\Environment\EnvironmentSqlDumpCommand();
+        $commands[] = new Command\Environment\EnvironmentSqlSizeCommand();
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
         $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();
