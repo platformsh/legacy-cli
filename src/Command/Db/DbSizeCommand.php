@@ -1,5 +1,5 @@
 <?php
-namespace Platformsh\Cli\Command\Environment;
+namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -11,14 +11,12 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
-class EnvironmentSqlSizeCommand extends CommandBase
+class DbSizeCommand extends CommandBase
 {
 
     protected function configure()
     {
-        $this
-            ->setName('environment:sql-size')
-            ->setAliases(['sqls'])
+        $this->setName('db:size')
             ->setDescription('Estimate the disk usage of a database')
             ->setHelp(
                 "This command provides an estimate of the database's disk usage. It is not guaranteed to be reliable."
