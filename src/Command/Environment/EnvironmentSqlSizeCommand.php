@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,42 +30,53 @@ class EnvironmentSqlSizeCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($this->selectApp($input));
-
-        /** @var ShellHelper $shellHelper */
-        $shellHelper = $this->getHelper('shell');
-
-        // Get and parse app config.
-        $args = ['ssh', $sshUrl, 'echo $' . self::$config->get('service.env_prefix') . 'APPLICATION'];
-        $result = $shellHelper->execute($args, null, true);
-        $appConfig = json_decode(base64_decode($result), true);
-        $databaseService = $appConfig['relationships']['database'];
-        list($dbServiceName, $dbServiceType) = explode(":", $databaseService);
-
-        // Load services yaml.
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
-        $services = Yaml::parse(file_get_contents($projectRoot . '/.platform/services.yaml'));
-        $allocatedDisk = $services[$dbServiceName]['disk'];
+        $appName = $this->selectApp($input);
+
+        $sshUrl = $this->getSelectedEnvironment()
+            ->getSshUrl($appName);
+
+        // Get and parse app config.
+        $app = LocalApplication::getApplication($appName, $projectRoot);
+        $appConfig = $app->getConfig();
+        if (empty($appConfig['relationships'])) {
+            $this->stdErr->writeln('No application relationships found.');
+            return 1;
+        }
 
         $util = new RelationshipsUtil($this->stdErr);
         $database = $util->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
+            $this->stdErr->writeln('No database selected.');
             return 1;
         }
+
+        // Find the database's service name in the relationships.
+        $dbServiceName = false;
+        foreach ($appConfig['relationships'] as $relationshipName => $relationship) {
+            if ($database['_relationship_name'] === $relationshipName) {
+                list($dbServiceName,) = explode(':', $relationship, 2);
+                break;
+            }
+        }
+        if (!$dbServiceName) {
+            $this->stdErr->writeln('Service name not found for relationship: ' . $database['_relationship_name']);
+            return 1;
+        }
+
+        // Load services yaml.
+        $services = Yaml::parse(file_get_contents($projectRoot . '/.platform/services.yaml'));
+        $allocatedDisk = $services[$dbServiceName]['disk'];
 
         $this->stdErr->write('Querying database <comment>' . $dbServiceName . '</comment> to estimate disk usage. ');
         $this->stdErr->writeln('This might take a while.');
 
+        /** @var ShellHelper $shellHelper */
+        $shellHelper = $this->getHelper('shell');
         $command = ['ssh'];
-        // Switch on pseudo-tty allocation when there is a local tty.
-        if ($this->isTerminal($output)) {
-            $command[] = '-t';
-        }
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $command[] = '-vv';
         } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
