@@ -74,19 +74,7 @@ class EnvironmentDrushCommand extends CommandBase
         // available.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot && $this->selectedProjectIsCurrent()) {
-            $apps = LocalApplication::getApplications($projectRoot, self::$config);
-            /** @var LocalApplication $app */
-            if (count($apps) === 1 && $appName === null) {
-                $app = reset($apps);
-            }
-            else {
-                foreach ($apps as $possibleApp) {
-                    if ($possibleApp->getName() === $appName) {
-                        $app = $possibleApp;
-                        break;
-                    }
-                }
-            }
+            $app = LocalApplication::getApplication($appName, $projectRoot, self::$config);
         }
 
         // Use the local application configuration (if available) to determine

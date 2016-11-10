@@ -233,7 +233,7 @@ class LocalApplication
      * @param CliConfig|null $config
      *     CLI configuration.
      *
-     * @return static[]
+     * @return LocalApplication[]
      */
     public static function getApplications($directory, CliConfig $config = null)
     {
@@ -252,8 +252,7 @@ class LocalApplication
         $applications = [];
         if ($finder->count() == 0) {
             $applications[$directory] = new LocalApplication($directory, $config, $directory);
-        }
-        else {
+        } else {
             /** @var \Symfony\Component\Finder\SplFileInfo $file */
             foreach ($finder as $file) {
                 $appRoot = dirname($file->getRealPath());
@@ -262,6 +261,33 @@ class LocalApplication
         }
 
         return $applications;
+    }
+
+    /**
+     * Get a single application by name.
+     *
+     * @param string|null $name
+     *     The application name.
+     * @param string $directory
+     *     The absolute path to a directory.
+     * @param CliConfig|null $config
+     *     CLI configuration.
+     *
+     * @return LocalApplication
+     */
+    public static function getApplication($name, $directory, CliConfig $config = null)
+    {
+        $apps = self::getApplications($directory, $config);
+        if ($name === null && count($apps) === 1) {
+            return reset($apps);
+        }
+        foreach ($apps as $app) {
+            if ($app->getName() === $name) {
+                return $app;
+            }
+        }
+
+        throw new \InvalidArgumentException('App not found: ' . $name);
     }
 
     /**

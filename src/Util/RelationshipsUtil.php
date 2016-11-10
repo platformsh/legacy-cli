@@ -37,22 +37,39 @@ class RelationshipsUtil
     public function chooseDatabase($sshUrl, InputInterface $input)
     {
         $relationships = $this->getRelationships($sshUrl);
-        if (empty($relationships['database'])) {
-            $this->output->writeln("No databases found");
+
+        // Filter to find database (mysql and pgsql) relationships.
+        $relationships = array_filter($relationships, function (array $relationship) {
+            foreach ($relationship as $key => $service) {
+                if ($service['scheme'] === 'mysql' || $service['scheme'] === 'pgsql') {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        if (empty($relationships)) {
+            $this->output->writeln('No databases found');
             return false;
         }
-        elseif (count($relationships['database']) > 1) {
-            $questionHelper = new QuestionHelper($input, $this->output);
-            $choices = [];
-            foreach ($relationships['database'] as $key => $database) {
-                $choices[$key] = $database['host'] . '/' . $database['path'];
+
+        $questionHelper = new QuestionHelper($input, $this->output);
+        $choices = [];
+        $separator = '.';
+        foreach ($relationships as $name => $relationship) {
+            $serviceCount = count($relationship);
+            foreach ($relationship as $key => $service) {
+                $choices[$name . $separator . $key] = $name . ($serviceCount > 1 ? '.' . $key : '');
             }
-            $key = $questionHelper->choose($choices, 'Enter a number to choose a database');
-            $database = $relationships['database'][$key];
         }
-        else {
-            $database = reset($relationships['database']);
-        }
+        $choice = $questionHelper->choose($choices, 'Enter a number to choose a database:');
+        list($name, $key) = explode($separator, $choice, 2);
+        $database = $relationships[$name][$key];
+
+        // Add metadata about the database.
+        $database['_relationship_name'] = $name;
+        $database['_relationship_key'] = $key;
 
         return $database;
     }

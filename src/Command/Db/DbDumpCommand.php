@@ -1,5 +1,5 @@
 <?php
-namespace Platformsh\Cli\Command\Environment;
+namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -10,19 +10,19 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentSqlDumpCommand extends CommandBase
+class DbDumpCommand extends CommandBase
 {
 
     protected function configure()
     {
-        $this
-            ->setName('environment:sql-dump')
+        $this->setName('db:dump')
             ->setAliases(['sql-dump'])
             ->setDescription('Create a local dump of the remote database')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>--<environment ID>--dump.sql" in the project root')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        $this->setHiddenAliases(['environment:sql-dump']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

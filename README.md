@@ -81,6 +81,10 @@ auth
   auth:info                                 Display your account information
   auth:login (login)                        Log in to Platform.sh
   auth:logout (logout)                      Log out of Platform.sh
+db
+  db:dump (sql-dump)                        Create a local dump of the remote database
+  db:size                                   Estimate the disk usage of a database
+  db:sql (sql)                              Run SQL on the remote database
 domain
   domain:add                                Add a new domain to the project
   domain:delete                             Delete a domain from the project
@@ -100,8 +104,6 @@ environment
   environment:merge (merge)                 Merge an environment
   environment:relationships (relationships)   Show an environment's relationships
   environment:routes (routes)               List an environment's routes
-  environment:sql (sql)                     Run SQL on the remote database
-  environment:sql-dump (sql-dump)           Create a local dump of the remote database
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment
