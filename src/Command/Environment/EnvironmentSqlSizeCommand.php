@@ -77,13 +77,6 @@ class EnvironmentSqlSizeCommand extends CommandBase
         /** @var ShellHelper $shellHelper */
         $shellHelper = $this->getHelper('shell');
         $command = ['ssh'];
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $command[] = '-vv';
-        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-            $command[] = '-v';
-        } elseif ($output->getVerbosity() <= OutputInterface::VERBOSITY_VERBOSE) {
-            $command[] = '-q';
-        }
         $command[] = $sshUrl;
         switch ($database['scheme']) {
             case 'pgsql':
