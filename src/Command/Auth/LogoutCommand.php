@@ -16,7 +16,7 @@ class LogoutCommand extends CommandBase
             ->setName('auth:logout')
             ->setAliases(['logout'])
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
-            ->setDescription('Log out of ' . self::$config->get('service.name'));
+            ->setDescription('Log out of ' . $this->config()->get('service.name'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -35,7 +35,7 @@ class LogoutCommand extends CommandBase
         }
 
         // Ask for a confirmation.
-        if ($this->api()->isLoggedIn() && !$this->getHelper('question')->confirm("Are you sure you wish to log out?")) {
+        if ($this->api()->isLoggedIn() && !$this->getService('question_helper')->confirm("Are you sure you wish to log out?")) {
             $this->stdErr->writeln('You remain logged in.');
 
             return 1;
@@ -51,14 +51,14 @@ class LogoutCommand extends CommandBase
         $sessionsDir = $this->getSessionsDir();
         if ($input->getOption('all')) {
             if (is_dir($sessionsDir)) {
-                /** @var \Platformsh\Cli\Helper\FilesystemHelper $fs */
-                $fs = $this->getHelper('fs');
+                /** @var \Platformsh\Cli\Service\Filesystem $fs */
+                $fs = $this->getService('fs');
                 $fs->remove($sessionsDir);
                 $this->stdErr->writeln('All session files have been deleted.');
             }
         }
         elseif (is_dir($sessionsDir) && glob($sessionsDir . '/sess-cli-*', GLOB_NOSORT)) {
-            $this->stdErr->writeln('Other session files exist. Delete them with: <comment>' . self::$config->get('application.executable') . ' logout --all</comment>');
+            $this->stdErr->writeln('Other session files exist. Delete them with: <comment>' . $this->config()->get('application.executable') . ' logout --all</comment>');
         }
 
         return 0;

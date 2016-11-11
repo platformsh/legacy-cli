@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\Toolstack\Drupal;
-use Platformsh\Cli\Util\SshUtil;
+use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -22,6 +22,7 @@ class EnvironmentDrushCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
+        Ssh::configureInput($this->getDefinition());
         $this->addExample('Run "drush status" on the remote environment');
         $this->addExample('Enable the Overlay module on the remote environment', "'en overlay'");
     }
@@ -70,7 +71,7 @@ class EnvironmentDrushCommand extends CommandBase
         // available.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot && $this->selectedProjectIsCurrent()) {
-            $app = LocalApplication::getApplication($appName, $projectRoot, self::$config);
+            $app = LocalApplication::getApplication($appName, $projectRoot, $this->config());
         }
 
         // Use the local application configuration (if available) to determine
@@ -82,7 +83,7 @@ class EnvironmentDrushCommand extends CommandBase
             // Fall back to the PLATFORM_DOCUMENT_ROOT environment variable,
             // which is usually correct, except where the document_root was
             // specified as '/'.
-            $documentRootEnvVar = self::$config->get('service.env_prefix') . 'DOCUMENT_ROOT';
+            $documentRootEnvVar = $this->config()->get('service.env_prefix') . 'DOCUMENT_ROOT';
             $drupalRoot = '${' . $documentRootEnvVar . ':-/app/public}';
 
             $this->debug('<comment>Warning:</comment> using $' . $documentRootEnvVar . ' for the Drupal root. This fails in cases where the document_root is /.');
@@ -98,11 +99,10 @@ class EnvironmentDrushCommand extends CommandBase
         }
         $sshDrushCommand .= ' ' . $drushCommand . ' 2>&1';
 
-        $sshUtil = new SshUtil($input, $output);
-        $command = $sshUtil->getSshCommand()
+        $command = $this->getService('ssh')->getSshCommand()
             . ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sshDrushCommand);
 
-        return $this->getHelper('shell')->executeSimple($command);
+        return $this->getService('shell')->executeSimple($command);
     }
 }

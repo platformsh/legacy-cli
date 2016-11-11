@@ -1,9 +1,7 @@
 <?php
 
-namespace Platformsh\Cli\Helper;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Console\OutputAwareInterface;
-use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -11,7 +9,7 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\ProcessBuilder;
 
-class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInterface
+class Shell
 {
 
     /** @var OutputInterface */
@@ -19,18 +17,15 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
 
     protected $defaultTimeout = 3600;
 
-    public function getName()
-    {
-        return 'shell';
-    }
-
     public function __construct(OutputInterface $output = null)
     {
         $this->output = $output ?: new NullOutput();
     }
 
     /**
-     * {@inheritdoc}
+     * Change the output object.
+     *
+     * @param OutputInterface $output
      */
     public function setOutput(OutputInterface $output)
     {
@@ -54,16 +49,27 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
     {
         $this->output->writeln('Running command: <info>' . $commandline. '</info>', OutputInterface::VERBOSITY_VERBOSE);
 
-        $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir, $env ? $env + $_ENV : null);
+        $env = $env ? $env + $this->getParentEnv() : null;
+        $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir, $env);
 
         return proc_close($process);
     }
 
     /**
-     * @inheritdoc
+     * Execute a command.
+     *
+     * @param array       $args
+     * @param string|null $dir
+     * @param bool        $mustRun
+     * @param bool        $quiet
+     * @param array       $env
      *
      * @throws \Exception
      *   If $mustRun is enabled and the command fails.
+     *
+     * @return bool|string
+     *   False if the command fails, true if it succeeds with no output, or a
+     *   string if it succeeds with output.
      */
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [])
     {
@@ -117,11 +123,16 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
     }
 
     /**
+     * Run a process.
+     *
      * @param Process     $process
      * @param bool        $mustRun
      * @param bool        $quiet
      *
      * @return int|string
+     *   The exit code of the process if it fails, true if it succeeds with no
+     *   output, or a string if it succeeds with output.
+     *
      * @throws \Exception
      */
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
@@ -184,7 +195,11 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
     }
 
     /**
-     * @inheritdoc
+     * Test whether a CLI command exists.
+     *
+     * @param string $command
+     *
+     * @return bool
      */
     public function commandExists($command)
     {
@@ -192,7 +207,11 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
     }
 
     /**
-     * {@inheritdoc}
+     * Find the absolute path to an executable.
+     *
+     * @param string $command
+     *
+     * @return string
      */
     public function resolveCommand($command)
     {

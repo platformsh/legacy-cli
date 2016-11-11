@@ -2,8 +2,8 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\RelationshipsUtil;
-use Platformsh\Cli\Util\SshUtil;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\Relationships;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,8 +22,8 @@ class DbDumpCommand extends CommandBase
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
-        RelationshipsUtil::configureInput($this->getDefinition());
-        SshUtil::configureInput($this->getDefinition());
+        Relationships::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
         $this->setHiddenAliases(['environment:sql-dump']);
     }
 
@@ -39,8 +39,8 @@ class DbDumpCommand extends CommandBase
         if (!$input->getOption('stdout')) {
             if ($input->getOption('file')) {
                 $dumpFile = rtrim($input->getOption('file'), '/');
-                /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-                $fsHelper = $this->getHelper('fs');
+                /** @var \Platformsh\Cli\Service\Filesystem $fs */
+                $fs = $this->getService('fs');
 
                 // Insert the timestamp into the filename.
                 if ($timestamp) {
@@ -55,7 +55,7 @@ class DbDumpCommand extends CommandBase
                 }
 
                 // Make the filename absolute.
-                $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
+                $dumpFile = $fs->makePathAbsolute($dumpFile);
 
                 // Ensure the filename is not a directory.
                 if (is_dir($dumpFile)) {
@@ -71,8 +71,8 @@ class DbDumpCommand extends CommandBase
 
         if (isset($dumpFile)) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-                $questionHelper = $this->getHelper('question');
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
                 if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
                     return 1;
                 }
@@ -80,12 +80,9 @@ class DbDumpCommand extends CommandBase
             $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
         }
 
-        $sshUtil = new SshUtil($input, $output);
+        $relationships = $this->getService('relationships');
 
-        $relationshipsUtil = new RelationshipsUtil($this->stdErr);
-        $relationshipsUtil->setSshUtil($sshUtil);
-
-        $database = $relationshipsUtil->chooseDatabase($sshUrl, $input);
+        $database = $relationships->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
         }
@@ -106,14 +103,14 @@ class DbDumpCommand extends CommandBase
 
         set_time_limit(0);
 
-        $command = $sshUtil->getSshCommand()
+        $command = $this->getService('ssh')->getSshCommand()
             . ' -C ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($dumpCommand);
         if (isset($dumpFile)) {
             $command .= ' > ' . escapeshellarg($dumpFile);
         }
 
-        return $this->getHelper('shell')->executeSimple($command);
+        return $this->getService('shell')->executeSimple($command);
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Tests;
 
-use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Service\Shell;
 
 class ShellHelperTest extends \PHPUnit_Framework_TestCase
 {
@@ -12,7 +12,7 @@ class ShellHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testExecute()
     {
-        $shellHelper = new ShellHelper();
+        $shellHelper = new Shell();
 
         // Find a command that will work on all platforms.
         $workingCommand = strpos(PHP_OS, 'WIN') !== false ? 'help' : 'pwd';

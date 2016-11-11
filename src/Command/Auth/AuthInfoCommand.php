@@ -2,8 +2,7 @@
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -26,7 +25,7 @@ class AuthInfoCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $info = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
-        $formatter = new PropertyFormatter($input);
+        $formatter = $this->getService('property_formatter');
         $propertyWhitelist = ['id', 'uuid', 'display_name', 'username', 'mail', 'has_key'];
         $info = array_intersect_key($info, array_flip($propertyWhitelist));
 
@@ -62,7 +61,7 @@ class AuthInfoCommand extends CommandBase
                 $header[] = $property;
             }
         }
-        $table = new Table($input, $output);
+        $table = $this->getService('table');
         $table->renderSimple($values, $header);
 
         return 0;

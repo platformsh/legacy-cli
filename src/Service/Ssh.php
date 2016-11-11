@@ -1,13 +1,13 @@
 <?php
 
-namespace Platformsh\Cli\Util;
+namespace Platformsh\Cli\Service;
 
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshUtil
+class Ssh
 {
     protected $input;
     protected $output;

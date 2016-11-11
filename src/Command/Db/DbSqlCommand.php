@@ -2,8 +2,8 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\RelationshipsUtil;
-use Platformsh\Cli\Util\SshUtil;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\Relationships;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,8 +18,8 @@ class DbSqlCommand extends CommandBase
             ->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
-        RelationshipsUtil::configureInput($this->getDefinition());
-        SshUtil::configureInput($this->getDefinition());
+        Relationships::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
         $this->addExample('Open an SQL console on the remote database');
         $this->addExample('View tables on the remote database', "'SHOW TABLES'");
         $this->addExample('Import a dump file into the remote database', '< dump.sql');
@@ -36,12 +36,7 @@ class DbSqlCommand extends CommandBase
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($this->selectApp($input));
 
-        $sshUtil = new SshUtil($input, $output);
-
-        $relationshipsUtil = new RelationshipsUtil($this->stdErr);
-        $relationshipsUtil->setSshUtil($sshUtil);
-
-        $database = $relationshipsUtil->chooseDatabase($sshUrl, $input);
+        $database = $this->getService('relationships')->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
         }
@@ -65,13 +60,13 @@ class DbSqlCommand extends CommandBase
             $sqlCommand .= $queryOption . escapeshellarg($query) . ' 2>&1';
         }
 
-        $sshCommand = $sshUtil->getSshCommand();
+        $sshCommand = $this->getService('ssh')->getSshCommand();
         if ($this->isTerminal($output)) {
             $sshCommand .= ' -t';
         }
         $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sqlCommand);
 
-        return $this->getHelper('shell')->executeSimple($sshCommand);
+        return $this->getService('shell')->executeSimple($sshCommand);
     }
 }

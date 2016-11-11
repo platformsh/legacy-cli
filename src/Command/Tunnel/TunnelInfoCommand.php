@@ -1,8 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\Util;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -46,7 +45,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             $this->stdErr->writeln('No tunnels found.');
 
             if (count($tunnels) > count($relationships)) {
-                $this->stdErr->writeln("List all tunnels with: <info>" . self::$config->get('application.executable') . " tunnels --all</info>");
+                $this->stdErr->writeln("List all tunnels with: <info>" . $this->config()->get('application.executable') . " tunnels --all</info>");
             }
 
             return 1;
@@ -72,7 +71,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             }
         }
 
-        $formatter = new PropertyFormatter();
+        $formatter = $this->getService('property_formatter');
         $formatter->yamlInline = 10;
         $output->writeln($formatter->format($value, $property));
 

@@ -15,10 +15,10 @@ class LoginCommand extends CommandBase
         $this
             ->setName('auth:login')
             ->setAliases(['login'])
-            ->setDescription('Log in to ' . self::$config->get('service.name'));
-        $help = 'Use this command to log in to your ' . self::$config->get('service.name') . ' account.'
-            . "\n\nYou can create an account at:\n    <info>" . self::$config->get('service.accounts_url') . '</info>'
-            . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>" . self::$config->get('service.accounts_url') . '/user/password</info>';
+            ->setDescription('Log in to ' . $this->config()->get('service.name'));
+        $help = 'Use this command to log in to your ' . $this->config()->get('service.name') . ' account.'
+            . "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.accounts_url') . '</info>'
+            . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>" . $this->config()->get('service.accounts_url') . '/user/password</info>';
         $this->setHelp($help);
     }
 
@@ -33,7 +33,7 @@ class LoginCommand extends CommandBase
             throw new \Exception('Non-interactive login not supported');
         }
 
-        $this->stdErr->writeln('Please log in using your <info>' . self::$config->get('service.name') . '</info> account.');
+        $this->stdErr->writeln('Please log in using your <info>' . $this->config()->get('service.name') . '</info> account.');
         $this->stdErr->writeln('');
         $this->configureAccount($input, $this->stdErr);
 
@@ -48,8 +48,8 @@ class LoginCommand extends CommandBase
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)
     {
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $helper */
-        $helper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $question = new Question('Your email address: ');
         $question->setValidator(
@@ -64,7 +64,7 @@ class LoginCommand extends CommandBase
             }
         );
         $question->setMaxAttempts(5);
-        $email = $helper->ask($input, $output, $question);
+        $email = $questionHelper->ask($input, $output, $question);
 
         $question = new Question('Your password: ');
         $question->setValidator(
@@ -78,7 +78,7 @@ class LoginCommand extends CommandBase
         );
         $question->setHidden(true);
         $question->setMaxAttempts(5);
-        $password = $helper->ask($input, $output, $question);
+        $password = $questionHelper->ask($input, $output, $question);
 
         try {
             $this->api()->getClient(false)
@@ -117,12 +117,12 @@ class LoginCommand extends CommandBase
                 });
                 $question->setMaxAttempts(5);
                 $output->writeln("\nTwo-factor authentication is required.");
-                $helper->ask($input, $output, $question);
+                $questionHelper->ask($input, $output, $question);
             }
             elseif ($e->getResponse()->getStatusCode() === 401) {
                 $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
                 $output->writeln("Forgot your password? Or don't have a password yet? Visit:");
-                $output->writeln("  <comment>" . self::$config->get('service.accounts_url') . "/user/password</comment>\n");
+                $output->writeln("  <comment>" . $this->config()->get('service.accounts_url') . "/user/password</comment>\n");
                 $this->configureAccount($input, $output);
             }
             else {

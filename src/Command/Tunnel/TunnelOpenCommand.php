@@ -1,9 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\ProcessManager;
-use Platformsh\Cli\Util\RelationshipsUtil;
-use Platformsh\Cli\Util\SshUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -20,7 +19,7 @@ class TunnelOpenCommand extends TunnelCommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
-        SshUtil::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
     }
 
     /**
@@ -34,8 +33,8 @@ class TunnelOpenCommand extends TunnelCommandBase
         $environment = $this->getSelectedEnvironment();
 
         if ($environment->id === 'master') {
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
             if (!$questionHelper->confirm('Are you sure you want to open SSH tunnel(s) to the <comment>master</comment> (production) environment?', false)) {
                 return 1;
             }
@@ -44,20 +43,19 @@ class TunnelOpenCommand extends TunnelCommandBase
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
 
-        $util = new RelationshipsUtil($this->stdErr);
-        $relationships = $util->getRelationships($sshUrl);
+        $relationships = $this->getService('relationships')->getRelationships($sshUrl);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
         }
 
-        $logFile = self::$config->getUserConfigDir() . '/tunnels.log';
+        $logFile = $this->config()->getUserConfigDir() . '/tunnels.log';
         if (!$log = $this->openLog($logFile)) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: %s', $logFile));
             return 1;
         }
 
-        $sshArgs = (new SshUtil($input, $output))->getSshArgs();
+        $sshArgs = $this->getService('ssh')->getSshArgs();
 
         $log->setVerbosity($output->getVerbosity());
 
@@ -131,9 +129,9 @@ class TunnelOpenCommand extends TunnelCommandBase
 
         if (!$error) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln("List tunnels with: <info>" . self::$config->get('application.executable') . " tunnels</info>");
-            $this->stdErr->writeln("View tunnel details with: <info>" . self::$config->get('application.executable') . " tunnel:info</info>");
-            $this->stdErr->writeln("Close tunnels with: <info>" . self::$config->get('application.executable') . " tunnel:close</info>");
+            $this->stdErr->writeln("List tunnels with: <info>" . $this->config()->get('application.executable') . " tunnels</info>");
+            $this->stdErr->writeln("View tunnel details with: <info>" . $this->config()->get('application.executable') . " tunnel:info</info>");
+            $this->stdErr->writeln("Close tunnels with: <info>" . $this->config()->get('application.executable') . " tunnel:close</info>");
         }
 
         $processManager->killParent($error);

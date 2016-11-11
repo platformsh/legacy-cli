@@ -2,8 +2,8 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Cli\Util\SshUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -30,7 +30,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption("Do not wait for the environment to be branched");
-        SshUtil::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
 
@@ -62,7 +62,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
-            $checkout = $this->getHelper('question')
+            $checkout = $this->getService('question_helper')
                              ->confirm(
                                  "The environment <comment>$branchName</comment> already exists. Check out?"
                              );
@@ -92,8 +92,8 @@ class EnvironmentBranchCommand extends CommandBase
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot && $force) {
             $this->stdErr->writeln(
-                "<comment>This command was run from outside your local project root, so the new " . self::$config->get('service.name') . " branch cannot be checked out in your local Git repository."
-                . " Make sure to run '" . self::$config->get('application.executable') . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
+                "<comment>This command was run from outside your local project root, so the new " . $this->config()->get('service.name') . " branch cannot be checked out in your local Git repository."
+                . " Make sure to run '" . $this->config()->get('application.executable') . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
             );
         } elseif (!$projectRoot) {
             $this->stdErr->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
@@ -111,19 +111,18 @@ class EnvironmentBranchCommand extends CommandBase
         // Clear the environments cache, as branching has started.
         $this->api()->clearEnvironmentsCache($selectedProject->id);
 
-        /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
-        $gitHelper = $this->getHelper('git');
-        $sshUtil = new SshUtil($input, $output);
-        $gitHelper->setSshCommand($sshUtil->getSshCommand());
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $git->setSshCommand($this->getService('ssh')->getSshCommand());
 
         if ($projectRoot) {
-            $gitHelper->setDefaultRepositoryDir($projectRoot);
+            $git->setDefaultRepositoryDir($projectRoot);
 
             // If the Git branch already exists locally, just check it out.
-            $existsLocally = $gitHelper->branchExists($branchName);
+            $existsLocally = $git->branchExists($branchName);
             if ($existsLocally) {
                 $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
-                if (!$gitHelper->checkOut($branchName)) {
+                if (!$git->checkOut($branchName)) {
                     $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
@@ -131,10 +130,10 @@ class EnvironmentBranchCommand extends CommandBase
                 }
             } else {
                 // Create a new branch, using the parent if it exists locally.
-                $parent = $gitHelper->branchExists($parentEnvironment->id) ? $parentEnvironment->id : null;
+                $parent = $git->branchExists($parentEnvironment->id) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
 
-                if (!$gitHelper->checkOutNew($branchName, $parent)) {
+                if (!$git->checkOutNew($branchName, $parent)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
@@ -155,18 +154,18 @@ class EnvironmentBranchCommand extends CommandBase
             if ($remoteSuccess && $projectRoot) {
                 // Determine the correct upstream for the new branch. If there is an
                 // 'origin' remote, then it has priority.
-                $upstreamRemote = self::$config->get('detection.git_remote_name');
-                $originRemoteUrl = $gitHelper->getConfig('remote.origin.url');
-                if ($originRemoteUrl !== $selectedProject->getGitUrl(false) && $gitHelper->remoteBranchExists('origin', $branchName)) {
+                $upstreamRemote = $this->config()->get('detection.git_remote_name');
+                $originRemoteUrl = $git->getConfig('remote.origin.url');
+                if ($originRemoteUrl !== $selectedProject->getGitUrl(false) && $git->remoteBranchExists('origin', $branchName)) {
                     $upstreamRemote = 'origin';
                 }
 
                 // Fetch the branch from the upstream remote.
-                $gitHelper->fetch($upstreamRemote, $branchName);
+                $git->fetch($upstreamRemote, $branchName);
 
                 $upstream = $upstreamRemote . '/' . $branchName;
 
-                $gitHelper->setUpstream($upstream);
+                $git->setUpstream($upstream);
             }
         }
 

@@ -2,8 +2,7 @@
 namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\SshUtil;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\Util;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,7 +22,7 @@ class AppConfigGetCommand extends CommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
-        SshUtil::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
     }
 
     /**
@@ -32,16 +31,19 @@ class AppConfigGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $shellHelper = $this->getHelper('shell');
-        $sshUtil = new SshUtil($input, $output);
+
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+        /** @var \Platformsh\Cli\Service\Ssh $sshService */
+        $sshService = $this->getService('ssh');
 
         $sshUrl = $this->getSelectedEnvironment()
             ->getSshUrl($this->selectApp($input));
         $args = ['ssh'];
-        $args = array_merge($args, $sshUtil->getSshArgs());
+        $args = array_merge($args, $sshService->getSshArgs());
         $args[] = $sshUrl;
-        $args[] = 'echo $' . self::$config->get('service.env_prefix') . 'APPLICATION';
-        $result = $shellHelper->execute($args, null, true);
+        $args[] = 'echo $' . $this->config()->get('service.env_prefix') . 'APPLICATION';
+        $result = $shell->execute($args, null, true);
         $appConfig = json_decode(base64_decode($result), true);
         $value = $appConfig;
         $key = null;
@@ -57,7 +59,7 @@ class AppConfigGetCommand extends CommandBase
             }
         }
 
-        $formatter = new PropertyFormatter();
+        $formatter = $this->getService('property_formatter');
         $formatter->yamlInline = 10;
         $output->writeln($formatter->format($value, $key));
 

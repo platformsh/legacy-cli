@@ -4,13 +4,11 @@
  * Overrides Symfony's QuestionHelper to provide --yes and --no options.
  */
 
-namespace Platformsh\Cli\Helper;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Console\OutputAwareInterface;
 use Symfony\Component\Console\Helper\QuestionHelper as BaseQuestionHelper;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputAwareInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,7 +16,7 @@ use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 
-class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface, InputAwareInterface
+class QuestionHelper extends BaseQuestionHelper
 {
     /** @var InputInterface */
     private $input;
@@ -38,7 +36,7 @@ class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface,
     }
 
     /**
-     * {@inheritdoc}
+     * @param InputInterface $input
      */
     public function setInput(InputInterface $input)
     {
@@ -46,7 +44,9 @@ class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface,
     }
 
     /**
-     * {@inheritdoc}
+     * Set the output object.
+     *
+     * @param OutputInterface $output
      */
     public function setOutput(OutputInterface $output)
     {

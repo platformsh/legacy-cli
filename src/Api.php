@@ -14,6 +14,7 @@ use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -24,8 +25,8 @@ class Api
     /** @var CliConfig */
     protected $config;
 
-    /** @var null|EventDispatcherInterface */
-    protected $dispatcher;
+    /** @var EventDispatcherInterface */
+    public $dispatcher;
 
     /** @var string */
     protected static $sessionId = 'default';
@@ -51,7 +52,7 @@ class Api
     public function __construct(CliConfig $config = null, EventDispatcherInterface $dispatcher = null)
     {
         $this->config = $config ?: new CliConfig();
-        $this->dispatcher = $dispatcher;
+        $this->dispatcher = $dispatcher ?: new EventDispatcher();
 
         self::$sessionId = $this->config->get('api.session_id') ?: 'default';
         if (self::$sessionId === 'api-token') {
@@ -179,7 +180,7 @@ class Api
 
             self::$client = new PlatformClient($connector);
 
-            if (isset($this->dispatcher) && $autoLogin && !$connector->isLoggedIn()) {
+            if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
             }
         }
@@ -319,7 +320,7 @@ class Api
             }
 
             // Dispatch an event if the list of environments has changed.
-            if (isset($this->dispatcher) && $events && (!$cached || array_diff_key($environments, $cached))) {
+            if ($events && (!$cached || array_diff_key($environments, $cached))) {
                 $this->dispatcher->dispatch(
                     'environments_changed',
                     new EnvironmentsChangedEvent($project, $environments)

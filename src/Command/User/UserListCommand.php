@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -27,7 +27,7 @@ class UserListCommand extends CommandBase
 
         $rows = [];
         $i = 0;
-        $table = new Table($input, $output);
+        $table = $this->getService('table');
         foreach ($project->getUsers() as $user) {
             $account = $this->api()->getAccount($user);
             $role = $user['role'];

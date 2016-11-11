@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Command\Activity;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -62,7 +62,7 @@ class ActivityListCommand extends CommandBase
             return 1;
         }
 
-        $table = new Table($input, $output);
+        $table = $this->getService('table');
 
         $rows = [];
         foreach ($activities as $activity) {

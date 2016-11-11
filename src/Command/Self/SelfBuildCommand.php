@@ -41,9 +41,9 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
-        $shellHelper = $this->getHelper('shell');
-        if (!$shellHelper->commandExists('box')) {
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+        if (!$shell->commandExists('box')) {
             $this->stdErr->writeln('Command not found: <error>box</error>');
             $this->stdErr->writeln('The Box utility is required to build new CLI packages. Try:');
             $this->stdErr->writeln('  composer global require kherge/box:~2.5');
@@ -58,25 +58,23 @@ class SelfBuildCommand extends CommandBase
 
         $boxConfig = [];
         if ($outputFilename) {
-            /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-            $fsHelper = $this->getHelper('fs');
-            $boxConfig['output'] = $fsHelper->makePathAbsolute($outputFilename);
+            $boxConfig['output'] = $this->getService('fs')->makePathAbsolute($outputFilename);
         }
         else {
             // Default output: CLI_PHAR in the current directory.
             $cwd = getcwd();
             if ($cwd && $cwd !== CLI_ROOT) {
-                $boxConfig['output'] = getcwd() . '/' . self::$config->get('application.phar');
+                $boxConfig['output'] = getcwd() . '/' . $this->config()->get('application.phar');
             }
         }
         if ($keyFilename) {
             $boxConfig['key'] = realpath($keyFilename);
         }
 
-        $phar = isset($boxConfig['output']) ? $boxConfig['output'] : CLI_ROOT . '/' . self::$config->get('application.phar');
+        $phar = isset($boxConfig['output']) ? $boxConfig['output'] : CLI_ROOT . '/' . $this->config()->get('application.phar');
         if (file_exists($phar)) {
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
             if (!$questionHelper->confirm("File exists: <comment>$phar</comment>. Overwrite?")) {
                 return 1;
             }
@@ -87,10 +85,10 @@ class SelfBuildCommand extends CommandBase
 
             // Remove the 'vendor' directory, in case the developer has incorporated
             // their own version of dependencies locally.
-            $shellHelper->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
+            $shell->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
 
-            $shellHelper->execute([
-                $shellHelper->resolveCommand('composer'),
+            $shell->execute([
+                $shell->resolveCommand('composer'),
                 'install',
                 '--no-dev',
                 '--classmap-authoritative',
@@ -99,7 +97,7 @@ class SelfBuildCommand extends CommandBase
             ], CLI_ROOT, true, false);
         }
 
-        $boxArgs = [$shellHelper->resolveCommand('box'), 'build', '--no-interaction'];
+        $boxArgs = [$shell->resolveCommand('box'), 'build', '--no-interaction'];
 
         // Create a temporary box.json file for this build.
         if (!empty($boxConfig)) {
@@ -112,7 +110,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         $this->stdErr->writeln("Building Phar package using Box");
-        $result = $shellHelper->execute($boxArgs, CLI_ROOT, false, true);
+        $result = $shell->execute($boxArgs, CLI_ROOT, false, true);
 
         // Clean up the temporary file, regardless of errors.
         if (!empty($tmpJson)) {
@@ -129,7 +127,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         $sha1 = sha1_file($phar);
-        $version = self::$config->get('application.version');
+        $version = $this->config()->get('application.version');
         $size = filesize($phar);
 
         $output->writeln("Package built: <info>$phar</info>");

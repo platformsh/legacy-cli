@@ -30,11 +30,11 @@ class LocalDirCommand extends CommandBase
         $dir = $projectRoot;
 
         $subDirs = [
-            'builds' => self::$config->get('local.build_dir'),
-            'local' => self::$config->get('local.local_dir'),
-            'shared' => self::$config->get('local.shared_dir'),
-            'web' => self::$config->get('local.web_root'),
-            'web_root' => self::$config->get('local.web_root'),
+            'builds' => $this->config()->get('local.build_dir'),
+            'local' => $this->config()->get('local.local_dir'),
+            'shared' => $this->config()->get('local.shared_dir'),
+            'web' => $this->config()->get('local.web_root'),
+            'web_root' => $this->config()->get('local.web_root'),
         ];
 
         $subDir = $input->getArgument('subdir');

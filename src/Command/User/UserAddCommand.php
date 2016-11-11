@@ -29,8 +29,8 @@ class UserAddCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $email = $input->getArgument('email');
         if ($email && !$this->validateEmail($email)) {

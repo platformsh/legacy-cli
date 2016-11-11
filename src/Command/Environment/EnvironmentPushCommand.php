@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Util\SshUtil;
+use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -25,7 +25,7 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('no-wait', null, InputOption::VALUE_NONE, 'After pushing, do not wait for build or deploy');
         $this->addProjectOption()
             ->addEnvironmentOption();
-        SshUtil::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -36,23 +36,23 @@ class EnvironmentPushCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
-        $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($projectRoot);
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $git->setDefaultRepositoryDir($projectRoot);
 
         $source = $input->getArgument('src');
 
         if ($this->hasSelectedEnvironment()) {
             $target = $this->getSelectedEnvironment()->id;
-        } elseif ($currentBranch = $gitHelper->getCurrentBranch()) {
+        } elseif ($currentBranch = $git->getCurrentBranch()) {
             $target = $currentBranch;
         } else {
             $this->stdErr->writeln('Could not determine target environment name.');
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         if ($target === 'master'
             && !$questionHelper->confirm(
@@ -105,8 +105,6 @@ class EnvironmentPushCommand extends CommandBase
             }
         }
 
-        $sshUtil = new SshUtil($input, $output);
-
         $extraSshOptions = [];
         $env = [];
         if ($input->getOption('no-wait')) {
@@ -114,8 +112,8 @@ class EnvironmentPushCommand extends CommandBase
             $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }
 
-        $gitHelper->setSshCommand($sshUtil->getSshCommand($extraSshOptions));
+        $git->setSshCommand($this->getService('ssh')->getSshCommand($extraSshOptions));
 
-        return $gitHelper->execute($gitArgs, null, true, false, $env) ? 0 : 1;
+        return $git->execute($gitArgs, null, true, false, $env) ? 0 : 1;
     }
 }

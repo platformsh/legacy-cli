@@ -2,9 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\RelationshipsUtil;
-use Platformsh\Cli\Util\SshUtil;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\Util;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,7 +26,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
-        SshUtil::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
         $this->addExample("View all the current environment's relationships");
         $this->addExample("View the 'master' environment's relationships", 'master');
         $this->addExample("View the 'master' environment's database port", 'master --property database.0.port');
@@ -45,11 +43,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $cache = $this->api()->getCache();
         $relationships = $cache->fetch($cacheKey);
         if (empty($relationships) || $input->getOption('refresh')) {
-            $sshUtil = new SshUtil($input, $output);
-            $relationshipsUtil = new RelationshipsUtil($this->stdErr);
-            $relationshipsUtil->setSshUtil($sshUtil);
             $sshUrl = $environment->getSshUrl($app);
-            $relationships = $relationshipsUtil->getRelationships($sshUrl);
+            $relationships = $this->getService('relationships')->getRelationships($sshUrl);
             if (empty($relationships)) {
                 $this->stdErr->writeln('No relationships found');
                 return 1;
@@ -71,7 +66,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
             }
         }
 
-        $formatter = new PropertyFormatter();
+        $formatter = $this->getService('property_formatter');
         $formatter->yamlInline = 10;
         $output->writeln($formatter->format($value, $key));
 

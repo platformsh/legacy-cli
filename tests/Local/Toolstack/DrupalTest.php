@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
 
 class DrupalTest extends BaseToolstackTest
@@ -111,7 +111,7 @@ class DrupalTest extends BaseToolstackTest
     public function testDoNotSymlinkBuildsIntoSitesDefault()
     {
         $repository = $this->createTempSubDir('repo');
-        $fsHelper = new FilesystemHelper();
+        $fsHelper = new Filesystem();
         $sourceDir = 'tests/data/apps/drupal/project';
         $fsHelper->copyAll($sourceDir, $repository);
         $wwwDir = $repository . '/www';

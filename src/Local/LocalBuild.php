@@ -2,9 +2,9 @@
 namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Shell;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
@@ -21,13 +21,13 @@ class LocalBuild
     /** @var OutputInterface */
     protected $output;
 
-    /** @var FilesystemHelper */
+    /** @var Filesystem */
     protected $fsHelper;
 
-    /** @var GitHelper */
+    /** @var Git */
     protected $gitHelper;
 
-    /** @var ShellHelper */
+    /** @var Shell */
     protected $shellHelper;
 
     /** @var CliConfig */
@@ -67,10 +67,10 @@ class LocalBuild
         $this->config = $config ?: new CliConfig();
         $this->settings = $settings;
         $this->output = $output ?: new NullOutput();
-        $this->shellHelper = new ShellHelper($this->output);
-        $this->fsHelper = new FilesystemHelper($this->shellHelper);
+        $this->shellHelper = new Shell($this->output);
+        $this->fsHelper = new Filesystem($this->shellHelper);
         $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
-        $this->gitHelper = new GitHelper($this->shellHelper);
+        $this->gitHelper = new Git($this->shellHelper);
     }
 
     /**

@@ -3,8 +3,8 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\Table;
-use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -46,12 +46,12 @@ class SubscriptionInfoCommand extends CommandBase
 
             return 1;
         }
-        $this->formatter = new PropertyFormatter($input);
+        $this->formatter = $this->getService('property_formatter');
 
         $property = $input->getArgument('property');
 
         if (!$property) {
-            return $this->listProperties($subscription, new Table($input, $output));
+            return $this->listProperties($subscription);
         }
 
         switch ($property) {
@@ -70,11 +70,10 @@ class SubscriptionInfoCommand extends CommandBase
 
     /**
      * @param Subscription $subscription
-     * @param Table        $table
      *
      * @return int
      */
-    protected function listProperties(Subscription $subscription, Table $table)
+    protected function listProperties(Subscription $subscription)
     {
         $headings = [];
         $values = [];
@@ -82,7 +81,7 @@ class SubscriptionInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        $table->renderSimple($values, $headings);
+        $this->getService('table')->renderSimple($values, $headings);
 
         return 0;
     }

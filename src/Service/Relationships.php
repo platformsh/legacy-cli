@@ -1,36 +1,33 @@
 <?php
 
-namespace Platformsh\Cli\Util;
+namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\QuestionHelper;
-use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Helper\ShellHelperInterface;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class RelationshipsUtil
+class Relationships
 {
 
     protected $output;
     protected $shellHelper;
     protected $config;
-
-    /** @var SshUtil|null */
-    protected $sshUtil;
+    protected $ssh;
 
     /**
-     * @param OutputInterface           $output
-     * @param ShellHelperInterface|null $shellHelper
-     * @param CliConfig|null            $config
+     * @param OutputInterface             $output
+     * @param Ssh                         $ssh
+     * @param Shell                       $shellHelper
+     * @param CliConfig                   $config
      */
-    public function __construct(OutputInterface $output, ShellHelperInterface $shellHelper = null, CliConfig $config = null)
+    public function __construct(OutputInterface $output, Ssh $ssh, Shell $shellHelper = null, CliConfig $config = null)
     {
         $this->output = $output;
-        $this->shellHelper = $shellHelper ?: new ShellHelper($output);
+        $this->ssh = $ssh;
+        $this->shellHelper = $shellHelper ?: new Shell($output);
         $this->config = $config ?: new CliConfig();
     }
 
@@ -109,21 +106,13 @@ class RelationshipsUtil
     public function getRelationships($sshUrl)
     {
         $args = ['ssh'];
-        if (isset($this->sshUtil)) {
-            $args = array_merge($args, $this->sshUtil->getSshArgs());
+        if (isset($this->ssh)) {
+            $args = array_merge($args, $this->ssh->getSshArgs());
         }
         $args[] = $sshUrl;
         $args[] = 'echo $' . $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
         $result = $this->shellHelper->execute($args, null, true);
 
         return json_decode(base64_decode($result), true);
-    }
-
-    /**
-     * @param SshUtil $sshUtil
-     */
-    public function setSshUtil(SshUtil $sshUtil)
-    {
-        $this->sshUtil = $sshUtil;
     }
 }

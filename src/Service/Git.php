@@ -1,22 +1,19 @@
 <?php
 
-namespace Platformsh\Cli\Helper;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Exception\DependencyMissingException;
-use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Helper class which runs Git CLI commands and interprets the results.
  */
-class GitHelper extends Helper implements OutputAwareInterface
+class Git
 {
 
     /** @var string */
     protected $repositoryDir = '.';
 
-    /** @var ShellHelperInterface */
+    /** @var Shell */
     protected $shellHelper;
 
     /** @var array */
@@ -26,31 +23,13 @@ class GitHelper extends Helper implements OutputAwareInterface
     protected $sshCommandFile;
 
     /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'git';
-    }
-
-    /**
      * Constructor.
      *
-     * @param ShellHelperInterface|null $shellHelper
+     * @param Shell|null $shellHelper
      */
-    public function __construct(ShellHelperInterface $shellHelper = null)
+    public function __construct(Shell $shellHelper = null)
     {
-        $this->shellHelper = $shellHelper ?: new ShellHelper();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setOutput(OutputInterface $output)
-    {
-        if ($this->shellHelper instanceof OutputAwareInterface) {
-            $this->shellHelper->setOutput($output);
-        }
+        $this->shellHelper = $shellHelper ?: new Shell();
     }
 
     /**

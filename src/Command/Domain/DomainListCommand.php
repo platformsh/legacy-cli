@@ -2,8 +2,7 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Domain;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -34,7 +33,7 @@ class DomainListCommand extends DomainCommandBase
     {
         $rows = [];
 
-        $formatter = new PropertyFormatter();
+        $formatter = $this->getService('property_formatter');
 
         foreach ($tree as $domain) {
             $rows[] = [
@@ -67,12 +66,12 @@ class DomainListCommand extends DomainCommandBase
 
         if (empty($domains)) {
             $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
-            $this->stdErr->writeln("\nAdd a domain to the project by running <info>" . self::$config->get('application.executable') . " domain:add [domain-name]</info>");
+            $this->stdErr->writeln("\nAdd a domain to the project by running <info>" . $this->config()->get('application.executable') . " domain:add [domain-name]</info>");
 
             return 1;
         }
 
-        $table = new Table($input, $output);
+        $table = $this->getService('table');
         $header = ['Name', 'SSL enabled', 'Creation date'];
         $rows = $this->buildDomainRows($domains);
 
@@ -86,9 +85,9 @@ class DomainListCommand extends DomainCommandBase
         $table->render($rows, $header);
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('To add a new domain, run: <info>' . self::$config->get('application.executable') . ' domain:add [domain-name]</info>');
-        $this->stdErr->writeln('To view a domain, run: <info>' . self::$config->get('application.executable') . ' domain:get [domain-name]</info>');
-        $this->stdErr->writeln('To delete a domain, run: <info>' . self::$config->get('application.executable') . ' domain:delete [domain-name]</info>');
+        $this->stdErr->writeln('To add a new domain, run: <info>' . $this->config()->get('application.executable') . ' domain:add [domain-name]</info>');
+        $this->stdErr->writeln('To view a domain, run: <info>' . $this->config()->get('application.executable') . ' domain:get [domain-name]</info>');
+        $this->stdErr->writeln('To delete a domain, run: <info>' . $this->config()->get('application.executable') . ' domain:delete [domain-name]</info>');
 
         return 0;
     }

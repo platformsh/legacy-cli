@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Util\SshUtil;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -23,7 +23,7 @@ class EnvironmentCheckoutCommand extends CommandBase
                 InputArgument::OPTIONAL,
                 'The ID of the environment to check out. For example: "sprint2"'
             );
-        SshUtil::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
         $this->addExample('Check out the environment "develop"', 'develop');
     }
 
@@ -50,14 +50,12 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
-        $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($projectRoot);
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $git->setDefaultRepositoryDir($projectRoot);
+        $git->setSshCommand($this->getService('ssh')->getSshCommand());
 
-        $sshUtil = new SshUtil($input, $output);
-        $gitHelper->setSshCommand($sshUtil->getSshCommand());
-
-        $existsLocally = $gitHelper->branchExists($branch);
+        $existsLocally = $git->branchExists($branch);
         if (!$existsLocally && !$this->api()->getEnvironment($branch, $project)) {
             $this->stdErr->writeln('Branch not found: <error>' . $branch . '</error>');
 
@@ -68,29 +66,29 @@ class EnvironmentCheckoutCommand extends CommandBase
         if ($existsLocally) {
             $this->stdErr->writeln('Checking out <info>' . $branch . '</info>');
 
-            return $gitHelper->checkOut($branch) ? 0 : 1;
+            return $git->checkOut($branch) ? 0 : 1;
         }
 
         // Make sure that remotes are set up correctly.
-        $this->localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
+        $this->getService('local.project')->ensureGitRemote($projectRoot, $project->getGitUrl());
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
-        $upstreamRemote = self::$config->get('detection.git_remote_name');
-        $originRemoteUrl = $gitHelper->getConfig('remote.origin.url');
-        if ($originRemoteUrl !== $project->getGitUrl(false) && $gitHelper->remoteBranchExists('origin', $branch)) {
+        $upstreamRemote = $this->config()->get('detection.git_remote_name');
+        $originRemoteUrl = $git->getConfig('remote.origin.url');
+        if ($originRemoteUrl !== $project->getGitUrl(false) && $git->remoteBranchExists('origin', $branch)) {
             $upstreamRemote = 'origin';
         }
 
         // Fetch the branch from the upstream remote.
-        $gitHelper->fetch($upstreamRemote, $branch);
+        $git->fetch($upstreamRemote, $branch);
 
         $upstream = $upstreamRemote . '/' . $branch;
 
         $this->stdErr->writeln(sprintf('Creating branch %s based on upstream %s', $branch, $upstream));
 
         // Create the new branch, and set the correct upstream.
-        $success = $gitHelper->checkOutNew($branch, null, $upstream);
+        $success = $git->checkOutNew($branch, null, $upstream);
 
         return $success ? 0 : 1;
     }
@@ -118,7 +116,7 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
             $environmentList[$id] = $environment->title;
         }
-        $projectConfig = $this->localProject->getProjectConfig($projectRoot);
+        $projectConfig = $this->getService('local.project')->getProjectConfig($projectRoot);
         if (!empty($projectConfig['mapping'])) {
             foreach ($projectConfig['mapping'] as $branch => $id) {
                 if (isset($environmentList[$id]) && isset($environmentList[$branch])) {
@@ -128,13 +126,13 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
         }
         if (!count($environmentList)) {
-            $this->stdErr->writeln("Use <info>" . self::$config->get('application.executable') . " branch</info> to create an environment.");
+            $this->stdErr->writeln("Use <info>" . $this->config()->get('application.executable') . " branch</info> to create an environment.");
 
             return false;
         }
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $helper */
-        $helper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $helper */
+        $helper = $this->getService('question_helper');
 
         // If there's more than one choice, present the user with a list.
         if (count($environmentList) > 1) {

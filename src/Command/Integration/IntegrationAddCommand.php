@@ -29,7 +29,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->validateInput($input);
 
         $values = $this->getForm()
-                       ->resolveOptions($input, $this->stdErr, $this->getHelper('question'));
+                       ->resolveOptions($input, $this->stdErr, $this->getService('question_helper'));
 
         $result = $this->getSelectedProject()
                        ->addIntegration($values['type'], $values);
@@ -44,9 +44,8 @@ class IntegrationAddCommand extends IntegrationCommandBase
             $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
         }
 
-        $this->displayIntegration($integration, $input, $this->stdErr);
+        $this->displayIntegration($integration);
 
         return $success ? 0 : 1;
     }
-
 }

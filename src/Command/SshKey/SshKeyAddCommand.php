@@ -23,10 +23,10 @@ class SshKeyAddCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
-        /** @var \Platformsh\Cli\Helper\ShellHelperInterface $shellHelper */
-        $shellHelper = $this->getHelper('shell');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        /** @var \Platformsh\Cli\Service\Shell $shellHelper */
+        $shellHelper = $this->getService('shell');
 
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
@@ -93,9 +93,9 @@ class SshKeyAddCommand extends CommandBase
             // Check whether the public key already exists in the user's account.
             if (isset($fingerprint) && $this->keyExistsByFingerprint($fingerprint)) {
                 $this->stdErr->writeln(
-                    'An SSH key already exists in your ' . self::$config->get('service.name') . ' account with the same fingerprint: ' . $fingerprint
+                    'An SSH key already exists in your ' . $this->config()->get('service.name') . ' account with the same fingerprint: ' . $fingerprint
                 );
-                $this->stdErr->writeln("List your SSH keys with: <info>" . self::$config->get('application.executable') . " ssh-keys</info>");
+                $this->stdErr->writeln("List your SSH keys with: <info>" . $this->config()->get('application.executable') . " ssh-keys</info>");
 
                 return 0;
             }
@@ -120,7 +120,7 @@ class SshKeyAddCommand extends CommandBase
         $this->api()->getClient()->addSshKey($publicKey, $name);
 
         $this->stdErr->writeln(
-            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . self::$config->get('service.name') . ' account.'
+            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . $this->config()->get('service.name') . ' account.'
         );
 
         return 0;
