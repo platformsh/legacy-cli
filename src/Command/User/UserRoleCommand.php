@@ -41,7 +41,7 @@ class UserRoleCommand extends CommandBase
             return 1;
         }
 
-        $this->validateInput($input, true);
+        $this->validateInput($input, $level !== 'environment');
         $project = $this->getSelectedProject();
 
         if ($level === null && $role && $this->hasSelectedEnvironment() && $input->isInteractive()) {

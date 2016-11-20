@@ -113,7 +113,7 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
             $environmentList[$id] = $environment->title;
         }
-        $projectConfig = $this->getProjectConfig($projectRoot);
+        $projectConfig = $this->localProject->getProjectConfig($projectRoot);
         if (!empty($projectConfig['mapping'])) {
             foreach ($projectConfig['mapping'] as $branch => $id) {
                 if (isset($environmentList[$id]) && isset($environmentList[$branch])) {

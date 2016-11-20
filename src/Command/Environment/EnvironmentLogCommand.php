@@ -85,11 +85,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
 
-        $this->stdErr->writeln("Running command: <info>$sshCommand</info>", OutputInterface::VERBOSITY_VERBOSE);
-
-        $process = proc_open($sshCommand, [STDIN, STDOUT, STDERR], $pipes);
-
-        return proc_close($process);
+        return $this->getHelper('shell')->executeSimple($sshCommand);
     }
 
     /**

@@ -13,7 +13,8 @@ class LoginCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('login')
+            ->setName('auth:login')
+            ->setAliases(['login'])
             ->setDescription('Log in to ' . self::$config->get('service.name'));
         $help = 'Use this command to log in to your ' . self::$config->get('service.name') . ' account.'
             . "\n\nYou can create an account at:\n    <info>" . self::$config->get('service.accounts_url') . '</info>'

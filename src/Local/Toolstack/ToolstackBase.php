@@ -133,7 +133,7 @@ abstract class ToolstackBase implements ToolstackInterface
         }
 
         $this->copy = !empty($settings['copy']);
-        $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
+        $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
     }
 
     /**

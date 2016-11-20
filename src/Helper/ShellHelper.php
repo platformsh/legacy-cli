@@ -41,20 +41,21 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
     }
 
     /**
-     * Execute a command, sending output to the defined output.
+     * Execute a command, using STDIN, STDERR and STDOUT directly.
      *
      * @param string      $commandline
      * @param string|null $dir
      *
-     * @return int|true
-     *   True on success, or the command's exit code on failure.
+     * @return int
+     *   The command's exit code (0 on success, a different integer on failure).
      */
     public function executeSimple($commandline, $dir = null)
     {
-        $process = new Process($commandline, $dir, null, null, $this->defaultTimeout);
-        $result = $this->runProcess($process, false, false);
+        $this->output->writeln('Running command: <info>' . $commandline. '</info>', OutputInterface::VERBOSITY_VERBOSE);
 
-        return is_int($result) ? $result : true;
+        $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir);
+
+        return proc_close($process);
     }
 
     /**
@@ -87,9 +88,7 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
      */
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
     {
-        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->output->writeln("Running command: <info>" . $process->getCommandLine() . "</info>");
-        }
+        $this->output->writeln("Running command: <info>" . $process->getCommandLine() . "</info>", OutputInterface::VERBOSITY_VERBOSE);
 
         try {
             $process->mustRun($quiet ? null : function ($type, $buffer) {
