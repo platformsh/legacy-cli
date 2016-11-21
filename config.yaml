@@ -5,8 +5,8 @@ application:
   executable: 'sensio-cloud'
   phar: 'sensio-cloud.phar'
   package_name: ~
-  installer_url: 'https://sensio.cloud/cli/installer'
-  manifest_url: 'https://sensio.cloud/cli/manifest.json'
+  installer_url: 'https://accounts.sensio.cloud/cli/installer'
+  manifest_url: 'https://accounts.sensio.cloud/cli/manifest.json'
   user_config_dir: '.sensio-cloud'
   env_prefix: 'SENSIO_CLOUD_CLI_'
 
