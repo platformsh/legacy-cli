@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Util\RelationshipsUtil;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -46,8 +45,7 @@ class DbDumpCommand extends CommandBase
                     $prefix = substr($dumpFile, 0, - strlen($basename));
                     if ($dotPos = strrpos($basename, '.')) {
                         $basename = substr($basename, 0, $dotPos) . '--' . $timestamp . substr($basename, $dotPos);
-                    }
-                    else {
+                    } else {
                         $basename .= '--' . $timestamp;
                     }
                     $dumpFile = $prefix . $basename;
@@ -60,14 +58,11 @@ class DbDumpCommand extends CommandBase
                 if (is_dir($dumpFile)) {
                     $dumpFile .= '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
                 }
-            }
-            else {
-                if (!$projectRoot = $this->getProjectRoot()) {
-                    throw new RootNotFoundException(
-                        'Project root not found. Specify --file or go to a project directory.'
-                    );
-                }
-                $dumpFile = $projectRoot . '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
+            } else {
+                $projectRoot = $this->getProjectRoot();
+                $directory = $projectRoot ?: getcwd();
+                $dumpFile = $directory
+                    . '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
             }
         }
 
