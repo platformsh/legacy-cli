@@ -220,8 +220,7 @@ class Api
 
         if ($refresh === false && !$cached) {
             return [];
-        }
-        elseif ($refresh || !$cached) {
+        } elseif ($refresh || !$cached) {
             foreach ($this->getClient()->getProjects() as $project) {
                 $projects[$project->id] = $project;
             }
@@ -244,36 +243,47 @@ class Api
     }
 
     /**
-     * Return the user's project with the given id.
+     * Return the user's project with the given ID.
      *
-     * @param string $id        The project ID, or a full URL to the project
-     *                          (this can be any API or web interface URL for
-     *                          the project).
-     * @param string $host      The project's hostname, if $id is just an ID.
-     *                          If not provided, the hostname will be determined
-     *                          from the user's projects list.
-     * @param bool|null $refresh   Whether to bypass the cache.
+     * @param string      $id      The project ID.
+     * @param string|null $host    The project's hostname.
+     * @param bool|null   $refresh Whether to bypass the cache.
      *
      * @return Project|false
      */
     public function getProject($id, $host = null, $refresh = null)
     {
-        // Find the project in the user's main project list. This uses a cache.
+        // Find the project in the user's main project list. This uses a
+        // separate cache.
         $projects = $this->getProjects($refresh);
         if (isset($projects[$id])) {
             return $projects[$id];
         }
-        // Get the project directly if a hostname is specified.
-        if (!empty($host)) {
+
+        // Find the project directly.
+        $cacheKey = sprintf('%s:project:%s:%s', self::$sessionId, $id, $host);
+        $cached = self::$cache->fetch($cacheKey);
+        if ($refresh || !$cached) {
             $scheme = 'https';
-            if (($pos = strpos($host, '//')) !== false) {
+            if ($host !== null && (($pos = strpos($host, '//')) !== false)) {
                 $scheme = parse_url($host, PHP_URL_SCHEME);
                 $host = substr($host, $pos + 2);
             }
-            return $this->getClient()->getProjectDirect($id, $host, $scheme != 'http');
+            $project = $this->getClient()
+                ->getProject($id, $host, $scheme !== 'http');
+            if ($project) {
+                $toCache = $project->getData();
+                $toCache['_endpoint'] = $project->getUri(true);
+                self::$cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
+            }
+        } else {
+            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $baseUrl = $cached['_endpoint'];
+            unset($cached['_endpoint']);
+            $project = new Project($cached, $baseUrl, $guzzleClient);
         }
 
-        return false;
+        return $project;
     }
 
     /**

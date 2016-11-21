@@ -28,6 +28,7 @@ class Composer extends ToolstackBase
             $args = [
                 $this->shellHelper->resolveCommand('composer'),
                 'install',
+                '--no-dev',
                 '--no-progress',
                 '--prefer-dist',
                 '--optimize-autoloader',

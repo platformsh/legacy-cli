@@ -1,5 +1,5 @@
 <?php
-namespace Platformsh\Cli\Command\Environment;
+namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\RelationshipsUtil;
@@ -7,13 +7,12 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentSqlCommand extends CommandBase
+class DbSqlCommand extends CommandBase
 {
 
     protected function configure()
     {
-        $this
-            ->setName('environment:sql')
+        $this->setName('db:sql')
             ->setAliases(['sql'])
             ->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute');
@@ -21,6 +20,7 @@ class EnvironmentSqlCommand extends CommandBase
         $this->addExample('Open an SQL console on the remote database');
         $this->addExample('View tables on the remote database', "'SHOW TABLES'");
         $this->addExample('Import a dump file into the remote database', '< dump.sql');
+        $this->setHiddenAliases(['environment:sql']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

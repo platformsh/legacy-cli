@@ -112,6 +112,9 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthInfoCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
+        $commands[] = new Command\Db\DbSqlCommand();
+        $commands[] = new Command\Db\DbDumpCommand();
+        $commands[] = new Command\Db\DbSizeCommand();
         $commands[] = new Command\Domain\DomainAddCommand();
         $commands[] = new Command\Domain\DomainDeleteCommand();
         $commands[] = new Command\Domain\DomainGetCommand();
@@ -129,8 +132,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentRoutesCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
-        $commands[] = new Command\Environment\EnvironmentSqlCommand();
-        $commands[] = new Command\Environment\EnvironmentSqlDumpCommand();
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
         $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();

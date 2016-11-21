@@ -673,16 +673,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return $environment;
         }
 
-        $message = "Could not determine the current environment.";
         if ($this->getProjectRoot()) {
-            throw new \RuntimeException(
-                $message . "\nSpecify it manually using --environment."
-            );
+            $message = 'Could not determine the current environment.'
+                . "\n" . 'Specify it manually using --environment (-e).';
         } else {
-            throw new RootNotFoundException(
-                $message . "\nSpecify it manually using --environment or go to a project directory."
-            );
+            $message = 'No environment specified.'
+                . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
         }
+        throw new \RuntimeException($message);
     }
 
     /**
@@ -764,7 +762,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $host = parse_url($url, PHP_URL_HOST);
         $path = parse_url($url, PHP_URL_PATH);
         if ((!$path || $path === '/') && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote(self::$config->get('detection.site_domain')) . '$/', $host)) {
-            list($env_project_app, $result['host']) = explode('.', $host, 2);
+            list($env_project_app,) = explode('.', $host, 2);
             if (($doubleDashPos = strrpos($env_project_app, '--')) !== false) {
                 $env_project = substr($env_project_app, 0, $doubleDashPos);
                 $result['appId'] = substr($env_project_app, $doubleDashPos + 2);

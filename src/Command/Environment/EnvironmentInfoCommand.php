@@ -64,7 +64,14 @@ class EnvironmentInfoCommand extends CommandBase
             return $this->setProperty($property, $value, $environment, $input->getOption('no-wait'));
         }
 
-        $value = $this->api()->getNestedProperty($environment, $property);
+        switch ($property) {
+            case 'url':
+                $value = $environment->getUri(true);
+                break;
+
+            default:
+                $value = $this->api()->getNestedProperty($environment, $property);
+        }
 
         $output->writeln($this->formatter->format($value, $property));
 

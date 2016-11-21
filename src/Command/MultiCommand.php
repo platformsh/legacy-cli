@@ -53,22 +53,22 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
 
         $success = true;
         $continue = $input->getOption('continue');
-        $output->writeln(sprintf(
+        $this->stdErr->writeln(sprintf(
             "Running command '%s' on %d %s.",
             $commandLine,
             count($projects),
             count($projects) === 1 ? 'project' : 'projects'
         ));
         foreach ($projects as $project) {
-            $output->writeln('');
-            $output->writeln('<options=reverse>*</> Project: ' . $this->api()->getProjectLabel($project, false));
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('<options=reverse>*</> Project: ' . $this->api()->getProjectLabel($project, false));
             try {
                 $application->setCurrentCommand($command);
                 $commandInput = new StringInput($commandLine . ' --project ' . escapeshellarg($project->id));
                 if ($command instanceof MultiAwareInterface) {
                     $command->setRunningViaMulti(true);
                 }
-                $returnCode = $command->run($commandInput, $this->output);
+                $returnCode = $command->run($commandInput, $output);
                 $application->setCurrentCommand($this);
                 if ($returnCode !== 0) {
                     $success = false;
