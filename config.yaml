@@ -2,22 +2,22 @@
 application:
   name: 'Sensio Cloud CLI'
   version: '1.x-dev'
-  executable: 'sensio-cloud'
-  phar: 'sensio-cloud.phar'
+  executable: 'sensiocloud'
+  phar: 'sensiocloud.phar'
   package_name: ~
   installer_url: 'https://accounts.sensio.cloud/cli/installer'
   manifest_url: 'https://accounts.sensio.cloud/cli/manifest.json'
-  user_config_dir: '.sensio-cloud'
-  env_prefix: 'SENSIO_CLOUD_CLI_'
+  user_config_dir: '.sensiocloud'
+  env_prefix: 'SENSIOCLOUD_CLI_'
 
 # Configuration for working with projects locally.
 local:
-  local_dir: '.sensio-cloud/local'
-  archive_dir: '.sensio-cloud/local/build-archives'
-  build_dir: '.sensio-cloud/local/builds'
-  project_config: '.sensio-cloud/local/project.yaml'
+  local_dir: '.sensiocloud/local'
+  archive_dir: '.sensiocloud/local/build-archives'
+  build_dir: '.sensiocloud/local/builds'
+  project_config: '.sensiocloud/local/project.yaml'
   project_config_legacy: '.platform-project'
-  shared_dir: '.sensio-cloud/local/shared'
+  shared_dir: '.sensiocloud/local/shared'
   web_root: '_www'
 
   # This can be overridden by the {application.env_prefix}COPY_ON_WINDOWS env
@@ -27,9 +27,9 @@ local:
 # Details about the cloud service that the CLI works with.
 service:
   name: 'Sensio Cloud'
-  env_prefix: 'SENSIO_CLOUD_'
-  app_config_file: '.sensio-cloud.app.yaml'
-  project_config_dir: '.sensio-cloud'
+  env_prefix: 'SENSIOCLOUD_'
+  app_config_file: '.sensiocloud.app.yaml'
+  project_config_dir: '.sensiocloud'
   docs_url: 'https://docs.sensio.cloud'
   accounts_url: 'https://accounts.sensio.cloud'
 
@@ -58,7 +58,7 @@ api:
 
 # How the CLI detects and configures Git repositories as projects.
 detection:
-  git_remote_name: 'sensio-cloud'
+  git_remote_name: 'sensiocloud'
   git_domain: 'sensio.cloud'
   site_domain: 'sensiocloud.site'
 
