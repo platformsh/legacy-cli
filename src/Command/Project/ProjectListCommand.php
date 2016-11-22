@@ -64,12 +64,23 @@ class ProjectListCommand extends CommandBase
         }
 
         $table = new Table($input, $output);
+        $machineReadable = $table->formatIsMachineReadable();
 
         $rows = [];
         foreach ($projects as $project) {
+            $title = $project->title ?: '[Untitled Project]';
+
+            // Add a warning next to the title if the project is suspended.
+            if (!$machineReadable && $project->isSuspended()) {
+                $title = sprintf(
+                    '<fg=white;bg=black>%s</> <fg=yellow;bg=black>(suspended)</>',
+                    $title
+                );
+            }
+
             $rows[] = [
                 new AdaptiveTableCell($project->id, ['wrap' => false]),
-                $project->title,
+                $title,
                 $project->getLink('#ui'),
             ];
         }
@@ -78,7 +89,7 @@ class ProjectListCommand extends CommandBase
 
         // Display a simple table (and no messages) if the --format is
         // machine-readable (e.g. csv or tsv).
-        if ($table->formatIsMachineReadable()) {
+        if ($machineReadable) {
             $table->render($rows, $header);
 
             return 0;
