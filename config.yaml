@@ -60,7 +60,7 @@ api:
 detection:
   git_remote_name: 'sensiocloud'
   git_domain: 'sensio.cloud'
-  site_domain: 'sensiocloud.site'
+  site_domain: 'sensiosite.cloud'
 
 # Automatic updates.
 # This can be overridden in the user config file.
