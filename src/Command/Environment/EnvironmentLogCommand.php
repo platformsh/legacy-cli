@@ -115,7 +115,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
                 'error',
                 'cron',
                 'deploy',
-                'php',
+                'app',
             ];
         }
 
