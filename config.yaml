@@ -1,6 +1,6 @@
 # Metadata about the CLI application itself.
 application:
-  name: 'Sensio Cloud CLI'
+  name: 'SensioCloud CLI'
   version: '1.x-dev'
   executable: 'sensiocloud'
   phar: 'sensiocloud.phar'
@@ -26,7 +26,7 @@ local:
 
 # Details about the cloud service that the CLI works with.
 service:
-  name: 'Sensio Cloud'
+  name: 'SensioCloud'
   env_prefix: 'SENSIOCLOUD_'
   app_config_file: '.sensiocloud.app.yaml'
   project_config_dir: '.sensiocloud'

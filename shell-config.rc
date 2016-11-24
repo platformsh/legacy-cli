@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Sensio Cloud CLI shell configuration.
+# SensioCloud CLI shell configuration.
 
 # Enable auto-completion.
-if HOOK=$(sensio-cloud _completion -g -p sensio-cloud 2>/dev/null); then
+if HOOK=$(sensiocloud _completion -g -p sensiocloud 2>/dev/null); then
     # Try two commands.
     # See https://github.com/stecman/symfony-console-completion/issues/12
     echo "$HOOK" | source /dev/stdin
