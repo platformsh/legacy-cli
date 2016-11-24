@@ -46,37 +46,44 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         // Select the log file that the user specified.
         if ($logType = $input->getArgument('type')) {
             // @todo this might need to be cleverer
+            if (substr($logType, -4) === '.log') {
+                $logType = substr($logType, 0, strlen($logType) - 4);
+            }
             $logFilename = '/var/log/' . $logType . '.log';
-        }
-        elseif (!$input->isInteractive()) {
+        } elseif (!$input->isInteractive()) {
             $this->stdErr->writeln('No log type specified.');
             return 1;
-        }
-        // Offer a choice of log files, if possible.
-        else {
+        } else {
             /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
             $questionHelper = $this->getHelper('question');
             /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
             $shellHelper = $this->getHelper('shell');
 
-            $result = $shellHelper->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
-            if ($result) {
-                $files = explode("\n", $result);
-                $files = array_combine($files, array_map(function ($file) {
-                    return str_replace('.log', '', basename(trim($file)));
-                }, $files));
-            }
-            else {
-                $files = [
-                    '/var/log/access.log' => 'access',
-                    '/var/log/error.log' => 'error',
-                ];
+            // Read the list of files from the environment.
+            $cacheKey = sprintf('log-files:%s', $sshUrl);
+            $cache = $this->api()->getCache();
+            if (!$result = $cache->fetch($cacheKey)) {
+                $result = $shellHelper->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
+
+                // Cache the list for 1 hour.
+                $cache->save($cacheKey, $result, 86400);
             }
 
+            // Provide a fallback list of files, in case the SSH command failed.
+            $defaultFiles = [
+                '/var/log/access.log',
+                '/var/log/error.log',
+            ];
+            $files = $result ? explode("\n", $result) : $defaultFiles;
+
+            // Ask the user to choose a file.
+            $files = array_combine($files, array_map(function ($file) {
+                return str_replace('.log', '', basename(trim($file)));
+            }, $files));
             $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 
-        $command = sprintf('tail -n %d %s', $input->getOption('lines'), escapeshellarg($logFilename));
+        $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), escapeshellarg($logFilename));
         if ($input->getOption('tail')) {
             $command .= ' -f';
         }
@@ -108,7 +115,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
                 'error',
                 'cron',
                 'deploy',
-                'php',
+                'app',
             ];
         }
 

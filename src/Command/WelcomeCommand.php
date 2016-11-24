@@ -26,11 +26,25 @@ class WelcomeCommand extends CommandBase
         $this->api()->getClient();
 
         if ($project = $this->getCurrentProject()) {
-            // The project is known. Show the environments.
             $projectUri = $project->getLink('#ui');
             $this->stdErr->writeln("Project title: <info>{$project->title}</info>");
             $this->stdErr->writeln("Project ID: <info>{$project->id}</info>");
             $this->stdErr->writeln("Project dashboard: <info>$projectUri</info>\n");
+
+            // Warn if the project is suspended.
+            if ($project->isSuspended()) {
+                $messages = [];
+                $messages[] = '<comment>This project is suspended.</comment>';
+                if ($project->owner === $this->api()->getMyAccount()['uuid']) {
+                    $messages[] = '<comment>Update your payment details to re-activate it: '
+                        . self::$config->get('service.accounts_url')
+                        . '</comment>';
+                }
+                $messages[] = '';
+                $this->stdErr->writeln($messages);
+            }
+
+            // Show the environments.
             $this->runOtherCommand('environments');
             $this->stdErr->writeln("\nYou can list other projects by running <info>" . self::$config->get('application.executable') . " projects</info>\n");
         } else {

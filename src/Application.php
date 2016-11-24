@@ -43,7 +43,7 @@ class Application extends ParentApplication
         $this->setDefaultCommand('welcome');
 
         $dispatcher = new EventDispatcher();
-        $dispatcher->addSubscriber(new EventSubscriber());
+        $dispatcher->addSubscriber(new EventSubscriber($this->cliConfig));
         $this->setDispatcher($dispatcher);
     }
 

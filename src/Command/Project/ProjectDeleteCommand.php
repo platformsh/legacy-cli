@@ -55,6 +55,9 @@ class ProjectDeleteCommand extends CommandBase
 
         $subscriptionId = $project->getSubscriptionId();
         $subscription = $this->api()->getClient()->getSubscription($subscriptionId);
+        if (!$subscription) {
+            throw new \RuntimeException('Subscription not found: ' . $subscriptionId);
+        }
 
         $subscription->delete();
         $this->api()->clearProjectsCache();
