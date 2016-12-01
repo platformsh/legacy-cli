@@ -246,6 +246,7 @@ class LocalApplication
                ->name($config->get('service.app_config_file'))
                ->notPath('builds')
                ->notPath($config->get('local.local_dir'))
+               ->ignoreUnreadableDirs()
                ->depth('> 0')
                ->depth('< 5');
 
