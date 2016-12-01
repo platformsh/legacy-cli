@@ -16,8 +16,9 @@ class DbDumpCommand extends CommandBase
     {
         $this->setName('db:dump')
             ->setAliases(['sql-dump'])
-            ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>--<environment ID>--dump.sql" in the project root')
+            ->setDescription('Create a local dump of the remote database');
+        RelationshipsUtil::configureInput($this->getDefinition());
+        $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>--<environment ID>--dump.sql" in the project root')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
@@ -77,8 +78,8 @@ class DbDumpCommand extends CommandBase
             $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
         }
 
-        $util = new RelationshipsUtil($this->stdErr);
-        $database = $util->chooseDatabase($sshUrl, $input);
+        $util = new RelationshipsUtil();
+        $database = $util->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             return 1;
         }

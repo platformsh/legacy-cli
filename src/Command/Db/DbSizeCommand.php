@@ -21,6 +21,7 @@ class DbSizeCommand extends CommandBase
             ->setHelp(
                 "This command provides an estimate of the database's disk usage. It is not guaranteed to be reliable."
             );
+        RelationshipsUtil::configureInput($this->getDefinition());
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Table::addFormatOption($this->getDefinition());
     }
@@ -45,8 +46,8 @@ class DbSizeCommand extends CommandBase
             return 1;
         }
 
-        $util = new RelationshipsUtil($this->stdErr);
-        $database = $util->chooseDatabase($sshUrl, $input);
+        $util = new RelationshipsUtil();
+        $database = $util->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;
