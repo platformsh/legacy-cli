@@ -13,6 +13,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
   * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
+  * Other build tools: [npm](https://www.npmjs.com/), [pip](http://docs.python-guide.org/en/latest/starting/installation/), [bundler](http://bundler.io/), etc.
 
 ## Installation
 
