@@ -16,6 +16,7 @@ class DbSqlCommand extends CommandBase
             ->setAliases(['sql'])
             ->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute');
+        RelationshipsUtil::configureInput($this->getDefinition());
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         $this->addExample('Open an SQL console on the remote database');
         $this->addExample('View tables on the remote database', "'SHOW TABLES'");
@@ -35,8 +36,8 @@ class DbSqlCommand extends CommandBase
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($this->selectApp($input));
 
-        $util = new RelationshipsUtil($this->stdErr);
-        $database = $util->chooseDatabase($sshUrl, $input);
+        $util = new RelationshipsUtil();
+        $database = $util->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             return 1;
         }

@@ -43,7 +43,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $cache = $this->api()->getCache();
         $relationships = $cache->fetch($cacheKey);
         if (empty($relationships) || $input->getOption('refresh')) {
-            $util = new RelationshipsUtil($this->stdErr);
+            $util = new RelationshipsUtil($this->getHelper('shell'));
             $sshUrl = $environment->getSshUrl($app);
             $relationships = $util->getRelationships($sshUrl);
             if (empty($relationships)) {

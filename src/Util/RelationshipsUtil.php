@@ -6,36 +6,48 @@ use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Helper\QuestionHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Helper\ShellHelperInterface;
+use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class RelationshipsUtil
 {
 
-    protected $output;
     protected $shellHelper;
     protected $config;
 
     /**
-     * @param OutputInterface      $output
      * @param ShellHelperInterface $shellHelper
      * @param CliConfig            $config
      */
-    public function __construct(OutputInterface $output, ShellHelperInterface $shellHelper = null, CliConfig $config = null)
+    public function __construct(ShellHelperInterface $shellHelper = null, CliConfig $config = null)
     {
-        $this->output = $output;
-        $this->shellHelper = $shellHelper ?: new ShellHelper($output);
+        $this->shellHelper = $shellHelper ?: new ShellHelper();
         $this->config = $config ?: new CliConfig();
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Input\InputDefinition $definition
+     */
+    public static function configureInput(InputDefinition $definition)
+    {
+        $definition->addOption(
+            new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The database relationship to use')
+        );
     }
 
     /**
      * @param string          $sshUrl
      * @param InputInterface  $input
+     * @param OutputInterface $output
      *
      * @return array|false
      */
-    public function chooseDatabase($sshUrl, InputInterface $input)
+    public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
     {
+        $stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
         $relationships = $this->getRelationships($sshUrl);
 
         // Filter to find database (mysql and pgsql) relationships.
@@ -50,11 +62,21 @@ class RelationshipsUtil
         });
 
         if (empty($relationships)) {
-            $this->output->writeln('No databases found');
+            $stdErr->writeln('No databases found');
             return false;
         }
 
-        $questionHelper = new QuestionHelper($input, $this->output);
+        // Use the --relationship option, if specified.
+        if ($input->hasOption('relationship')
+            && ($relationshipName = $input->getOption('relationship'))) {
+            if (!isset($relationships[$relationshipName])) {
+                $stdErr->writeln('Database relationship not found: ' . $relationshipName);
+                return false;
+            }
+            $relationships = array_intersect_key($relationships, [$relationshipName => true]);
+        }
+
+        $questionHelper = new QuestionHelper($input, $output);
         $choices = [];
         $separator = '.';
         foreach ($relationships as $name => $relationship) {
