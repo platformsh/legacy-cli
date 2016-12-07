@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Util\SshUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,31 +22,42 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('force', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Do everything except actually send the updates')
-            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'After pushing, do not wait for build or deploy')
-            ->addOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Specify an SSH identity file (public key) to use');
+            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'After pushing, do not wait for build or deploy');
         $this->addProjectOption()
             ->addEnvironmentOption();
+        SshUtil::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, true);
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
 
-        $environment = $this->getSelectedEnvironment();
+        /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
+        $gitHelper = $this->getHelper('git');
+        $gitHelper->setDefaultRepositoryDir($projectRoot);
+
         $source = $input->getArgument('src');
+
+        if ($this->hasSelectedEnvironment()) {
+            $target = $this->getSelectedEnvironment()->id;
+        } elseif ($currentBranch = $gitHelper->getCurrentBranch()) {
+            $target = $currentBranch;
+        } else {
+            $this->stdErr->writeln('Could not determine target environment name.');
+            return 1;
+        }
 
         /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
 
-        if (($environment->is_main || $environment->id === 'master')
-            && !$questionHelper->confirm(sprintf(
-                'Are you sure you want to push to the <comment>%s</comment> (production) branch?',
-                $environment->id
-            ))) {
+        if ($target === 'master'
+            && !$questionHelper->confirm(
+                'Are you sure you want to push to the <comment>master</comment> (production) branch?'
+            )) {
             return 1;
         }
 
@@ -87,74 +99,23 @@ class EnvironmentPushCommand extends CommandBase
             $source . ':' . $target,
         ];
 
-        $command = sprintf(
-            'git push %s %s:%s',
-            escapeshellarg($this->getSelectedProject()->getGitUrl()),
-            escapeshellarg($source),
-            escapeshellarg($environment->id)
-        );
-
         foreach (['force-with-lease', 'dry-run'] as $option) {
             if ($input->getOption($option)) {
-                $command .= ' --' . $option;
+                $gitArgs[] = ' --' . $option;
             }
         }
 
-        $sshOptions = [];
+        $sshUtil = new SshUtil($input, $output);
 
-        $sshOptions[] = "-o 'SendEnv TERM'";
-
+        $extraSshOptions = [];
+        $env = [];
         if ($input->getOption('no-wait')) {
-            $sshOptions[] = "-o 'SendEnv PLATFORMSH_PUSH_NO_WAIT'";
-            $command = 'PLATFORMSH_PUSH_NO_WAIT=1 ' . $command;
-        }
-        if ($identityFile = $input->getOption('identity-file')) {
-            if (!file_exists($identityFile)) {
-                $this->stdErr->writeln('File not found: ' . $identityFile);
-                return 1;
-            }
-            $sshOptions[] = "-o 'IdentityFile '" . escapeshellarg($identityFile);
+            $extraSshOptions[] = 'SendEnv PLATFORMSH_PUSH_NO_WAIT';
+            $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }
 
-        if (!empty($sshOptions)) {
-            $sshCommand = 'ssh ' . implode(' ', $sshOptions) . ' $*' . "\n";
-            $tempFile = $this->writeSshFile($sshCommand);
-            $command = 'GIT_SSH=' . escapeshellarg($tempFile) . ' ' . $command;
-        }
+        $gitHelper->setSshCommand($sshUtil->getSshCommand($extraSshOptions));
 
-        try {
-            /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
-            $shellHelper = $this->getHelper('shell');
-            $result = $shellHelper->executeSimple($command, $projectRoot);
-        }
-        finally {
-            if (isset($tempFile)) {
-                unlink($tempFile);
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param string $sshCommand
-     *
-     * @return string
-     */
-    protected function writeSshFile($sshCommand)
-    {
-        $tempDir = sys_get_temp_dir();
-        $tempFile = tempnam($tempDir, 'cli-git-ssh');
-        if (!$tempFile) {
-            throw new \RuntimeException('Failed to create temporary file in: ' . $tempDir);
-        }
-        if (!file_put_contents($tempFile, $sshCommand)) {
-            throw new \RuntimeException('Failed to write temporary file: ' . $tempFile);
-        }
-        if (!chmod($tempFile, 0750)) {
-            throw new \RuntimeException('Failed to make temporary SSH command file executable: ' . $tempFile);
-        }
-
-        return $tempFile;
+        return $gitHelper->execute($gitArgs, null, true, false, $env) ? 0 : 1;
     }
 }

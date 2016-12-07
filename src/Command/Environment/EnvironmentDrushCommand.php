@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Util\SshUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -42,9 +43,7 @@ class EnvironmentDrushCommand extends CommandBase
 
         $drushCommand = $input->getArgument('cmd');
 
-        $sshOptions = '';
-
-        // Pass through options that the CLI shares with Drush and SSH.
+        // Pass through options that the CLI shares with Drush.
         foreach (['yes', 'no', 'quiet'] as $option) {
             if ($input->getOption($option)) {
                 $drushCommand .= " --$option";
@@ -52,15 +51,12 @@ class EnvironmentDrushCommand extends CommandBase
         }
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $drushCommand .= " --debug";
-            $sshOptions .= ' -vv';
         } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
             $drushCommand .= " --verbose";
-            $sshOptions .= ' -v';
         } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $drushCommand .= " --verbose";
         } elseif ($output->getVerbosity() == OutputInterface::VERBOSITY_QUIET) {
             $drushCommand .= " --quiet";
-            $sshOptions .= ' -q';
         }
 
         $appName = $this->selectApp($input, function (LocalApplication $app) {
@@ -102,7 +98,9 @@ class EnvironmentDrushCommand extends CommandBase
         }
         $sshDrushCommand .= ' ' . $drushCommand . ' 2>&1';
 
-        $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
+        $sshUtil = new SshUtil($input, $output);
+        $command = $sshUtil->getSshCommand()
+            . ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sshDrushCommand);
 
         return $this->getHelper('shell')->executeSimple($command);

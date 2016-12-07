@@ -19,6 +19,9 @@ class RelationshipsUtil
     protected $shellHelper;
     protected $config;
 
+    /** @var SshUtil|null */
+    protected $sshUtil;
+
     /**
      * @param OutputInterface           $output
      * @param ShellHelperInterface|null $shellHelper
@@ -105,9 +108,22 @@ class RelationshipsUtil
      */
     public function getRelationships($sshUrl)
     {
-        $args = ['ssh', $sshUrl, 'echo $' . $this->config->get('service.env_prefix') . 'RELATIONSHIPS'];
+        $args = ['ssh'];
+        if (isset($this->sshUtil)) {
+            $args = array_merge($args, $this->sshUtil->getSshArgs());
+        }
+        $args[] = $sshUrl;
+        $args[] = 'echo $' . $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
         $result = $this->shellHelper->execute($args, null, true);
 
         return json_decode(base64_decode($result), true);
+    }
+
+    /**
+     * @param SshUtil $sshUtil
+     */
+    public function setSshUtil(SshUtil $sshUtil)
+    {
+        $this->sshUtil = $sshUtil;
     }
 }

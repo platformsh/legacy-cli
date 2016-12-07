@@ -7,6 +7,7 @@ use Platformsh\Cli\Helper\GitHelper;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Util\SshUtil;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -50,6 +51,7 @@ class ProjectGetCommand extends CommandBase
                 InputOption::VALUE_NONE,
                 'Build the project after cloning'
             );
+        SshUtil::configureInput($this->getDefinition());
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
 
@@ -131,6 +133,8 @@ class ProjectGetCommand extends CommandBase
 
         $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
         $gitHelper->ensureInstalled();
+        $sshUtil = new SshUtil($input, $output);
+        $gitHelper->setSshCommand($sshUtil->getSshCommand());
 
         // First check if the repo actually exists.
         try {

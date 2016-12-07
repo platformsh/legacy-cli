@@ -45,15 +45,16 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
      *
      * @param string      $commandline
      * @param string|null $dir
+     * @param array       $env
      *
      * @return int
      *   The command's exit code (0 on success, a different integer on failure).
      */
-    public function executeSimple($commandline, $dir = null)
+    public function executeSimple($commandline, $dir = null, array $env = [])
     {
         $this->output->writeln('Running command: <info>' . $commandline. '</info>', OutputInterface::VERBOSITY_VERBOSE);
 
-        $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir);
+        $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir, $env ? $env + $_ENV : null);
 
         return proc_close($process);
     }
@@ -64,10 +65,13 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
      * @throws \Exception
      *   If $mustRun is enabled and the command fails.
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [])
     {
         $builder = new ProcessBuilder($args);
         $process = $builder->getProcess();
+        if (!empty($env)) {
+            $process->setEnv($env + $this->getParentEnv());
+        }
         $process->setTimeout($this->defaultTimeout);
         if ($dir) {
             $process->setWorkingDirectory($dir);
@@ -76,6 +80,40 @@ class ShellHelper extends Helper implements ShellHelperInterface, OutputAwareInt
         $result = $this->runProcess($process, $mustRun, $quiet);
 
         return is_int($result) ? $result === 0 : $result;
+    }
+
+    /**
+     * Attempt to read useful environment variables from the parent process.
+     *
+     * We can't rely on the PHP having a variables_order that includes 'e', so
+     * $_ENV may be empty.
+     *
+     * @return array
+     */
+    protected function getParentEnv()
+    {
+        if (!empty($_ENV)) {
+            return $_ENV;
+        }
+
+        $candidates = [
+            'TERM',
+            'TERM_SESSION_ID',
+            'TMPDIR',
+            'SSH_AUTH_SOCK',
+            'PATH',
+            'LANG',
+            'LC_ALL',
+            'LC_CTYPE',
+            'PAGER',
+            'LESS',
+        ];
+        $variables = [];
+        foreach ($candidates as $name) {
+            $variables[$name] = getenv($name);
+        }
+
+        return array_filter($variables);
     }
 
     /**

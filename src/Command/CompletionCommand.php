@@ -147,6 +147,13 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 Completion::TYPE_OPTION,
                 [$this, 'getAppNames']
             ),
+            Completion::makeGlobalHandler(
+                'identity-file',
+                Completion::TYPE_OPTION,
+                function () {
+                    exit(Completion\ShellPathCompletion::PATH_COMPLETION_EXIT_CODE);
+                }
+            ),
         ]);
 
         try {

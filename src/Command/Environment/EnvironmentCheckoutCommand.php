@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Util\SshUtil;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,6 +23,7 @@ class EnvironmentCheckoutCommand extends CommandBase
                 InputArgument::OPTIONAL,
                 'The ID of the environment to check out. For example: "sprint2"'
             );
+        SshUtil::configureInput($this->getDefinition());
         $this->addExample('Check out the environment "develop"', 'develop');
     }
 
@@ -51,6 +53,9 @@ class EnvironmentCheckoutCommand extends CommandBase
         /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
         $gitHelper = $this->getHelper('git');
         $gitHelper->setDefaultRepositoryDir($projectRoot);
+
+        $sshUtil = new SshUtil($input, $output);
+        $gitHelper->setSshCommand($sshUtil->getSshCommand());
 
         $existsLocally = $gitHelper->branchExists($branch);
         if (!$existsLocally && !$this->api()->getEnvironment($branch, $project)) {

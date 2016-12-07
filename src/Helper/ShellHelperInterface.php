@@ -15,13 +15,14 @@ interface ShellHelperInterface
      * @param string|false $dir
      * @param bool         $mustRun
      * @param bool         $quiet
+     * @param array        $env
      *
      * @throws ProcessFailedException If $mustRun is enabled and the command fails.
      *
      * @return string|bool
      *   The command's output or true on success, false on failure.
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = false);
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = false, array $env = []);
 
     /**
      * @param OutputInterface $output

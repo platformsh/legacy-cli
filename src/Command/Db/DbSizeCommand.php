@@ -6,6 +6,7 @@ use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Util\RelationshipsUtil;
+use Platformsh\Cli\Util\SshUtil;
 use Platformsh\Cli\Util\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -46,8 +47,12 @@ class DbSizeCommand extends CommandBase
             return 1;
         }
 
-        $util = new RelationshipsUtil($this->stdErr);
-        $database = $util->chooseDatabase($sshUrl, $input);
+        $sshUtil = new SshUtil($input, $output);
+
+        $relationshipsUtil = new RelationshipsUtil($this->stdErr);
+        $relationshipsUtil->setSshUtil($sshUtil);
+
+        $database = $relationshipsUtil->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;
@@ -80,7 +85,9 @@ class DbSizeCommand extends CommandBase
 
         /** @var ShellHelper $shellHelper */
         $shellHelper = $this->getHelper('shell');
+
         $command = ['ssh'];
+        $command = array_merge($command, $sshUtil->getSshArgs());
         $command[] = $sshUrl;
         switch ($database['scheme']) {
             case 'pgsql':

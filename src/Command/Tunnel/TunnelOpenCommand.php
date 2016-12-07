@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Util\ProcessManager;
 use Platformsh\Cli\Util\RelationshipsUtil;
+use Platformsh\Cli\Util\SshUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -19,6 +20,7 @@ class TunnelOpenCommand extends TunnelCommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
+        SshUtil::configureInput($this->getDefinition());
     }
 
     /**
@@ -55,13 +57,8 @@ class TunnelOpenCommand extends TunnelCommandBase
             return 1;
         }
 
-        $extraSshArgs = [];
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-            $extraSshArgs[] = '-vv';
-        }
-        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $extraSshArgs[] = '-v';
-        }
+        $sshArgs = (new SshUtil($input, $output))->getSshArgs();
+
         $log->setVerbosity($output->getVerbosity());
 
         $processManager = new ProcessManager();
@@ -95,7 +92,7 @@ class TunnelOpenCommand extends TunnelCommandBase
                     continue;
                 }
 
-                $process = $this->createTunnelProcess($sshUrl, $remoteHost, $remotePort, $localPort, $extraSshArgs);
+                $process = $this->createTunnelProcess($sshUrl, $remoteHost, $remotePort, $localPort, $sshArgs);
 
                 $pidFile = $this->getPidFile($tunnel);
 

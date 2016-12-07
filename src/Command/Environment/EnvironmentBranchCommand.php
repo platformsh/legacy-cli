@@ -2,9 +2,8 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\ShellHelper;
 use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Cli\Util\SshUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -31,6 +30,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption("Do not wait for the environment to be branched");
+        SshUtil::configureInput($this->getDefinition());
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
 
@@ -111,8 +111,12 @@ class EnvironmentBranchCommand extends CommandBase
         // Clear the environments cache, as branching has started.
         $this->api()->clearEnvironmentsCache($selectedProject->id);
 
+        /** @var \Platformsh\Cli\Helper\GitHelper $gitHelper */
+        $gitHelper = $this->getHelper('git');
+        $sshUtil = new SshUtil($input, $output);
+        $gitHelper->setSshCommand($sshUtil->getSshCommand());
+
         if ($projectRoot) {
-            $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
             $gitHelper->setDefaultRepositoryDir($projectRoot);
 
             // If the Git branch already exists locally, just check it out.
