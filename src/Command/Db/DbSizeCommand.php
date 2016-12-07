@@ -46,8 +46,8 @@ class DbSizeCommand extends CommandBase
             return 1;
         }
 
-        $util = new RelationshipsUtil();
-        $database = $util->chooseDatabase($sshUrl, $input, $output);
+        $util = new RelationshipsUtil($this->stdErr);
+        $database = $util->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;

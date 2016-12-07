@@ -15,16 +15,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 class RelationshipsUtil
 {
 
+    protected $output;
     protected $shellHelper;
     protected $config;
 
     /**
-     * @param ShellHelperInterface $shellHelper
-     * @param CliConfig            $config
+     * @param OutputInterface           $output
+     * @param ShellHelperInterface|null $shellHelper
+     * @param CliConfig|null            $config
      */
-    public function __construct(ShellHelperInterface $shellHelper = null, CliConfig $config = null)
+    public function __construct(OutputInterface $output, ShellHelperInterface $shellHelper = null, CliConfig $config = null)
     {
-        $this->shellHelper = $shellHelper ?: new ShellHelper();
+        $this->output = $output;
+        $this->shellHelper = $shellHelper ?: new ShellHelper($output);
         $this->config = $config ?: new CliConfig();
     }
 
@@ -41,13 +44,12 @@ class RelationshipsUtil
     /**
      * @param string          $sshUrl
      * @param InputInterface  $input
-     * @param OutputInterface $output
      *
      * @return array|false
      */
-    public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
+    public function chooseDatabase($sshUrl, InputInterface $input)
     {
-        $stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
+        $stdErr = $this->output instanceof ConsoleOutput ? $this->output->getErrorOutput() : $this->output;
         $relationships = $this->getRelationships($sshUrl);
 
         // Filter to find database (mysql and pgsql) relationships.
@@ -76,7 +78,7 @@ class RelationshipsUtil
             $relationships = array_intersect_key($relationships, [$relationshipName => true]);
         }
 
-        $questionHelper = new QuestionHelper($input, $output);
+        $questionHelper = new QuestionHelper($input, $this->output);
         $choices = [];
         $separator = '.';
         foreach ($relationships as $name => $relationship) {

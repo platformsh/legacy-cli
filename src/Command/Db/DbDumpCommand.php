@@ -78,8 +78,8 @@ class DbDumpCommand extends CommandBase
             $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
         }
 
-        $util = new RelationshipsUtil();
-        $database = $util->chooseDatabase($sshUrl, $input, $output);
+        $util = new RelationshipsUtil($this->stdErr);
+        $database = $util->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
         }

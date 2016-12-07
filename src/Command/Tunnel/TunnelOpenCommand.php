@@ -42,7 +42,7 @@ class TunnelOpenCommand extends TunnelCommandBase
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
 
-        $util = new RelationshipsUtil($this->getHelper('shell'));
+        $util = new RelationshipsUtil($this->stdErr);
         $relationships = $util->getRelationships($sshUrl);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
