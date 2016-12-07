@@ -30,6 +30,7 @@ class ProjectVariableSetCommand extends CommandBase
         $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
         $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
         $this->addExample('Set the variable "example" to the string "abc", but only at build time', 'example abc --no-visible-runtime');
+        $this->addExample('Set the variable "EXAMPLE" outside of the PLATFORM_VARIABLES to the string "abc" by prefixing the variable name with "env:"', 'env:EXAMPLE abc');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
