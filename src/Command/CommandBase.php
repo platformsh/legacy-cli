@@ -761,21 +761,23 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $host = parse_url($url, PHP_URL_HOST);
         $path = parse_url($url, PHP_URL_PATH);
-        if ((!$path || $path === '/') && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote(self::$config->get('detection.site_domain')) . '$/', $host)) {
+        if (!strpos($path, '/projects/')
+            && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote(self::$config->get('detection.site_domain')) . '$/', $host)) {
             list($env_project_app,) = explode('.', $host, 2);
+            if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
+                $env_project_app = substr($env_project_app, $tripleDashPos + 3);
+            }
             if (($doubleDashPos = strrpos($env_project_app, '--')) !== false) {
                 $env_project = substr($env_project_app, 0, $doubleDashPos);
                 $result['appId'] = substr($env_project_app, $doubleDashPos + 2);
-            }
-            else {
+            } else {
                 $env_project = $env_project_app;
             }
             if (($dashPos = strrpos($env_project, '-')) !== false) {
                 $result['projectId'] = substr($env_project, $dashPos + 1);
                 $result['environmentId'] = substr($env_project, 0, $dashPos);
             }
-        }
-        else {
+        } else {
             $result['host'] = $host;
             $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
             if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
