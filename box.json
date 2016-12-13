@@ -29,5 +29,5 @@
   ],
   "main": "bin/platform",
   "output": "platform.phar",
-  "stub": true
+  "stub": "stub.php"
 }
