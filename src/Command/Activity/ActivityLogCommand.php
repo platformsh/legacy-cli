@@ -78,6 +78,11 @@ class ActivityLogCommand extends CommandBase
                 },
                 $refresh
             );
+
+            // Once the activity is complete, something has probably changed in
+            // the project's environments, so this is a good opportunity to
+            // clear the cache.
+            $this->api()->clearEnvironmentsCache($activity->project);
         }
         else {
             $output->write($activity->log);

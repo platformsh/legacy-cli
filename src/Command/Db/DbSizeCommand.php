@@ -21,6 +21,7 @@ class DbSizeCommand extends CommandBase
             ->setHelp(
                 "This command provides an estimate of the database's disk usage. It is not guaranteed to be reliable."
             );
+        RelationshipsUtil::configureInput($this->getDefinition());
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Table::addFormatOption($this->getDefinition());
     }

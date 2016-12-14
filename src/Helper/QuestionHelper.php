@@ -33,8 +33,8 @@ class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface,
      */
     public function __construct(InputInterface $input = null, OutputInterface $output = null)
     {
-        $this->input = $input ?: new ArgvInput();
-        $this->output = $output ?: new ConsoleOutput();
+        $this->setInput($input ?: new ArgvInput());
+        $this->setOutput($output ?: new ConsoleOutput());
     }
 
     /**
