@@ -14,7 +14,7 @@ class SelfInstallCommand extends CommandBase
         $this->setName('self:install')
              ->setDescription('Install or update CLI configuration files');
         $this->setHiddenAliases(['local:install']);
-        $cliName = self::$config->get('application.name');
+        $cliName = $this->config()->get('application.name');
         $this->setHelp(<<<EOT
 This command automatically installs shell configuration for the {$cliName},
 adding autocompletion support and handy aliases. Bash and ZSH are supported.
@@ -25,7 +25,7 @@ EOT
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $homeDir = $this->getHomeDir();
-        $configDir = self::$config->getUserConfigDir();
+        $configDir = $this->config()->getUserConfigDir();
 
         $shellConfig = file_get_contents(CLI_ROOT . '/shell-config.rc');
         if ($shellConfig === false) {
@@ -57,11 +57,11 @@ EOT
         $suggestedShellConfig = "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
             . '. ' . escapeshellarg($shellConfigDestination) . " 2>/dev/null";
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
         if (!$questionHelper->confirm('Do you want to update the file automatically?')) {
             $suggestedShellConfig = PHP_EOL
-                . '# ' . self::$config->get('application.name') . ' configuration'
+                . '# ' . $this->config()->get('application.name') . ' configuration'
                 . PHP_EOL
                 . $suggestedShellConfig;
 
@@ -72,7 +72,7 @@ EOT
 
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
             . PHP_EOL . PHP_EOL
-            . '# Automatically added by the ' . self::$config->get('application.name')
+            . '# Automatically added by the ' . $this->config()->get('application.name')
             . PHP_EOL . $suggestedShellConfig;
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');

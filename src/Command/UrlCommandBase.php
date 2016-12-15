@@ -41,7 +41,7 @@ abstract class UrlCommandBase extends CommandBase
             return;
         }
 
-        $shellHelper = $this->getHelper('shell');
+        $shell = $this->getService('shell');
 
         if ($browser === '0') {
             // The user has requested not to use a browser.
@@ -49,14 +49,14 @@ abstract class UrlCommandBase extends CommandBase
         } elseif (empty($browser)) {
             // Find a default browser to use.
             $browser = $this->getDefaultBrowser();
-        } elseif (!$shellHelper->commandExists($browser)) {
+        } elseif (!$shell->commandExists($browser)) {
             // The user has specified a browser, but it can't be found.
             $this->stdErr->writeln("<error>Browser not found: $browser</error>");
             $browser = false;
         }
 
         if ($browser) {
-            $opened = $shellHelper->execute([$browser, $url]);
+            $opened = $shell->execute([$browser, $url]);
             if ($opened) {
                 $this->stdErr->writeln("Opened: $url");
 
@@ -75,9 +75,9 @@ abstract class UrlCommandBase extends CommandBase
     protected function getDefaultBrowser()
     {
         $potential = ['xdg-open', 'open', 'start'];
-        $shellHelper = $this->getHelper('shell');
+        $shell = $this->getService('shell');
         foreach ($potential as $browser) {
-            if ($shellHelper->commandExists($browser)) {
+            if ($shell->commandExists($browser)) {
                 return $browser;
             }
         }

@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -37,8 +37,8 @@ class IntegrationGetCommand extends IntegrationCommandBase
         }
         elseif (!$id) {
             $integrations = $project->getIntegrations();
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
             $choices = [];
             foreach ($integrations as $integration) {
                 $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
@@ -62,12 +62,12 @@ class IntegrationGetCommand extends IntegrationCommandBase
                 $value = $this->api()->getNestedProperty($integration, $property);
             }
 
-            $output->writeln($this->propertyFormatter->format($value, $property));
+            $output->writeln($this->getService('property_formatter')->format($value, $property));
 
             return 0;
         }
 
-        $this->displayIntegration($integration, $input, $output);
+        $this->displayIntegration($integration);
 
         return 0;
     }

@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -38,7 +38,7 @@ class SnapshotListCommand extends CommandBase
             return 1;
         }
 
-        $table = new Table($input, $output);
+        $table = $this->getService('table');
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");

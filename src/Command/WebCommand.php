@@ -27,7 +27,7 @@ class WebCommand extends UrlCommandBase
             // Ignore errors.
         }
 
-        $url = self::$config->get('service.accounts_url');
+        $url = $this->config()->get('service.accounts_url');
         if ($this->hasSelectedProject()) {
             $url = $this->getSelectedProject()->getLink('#ui');
             if ($this->hasSelectedEnvironment()) {

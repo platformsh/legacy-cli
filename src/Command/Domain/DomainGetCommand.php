@@ -1,9 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
-use Platformsh\Cli\Helper\QuestionHelper;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -48,7 +48,7 @@ class DomainGetCommand extends DomainCommandBase
                 $options[$domain->name] = $domain->name;
             }
             /** @var QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
+            $questionHelper = $this->getService('question_helper');
             $domainName = $questionHelper->choose($options, 'Enter a number to choose a domain:');
         }
 
@@ -58,7 +58,7 @@ class DomainGetCommand extends DomainCommandBase
             return 1;
         }
 
-        $propertyFormatter = new PropertyFormatter($input);
+        $propertyFormatter = $this->getService('property_formatter');
 
         if ($property = $input->getOption('property')) {
             $value = $this->api()->getNestedProperty($domain, $property);
@@ -77,12 +77,12 @@ class DomainGetCommand extends DomainCommandBase
             $properties[] = $name;
             $values[] = $propertyFormatter->format($value, $name);
         }
-        $table = new Table($input, $output);
+        $table = $this->getService('table');
         $table->renderSimple($values, $properties);
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('To update a domain, run: <info>' . self::$config->get('application.executable') . ' domain:update [domain-name]</info>');
-        $this->stdErr->writeln('To delete a domain, run: <info>' . self::$config->get('application.executable') . ' domain:delete [domain-name]</info>');
+        $this->stdErr->writeln('To update a domain, run: <info>' . $this->config()->get('application.executable') . ' domain:update [domain-name]</info>');
+        $this->stdErr->writeln('To delete a domain, run: <info>' . $this->config()->get('application.executable') . ' domain:delete [domain-name]</info>');
 
         return 0;
     }

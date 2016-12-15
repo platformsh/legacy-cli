@@ -3,28 +3,25 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Api;
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
-use Platformsh\Cli\SelfUpdate\SelfUpdater;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Input\InputAwareInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
 {
@@ -59,11 +56,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
 
-    /** @var CliConfig */
-    protected static $config;
-
-    /** @var LocalProject|null */
-    protected $localProject;
+    protected static $container;
 
     /** @var Api|null */
     private $api;
@@ -106,24 +99,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     private $synopsis = [];
 
-    public function __construct($name = null)
-    {
-        // The config dependency is static for performance reasons: there are
-        // always many CommandBase objects instantiated, and the config does not
-        // need to change.
-        if (!isset(self::$config)) {
-            self::$config = new CliConfig();
-        }
-
-        $this->localProject = new LocalProject(self::$config);
-
-        parent::__construct($name);
-    }
-
     /**
      * {@inheritdoc}
      */
-    public function isHiddenInList() {
+    public function isHiddenInList()
+    {
         return $this->hiddenInList;
     }
 
@@ -134,12 +114,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         // Set up dependencies that are only needed once per command run.
         $this->output = $output;
+        $this->container()->set('output', $output);
         $this->input = $input;
+        $this->container()->set('input', $input);
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
         self::$interactive = $input->isInteractive();
 
-        if (self::$config->get('api.debug')) {
+        if ($this->config()->get('api.debug')) {
             $this->stdErr->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
 
@@ -165,10 +147,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function api()
     {
         if (!isset($this->api)) {
-            $dispatcher = new EventDispatcher();
-            $dispatcher->addListener('login_required', [$this, 'login']);
-            $dispatcher->addListener('environments_changed', [$this, 'updateDrushAliases']);
-            $this->api = new Api(self::$config, $dispatcher);
+            $this->api = $this->getService('api');
+            $this->api
+                ->dispatcher
+                ->addListener('login_required', [$this, 'login']);
+            $this->api
+                ->dispatcher
+                ->addListener('environments_changed', [$this, 'updateDrushAliases']);
         }
 
         return $this->api;
@@ -185,34 +170,35 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function promptLegacyMigrate()
     {
         static $asked = false;
-        if ($this->localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
+        $localProject = $this->getService('local.project');
+        if ($localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
             $asked = true;
 
             $projectRoot = $this->getProjectRoot();
             $timestamp = time();
             $promptMigrate = true;
             if ($projectRoot) {
-                $projectConfig = $this->localProject->getProjectConfig($projectRoot);
+                $projectConfig = $localProject->getProjectConfig($projectRoot);
                 if (isset($projectConfig['migrate']['3.x']['last_asked']) && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
                     $promptMigrate = false;
                 }
             }
 
-            $this->stdErr->writeln('You are in a project using an old file structure, from previous versions of the ' . self::$config->get('application.name') .'.');
+            $this->stdErr->writeln('You are in a project using an old file structure, from previous versions of the ' . $this->config()->get('application.name') .'.');
             if ($this->input->isInteractive() && $promptMigrate) {
                 if ($projectRoot && isset($projectConfig)) {
                     $projectConfig['migrate']['3.x']['last_asked'] = $timestamp;
-                    $this->localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
+                    $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
                 }
-                /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-                $questionHelper = $this->getHelper('question');
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
                 if ($questionHelper->confirm('Migrate to the new structure?')) {
                     $code = $this->runOtherCommand('legacy-migrate');
                     exit($code);
                 }
             }
             else {
-                $this->stdErr->writeln('Fix this with: <comment>' . self::$config->get('application.executable') . ' legacy-migrate</comment>');
+                $this->stdErr->writeln('Fix this with: <comment>' . $this->config()->get('application.executable') . ' legacy-migrate</comment>');
             }
             $this->stdErr->writeln('');
         }
@@ -224,7 +210,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function getHomeDir()
     {
         if (!isset(self::$homeDir)) {
-            self::$homeDir = FilesystemHelper::getHomeDirectory();
+            self::$homeDir = Filesystem::getHomeDirectory();
         }
 
         return self::$homeDir;
@@ -264,15 +250,16 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $timestamp = time();
+        $config = $this->config();
 
-        if (!self::$config->get('updates.check')) {
+        if (!$config->get('updates.check')) {
             return;
         }
-        elseif (!$reset && self::$config->get('updates.last_checked') > $timestamp - self::$config->get('updates.check_interval')) {
+        elseif (!$reset && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
             return;
         }
 
-        self::$config->writeUserConfig([
+        $config->writeUserConfig([
             'updates' => [
                 'check' => true,
                 'last_checked' => $timestamp,
@@ -281,13 +268,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
-        /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
-        $shellHelper = $this->getHelper('shell');
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
-        $currentVersion = self::$config->get('application.version');
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $currentVersion = $this->config()->get('application.version');
 
-        $cliUpdater = new SelfUpdater($this->input, $this->output, self::$config, $questionHelper);
+        $cliUpdater = $this->getService('self_updater');
         $cliUpdater->setAllowMajor(true);
         $cliUpdater->setTimeout(10);
 
@@ -315,7 +302,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                     . "\n\n" . 'Continue?';
                 if ($questionHelper->confirm($questionText)) {
                     $this->stdErr->writeln('');
-                    $exitCode = $shellHelper->executeSimple($originalCommand);
+                    $exitCode = $shell->executeSimple($originalCommand);
                 }
             }
             exit($exitCode);
@@ -329,7 +316,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function getSessionsDir()
     {
-        return self::$config->getUserConfigDir() . '/.session';
+        return $this->config()->getUserConfigDir() . '/.session';
     }
 
     /**
@@ -378,7 +365,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $project = false;
-        $config = $this->localProject->getProjectConfig($projectRoot);
+        $config = $this->getService('local.project')->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
@@ -418,13 +405,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return false;
         }
 
-        $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot());
-        $config = $this->localProject->getProjectConfig($projectRoot);
+        $git = $this->getService('git');
+        $git->setDefaultRepositoryDir($this->getProjectRoot());
+        $localProject = $this->getService('local.project');
+        $config = $localProject->getProjectConfig($projectRoot);
 
         // Check if there is a manual mapping set for the current branch.
         if (!empty($config['mapping'])
-            && ($currentBranch = $gitHelper->getCurrentBranch())
+            && ($currentBranch = $git->getCurrentBranch())
             && !empty($config['mapping'][$currentBranch])) {
             $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
             if ($environment) {
@@ -432,13 +420,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 return $environment;
             } else {
                 unset($config['mapping'][$currentBranch]);
-                $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
+                $localProject->writeCurrentProjectConfig($config, $projectRoot);
             }
         }
 
         // Check whether the user has a Git upstream set to a remote environment
         // ID.
-        $upstream = $gitHelper->getUpstream();
+        $upstream = $git->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
@@ -450,7 +438,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         // There is no Git remote set. Fall back to trying the current branch
         // name.
-        if (!empty($currentBranch) || ($currentBranch = $gitHelper->getCurrentBranch())) {
+        if (!empty($currentBranch) || ($currentBranch = $git->getCurrentBranch())) {
             $environment = $this->api()->getEnvironment($currentBranch, $project, $refresh);
             if (!$environment) {
                 // Try a sanitized version of the branch name too.
@@ -491,10 +479,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return;
         }
         $this->debug('Updating Drush aliases');
-        /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
-        $drushHelper = $this->getHelper('drush');
-        $drushHelper->setHomeDir($this->getHomeDir());
-        $drushHelper->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
+        /** @var \Platformsh\Cli\Service\Drush $drush */
+        $drush = $this->getService('drush');
+        $drush->setHomeDir($this->getHomeDir());
+        $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
     }
 
     /**
@@ -515,7 +503,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         if (!isset(self::$projectRoot)) {
             $this->debug('Finding the project root based on the CWD');
-            self::$projectRoot = $this->localProject->getProjectRoot();
+            self::$projectRoot = $this->getService('local.project')->getProjectRoot();
             $this->debug(
                 self::$projectRoot
                     ? 'Project root found: ' . self::$projectRoot
@@ -707,15 +695,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $this->debug('Searching for applications in local repository');
         /** @var LocalApplication[] $apps */
-        $apps = LocalApplication::getApplications($projectRoot, self::$config);
+        $apps = LocalApplication::getApplications($projectRoot, $this->config());
 
         if ($filter) {
             $apps = array_filter($apps, $filter);
         }
 
         if (count($apps) > 1 && $input->isInteractive()) {
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
             $choices = [];
             foreach ($apps as $app) {
                 $choices[$app->getName()] = $app->getName();
@@ -762,7 +750,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $host = parse_url($url, PHP_URL_HOST);
         $path = parse_url($url, PHP_URL_PATH);
         if (!strpos($path, '/projects/')
-            && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote(self::$config->get('detection.site_domain')) . '$/', $host)) {
+            && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote($this->config()->get('detection.site_domain')) . '$/', $host)) {
             list($env_project_app,) = explode('.', $host, 2);
             if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
                 $env_project_app = substr($env_project_app, $tripleDashPos + 3);
@@ -986,7 +974,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $name = $this->getName();
 
         $placeholders = ['%command.name%', '%command.full_name%'];
-        $replacements = [$name, self::$config->get('application.executable') . ' ' . $name];
+        $replacements = [$name, $this->config()->get('application.executable') . ' ' . $name];
 
         return str_replace($placeholders, $replacements, $help);
     }
@@ -1004,19 +992,47 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * {@inheritdoc}
+     * Get a service object.
+     *
+     * Services are configured in services.yml, and loaded via the Symfony
+     * Dependency Injection component.
+     *
+     * @param string $name The service name. See services.yml for a list.
+     *
+     * @return object The associated service object.
      */
-    public function getHelper($name)
+    protected function getService($name)
     {
-        $helper = parent::getHelper($name);
-        if ($this->input !== null && $helper instanceof InputAwareInterface) {
-            $helper->setInput($this->input);
-        }
-        if ($this->output !== null && $helper instanceof OutputAwareInterface) {
-            $helper->setOutput($this->output);
+        return $this->container()->get($name);
+    }
+
+    /**
+     * @return ContainerBuilder
+     */
+    private function container()
+    {
+        if (!isset(self::$container)) {
+            self::$container = new ContainerBuilder();
+            $loader = new YamlFileLoader(self::$container, new FileLocator());
+            $loader->load(CLI_ROOT . '/services.yaml');
         }
 
-        return $helper;
+        return self::$container;
+    }
+
+    /**
+     * Get the configuration service.
+     *
+     * @return \Platformsh\Cli\CliConfig
+     */
+    protected function config()
+    {
+        static $config;
+        if (!isset($config)) {
+            $config = $this->getService('config');
+        }
+
+        return $config;
     }
 
     /**
@@ -1048,7 +1064,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             $this->synopsis[$key] = trim(sprintf(
                 '%s %s %s',
-                self::$config->get('application.executable'),
+                $this->config()->get('application.executable'),
                 $shortName,
                 $this->getDefinition()->getSynopsis($short)
             ));

@@ -7,6 +7,7 @@
   "files": [
     "config.yaml",
     "constants.php",
+    "services.yaml",
     "shell-config.rc",
     "vendor/autoload.php",
     "vendor/symfony/console/Resources/bin/hiddeninput.exe"
@@ -28,5 +29,5 @@
   ],
   "main": "bin/platform",
   "output": "platform.phar",
-  "stub": true
+  "stub": "stub.php"
 }

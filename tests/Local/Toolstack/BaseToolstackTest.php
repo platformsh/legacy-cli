@@ -3,7 +3,7 @@
 namespace Platformsh\Cli\Tests\Toolstack;
 
 use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Tests\HasTempDirTrait;
@@ -85,7 +85,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         $projectRoot = $this->createTempSubDir('project');
 
         // Set up the project.
-        $fsHelper = new FilesystemHelper();
+        $fsHelper = new Filesystem();
         $fsHelper->copyAll($sourceDir, $projectRoot);
 
         // @todo perhaps make some of these steps unnecessary

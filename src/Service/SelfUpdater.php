@@ -1,9 +1,9 @@
 <?php
-namespace Platformsh\Cli\SelfUpdate;
+namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\CliConfig;
 use Humbug\SelfUpdate\Updater;
-use Platformsh\Cli\Helper\QuestionHelper;
+use Platformsh\Cli\SelfUpdate\ManifestStrategy;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;

@@ -1,58 +1,40 @@
 <?php
 
-namespace Platformsh\Cli\Helper;
+namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
-use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
-class DrushHelper extends Helper implements OutputAwareInterface
+class Drush
 {
 
     protected $homeDir = '~';
 
-    /** @var ShellHelperInterface */
+    /** @var Shell */
     protected $shellHelper;
 
-    /** @var Filesystem */
+    /** @var SymfonyFilesystem */
     protected $fs;
 
     /** @var CliConfig */
     protected $config;
 
-    public function getName()
-    {
-        return 'drush';
-    }
-
     /**
-     * @param CliConfig|null            $config
-     * @param ShellHelperInterface|null $shellHelper
-     * @param Filesystem|null           $fs
+     * @param CliConfig|null         $config
+     * @param Shell|null             $shellHelper
+     * @param SymfonyFilesystem|null $fs
      */
-    public function __construct(CliConfig $config = null, ShellHelperInterface $shellHelper = null, Filesystem $fs = null)
+    public function __construct(CliConfig $config = null, Shell $shellHelper = null, SymfonyFilesystem $fs = null)
     {
-        $this->shellHelper = $shellHelper ?: new ShellHelper();
+        $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new CliConfig();
-        $this->fs = $fs ?: new Filesystem();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setOutput(OutputInterface $output)
-    {
-        if ($this->shellHelper instanceof OutputAwareInterface) {
-            $this->shellHelper->setOutput($output);
-        }
+        $this->fs = $fs ?: new SymfonyFilesystem();
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli;
 
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Util\Util;
 use Symfony\Component\Yaml\Yaml;
 
@@ -67,7 +67,7 @@ class CliConfig
      */
     public function getUserConfigDir()
     {
-        return FilesystemHelper::getHomeDirectory() . '/' . $this->get('application.user_config_dir');
+        return Filesystem::getHomeDirectory() . '/' . $this->get('application.user_config_dir');
     }
 
     /**

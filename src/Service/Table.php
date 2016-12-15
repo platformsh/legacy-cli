@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Util;
+namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTable;
 use Symfony\Component\Console\Input\InputDefinition;

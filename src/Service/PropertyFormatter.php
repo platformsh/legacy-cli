@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Util;
+namespace Platformsh\Cli\Service;
 
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;

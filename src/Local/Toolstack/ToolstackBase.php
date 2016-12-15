@@ -3,10 +3,9 @@
 namespace Platformsh\Cli\Local\Toolstack;
 
 use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Helper\ShellHelperInterface;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -47,13 +46,13 @@ abstract class ToolstackBase implements ToolstackInterface
     /** @var OutputInterface */
     protected $output;
 
-    /** @var FilesystemHelper */
+    /** @var Filesystem */
     protected $fsHelper;
 
-    /** @var GitHelper */
+    /** @var Git */
     protected $gitHelper;
 
-    /** @var ShellHelperInterface */
+    /** @var Shell */
     protected $shellHelper;
 
     /** @var CliConfig */
@@ -73,15 +72,15 @@ abstract class ToolstackBase implements ToolstackInterface
     private $buildInPlace = false;
 
     /**
-     * @param object               $fsHelper
-     * @param ShellHelperInterface $shellHelper
-     * @param object               $gitHelper
+     * @param object     $fsHelper
+     * @param Shell|null $shellHelper
+     * @param object     $gitHelper
      */
-    public function __construct($fsHelper = null, ShellHelperInterface $shellHelper = null, $gitHelper = null)
+    public function __construct($fsHelper = null, Shell $shellHelper = null, $gitHelper = null)
     {
-        $this->shellHelper = $shellHelper ?: new ShellHelper();
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper($this->shellHelper);
-        $this->gitHelper = $gitHelper ?: new GitHelper($this->shellHelper);
+        $this->shellHelper = $shellHelper ?: new Shell();
+        $this->fsHelper = $fsHelper ?: new Filesystem($this->shellHelper);
+        $this->gitHelper = $gitHelper ?: new Git($this->shellHelper);
         $this->output = new NullOutput();
 
         $this->specialDestinations = [

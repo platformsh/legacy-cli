@@ -46,8 +46,8 @@ class UserRoleCommand extends CommandBase
 
         if ($level === null && $role && $this->hasSelectedEnvironment() && $input->isInteractive()) {
             $environment = $this->getSelectedEnvironment();
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
             $question = new ChoiceQuestion('For which access level do you want to set the role?', [
                 'project' => 'The project',
                 'environment' => sprintf('The environment (%s)', $environment->id),

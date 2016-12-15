@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
 
 class VanillaTest extends BaseToolstackTest
@@ -46,7 +46,7 @@ class VanillaTest extends BaseToolstackTest
     {
         // Copy the 'vanilla' app to a temporary directory.
         $sourceDir = $this->createTempSubDir();
-        $fsHelper = new FilesystemHelper();
+        $fsHelper = new Filesystem();
         $fsHelper->copyAll('tests/data/apps/vanilla', $sourceDir);
 
         // Create another temporary directory.

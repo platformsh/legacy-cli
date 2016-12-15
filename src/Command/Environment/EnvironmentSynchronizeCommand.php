@@ -55,7 +55,7 @@ EOT
 
         $parentId = $selectedEnvironment->parent;
 
-        $questionHelper = $this->getHelper('question');
+        $questionHelper = $this->getService('question_helper');
 
         if ($synchronize = $input->getArgument('synchronize')) {
             // The input was invalid.

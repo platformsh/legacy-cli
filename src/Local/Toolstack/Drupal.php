@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
-use Platformsh\Cli\Helper\DrushHelper;
+use Platformsh\Cli\Service\Drush;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -203,13 +203,13 @@ class Drupal extends ToolstackBase
     }
 
     /**
-     * @return DrushHelper
+     * @return Drush
      */
     protected function getDrushHelper()
     {
         static $drushHelper;
         if (!isset($drushHelper)) {
-            $drushHelper = new DrushHelper($this->config, $this->shellHelper);
+            $drushHelper = new Drush($this->config, $this->shellHelper);
         }
 
         return $drushHelper;

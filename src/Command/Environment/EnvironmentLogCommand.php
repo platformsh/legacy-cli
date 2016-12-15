@@ -54,16 +54,16 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $this->stdErr->writeln('No log type specified.');
             return 1;
         } else {
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
-            /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
-            $shellHelper = $this->getHelper('shell');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            /** @var \Platformsh\Cli\Service\Shell $shell */
+            $shell = $this->getService('shell');
 
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $sshUrl);
             $cache = $this->api()->getCache();
             if (!$result = $cache->fetch($cacheKey)) {
-                $result = $shellHelper->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
+                $result = $shell->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
 
                 // Cache the list for 1 hour.
                 $cache->save($cacheKey, $result, 86400);
@@ -92,7 +92,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
 
-        return $this->getHelper('shell')->executeSimple($sshCommand);
+        return $this->getService('shell')->executeSimple($sshCommand);
     }
 
     /**

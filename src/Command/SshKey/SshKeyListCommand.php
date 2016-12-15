@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\SshKey;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -24,9 +24,9 @@ class SshKeyListCommand extends CommandBase
                      ->getSshKeys();
 
         if (empty($keys)) {
-            $this->stdErr->writeln("You do not yet have any SSH public keys in your " . self::$config->get('service.name') . " account");
+            $this->stdErr->writeln("You do not yet have any SSH public keys in your " . $this->config()->get('service.name') . " account");
         } else {
-            $table = new Table($input, $output);
+            $table = $this->getService('table');
             $headers = ['ID', 'Title', 'Fingerprint'];
             $rows = [];
             foreach ($keys as $key) {
@@ -44,8 +44,8 @@ class SshKeyListCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $this->stdErr->writeln("Add a new SSH key with: <info>" . self::$config->get('application.executable') . " ssh-key:add</info>");
-        $this->stdErr->writeln("Delete an SSH key with: <info>" . self::$config->get('application.executable') . " ssh-key:delete [id]</info>");
+        $this->stdErr->writeln("Add a new SSH key with: <info>" . $this->config()->get('application.executable') . " ssh-key:add</info>");
+        $this->stdErr->writeln("Delete an SSH key with: <info>" . $this->config()->get('application.executable') . " ssh-key:delete [id]</info>");
 
         return !empty($keys) ? 0 : 1;
     }

@@ -4,8 +4,8 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Cli\Util\Table;
-use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -53,10 +53,10 @@ class EnvironmentInfoCommand extends CommandBase
 
         $property = $input->getArgument('property');
 
-        $this->formatter = new PropertyFormatter($input);
+        $this->formatter = $this->getService('property_formatter');
 
         if (!$property) {
-            return $this->listProperties($environment, new Table($input, $output));
+            return $this->listProperties($environment);
         }
 
         $value = $input->getArgument('value');
@@ -81,11 +81,9 @@ class EnvironmentInfoCommand extends CommandBase
     /**
      * @param Environment $environment
      *
-     * @param Table       $table
-     *
      * @return int
      */
-    protected function listProperties(Environment $environment, Table $table)
+    protected function listProperties(Environment $environment)
     {
         $headings = [];
         $values = [];
@@ -93,7 +91,7 @@ class EnvironmentInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        $table->renderSimple($values, $headings);
+        $this->getService('table')->renderSimple($values, $headings);
 
         return 0;
     }
