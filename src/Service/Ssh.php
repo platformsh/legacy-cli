@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Ssh
+class Ssh implements InputConfiguringInterface
 {
     protected $input;
     protected $output;

@@ -2,21 +2,22 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class DocsCommand extends UrlCommandBase
+class DocsCommand extends CommandBase
 {
 
     protected function configure()
     {
-        parent::configure();
         $this
             ->setName('docs')
             ->setDescription('Open the online documentation')
             ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
         $this->addExample('Search for information about the CLI', 'CLI');
+        Url::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -36,7 +37,7 @@ class DocsCommand extends UrlCommandBase
                 . urlencode('site:' . $hostname . ' ' . $query);
         }
 
-        $this->openUrl($url, $input, $output);
+        $this->getService('url')->openUrl($url, $input, $output);
     }
 
     /**
@@ -60,5 +61,4 @@ class DocsCommand extends UrlCommandBase
     {
         return strpos($term, ' ') ? '"' . $term . '"' : $term;
     }
-
 }

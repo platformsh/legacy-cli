@@ -37,3 +37,6 @@ services:
     table:
         class:     '\Platformsh\Cli\Service\Table'
         arguments: ['@input', '@output']
+    url:
+        class:     '\Platformsh\Cli\Service\Url'
+        arguments: ['@shell']

@@ -1,20 +1,21 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
-use Platformsh\Cli\Command\UrlCommandBase;
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentUrlCommand extends UrlCommandBase
+class EnvironmentUrlCommand extends CommandBase
 {
 
     protected function configure()
     {
-        parent::configure();
         $this
             ->setName('environment:url')
             ->setAliases(['url'])
             ->setDescription('Get the public URLs of an environment');
+        Url::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -56,7 +57,7 @@ class EnvironmentUrlCommand extends UrlCommandBase
         $questionHelper = $this->getService('question_helper');
         $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to choose a URL', $urls[0]);
 
-        $this->openUrl($url, $input, $output);
+        $this->getService('url')->openUrl($url, $input, $output);
 
         return 0;
     }

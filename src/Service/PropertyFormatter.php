@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Yaml\Yaml;
 
-class PropertyFormatter
+class PropertyFormatter implements InputConfiguringInterface
 {
     const DEFAULT_DATE_FORMAT = 'c';
 
