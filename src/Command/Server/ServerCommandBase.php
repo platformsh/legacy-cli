@@ -15,8 +15,8 @@ abstract class ServerCommandBase extends CommandBase
 
     public function isEnabled()
     {
-        return self::$config->has('experimental.enable_local_server')
-            && self::$config->get('experimental.enable_local_server')
+        return $this->config()->has('experimental.enable_local_server')
+            && $this->config()->get('experimental.enable_local_server')
             && parent::isEnabled();
     }
 
@@ -56,15 +56,13 @@ abstract class ServerCommandBase extends CommandBase
         $serverInfo = $this->getServerInfo();
         if (file_exists($pidFile)) {
             $pid = file_get_contents($pidFile);
-        }
-        elseif (isset($serverInfo[$address])) {
+        } elseif (isset($serverInfo[$address])) {
             $pid = $serverInfo[$address]['pid'];
         }
 
         if (!empty($pid) && (!function_exists('posix_kill') || posix_kill($pid, 0))) {
             return $pid;
-        }
-        elseif (!empty($pid)) {
+        } elseif (!empty($pid)) {
             // The PID is no longer valid. Delete the lock file and
             // continue.
             $this->stopServer($address);
@@ -89,9 +87,9 @@ abstract class ServerCommandBase extends CommandBase
     {
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
-            $filename = self::$config->getUserConfigDir() . '/local-servers.json';
+            $filename = $this->config()->getUserConfigDir() . '/local-servers.json';
             if (file_exists($filename)) {
-                $this->serverInfo = (array) json_decode(file_get_contents($filename), TRUE);
+                $this->serverInfo = (array) json_decode(file_get_contents($filename), true);
             }
         }
 
@@ -111,13 +109,12 @@ abstract class ServerCommandBase extends CommandBase
 
     protected function saveServerInfo()
     {
-        $filename = self::$config->getUserConfigDir() . '/local-servers.json';
+        $filename = $this->config()->getUserConfigDir() . '/local-servers.json';
         if (!empty($this->serverInfo)) {
             if (!file_put_contents($filename, json_encode($this->serverInfo))) {
                 throw new \RuntimeException('Failed to write server info to: ' . $filename);
             }
-        }
-        else {
+        } else {
             unlink($filename);
         }
     }
@@ -194,7 +191,7 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function getPidFile($address)
     {
-        return self::$config->getUserConfigDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
+        return $this->config()->getUserConfigDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
     }
 
     /**
@@ -221,9 +218,11 @@ abstract class ServerCommandBase extends CommandBase
                 $stack = 'php';
             }
             if ($stack === 'php' && $version && version_compare(PHP_VERSION, $version, '<')) {
-                $this->stdErr->writeln(
-                  sprintf("<comment>Warning:</comment> your local PHP version is %s, but the app expects %s", PHP_VERSION, $version)
-                );
+                $this->stdErr->writeln(sprintf(
+                    '<comment>Warning:</comment> your local PHP version is %s, but the app expects %s',
+                    PHP_VERSION,
+                    $version
+                ));
             }
         }
 
@@ -234,7 +233,7 @@ abstract class ServerCommandBase extends CommandBase
 
             $this->showSecurityWarning();
 
-            $arguments[] = $this->getHelper('shell')->resolveCommand('php');
+            $arguments[] = $this->getService('shell')->resolveCommand('php');
 
             foreach ($this->getServerPhpConfig() as $item => $value) {
                 $arguments[] = sprintf('-d %s="%s"', $item, $value);
@@ -255,12 +254,12 @@ abstract class ServerCommandBase extends CommandBase
 
             $builder = new ProcessBuilder($arguments);
             $process = $builder->getProcess();
-        }
-        else {
+        } else {
             // Bail out. We can't support non-PHP apps for now.
-            throw new \Exception(
-              sprintf("Not supported: the CLI doesn't yet support starting a server for the application type '%s'", $appConfig['type'])
-            );
+            throw new \Exception(sprintf(
+                "Not supported: the CLI doesn't yet support starting a server for the application type '%s'",
+                $appConfig['type']
+            ));
 
             // The following code is a potential strategy for non-PHP apps, but
             // it won't really work without starting more than one process,
@@ -278,7 +277,7 @@ abstract class ServerCommandBase extends CommandBase
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);
-        $envPrefix = self::$config->get('application.env_prefix');
+        $envPrefix = $this->config()->get('service.env_prefix');
         if (isset($env[$envPrefix . '_APP_DIR'])) {
             $process->setWorkingDirectory($env[$envPrefix . '_APP_DIR']);
         }
@@ -323,7 +322,7 @@ abstract class ServerCommandBase extends CommandBase
             return false;
         }
 
-        $router = $projectRoot . '/' . self::$config->get('local.local_dir') . '/' . basename($router_src);
+        $router = $projectRoot . '/' . $this->config()->get('local.local_dir') . '/' . basename($router_src);
         if (!isset($created[$router])) {
             if (!file_put_contents($router, file_get_contents($router_src))) {
                 $this->stdErr->writeln(sprintf('Could not create router file: <error>%s</error>', $router));
@@ -363,7 +362,7 @@ abstract class ServerCommandBase extends CommandBase
     protected function createEnv($projectRoot, $docRoot, $address, array $appConfig)
     {
         $realDocRoot = realpath($docRoot);
-        $envPrefix = self::$config->get('application.env_prefix');
+        $envPrefix = $this->config()->get('service.env_prefix');
         $env = [
             '_PLATFORM_VARIABLES_PREFIX' => $envPrefix,
             $envPrefix . 'ENVIRONMENT' => '_local',
@@ -374,7 +373,7 @@ abstract class ServerCommandBase extends CommandBase
 
         list($env['IP'], $env['PORT']) = explode(':', $address);
 
-        if (dirname(dirname($realDocRoot)) === $projectRoot . '/' . self::$config->get('local.local_dir')) {
+        if (dirname(dirname($realDocRoot)) === $projectRoot . '/' . $this->config()->get('local.local_dir')) {
             $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);
         }
 
@@ -384,8 +383,7 @@ abstract class ServerCommandBase extends CommandBase
                 if ($project) {
                     $env[$envPrefix . 'PROJECT'] = $project->id;
                 }
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 // Ignore errors
             }
         }
@@ -399,7 +397,9 @@ abstract class ServerCommandBase extends CommandBase
         if ($shown) {
             return;
         }
-        $this->stdErr->writeln('<comment>Warning:</comment> this uses the PHP built-in web server, which is neither secure nor reliable for production use');
+        $this->stdErr->writeln(
+            '<comment>Warning:</comment> this uses the PHP built-in web server, which is neither secure nor reliable for production use'
+        );
         $shown = true;
     }
 }

@@ -4,8 +4,8 @@ namespace Platformsh\Cli\Command\Server;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
-use Platformsh\Cli\Util\UrlUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -13,9 +13,6 @@ use Symfony\Component\Process\Exception\RuntimeException;
 
 class ServerRunCommand extends ServerCommandBase
 {
-    /** @var UrlUtil */
-    protected $urlUtil;
-
     protected function configure()
     {
         $this
@@ -25,9 +22,8 @@ class ServerRunCommand extends ServerCommandBase
           ->addOption('app', null, InputOption::VALUE_REQUIRED, 'The app name')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port')
-          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. If not defined, logs are written to STDERR');
-        $this->urlUtil = new UrlUtil();
-        $this->urlUtil->addBrowserOption($this->getDefinition());
+          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file (logs are written to stderr by default)');
+        Url::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -55,8 +51,8 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $multiApp = count($apps) > 1;
         $appId = $input->getOption('app');
@@ -78,11 +74,14 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $webRoot = $projectRoot . '/' . $this->config()->get('local.web_root');
         $docRoot = $multiApp ? $webRoot . '/' . $app->getWebPath() : $webRoot;
         if (!file_exists($docRoot)) {
             $this->stdErr->writeln(sprintf('Document root not found: <error>%s</error>', $docRoot));
-            $this->stdErr->writeln(sprintf('Build the application with: <comment>' . self::$config->get('application.executable') . ' build</comment>'));
+            $this->stdErr->writeln(sprintf(
+                'Build the application with: <comment>%s build</comment>',
+                $this->config()->get('application.executable')
+            ));
             return 1;
         }
 
@@ -93,8 +92,7 @@ class ServerRunCommand extends ServerCommandBase
                 $this->stdErr->writeln(sprintf('Failed to open log file for writing: <error>%s</error>', $logFile));
                 return 1;
             }
-        }
-        else {
+        } else {
             $log = $this->stdErr;
         }
 
@@ -110,10 +108,10 @@ class ServerRunCommand extends ServerCommandBase
         if ($otherServer = $this->isServerRunningForApp($appId, $projectRoot)) {
             if (!$force) {
                 $this->stdErr->writeln(sprintf(
-                  'A server is already running for the app <info>%s</info> at http://%s, PID %s',
-                  $appId,
-                  $otherServer['address'],
-                  $otherServer['pid']
+                    'A server is already running for the app <info>%s</info> at http://%s, PID %s',
+                    $appId,
+                    $otherServer['address'],
+                    $otherServer['pid']
                 ));
                 return 1;
             }
@@ -121,9 +119,10 @@ class ServerRunCommand extends ServerCommandBase
             // If the port was not manually specified, kill the old server and
             // take its address.
             $this->stdErr->writeln(sprintf(
-              'Stopping server for the app <info>%s</info> at http://%s',
-              $appId,
-              $otherServer['address']));
+                'Stopping server for the app <info>%s</info> at http://%s',
+                $appId,
+                $otherServer['address']
+            ));
             $this->stopServer($address, $otherServer['pid']);
             sleep(1);
 
@@ -137,11 +136,10 @@ class ServerRunCommand extends ServerCommandBase
         if ($otherPid = $this->isServerRunningForAddress($address)) {
             if (!$force || $otherPid === true) {
                 $this->stdErr->writeln(sprintf(
-                  'A server is already running at address: http://%s, PID %s',
-                  $address,
-                  $otherPid === true ? 'unknown' : $otherPid
+                    'A server is already running at address: http://%s, PID %s',
+                    $address,
+                    $otherPid === true ? 'unknown' : $otherPid
                 ));
-                $error = true;
                 return 1;
             }
 
@@ -162,7 +160,11 @@ class ServerRunCommand extends ServerCommandBase
           'projectRoot' => $projectRoot,
         ]);
 
-        $this->stdErr->writeln(sprintf('Web server started at <info>http://%s</info> for app <info>%s</info>', $address, $appId));
+        $this->stdErr->writeln(sprintf(
+            'Web server started at <info>http://%s</info> for app <info>%s</info>',
+            $address,
+            $appId
+        ));
 
         if ($logFile) {
             $this->stdErr->writeln('Logs are written to: ' . $logFile);
@@ -173,13 +175,12 @@ class ServerRunCommand extends ServerCommandBase
         sleep(1);
 
         if ($process->isRunning()) {
-            $this->urlUtil->openUrl('http://' . $address, $input, $output, true);
+            $this->getService('url')->openUrl('http://' . $address, $input, $output, true);
         }
 
         try {
             $process->wait();
-        }
-        catch (RuntimeException $e) {
+        } catch (RuntimeException $e) {
             if (strpos($e->getMessage(), '"' . SIGTERM . '"')) {
                 $this->stdErr->writeln('The server was stopped');
                 return 1;

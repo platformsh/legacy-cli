@@ -37,8 +37,7 @@ class ServerStopCommand extends ServerCommandBase
         if (!$servers) {
             $this->stdErr->writeln('No servers are running');
             return 1;
-        }
-        elseif (!$all) {
+        } elseif (!$all) {
             $servers = array_filter($servers, function ($server) use ($projectRoot) {
                 return $server['projectRoot'] === $projectRoot;
             });

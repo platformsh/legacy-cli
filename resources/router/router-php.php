@@ -10,15 +10,15 @@ $variables_prefix = isset($_ENV['_PLATFORM_VARIABLES_PREFIX']) ? $_ENV['_PLATFOR
 $run_php = function ($filename) {
     register_shutdown_function(function () {
         error_log(
-          sprintf(
-            '%s:%d [%d]: %s %s',
-            $_SERVER['REMOTE_ADDR'],
-            $_SERVER['REMOTE_PORT'],
-            http_response_code(),
-            $_SERVER['REQUEST_METHOD'],
-            $_SERVER['REQUEST_URI']
-          ),
-          4
+            sprintf(
+                '%s:%d [%d]: %s %s',
+                $_SERVER['REMOTE_ADDR'],
+                $_SERVER['REMOTE_PORT'],
+                http_response_code(),
+                $_SERVER['REQUEST_METHOD'],
+                $_SERVER['REQUEST_URI']
+            ),
+            4
         );
     });
 
@@ -57,8 +57,7 @@ $locations = isset($app['web']['locations']) ? $app['web']['locations'] : ['/' =
 foreach ($locations as $path => $location_candidate) {
     if ($path === '/' && $_SERVER['REQUEST_URI'] === '/') {
         $location = $location_candidate;
-    }
-    elseif (preg_match('#^' . preg_quote(ltrim($path, '/'), '#') . '#', $_SERVER['REQUEST_URI'])) {
+    } elseif (preg_match('#^' . preg_quote(ltrim($path, '/'), '#') . '#', $_SERVER['REQUEST_URI'])) {
         $location = $location_candidate;
     }
 }
@@ -128,8 +127,7 @@ if (!empty($app['web']['blacklist'])) {
     if (preg_match($pattern, $relative_path)) {
         if ($passthru) {
             $requested_file = $passthru;
-        }
-        else {
+        } else {
             http_response_code(403);
             echo "Access denied.";
             error_log(sprintf('Access denied. File in blacklist: %s', $relative_path), 4);
@@ -146,11 +144,11 @@ if (preg_match('/\.php$/', $requested_file)) {
 
 // Process the whitelist. If the path doesn't match, serve a 403.
 $whitelist = isset($app['web']['whitelist']) ? (array) $app['web']['whitelist'] : [
-  # CSS and Javascript.
+  // CSS and Javascript.
   '\.css$',
   '\.js$',
 
-  # image/* types.
+  // image/* types.
   '\.gif$',
   '\.jpe?g$',
   '\.png$',
@@ -161,7 +159,7 @@ $whitelist = isset($app['web']['whitelist']) ? (array) $app['web']['whitelist'] 
   '\.bmp$',
   '\.svgz?$',
 
-  # audio/* types.
+  // audio/* types.
   '\.midi?$',
   '\.mpe?ga$',
   '\.mp2$',
@@ -170,7 +168,7 @@ $whitelist = isset($app['web']['whitelist']) ? (array) $app['web']['whitelist'] 
   '\.ra$',
   '\.weba$',
 
-  # video/* types.
+  // video/* types.
   '\.3gpp?$',
   '\.mp4$',
   '\.mpe?g$',
@@ -185,22 +183,22 @@ $whitelist = isset($app['web']['whitelist']) ? (array) $app['web']['whitelist'] 
   '\.wmv$',
   '\.avi$',
 
-  # application/ogg.
+  // application/ogg.
   '\.ogx$',
 
-  # application/x-shockwave-flash.
+  // application/x-shockwave-flash.
   '\.swf$',
 
-  # application/java-archive.
+  // application/java-archive.
   '\.jar$',
 
-  # fonts types.
+  // fonts types.
   '\.ttf$',
   '\.eot$',
   '\.woff$',
   '\.otf$',
 
-  # robots.txt.
+  // robots.txt.
   '/robots\.txt$',
 ];
 $pattern = '#' . implode('|', $whitelist) . '#';
