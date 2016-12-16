@@ -99,7 +99,7 @@ class EnvironmentPushCommand extends CommandBase
             $source . ':' . $target,
         ];
 
-        foreach (['force-with-lease', 'dry-run'] as $option) {
+        foreach (['force', 'force-with-lease', 'dry-run'] as $option) {
             if ($input->getOption($option)) {
                 $gitArgs[] = '--' . $option;
             }
