@@ -93,9 +93,12 @@ class EnvironmentPushCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment <info>%s</info>', $source, $target));
 
+        $this->getService('local.project')
+            ->ensureGitRemote($projectRoot, $this->getSelectedProject()->getGitUrl());
+
         $gitArgs = [
             'push',
-            $this->getSelectedProject()->getGitUrl(),
+            $this->config()->get('detection.git_remote_name'),
             $source . ':' . $target,
         ];
 
