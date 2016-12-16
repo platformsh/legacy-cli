@@ -114,6 +114,6 @@ class EnvironmentPushCommand extends CommandBase
 
         $git->setSshCommand($this->getService('ssh')->getSshCommand($extraSshOptions));
 
-        return $git->execute($gitArgs, null, true, false, $env) ? 0 : 1;
+        return $git->execute($gitArgs, null, false, false, $env) ? 0 : 1;
     }
 }
