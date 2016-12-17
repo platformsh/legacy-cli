@@ -3,7 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -24,20 +24,20 @@ class Relationships implements InputConfiguringInterface
      * @param Ssh             $ssh
      * @param CacheProvider   $cache
      * @param Shell|null      $shellHelper
-     * @param CliConfig|null  $config
+     * @param Config|null  $config
      */
     public function __construct(
         OutputInterface $output,
         Ssh $ssh,
         CacheProvider $cache,
         Shell $shellHelper = null,
-        CliConfig $config = null
+        Config $config = null
     ) {
         $this->output = $output;
         $this->ssh = $ssh;
         $this->cache = $cache;
         $this->shellHelper = $shellHelper ?: new Shell($output);
-        $this->config = $config ?: new CliConfig();
+        $this->config = $config ?: new Config();
     }
 
     /**

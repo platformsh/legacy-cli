@@ -2,6 +2,7 @@
 namespace Platformsh\Cli;
 
 use Platformsh\Cli\Console\EventSubscriber;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,7 +19,7 @@ class Application extends ParentApplication
      */
     protected $currentCommand;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $cliConfig;
 
     /**
@@ -26,7 +27,7 @@ class Application extends ParentApplication
      */
     public function __construct()
     {
-        $this->cliConfig = new CliConfig();
+        $this->cliConfig = new Config();
         parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
 
         $this->setDefaultTimezone();

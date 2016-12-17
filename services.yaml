@@ -9,7 +9,7 @@ services:
     cache_factory:
         class:     '\Platformsh\Cli\Service\CacheFactory'
     config:
-        class:     '\Platformsh\Cli\CliConfig'
+        class:     '\Platformsh\Cli\Service\Config'
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
         arguments: ['@config', '@shell']
@@ -30,7 +30,7 @@ services:
         arguments: ['@input', '@output']
     relationships:
         class:     '\Platformsh\Cli\Service\Relationships'
-        arguments: ['@output', '@ssh', '@cache']
+        arguments: ['@output', '@ssh', '@cache', '@shell', '@config']
     self_updater:
         class:     '\Platformsh\Cli\Service\SelfUpdater'
         arguments: ['@input', '@output', '@config', '@question_helper']

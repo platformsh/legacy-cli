@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\Shell;
@@ -30,7 +30,7 @@ class LocalBuild
     /** @var Shell */
     protected $shellHelper;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
     /**
@@ -57,14 +57,14 @@ class LocalBuild
      *     - lock (bool, default false) Create or update a lock
      *       file via Drush Make, if applicable.
      *     - run-deploy-hooks (bool, default false) Run deploy hooks.
-     * @param CliConfig|null       $config
+     * @param Config|null       $config
      *     Optionally, inject a specific CLI configuration object.
      * @param OutputInterface|null $output
      *     Optionally, inject a specific Symfony Console output object.
      */
-    public function __construct(array $settings = [], CliConfig $config = null, OutputInterface $output = null)
+    public function __construct(array $settings = [], Config $config = null, OutputInterface $output = null)
     {
-        $this->config = $config ?: new CliConfig();
+        $this->config = $config ?: new Config();
         $this->settings = $settings;
         $this->output = $output ?: new NullOutput();
         $this->shellHelper = new Shell($this->output);

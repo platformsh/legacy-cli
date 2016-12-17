@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
@@ -22,18 +21,18 @@ class Drush
     /** @var SymfonyFilesystem */
     protected $fs;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
     /**
-     * @param CliConfig|null         $config
+     * @param Config|null         $config
      * @param Shell|null             $shellHelper
      * @param SymfonyFilesystem|null $fs
      */
-    public function __construct(CliConfig $config = null, Shell $shellHelper = null, SymfonyFilesystem $fs = null)
+    public function __construct(Config $config = null, Shell $shellHelper = null, SymfonyFilesystem $fs = null)
     {
         $this->shellHelper = $shellHelper ?: new Shell();
-        $this->config = $config ?: new CliConfig();
+        $this->config = $config ?: new Config();
         $this->fs = $fs ?: new SymfonyFilesystem();
     }
 

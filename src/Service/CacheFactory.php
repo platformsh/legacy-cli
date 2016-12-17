@@ -4,19 +4,18 @@ namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\FilesystemCache;
 use Doctrine\Common\Cache\VoidCache;
-use Platformsh\Cli\CliConfig;
 
 class CacheFactory
 {
 
     /**
-     * @param \Platformsh\Cli\CliConfig $cliConfig
+     * @param \Platformsh\Cli\Service\Config $cliConfig
      *
      * @return \Doctrine\Common\Cache\CacheProvider
      */
-    public static function createCacheProvider(CliConfig $cliConfig = null)
+    public static function createCacheProvider(Config $cliConfig = null)
     {
-        $cliConfig = $cliConfig ?: new CliConfig();
+        $cliConfig = $cliConfig ?: new Config();
         if (!empty($cliConfig->get('api.disable_cache'))) {
             return new VoidCache();
         }

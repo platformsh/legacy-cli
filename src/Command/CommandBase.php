@@ -1023,7 +1023,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     /**
      * Get the configuration service.
      *
-     * @return \Platformsh\Cli\CliConfig
+     * @return \Platformsh\Cli\Service\Config
      */
     protected function config()
     {

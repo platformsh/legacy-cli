@@ -1,15 +1,14 @@
 <?php
 
-namespace Platformsh\Cli;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Util\Util;
 use Symfony\Component\Yaml\Yaml;
 
 /**
  * Configuration used throughout the CLI.
  */
-class CliConfig
+class Config
 {
     protected static $config = [];
 

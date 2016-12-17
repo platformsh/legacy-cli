@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Tests;
 
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Local\LocalProject;
 
 class LocalProjectTest extends \PHPUnit_Framework_TestCase
@@ -17,7 +17,7 @@ class LocalProjectTest extends \PHPUnit_Framework_TestCase
         mkdir("$testDir/1/2/3/4/5", 0755, true);
 
         $expectedRoot = "$testDir/1";
-        $config = new CliConfig(null, null, true);
+        $config = new Config(null, null, true);
         $this->assertTrue($config->has('local.project_config_legacy'));
         touch("$expectedRoot/" . $config->get('local.project_config_legacy'));
 

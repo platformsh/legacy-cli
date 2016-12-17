@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
@@ -15,9 +15,9 @@ class LocalProject
 
     protected static $projectConfigs = [];
 
-    public function __construct(CliConfig $config = null)
+    public function __construct(Config $config = null)
     {
-        $this->config = $config ?: new CliConfig();
+        $this->config = $config ?: new Config();
         $this->fs = new Filesystem();
     }
 

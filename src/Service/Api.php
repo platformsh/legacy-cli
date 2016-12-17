@@ -3,8 +3,6 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
-use Doctrine\Common\Cache\VoidCache;
-use Platformsh\Cli\CliConfig;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Util\Util;
 use Platformsh\Client\Connection\Connector;
@@ -22,7 +20,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 class Api
 {
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
     /** @var \Doctrine\Common\Cache\CacheProvider */
@@ -46,19 +44,19 @@ class Api
     /**
      * Constructor.
      *
-     * @param CliConfig|null                $config
+     * @param Config|null                $config
      * @param CacheProvider|null            $cache
      * @param EventDispatcherInterface|null $dispatcher
      */
     public function __construct(
-        CliConfig $config,
-        CacheProvider $cache,
+        Config $config = null,
+        CacheProvider $cache = null,
         EventDispatcherInterface $dispatcher = null
     ) {
-        $this->config = $config ?: new CliConfig();
+        $this->config = $config ?: new Config();
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
 
-        $this->cache = $cache ?: new VoidCache();
+        $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
 
         $this->sessionId = $this->config->get('api.session_id') ?: 'default';
         if ($this->sessionId === 'api-token') {

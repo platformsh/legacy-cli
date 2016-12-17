@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\Shell;
@@ -55,7 +55,7 @@ abstract class ToolstackBase implements ToolstackInterface
     /** @var Shell */
     protected $shellHelper;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
     /** @var string */
@@ -112,7 +112,7 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, LocalApplication $app, CliConfig $config, array $settings = [])
+    public function prepare($buildDir, LocalApplication $app, Config $config, array $settings = [])
     {
         $this->app = $app;
         $this->appRoot = $app->getRoot();

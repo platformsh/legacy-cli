@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\CliConfig;
 use Humbug\SelfUpdate\Updater;
 use Platformsh\Cli\SelfUpdate\ManifestStrategy;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -27,13 +26,13 @@ class SelfUpdater
      *
      * @param InputInterface|null  $input
      * @param OutputInterface|null $output
-     * @param CliConfig|null       $cliConfig
+     * @param Config|null       $cliConfig
      * @param QuestionHelper|null  $questionHelper
      */
     public function __construct(
         InputInterface $input = null,
         OutputInterface $output = null,
-        CliConfig $cliConfig = null,
+        Config $cliConfig = null,
         QuestionHelper $questionHelper = null
     ) {
         $this->input = $input ?: new ArgvInput();
@@ -41,7 +40,7 @@ class SelfUpdater
         $this->stdErr = $this->output instanceof ConsoleOutputInterface
             ? $this->output->getErrorOutput()
             : $this->output;
-        $this->config = $cliConfig ?: new CliConfig();
+        $this->config = $cliConfig ?: new Config();
         $this->questionHelper = $questionHelper ?: new QuestionHelper($this->input, $this->output);
     }
 
