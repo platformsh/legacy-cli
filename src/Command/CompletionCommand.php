@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Api;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Application;
 use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;

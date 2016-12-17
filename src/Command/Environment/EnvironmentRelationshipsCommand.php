@@ -39,18 +39,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $app = $this->selectApp($input);
         $environment = $this->getSelectedEnvironment();
 
-        $cacheKey = implode('-', ['relationships', $environment->id . $environment->project . $app]);
-        $cache = $this->api()->getCache();
-        $relationships = $cache->fetch($cacheKey);
-        if (empty($relationships) || $input->getOption('refresh')) {
-            $sshUrl = $environment->getSshUrl($app);
-            $relationships = $this->getService('relationships')->getRelationships($sshUrl);
-            if (empty($relationships)) {
-                $this->stdErr->writeln('No relationships found');
-                return 1;
-            }
-            $cache->save($cacheKey, $relationships, 3600);
-        }
+        $sshUrl = $environment->getSshUrl($app);
+        $relationships = $this->getService('relationships')->getRelationships($sshUrl);
 
         $value = $relationships;
         $key = null;

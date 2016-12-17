@@ -1,7 +1,13 @@
 services:
     api:
-        class:     '\Platformsh\Cli\Api'
+        class:     '\Platformsh\Cli\Service\Api'
+        arguments: ['@config', '@cache']
+    cache:
+        class:     '\Doctrine\Common\Cache\CacheProvider'
+        factory:   'cache_factory:createCacheProvider'
         arguments: ['@config']
+    cache_factory:
+        class:     '\Platformsh\Cli\Service\CacheFactory'
     config:
         class:     '\Platformsh\Cli\CliConfig'
     drush:
@@ -24,7 +30,7 @@ services:
         arguments: ['@input', '@output']
     relationships:
         class:     '\Platformsh\Cli\Service\Relationships'
-        arguments: ['@output', '@ssh']
+        arguments: ['@output', '@ssh', '@cache']
     self_updater:
         class:     '\Platformsh\Cli\Service\SelfUpdater'
         arguments: ['@input', '@output', '@config', '@question_helper']

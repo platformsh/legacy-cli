@@ -37,7 +37,9 @@ class LoginCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->configureAccount($input, $this->stdErr);
 
-        $this->api()->clearCache();
+        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+        $cache = $this->getService('cache');
+        $cache->flushAll();
 
         $info = $this->api()->getClient(false)->getAccountInfo();
         if (isset($info['mail'])) {

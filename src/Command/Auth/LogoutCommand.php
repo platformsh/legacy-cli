@@ -44,7 +44,9 @@ class LogoutCommand extends CommandBase
         $this->api()->getClient(false)
              ->getConnector()
              ->logOut();
-        $this->api()->clearCache();
+        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+        $cache = $this->getService('cache');
+        $cache->flushAll();
         $this->stdErr->writeln('You are now logged out.');
 
 

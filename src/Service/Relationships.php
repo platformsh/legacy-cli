@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\CliConfig;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,17 +17,25 @@ class Relationships implements InputConfiguringInterface
     protected $shellHelper;
     protected $config;
     protected $ssh;
+    protected $cache;
 
     /**
-     * @param OutputInterface             $output
-     * @param Ssh                         $ssh
-     * @param Shell                       $shellHelper
-     * @param CliConfig                   $config
+     * @param OutputInterface $output
+     * @param Ssh             $ssh
+     * @param CacheProvider   $cache
+     * @param Shell|null      $shellHelper
+     * @param CliConfig|null  $config
      */
-    public function __construct(OutputInterface $output, Ssh $ssh, Shell $shellHelper = null, CliConfig $config = null)
-    {
+    public function __construct(
+        OutputInterface $output,
+        Ssh $ssh,
+        CacheProvider $cache,
+        Shell $shellHelper = null,
+        CliConfig $config = null
+    ) {
         $this->output = $output;
         $this->ssh = $ssh;
+        $this->cache = $cache;
         $this->shellHelper = $shellHelper ?: new Shell($output);
         $this->config = $config ?: new CliConfig();
     }
@@ -100,19 +109,26 @@ class Relationships implements InputConfiguringInterface
 
     /**
      * @param string $sshUrl
+     * @param bool   $refresh
      *
      * @return array
      */
-    public function getRelationships($sshUrl)
+    public function getRelationships($sshUrl, $refresh = false)
     {
-        $args = ['ssh'];
-        if (isset($this->ssh)) {
-            $args = array_merge($args, $this->ssh->getSshArgs());
+        $cacheKey = 'relationships-' . $sshUrl;
+        $relationships = $this->cache->fetch($cacheKey);
+        if ($refresh || empty($relationships)) {
+            $args = ['ssh'];
+            if (isset($this->ssh)) {
+                $args = array_merge($args, $this->ssh->getSshArgs());
+            }
+            $args[] = $sshUrl;
+            $args[] = 'echo $' . $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
+            $result = $this->shellHelper->execute($args, null, true);
+            $relationships = json_decode(base64_decode($result), true);
+            $this->cache->save($cacheKey, $relationships, 3600);
         }
-        $args[] = $sshUrl;
-        $args[] = 'echo $' . $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
-        $result = $this->shellHelper->execute($args, null, true);
 
-        return json_decode(base64_decode($result), true);
+        return $relationships;
     }
 }

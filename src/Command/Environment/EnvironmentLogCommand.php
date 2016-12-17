@@ -61,7 +61,8 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $sshUrl);
-            $cache = $this->api()->getCache();
+            /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+            $cache = $this->getService('cache');
             if (!$result = $cache->fetch($cacheKey)) {
                 $result = $shell->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
 

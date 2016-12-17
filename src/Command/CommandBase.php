@@ -2,11 +2,11 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Api;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\Toolstack\Drupal;
