@@ -45,9 +45,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     private static $projectRoot = null;
 
     /** @var OutputInterface|null */
-    protected $output;
-
-    /** @var OutputInterface|null */
     protected $stdErr;
 
     protected $envArgName = 'environment';
@@ -63,6 +60,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
     /** @var InputInterface|null */
     private $input;
+
+    /** @var OutputInterface|null */
+    private $output;
 
     /**
      * @see self::setHiddenAliases()
@@ -122,17 +122,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         self::$interactive = $input->isInteractive();
 
         if ($this->config()->get('api.debug')) {
-            $this->stdErr->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
 
         // Tune error reporting based on the output verbosity.
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             error_reporting(E_ALL);
-        }
-        elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
+        } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
             error_reporting(false);
-        }
-        else {
+        } else {
             error_reporting(E_PARSE | E_ERROR);
         }
 
