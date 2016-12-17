@@ -22,7 +22,7 @@ class VariableGetCommand extends CommandBase
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
             ->setDescription('View variable(s) for an environment');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('View the variable "example"', 'example');

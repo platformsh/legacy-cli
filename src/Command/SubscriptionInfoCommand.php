@@ -27,7 +27,7 @@ class SubscriptionInfoCommand extends CommandBase
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->setDescription('Read subscription properties');
         PropertyFormatter::configureInput($this->getDefinition());
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addExample('View all subscription properties')
              ->addExample('View the subscription status', 'status')

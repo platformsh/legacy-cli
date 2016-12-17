@@ -15,7 +15,7 @@ class SshKeyListCommand extends CommandBase
             ->setName('ssh-key:list')
             ->setAliases(['ssh-keys'])
             ->setDescription('Get a list of SSH keys in your account');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

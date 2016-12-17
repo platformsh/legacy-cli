@@ -19,7 +19,7 @@ class AuthInfoCommand extends CommandBase
             ->addArgument('property', InputArgument::OPTIONAL, 'The account property to view')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The account property to view (alternate syntax)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

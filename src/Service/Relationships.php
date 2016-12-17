@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
-use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;

@@ -29,7 +29,7 @@ class EnvironmentInfoCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for an environment');
         PropertyFormatter::configureInput($this->getDefinition());
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();

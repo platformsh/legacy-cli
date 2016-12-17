@@ -31,7 +31,7 @@ class EnvironmentListCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
 

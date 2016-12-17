@@ -19,7 +19,7 @@ class TunnelInfoCommand extends TunnelCommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

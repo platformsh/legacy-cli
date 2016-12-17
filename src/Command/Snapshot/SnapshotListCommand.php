@@ -19,7 +19,7 @@ class SnapshotListCommand extends CommandBase
             ->setDescription('List available snapshots of an environment')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List the most recent snapshots')

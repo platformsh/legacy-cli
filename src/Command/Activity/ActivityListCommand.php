@@ -24,7 +24,7 @@ class ActivityListCommand extends CommandBase
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check activities on all environments')
             ->setDescription('Get a list of activities for an environment or project');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List recent activities for the current environment')

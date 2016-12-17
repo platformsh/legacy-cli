@@ -19,7 +19,7 @@ class EnvironmentRoutesCommand extends CommandBase
             ->setAliases(['routes'])
             ->setDescription('List an environment\'s routes')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
     }

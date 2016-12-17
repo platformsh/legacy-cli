@@ -24,7 +24,7 @@ class DbSizeCommand extends CommandBase
             );
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
     }
 

@@ -29,7 +29,7 @@ class ProjectInfoCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for a project');
         PropertyFormatter::configureInput($this->getDefinition());
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')

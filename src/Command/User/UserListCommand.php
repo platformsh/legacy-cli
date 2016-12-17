@@ -15,7 +15,7 @@ class UserListCommand extends CommandBase
             ->setName('user:list')
             ->setAliases(['users'])
             ->setDescription('List project users');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
 

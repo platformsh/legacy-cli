@@ -18,7 +18,7 @@ class DomainListCommand extends DomainCommandBase
             ->setName('domain:list')
             ->setAliases(['domains'])
             ->setDescription('Get a list of all domains');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
 

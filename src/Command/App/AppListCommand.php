@@ -20,7 +20,7 @@ class AppListCommand extends CommandBase
         $this->setName('app:list')
             ->setAliases(['apps'])
             ->setDescription('Get a list of all apps in the local repository');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     /**

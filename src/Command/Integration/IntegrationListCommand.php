@@ -18,7 +18,7 @@ class IntegrationListCommand extends IntegrationCommandBase
             ->setName('integration:list')
             ->setAliases(['integrations'])
             ->setDescription('View a list of project integration(s)');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
 

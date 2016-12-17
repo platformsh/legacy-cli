@@ -22,7 +22,7 @@ class DomainGetCommand extends DomainCommandBase
             ->setDescription('Show detailed information for a domain')
             ->addArgument('name', InputArgument::OPTIONAL, 'The domain name')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption();
     }

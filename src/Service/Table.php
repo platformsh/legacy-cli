@@ -27,7 +27,7 @@ use Symfony\Component\Console\Output\StreamOutput;
  *     $table->render($rows, $header);
  * </code>
  */
-class Table
+class Table implements InputConfiguringInterface
 {
     protected $output;
     protected $input;
@@ -47,7 +47,7 @@ class Table
      *
      * @param InputDefinition $definition
      */
-    public static function addFormatOption(InputDefinition $definition)
+    public static function configureInput(InputDefinition $definition)
     {
         $description = 'The output format ("table", "csv", or "tsv")';
         $option = new InputOption('format', null, InputOption::VALUE_REQUIRED, $description, 'table');

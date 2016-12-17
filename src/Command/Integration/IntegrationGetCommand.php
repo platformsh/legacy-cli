@@ -19,7 +19,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view')
             ->setDescription('View details of an integration');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
 
