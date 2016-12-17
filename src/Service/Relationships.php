@@ -22,21 +22,21 @@ class Relationships implements InputConfiguringInterface
      * @param OutputInterface $output
      * @param Ssh             $ssh
      * @param CacheProvider   $cache
-     * @param Shell|null      $shellHelper
-     * @param Config|null  $config
+     * @param Shell           $shellHelper
+     * @param Config          $config
      */
     public function __construct(
         OutputInterface $output,
         Ssh $ssh,
         CacheProvider $cache,
-        Shell $shellHelper = null,
-        Config $config = null
+        Shell $shellHelper,
+        Config $config
     ) {
         $this->output = $output;
         $this->ssh = $ssh;
         $this->cache = $cache;
-        $this->shellHelper = $shellHelper ?: new Shell($output);
-        $this->config = $config ?: new Config();
+        $this->shellHelper = $shellHelper;
+        $this->config = $config;
     }
 
     /**

@@ -12,9 +12,9 @@ class Url implements InputConfiguringInterface
 {
     protected $shell;
 
-    public function __construct(Shell $shell = null)
+    public function __construct(Shell $shell)
     {
-        $this->shell = $shell ?: new Shell();
+        $this->shell = $shell;
     }
 
     /**

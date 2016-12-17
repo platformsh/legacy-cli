@@ -3,10 +3,8 @@ namespace Platformsh\Cli\Service;
 
 use Humbug\SelfUpdate\Updater;
 use Platformsh\Cli\SelfUpdate\ManifestStrategy;
-use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfUpdater
@@ -24,24 +22,24 @@ class SelfUpdater
     /**
      * Updater constructor.
      *
-     * @param InputInterface|null  $input
-     * @param OutputInterface|null $output
-     * @param Config|null       $cliConfig
-     * @param QuestionHelper|null  $questionHelper
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     * @param Config          $cliConfig
+     * @param QuestionHelper  $questionHelper
      */
     public function __construct(
-        InputInterface $input = null,
-        OutputInterface $output = null,
-        Config $cliConfig = null,
-        QuestionHelper $questionHelper = null
+        InputInterface $input,
+        OutputInterface $output,
+        Config $cliConfig,
+        QuestionHelper $questionHelper
     ) {
-        $this->input = $input ?: new ArgvInput();
-        $this->output = $output ?: new NullOutput();
-        $this->stdErr = $this->output instanceof ConsoleOutputInterface
-            ? $this->output->getErrorOutput()
-            : $this->output;
-        $this->config = $cliConfig ?: new Config();
-        $this->questionHelper = $questionHelper ?: new QuestionHelper($this->input, $this->output);
+        $this->input = $input;
+        $this->output = $output;
+        $this->stdErr = $output instanceof ConsoleOutputInterface
+            ? $output->getErrorOutput()
+            : $output;
+        $this->config = $cliConfig;
+        $this->questionHelper = $questionHelper;
     }
 
     /**

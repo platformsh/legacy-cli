@@ -13,9 +13,8 @@ class CacheFactory
      *
      * @return \Doctrine\Common\Cache\CacheProvider
      */
-    public static function createCacheProvider(Config $cliConfig = null)
+    public static function createCacheProvider(Config $cliConfig)
     {
-        $cliConfig = $cliConfig ?: new Config();
         if (!empty($cliConfig->get('api.disable_cache'))) {
             return new VoidCache();
         }
