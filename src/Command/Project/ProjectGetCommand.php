@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Project;
 
 use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
@@ -256,10 +255,10 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . $this->config()->get('application.executable') . ' build</info> to repeat this.');
             $options = ['no-clean' => true];
-            $builder = new LocalBuild($options, $this->config(), $output);
-            $success = $builder->build($projectRoot);
-        }
-        else {
+            /** @var \Platformsh\Cli\Local\LocalBuild $builder */
+            $builder = $this->getService('local.build');
+            $success = $builder->build($options, $projectRoot);
+        } else {
             $this->stdErr->writeln(
                 "\nYou can build the project with: "
                 . "\n    cd $directory"

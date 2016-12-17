@@ -38,11 +38,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->builder = new LocalBuild(
-            $this->buildSettings,
-            null,
-            self::$output
-        );
+        $this->builder = new LocalBuild(self::$config, self::$output);
         $this->tempDirSetUp();
     }
 
@@ -62,10 +58,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     {
         $projectRoot = $this->createDummyProject($sourceDir);
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
-        $builder = $buildSettings
-            ? new LocalBuild($buildSettings + $this->buildSettings, null, self::$output)
-            : $this->builder;
-        $success = $builder->build($projectRoot);
+        $success = $this->builder->build($buildSettings + $this->buildSettings, $projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
 
         return $projectRoot;

@@ -5,7 +5,7 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\Shell;
-use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -16,7 +16,8 @@ class LocalBuild
     // archives. Increment this number as breaking changes are released.
     const BUILD_VERSION = 3;
 
-    protected $settings;
+    /** @var array */
+    protected $settings = [];
 
     /** @var OutputInterface */
     protected $output;
@@ -36,7 +37,33 @@ class LocalBuild
     /**
      * LocalBuild constructor.
      *
-     * @param array                $settings
+     * @param Config|null                             $config
+     * @param OutputInterface|null                    $output
+     * @param \Platformsh\Cli\Service\Shell|null      $shell
+     * @param \Platformsh\Cli\Service\Filesystem|null $fs
+     * @param \Platformsh\Cli\Service\Git|null        $git
+     */
+    public function __construct(
+        Config $config = null,
+        OutputInterface $output = null,
+        Shell $shell = null,
+        Filesystem $fs = null,
+        Git $git = null
+    ) {
+        $this->config = $config ?: new Config();
+        $this->output = $output ?: new ConsoleOutput();
+        if ($this->output instanceof ConsoleOutput) {
+            $this->output = $this->output->getErrorOutput();
+        }
+        $this->shellHelper = $shell ?: new Shell($this->output);
+        $this->fsHelper = $fs ?: new Filesystem($this->shellHelper);
+        $this->gitHelper = $git ?: new Git($this->shellHelper);
+    }
+
+    /**
+     * Build a project from any source directory, targeting any destination.
+     *
+     * @param array  $settings    An array of build settings.
      *     Possible settings:
      *     - clone (bool, default false) Clone the repository to the build
      *       directory before building, where possible.
@@ -57,25 +84,6 @@ class LocalBuild
      *     - lock (bool, default false) Create or update a lock
      *       file via Drush Make, if applicable.
      *     - run-deploy-hooks (bool, default false) Run deploy hooks.
-     * @param Config|null       $config
-     *     Optionally, inject a specific CLI configuration object.
-     * @param OutputInterface|null $output
-     *     Optionally, inject a specific Symfony Console output object.
-     */
-    public function __construct(array $settings = [], Config $config = null, OutputInterface $output = null)
-    {
-        $this->config = $config ?: new Config();
-        $this->settings = $settings;
-        $this->output = $output ?: new NullOutput();
-        $this->shellHelper = new Shell($this->output);
-        $this->fsHelper = new Filesystem($this->shellHelper);
-        $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
-        $this->gitHelper = new Git($this->shellHelper);
-    }
-
-    /**
-     * Build a project from any source directory, targeting any destination.
-     *
      * @param string $sourceDir   The absolute path to the source directory.
      * @param string $destination Where the web root(s) will be linked (absolute
      *                            path).
@@ -85,15 +93,17 @@ class LocalBuild
      *
      * @return bool
      */
-    public function build($sourceDir, $destination = null, array $apps = [])
+    public function build(array $settings, $sourceDir, $destination = null, array $apps = [])
     {
-        $success = true;
+        $this->settings = $settings;
+        $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
 
         if (file_exists($sourceDir . '/.git')) {
             (new LocalProject())->writeGitExclude($sourceDir);
         }
 
         $ids = [];
+        $success = true;
         foreach (LocalApplication::getApplications($sourceDir, $this->config) as $app) {
             $id = $app->getId();
             $ids[] = $id;
@@ -108,7 +118,7 @@ class LocalBuild
                 $this->output->writeln("Application not found: <comment>$notFound</comment>");
             }
         }
-        if (empty($this->settings['no-clean'])) {
+        if (empty($settings['no-clean'])) {
             $this->output->writeln("Cleaning up...");
             $this->cleanBuilds($sourceDir);
             $this->cleanArchives($sourceDir);
@@ -174,7 +184,7 @@ class LocalBuild
     /**
      * @param LocalApplication $app
      * @param string           $sourceDir
-     * @param string           $destination
+     * @param string|null      $destination
      *
      * @return bool
      */

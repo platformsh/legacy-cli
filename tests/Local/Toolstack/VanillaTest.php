@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Tests\Toolstack;
 
 use Platformsh\Cli\Service\Filesystem;
-use Platformsh\Cli\Local\LocalBuild;
 
 class VanillaTest extends BaseToolstackTest
 {
@@ -53,13 +52,11 @@ class VanillaTest extends BaseToolstackTest
         $destination = $this->createTempSubDir();
 
         // Test with symlinking.
-        $builder = new LocalBuild(['abslinks' => true], null, self::$output);
-        $builder->build($sourceDir, $destination);
+        $this->builder->build(['abslinks' => true], $sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 
         // Test with copying.
-        $builder = new LocalBuild(['copy' => true, 'abslinks' => true], null, self::$output);
-        $builder->build($sourceDir, $destination);
+        $this->builder->build(['copy' => true, 'abslinks' => true], $sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 
         // Remove the temporary files.
@@ -75,8 +72,7 @@ class VanillaTest extends BaseToolstackTest
 
         $destination = $projectRoot . '/web';
 
-        $builder = new LocalBuild($this->buildSettings, null, self::$output);
-        $builder->build($projectRoot, $destination);
+        $this->builder->build($this->buildSettings, $projectRoot, $destination);
         $this->assertFileExists($destination . '/index.html');
     }
 }

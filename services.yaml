@@ -19,6 +19,9 @@ services:
     git:
         class:     '\Platformsh\Cli\Service\Git'
         arguments: ['@shell']
+    local.build:
+        class:     '\Platformsh\Cli\Local\LocalBuild'
+        arguments: ['@config', '@output', '@shell', '@fs', '@git']
     local.project:
         class:     '\Platformsh\Cli\Local\LocalProject'
         arguments: ['@config']
