@@ -15,7 +15,7 @@ services:
         arguments: ['@config', '@shell']
     fs:
         class:     '\Platformsh\Cli\Service\Filesystem'
-        arguments: ['@input', '@output']
+        arguments: ['@shell']
     git:
         class:     '\Platformsh\Cli\Service\Git'
         arguments: ['@shell']
