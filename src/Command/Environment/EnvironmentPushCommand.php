@@ -94,7 +94,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment <info>%s</info>', $source, $target));
 
         $this->getService('local.project')
-            ->ensureGitRemote($projectRoot, $this->getSelectedProject()->getGitUrl());
+            ->ensureGitRemote($projectRoot, $project->getGitUrl());
 
         $gitArgs = [
             'push',
@@ -117,6 +117,12 @@ class EnvironmentPushCommand extends CommandBase
 
         $git->setSshCommand($this->getService('ssh')->getSshCommand($extraSshOptions));
 
-        return $git->execute($gitArgs, null, false, false, $env) ? 0 : 1;
+        $result = $git->execute($gitArgs, null, false, false, $env);
+
+        if ($result) {
+            $this->api()->clearEnvironmentsCache($project->id);
+        }
+
+        return $result ? 0 : 1;
     }
 }
