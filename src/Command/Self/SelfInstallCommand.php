@@ -24,7 +24,6 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $homeDir = $this->getHomeDir();
         $configDir = $this->config()->getUserConfigDir();
 
         $shellConfig = file_get_contents(CLI_ROOT . '/shell-config.rc');
@@ -41,7 +40,7 @@ EOT
 
         $this->stdErr->writeln(sprintf('Successfully copied CLI configuration to: %s', $shellConfigDestination));
 
-        if (!$shellConfigFile = $this->findShellConfigFile($homeDir)) {
+        if (!$shellConfigFile = $this->findShellConfigFile()) {
             $this->stdErr->writeln('Failed to find a shell configuration file.');
             return 1;
         }
@@ -100,15 +99,13 @@ EOT
     /**
      * Finds a shell configuration file for the user.
      *
-     * @param string $homeDir
-     *   The user's home directory.
-     *
      * @return string|false
      *   The absolute path to an existing shell config file, or false on
      *   failure.
      */
-    protected function findShellConfigFile($homeDir)
+    protected function findShellConfigFile()
     {
+        $homeDir = $this->getService('fs')->getHomeDirectory();
         $candidates = ['.zshrc', '.bashrc', '.bash_profile', '.profile'];
         $shell = str_replace('/bin/', '', getenv('SHELL'));
         if (!empty($shell)) {

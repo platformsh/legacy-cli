@@ -30,7 +30,7 @@ class SshKeyAddCommand extends CommandBase
 
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
-            $defaultKeyPath = $this->getHomeDir() . '/.ssh/' . self::DEFAULT_BASENAME;
+            $defaultKeyPath = $this->getService('fs')->getHomeDirectory() . '/.ssh/' . self::DEFAULT_BASENAME;
             $defaultPublicKeyPath = $defaultKeyPath . '.pub';
 
             // Look for an existing local key.
@@ -161,7 +161,7 @@ class SshKeyAddCommand extends CommandBase
         if ($number > 1) {
             $basename = strpos($basename, '.key') ? str_replace('.key', ".$number.key", $basename) : "$basename.$number";
         }
-        $filename = $this->getHomeDir() . '/.ssh/' . $basename;
+        $filename = $this->getService('fs')->getHomeDirectory() . '/.ssh/' . $basename;
         if (file_exists($filename)) {
             return $this->getNewKeyPath(++$number);
         }

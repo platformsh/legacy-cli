@@ -6,8 +6,6 @@ use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Model\Environment;
@@ -26,9 +24,6 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
 {
     use HasExamplesTrait;
-
-    /** @var string|null */
-    private static $homeDir;
 
     /** @var bool */
     private static $checkedUpdates;
@@ -55,7 +50,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
     protected static $container;
 
-    /** @var Api|null */
+    /** @var \Platformsh\Cli\Service\Api|null */
     private $api;
 
     /** @var InputInterface|null */
@@ -140,7 +135,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     /**
      * Set up the API object.
      *
-     * @return Api
+     * @return \Platformsh\Cli\Service\Api
      */
     protected function api()
     {
@@ -200,18 +195,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
             $this->stdErr->writeln('');
         }
-    }
-
-    /**
-     * @return string
-     */
-    protected function getHomeDir()
-    {
-        if (!isset(self::$homeDir)) {
-            self::$homeDir = Filesystem::getHomeDirectory();
-        }
-
-        return self::$homeDir;
     }
 
     /**
@@ -459,7 +442,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *
      * This is called via the 'environments_changed' event.
      *
-     * @see Api::getEnvironments()
+     * @see \Platformsh\Cli\Service\Api::getEnvironments()
      *
      * @param EnvironmentsChangedEvent $event
      */
@@ -481,7 +464,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $this->debug('Updating Drush aliases');
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
-        $drush->setHomeDir($this->getHomeDir());
         $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
     }
 

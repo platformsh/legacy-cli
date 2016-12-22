@@ -56,12 +56,9 @@ class LocalDrushAliasesCommand extends CommandBase
 
         $new_group = ltrim($input->getOption('group'), '@');
 
-        $homeDir = $this->getHomeDir();
-
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
         $drush->ensureInstalled();
-        $drush->setHomeDir($homeDir);
 
         $aliases = $drush->getAliases($current_group);
 
@@ -86,7 +83,7 @@ class LocalDrushAliasesCommand extends CommandBase
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
             if ($new_group != $current_group) {
-                $drushDir = $homeDir . '/.drush';
+                $drushDir = $this->getService('fs')->getHomeDirectory() . '/.drush';
                 $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
                 if (file_exists($oldFile)) {
                     if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {

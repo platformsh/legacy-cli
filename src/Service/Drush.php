@@ -13,27 +13,25 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 class Drush
 {
 
-    protected $homeDir = '~';
-
     /** @var Shell */
     protected $shellHelper;
 
-    /** @var SymfonyFilesystem */
+    /** @var Filesystem */
     protected $fs;
 
     /** @var Config */
     protected $config;
 
     /**
-     * @param Config|null         $config
-     * @param Shell|null             $shellHelper
-     * @param SymfonyFilesystem|null $fs
+     * @param Config|null     $config
+     * @param Shell|null      $shellHelper
+     * @param Filesystem|null $fs
      */
-    public function __construct(Config $config = null, Shell $shellHelper = null, SymfonyFilesystem $fs = null)
+    public function __construct(Config $config = null, Shell $shellHelper = null, Filesystem $fs = null)
     {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
-        $this->fs = $fs ?: new SymfonyFilesystem();
+        $this->fs = $fs ?: new Filesystem();
     }
 
     /**
@@ -81,16 +79,6 @@ class Drush
             throw new DependencyMissingException('Drush is not installed');
         }
         $installed = true;
-    }
-
-    /**
-     * Set the user's home directory.
-     *
-     * @param string $homeDir
-     */
-    public function setHomeDir($homeDir)
-    {
-        $this->homeDir = $homeDir;
     }
 
     /**
@@ -185,7 +173,7 @@ class Drush
         $autoRemoveKey = $this->getAutoRemoveKey();
 
         // Ensure the existence of the .drush directory.
-        $drushDir = $this->homeDir . '/.drush';
+        $drushDir = $this->fs->getHomeDirectory() . '/.drush';
         if (!is_dir($drushDir)) {
             mkdir($drushDir);
         }
@@ -322,11 +310,12 @@ class Drush
      */
     protected function writeAliasFile($filename, $contents)
     {
+        $fs = new SymfonyFilesystem();
         if (is_readable($filename) && $contents !== file_get_contents($filename)) {
             $backupName = dirname($filename) . '/' . str_replace('.php', '.bak.php', basename($filename));
-            $this->fs->rename($filename, $backupName, true);
+            $fs->rename($filename, $backupName, true);
         }
-        $this->fs->dumpFile($filename, $contents);
+        $fs->dumpFile($filename, $contents);
     }
 
     /**
