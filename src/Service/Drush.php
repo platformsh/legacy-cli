@@ -33,7 +33,8 @@ class Drush
     {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
-        $this->homeDir = ($fs ?: new Filesystem())->getHomeDirectory();
+        $fs = $fs ?: new Filesystem();
+        $this->homeDir = $fs->getHomeDirectory();
     }
 
     /**
