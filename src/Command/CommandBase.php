@@ -293,14 +293,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * @return string
-     */
-    protected function getSessionsDir()
-    {
-        return $this->config()->getUserConfigDir() . '/.session';
-    }
-
-    /**
      * Log in the user.
      *
      * This is called via the 'login_required' event.

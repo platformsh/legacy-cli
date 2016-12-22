@@ -35,7 +35,8 @@ class LogoutCommand extends CommandBase
         }
 
         // Ask for a confirmation.
-        if ($this->api()->isLoggedIn() && !$this->getService('question_helper')->confirm("Are you sure you wish to log out?")) {
+        if ($this->api()->isLoggedIn()
+            && !$this->getService('question_helper')->confirm("Are you sure you wish to log out?")) {
             $this->stdErr->writeln('You remain logged in.');
 
             return 1;
@@ -49,8 +50,8 @@ class LogoutCommand extends CommandBase
         $cache->flushAll();
         $this->stdErr->writeln('You are now logged out.');
 
-
-        $sessionsDir = $this->getSessionsDir();
+        $config = $this->config();
+        $sessionsDir = $config->getUserConfigDir() . '/.session';
         if ($input->getOption('all')) {
             if (is_dir($sessionsDir)) {
                 /** @var \Platformsh\Cli\Service\Filesystem $fs */
@@ -58,9 +59,11 @@ class LogoutCommand extends CommandBase
                 $fs->remove($sessionsDir);
                 $this->stdErr->writeln('All session files have been deleted.');
             }
-        }
-        elseif (is_dir($sessionsDir) && glob($sessionsDir . '/sess-cli-*', GLOB_NOSORT)) {
-            $this->stdErr->writeln('Other session files exist. Delete them with: <comment>' . $this->config()->get('application.executable') . ' logout --all</comment>');
+        } elseif (is_dir($sessionsDir) && glob($sessionsDir . '/sess-cli-*', GLOB_NOSORT)) {
+            $this->stdErr->writeln(sprintf(
+                'Other session files exist. Delete them with: <comment>%s logout --all</comment>',
+                $config->get('application.executable')
+            ));
         }
 
         return 0;
