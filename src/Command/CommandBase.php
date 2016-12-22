@@ -29,7 +29,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     private static $checkedUpdates;
 
     /** @var bool */
-    protected static $interactive = false;
+    private static $interactive = false;
 
     /**
      * @see self::getProjectRoot()
@@ -48,7 +48,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
 
-    protected static $container;
+    private static $container;
 
     /** @var \Platformsh\Cli\Service\Api|null */
     private $api;
@@ -160,7 +160,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * configuration. If the input is not interactive, the user will be warned
      * (on every command run) that they should run the 'legacy-migrate' command.
      */
-    protected function promptLegacyMigrate()
+    private function promptLegacyMigrate()
     {
         static $asked = false;
         $localProject = $this->getService('local.project');
