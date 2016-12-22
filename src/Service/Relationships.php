@@ -130,4 +130,14 @@ class Relationships implements InputConfiguringInterface
 
         return $relationships;
     }
+
+    /**
+     * Clear the cache.
+     *
+     * @param string $sshUrl
+     */
+    public function clearCache($sshUrl)
+    {
+        $this->cache->delete('relationships-' . $sshUrl);
+    }
 }

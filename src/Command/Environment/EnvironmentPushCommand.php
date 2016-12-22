@@ -119,8 +119,13 @@ class EnvironmentPushCommand extends CommandBase
 
         $result = $git->execute($gitArgs, null, false, false, $env);
 
+        // Clear some caches after pushing.
         if ($result) {
             $this->api()->clearEnvironmentsCache($project->id);
+            if ($this->hasSelectedEnvironment()) {
+                $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
+                $this->getService('relationships')->clearCache($sshUrl);
+            }
         }
 
         return $result ? 0 : 1;
