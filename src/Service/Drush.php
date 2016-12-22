@@ -12,6 +12,8 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
 class Drush
 {
+    /** @var string */
+    protected $homeDir;
 
     /** @var Shell */
     protected $shellHelper;
@@ -31,7 +33,15 @@ class Drush
     {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
-        $this->fs = $fs ?: new Filesystem();
+        $this->homeDir = ($fs ?: new Filesystem())->getHomeDirectory();
+    }
+
+    /**
+     * @param string $homeDir
+     */
+    public function setHomeDir($homeDir)
+    {
+        $this->homeDir = $homeDir;
     }
 
     /**
@@ -173,7 +183,7 @@ class Drush
         $autoRemoveKey = $this->getAutoRemoveKey();
 
         // Ensure the existence of the .drush directory.
-        $drushDir = $this->fs->getHomeDirectory() . '/.drush';
+        $drushDir = $this->homeDir . '/.drush';
         if (!is_dir($drushDir)) {
             mkdir($drushDir);
         }
