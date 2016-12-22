@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Local\LocalBuild;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -153,7 +152,9 @@ class LocalBuildCommand extends CommandBase
         }
 
         if ($destination) {
-            $destination = $this->getService('fs')->makePathAbsolute($destination);
+            /** @var \Platformsh\Cli\Service\Filesystem $fs */
+            $fs = $this->getService('fs');
+            $destination = $fs->makePathAbsolute($destination);
         }
         elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
@@ -188,7 +189,7 @@ class LocalBuildCommand extends CommandBase
 
         $apps = $input->getArgument('app');
 
-        /** @var LocalBuild $builder */
+        /** @var \Platformsh\Cli\Local\LocalBuild $builder */
         $builder = $this->getService('local.build');
         $success = $builder->build($settings, $sourceDir, $destination, $apps);
 

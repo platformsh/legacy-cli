@@ -62,10 +62,11 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
-            $checkout = $this->getService('question_helper')
-                             ->confirm(
-                                 "The environment <comment>$branchName</comment> already exists. Check out?"
-                             );
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $checkout = $questionHelper->confirm(
+                "The environment <comment>$branchName</comment> already exists. Check out?"
+            );
             if ($checkout) {
                 return $this->runOtherCommand(
                     'environment:checkout',
@@ -113,7 +114,9 @@ class EnvironmentBranchCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
-        $git->setSshCommand($this->getService('ssh')->getSshCommand());
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $git->setSshCommand($ssh->getSshCommand());
 
         if ($projectRoot) {
             $git->setDefaultRepositoryDir($projectRoot);

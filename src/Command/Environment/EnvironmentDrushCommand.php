@@ -99,10 +99,15 @@ class EnvironmentDrushCommand extends CommandBase
         }
         $sshDrushCommand .= ' ' . $drushCommand . ' 2>&1';
 
-        $command = $this->getService('ssh')->getSshCommand()
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $command = $ssh->getSshCommand()
             . ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sshDrushCommand);
 
-        return $this->getService('shell')->executeSimple($command);
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        return $shell->executeSimple($command);
     }
 }

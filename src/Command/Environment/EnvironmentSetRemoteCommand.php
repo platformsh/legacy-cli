@@ -39,6 +39,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
 
         $projectRoot = $this->getProjectRoot();
 
+        /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
         $git->setDefaultRepositoryDir($projectRoot);
 
@@ -76,6 +77,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
         }
 
         // Perform the mapping or unmapping.
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
         $projectConfig = $localProject->getProjectConfig($projectRoot);
         $projectConfig += ['mapping' => []];

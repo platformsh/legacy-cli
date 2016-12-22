@@ -34,6 +34,7 @@ class IntegrationListCommand extends IntegrationCommandBase
             return 1;
         }
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $header = ['ID', 'Type', 'Summary'];
         $rows = [];

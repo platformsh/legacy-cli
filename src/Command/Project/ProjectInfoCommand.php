@@ -3,9 +3,9 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectInfoCommand extends CommandBase
 {
-    /** @var PropertyFormatter */
+    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
     /**
@@ -90,7 +90,9 @@ class ProjectInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        $this->getService('table')->renderSimple($values, $headings);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+        $table->renderSimple($values, $headings);
 
         return 0;
     }

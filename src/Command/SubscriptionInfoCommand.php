@@ -3,8 +3,8 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,7 +14,7 @@ class SubscriptionInfoCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
-    /** @var PropertyFormatter */
+    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
     /**
@@ -81,7 +81,9 @@ class SubscriptionInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        $this->getService('table')->renderSimple($values, $headings);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+        $table->renderSimple($values, $headings);
 
         return 0;
     }

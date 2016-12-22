@@ -47,11 +47,16 @@ class EnvironmentSshCommand extends CommandBase
             throw new \InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
-        $command = $this->getService('ssh')->getSshCommand() . ' ' . escapeshellarg($sshUrl);
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $command = $ssh->getSshCommand() . ' ' . escapeshellarg($sshUrl);
         if ($remoteCommand) {
             $command .= ' ' . escapeshellarg($remoteCommand);
         }
 
-        return $this->getService('shell')->executeSimple($command);
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        return $shell->executeSimple($command);
     }
 }

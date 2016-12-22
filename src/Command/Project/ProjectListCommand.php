@@ -63,6 +63,7 @@ class ProjectListCommand extends CommandBase
             return 0;
         }
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
 

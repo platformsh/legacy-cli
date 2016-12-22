@@ -48,7 +48,7 @@ class DbSizeCommand extends CommandBase
             return 1;
         }
 
-        /** @var Relationships $relationships */
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
 
         $database = $relationships->chooseDatabase($sshUrl, $input);
@@ -84,9 +84,11 @@ class DbSizeCommand extends CommandBase
 
         /** @var Shell $shell */
         $shell = $this->getService('shell');
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
 
         $command = ['ssh'];
-        $command = array_merge($command, $this->getService('ssh')->getSshArgs());
+        $command = array_merge($command, $ssh->getSshArgs());
         $command[] = $sshUrl;
         switch ($database['scheme']) {
             case 'pgsql':
@@ -103,6 +105,7 @@ class DbSizeCommand extends CommandBase
 
         $percentsUsed = $estimatedUsage * 100 / $allocatedDisk;
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $propertyNames = [
             'max',

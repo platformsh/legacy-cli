@@ -48,4 +48,4 @@ services:
         arguments: ['@input', '@output']
     url:
         class:     '\Platformsh\Cli\Service\Url'
-        arguments: ['@shell']
+        arguments: ['@shell', '@input', '@output']

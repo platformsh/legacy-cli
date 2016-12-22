@@ -43,7 +43,9 @@ class TunnelOpenCommand extends TunnelCommandBase
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
 
-        $relationships = $this->getService('relationships')->getRelationships($sshUrl);
+        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
+        $relationshipsService = $this->getService('relationships');
+        $relationships = $relationshipsService->getRelationships($sshUrl);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
@@ -55,7 +57,9 @@ class TunnelOpenCommand extends TunnelCommandBase
             return 1;
         }
 
-        $sshArgs = $this->getService('ssh')->getSshArgs();
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $sshArgs = $ssh->getSshArgs();
 
         $log->setVerbosity($output->getVerbosity());
 

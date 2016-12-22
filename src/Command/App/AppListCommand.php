@@ -41,6 +41,7 @@ class AppListCommand extends CommandBase
             $rows[] = [$app->getName(), $type, $app->getRoot()];
         }
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $table->render($rows, ['Name', 'Type', 'Path']);
     }

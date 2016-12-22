@@ -38,6 +38,7 @@ class SnapshotListCommand extends CommandBase
             return 1;
         }
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
         if (!$table->formatIsMachineReadable()) {

@@ -43,6 +43,9 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $appName = $this->selectApp($input);
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
         // Select the log file that the user specified.
         if ($logType = $input->getArgument('type')) {
             // @todo this might need to be cleverer
@@ -56,8 +59,6 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         } else {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            /** @var \Platformsh\Cli\Service\Shell $shell */
-            $shell = $this->getService('shell');
 
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $sshUrl);
@@ -93,7 +94,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
 
-        return $this->getService('shell')->executeSimple($sshCommand);
+        return $shell->executeSimple($sshCommand);
     }
 
     /**

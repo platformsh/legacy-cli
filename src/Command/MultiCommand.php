@@ -173,6 +173,9 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $projectList = $input->getOption('projects');
         $projects = $this->getAllProjects($input);
 
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
         if (!empty($projectList)) {
             $projectIds = array_unique(preg_split('/[,\s]+/', $projectList));
             if ($invalid = array_diff($projectIds, array_keys($projects))) {
@@ -184,7 +187,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             $this->stdErr->writeln('In non-interactive mode, the --projects option must be specified.');
             return false;
         }
-        elseif (!$this->getService('shell')->commandExists('dialog')) {
+        elseif (!$shell->commandExists('dialog')) {
             $this->stdErr->writeln('The "dialog" utility is required for interactive use.');
             $this->stdErr->writeln('You can specify projects via the --projects option.');
             return false;

@@ -55,6 +55,7 @@ EOT
 
         $parentId = $selectedEnvironment->parent;
 
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
         if ($synchronize = $input->getArgument('synchronize')) {

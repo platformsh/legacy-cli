@@ -42,6 +42,7 @@ class LocalDrushAliasesCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
         $projectConfig = $localProject->getProjectConfig($projectRoot);
         $current_group = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $projectConfig['id'];
@@ -67,6 +68,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $this->stdErr->writeln("Creating Drush aliases in the group <info>@$new_group</info>");
 
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             if ($new_group != $current_group) {
                 $existing = $drush->getAliases($new_group);

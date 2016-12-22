@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
-use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -47,7 +46,7 @@ class DomainGetCommand extends DomainCommandBase
             foreach ($domains as $domain) {
                 $options[$domain->name] = $domain->name;
             }
-            /** @var QuestionHelper $questionHelper */
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             $domainName = $questionHelper->choose($options, 'Enter a number to choose a domain:');
         }
@@ -58,6 +57,7 @@ class DomainGetCommand extends DomainCommandBase
             return 1;
         }
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->getService('property_formatter');
 
         if ($property = $input->getOption('property')) {
@@ -77,6 +77,7 @@ class DomainGetCommand extends DomainCommandBase
             $properties[] = $name;
             $values[] = $propertyFormatter->format($value, $name);
         }
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $table->renderSimple($values, $properties);
 

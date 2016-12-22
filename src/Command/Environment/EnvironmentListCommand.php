@@ -135,7 +135,9 @@ class EnvironmentListCommand extends CommandBase
         $this->currentEnvironment = $this->getCurrentEnvironment($project);
 
         if (($currentProject = $this->getCurrentProject()) && $currentProject == $project) {
-            $projectConfig = $this->getService('local.project')->getProjectConfig($this->getProjectRoot());
+            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+            $localProject = $this->getService('local.project');
+            $projectConfig = $localProject->getProjectConfig($this->getProjectRoot());
             if (isset($projectConfig['mapping'])) {
                 $this->mapping = $projectConfig['mapping'];
             }
@@ -161,6 +163,7 @@ class EnvironmentListCommand extends CommandBase
 
         $headers = ['ID', 'Name', 'Status'];
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
         if ($table->formatIsMachineReadable()) {

@@ -63,6 +63,7 @@ class ProjectVariableGetCommand extends CommandBase
             throw new \InvalidArgumentException('Specify a variable name to use --pipe');
         }
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
         $header = ['ID', 'Value', 'JSON', 'Build time', 'Runtime'];

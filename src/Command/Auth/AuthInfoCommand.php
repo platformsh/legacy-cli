@@ -25,6 +25,7 @@ class AuthInfoCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $info = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
         $propertyWhitelist = ['id', 'uuid', 'display_name', 'username', 'mail', 'has_key'];
         $info = array_intersect_key($info, array_flip($propertyWhitelist));
@@ -61,6 +62,7 @@ class AuthInfoCommand extends CommandBase
                 $header[] = $property;
             }
         }
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $table->renderSimple($values, $header);
 

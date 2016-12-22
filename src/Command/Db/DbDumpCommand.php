@@ -80,6 +80,7 @@ class DbDumpCommand extends CommandBase
             $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
         }
 
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
 
         $database = $relationships->chooseDatabase($sshUrl, $input);
@@ -103,14 +104,19 @@ class DbDumpCommand extends CommandBase
 
         set_time_limit(0);
 
-        $command = $this->getService('ssh')->getSshCommand()
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $command = $ssh->getSshCommand()
             . ' -C ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($dumpCommand);
         if (isset($dumpFile)) {
             $command .= ' > ' . escapeshellarg($dumpFile);
         }
 
-        return $this->getService('shell')->executeSimple($command);
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        return $shell->executeSimple($command);
     }
 
     /**

@@ -53,12 +53,12 @@ class VariableDeleteCommand extends CommandBase
         }
 
         $environmentId = $this->getSelectedEnvironment()->id;
-        $confirm = $this->getService('question_helper')
-                        ->confirm(
-                            "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
-                            false
-                        );
-
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $confirm = $questionHelper->confirm(
+            "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
+            false
+        );
         if (!$confirm) {
             return 1;
         }

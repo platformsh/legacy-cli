@@ -52,8 +52,10 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
         $git->setDefaultRepositoryDir($projectRoot);
-        $git->setSshCommand($this->getService('ssh')->getSshCommand());
+        $git->setSshCommand($ssh->getSshCommand());
 
         $existsLocally = $git->branchExists($branch);
         if (!$existsLocally && !$this->api()->getEnvironment($branch, $project)) {
@@ -70,7 +72,9 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         // Make sure that remotes are set up correctly.
-        $this->getService('local.project')->ensureGitRemote($projectRoot, $project->getGitUrl());
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
@@ -116,7 +120,9 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
             $environmentList[$id] = $environment->title;
         }
-        $projectConfig = $this->getService('local.project')->getProjectConfig($projectRoot);
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $projectConfig = $localProject->getProjectConfig($projectRoot);
         if (!empty($projectConfig['mapping'])) {
             foreach ($projectConfig['mapping'] as $branch => $id) {
                 if (isset($environmentList[$id]) && isset($environmentList[$branch])) {

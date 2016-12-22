@@ -37,7 +37,9 @@ class IntegrationDeleteCommand extends CommandBase
 
         $type = $integration->getProperty('type');
         $confirmText = "Delete the integration <info>$id</info> (type: $type)?";
-        if (!$this->getService('question_helper')->confirm($confirmText)) {
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
 

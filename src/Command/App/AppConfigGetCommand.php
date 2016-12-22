@@ -59,6 +59,7 @@ class AppConfigGetCommand extends CommandBase
             }
         }
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
         $formatter->yamlInline = 10;
         $output->writeln($formatter->format($value, $key));

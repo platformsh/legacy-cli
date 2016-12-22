@@ -105,7 +105,9 @@ EOT
      */
     protected function findShellConfigFile()
     {
-        $homeDir = $this->getService('fs')->getHomeDirectory();
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
+        $homeDir = $fs->getHomeDirectory();
         $candidates = ['.zshrc', '.bashrc', '.bash_profile', '.profile'];
         $shell = str_replace('/bin/', '', getenv('SHELL'));
         if (!empty($shell)) {

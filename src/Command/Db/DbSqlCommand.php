@@ -36,7 +36,9 @@ class DbSqlCommand extends CommandBase
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($this->selectApp($input));
 
-        $database = $this->getService('relationships')->chooseDatabase($sshUrl, $input);
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+        $database = $relationships->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
         }
@@ -60,13 +62,19 @@ class DbSqlCommand extends CommandBase
             $sqlCommand .= $queryOption . escapeshellarg($query) . ' 2>&1';
         }
 
-        $sshCommand = $this->getService('ssh')->getSshCommand();
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+
+        $sshCommand = $ssh->getSshCommand();
         if ($this->isTerminal($output)) {
             $sshCommand .= ' -t';
         }
         $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sqlCommand);
 
-        return $this->getService('shell')->executeSimple($sshCommand);
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        return $shell->executeSimple($sshCommand);
     }
 }

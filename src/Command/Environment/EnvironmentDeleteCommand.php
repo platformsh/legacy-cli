@@ -129,8 +129,10 @@ EOF
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
         $git->setDefaultRepositoryDir($projectRoot);
-        $this->getService('local.project')
-            ->ensureGitRemote($projectRoot, $this->getSelectedProject()->getGitUrl());
+
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $localProject->ensureGitRemote($projectRoot, $this->getSelectedProject()->getGitUrl());
 
         $remoteName = $this->config()->get('detection.git_remote_name');
 
@@ -174,6 +176,7 @@ EOF
         $delete = [];
         $deactivate = [];
         $error = false;
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         foreach ($environments as $environment) {
             $environmentId = $environment->id;

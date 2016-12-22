@@ -37,6 +37,7 @@ class EnvironmentRoutesCommand extends CommandBase
             return 0;
         }
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
         $header = ['Route', 'Type', 'To', 'Cache', 'SSI'];

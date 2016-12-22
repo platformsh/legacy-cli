@@ -44,11 +44,16 @@ class ProjectVariableDeleteCommand extends CommandBase
         }
 
         $projectId = $this->getSelectedProject()->id;
-        $confirm = $this->getService('question_helper')
-                        ->confirm(sprintf("Delete the variable <info>%s</info> from the project <info>%s</info>?", $variableName, $projectId),
-                            false
-                        );
-
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $confirm = $questionHelper->confirm(
+            sprintf(
+                "Delete the variable <info>%s</info> from the project <info>%s</info>?",
+                $variableName,
+                $projectId
+            ),
+            false
+        );
         if (!$confirm) {
             return 1;
         }

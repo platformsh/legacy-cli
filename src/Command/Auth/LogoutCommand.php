@@ -35,8 +35,10 @@ class LogoutCommand extends CommandBase
         }
 
         // Ask for a confirmation.
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
         if ($this->api()->isLoggedIn()
-            && !$this->getService('question_helper')->confirm("Are you sure you wish to log out?")) {
+            && !$questionHelper->confirm("Are you sure you wish to log out?")) {
             $this->stdErr->writeln('You remain logged in.');
 
             return 1;

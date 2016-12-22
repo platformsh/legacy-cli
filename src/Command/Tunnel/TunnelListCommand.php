@@ -41,6 +41,7 @@ class TunnelListCommand extends TunnelCommandBase
             }
         }
 
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $headers = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
         $rows = [];

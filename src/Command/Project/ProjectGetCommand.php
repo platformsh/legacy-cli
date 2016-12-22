@@ -128,9 +128,12 @@ class ProjectGetCommand extends CommandBase
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
 
+        /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
         $git->ensureInstalled();
-        $git->setSshCommand($this->getService('ssh')->getSshCommand());
+        $git->setSshCommand($ssh->getSshCommand());
 
         // First check if the repo actually exists.
         try {
@@ -169,6 +172,7 @@ class ProjectGetCommand extends CommandBase
             $projectConfig['host'] = $host;
         }
 
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
 
         // If the remote repository exists, then locally we need to create the

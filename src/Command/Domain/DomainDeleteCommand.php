@@ -39,7 +39,9 @@ class DomainDeleteCommand extends CommandBase
             return 1;
         }
 
-        if (!$this->getService('question_helper')->confirm("Are you sure you want to delete the domain <info>$name</info>?")) {
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if (!$questionHelper->confirm("Are you sure you want to delete the domain <info>$name</info>?")) {
             return 1;
         }
 

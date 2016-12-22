@@ -165,6 +165,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $selectedEnvironment->ensureFull();
         $environmentId = $selectedEnvironment->id;
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
         if (!empty($accessOpts)) {

@@ -27,6 +27,7 @@ class UserListCommand extends CommandBase
 
         $rows = [];
         $i = 0;
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         foreach ($project->getUsers() as $user) {
             $account = $this->api()->getAccount($user);

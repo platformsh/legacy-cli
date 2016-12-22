@@ -57,6 +57,7 @@ class EnvironmentActivateCommand extends CommandBase
         $processed = 0;
         // Confirm which environments the user wishes to be activated.
         $process = [];
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         foreach ($environments as $environment) {
             $environmentId = $environment->id;

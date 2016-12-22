@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentInfoCommand extends CommandBase
 {
-    /** @var PropertyFormatter */
+    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
     /**
@@ -91,7 +91,9 @@ class EnvironmentInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        $this->getService('table')->renderSimple($values, $headings);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+        $table->renderSimple($values, $headings);
 
         return 0;
     }

@@ -58,7 +58,9 @@ class SelfBuildCommand extends CommandBase
 
         $boxConfig = [];
         if ($outputFilename) {
-            $boxConfig['output'] = $this->getService('fs')->makePathAbsolute($outputFilename);
+            /** @var \Platformsh\Cli\Service\Filesystem $fs */
+            $fs = $this->getService('fs');
+            $boxConfig['output'] = $fs->makePathAbsolute($outputFilename);
         }
         else {
             // Default output: CLI_PHAR in the current directory.

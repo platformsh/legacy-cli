@@ -31,11 +31,15 @@ EOF
 
     public function isHiddenInList()
     {
-        return $this->getService('local.project')->getLegacyProjectRoot() ? false : true;
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+
+        return $localProject->getLegacyProjectRoot() ? false : true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
         $legacyRoot = $localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {

@@ -93,8 +93,9 @@ class EnvironmentPushCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment <info>%s</info>', $source, $target));
 
-        $this->getService('local.project')
-            ->ensureGitRemote($projectRoot, $project->getGitUrl());
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
 
         $gitArgs = [
             'push',
@@ -115,7 +116,9 @@ class EnvironmentPushCommand extends CommandBase
             $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }
 
-        $git->setSshCommand($this->getService('ssh')->getSshCommand($extraSshOptions));
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $git->setSshCommand($ssh->getSshCommand($extraSshOptions));
 
         $result = $git->execute($gitArgs, null, false, false, $env);
 
@@ -124,7 +127,9 @@ class EnvironmentPushCommand extends CommandBase
             $this->api()->clearEnvironmentsCache($project->id);
             if ($this->hasSelectedEnvironment()) {
                 $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
-                $this->getService('relationships')->clearCache($sshUrl);
+                /** @var \Platformsh\Cli\Service\Relationships $relationships */
+                $relationships = $this->getService('relationships');
+                $relationships->clearCache($sshUrl);
             }
         }
 

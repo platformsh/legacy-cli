@@ -10,11 +10,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Url implements InputConfiguringInterface
 {
+    protected $input;
     protected $shell;
+    protected $output;
 
-    public function __construct(Shell $shell)
+    public function __construct(Shell $shell, InputInterface $input, OutputInterface $output)
     {
         $this->shell = $shell;
+        $this->input = $input;
+        $this->output = $output;
     }
 
     /**
@@ -39,23 +43,22 @@ class Url implements InputConfiguringInterface
     /**
      * Open a URL in the browser, or print it.
      *
-     * @param string          $url
-     * @param InputInterface  $input
-     * @param OutputInterface $output
-     * @param bool $quiet
+     * @param string $url
      */
-    public function openUrl($url, InputInterface $input, OutputInterface $output, $quiet = false)
+    public function openUrl($url)
     {
-        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $browser = $input->hasOption('browser') ? $input->getOption('browser') : null;
+        $stdErr = $this->output instanceof ConsoleOutputInterface
+            ? $this->output->getErrorOutput()
+            : $this->output;
+        $browser = $this->input->hasOption('browser') ? $this->input->getOption('browser') : null;
 
-        if ($input->hasOption('pipe') && $input->getOption('pipe')) {
-            $output->writeln($url);
+        if ($this->input->hasOption('pipe') && $this->input->getOption('pipe')) {
+            $this->output->writeln($url);
             return;
         }
 
         if (!getenv('DISPLAY') && strpos(PHP_OS, 'WIN') === false) {
-            if ($browser !== '0' && $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            if ($browser !== '0' && $this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                 $stdErr->writeln(sprintf('Not opening URL %s (no display found)', $url));
             }
             return;
@@ -82,9 +85,7 @@ class Url implements InputConfiguringInterface
             }
         }
 
-        if (!$quiet) {
-            $output->writeln($url);
-        }
+        $this->output->writeln($url);
     }
 
     /**

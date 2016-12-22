@@ -28,8 +28,10 @@ class IntegrationAddCommand extends IntegrationCommandBase
     {
         $this->validateInput($input);
 
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
         $values = $this->getForm()
-                       ->resolveOptions($input, $this->stdErr, $this->getService('question_helper'));
+                       ->resolveOptions($input, $this->stdErr, $questionHelper);
 
         $result = $this->getSelectedProject()
                        ->addIntegration($values['type'], $values);

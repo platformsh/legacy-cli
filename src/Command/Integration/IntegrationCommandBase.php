@@ -127,7 +127,9 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     protected function displayIntegration(Integration $integration)
     {
+        /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
         $info = [];

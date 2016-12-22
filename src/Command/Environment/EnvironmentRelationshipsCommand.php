@@ -40,9 +40,10 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $sshUrl = $environment->getSshUrl($app);
-        $relationships = $this->getService('relationships')->getRelationships($sshUrl);
+        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
+        $relationshipsService = $this->getService('relationships');
+        $value = $relationshipsService->getRelationships($sshUrl);
 
-        $value = $relationships;
         $key = null;
 
         if ($property = $input->getOption('property')) {
@@ -56,6 +57,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
             }
         }
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
         $formatter->yamlInline = 10;
         $output->writeln($formatter->format($value, $key));

@@ -163,6 +163,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     private function promptLegacyMigrate()
     {
         static $asked = false;
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
         if ($localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
             $asked = true;
@@ -255,6 +256,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $questionHelper = $this->getService('question_helper');
         $currentVersion = $this->config()->get('application.version');
 
+        /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
         $cliUpdater = $this->getService('self_updater');
         $cliUpdater->setAllowMajor(true);
         $cliUpdater->setTimeout(10);
@@ -338,7 +340,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $project = false;
-        $config = $this->getService('local.project')->getProjectConfig($projectRoot);
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
@@ -378,8 +382,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return false;
         }
 
+        /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
         $git->setDefaultRepositoryDir($this->getProjectRoot());
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
         $config = $localProject->getProjectConfig($projectRoot);
 
@@ -477,7 +483,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         if (!isset(self::$projectRoot)) {
             $this->debug('Finding the project root based on the CWD');
-            self::$projectRoot = $this->getService('local.project')->getProjectRoot();
+            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+            $localProject = $this->getService('local.project');
+            self::$projectRoot = $localProject->getProjectRoot();
             $this->debug(
                 self::$projectRoot
                     ? 'Project root found: ' . self::$projectRoot

@@ -36,6 +36,8 @@ class WebCommand extends CommandBase
             }
         }
 
-        $this->getService('url')->openUrl($url, $input, $output);
+        /** @var \Platformsh\Cli\Service\Url $url */
+        $url = $this->getService('url');
+        $url->openUrl($url);
     }
 }
