@@ -441,7 +441,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             if (!$environment) {
                 // Try a sanitized version of the branch name too.
                 $currentBranchSanitized = Environment::sanitizeId($currentBranch);
-                $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+                if ($currentBranchSanitized !== $currentBranch) {
+                    $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+                }
             }
             if ($environment) {
                 $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
