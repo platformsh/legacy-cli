@@ -97,12 +97,10 @@ class EnvironmentSetRemoteCommand extends CommandBase
         if (isset($projectConfig['mapping'][$specifiedBranch])) {
             $actualRemoteEnvironment = $projectConfig['mapping'][$specifiedBranch];
             $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is mapped to the remote environment <info>$actualRemoteEnvironment</info>");
-        }
-        elseif ($mappedByDefault) {
+        } elseif ($mappedByDefault) {
             $actualRemoteEnvironment = $specifiedBranch;
             $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is mapped to the default remote environment, <info>$specifiedBranch</info>");
-        }
-        else {
+        } else {
             $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is not mapped to a remote environment");
         }
 

@@ -19,7 +19,7 @@ class ProjectVariableDeleteCommand extends CommandBase
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->setDescription('Delete a variable from a project');
         $this->addProjectOption()
-             ->addNoWaitOption();
+                ->addNoWaitOption();
         $this->addExample('Delete the variable "example"', 'example');
     }
 
@@ -30,7 +30,7 @@ class ProjectVariableDeleteCommand extends CommandBase
         $variableName = $input->getArgument('name');
 
         $variable = $this->getSelectedProject()
-                         ->getVariable($variableName);
+                            ->getVariable($variableName);
         if (!$variable) {
             $this->stdErr->writeln("Variable not found: <error>$variableName</error>");
 

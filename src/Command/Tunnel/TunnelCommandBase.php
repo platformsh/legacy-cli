@@ -66,7 +66,7 @@ abstract class TunnelCommandBase extends CommandBase
             $filename = $this->config()->getUserConfigDir() . '/tunnel-info.json';
             if (file_exists($filename)) {
                 $this->debug(sprintf('Loading tunnel info from %s', $filename));
-                $this->tunnelInfo = (array) json_decode(file_get_contents($filename), TRUE);
+                $this->tunnelInfo = (array) json_decode(file_get_contents($filename), true);
             }
         }
 
@@ -95,8 +95,7 @@ abstract class TunnelCommandBase extends CommandBase
             if (!file_put_contents($filename, json_encode($this->tunnelInfo))) {
                 throw new \RuntimeException('Failed to write tunnel info to: ' . $filename);
             }
-        }
-        else {
+        } else {
             unlink($filename);
         }
     }
@@ -263,7 +262,8 @@ abstract class TunnelCommandBase extends CommandBase
      *
      * @return string
      */
-    protected function formatTunnelRelationship(array $tunnel) {
+    protected function formatTunnelRelationship(array $tunnel)
+    {
         return $tunnel['serviceKey'] > 0
             ? sprintf('%s.%d', $tunnel['relationship'], $tunnel['serviceKey'])
             : $tunnel['relationship'];

@@ -34,7 +34,7 @@ class ProjectVariableGetCommand extends CommandBase
 
         if ($name = $input->getArgument('name')) {
             $variable = $this->getSelectedProject()
-                             ->getVariable($name);
+                                ->getVariable($name);
             if (!$variable) {
                 $this->stdErr->writeln("Variable not found: <error>$name</error>");
 

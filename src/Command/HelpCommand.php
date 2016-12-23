@@ -35,7 +35,7 @@ class HelpCommand extends ParentHelpCommand
     {
         if (null === $this->command) {
             $this->command = $this->getApplication()
-                                  ->find($input->getArgument('command_name'));
+                                    ->find($input->getArgument('command_name'));
         }
 
         $config = new Config();

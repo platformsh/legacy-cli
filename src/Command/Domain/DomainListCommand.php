@@ -59,8 +59,7 @@ class DomainListCommand extends DomainCommandBase
 
         try {
             $domains = $project->getDomains();
-        }
-        catch (ClientException $e) {
+        } catch (ClientException $e) {
             $this->handleApiException($e, $project);
             return 1;
         }

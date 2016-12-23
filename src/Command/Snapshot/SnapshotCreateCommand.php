@@ -18,8 +18,8 @@ class SnapshotCreateCommand extends CommandBase
             ->setDescription('Make a snapshot of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addNoWaitOption('Do not wait for the snapshot to complete');
+                ->addEnvironmentOption()
+                ->addNoWaitOption('Do not wait for the snapshot to complete');
         $this->setHiddenAliases(['environment:backup']);
         $this->addExample('Make a snapshot of the current environment');
     }

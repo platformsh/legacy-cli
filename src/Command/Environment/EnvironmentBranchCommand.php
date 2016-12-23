@@ -28,8 +28,8 @@ class EnvironmentBranchCommand extends CommandBase
                 "Create the new environment even if the branch cannot be checked out locally"
             );
         $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addNoWaitOption("Do not wait for the environment to be branched");
+                ->addEnvironmentOption()
+                ->addNoWaitOption("Do not wait for the environment to be branched");
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }

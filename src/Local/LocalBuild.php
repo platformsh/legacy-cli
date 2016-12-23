@@ -556,8 +556,7 @@ class LocalBuild
                 }
                 if ($this->fsHelper->remove($filename)) {
                     $numDeleted++;
-                }
-                elseif (!$quiet) {
+                } elseif (!$quiet) {
                     $this->output->writeln("Failed to delete: <error>" . basename($filename) . "</error>");
                 }
             } else {

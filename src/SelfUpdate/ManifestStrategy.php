@@ -121,11 +121,9 @@ class ManifestStrategy implements StrategyInterface
         foreach ($items as $updating) {
             if (!isset($updating['notes'])) {
                 continue;
-            }
-            elseif (isset($updating['hide from']) && version_compare($localVersion, $updating['hide from'], '>=')) {
+            } elseif (isset($updating['hide from']) && version_compare($localVersion, $updating['hide from'], '>=')) {
                 continue;
-            }
-            elseif (isset($updating['show from']) && version_compare($localVersion, $updating['show from'], '<')) {
+            } elseif (isset($updating['show from']) && version_compare($localVersion, $updating['show from'], '<')) {
                 continue;
             }
             return $updating['notes'];
@@ -243,9 +241,9 @@ class ManifestStrategy implements StrategyInterface
      */
     private function filterByLocalMajorVersion(array $versions)
     {
-        list($localMajorVersion, ) = explode('.', $this->localVersion, 2);
+        list($localMajorVersion,) = explode('.', $this->localVersion, 2);
         return array_filter($versions, function ($version) use ($localMajorVersion) {
-            list($majorVersion, ) = explode('.', $version, 2);
+            list($majorVersion,) = explode('.', $version, 2);
             return $majorVersion === $localMajorVersion;
         });
 
@@ -265,8 +263,7 @@ class ManifestStrategy implements StrategyInterface
         return array_filter($versions, function ($version) use ($versionInfo) {
             if (isset($versionInfo[$version]['php']['min']) && version_compare(PHP_VERSION, $versionInfo[$version]['php']['min'], '<')) {
                 return false;
-            }
-            elseif (isset($versionInfo[$version]['php']['max']) && version_compare(PHP_VERSION, $versionInfo[$version]['php']['max'], '>')) {
+            } elseif (isset($versionInfo[$version]['php']['max']) && version_compare(PHP_VERSION, $versionInfo[$version]['php']['max'], '>')) {
                 return false;
             }
 

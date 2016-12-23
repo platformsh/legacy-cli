@@ -180,10 +180,10 @@ abstract class ToolstackBase implements ToolstackInterface
                     continue;
                 }
                 if ($this->copy) {
-                    $this->output->writeln("Copying $relSource to $relDestination");
+                    $this->output->writeln("copying $relSource to $relDestination");
                 }
                 else {
-                    $this->output->writeln("Symlinking $relSource to $relDestination");
+                    $this->output->writeln("symlinking $relSource to $relDestination");
                 }
                 // Delete existing files, emitting a warning.
                 if (file_exists($destination)) {
@@ -197,8 +197,7 @@ abstract class ToolstackBase implements ToolstackInterface
                 }
                 if ($this->copy) {
                     $this->fsHelper->copy($source, $destination);
-                }
-                else {
+                } else {
                     $this->fsHelper->symlink($source, $destination);
                 }
             }
@@ -258,11 +257,9 @@ abstract class ToolstackBase implements ToolstackInterface
         }
         if (!empty($this->settings['clone'])) {
             $this->cloneToBuildDir($buildDir);
-        }
-        elseif ($this->copy) {
+        } elseif ($this->copy) {
             $this->fsHelper->copyAll($this->appRoot, $buildDir, $this->ignoredFiles, true);
-        }
-        else {
+        } else {
             $this->fsHelper->symlink($this->appRoot, $buildDir);
         }
 
@@ -363,8 +360,7 @@ abstract class ToolstackBase implements ToolstackInterface
                 $this->output->writeln("Creating file: <info>$relative</info>");
                 $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);
                 $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
-            }
-            else {
+            } else {
                 $this->output->writeln("Symlinking <info>$relative</info> into sites/default");
             }
             $this->fsHelper->symlink($sharedSettingsLocal, $settingsLocal);

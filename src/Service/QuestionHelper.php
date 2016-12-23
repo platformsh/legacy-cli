@@ -42,7 +42,7 @@ class QuestionHelper extends BaseQuestionHelper
      * @param string          $questionText
      * @param bool            $default
      *
-     * @return bool
+     * @return boolean|string
      */
     public function confirm($questionText, $default = true)
     {
@@ -100,7 +100,7 @@ class QuestionHelper extends BaseQuestionHelper
      *
      * @param string $questionText
      * @param mixed  $default
-     * @param array  $autoCompleterValues
+     * @param integer[]  $autoCompleterValues
      *
      * @return string
      *   The user's answer.

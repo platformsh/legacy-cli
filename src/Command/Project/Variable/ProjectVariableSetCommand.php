@@ -25,7 +25,7 @@ class ProjectVariableSetCommand extends CommandBase
             ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not e\Expose this variable at deploy and runtime')
             ->setDescription('Set a variable for a project');
         $this->addProjectOption()
-             ->addNoWaitOption();
+                ->addNoWaitOption();
         $this->addExample('Set the variable "example" to the string "123"', 'example 123');
         $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
         $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
@@ -49,7 +49,7 @@ class ProjectVariableSetCommand extends CommandBase
         // Check whether the variable already exists. If there is no change,
         // quit early.
         $existing = $this->getSelectedProject()
-                         ->getVariable($variableName);
+                            ->getVariable($variableName);
         if ($existing && $existing->getProperty('value') === $variableValue && $existing->getProperty('is_json') == $json) {
             $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
 
@@ -58,7 +58,7 @@ class ProjectVariableSetCommand extends CommandBase
 
         // Set the variable to a new value.
         $result = $this->getSelectedProject()
-                       ->setVariable($variableName, $variableValue, $json, !$supressBuild, !$supressRuntime);
+                        ->setVariable($variableName, $variableValue, $json, !$supressBuild, !$supressRuntime);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 

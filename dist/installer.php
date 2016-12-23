@@ -216,8 +216,7 @@ if ($home = getHomeDirectory()) {
     $rcSource = 'phar://' . CLI_PHAR . '/shell-config.rc';
     if (($rcContents = file_get_contents($rcSource)) === false) {
         output(sprintf('  Failed to read file: %s', $rcSource), 'warning');
-    }
-    elseif (file_put_contents($rcDestination, $rcContents) === false) {
+    } elseif (file_put_contents($rcDestination, $rcContents) === false) {
         output(sprintf('  Failed to write file: %s', $rcDestination), 'warning');
     }
 

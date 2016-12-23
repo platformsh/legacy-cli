@@ -44,8 +44,7 @@ class DomainUpdateCommand extends DomainCommandBase
         foreach (['key' => '', 'certificate' => '', 'chain' => []] as $option => $default) {
             if (empty($this->sslOptions[$option])) {
                 $this->sslOptions[$option] = $domain->ssl[$option] ?: $default;
-            }
-            elseif ($this->sslOptions[$option] != $domain->ssl[$option]) {
+            } elseif ($this->sslOptions[$option] != $domain->ssl[$option]) {
                 $needsUpdate = true;
             }
         }

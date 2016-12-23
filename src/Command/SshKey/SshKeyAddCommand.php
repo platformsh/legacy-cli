@@ -54,8 +54,7 @@ class SshKeyAddCommand extends CommandBase
                     $this->stdErr->writeln('    eval $(ssh-agent)');
                     $this->stdErr->writeln('    ssh-add ' . escapeshellarg($newKeyPath));
                 }
-            }
-            else {
+            } else {
                 $this->stdErr->writeln("<error>You must specify the path to a public SSH key</error>");
                 return 1;
             }
@@ -87,8 +86,7 @@ class SshKeyAddCommand extends CommandBase
             // Extract the fingerprint from the command output.
             if (preg_match('/^\s*[0-9]+ +(MD5:)?([0-9a-z:]+)( |$)/i', $result, $matches)) {
                 $fingerprint = str_replace(':', '', $matches[2]);
-            }
-            else {
+            } else {
                 $this->debug("Unexpected output from ssh-keygen: $result");
             }
 

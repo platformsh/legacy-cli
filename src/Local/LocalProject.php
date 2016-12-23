@@ -75,8 +75,7 @@ class LocalProject
         $currentUrl = $gitHelper->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);
         if (!$currentUrl) {
             $gitHelper->execute(['remote', 'add', $this->config->get('detection.git_remote_name'), $url], $dir, true);
-        }
-        elseif ($currentUrl != $url) {
+        } elseif ($currentUrl != $url) {
             $gitHelper->execute(['remote', 'set-url', $this->config->get('detection.git_remote_name'), $url], $dir, true);
         }
         // Add an origin remote too.

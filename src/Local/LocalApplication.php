@@ -46,7 +46,7 @@ class LocalApplication
      */
     protected function getPath()
     {
-        return str_replace($this->sourceDir . '/' , '', $this->appRoot);
+        return str_replace($this->sourceDir . '/', '', $this->appRoot);
     }
 
     /**
@@ -92,8 +92,7 @@ class LocalApplication
                     $parser = new Parser();
                     $config = (array) $parser->parse(file_get_contents($file));
                     $this->config = $this->normalizeConfig($config);
-                }
-                catch (ParseException $e) {
+                } catch (ParseException $e) {
                     throw new InvalidConfigException(
                         "Parse error in file '$file': \n" . $e->getMessage()
                     );
@@ -190,7 +189,7 @@ class LocalApplication
         // 'build.flavor' config keys.
         $appConfig = $this->getConfig();
         if (isset($appConfig['type'])) {
-            list($stack, ) = explode(':', $appConfig['type'], 2);
+            list($stack,) = explode(':', $appConfig['type'], 2);
             $flavor = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
 
             // Toolstack classes for HHVM are the same as PHP.
@@ -242,13 +241,13 @@ class LocalApplication
         $finder = new Finder();
         $config = $config ?: new Config();
         $finder->in($directory)
-               ->ignoreDotFiles(false)
-               ->name($config->get('service.app_config_file'))
-               ->notPath('builds')
-               ->notPath($config->get('local.local_dir'))
-               ->ignoreUnreadableDirs()
-               ->depth('> 0')
-               ->depth('< 5');
+                ->ignoreDotFiles(false)
+                ->name($config->get('service.app_config_file'))
+                ->notPath('builds')
+                ->notPath($config->get('local.local_dir'))
+                ->ignoreUnreadableDirs()
+                ->depth('> 0')
+                ->depth('< 5');
 
         $applications = [];
         if ($finder->count() == 0) {
@@ -313,7 +312,7 @@ class LocalApplication
     /**
      * Check whether the whole app should be moved into the document root.
      *
-     * @return string
+     * @return boolean
      */
     public function shouldMoveToRoot()
     {

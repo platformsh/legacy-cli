@@ -99,8 +99,7 @@ class LoginCommand extends CommandBase
                         $this->api()->getClient(false)
                             ->getConnector()
                             ->logIn($email, $password, true, $answer);
-                    }
-                    catch (BadResponseException $e) {
+                    } catch (BadResponseException $e) {
                         // If there is a two-factor authentication error, show
                         // the error description that the server provides.
                         //
@@ -109,8 +108,7 @@ class LoginCommand extends CommandBase
                         if ($e->getResponse()->getHeader('X-Drupal-TFA')) {
                             $json = $e->getResponse()->json();
                             throw new \RuntimeException($json['error_description']);
-                        }
-                        else {
+                        } else {
                             throw $e;
                         }
                     }

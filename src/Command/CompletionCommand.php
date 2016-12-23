@@ -222,7 +222,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
      * the command (via the 'id' argument of 'get', or the '--project' option),
      * or it is determined from the current path.
      *
-     * @return \Platformsh\Client\Model\Project|false
+     * @return \Platformsh\Client\Model\Project
      */
     protected function getProject()
     {
@@ -235,8 +235,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
         if (!$currentProjectId && ($currentProject = $this->welcomeCommand->getCurrentProject())) {
             return $currentProject;
-        }
-        elseif (isset($this->projects[$currentProjectId])) {
+        } elseif (isset($this->projects[$currentProjectId])) {
             return $this->projects[$currentProjectId];
         }
 
