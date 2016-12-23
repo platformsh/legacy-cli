@@ -99,8 +99,7 @@ class Filesystem
         foreach ($files as $file) {
             if (is_link($file)) {
                 continue;
-            }
-            elseif (is_dir($file)) {
+            } elseif (is_dir($file)) {
                 if ((!is_executable($file) || !is_writable($file))
                     && true !== @chmod($file, 0700)) {
                     return false;
@@ -108,8 +107,7 @@ class Filesystem
                 if ($recursive && !$this->unprotect(new \FilesystemIterator($file), true)) {
                     return false;
                 }
-            }
-            elseif (!is_writable($file) && true !== @chmod($file, 0600)) {
+            } elseif (!is_writable($file) && true !== @chmod($file, 0600)) {
                 return false;
             }
         }
@@ -200,8 +198,7 @@ class Filesystem
                 }
             }
             closedir($sourceDirectory);
-        }
-        else {
+        } else {
             $this->fs->copy($source, $destination, $override);
         }
     }
@@ -288,23 +285,20 @@ class Filesystem
             if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
                 $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, $blacklist, $copy);
                 continue;
-            }
-            elseif (file_exists($linkFile)) {
+            } elseif (file_exists($linkFile)) {
                 if ($skipExisting) {
                     continue;
                 } else {
                     throw new \Exception('File exists: ' . $linkFile);
                 }
-            }
-            elseif (is_link($linkFile)) {
+            } elseif (is_link($linkFile)) {
                 // This is a broken link. Remove it.
                 $this->remove($linkFile);
             }
 
             if ($copy) {
                 $this->copyAll($sourceFile, $linkFile, $blacklist);
-            }
-            else {
+            } else {
                 if ($this->relative) {
                     $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
                     chdir($destination);
@@ -353,8 +347,7 @@ class Filesystem
     {
         if (file_exists($relativePath) && !is_link($relativePath) && ($realPath = realpath($relativePath))) {
             $absolute = $realPath;
-        }
-        else {
+        } else {
             $parent = dirname($relativePath);
             if (!is_dir($parent) || !($parentRealPath = realpath($parent))) {
                 throw new \InvalidArgumentException('Directory not found: ' . $parent);

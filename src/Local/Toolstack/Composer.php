@@ -36,11 +36,9 @@ class Composer extends ToolstackBase
             ];
             if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
                 $args[] = '-vvv';
-            }
-            elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            } elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                 $args[] = '-vv';
-            }
-            elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            } elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                 $args[] = '-v';
             }
             $this->shellHelper->execute($args, $buildDir, true, false);

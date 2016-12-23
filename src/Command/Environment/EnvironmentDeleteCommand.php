@@ -207,13 +207,11 @@ EOF
                         }
                     }
                 }
-            }
-            elseif ($environment->status === 'inactive') {
+            } elseif ($environment->status === 'inactive') {
                 if ($questionHelper->confirm("Are you sure you want to delete the remote Git branch <comment>$environmentId</comment>?")) {
                     $delete[$environmentId] = $environment;
                 }
-            }
-            elseif ($environment->status === 'dirty') {
+            } elseif ($environment->status === 'dirty') {
                 $output->writeln("The environment <error>$environmentId</error> is currently building, and therefore can't be deleted. Please wait.");
                 $error = true;
                 continue;

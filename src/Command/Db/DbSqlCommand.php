@@ -34,7 +34,7 @@ class DbSqlCommand extends CommandBase
         }
 
         $sshUrl = $this->getSelectedEnvironment()
-                       ->getSshUrl($this->selectApp($input));
+                        ->getSshUrl($this->selectApp($input));
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');

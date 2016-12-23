@@ -234,7 +234,7 @@ class Api
      * @param string|null $host    The project's hostname.
      * @param bool|null   $refresh Whether to bypass the cache.
      *
-     * @return Project|false
+     * @return Project
      */
     public function getProject($id, $host = null, $refresh = null)
     {
@@ -501,7 +501,7 @@ class Api
      * @param Project $project
      * @param string  $email
      *
-     * @return ProjectAccess|false
+     * @return string
      */
     public function loadProjectAccessByEmail(Project $project, $email)
     {

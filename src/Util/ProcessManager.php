@@ -65,8 +65,7 @@ class ProcessManager
         $pid = pcntl_fork();
         if ($pid === -1) {
             throw new \RuntimeException('Failed to fork PHP process');
-        }
-        elseif ($pid > 0) {
+        } elseif ($pid > 0) {
             // This is the parent process. If the child process succeeds, this
             // receives SIGCHLD. If it fails, this receives SIGTERM.
             declare (ticks = 1);
@@ -81,8 +80,7 @@ class ProcessManager
             // finish.
             sleep(60);
             throw new \RuntimeException('Timeout in parent process');
-        }
-        elseif (posix_setsid() === -1) {
+        } elseif (posix_setsid() === -1) {
             throw new \RuntimeException('Child process failed to become session leader');
         }
     }
@@ -124,8 +122,7 @@ class ProcessManager
             $process->start(function ($type, $buffer) use ($log) {
                 $log->writeln($buffer);
             });
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             unset($this->processes[$pidFile]);
             throw $e;
         }

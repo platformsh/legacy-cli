@@ -130,7 +130,7 @@ class Table implements InputConfiguringInterface
      * Render CSV output.
      *
      * @param array  $rows
-     * @param array  $header
+     * @param string[]  $header
      * @param string $delimiter
      * @param string $enclosure
      */
@@ -138,8 +138,7 @@ class Table implements InputConfiguringInterface
     {
         if ($this->output instanceof StreamOutput) {
             $stream = $this->output->getStream();
-        }
-        else {
+        } else {
             throw new \RuntimeException('A stream output is required for the CSV format');
         }
         if ($header) {
@@ -154,7 +153,7 @@ class Table implements InputConfiguringInterface
      * Render a Symfony Console table.
      *
      * @param array $rows
-     * @param array $header
+     * @param string[] $header
      */
     protected function renderTable(array $rows, array $header)
     {

@@ -90,7 +90,7 @@ class EnvironmentDrushCommand extends CommandBase
         }
 
         $dimensions = $this->getApplication()
-                           ->getTerminalDimensions();
+                            ->getTerminalDimensions();
         $columns = $dimensions[0] ?: 80;
 
         $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";

@@ -65,8 +65,7 @@ class ProjectGetCommand extends CommandBase
 
                 return 1;
             }
-        }
-        else {
+        } else {
             $result = $this->parseProjectId($projectId);
             $projectId = $result['projectId'];
             $hostOption = $hostOption ?: $result['host'];
@@ -138,8 +137,7 @@ class ProjectGetCommand extends CommandBase
         // First check if the repo actually exists.
         try {
             $exists = $git->remoteRepoExists($gitUrl);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln('<error>Failed to connect to the ' . $this->config()->get('service.name') . ' Git server</error>');
 
@@ -147,8 +145,7 @@ class ProjectGetCommand extends CommandBase
             $sshKeys = [];
             try {
                 $sshKeys = $this->api()->getClient(false)->getSshKeys();
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 // Ignore exceptions.
             }
 
@@ -156,8 +153,7 @@ class ProjectGetCommand extends CommandBase
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please check your SSH credentials');
                 $this->stdErr->writeln('You can list your keys with: <comment>' . $this->config()->get('application.executable') . ' ssh-keys</comment>');
-            }
-            else {
+            } else {
                 $this->stdErr->writeln('You probably need to add an SSH key, with: <comment>' . $this->config()->get('application.executable') . ' ssh-key:add</comment>');
             }
 

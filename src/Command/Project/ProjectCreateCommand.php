@@ -36,9 +36,9 @@ class ProjectCreateCommand extends CommandBase
     protected function configure()
     {
         $this
-          ->setName('project:create')
-          ->setAliases(['create'])
-          ->setDescription('Create a new project');
+            ->setName('project:create')
+            ->setAliases(['create'])
+            ->setDescription('Create a new project');
 
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
@@ -178,37 +178,37 @@ class ProjectCreateCommand extends CommandBase
     protected function getFields()
     {
         return [
-          'title' => new Field('Project title', [
+            'title' => new Field('Project title', [
             'optionName' => 'title',
             'description' => 'The initial project title',
             'default' => 'Untitled Project',
-          ]),
-          'region' => new OptionsField('Region', [
+            ]),
+            'region' => new OptionsField('Region', [
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
             'options' => Subscription::$availableRegions,
-          ]),
-          'plan' => new OptionsField('Plan', [
+            ]),
+            'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
             'default' => 'development',
-          ]),
-          'environments' => new Field('Environments', [
+            ]),
+            'environments' => new Field('Environments', [
             'optionName' => 'environments',
             'description' => 'The number of environments',
             'default' => 3,
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 50;
             },
-          ]),
-          'storage' => new Field('Storage', [
+            ]),
+            'storage' => new Field('Storage', [
             'description' => 'The amount of storage per environment, in GiB',
             'default' => 5,
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 1024;
             },
-          ]),
+            ]),
         ];
     }
 }

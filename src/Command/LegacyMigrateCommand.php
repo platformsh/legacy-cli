@@ -61,8 +61,7 @@ EOF
             $this->stdErr->writeln('Directory not found: <error>' . $repositoryDir . '</error>');
 
             return 1;
-        }
-        elseif (!is_dir($repositoryDir . '/.git')) {
+        } elseif (!is_dir($repositoryDir . '/.git')) {
             $this->stdErr->writeln('Not a Git repository: <error>' . $repositoryDir . '</error>');
 
             return 1;
@@ -89,8 +88,7 @@ EOF
             if (is_dir($repositoryDir . '/' . $this->config()->get('local.shared_dir'))) {
                 $fs->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . $this->config()->get('local.shared_dir'));
                 $fs->remove($legacyRoot . '/shared');
-            }
-            else {
+            } else {
                 rename($legacyRoot . '/shared', $repositoryDir . '/' . $this->config()->get('local.shared_dir'));
             }
         }
@@ -128,8 +126,7 @@ EOF
             $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');
 
             return 1;
-        }
-        elseif (file_exists($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'))) {
+        } elseif (file_exists($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'))) {
             $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . $this->config()->get('local.project_config_legacy') . '</error>');
 
             return 1;

@@ -29,7 +29,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
         $command->mergeApplicationDefinition(false);
 
         $this->write($command->getName() . "\n"
-            . str_repeat('-', strlen($command->getName()))."\n");
+            . str_repeat('-', strlen($command->getName())) . "\n");
 
         if ($description = $command->getDescription()) {
             $this->write("$description\n\n");
@@ -38,7 +38,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
         $aliases = $command instanceof CommandBase ? $command->getVisibleAliases() : $command->getAliases();
         if ($aliases) {
             $this->write(
-                'Aliases: ' . '`'.implode('`, `', $aliases).'`' . "\n\n"
+                'Aliases: ' . '`' . implode('`, `', $aliases) . '`' . "\n\n"
             );
         }
 
@@ -92,13 +92,12 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     {
         $this->write('* **`--' . $option->getName() . "`**");
         if ($shortcut = $option->getShortcut()) {
-            $this->write(" (`-" . implode('|-', explode('|', $shortcut)). "`)");
+            $this->write(" (`-" . implode('|-', explode('|', $shortcut)) . "`)");
         }
         $notes = [];
         if ($option->isArray()) {
             $notes[] = 'multiple values allowed';
-        }
-        elseif ($option->acceptValue()) {
+        } elseif ($option->acceptValue()) {
             $notes[] = 'expects a value';
         }
         if ($notes) {

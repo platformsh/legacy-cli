@@ -51,9 +51,9 @@ abstract class DomainCommandBase extends CommandBase
     protected function addDomainOptions()
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The domain name')
-             ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file for this domain')
-             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the private key file for the provided certificate.')
-             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file or files for the provided certificate');
+                ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file for this domain')
+                ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the private key file for the provided certificate.')
+                ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file or files for the provided certificate');
     }
 
     /**
@@ -109,8 +109,7 @@ abstract class DomainCommandBase extends CommandBase
                 foreach (explode($begin, $data) as $cert) {
                     $chain[] = $begin . $cert;
                 }
-            }
-            else {
+            } else {
                 $chain[] = $data;
             }
         }
@@ -178,8 +177,7 @@ abstract class DomainCommandBase extends CommandBase
             if (!$project->hasLink('#manage-domains') && !empty($data['subscription']['plan']) && $data['subscription']['plan'] === 'development') {
                 $this->stdErr->writeln('This project is on a Development plan. Upgrade the plan to add domains.');
             }
-        }
-        else {
+        } else {
             throw $e;
         }
     }

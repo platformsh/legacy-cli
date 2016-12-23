@@ -31,10 +31,10 @@ class IntegrationAddCommand extends IntegrationCommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $values = $this->getForm()
-                       ->resolveOptions($input, $this->stdErr, $questionHelper);
+                        ->resolveOptions($input, $this->stdErr, $questionHelper);
 
         $result = $this->getSelectedProject()
-                       ->addIntegration($values['type'], $values);
+                        ->addIntegration($values['type'], $values);
 
         /** @var Integration $integration */
         $integration = $result->getEntity();

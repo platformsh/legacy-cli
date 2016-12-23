@@ -100,8 +100,7 @@ class TunnelOpenCommand extends TunnelCommandBase
 
                 try {
                     $pid = $processManager->startProcess($process, $pidFile, $log);
-                }
-                catch (\Exception $e) {
+                } catch (\Exception $e) {
                     $this->stdErr->writeln(sprintf('Failed to open tunnel for relationship <error>%s</error>: %s', $relationshipString, $e->getMessage()));
                     $error = true;
                     continue;

@@ -85,7 +85,7 @@ class Git
      * @param bool   $mustRun
      *   Enable exceptions if the Git command fails.
      *
-     * @return string|false
+     * @return string|boolean
      */
     public function getCurrentBranch($dir = null, $mustRun = false)
     {
@@ -211,7 +211,7 @@ class Git
             return trim(ltrim($line, '* '));
         }, explode("\n", $result));
 
-        return in_array($branchName, $branches, TRUE);
+        return in_array($branchName, $branches, true);
     }
 
     /**
@@ -307,7 +307,7 @@ class Git
      * @param bool        $mustRun
      *   Enable exceptions if the Git command fails.
      *
-     * @return string|false
+     * @return string|boolean
      *   The upstream, in the form remote/branch, or false if no upstream is
      *   found.
      */
@@ -401,7 +401,7 @@ class Git
      * @param string|null $dir
      * @param bool        $mustRun
      *
-     * @return string|false
+     * @return string|boolean
      */
     public function getRoot($dir = null, $mustRun = false)
     {
@@ -440,7 +440,7 @@ class Git
      * @param bool        $mustRun
      *   Enable exceptions if the Git command fails.
      *
-     * @return string|false
+     * @return string|boolean
      */
     public function getConfig($key, $dir = null, $mustRun = false)
     {

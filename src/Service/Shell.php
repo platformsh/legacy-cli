@@ -47,7 +47,7 @@ class Shell
      */
     public function executeSimple($commandline, $dir = null, array $env = [])
     {
-        $this->output->writeln('Running command: <info>' . $commandline. '</info>', OutputInterface::VERBOSITY_VERBOSE);
+        $this->output->writeln('Running command: <info>' . $commandline . '</info>', OutputInterface::VERBOSITY_VERBOSE);
 
         $env = $env ? $env + $this->getParentEnv() : null;
         $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir, $env);

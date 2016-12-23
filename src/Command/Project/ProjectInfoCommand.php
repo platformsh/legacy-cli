@@ -32,8 +32,8 @@ class ProjectInfoCommand extends CommandBase
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Read all project properties')
-             ->addExample("Show the project's Git URL", 'git')
-             ->addExample("Change the project's title", 'title "My project"');
+                ->addExample("Show the project's Git URL", 'git')
+                ->addExample("Change the project's title", 'title "My project"');
         $this->setHiddenAliases(['project:metadata']);
     }
 

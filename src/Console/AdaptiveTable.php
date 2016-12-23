@@ -31,7 +31,7 @@ class AdaptiveTable extends Table
      *
      * @param OutputInterface $output
      * @param int|null        $maxTableWidth
-     * @param int|null        $minColumnWidth
+     * @param integer        $minColumnWidth
      */
     public function __construct(OutputInterface $output, $maxTableWidth = null, $minColumnWidth = 10)
     {

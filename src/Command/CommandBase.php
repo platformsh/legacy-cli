@@ -178,7 +178,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 }
             }
 
-            $this->stdErr->writeln('You are in a project using an old file structure, from previous versions of the ' . $this->config()->get('application.name') .'.');
+            $this->stdErr->writeln('You are in a project using an old file structure, from previous versions of the ' . $this->config()->get('application.name') . '.');
             if ($this->input->isInteractive() && $promptMigrate) {
                 if ($projectRoot && isset($projectConfig)) {
                     $projectConfig['migrate']['3.x']['last_asked'] = $timestamp;
@@ -190,8 +190,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                     $code = $this->runOtherCommand('legacy-migrate');
                     exit($code);
                 }
-            }
-            else {
+            } else {
                 $this->stdErr->writeln('Fix this with: <comment>' . $this->config()->get('application.executable') . ' legacy-migrate</comment>');
             }
             $this->stdErr->writeln('');
@@ -236,8 +235,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         if (!$config->get('updates.check')) {
             return;
-        }
-        elseif (!$reset && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
+        } elseif (!$reset && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
             return;
         }
 
@@ -351,8 +349,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                     $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
                     $message = "Project not found: " . $projectUrl
                         . "\nThe project probably no longer exists.";
-                }
-                else {
+                } else {
                     $message = "Project not found: " . $config['id']
                         . "\nEither you do not have access to the project or it no longer exists.";
                 }
@@ -811,8 +808,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
             if (!$environmentId && $envNotRequired) {
                 $this->environment = $this->getCurrentEnvironment($this->project);
-            }
-            else {
+            } else {
                 $this->environment = $this->selectEnvironment($environmentId);
             }
         }
@@ -919,7 +915,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *
      * @see parent::setAliases()
      *
-     * @param array $hiddenAliases
+     * @param string[] $hiddenAliases
      *
      * @return CommandBase
      */

@@ -10,8 +10,8 @@ class TunnelCloseCommand extends TunnelCommandBase
     protected function configure()
     {
         $this
-          ->setName('tunnel:close')
-          ->setDescription('Close SSH tunnels')
+            ->setName('tunnel:close')
+            ->setDescription('Close SSH tunnels')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Close all tunnels');
         $this->addProjectOption();
         $this->addEnvironmentOption();
@@ -52,8 +52,7 @@ class TunnelCloseCommand extends TunnelCommandBase
             if ($questionHelper->confirm($questionText)) {
                 if ($this->closeTunnel($tunnel)) {
                     $this->stdErr->writeln(sprintf('Closed tunnel to <info>%s</info> on %s', $relationshipString, $appString));
-                }
-                else {
+                } else {
                     $error = true;
                     $this->stdErr->writeln(sprintf('Failed closing tunnel to <error>%s</error> on %s', $relationshipString, $appString));
                 }

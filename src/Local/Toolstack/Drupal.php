@@ -122,7 +122,7 @@ class Drupal extends ToolstackBase
     /**
      * Set up options to pass to the drush commands.
      *
-     * @return array
+     * @return string[]
      */
     protected function getDrushFlags()
     {

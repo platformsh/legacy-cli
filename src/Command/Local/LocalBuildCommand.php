@@ -135,11 +135,9 @@ class LocalBuildCommand extends CommandBase
                 $projectRoot = $sourceDir;
                 $sourceDir = $projectRoot;
             }
-        }
-        elseif (!$projectRoot) {
+        } elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
-        }
-        else {
+        } else {
             $sourceDir = $projectRoot;
         }
 

@@ -135,11 +135,11 @@ class DbSizeCommand extends CommandBase
     {
         // I couldn't find a way to run the SUM directly in the database query...
         $query = 'SELECT'
-          . ' sum(pg_relation_size(pg_class.oid))::bigint AS size'
-          . ' FROM pg_class'
-          . ' LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)'
-          . ' GROUP BY pg_class.relkind, nspname'
-          . ' ORDER BY sum(pg_relation_size(pg_class.oid)) DESC;';
+            . ' sum(pg_relation_size(pg_class.oid))::bigint AS size'
+            . ' FROM pg_class'
+            . ' LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)'
+            . ' GROUP BY pg_class.relkind, nspname'
+            . ' ORDER BY sum(pg_relation_size(pg_class.oid)) DESC;';
 
         $dbUrl = sprintf(
             'postgresql://%s:%s@%s/%s',
