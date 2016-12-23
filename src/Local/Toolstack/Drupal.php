@@ -87,7 +87,7 @@ class Drupal extends ToolstackBase
         } elseif ($projectMake) {
             $this->buildInProjectMode($projectMake);
         } else {
-            $this->output->writeln("Building in vanilla mode: you are missing out!");
+            $this->stdErr->writeln("Building in vanilla mode: you are missing out!");
 
             $this->copyToBuildDir();
 
@@ -115,7 +115,7 @@ class Drupal extends ToolstackBase
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
         if (!$this->gitHelper->execute(['check-ignore', $relative], $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
-            $this->output->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
+            $this->stdErr->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
         }
     }
 
@@ -130,7 +130,7 @@ class Drupal extends ToolstackBase
             '--yes',
         ];
 
-        $verbosity = $this->output->getVerbosity();
+        $verbosity = $this->stdErr->getVerbosity();
         if ($verbosity === OutputInterface::VERBOSITY_QUIET) {
             $drushFlags[] = '--quiet';
         } elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
@@ -286,7 +286,7 @@ class Drupal extends ToolstackBase
 
         $drupalRoot = $this->getWebRoot();
 
-        $this->output->writeln("Building profile <info>$profileName</info>");
+        $this->stdErr->writeln("Building profile <info>$profileName</info>");
 
         $profileDir = $drupalRoot . '/profiles/' . $profileName;
 
@@ -331,10 +331,10 @@ class Drupal extends ToolstackBase
         }
 
         if ($this->copy) {
-            $this->output->writeln("Copying existing app files to the profile");
+            $this->stdErr->writeln("Copying existing app files to the profile");
         }
         else {
-            $this->output->writeln("Symlinking existing app files to the profile");
+            $this->stdErr->writeln("Symlinking existing app files to the profile");
         }
 
         $this->ignoredFiles[] = '*.make';
@@ -379,9 +379,9 @@ class Drupal extends ToolstackBase
         }
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
-            $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
+            $this->stdErr->writeln("Found a custom settings.php file: $settingsPhpFile");
             $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
-            $this->output->writeln(
+            $this->stdErr->writeln(
                 "  <comment>Your settings.php file has been copied (not symlinked) into the build directory."
                 . "\n  You will need to rebuild if you edit this file.</comment>"
             );

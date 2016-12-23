@@ -15,11 +15,14 @@ class Shell
     /** @var OutputInterface */
     protected $output;
 
+    /** @var OutputInterface */
+    protected $stdErr;
+
     protected $defaultTimeout = 3600;
 
     public function __construct(OutputInterface $output = null)
     {
-        $this->output = $output ?: new NullOutput();
+        $this->setOutput($output ?: new NullOutput());
     }
 
     /**
@@ -29,10 +32,10 @@ class Shell
      */
     public function setOutput(OutputInterface $output)
     {
-        if ($output instanceof ConsoleOutputInterface) {
-            $output = $output->getErrorOutput();
-        }
         $this->output = $output;
+        $this->stdErr = $output instanceof ConsoleOutputInterface
+            ? $output->getErrorOutput()
+            : $output;
     }
 
     /**
