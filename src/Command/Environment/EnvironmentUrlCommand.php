@@ -57,9 +57,9 @@ class EnvironmentUrlCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
         $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to choose a URL', $urls[0]);
 
-        /** @var \Platformsh\Cli\Service\Url $url */
-        $url = $this->getService('url');
-        $url->openUrl($url);
+        /** @var \Platformsh\Cli\Service\Url $urlService */
+        $urlService = $this->getService('url');
+        $urlService->openUrl($url);
 
         return 0;
     }

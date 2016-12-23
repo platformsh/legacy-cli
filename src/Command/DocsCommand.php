@@ -37,9 +37,9 @@ class DocsCommand extends CommandBase
                 . urlencode('site:' . $hostname . ' ' . $query);
         }
 
-        /** @var \Platformsh\Cli\Service\Url $url */
-        $url = $this->getService('url');
-        $url->openUrl($url);
+        /** @var \Platformsh\Cli\Service\Url $urlService */
+        $urlService = $this->getService('url');
+        $urlService->openUrl($url);
     }
 
     /**
