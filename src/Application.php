@@ -187,14 +187,14 @@ class Application extends ParentApplication
     /**
      * {@inheritdoc}
      */
-    public function doRun(InputInterface $input, OutputInterface $output)
+    protected function configureIO(InputInterface $input, OutputInterface $output)
     {
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);
         }
 
-        return parent::doRun($input, $output);
+        parent::configureIO($input, $output);
     }
 
     /**
