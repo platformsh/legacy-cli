@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -126,10 +127,14 @@ class EnvironmentPushCommand extends CommandBase
         if ($result) {
             $this->api()->clearEnvironmentsCache($project->id);
             if ($this->hasSelectedEnvironment()) {
-                $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
-                /** @var \Platformsh\Cli\Service\Relationships $relationships */
-                $relationships = $this->getService('relationships');
-                $relationships->clearCache($sshUrl);
+                try {
+                    $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
+                    /** @var \Platformsh\Cli\Service\Relationships $relationships */
+                    $relationships = $this->getService('relationships');
+                    $relationships->clearCache($sshUrl);
+                } catch (EnvironmentStateException $e) {
+                    // Ignore environments with a missing SSH URL.
+                }
             }
         }
 
