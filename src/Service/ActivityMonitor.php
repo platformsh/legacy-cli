@@ -36,20 +36,36 @@ class ActivityMonitor
     }
 
     /**
+     * Indent a multi-line string.
+     *
+     * @param string $string
+     * @param string $prefix
+     *
+     * @return string
+     */
+    protected function indent($string, $prefix = '    ')
+    {
+        return preg_replace('/^/m', $prefix, $string);
+    }
+
+    /**
      * Wait for a single activity to complete, and display the log continuously.
      *
-     * @param Activity        $activity
-     * @param string          $success
-     * @param string          $failure
+     * @param Activity    $activity The activity.
+     * @param string|null $success  A message to show on success.
+     * @param string|null $failure  A message to show on failure.
      *
-     * @return bool
-     *   True if the activity succeeded, false otherwise.
+     * @return bool True if the activity succeeded, false otherwise.
      */
     public function waitAndLog(Activity $activity, $success = null, $failure = null)
     {
         $stdErr = $this->getStdErr();
 
-        $stdErr->writeln('Waiting for the activity <info>' . $activity->id . '</info> (' . $activity->getDescription() . "):");
+        $stdErr->writeln(sprintf(
+            'Waiting for the activity <info>%s</info> (%s):',
+            $activity->id,
+            $activity->getDescription()
+        ));
 
         // Initialize a progress bar which will show elapsed time and the
         // activity's state.
@@ -57,7 +73,7 @@ class ActivityMonitor
         $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
             return $this->formatState($activity->state);
         });
-        $bar->setFormat("  [%bar%] %elapsed:6s% (%state%)");
+        $bar->setFormat('  [%bar%] %elapsed:6s% (%state%)');
         $bar->start();
 
         // Wait for the activity to complete.
@@ -72,8 +88,8 @@ class ActivityMonitor
                 $bar->clear();
                 $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
 
-                // Display the new log output, with an indent.
-                $stdErr->write(preg_replace('/^/m', '    ', $log));
+                // Display the new log output.
+                $stdErr->write($this->indent($log));
 
                 // Display the progress bar again.
                 $bar->advance();
@@ -119,7 +135,7 @@ class ActivityMonitor
             return $this->waitAndLog(reset($activities));
         }
 
-        $stdErr->writeln("Waiting for $count activities...");
+        $stdErr->writeln(sprintf('Waiting for %d activities...', $count));
 
         // Initialize a progress bar which will show elapsed time and all of the
         // activities' states.
@@ -137,7 +153,7 @@ class ActivityMonitor
 
             return rtrim($format, ', ');
         });
-        $bar->setFormat("  [%bar%] %elapsed:6s% (%states%)");
+        $bar->setFormat('  [%bar%] %elapsed:6s% (%states%)');
         $bar->start();
 
         // Get the most recent created date of each of the activities, as a Unix
@@ -188,17 +204,17 @@ class ActivityMonitor
             $description = $activity->getDescription();
             switch ($activity['result']) {
                 case Activity::RESULT_SUCCESS:
-                    $stdErr->writeln("Activity <info>{$activity->id}</info> succeeded: $description");
+                    $stdErr->writeln(sprintf('Activity <info>%s</info> succeeded: %s', $activity->id, $description));
                     break;
 
                 case Activity::RESULT_FAILURE:
                     $success = false;
-                    $stdErr->writeln("Activity <error>{$activity->id}</error> failed");
+                    $stdErr->writeln(sprintf('Activity <error>%s</error> failed', $activity->id));
 
                     // If the activity failed, show the complete log.
-                    $stdErr->writeln("  Description: $description");
-                    $stdErr->writeln("  Log:");
-                    $stdErr->writeln(preg_replace('/^/m', '    ', $activity->log));
+                    $stdErr->writeln('  Description: ' . $description);
+                    $stdErr->writeln('  Log:');
+                    $stdErr->writeln($this->indent($activity->log));
                     break;
             }
         }
