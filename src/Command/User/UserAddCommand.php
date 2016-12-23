@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -143,7 +142,9 @@ class UserAddCommand extends CommandBase
         }
 
         if (!$input->getOption('no-wait')) {
-            if (!ActivityUtil::waitMultiple($activities, $this->stdErr, $project)) {
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            if (!$activityMonitor->waitMultiple($activities, $project)) {
                 $success = false;
             }
         }

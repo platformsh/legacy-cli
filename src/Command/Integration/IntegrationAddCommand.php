@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -43,7 +42,9 @@ class IntegrationAddCommand extends IntegrationCommandBase
 
         $success = true;
         if (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         $this->displayIntegration($integration);

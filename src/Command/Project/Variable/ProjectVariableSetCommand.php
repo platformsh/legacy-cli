@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -65,9 +64,10 @@ class ProjectVariableSetCommand extends CommandBase
         $success = true;
         if (!$result->countActivities()) {
             $this->rebuildWarning();
-        }
-        elseif (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+        } elseif (!$input->getOption('no-wait')) {
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return $success ? 0 : 1;

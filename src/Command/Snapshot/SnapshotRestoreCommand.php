@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -81,12 +80,13 @@ class SnapshotRestoreCommand extends CommandBase
 
         $activity = $selectedActivity->restore();
         if (!$input->getOption('no-wait')) {
-            $this->stdErr->writeln("Waiting for the restore to complete...");
-            $success = ActivityUtil::waitAndLog(
+            $this->stdErr->writeln('Waiting for the restore to complete...');
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitAndLog(
                 $activity,
-                $this->stdErr,
-                "The snapshot was successfully restored",
-                "Restoring failed"
+                'The snapshot was successfully restored',
+                'Restoring failed'
             );
             if (!$success) {
                 return 1;

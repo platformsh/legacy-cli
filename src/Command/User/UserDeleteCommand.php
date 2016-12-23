@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -55,7 +54,9 @@ class UserDeleteCommand extends CommandBase
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         // If the user was deleting themselves from the project, then invalidate

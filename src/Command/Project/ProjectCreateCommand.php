@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Command\Project;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\Bot;
+use Platformsh\Cli\Console\Bot;
 use Platformsh\Client\Model\Subscription;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;

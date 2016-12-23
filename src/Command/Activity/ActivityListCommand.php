@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\ActivityUtil;
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -72,7 +72,7 @@ class ActivityListCommand extends CommandBase
                 date('Y-m-d H:i:s', strtotime($activity['created_at'])),
                 $activity->getDescription(),
                 $activity->getCompletionPercent(),
-                ActivityUtil::formatState($activity->state),
+                ActivityMonitor::formatState($activity->state),
             ];
             if (!$environmentSpecific) {
                 $row[] = implode(', ', $activity->environments);

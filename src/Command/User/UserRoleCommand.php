@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\EnvironmentAccess;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
@@ -129,7 +128,9 @@ class UserRoleCommand extends CommandBase
         }
 
         if (isset($result) && !$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         if ($input->getOption('pipe')) {

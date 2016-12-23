@@ -1,4 +1,7 @@
 services:
+    activity_monitor:
+        class:     '\Platformsh\Cli\Service\ActivityMonitor'
+        arguments: ['@output']
     api:
         class:     '\Platformsh\Cli\Service\Api'
         arguments: ['@config', '@cache']

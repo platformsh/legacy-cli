@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -147,9 +146,10 @@ class EnvironmentBranchCommand extends CommandBase
 
         $remoteSuccess = true;
         if (!$input->getOption('no-wait')) {
-            $remoteSuccess = ActivityUtil::waitAndLog(
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $remoteSuccess = $activityMonitor->waitAndLog(
                 $activity,
-                $this->stdErr,
                 "The environment <info>$branchName</info> has been created.",
                 '<error>Branching failed</error>'
             );

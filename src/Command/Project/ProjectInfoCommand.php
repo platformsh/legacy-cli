@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Project;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
-use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
@@ -132,7 +131,9 @@ class ProjectInfoCommand extends CommandBase
 
         $success = true;
         if (!$noWait) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return $success ? 0 : 1;

@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -93,7 +92,9 @@ class EnvironmentActivateCommand extends CommandBase
         $success = true;
         if ($processed) {
             if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitMultiple($activities, $this->stdErr, $this->getSelectedProject());
+                /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+                $activityMonitor = $this->getService('activity_monitor');
+                $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
             }
             $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
         }

@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Util\ProcessManager;
+use Platformsh\Cli\Console\ProcessManager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 

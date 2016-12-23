@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Util\Bot;
+use Platformsh\Cli\Console\Bot;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
