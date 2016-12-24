@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Util\Util;
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -51,7 +51,7 @@ class AppConfigGetCommand extends CommandBase
         if ($property = $input->getOption('property')) {
             $parents = explode('.', $property);
             $key = end($parents);
-            $value = Util::getNestedArrayValue($appConfig, $parents, $keyExists);
+            $value = NestedArrayUtil::getNestedArrayValue($appConfig, $parents, $keyExists);
             if (!$keyExists) {
                 $this->stdErr->writeln("Configuration property not found: <error>$property</error>");
 

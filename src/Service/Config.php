@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Util\Util;
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -41,7 +41,7 @@ class Config
      */
     public function has($name, $notNull = true)
     {
-        $value = Util::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
 
         return $exists && (!$notNull || $value !== null);
     }
@@ -53,7 +53,7 @@ class Config
      */
     public function get($name)
     {
-        $value = Util::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
         if (!$exists) {
             throw new \RuntimeException('Configuration not defined: ' . $name);
         }
@@ -101,7 +101,7 @@ class Config
         foreach ($overrideMap as $var => $key) {
             $value = $this->getEnv($var);
             if ($value !== false) {
-                Util::setNestedArrayValue(self::$config, explode('.', $key), $value, true);
+                NestedArrayUtil::setNestedArrayValue(self::$config, explode('.', $key), $value, true);
             }
         }
     }
@@ -181,17 +181,17 @@ class Config
         $userConfig = $this->getUserConfig();
         if (!empty($userConfig)) {
             foreach ($overrideMap as $userConfigKey => $configKey) {
-                $value = Util::getNestedArrayValue($userConfig, explode('.', $userConfigKey), $exists);
+                $value = NestedArrayUtil::getNestedArrayValue($userConfig, explode('.', $userConfigKey), $exists);
                 if ($exists) {
                     $configParents = explode('.', $configKey);
-                    $default = Util::getNestedArrayValue(self::$config, $configParents, $defaultExists);
+                    $default = NestedArrayUtil::getNestedArrayValue(self::$config, $configParents, $defaultExists);
                     if ($defaultExists && is_array($default)) {
                         if (!is_array($value)) {
                             continue;
                         }
                         $value = array_replace_recursive($default, $value);
                     }
-                    Util::setNestedArrayValue(self::$config, $configParents, $value, true);
+                    NestedArrayUtil::setNestedArrayValue(self::$config, $configParents, $value, true);
                 }
             }
         }

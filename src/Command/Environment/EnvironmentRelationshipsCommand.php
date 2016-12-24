@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Util\Util;
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -49,7 +49,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         if ($property = $input->getOption('property')) {
             $parents = explode('.', $property);
             $key = end($parents);
-            $value = Util::getNestedArrayValue($relationships, $parents, $keyExists);
+            $value = NestedArrayUtil::getNestedArrayValue($relationships, $parents, $keyExists);
             if (!$keyExists) {
                 $this->stdErr->writeln("Relationship property not found: <error>$property</error>");
 

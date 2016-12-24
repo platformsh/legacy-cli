@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Util\Util;
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -479,7 +479,7 @@ class Api
                 $propertyName
             ));
         }
-        $value = Util::getNestedArrayValue($property, $parents, $keyExists);
+        $value = NestedArrayUtil::getNestedArrayValue($property, $parents, $keyExists);
         if (!$keyExists) {
             throw new \InvalidArgumentException('Property not found: ' . $propertyPath);
         }
