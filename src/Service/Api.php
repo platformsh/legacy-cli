@@ -325,7 +325,7 @@ class Api
             }
         }
 
-        $staticEnvironmentsCache[$projectId] = $environments;
+        self::$environmentsCache[$projectId] = $environments;
 
         return $environments;
     }
