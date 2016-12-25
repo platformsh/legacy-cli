@@ -1,4 +1,4 @@
-#!/usr/bin/env php -d variables_order=es
+#!/usr/bin/env php
 <?php
 /**
  * @file
