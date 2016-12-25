@@ -89,7 +89,7 @@ class EnvironmentActivateCommand extends CommandBase
         /** @var Environment $environment */
         foreach ($process as $environmentId => $environment) {
             try {
-                if ($parentId && $parentId !== $environment->parent) {
+                if ($parentId && $parentId !== $environment->parent && $parentId !== $environmentId) {
                     $output->writeln(sprintf(
                         'Setting parent of environment <info>%s</info> to <info>%s</info>',
                         $environmentId,

@@ -75,17 +75,17 @@ class EnvironmentPushCommand extends CommandBase
         $project = $this->getSelectedProject();
         $activate = false;
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
-        if (!$targetEnvironment || !$targetEnvironment->isActive()) {
+        if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
             $activate = $input->getOption('activate')
                 || $questionHelper->confirm('Activate the environment after pushing?');
         }
 
         // If activating, determine what the environment's parent should be.
-        $parentId = 'master';
-        if ($activate) {
+        $parentId = null;
+        if ($activate && $target !== 'master') {
             $autoCompleterValues = array_keys($this->api()->getEnvironments($project));
             $parentId = $input->getOption('parent')
-                ?: $questionHelper->askInput('Parent environment', $parentId, $autoCompleterValues);
+                ?: $questionHelper->askInput('Parent environment', 'master', $autoCompleterValues);
         }
 
         // Ensure the correct Git remote exists.
