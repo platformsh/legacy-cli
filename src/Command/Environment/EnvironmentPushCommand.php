@@ -86,10 +86,6 @@ class EnvironmentPushCommand extends CommandBase
             $autoCompleterValues = array_keys($this->api()->getEnvironments($project));
             $parentId = $input->getOption('parent')
                 ?: $questionHelper->askInput('Parent environment', $parentId, $autoCompleterValues);
-            if (!$parent = $this->api()->getEnvironment($parentId, $project)) {
-                $this->stdErr->writeln(sprintf('Parent environment not found: <error>%s</error>', $parentId));
-                return 1;
-            }
         }
 
         // Ensure the correct Git remote exists.
@@ -143,51 +139,13 @@ class EnvironmentPushCommand extends CommandBase
             }
         }
 
-        if (!$activate) {
-            return 0;
+        if ($activate) {
+            return $this->runOtherCommand('environment:activate', [
+                '--environment' => $target,
+                '--parent' => $parentId,
+                '--yes' => true,
+            ]);
         }
-
-        // Activate the environment.
-        $newEnvironment = $this->api()->getEnvironment($target, $project, true);
-        if (!$newEnvironment) {
-            $this->stdErr->writeln(sprintf(
-                'Could not load new environment: <comment>%s</comment>',
-                $target
-            ));
-            return 0;
-        } elseif ($newEnvironment->isActive()) {
-            return 0;
-        }
-
-        $activities = [];
-
-        // Set the environment's parent just before activation.
-        if ($newEnvironment->parent !== $parentId) {
-            $this->stdErr->writeln(sprintf(
-                'Setting the parent of environment <info>%s</info> to <info>%s</info>',
-                $newEnvironment->id,
-                $parentId
-            ));
-            $result = $newEnvironment->update(['parent' => $parentId]);
-            $activities = array_merge($activities, $result->getActivities());
-        }
-
-        $this->stdErr->writeln(sprintf(
-            'Activating environment <info>%s</info>',
-            $newEnvironment->id
-        ));
-        $activities[] = $newEnvironment->activate();
-
-        if (!$input->getOption('no-wait')) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($activities, $project);
-            if (!$success) {
-                return 1;
-            }
-        }
-
-        $this->api()->clearEnvironmentsCache($project->id);
 
         return 0;
     }

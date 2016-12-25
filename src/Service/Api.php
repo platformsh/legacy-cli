@@ -41,6 +41,12 @@ class Api
     /** @var PlatformClient */
     protected $client;
 
+    /** @var Environment[] */
+    protected static $environmentsCache = [];
+
+    /** @var array */
+    protected static $notFound = [];
+
     /**
      * Constructor.
      *
@@ -284,9 +290,8 @@ class Api
     {
         $projectId = $project->getProperty('id');
 
-        static $staticEnvironmentsCache;
-        if (!$refresh && isset($staticEnvironmentsCache[$projectId])) {
-            return $staticEnvironmentsCache[$projectId];
+        if (!$refresh && isset(self::$environmentsCache[$projectId])) {
+            return self::$environmentsCache[$projectId];
         }
 
         $cacheKey = 'environments:' . $projectId;
@@ -339,9 +344,8 @@ class Api
     public function getEnvironment($id, Project $project, $refresh = null, $tryMachineName = false)
     {
         // Statically cache not found environments.
-        static $notFound = [];
         $cacheKey = $project->id . ':' . $id . ($tryMachineName ? ':mn' : '');
-        if (!$refresh && isset($notFound[$cacheKey])) {
+        if (!$refresh && isset(self::$notFound[$cacheKey])) {
             return false;
         }
 
@@ -357,7 +361,7 @@ class Api
             }
         }
 
-        $notFound[$cacheKey] = true;
+        self::$notFound[$cacheKey] = true;
 
         return false;
     }
@@ -411,6 +415,12 @@ class Api
     public function clearEnvironmentsCache($projectId)
     {
         $this->cache->delete('environments:' . $projectId);
+        unset(self::$environmentsCache[$projectId]);
+        foreach (array_keys(self::$notFound) as $key) {
+            if (strpos($key, $projectId . ':') === 0) {
+                unset(self::$notFound[$key]);
+            }
+        }
     }
 
     /**
