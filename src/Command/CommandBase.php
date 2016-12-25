@@ -28,9 +28,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     /** @var bool */
     private static $checkedUpdates;
 
-    /** @var bool */
-    private static $interactive = false;
-
     /**
      * @see self::getProjectRoot()
      * @see self::setProjectRoot()
@@ -113,8 +110,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $this->input = $input;
         $this->container()->set('input', $input);
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-
-        self::$interactive = $input->isInteractive();
 
         if ($this->config()->get('api.debug')) {
             $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
@@ -207,7 +202,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         // is always considered to be interactive.
         if ($this->getName() === 'welcome' && isset($GLOBALS['argv']) && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
             $input->setInteractive(false);
-            self::$interactive = false;
             return;
         }
 
@@ -303,7 +297,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function login()
     {
-        if (!$this->output || !self::$interactive) {
+        if (!$this->output || (isset($this->input) && !$this->input->isInteractive())) {
             throw new LoginRequiredException();
         }
         $exitCode = $this->runOtherCommand('login');
@@ -903,9 +897,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $cmdInput = new ArrayInput(['command' => $name] + $arguments);
-        $cmdInput->setInteractive(self::$interactive);
+        if (!empty($arguments['--yes']) || !empty($arguments['--no'])) {
+            $cmdInput->setInteractive(false);
+        } elseif (isset($this->input)) {
+            $cmdInput->setInteractive($this->input->isInteractive());
+        }
 
         $this->debug('Running command: ' . $name);
+
+        $this->container()->reset();
 
         $application->setCurrentCommand($command);
         $result = $command->run($cmdInput, $output ?: $this->output);
