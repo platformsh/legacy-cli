@@ -187,6 +187,8 @@ class EnvironmentPushCommand extends CommandBase
             }
         }
 
+        $this->api()->clearEnvironmentsCache($project->id);
+
         return 0;
     }
 }
