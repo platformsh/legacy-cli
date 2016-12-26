@@ -20,9 +20,8 @@ class EnvironmentPushCommand extends CommandBase
             ->setAliases(['push'])
             ->setDescription('Push code to an environment')
             ->addArgument('src', InputArgument::OPTIONAL, 'The source ref: a branch name or commit hash', 'HEAD')
-            ->addOption('force', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
+            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Do everything except actually send the updates')
             ->addOption('no-wait', null, InputOption::VALUE_NONE, 'After pushing, do not wait for build or deploy')
             ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment after pushing')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent (only used with --activate)');
@@ -99,7 +98,7 @@ class EnvironmentPushCommand extends CommandBase
             $this->config()->get('detection.git_remote_name'),
             $source . ':' . $target,
         ];
-        foreach (['force', 'force-with-lease', 'dry-run'] as $option) {
+        foreach (['force', 'force-with-lease'] as $option) {
             if ($input->getOption($option)) {
                 $gitArgs[] = '--' . $option;
             }
@@ -121,9 +120,6 @@ class EnvironmentPushCommand extends CommandBase
         $success = $git->execute($gitArgs, null, false, false, $env);
         if (!$success) {
             return 1;
-        }
-        if ($input->getOption('dry-run')) {
-            return 0;
         }
 
         // Clear some caches after pushing.
