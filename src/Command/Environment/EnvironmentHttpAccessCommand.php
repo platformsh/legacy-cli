@@ -168,7 +168,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $formatter = $this->getService('property_formatter');
 
         if (!empty($accessOpts)) {
-            $current = (array) $selectedEnvironment->getProperty('http_access');
+            $current = (array) $selectedEnvironment->http_access;
 
             // Merge existing settings. Not using a reference here, as that
             // would affect the comparison with $current later.
@@ -192,7 +192,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
                 $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
-                $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
+                $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
 
                 $success = true;
                 if (!$result->countActivities()) {
@@ -209,7 +209,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         }
 
         $this->stdErr->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
-        $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
+        $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
 
         return 0;
     }

@@ -288,7 +288,7 @@ class Api
      */
     public function getEnvironments(Project $project, $refresh = null, $events = true)
     {
-        $projectId = $project->getProperty('id');
+        $projectId = $project->id;
 
         if (!$refresh && isset(self::$environmentsCache[$projectId])) {
             return self::$environmentsCache[$projectId];
@@ -318,7 +318,7 @@ class Api
             $this->cache->save($cacheKey, $toCache, $this->config->get('api.environments_ttl'));
         } else {
             $environments = [];
-            $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
+            $endpoint = $project->getUri();
             $guzzleClient = $this->getClient()->getConnector()->getClient();
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);

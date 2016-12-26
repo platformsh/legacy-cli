@@ -45,10 +45,7 @@ class VariableSetCommand extends CommandBase
         // quit early.
         $existing = $this->getSelectedEnvironment()
                          ->getVariable($variableName);
-        if ($existing && $existing->getProperty('value') === $variableValue && $existing->getProperty(
-                'is_json'
-            ) == $json
-        ) {
+        if ($existing && $existing->value === $variableValue && $existing->is_json == $json) {
             $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
 
             return 0;
