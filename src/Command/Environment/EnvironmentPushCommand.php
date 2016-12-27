@@ -20,6 +20,7 @@ class EnvironmentPushCommand extends CommandBase
             ->setAliases(['push'])
             ->setDescription('Push code to an environment')
             ->addArgument('src', InputArgument::OPTIONAL, 'The source ref: a branch name or commit hash', 'HEAD')
+            ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
             ->addOption('no-wait', null, InputOption::VALUE_NONE, 'After pushing, do not wait for build or deploy')
@@ -55,9 +56,11 @@ class EnvironmentPushCommand extends CommandBase
             return 1;
         }
 
-        // Find the target branch name (the name of the current environment, or
-        // the Git branch name).
-        if ($this->hasSelectedEnvironment()) {
+        // Find the target branch name (--target, the name of the current
+        // environment, or the Git branch name).
+        if ($input->getOption('target')) {
+            $target = $input->getOption('target');
+        } elseif ($this->hasSelectedEnvironment()) {
             $target = $this->getSelectedEnvironment()->id;
         } elseif ($currentBranch = $git->getCurrentBranch()) {
             $target = $currentBranch;
