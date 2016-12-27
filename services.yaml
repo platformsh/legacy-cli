@@ -27,7 +27,7 @@ services:
         arguments: ['@config', '@output', '@shell', '@fs', '@git']
     local.project:
         class:     '\Platformsh\Cli\Local\LocalProject'
-        arguments: ['@config']
+        arguments: ['@config', '@git']
     property_formatter:
         class:     '\Platformsh\Cli\Service\PropertyFormatter'
         arguments: ['@input']
