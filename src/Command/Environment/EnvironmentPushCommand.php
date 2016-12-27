@@ -28,6 +28,12 @@ class EnvironmentPushCommand extends CommandBase
         $this->addProjectOption()
             ->addEnvironmentOption();
         Ssh::configureInput($this->getDefinition());
+        $this->addExample('Push code to the current environment');
+        $this->addExample('Push code, without waiting for deployment', '--no-wait');
+        $this->addExample(
+            'Push code and activate the environment as a child of \'develop\'',
+            '--activate --parent develop'
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
