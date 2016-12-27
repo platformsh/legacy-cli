@@ -2,8 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Service\Filesystem;
 
 class DrupalTest extends BaseToolstackTest
 {
@@ -25,8 +24,7 @@ class DrupalTest extends BaseToolstackTest
 
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
         $buildSettings = ['abslinks' => true];
-        $builder = new LocalBuild($buildSettings + $this->buildSettings, null, self::$output);
-        $success = $builder->build($projectRoot);
+        $success = $this->builder->build($buildSettings + $this->buildSettings, $projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
 
         // Test build results.
@@ -59,7 +57,7 @@ class DrupalTest extends BaseToolstackTest
         $this->assertFileExists($webRoot . '/test.txt');
 
         // Test building the same project again.
-        $success2 = $builder->build($projectRoot);
+        $success2 = $this->builder->build($buildSettings + $this->buildSettings, $projectRoot);
         $this->assertTrue($success2, 'Second build success for dir: ' . $sourceDir);
     }
 
@@ -99,19 +97,19 @@ class DrupalTest extends BaseToolstackTest
         $this->assertNotEmpty($treeId);
 
         // Build. This should create an archive.
-        $this->builder->build($projectRoot);
+        $this->builder->build($this->buildSettings, $projectRoot);
         $archive = $projectRoot . '/' . self::$config->get('local.archive_dir')  .'/' . $treeId . '.tar.gz';
         $this->assertFileExists($archive);
 
         // Build again. This will extract the archive.
-        $success = $this->builder->build($projectRoot);
+        $success = $this->builder->build($this->buildSettings, $projectRoot);
         $this->assertTrue($success);
     }
 
     public function testDoNotSymlinkBuildsIntoSitesDefault()
     {
         $repository = $this->createTempSubDir('repo');
-        $fsHelper = new FilesystemHelper();
+        $fsHelper = new Filesystem();
         $sourceDir = 'tests/data/apps/drupal/project';
         $fsHelper->copyAll($sourceDir, $repository);
         $wwwDir = $repository . '/www';
@@ -119,7 +117,7 @@ class DrupalTest extends BaseToolstackTest
         // Run these tests twice to check that a previous build does not affect
         // the next one.
         for ($i = 1; $i <= 2; $i++) {
-            $this->assertTrue($this->builder->build($repository, $wwwDir));
+            $this->assertTrue($this->builder->build($this->buildSettings, $repository, $wwwDir));
             $this->assertFileExists($wwwDir . '/sites/default/settings.php');
             $this->assertFileNotExists($wwwDir . '/sites/default/builds');
             $this->assertFileNotExists($wwwDir . '/sites/default/www');

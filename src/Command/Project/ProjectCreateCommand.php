@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Command\Project;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\Bot;
+use Platformsh\Cli\Console\Bot;
 use Platformsh\Client\Model\Subscription;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -23,9 +23,11 @@ class ProjectCreateCommand extends CommandBase
      */
     public function isEnabled()
     {
+        $config = $this->config();
+
         return parent::isEnabled()
-            && self::$config->has('experimental.enable_create')
-            && self::$config->get('experimental.enable_create');
+            && $config->has('experimental.enable_create')
+            && $config->get('experimental.enable_create');
     }
 
     /**
@@ -47,8 +49,8 @@ class ProjectCreateCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
@@ -76,13 +78,13 @@ class ProjectCreateCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf(
             'Your %s project has been requested (subscription ID: <comment>%s</comment>)',
-            self::$config->get('service.name'),
+            $this->config()->get('service.name'),
             $subscription->id
         ));
 
         $this->stdErr->writeln(sprintf(
             "\nThe %s Bot is activating your project\n",
-            self::$config->get('service.name')
+            $this->config()->get('service.name')
         ));
 
         $bot = new Bot($this->stdErr);
@@ -128,7 +130,7 @@ class ProjectCreateCommand extends CommandBase
      */
     protected function getEstimate($plan, $storage, $environments)
     {
-        $apiUrl = self::$config->get('api.accounts_api_url');
+        $apiUrl = $this->config()->get('api.accounts_api_url');
         if (!$parts = parse_url($apiUrl)) {
             throw new \RuntimeException('Failed to parse URL: ' . $apiUrl);
         }
@@ -160,8 +162,9 @@ class ProjectCreateCommand extends CommandBase
      */
     protected function getAvailablePlans()
     {
-        if (self::$config->has('experimental.available_plans')) {
-            return self::$config->get('experimental.available_plans');
+        $config = $this->config();
+        if ($config->has('experimental.available_plans')) {
+            return $config->get('experimental.available_plans');
         }
 
         return Subscription::$availablePlans;

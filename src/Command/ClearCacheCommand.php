@@ -19,7 +19,9 @@ class ClearCacheCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->api()->clearCache();
+        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+        $cache = $this->getService('cache');
+        $cache->flushAll();
         $this->stdErr->writeln("All caches have been cleared");
     }
 }

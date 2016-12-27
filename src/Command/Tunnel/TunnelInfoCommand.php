@@ -1,9 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Table;
-use Platformsh\Cli\Util\Util;
+use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,7 +19,7 @@ class TunnelInfoCommand extends TunnelCommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -46,7 +45,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             $this->stdErr->writeln('No tunnels found.');
 
             if (count($tunnels) > count($relationships)) {
-                $this->stdErr->writeln("List all tunnels with: <info>" . self::$config->get('application.executable') . " tunnels --all</info>");
+                $this->stdErr->writeln("List all tunnels with: <info>" . $this->config()->get('application.executable') . " tunnels --all</info>");
             }
 
             return 1;
@@ -64,7 +63,7 @@ class TunnelInfoCommand extends TunnelCommandBase
 
         $value = $relationships;
         if ($property = $input->getOption('property')) {
-            $value = Util::getNestedArrayValue($relationships, explode('.', $property), $keyExists);
+            $value = NestedArrayUtil::getNestedArrayValue($relationships, explode('.', $property), $keyExists);
             if (!$keyExists) {
                 $this->stdErr->writeln("Property not found: <error>$property</error>");
 
@@ -72,7 +71,8 @@ class TunnelInfoCommand extends TunnelCommandBase
             }
         }
 
-        $formatter = new PropertyFormatter();
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
         $formatter->yamlInline = 10;
         $output->writeln($formatter->format($value, $property));
 

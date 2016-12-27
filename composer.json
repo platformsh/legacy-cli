@@ -16,7 +16,9 @@
         "symfony/process": "^3.0",
         "stecman/symfony-console-completion": "~0.7",
         "symfony/event-dispatcher": "^3.0",
-        "padraic/phar-updater": "^1.0"
+        "padraic/phar-updater": "^1.0",
+        "symfony/dependency-injection": "^3.1",
+        "symfony/config": "^3.1"
     },
     "suggest": {
         "drush/drush": "For Drupal projects"

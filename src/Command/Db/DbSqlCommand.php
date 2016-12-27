@@ -2,7 +2,8 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\RelationshipsUtil;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\Relationships;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,8 +17,9 @@ class DbSqlCommand extends CommandBase
             ->setAliases(['sql'])
             ->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute');
-        RelationshipsUtil::configureInput($this->getDefinition());
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        Relationships::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
         $this->addExample('Open an SQL console on the remote database');
         $this->addExample('View tables on the remote database', "'SHOW TABLES'");
         $this->addExample('Import a dump file into the remote database', '< dump.sql');
@@ -31,13 +33,12 @@ class DbSqlCommand extends CommandBase
             throw new \InvalidArgumentException('The query argument is required when running via "multi"');
         }
 
-        $sshOptions = '';
-
         $sshUrl = $this->getSelectedEnvironment()
                        ->getSshUrl($this->selectApp($input));
 
-        $util = new RelationshipsUtil($this->stdErr);
-        $database = $util->chooseDatabase($sshUrl, $input);
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+        $database = $relationships->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
         }
@@ -61,24 +62,19 @@ class DbSqlCommand extends CommandBase
             $sqlCommand .= $queryOption . escapeshellarg($query) . ' 2>&1';
         }
 
-        // Switch on pseudo-tty allocation when there is a local tty.
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+
+        $sshCommand = $ssh->getSshCommand();
         if ($this->isTerminal($output)) {
-            $sshOptions .= ' -t';
+            $sshCommand .= ' -t';
         }
-
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $sshOptions .= ' -vv';
-        }
-        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-            $sshOptions .= ' -v';
-        }
-        elseif ($output->getVerbosity() <= OutputInterface::VERBOSITY_VERBOSE) {
-            $sshOptions .= ' -q';
-        }
-
-        $command = 'ssh' . $sshOptions . ' ' . escapeshellarg($sshUrl)
+        $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sqlCommand);
 
-        return $this->getHelper('shell')->executeSimple($command);
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        return $shell->executeSimple($sshCommand);
     }
 }

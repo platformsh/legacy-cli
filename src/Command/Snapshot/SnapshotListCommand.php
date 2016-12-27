@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,7 +19,7 @@ class SnapshotListCommand extends CommandBase
             ->setDescription('List available snapshots of an environment')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List the most recent snapshots')
@@ -38,7 +38,8 @@ class SnapshotListCommand extends CommandBase
             return 1;
         }
 
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");

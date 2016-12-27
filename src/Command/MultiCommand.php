@@ -38,7 +38,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $application = $this->getApplication();
         $command = $application->find($commandName);
         if (!$command instanceof MultiAwareInterface || !$command->canBeRunMultipleTimes()) {
-            $this->stdErr->writeln(sprintf('The command <error>%s</error> cannot be run via "%s multi".', $commandName, self::$config->get('application.executable')));
+            $this->stdErr->writeln(sprintf('The command <error>%s</error> cannot be run via "%s multi".', $commandName, $this->config()->get('application.executable')));
             return 1;
         }
         elseif (!$command->getDefinition()->hasOption('project')) {
@@ -111,7 +111,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         }
 
         $dialogRc = file_get_contents(CLI_ROOT . '/resources/console/dialogrc');
-        $dialogRcFile = self::$config->getUserConfigDir() . '/dialogrc';
+        $dialogRcFile = $this->config()->getUserConfigDir() . '/dialogrc';
         if ($dialogRc !== false && (file_exists($dialogRcFile) || file_put_contents($dialogRcFile, $dialogRc))) {
             putenv('DIALOGRC=' . $dialogRcFile);
         }
@@ -173,6 +173,9 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $projectList = $input->getOption('projects');
         $projects = $this->getAllProjects($input);
 
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
         if (!empty($projectList)) {
             $projectIds = array_unique(preg_split('/[,\s]+/', $projectList));
             if ($invalid = array_diff($projectIds, array_keys($projects))) {
@@ -184,7 +187,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             $this->stdErr->writeln('In non-interactive mode, the --projects option must be specified.');
             return false;
         }
-        elseif (!$this->getHelper('shell')->commandExists('dialog')) {
+        elseif (!$shell->commandExists('dialog')) {
             $this->stdErr->writeln('The "dialog" utility is required for interactive use.');
             $this->stdErr->writeln('You can specify projects via the --projects option.');
             return false;

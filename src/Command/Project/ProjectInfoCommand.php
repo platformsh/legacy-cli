@@ -3,9 +3,8 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Cli\Util\Table;
-use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectInfoCommand extends CommandBase
 {
-    /** @var PropertyFormatter */
+    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
     /**
@@ -29,7 +28,7 @@ class ProjectInfoCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for a project');
         PropertyFormatter::configureInput($this->getDefinition());
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
@@ -42,7 +41,7 @@ class ProjectInfoCommand extends CommandBase
         $this->validateInput($input);
 
         $project = $this->getSelectedProject();
-        $this->formatter = new PropertyFormatter($input);
+        $this->formatter = $this->getService('property_formatter');
 
         if ($input->getOption('refresh')) {
             $project->refresh();
@@ -51,7 +50,7 @@ class ProjectInfoCommand extends CommandBase
         $property = $input->getArgument('property');
 
         if (!$property) {
-            return $this->listProperties($project->getProperties(), new Table($input, $output));
+            return $this->listProperties($project->getProperties());
         }
 
         $value = $input->getArgument('value');
@@ -79,11 +78,10 @@ class ProjectInfoCommand extends CommandBase
 
     /**
      * @param array $properties
-     * @param Table $table
      *
      * @return int
      */
-    protected function listProperties(array $properties, Table $table)
+    protected function listProperties(array $properties)
     {
         $headings = [];
         $values = [];
@@ -91,6 +89,8 @@ class ProjectInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $table->renderSimple($values, $headings);
 
         return 0;
@@ -131,7 +131,9 @@ class ProjectInfoCommand extends CommandBase
 
         $success = true;
         if (!$noWait) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return $success ? 0 : 1;

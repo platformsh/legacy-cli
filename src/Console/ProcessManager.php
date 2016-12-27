@@ -1,5 +1,6 @@
 <?php
-namespace Platformsh\Cli\Util;
+
+namespace Platformsh\Cli\Console;
 
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;

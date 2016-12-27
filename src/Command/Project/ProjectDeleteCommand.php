@@ -26,8 +26,8 @@ class ProjectDeleteCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $confirmQuestionLines = [
             'You are about to delete the project:',

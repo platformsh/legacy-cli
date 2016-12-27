@@ -2,15 +2,9 @@
 namespace Platformsh\Cli;
 
 use Platformsh\Cli\Console\EventSubscriber;
-use Platformsh\Cli\Helper\DrushHelper;
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\QuestionHelper;
-use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
-use Symfony\Component\Console\Helper\FormatterHelper;
-use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,7 +19,7 @@ class Application extends ParentApplication
      */
     protected $currentCommand;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $cliConfig;
 
     /**
@@ -33,7 +27,7 @@ class Application extends ParentApplication
      */
     public function __construct()
     {
-        $this->cliConfig = new CliConfig();
+        $this->cliConfig = new Config();
         parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
 
         $this->setDefaultTimezone();
@@ -61,21 +55,6 @@ class Application extends ParentApplication
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
             new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts; disable interaction'),
             new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
-        ]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getDefaultHelperSet()
-    {
-        return new HelperSet([
-            new FormatterHelper(),
-            new QuestionHelper(),
-            new FilesystemHelper(),
-            new ShellHelper(),
-            new DrushHelper($this->cliConfig),
-            new GitHelper(),
         ]);
     }
 
@@ -130,6 +109,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentLogCommand();
         $commands[] = new Command\Environment\EnvironmentInfoCommand();
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
+        $commands[] = new Command\Environment\EnvironmentPushCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentRoutesCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
@@ -207,14 +187,14 @@ class Application extends ParentApplication
     /**
      * {@inheritdoc}
      */
-    public function doRun(InputInterface $input, OutputInterface $output)
+    protected function configureIO(InputInterface $input, OutputInterface $output)
     {
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);
         }
 
-        return parent::doRun($input, $output);
+        parent::configureIO($input, $output);
     }
 
     /**

@@ -2,12 +2,12 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Helper\ShellHelperInterface;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Local\LocalApplication;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -47,16 +47,19 @@ abstract class ToolstackBase implements ToolstackInterface
     /** @var OutputInterface */
     protected $output;
 
-    /** @var FilesystemHelper */
+    /** @var OutputInterface */
+    protected $stdErr;
+
+    /** @var Filesystem */
     protected $fsHelper;
 
-    /** @var GitHelper */
+    /** @var Git */
     protected $gitHelper;
 
-    /** @var ShellHelperInterface */
+    /** @var Shell */
     protected $shellHelper;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
     /** @var string */
@@ -73,16 +76,16 @@ abstract class ToolstackBase implements ToolstackInterface
     private $buildInPlace = false;
 
     /**
-     * @param object               $fsHelper
-     * @param ShellHelperInterface $shellHelper
-     * @param object               $gitHelper
+     * @param object     $fsHelper
+     * @param Shell|null $shellHelper
+     * @param object     $gitHelper
      */
-    public function __construct($fsHelper = null, ShellHelperInterface $shellHelper = null, $gitHelper = null)
+    public function __construct($fsHelper = null, Shell $shellHelper = null, $gitHelper = null)
     {
-        $this->shellHelper = $shellHelper ?: new ShellHelper();
-        $this->fsHelper = $fsHelper ?: new FilesystemHelper($this->shellHelper);
-        $this->gitHelper = $gitHelper ?: new GitHelper($this->shellHelper);
-        $this->output = new NullOutput();
+        $this->shellHelper = $shellHelper ?: new Shell();
+        $this->fsHelper = $fsHelper ?: new Filesystem($this->shellHelper);
+        $this->gitHelper = $gitHelper ?: new Git($this->shellHelper);
+        $this->stdErr = $this->output = new NullOutput();
 
         $this->specialDestinations = [
             "favicon.ico" => "{webroot}",
@@ -99,6 +102,9 @@ abstract class ToolstackBase implements ToolstackInterface
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
+        $this->stdErr = $output instanceof ConsoleOutputInterface
+            ? $output->getErrorOutput()
+            : $output;
         $this->shellHelper->setOutput($output);
     }
 
@@ -113,7 +119,7 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, LocalApplication $app, CliConfig $config, array $settings = [])
+    public function prepare($buildDir, LocalApplication $app, Config $config, array $settings = [])
     {
         $this->app = $app;
         $this->appRoot = $app->getRoot();
@@ -181,14 +187,14 @@ abstract class ToolstackBase implements ToolstackInterface
                     continue;
                 }
                 if ($this->copy) {
-                    $this->output->writeln("Copying $relSource to $relDestination");
+                    $this->stdErr->writeln("Copying $relSource to $relDestination");
                 }
                 else {
-                    $this->output->writeln("Symlinking $relSource to $relDestination");
+                    $this->stdErr->writeln("Symlinking $relSource to $relDestination");
                 }
                 // Delete existing files, emitting a warning.
                 if (file_exists($destination)) {
-                    $this->output->writeln(
+                    $this->stdErr->writeln(
                         sprintf(
                             "Overriding existing path '%s' in destination",
                             str_replace($this->buildDir . '/', '', $destination)
@@ -330,18 +336,18 @@ abstract class ToolstackBase implements ToolstackInterface
         }
 
         $sharedDirRelative = $this->config->get('local.shared_dir');
-        $this->output->writeln('Creating symbolic links to mimic shared file mounts');
+        $this->stdErr->writeln('Creating symbolic links to mimic shared file mounts');
         foreach ($sharedFileMounts as $appPath => $sharedPath) {
             $target = $sharedDir . '/' . $sharedPath;
             $targetRelative = $sharedDirRelative . '/' . $sharedPath;
             $link = $this->buildDir . '/' . $appPath;
             if (file_exists($link) && !is_link($link)) {
-                $this->output->writeln('  Overwriting existing file <comment>' . $appPath . '</comment>');
+                $this->stdErr->writeln('  Overwriting existing file <comment>' . $appPath . '</comment>');
             }
             if (!file_exists($target)) {
                 $this->fsHelper->mkdir($target, 0775);
             }
-            $this->output->writeln('  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>');
+            $this->stdErr->writeln('  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>');
             $this->fsHelper->symlink($target, $link);
         }
     }
@@ -361,12 +367,12 @@ abstract class ToolstackBase implements ToolstackInterface
             $sharedSettingsLocal = $shared . '/settings.local.php';
             $relative = $this->config->get('local.shared_dir') . '/settings.local.php';
             if (!file_exists($sharedSettingsLocal)) {
-                $this->output->writeln("Creating file: <info>$relative</info>");
+                $this->stdErr->writeln("Creating file: <info>$relative</info>");
                 $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);
-                $this->output->writeln('Edit this file to add your database credentials and other Drupal configuration.');
+                $this->stdErr->writeln('Edit this file to add your database credentials and other Drupal configuration.');
             }
             else {
-                $this->output->writeln("Symlinking <info>$relative</info> into sites/default");
+                $this->stdErr->writeln("Symlinking <info>$relative</info> into sites/default");
             }
             $this->fsHelper->symlink($sharedSettingsLocal, $settingsLocal);
         }
@@ -403,7 +409,7 @@ abstract class ToolstackBase implements ToolstackInterface
         }
         $appGitIgnore = $this->appRoot . '/.gitignore';
         if (!file_exists($appGitIgnore) && !file_exists($gitRoot . '/.gitignore')) {
-            $this->output->writeln("Creating a .gitignore file");
+            $this->stdErr->writeln("Creating a .gitignore file");
             copy($source, $appGitIgnore);
         }
     }

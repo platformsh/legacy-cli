@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -44,11 +43,16 @@ class ProjectVariableDeleteCommand extends CommandBase
         }
 
         $projectId = $this->getSelectedProject()->id;
-        $confirm = $this->getHelper('question')
-                        ->confirm(sprintf("Delete the variable <info>%s</info> from the project <info>%s</info>?", $variableName, $projectId),
-                            false
-                        );
-
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $confirm = $questionHelper->confirm(
+            sprintf(
+                "Delete the variable <info>%s</info> from the project <info>%s</info>?",
+                $variableName,
+                $projectId
+            ),
+            false
+        );
         if (!$confirm) {
             return 1;
         }
@@ -62,7 +66,9 @@ class ProjectVariableDeleteCommand extends CommandBase
             $this->rebuildWarning();
         }
         elseif (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return $success ? 0 : 1;

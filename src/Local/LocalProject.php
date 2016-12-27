@@ -2,8 +2,8 @@
 
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
@@ -15,9 +15,9 @@ class LocalProject
 
     protected static $projectConfigs = [];
 
-    public function __construct(CliConfig $config = null)
+    public function __construct(Config $config = null)
     {
-        $this->config = $config ?: new CliConfig();
+        $this->config = $config ?: new Config();
         $this->fs = new Filesystem();
     }
 
@@ -47,7 +47,7 @@ class LocalProject
      */
     protected function getGitRemoteUrl($dir)
     {
-        $gitHelper = new GitHelper();
+        $gitHelper = new Git();
         $gitHelper->ensureInstalled();
         foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
             if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
@@ -69,7 +69,7 @@ class LocalProject
         if (!file_exists($dir . '/.git')) {
             throw new \InvalidArgumentException('The directory is not a Git repository');
         }
-        $gitHelper = new GitHelper();
+        $gitHelper = new Git();
         $gitHelper->ensureInstalled();
         $gitHelper->setDefaultRepositoryDir($dir);
         $currentUrl = $gitHelper->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);

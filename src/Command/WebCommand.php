@@ -2,18 +2,19 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class WebCommand extends UrlCommandBase
+class WebCommand extends CommandBase
 {
 
     protected function configure()
     {
-        parent::configure();
         $this
             ->setName('web')
             ->setDescription('Open the Web UI');
+        Url::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -27,7 +28,7 @@ class WebCommand extends UrlCommandBase
             // Ignore errors.
         }
 
-        $url = self::$config->get('service.accounts_url');
+        $url = $this->config()->get('service.accounts_url');
         if ($this->hasSelectedProject()) {
             $url = $this->getSelectedProject()->getLink('#ui');
             if ($this->hasSelectedEnvironment()) {
@@ -35,6 +36,8 @@ class WebCommand extends UrlCommandBase
             }
         }
 
-        $this->openUrl($url, $input, $output);
+        /** @var \Platformsh\Cli\Service\Url $urlService */
+        $urlService = $this->getService('url');
+        $urlService->openUrl($url);
     }
 }

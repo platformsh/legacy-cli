@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,7 +19,7 @@ class EnvironmentRoutesCommand extends CommandBase
             ->setAliases(['routes'])
             ->setDescription('List an environment\'s routes')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -37,7 +37,8 @@ class EnvironmentRoutesCommand extends CommandBase
             return 0;
         }
 
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
 
         $header = ['Route', 'Type', 'To', 'Cache', 'SSI'];
         $rows = [];

@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,7 +22,7 @@ class ProjectVariableGetCommand extends CommandBase
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
             ->setDescription('View variable(s) for a project');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addExample('View the variable "example"', 'example');
         $this->setHiddenAliases(['project:variable:list']);
@@ -63,7 +63,8 @@ class ProjectVariableGetCommand extends CommandBase
             throw new \InvalidArgumentException('Specify a variable name to use --pipe');
         }
 
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
 
         $header = ['ID', 'Value', 'JSON', 'Build time', 'Runtime'];
         $rows = [];
