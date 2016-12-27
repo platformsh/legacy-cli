@@ -20,6 +20,7 @@ class EnvironmentPushCommand extends CommandBase
             ->setAliases(['push'])
             ->setDescription('Push code to an environment')
             ->addArgument('src', InputArgument::OPTIONAL, 'The source ref: a branch name or commit hash', 'HEAD')
+            ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
             ->addOption('no-wait', null, InputOption::VALUE_NONE, 'After pushing, do not wait for build or deploy')
@@ -55,9 +56,11 @@ class EnvironmentPushCommand extends CommandBase
             return 1;
         }
 
-        // Find the target branch name (the name of the current environment, or
-        // the Git branch name).
-        if ($this->hasSelectedEnvironment()) {
+        // Find the target branch name (--target, the name of the current
+        // environment, or the Git branch name).
+        if ($input->getOption('target')) {
+            $target = $input->getOption('target');
+        } elseif ($this->hasSelectedEnvironment()) {
             $target = $this->getSelectedEnvironment()->id;
         } elseif ($currentBranch = $git->getCurrentBranch()) {
             $target = $currentBranch;
@@ -82,15 +85,22 @@ class EnvironmentPushCommand extends CommandBase
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
         if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
             $activate = $input->getOption('activate')
-                || $questionHelper->confirm('Activate the environment after pushing?');
+                || $questionHelper->confirm(sprintf(
+                    'Activate the environment <info>%s</info> after pushing?',
+                    $target
+                ));
         }
 
         // If activating, determine what the environment's parent should be.
         $parentId = null;
         if ($activate && $target !== 'master') {
-            $autoCompleterValues = array_keys($this->api()->getEnvironments($project));
-            $parentId = $input->getOption('parent')
-                ?: $questionHelper->askInput('Parent environment', 'master', $autoCompleterValues);
+            $parentId = $input->getOption('parent');
+            if (!$parentId) {
+                $autoCompleterValues = array_keys($this->api()->getEnvironments($project));
+                $parentId = $autoCompleterValues === ['master']
+                    ? 'master'
+                    : $questionHelper->askInput('Parent environment', 'master', $autoCompleterValues);
+            }
         }
 
         // Ensure the correct Git remote exists.
@@ -102,7 +112,7 @@ class EnvironmentPushCommand extends CommandBase
         $gitArgs = [
             'push',
             $this->config()->get('detection.git_remote_name'),
-            $source . ':' . $target,
+            $source . ':refs/heads/' . $target,
         ];
         foreach (['force', 'force-with-lease'] as $option) {
             if ($input->getOption($option)) {
