@@ -51,7 +51,7 @@ class EnvironmentPushCommand extends CommandBase
 
         // Validate the src argument.
         $source = $input->getArgument('src');
-        if (strpos($source, ':') !== false) {
+        if (strpos($source, ':') !== false || $source === '') {
             $this->stdErr->writeln('Invalid ref: ' . $source);
             return 1;
         }
