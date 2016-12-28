@@ -112,7 +112,7 @@ class EnvironmentPushCommand extends CommandBase
         $gitArgs = [
             'push',
             $this->config()->get('detection.git_remote_name'),
-            $source . ':' . $target,
+            $source . ':refs/heads/' . $target,
         ];
         foreach (['force', 'force-with-lease'] as $option) {
             if ($input->getOption($option)) {
