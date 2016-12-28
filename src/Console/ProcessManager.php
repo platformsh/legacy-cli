@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Console;
 
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
@@ -123,10 +124,12 @@ class ProcessManager
 
         try {
             $process->start(function ($type, $buffer) use ($log) {
-                $log->writeln($buffer);
+                $output = $log instanceof ConsoleOutputInterface && $type === Process::ERR
+                    ? $log->getErrorOutput()
+                    : $log;
+                $output->writeln($buffer);
             });
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             unset($this->processes[$pidFile]);
             throw $e;
         }
