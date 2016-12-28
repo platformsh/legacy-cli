@@ -168,11 +168,15 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         if ($activate) {
-            return $this->runOtherCommand('environment:activate', [
+            $args = [
+                '--project' => $project->getUri(),
                 '--environment' => $target,
                 '--parent' => $parentId,
                 '--yes' => true,
-            ]);
+                '--no-wait' => $input->getOption('no-wait'),
+            ];
+
+            return $this->runOtherCommand('environment:activate', $args);
         }
 
         return 0;

@@ -44,6 +44,9 @@ class Api
     /** @var Environment[] */
     protected static $environmentsCache = [];
 
+    /** @var bool */
+    protected static $environmentsCacheRefreshed = false;
+
     /** @var array */
     protected static $notFound = [];
 
@@ -316,6 +319,7 @@ class Api
             }
 
             $this->cache->save($cacheKey, $toCache, $this->config->get('api.environments_ttl'));
+            self::$environmentsCacheRefreshed = true;
         } else {
             $environments = [];
             $endpoint = $project->getUri();
@@ -350,9 +354,20 @@ class Api
         }
 
         $environments = $this->getEnvironments($project, $refresh);
+
+        // Retry if the environment was not found in the cache.
+        if (!isset($environments[$id])
+            && $refresh === null
+            && !self::$environmentsCacheRefreshed) {
+            $environments = $this->getEnvironments($project, true);
+        }
+
+        // Look for the environment by ID.
         if (isset($environments[$id])) {
             return $environments[$id];
         }
+
+        // Look for the environment by machine name.
         if ($tryMachineName) {
             foreach ($environments as $environment) {
                 if ($environment->machine_name === $id) {

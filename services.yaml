@@ -28,6 +28,8 @@ services:
     local.project:
         class:     '\Platformsh\Cli\Local\LocalProject'
         arguments: ['@config', '@git']
+    output:
+        class:     '\Symfony\Component\Console\Output\NullOutput'
     property_formatter:
         class:     '\Platformsh\Cli\Service\PropertyFormatter'
         arguments: ['@input']

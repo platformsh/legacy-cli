@@ -463,11 +463,10 @@ class Git
     {
         if (empty($sshCommand) || $sshCommand === 'ssh') {
             unset($this->env['GIT_SSH_COMMAND'], $this->env['GIT_SSH']);
+        } elseif (!$this->supportsGitSshCommand()) {
+            $this->env['GIT_SSH'] = $this->writeSshFile($sshCommand . " \$*\n");
         } else {
             $this->env['GIT_SSH_COMMAND'] = $sshCommand;
-            if (!$this->supportsGitSshCommand()) {
-                $this->env['GIT_SSH'] = $this->writeSshFile($sshCommand . " \$*\n");
-            }
         }
     }
 
