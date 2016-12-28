@@ -50,9 +50,9 @@ class Shell
      */
     public function executeSimple($commandline, $dir = null, array $env = [])
     {
-        $this->stdErr->writeln('Running command: <info>' . $commandline. '</info>', OutputInterface::VERBOSITY_VERBOSE);
+        $this->stdErr->writeln('Running command: <info>' . $commandline . '</info>', OutputInterface::VERBOSITY_VERBOSE);
 
-        if ($env) {
+        if (!empty($env)) {
             $this->showEnvMessage($env);
             $env = $env + $this->getParentEnv();
         } else {
@@ -120,7 +120,7 @@ class Shell
      */
     private function showEnvMessage(array $env)
     {
-        if ($env) {
+        if (!empty($env)) {
             $message = ['  Using additional environment variables:'];
             foreach ($env as $variable => $value) {
                 $message[] = sprintf('    <info>%s</info>=%s', $variable, $value);
