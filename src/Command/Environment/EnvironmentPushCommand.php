@@ -19,7 +19,7 @@ class EnvironmentPushCommand extends CommandBase
             ->setName('environment:push')
             ->setAliases(['push'])
             ->setDescription('Push code to an environment')
-            ->addArgument('src', InputArgument::OPTIONAL, 'The source ref: a branch name or commit hash', 'HEAD')
+            ->addArgument('source', InputArgument::OPTIONAL, 'The source ref: a branch name or commit hash', 'HEAD')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
@@ -49,12 +49,21 @@ class EnvironmentPushCommand extends CommandBase
         $git = $this->getService('git');
         $git->setDefaultRepositoryDir($projectRoot);
 
-        // Validate the src argument.
-        $source = $input->getArgument('src');
-        if (strpos($source, ':') !== false || $source === '') {
-            $this->stdErr->writeln('Invalid ref: ' . $source);
+        // Validate the source argument.
+        $source = $input->getArgument('source');
+        if ($source === '') {
+            $this->stdErr->writeln('The <error><source></error> argument cannot be specified as an empty string.');
+            return 1;
+        } elseif (strpos($source, ':') !== false
+            || !($sourceRevision = $git->execute(['rev-parse', '--verify', $source]))) {
+            $this->stdErr->writeln(sprintf('Invalid source ref: <error>%s</error>', $source));
             return 1;
         }
+
+        $this->stdErr->writeln(
+            sprintf('Source revision: %s', $sourceRevision),
+            OutputInterface::VERBOSITY_VERY_VERBOSE
+        );
 
         // Find the target branch name (--target, the name of the current
         // environment, or the Git branch name).
