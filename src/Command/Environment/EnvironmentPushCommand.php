@@ -88,14 +88,22 @@ class EnvironmentPushCommand extends CommandBase
             return 1;
         }
 
-        // Determine whether to activate the environment after pushing.
+        // Determine whether the target environment is new.
         $project = $this->getSelectedProject();
-        $activate = false;
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
+        $this->stdErr->writeln(sprintf(
+            'Pushing <info>%s</info> to the %s environment <info>%s</info>',
+            $source,
+            $targetEnvironment ? 'existing' : 'new',
+            $target
+        ));
+
+        // Determine whether to activate the environment after pushing.
+        $activate = false;
         if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
             $activate = $input->getOption('activate')
                 || $questionHelper->confirm(sprintf(
-                    'Activate the environment <info>%s</info> after pushing?',
+                    'Activate <info>%s</info> after pushing?',
                     $target
                 ));
         }
@@ -141,7 +149,6 @@ class EnvironmentPushCommand extends CommandBase
         $git->setSshCommand($ssh->getSshCommand($extraSshOptions));
 
         // Push.
-        $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment <info>%s</info>', $source, $target));
         $success = $git->execute($gitArgs, null, false, false, $env);
         if (!$success) {
             return 1;
