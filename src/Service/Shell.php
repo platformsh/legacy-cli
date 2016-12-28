@@ -50,9 +50,17 @@ class Shell
      */
     public function executeSimple($commandline, $dir = null, array $env = [])
     {
-        $this->output->writeln('Running command: <info>' . $commandline. '</info>', OutputInterface::VERBOSITY_VERBOSE);
+        $this->stdErr->writeln('Running command: <info>' . $commandline . '</info>', OutputInterface::VERBOSITY_VERBOSE);
 
-        $env = $env ? $env + $this->getParentEnv() : null;
+        if (!empty($env)) {
+            $this->showEnvMessage($env);
+            $env = $env + $this->getParentEnv();
+        } else {
+            $env = null;
+        }
+
+        $this->showWorkingDirMessage($dir);
+
         $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir, $env);
 
         return proc_close($process);
@@ -78,17 +86,47 @@ class Shell
     {
         $builder = new ProcessBuilder($args);
         $process = $builder->getProcess();
+        $process->setTimeout($this->defaultTimeout);
+
+        $this->stdErr->writeln("Running command: <info>" . $process->getCommandLine() . "</info>", OutputInterface::VERBOSITY_VERBOSE);
+
         if (!empty($env)) {
+            $this->showEnvMessage($env);
             $process->setEnv($env + $this->getParentEnv());
         }
-        $process->setTimeout($this->defaultTimeout);
+
         if ($dir) {
+            $this->showWorkingDirMessage($dir);
             $process->setWorkingDirectory($dir);
         }
 
         $result = $this->runProcess($process, $mustRun, $quiet);
 
         return is_int($result) ? $result === 0 : $result;
+    }
+
+    /**
+     * @param string|null $dir
+     */
+    private function showWorkingDirMessage($dir)
+    {
+        if ($dir !== null) {
+            $this->stdErr->writeln('  Working directory: ' . $dir, OutputInterface::VERBOSITY_VERY_VERBOSE);
+        }
+    }
+
+    /**
+     * @param array $env
+     */
+    private function showEnvMessage(array $env)
+    {
+        if (!empty($env)) {
+            $message = ['  Using additional environment variables:'];
+            foreach ($env as $variable => $value) {
+                $message[] = sprintf('    <info>%s</info>=%s', $variable, $value);
+            }
+            $this->stdErr->writeln($message, OutputInterface::VERBOSITY_VERY_VERBOSE);
+        }
     }
 
     /**
@@ -140,11 +178,10 @@ class Shell
      */
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
     {
-        $this->output->writeln("Running command: <info>" . $process->getCommandLine() . "</info>", OutputInterface::VERBOSITY_VERBOSE);
-
         try {
             $process->mustRun($quiet ? null : function ($type, $buffer) {
-                $this->output->write(preg_replace('/^/m', '  ', $buffer));
+                $output = $type === Process::ERR ? $this->stdErr : $this->output;
+                $output->write(preg_replace('/^/m', '  ', $buffer));
             });
         } catch (ProcessFailedException $e) {
             if (!$mustRun) {

@@ -12,12 +12,14 @@ class LocalProject
 {
     protected $config;
     protected $fs;
+    protected $git;
 
     protected static $projectConfigs = [];
 
-    public function __construct(Config $config = null)
+    public function __construct(Config $config = null, Git $git = null)
     {
         $this->config = $config ?: new Config();
+        $this->git = $git ?: new Git();
         $this->fs = new Filesystem();
     }
 
@@ -47,10 +49,9 @@ class LocalProject
      */
     protected function getGitRemoteUrl($dir)
     {
-        $gitHelper = new Git();
-        $gitHelper->ensureInstalled();
+        $this->git->ensureInstalled();
         foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
-            if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
+            if ($url = $this->git->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
         }
@@ -69,19 +70,18 @@ class LocalProject
         if (!file_exists($dir . '/.git')) {
             throw new \InvalidArgumentException('The directory is not a Git repository');
         }
-        $gitHelper = new Git();
-        $gitHelper->ensureInstalled();
-        $gitHelper->setDefaultRepositoryDir($dir);
-        $currentUrl = $gitHelper->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);
+        $this->git->ensureInstalled();
+        $this->git->setDefaultRepositoryDir($dir);
+        $currentUrl = $this->git->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);
         if (!$currentUrl) {
-            $gitHelper->execute(['remote', 'add', $this->config->get('detection.git_remote_name'), $url], $dir, true);
+            $this->git->execute(['remote', 'add', $this->config->get('detection.git_remote_name'), $url], $dir, true);
         }
         elseif ($currentUrl != $url) {
-            $gitHelper->execute(['remote', 'set-url', $this->config->get('detection.git_remote_name'), $url], $dir, true);
+            $this->git->execute(['remote', 'set-url', $this->config->get('detection.git_remote_name'), $url], $dir, true);
         }
         // Add an origin remote too.
-        if ($this->config->get('detection.git_remote_name') !== 'origin' && !$gitHelper->getConfig("remote.origin.url", $dir)) {
-            $gitHelper->execute(['remote', 'add', 'origin', $url]);
+        if ($this->config->get('detection.git_remote_name') !== 'origin' && !$this->git->getConfig("remote.origin.url", $dir)) {
+            $this->git->execute(['remote', 'add', 'origin', $url]);
         }
     }
 

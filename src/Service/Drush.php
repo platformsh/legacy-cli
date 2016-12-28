@@ -18,6 +18,9 @@ class Drush
     /** @var Shell */
     protected $shellHelper;
 
+    /** @var LocalProject */
+    protected $localProject;
+
     /** @var Filesystem */
     protected $fs;
 
@@ -25,14 +28,20 @@ class Drush
     protected $config;
 
     /**
-     * @param Config|null     $config
-     * @param Shell|null      $shellHelper
-     * @param Filesystem|null $fs
+     * @param Config|null       $config
+     * @param Shell|null        $shellHelper
+     * @param LocalProject|null $localProject
+     * @param Filesystem|null   $fs
      */
-    public function __construct(Config $config = null, Shell $shellHelper = null, Filesystem $fs = null)
-    {
+    public function __construct(
+        Config $config = null,
+        Shell $shellHelper = null,
+        LocalProject $localProject = null,
+        Filesystem $fs = null
+    ) {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
+        $this->localProject = $localProject ?: new LocalProject();
         $fs = $fs ?: new Filesystem();
         $this->homeDir = $fs->getHomeDirectory();
     }
@@ -178,8 +187,7 @@ class Drush
      */
     public function createAliases(Project $project, $projectRoot, $environments, $original = null, $merge = true)
     {
-        $localProject = new LocalProject();
-        $config = $localProject->getProjectConfig($projectRoot);
+        $config = $this->localProject->getProjectConfig($projectRoot);
         $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
         $autoRemoveKey = $this->getAutoRemoveKey();
 
