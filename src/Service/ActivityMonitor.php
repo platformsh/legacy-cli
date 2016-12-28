@@ -6,6 +6,7 @@ use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityMonitor
@@ -67,9 +68,8 @@ class ActivityMonitor
             $activity->getDescription()
         ));
 
-        // Initialize a progress bar which will show elapsed time and the
-        // activity's state.
-        $bar = new ProgressBar($stdErr);
+        // The progress bar will show elapsed time and the activity's state.
+        $bar = $this->newProgressBar($stdErr);
         $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
             return $this->formatState($activity->state);
         });
@@ -137,9 +137,9 @@ class ActivityMonitor
 
         $stdErr->writeln(sprintf('Waiting for %d activities...', $count));
 
-        // Initialize a progress bar which will show elapsed time and all of the
-        // activities' states.
-        $bar = new ProgressBar($stdErr);
+        // The progress bar will show elapsed time and all of the activities'
+        // states.
+        $bar = $this->newProgressBar($stdErr);
         $states = [];
         foreach ($activities as $activity) {
             $state = $activity->state;
@@ -232,5 +232,21 @@ class ActivityMonitor
     public static function formatState($state)
     {
         return isset(self::$stateNames[$state]) ? self::$stateNames[$state] : $state;
+    }
+
+    /**
+     * Initialize a new progress bar.
+     *
+     * @param OutputInterface $output
+     *
+     * @return ProgressBar
+     */
+    protected function newProgressBar(OutputInterface $output)
+    {
+        // If the console output is not decorated (i.e. it does not support
+        // ANSI), use NullOutput to suppress the progress bar entirely.
+        $progressOutput = $output->isDecorated() ? $output : new NullOutput();
+
+        return new ProgressBar($progressOutput);
     }
 }
