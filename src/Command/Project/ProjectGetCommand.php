@@ -81,14 +81,17 @@ class ProjectGetCommand extends CommandBase
         }
 
         if ($environmentOption) {
-            if (!$this->api()->getEnvironment($environmentOption, $project, null, true)) {
-                $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
-                return 1;
-            }
             $environmentId = $environmentOption;
         } else {
             $environments = $this->api()->getEnvironments($project);
             $environmentId = count($environments) === 1 ? key($environments) : 'master';
+        }
+
+        $environment = $this->api()->getEnvironment($environmentId, $project, null, true);
+        if (!$environment) {
+            $this->stdErr->writeln("Environment not found: <error>$environmentId</error>");
+
+            return 1;
         }
 
         $directory = $input->getArgument('directory');
@@ -201,7 +204,7 @@ class ProjectGetCommand extends CommandBase
         $this->stdErr->writeln('Downloading project ' . $projectLabel);
         $cloneArgs = [
             '--branch',
-            $environmentId,
+            $environment->id,
             '--origin',
             $this->config()->get('detection.git_remote_name'),
         ];
