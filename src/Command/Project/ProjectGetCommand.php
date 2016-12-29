@@ -80,22 +80,15 @@ class ProjectGetCommand extends CommandBase
             return 1;
         }
 
-        $environments = $this->api()->getEnvironments($project);
         if ($environmentOption) {
-            if (!isset($environments[$environmentOption])) {
-                // Reload the environments list.
-                $environments = $this->api()->getEnvironments($project, true);
-                if (!isset($environments[$environmentOption])) {
-                    $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
-                }
-
+            if (!$this->api()->getEnvironment($environmentOption, $project, null, true)) {
+                $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
                 return 1;
             }
             $environmentId = $environmentOption;
-        } elseif (count($environments) === 1) {
-            $environmentId = key($environments);
         } else {
-            $environmentId = 'master';
+            $environments = $this->api()->getEnvironments($project);
+            $environmentId = count($environments) === 1 ? key($environments) : 'master';
         }
 
         $directory = $input->getArgument('directory');
