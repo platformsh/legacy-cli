@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PortUtil;
-use Platformsh\Cli\Util\RelationshipsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -70,12 +69,17 @@ class ProjectSshConfigCommand extends CommandBase
         if (!$alias = $input->getOption('alias')) {
             $projectRoot = $this->getProjectRoot();
             if ($projectRoot) {
-               $projectConfig = $this->localProject->getProjectConfig($projectRoot);
+                /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+                $localProject = $this->getService('local.project');
+                $projectConfig = $localProject->getProjectConfig($projectRoot);
             }
             $alias = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $project->getProperty('id');
         }
 
         $appName = $this->selectApp($input);
+
+        /** @var \Platformsh\Cli\Service\Relationships $relationshipsUtil */
+        $relationshipsUtil = $this->getService('relationships');
 
         foreach ($environments as $environment) {
             if ($environment->hasLink('ssh')) {
@@ -87,8 +91,7 @@ class ProjectSshConfigCommand extends CommandBase
                 $output->writeln($indent . "Hostname {$sshUrlParts[1]}");
                 $output->writeln($indent . "User {$sshUrlParts[0]}");
 
-                $util = new RelationshipsUtil($this->stdErr);
-                $relationships = $util->getRelationships($sshUrl);
+                $relationships = $relationshipsUtil->getRelationships($sshUrl);
 
                 if ($relationships) {
                     foreach ($relationships as $relationship => $services) {

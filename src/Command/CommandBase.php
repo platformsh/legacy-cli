@@ -1061,7 +1061,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function getState()
     {
         if (empty($this->state)) {
-            $filename = self::$config->getUserConfigDir() . '/' . $this->getName() . '.json';
+            $filename = $this->config()->getUserConfigDir() . '/' . $this->getName() . '.json';
             if (file_exists($filename)) {
                 $this->debug(sprintf('Loading command state from %s', $filename));
                 $this->state = (array) json_decode(file_get_contents($filename), TRUE);
@@ -1071,7 +1071,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
     protected function saveState()
     {
-        $filename = self::$config->getUserConfigDir() . '/' . $this->getName() . '.json';
+        $filename = $this->config()->getUserConfigDir() . '/' . $this->getName() . '.json';
         if (!empty($this->state)) {
             $this->debug('Saving command state info to: ' . $filename);
             if (!file_put_contents($filename, json_encode($this->state))) {
