@@ -23,7 +23,7 @@ class NodeJs extends ToolstackBase
         $buildDir = $this->copyToBuildDir();
 
         if (file_exists($buildDir . '/package.json')) {
-            $this->output->writeln("Found a package.json file, installing dependencies");
+            $this->stdErr->writeln("Found a package.json file, installing dependencies");
 
             if (!$this->shellHelper->commandExists('npm')) {
                 throw new DependencyMissingException('npm is not installed');
@@ -31,7 +31,7 @@ class NodeJs extends ToolstackBase
 
             $npm = $this->shellHelper->resolveCommand('npm');
             $npmArgs = [$npm];
-            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                 $npmArgs[] = '--loglevel=verbose';
             }
 

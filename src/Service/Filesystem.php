@@ -1,22 +1,19 @@
 <?php
 
-namespace Platformsh\Cli\Helper;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Console\OutputAwareInterface;
-use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Exception\IOException;
-use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
-class FilesystemHelper extends Helper implements OutputAwareInterface
+class Filesystem
 {
 
     protected $relative = false;
     protected $fs;
     protected $copyOnWindows = false;
 
-    /** @var ShellHelperInterface */
-    protected $shellHelper;
+    /** @var Shell */
+    protected $shell;
 
     public function getName()
     {
@@ -24,23 +21,13 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     }
 
     /**
-     * @param ShellHelperInterface $shellHelper
-     * @param OutputInterface      $fs
+     * @param Shell|null             $shell
+     * @param SymfonyFilesystem|null $fs
      */
-    public function __construct(ShellHelperInterface $shellHelper = null, $fs = null)
+    public function __construct(Shell $shell = null, SymfonyFilesystem $fs = null)
     {
-        $this->shellHelper = $shellHelper ?: new ShellHelper();
-        $this->fs = $fs ?: new Filesystem();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setOutput(OutputInterface $output)
-    {
-        if ($this->shellHelper instanceof OutputAwareInterface) {
-            $this->shellHelper->setOutput($output);
-        }
+        $this->shell = $shell ?: new Shell();
+        $this->fs = $fs ?: new SymfonyFilesystem();
     }
 
     /**
@@ -392,7 +379,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
         $tar = $this->getTarExecutable();
         $dir = $this->fixTarPath($dir);
         $destination = $this->fixTarPath($destination);
-        $this->shellHelper->execute([$tar, '-czp', '-C' . $dir, '-f' . $destination, '.'], null, true);
+        $this->shell->execute([$tar, '-czp', '-C' . $dir, '-f' . $destination, '.'], null, true);
     }
 
     /**
@@ -412,7 +399,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
         $tar = $this->getTarExecutable();
         $destination = $this->fixTarPath($destination);
         $archive = $this->fixTarPath($archive);
-        $this->shellHelper->execute([$tar, '-xzp', '-C' . $destination, '-f' . $archive], null, true);
+        $this->shell->execute([$tar, '-xzp', '-C' . $destination, '-f' . $archive], null, true);
     }
 
     /**
@@ -446,7 +433,7 @@ class FilesystemHelper extends Helper implements OutputAwareInterface
     {
         $candidates = ['tar', 'tar.exe', 'bsdtar.exe'];
         foreach ($candidates as $command) {
-            if ($this->shellHelper->commandExists($command)) {
+            if ($this->shell->commandExists($command)) {
                 return $command;
             }
         }

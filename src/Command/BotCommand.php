@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Util\Bot;
+use Platformsh\Cli\Console\Bot;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -13,12 +13,12 @@ class BotCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('bot')->setDescription('The ' . self::$config->get('service.name') . ' Bot');
+        $this->setName('bot')->setDescription('The ' . $this->config()->get('service.name') . ' Bot');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $bot = new Bot($output, self::$config->get('service.name'));
+        $bot = new Bot($output, $this->config()->get('service.name'));
 
         if (!$output->isDecorated()) {
             $bot->render();

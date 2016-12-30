@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -46,10 +45,7 @@ class VariableSetCommand extends CommandBase
         // quit early.
         $existing = $this->getSelectedEnvironment()
                          ->getVariable($variableName);
-        if ($existing && $existing->getProperty('value') === $variableValue && $existing->getProperty(
-                'is_json'
-            ) == $json
-        ) {
+        if ($existing && $existing->value === $variableValue && $existing->is_json == $json) {
             $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
 
             return 0;
@@ -66,7 +62,9 @@ class VariableSetCommand extends CommandBase
             $this->rebuildWarning();
         }
         elseif (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return $success ? 0 : 1;

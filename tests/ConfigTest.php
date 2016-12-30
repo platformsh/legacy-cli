@@ -2,16 +2,16 @@
 
 namespace Platformsh\Cli\Tests;
 
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 
-class CliConfigTest extends \PHPUnit_Framework_TestCase
+class ConfigTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * Test loading config from file.
      */
     public function testLoadMainConfig()
     {
-        $config = new CliConfig([], __DIR__ . '/data/mock-cli-config.yaml', true);
+        $config = new Config([], __DIR__ . '/data/mock-cli-config.yaml', true);
         $this->assertTrue($config->has('application.name'));
         $this->assertFalse($config->has('nonexistent'));
         $this->assertEquals($config->get('application.name'), 'Mock CLI');
@@ -22,10 +22,10 @@ class CliConfigTest extends \PHPUnit_Framework_TestCase
      */
     public function testEnvironmentOverrides()
     {
-        $config = new CliConfig([], __DIR__ . '/data/mock-cli-config.yaml', true);
+        $config = new Config([], __DIR__ . '/data/mock-cli-config.yaml', true);
         $this->assertFalse($config->has('api.debug'));
         putenv('MOCK_CLI_DISABLE_CACHE=1');
-        $config = new CliConfig([
+        $config = new Config([
             'MOCK_CLI_APPLICATION_NAME' => 'Attempted override',
             'MOCK_CLI_DEBUG' => 1,
         ], __DIR__ . '/data/mock-cli-config.yaml', true);
@@ -39,11 +39,11 @@ class CliConfigTest extends \PHPUnit_Framework_TestCase
      */
     public function testUserConfigOverrides()
     {
-        $config = new CliConfig([], __DIR__ . '/data/mock-cli-config.yaml', true);
+        $config = new Config([], __DIR__ . '/data/mock-cli-config.yaml', true);
         $this->assertFalse($config->has('experimental.test'));
         $home = getenv('HOME');
         putenv('HOME=' . __DIR__ . '/data');
-        $config = new CliConfig([], __DIR__ . '/data/mock-cli-config.yaml', true);
+        $config = new Config([], __DIR__ . '/data/mock-cli-config.yaml', true);
         putenv('HOME=' . $home);
         $this->assertTrue($config->has('experimental.test'));
         $this->assertTrue($config->get('experimental.test'));
@@ -52,6 +52,6 @@ class CliConfigTest extends \PHPUnit_Framework_TestCase
 
     public function tearDown()
     {
-        new CliConfig(null, null, true);
+        new Config(null, null, true);
     }
 }

@@ -2,9 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\RelationshipsUtil;
-use Platformsh\Cli\Util\Util;
+use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -27,6 +25,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
+        Ssh::configureInput($this->getDefinition());
         $this->addExample("View all the current environment's relationships");
         $this->addExample("View the 'master' environment's relationships", 'master');
         $this->addExample("View the 'master' environment's database port", 'master --property database.0.port');
@@ -39,38 +38,13 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $app = $this->selectApp($input);
         $environment = $this->getSelectedEnvironment();
 
-        $cacheKey = implode('-', ['relationships', $environment->id . $environment->project . $app]);
-        $cache = $this->api()->getCache();
-        $relationships = $cache->fetch($cacheKey);
-        if (empty($relationships) || $input->getOption('refresh')) {
-            $util = new RelationshipsUtil($this->stdErr);
-            $sshUrl = $environment->getSshUrl($app);
-            $relationships = $util->getRelationships($sshUrl);
-            if (empty($relationships)) {
-                $this->stdErr->writeln('No relationships found');
-                return 1;
-            }
-            $cache->save($cacheKey, $relationships, 3600);
-        }
+        $sshUrl = $environment->getSshUrl($app);
+        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
+        $relationshipsService = $this->getService('relationships');
+        $value = $relationshipsService->getRelationships($sshUrl);
 
-        $value = $relationships;
-        $key = null;
-
-        if ($property = $input->getOption('property')) {
-            $parents = explode('.', $property);
-            $key = end($parents);
-            $value = Util::getNestedArrayValue($relationships, $parents, $keyExists);
-            if (!$keyExists) {
-                $this->stdErr->writeln("Relationship property not found: <error>$property</error>");
-
-                return 1;
-            }
-        }
-
-        $formatter = new PropertyFormatter();
-        $formatter->yamlInline = 10;
-        $output->writeln($formatter->format($value, $key));
-
-        return 0;
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
+        $formatter->displayData($output, $value, $input->getOption('property'));
     }
 }

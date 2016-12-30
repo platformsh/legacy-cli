@@ -1,11 +1,11 @@
 <?php
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\ShellHelper;
-use Symfony\Component\Console\Output\NullOutput;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Shell;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -16,65 +16,74 @@ class LocalBuild
     // archives. Increment this number as breaking changes are released.
     const BUILD_VERSION = 3;
 
-    protected $settings;
+    /** @var array */
+    protected $settings = [];
 
     /** @var OutputInterface */
     protected $output;
 
-    /** @var FilesystemHelper */
+    /** @var Filesystem */
     protected $fsHelper;
 
-    /** @var GitHelper */
+    /** @var Git */
     protected $gitHelper;
 
-    /** @var ShellHelper */
+    /** @var Shell */
     protected $shellHelper;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
     /**
      * LocalBuild constructor.
      *
-     * @param array                $settings
-     *     Possible settings:
-     *     - clone (bool, default false) Clone the repository to the build
-     *       directory before building, where possible.
-     *     - copy (bool, default false) Copy files instead of symlinking them,
-     *       where possible.
-     *     - absoluteLinks (bool, default false) Use absolute paths in symlinks.
-     *     - noArchive (bool, default false) Do not archive or use an archive of
-     *       the build.
-     *     - noCache (bool, default false) Disable the package cache (if
-     *       relevant and if the package manager supports this).
-     *     - noClean (bool, default false) Disable cleaning up old builds or old
-     *       build archives.
-     *     - noBuildHooks (bool, default false) Disable running build hooks.
-     *     - drushConcurrency (int) Specify a concurrency for Drush Make, if
-     *       applicable (when using the Drupal toolstack).
-     *     - drushWorkingCopy (bool, default false) Specify the --working-copy
-     *       option to Drush Make, if applicable.
-     *     - drushUpdateLock (bool, default false) Create or update a lock file
-     *       via Drush Make, if applicable.
-     * @param CliConfig|null       $config
-     *     Optionally, inject a specific CLI configuration object.
-     * @param OutputInterface|null $output
-     *     Optionally, inject a specific Symfony Console output object.
+     * @param Config|null                             $config
+     * @param OutputInterface|null                    $output
+     * @param \Platformsh\Cli\Service\Shell|null      $shell
+     * @param \Platformsh\Cli\Service\Filesystem|null $fs
+     * @param \Platformsh\Cli\Service\Git|null        $git
      */
-    public function __construct(array $settings = [], CliConfig $config = null, OutputInterface $output = null)
-    {
-        $this->config = $config ?: new CliConfig();
-        $this->settings = $settings;
-        $this->output = $output ?: new NullOutput();
-        $this->shellHelper = new ShellHelper($this->output);
-        $this->fsHelper = new FilesystemHelper($this->shellHelper);
-        $this->fsHelper->setRelativeLinks(empty($settings['absoluteLinks']));
-        $this->gitHelper = new GitHelper($this->shellHelper);
+    public function __construct(
+        Config $config = null,
+        OutputInterface $output = null,
+        Shell $shell = null,
+        Filesystem $fs = null,
+        Git $git = null
+    ) {
+        $this->config = $config ?: new Config();
+        $this->output = $output ?: new ConsoleOutput();
+        if ($this->output instanceof ConsoleOutput) {
+            $this->output = $this->output->getErrorOutput();
+        }
+        $this->shellHelper = $shell ?: new Shell($this->output);
+        $this->fsHelper = $fs ?: new Filesystem($this->shellHelper);
+        $this->gitHelper = $git ?: new Git($this->shellHelper);
     }
 
     /**
      * Build a project from any source directory, targeting any destination.
      *
+     * @param array  $settings    An array of build settings.
+     *     Possible settings:
+     *     - clone (bool, default false) Clone the repository to the build
+     *       directory before building, where possible.
+     *     - copy (bool, default false) Copy files instead of symlinking them,
+     *       where possible.
+     *     - abslinks (bool, default false) Use absolute paths in symlinks.
+     *     - no-archive (bool, default false) Do not archive or use an archive of
+     *       the build.
+     *     - no-cache (bool, default false) Disable the package cache (if
+     *       relevant and if the package manager supports this).
+     *     - no-clean (bool, default false) Disable cleaning up old builds or
+     *       old build archives.
+     *     - no-build-hooks (bool, default false) Disable running build hooks.
+     *     - concurrency (int) Specify a concurrency for Drush Make, if
+     *       applicable (when using the Drupal toolstack).
+     *     - working-copy (bool, default false) Specify the --working-copy
+     *       option to Drush Make, if applicable.
+     *     - lock (bool, default false) Create or update a lock
+     *       file via Drush Make, if applicable.
+     *     - run-deploy-hooks (bool, default false) Run deploy hooks.
      * @param string $sourceDir   The absolute path to the source directory.
      * @param string $destination Where the web root(s) will be linked (absolute
      *                            path).
@@ -84,15 +93,17 @@ class LocalBuild
      *
      * @return bool
      */
-    public function build($sourceDir, $destination = null, array $apps = [])
+    public function build(array $settings, $sourceDir, $destination = null, array $apps = [])
     {
-        $success = true;
+        $this->settings = $settings;
+        $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
 
         if (file_exists($sourceDir . '/.git')) {
             (new LocalProject())->writeGitExclude($sourceDir);
         }
 
         $ids = [];
+        $success = true;
         foreach (LocalApplication::getApplications($sourceDir, $this->config) as $app) {
             $id = $app->getId();
             $ids[] = $id;
@@ -107,7 +118,7 @@ class LocalBuild
                 $this->output->writeln("Application not found: <comment>$notFound</comment>");
             }
         }
-        if (empty($this->settings['noClean'])) {
+        if (empty($settings['no-clean'])) {
             $this->output->writeln("Cleaning up...");
             $this->cleanBuilds($sourceDir);
             $this->cleanArchives($sourceDir);
@@ -160,8 +171,8 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $irrelevant = ['multiApp', 'noClean', 'drushConcurrency', 'noBackup'];
-        $settings = array_filter(array_diff_key($this->settings, array_flip($irrelevant)));
+        $relevant = ['abslinks', 'copy', 'clone', 'no-cache', 'working-copy', 'lock'];
+        $settings = array_intersect_key($this->settings, array_flip($relevant));
         $hashes[] = serialize($settings);
 
         $hashes[] = self::BUILD_VERSION;
@@ -173,7 +184,7 @@ class LocalBuild
     /**
      * @param LocalApplication $app
      * @param string           $sourceDir
-     * @param string           $destination
+     * @param string|null      $destination
      *
      * @return bool
      */
@@ -237,7 +248,7 @@ class LocalBuild
         $toolstack->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
 
         $archive = false;
-        if (empty($this->settings['noArchive']) && empty($this->settings['noCache'])) {
+        if (empty($this->settings['no-archive']) && empty($this->settings['no-cache'])) {
             $treeId = $this->getTreeId($appRoot);
             if ($treeId) {
                 if ($verbose) {
@@ -278,7 +289,7 @@ class LocalBuild
         // The build is complete. Move the directory.
         $buildDir = substr($tmpBuildDir, 0, strlen($tmpBuildDir) - 4);
         if (file_exists($buildDir)) {
-            if (empty($this->settings['noBackup']) && is_dir($buildDir)) {
+            if (empty($this->settings['no-backup']) && is_dir($buildDir) && !is_link($buildDir)) {
                 $previousBuildArchive = dirname($buildDir) . '/' . basename($buildDir) . '-old.tar.gz';
                 $this->output->writeln("Backing up previous build to: " . $previousBuildArchive);
                 $this->fsHelper->archiveDir($buildDir, $previousBuildArchive);
@@ -297,6 +308,8 @@ class LocalBuild
 
         $toolstack->setBuildDir($buildDir);
         $toolstack->install();
+
+        $this->runPostDeployHooks($appConfig, $buildDir);
 
         $webRoot = $toolstack->getWebRoot();
 
@@ -338,15 +351,55 @@ class LocalBuild
         if (!isset($appConfig['hooks']['build'])) {
             return null;
         }
-        if (!empty($this->settings['noBuildHooks'])) {
-            $this->output->writeln("Skipping post-build hooks");
+        if (!empty($this->settings['no-build-hooks'])) {
+            $this->output->writeln('Skipping post-build hooks');
             return null;
         }
-        $this->output->writeln("Running post-build hooks");
-        $command = implode(';', (array) $appConfig['hooks']['build']);
-        $code = $this->shellHelper->executeSimple($command, $buildDir);
+        $this->output->writeln('Running post-build hooks');
+
+        return $this->runHook($appConfig['hooks']['build'], $buildDir);
+    }
+
+    /**
+     * Run post-deploy hooks.
+     *
+     * @param array  $appConfig
+     * @param string $appDir
+     *
+     * @return bool|null
+     *   False if the deploy hooks fail, true if they succeed, null if not
+     *   applicable.
+     */
+    protected function runPostDeployHooks(array $appConfig, $appDir)
+    {
+        if (empty($this->settings['run-deploy-hooks'])) {
+            return null;
+        }
+        if (empty($appConfig['hooks']['deploy'])) {
+            $this->output->writeln('No deploy hooks found');
+            return null;
+        }
+        $this->output->writeln('Running post-deploy hooks');
+
+        return $this->runHook($appConfig['hooks']['deploy'], $appDir);
+    }
+
+    /**
+     * Run a user-defined hook.
+     *
+     * @param string|array $hook
+     * @param string       $dir
+     *
+     * @return bool
+     */
+    protected function runHook($hook, $dir)
+    {
+        $code = $this->shellHelper->executeSimple(
+            implode("\n", (array) $hook),
+            $dir
+        );
         if ($code !== 0) {
-            $this->output->writeln("<comment>The build hook failed with the exit code: $code</comment>");
+            $this->output->writeln("<comment>The hook failed with the exit code: $code</comment>");
             return false;
         }
 

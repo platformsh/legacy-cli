@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Api;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Application;
 use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
@@ -146,6 +146,13 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 'app',
                 Completion::TYPE_OPTION,
                 [$this, 'getAppNames']
+            ),
+            Completion::makeGlobalHandler(
+                'identity-file',
+                Completion::TYPE_OPTION,
+                function () {
+                    exit(Completion\ShellPathCompletion::PATH_COMPLETION_EXIT_CODE);
+                }
             ),
         ]);
 

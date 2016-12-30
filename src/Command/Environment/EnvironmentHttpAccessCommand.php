@@ -2,8 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Cli\Util\PropertyFormatter;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -166,10 +164,11 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $selectedEnvironment->ensureFull();
         $environmentId = $selectedEnvironment->id;
 
-        $formatter = new PropertyFormatter();
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
 
         if (!empty($accessOpts)) {
-            $current = (array) $selectedEnvironment->getProperty('http_access');
+            $current = (array) $selectedEnvironment->http_access;
 
             // Merge existing settings. Not using a reference here, as that
             // would affect the comparison with $current later.
@@ -193,14 +192,16 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
                 $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
-                $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
+                $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
 
                 $success = true;
                 if (!$result->countActivities()) {
                     $this->rebuildWarning();
                 }
                 elseif (!$input->getOption('no-wait')) {
-                    $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+                    /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+                    $activityMonitor = $this->getService('activity_monitor');
+                    $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
                 }
 
                 return $success ? 0 : 1;
@@ -208,7 +209,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         }
 
         $this->stdErr->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
-        $output->writeln($formatter->format($selectedEnvironment->getProperty('http_access'), 'http_access'));
+        $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
 
         return 0;
     }

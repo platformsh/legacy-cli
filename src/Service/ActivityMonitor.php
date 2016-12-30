@@ -1,13 +1,15 @@
 <?php
 
-namespace Platformsh\Cli\Util;
+namespace Platformsh\Cli\Service;
 
 use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class ActivityUtil
+class ActivityMonitor
 {
 
     protected static $stateNames = [
@@ -16,28 +18,62 @@ abstract class ActivityUtil
         Activity::STATE_IN_PROGRESS => 'in progress',
     ];
 
+    protected $output;
+
+    /**
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    public function __construct(OutputInterface $output)
+    {
+        $this->output = $output;
+    }
+
+    /**
+     * @return \Symfony\Component\Console\Output\OutputInterface
+     */
+    protected function getStdErr()
+    {
+        return $this->output instanceof ConsoleOutput ? $this->output->getErrorOutput() : $this->output;
+    }
+
+    /**
+     * Indent a multi-line string.
+     *
+     * @param string $string
+     * @param string $prefix
+     *
+     * @return string
+     */
+    protected function indent($string, $prefix = '    ')
+    {
+        return preg_replace('/^/m', $prefix, $string);
+    }
+
     /**
      * Wait for a single activity to complete, and display the log continuously.
      *
-     * @param Activity        $activity
-     * @param OutputInterface $output
-     * @param string          $success
-     * @param string          $failure
+     * @param Activity    $activity The activity.
+     * @param string|null $success  A message to show on success.
+     * @param string|null $failure  A message to show on failure.
      *
-     * @return bool
-     *   True if the activity succeeded, false otherwise.
+     * @return bool True if the activity succeeded, false otherwise.
      */
-    public static function waitAndLog(Activity $activity, OutputInterface $output, $success = null, $failure = null)
+    public function waitAndLog(Activity $activity, $success = null, $failure = null)
     {
-        $output->writeln('Waiting for the activity <info>' . $activity->id . '</info> (' . $activity->getDescription() . "):");
+        $stdErr = $this->getStdErr();
 
-        // Initialize a progress bar which will show elapsed time and the
-        // activity's state.
-        $bar = new ProgressBar($output);
+        $stdErr->writeln(sprintf(
+            'Waiting for the activity <info>%s</info> (%s):',
+            $activity->id,
+            $activity->getDescription()
+        ));
+
+        // The progress bar will show elapsed time and the activity's state.
+        $bar = $this->newProgressBar($stdErr);
         $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
-            return self::formatState($activity->state);
+            return $this->formatState($activity->state);
         });
-        $bar->setFormat("  [%bar%] %elapsed:6s% (%state%)");
+        $bar->setFormat('  [%bar%] %elapsed:6s% (%state%)');
         $bar->start();
 
         // Wait for the activity to complete.
@@ -47,29 +83,29 @@ abstract class ActivityUtil
                 $bar->advance();
             },
             // Display new log output when it is available.
-            function ($log) use ($output, $bar) {
+            function ($log) use ($stdErr, $bar) {
                 // Clear the progress bar and ensure the current line is flushed.
                 $bar->clear();
-                $output->write($output->isDecorated() ? "\n\033[1A" : "\n");
+                $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
 
-                // Display the new log output, with an indent.
-                $output->write(preg_replace('/^/m', '    ', $log));
+                // Display the new log output.
+                $stdErr->write($this->indent($log));
 
                 // Display the progress bar again.
                 $bar->advance();
             }
         );
         $bar->finish();
-        $output->writeln('');
+        $stdErr->writeln('');
 
         // Display the success or failure messages.
         switch ($activity['result']) {
             case Activity::RESULT_SUCCESS:
-                $output->writeln($success ?: "Activity <info>{$activity->id}</info> succeeded");
+                $stdErr->writeln($success ?: "Activity <info>{$activity->id}</info> succeeded");
                 return true;
 
             case Activity::RESULT_FAILURE:
-                $output->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
+                $stdErr->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
                 return false;
         }
 
@@ -83,26 +119,27 @@ abstract class ActivityUtil
      * only displayed at the end, if an activity failed.
      *
      * @param Activity[]      $activities
-     * @param OutputInterface $output
      * @param Project         $project
      *
      * @return bool
      *   True if all activities succeed, false otherwise.
      */
-    public static function waitMultiple(array $activities, OutputInterface $output, Project $project)
+    public function waitMultiple(array $activities, Project $project)
     {
+        $stdErr = $this->getStdErr();
+
         $count = count($activities);
         if ($count == 0) {
             return true;
         } elseif ($count === 1) {
-            return self::waitAndLog(reset($activities), $output);
+            return $this->waitAndLog(reset($activities));
         }
 
-        $output->writeln("Waiting for $count activities...");
+        $stdErr->writeln(sprintf('Waiting for %d activities...', $count));
 
-        // Initialize a progress bar which will show elapsed time and all of the
-        // activities' states.
-        $bar = new ProgressBar($output);
+        // The progress bar will show elapsed time and all of the activities'
+        // states.
+        $bar = $this->newProgressBar($stdErr);
         $states = [];
         foreach ($activities as $activity) {
             $state = $activity->state;
@@ -111,12 +148,12 @@ abstract class ActivityUtil
         $bar->setPlaceholderFormatterDefinition('states', function () use (&$states) {
             $format = '';
             foreach ($states as $state => $count) {
-                $format .= $count . ' ' . self::formatState($state) . ', ';
+                $format .= $count . ' ' . $this->formatState($state) . ', ';
             }
 
             return rtrim($format, ', ');
         });
-        $bar->setFormat("  [%bar%] %elapsed:6s% (%states%)");
+        $bar->setFormat('  [%bar%] %elapsed:6s% (%states%)');
         $bar->start();
 
         // Get the most recent created date of each of the activities, as a Unix
@@ -159,7 +196,7 @@ abstract class ActivityUtil
             $bar->advance();
         }
         $bar->finish();
-        $output->writeln('');
+        $stdErr->writeln('');
 
         // Display success or failure messages for each activity.
         $success = true;
@@ -167,17 +204,17 @@ abstract class ActivityUtil
             $description = $activity->getDescription();
             switch ($activity['result']) {
                 case Activity::RESULT_SUCCESS:
-                    $output->writeln("Activity <info>{$activity->id}</info> succeeded: $description");
+                    $stdErr->writeln(sprintf('Activity <info>%s</info> succeeded: %s', $activity->id, $description));
                     break;
 
                 case Activity::RESULT_FAILURE:
                     $success = false;
-                    $output->writeln("Activity <error>{$activity->id}</error> failed");
+                    $stdErr->writeln(sprintf('Activity <error>%s</error> failed', $activity->id));
 
                     // If the activity failed, show the complete log.
-                    $output->writeln("  Description: $description");
-                    $output->writeln("  Log:");
-                    $output->writeln(preg_replace('/^/m', '    ', $activity->log));
+                    $stdErr->writeln('  Description: ' . $description);
+                    $stdErr->writeln('  Log:');
+                    $stdErr->writeln($this->indent($activity->log));
                     break;
             }
         }
@@ -195,5 +232,21 @@ abstract class ActivityUtil
     public static function formatState($state)
     {
         return isset(self::$stateNames[$state]) ? self::$stateNames[$state] : $state;
+    }
+
+    /**
+     * Initialize a new progress bar.
+     *
+     * @param OutputInterface $output
+     *
+     * @return ProgressBar
+     */
+    protected function newProgressBar(OutputInterface $output)
+    {
+        // If the console output is not decorated (i.e. it does not support
+        // ANSI), use NullOutput to suppress the progress bar entirely.
+        $progressOutput = $output->isDecorated() ? $output : new NullOutput();
+
+        return new ProgressBar($progressOutput);
     }
 }

@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Finder\Finder;
@@ -18,15 +18,15 @@ class LocalApplication
 
     /**
      * @param string         $appRoot
-     * @param CliConfig|null $cliConfig
+     * @param Config|null $cliConfig
      * @param string|null    $sourceDir
      */
-    public function __construct($appRoot, CliConfig $cliConfig = null, $sourceDir = null)
+    public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null)
     {
         if (!is_dir($appRoot)) {
             throw new \InvalidArgumentException("Application directory not found: $appRoot");
         }
-        $this->cliConfig = $cliConfig ?: new CliConfig();
+        $this->cliConfig = $cliConfig ?: new Config();
         $this->appRoot = $appRoot;
         $this->sourceDir = $sourceDir ?: $appRoot;
     }
@@ -230,30 +230,30 @@ class LocalApplication
      *
      * @param string $directory
      *     The absolute path to a directory.
-     * @param CliConfig|null $config
+     * @param Config|null $config
      *     CLI configuration.
      *
-     * @return static[]
+     * @return LocalApplication[]
      */
-    public static function getApplications($directory, CliConfig $config = null)
+    public static function getApplications($directory, Config $config = null)
     {
         // Finder can be extremely slow with a deep directory structure. The
         // search depth is limited to safeguard against this.
         $finder = new Finder();
-        $config = $config ?: new CliConfig();
+        $config = $config ?: new Config();
         $finder->in($directory)
                ->ignoreDotFiles(false)
                ->name($config->get('service.app_config_file'))
                ->notPath('builds')
                ->notPath($config->get('local.local_dir'))
+               ->ignoreUnreadableDirs()
                ->depth('> 0')
                ->depth('< 5');
 
         $applications = [];
         if ($finder->count() == 0) {
             $applications[$directory] = new LocalApplication($directory, $config, $directory);
-        }
-        else {
+        } else {
             /** @var \Symfony\Component\Finder\SplFileInfo $file */
             foreach ($finder as $file) {
                 $appRoot = dirname($file->getRealPath());
@@ -262,6 +262,33 @@ class LocalApplication
         }
 
         return $applications;
+    }
+
+    /**
+     * Get a single application by name.
+     *
+     * @param string|null $name
+     *     The application name.
+     * @param string $directory
+     *     The absolute path to a directory.
+     * @param Config|null $config
+     *     CLI configuration.
+     *
+     * @return LocalApplication
+     */
+    public static function getApplication($name, $directory, Config $config = null)
+    {
+        $apps = self::getApplications($directory, $config);
+        if ($name === null && count($apps) === 1) {
+            return reset($apps);
+        }
+        foreach ($apps as $app) {
+            if ($app->getName() === $name) {
+                return $app;
+            }
+        }
+
+        throw new \InvalidArgumentException('App not found: ' . $name);
     }
 
     /**

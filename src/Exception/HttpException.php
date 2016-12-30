@@ -23,7 +23,7 @@ class HttpException extends \RuntimeException
             $details .= " [status code] " . $response->getStatusCode();
             $details .= " [reason phrase] " . $response->getReasonPhrase();
             $details .= ApiResponseException::getErrorDetails($response);
-            $message .= "\n\nDetails:\n" . $details;
+            $message .= "\n\nDetails:\n" . wordwrap($details);
         }
 
         parent::__construct($message, $this->code);

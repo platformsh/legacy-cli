@@ -1,13 +1,15 @@
 <?php
 
-namespace Platformsh\Cli\Util;
+namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
-class PropertyFormatter
+class PropertyFormatter implements InputConfiguringInterface
 {
     const DEFAULT_DATE_FORMAT = 'c';
 
@@ -110,5 +112,27 @@ class PropertyFormatter
         }, $info['basic_auth']);
 
         return $this->format($info);
+    }
+
+    /**
+     * @param OutputInterface $output
+     * @param array           $data
+     * @param string|null     $property
+     */
+    public function displayData(OutputInterface $output, array $data, $property = null)
+    {
+        $key = null;
+
+        if ($property) {
+            $parents = explode('.', $property);
+            $key = end($parents);
+            $data = NestedArrayUtil::getNestedArrayValue($data, $parents, $keyExists);
+            if (!$keyExists) {
+                throw new \InvalidArgumentException('Property not found: ' . $property);
+            }
+        }
+
+        $this->yamlInline = 10;
+        $output->writeln($this->format($data, $key));
     }
 }

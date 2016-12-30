@@ -2,14 +2,14 @@
 
 namespace Platformsh\Cli\Tests;
 
-use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Service\Git;
 
 class GitHelperTest extends \PHPUnit_Framework_TestCase
 {
 
     use HasTempDirTrait;
 
-    /** @var GitHelper */
+    /** @var Git */
     protected $gitHelper;
 
     /**
@@ -27,7 +27,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
             throw new \Exception("Failed to create directories.");
         }
 
-        $this->gitHelper = new GitHelper();
+        $this->gitHelper = new Git();
         $this->gitHelper->init($repository, true);
         $this->gitHelper->setDefaultRepositoryDir($repository);
         chdir($repository);
