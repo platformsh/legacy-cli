@@ -7,9 +7,13 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 * Operating system: Linux, OS X, Windows Vista, Windows 7, Windows 8 Pro, or Windows 10 (Windows 8 Standard does not work due to an issue with symlink permissions)
 * PHP 5.5.9 or higher, with cURL support
 * Git
+* A Bash-like shell:
+  * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
+  * On Windows: [Bash on Ubuntu](https://msdn.microsoft.com/en-gb/commandline/wsl/about) on Windows (recommended), or a Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
   * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
+  * Other build tools: [npm](https://www.npmjs.com/), [pip](http://docs.python-guide.org/en/latest/starting/installation/), [bundler](http://bundler.io/), etc.
 
 ## Installation
 
@@ -81,6 +85,10 @@ auth
   auth:info                                 Display your account information
   auth:login (login)                        Log in to Platform.sh
   auth:logout (logout)                      Log out of Platform.sh
+db
+  db:dump (sql-dump)                        Create a local dump of the remote database
+  db:size                                   Estimate the disk usage of a database
+  db:sql (sql)                              Run SQL on the remote database
 domain
   domain:add                                Add a new domain to the project
   domain:delete                             Delete a domain from the project
@@ -98,10 +106,9 @@ environment
   environment:list (environments)           Get a list of environments
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
+  environment:push (push)                   Push code to an environment
   environment:relationships (relationships)   Show an environment's relationships
   environment:routes (routes)               List an environment's routes
-  environment:sql (sql)                     Run SQL on the remote database
-  environment:sql-dump (sql-dump)           Create a local dump of the remote database
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment

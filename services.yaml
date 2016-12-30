@@ -1,0 +1,56 @@
+services:
+    activity_monitor:
+        class:     '\Platformsh\Cli\Service\ActivityMonitor'
+        arguments: ['@output']
+    api:
+        class:     '\Platformsh\Cli\Service\Api'
+        arguments: ['@config', '@cache']
+    cache:
+        class:     '\Doctrine\Common\Cache\CacheProvider'
+        factory:   'cache_factory:createCacheProvider'
+        arguments: ['@config']
+    cache_factory:
+        class:     '\Platformsh\Cli\Service\CacheFactory'
+    config:
+        class:     '\Platformsh\Cli\Service\Config'
+    drush:
+        class:     '\Platformsh\Cli\Service\Drush'
+        arguments: ['@config', '@shell']
+    fs:
+        class:     '\Platformsh\Cli\Service\Filesystem'
+        arguments: ['@shell']
+    git:
+        class:     '\Platformsh\Cli\Service\Git'
+        arguments: ['@shell']
+    local.build:
+        class:     '\Platformsh\Cli\Local\LocalBuild'
+        arguments: ['@config', '@output', '@shell', '@fs', '@git']
+    local.project:
+        class:     '\Platformsh\Cli\Local\LocalProject'
+        arguments: ['@config', '@git']
+    output:
+        class:     '\Symfony\Component\Console\Output\NullOutput'
+    property_formatter:
+        class:     '\Platformsh\Cli\Service\PropertyFormatter'
+        arguments: ['@input']
+    question_helper:
+        class:     '\Platformsh\Cli\Service\QuestionHelper'
+        arguments: ['@input', '@output']
+    relationships:
+        class:     '\Platformsh\Cli\Service\Relationships'
+        arguments: ['@output', '@ssh', '@cache', '@shell', '@config']
+    self_updater:
+        class:     '\Platformsh\Cli\Service\SelfUpdater'
+        arguments: ['@input', '@output', '@config', '@question_helper']
+    shell:
+        class:     '\Platformsh\Cli\Service\Shell'
+        arguments: ['@output']
+    ssh:
+        class:     '\Platformsh\Cli\Service\Ssh'
+        arguments: ['@input', '@output']
+    table:
+        class:     '\Platformsh\Cli\Service\Table'
+        arguments: ['@input', '@output']
+    url:
+        class:     '\Platformsh\Cli\Service\Url'
+        arguments: ['@shell', '@input', '@output']

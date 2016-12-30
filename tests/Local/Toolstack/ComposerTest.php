@@ -26,7 +26,7 @@ class ComposerTest extends BaseToolstackTest
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/composer-mounts', [
             'copy' => true,
-            'absoluteLinks' => true,
+            'abslinks' => true,
         ]);
         $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
         $shared = $projectRoot . '/' . self::$config->get('local.shared_dir');

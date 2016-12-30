@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Util;
 
-class Util
+class NestedArrayUtil
 {
     /**
      * Get a nested value in an array.
@@ -21,8 +21,7 @@ class Util
         foreach ($parents as $parent) {
             if (is_array($ref) && array_key_exists($parent, $ref)) {
                 $ref = &$ref[$parent];
-            }
-            else {
+            } else {
                 $keyExists = false;
                 $null = null;
                 return $null;
@@ -56,5 +55,4 @@ class Util
         }
         $ref = $value;
     }
-
 }

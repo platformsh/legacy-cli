@@ -1,28 +1,30 @@
 <?php
-namespace Platformsh\Cli\Command\Environment;
+namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Util\RelationshipsUtil;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\Relationships;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentSqlDumpCommand extends CommandBase
+class DbDumpCommand extends CommandBase
 {
 
     protected function configure()
     {
-        $this
-            ->setName('environment:sql-dump')
+        $this->setName('db:dump')
             ->setAliases(['sql-dump'])
-            ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>--<environment ID>--dump.sql" in the project root')
+            ->setDescription('Create a local dump of the remote database');
+        $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>--<environment ID>--dump.sql" in the project root')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        Relationships::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
+        $this->setHiddenAliases(['environment:sql-dump']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -37,8 +39,8 @@ class EnvironmentSqlDumpCommand extends CommandBase
         if (!$input->getOption('stdout')) {
             if ($input->getOption('file')) {
                 $dumpFile = rtrim($input->getOption('file'), '/');
-                /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-                $fsHelper = $this->getHelper('fs');
+                /** @var \Platformsh\Cli\Service\Filesystem $fs */
+                $fs = $this->getService('fs');
 
                 // Insert the timestamp into the filename.
                 if ($timestamp) {
@@ -46,35 +48,31 @@ class EnvironmentSqlDumpCommand extends CommandBase
                     $prefix = substr($dumpFile, 0, - strlen($basename));
                     if ($dotPos = strrpos($basename, '.')) {
                         $basename = substr($basename, 0, $dotPos) . '--' . $timestamp . substr($basename, $dotPos);
-                    }
-                    else {
+                    } else {
                         $basename .= '--' . $timestamp;
                     }
                     $dumpFile = $prefix . $basename;
                 }
 
                 // Make the filename absolute.
-                $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
+                $dumpFile = $fs->makePathAbsolute($dumpFile);
 
                 // Ensure the filename is not a directory.
                 if (is_dir($dumpFile)) {
                     $dumpFile .= '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
                 }
-            }
-            else {
-                if (!$projectRoot = $this->getProjectRoot()) {
-                    throw new RootNotFoundException(
-                        'Project root not found. Specify --file or go to a project directory.'
-                    );
-                }
-                $dumpFile = $projectRoot . '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
+            } else {
+                $projectRoot = $this->getProjectRoot();
+                $directory = $projectRoot ?: getcwd();
+                $dumpFile = $directory
+                    . '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
             }
         }
 
         if (isset($dumpFile)) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-                $questionHelper = $this->getHelper('question');
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
                 if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
                     return 1;
                 }
@@ -82,8 +80,10 @@ class EnvironmentSqlDumpCommand extends CommandBase
             $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
         }
 
-        $util = new RelationshipsUtil($this->stdErr);
-        $database = $util->chooseDatabase($sshUrl, $input);
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+
+        $database = $relationships->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
         }
@@ -104,13 +104,19 @@ class EnvironmentSqlDumpCommand extends CommandBase
 
         set_time_limit(0);
 
-        $command = 'ssh -C ' . escapeshellarg($sshUrl)
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $command = $ssh->getSshCommand()
+            . ' -C ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($dumpCommand);
         if (isset($dumpFile)) {
             $command .= ' > ' . escapeshellarg($dumpFile);
         }
 
-        return $this->getHelper('shell')->executeSimple($command);
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        return $shell->executeSimple($command);
     }
 
     /**

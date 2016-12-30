@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -25,7 +25,7 @@ class ProjectListCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -63,13 +63,25 @@ class ProjectListCommand extends CommandBase
             return 0;
         }
 
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+        $machineReadable = $table->formatIsMachineReadable();
 
         $rows = [];
         foreach ($projects as $project) {
+            $title = $project->title ?: '[Untitled Project]';
+
+            // Add a warning next to the title if the project is suspended.
+            if (!$machineReadable && $project->isSuspended()) {
+                $title = sprintf(
+                    '<fg=white;bg=black>%s</> <fg=yellow;bg=black>(suspended)</>',
+                    $title
+                );
+            }
+
             $rows[] = [
                 new AdaptiveTableCell($project->id, ['wrap' => false]),
-                $project->title,
+                $title,
                 $project->getLink('#ui'),
             ];
         }
@@ -78,7 +90,7 @@ class ProjectListCommand extends CommandBase
 
         // Display a simple table (and no messages) if the --format is
         // machine-readable (e.g. csv or tsv).
-        if ($table->formatIsMachineReadable()) {
+        if ($machineReadable) {
             $table->render($rows, $header);
 
             return 0;
@@ -92,7 +104,7 @@ class ProjectListCommand extends CommandBase
                     . '</comment>';
                 $this->stdErr->writeln('No projects found (filters in use: ' . $filtersUsed . ').');
             } else {
-                $this->stdErr->writeln('You do not have any ' . self::$config->get('service.name') . ' projects yet.');
+                $this->stdErr->writeln('You do not have any ' . $this->config()->get('service.name') . ' projects yet.');
             }
 
             return 0;
@@ -105,7 +117,7 @@ class ProjectListCommand extends CommandBase
 
         $table->render($rows, $header);
 
-        $commandName = self::$config->get('application.executable');
+        $commandName = $this->config()->get('application.executable');
         $this->stdErr->writeln([
             '',
             'Get a project by running: <info>' . $commandName . ' get [id]</info>',

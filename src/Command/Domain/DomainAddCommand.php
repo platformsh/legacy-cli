@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -58,7 +57,9 @@ class DomainAddCommand extends DomainCommandBase
         }
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

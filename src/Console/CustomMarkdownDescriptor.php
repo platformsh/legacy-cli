@@ -58,8 +58,10 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write('## Examples');
             $this->write("\n");
             $name = $command->getName();
+            $aliases = $command->getAliases();
+            $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             foreach ($examples as $arguments => $description) {
-                $this->write("\n* $description:  \n  ```\n  " . $this->cliExecutableName . " $name $arguments\n  ```\n");
+                $this->write("\n* $description:  \n  ```\n  " . $this->cliExecutableName . " $shortName $arguments\n  ```\n");
             }
             $this->write("\n");
         }

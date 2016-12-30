@@ -15,16 +15,16 @@ function platform_local_drush {
     GROUP="$(platform drush-aliases --no --pipe 2>/dev/null)"
     CODE=$?
     if [ "$CODE" = 2 ]; then
-        echo $0': This can only be run from inside a project directory' >&2
+        echo "$0"': This can only be run from inside a project directory' >&2
         return "$CODE"
     elif [ ! "$CODE" = 0 ]; then
-        echo $0': Drush alias group not found' >&2
+        echo "$0"': Drush alias group not found' >&2
         return "$CODE"
     fi
-    if [ -z $1 ]; then
-        drush @${GROUP}._local status
+    if [ -z "$1" ]; then
+        drush @"$GROUP"._local status
     else
-        drush @${GROUP}._local $@
+        drush @"$GROUP"._local "$@"
     fi
 }
 alias pldr=platform_local_drush

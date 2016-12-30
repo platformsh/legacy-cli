@@ -2,10 +2,10 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentActivateCommand extends CommandBase
@@ -16,7 +16,8 @@ class EnvironmentActivateCommand extends CommandBase
         $this
             ->setName('environment:activate')
             ->setDescription('Activate an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate');
+            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
+            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -53,11 +54,18 @@ class EnvironmentActivateCommand extends CommandBase
      */
     protected function activateMultiple(array $environments, InputInterface $input, OutputInterface $output)
     {
+        $parentId = $input->getOption('parent');
+        if ($parentId && !$this->api()->getEnvironment($parentId, $this->getSelectedProject())) {
+            $this->stdErr->writeln(sprintf('Parent environment not found: <error>%s</error>', $parentId));
+            return false;
+        }
+
         $count = count($environments);
         $processed = 0;
         // Confirm which environments the user wishes to be activated.
         $process = [];
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
         foreach ($environments as $environment) {
             $environmentId = $environment->id;
             if ($environment->isActive()) {
@@ -81,9 +89,21 @@ class EnvironmentActivateCommand extends CommandBase
         /** @var Environment $environment */
         foreach ($process as $environmentId => $environment) {
             try {
+                if ($parentId && $parentId !== $environment->parent && $parentId !== $environmentId) {
+                    $output->writeln(sprintf(
+                        'Setting parent of environment <info>%s</info> to <info>%s</info>',
+                        $environmentId,
+                        $parentId
+                    ));
+                    $result = $environment->update(['parent' => $parentId]);
+                    $activities = array_merge($activities, $result->getActivities());
+                }
+                $output->writeln(sprintf(
+                    'Activating environment <info>%s</info>',
+                    $environmentId
+                ));
                 $activities[] = $environment->activate();
                 $processed++;
-                $output->writeln("Activating environment <info>$environmentId</info>");
             } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
@@ -92,7 +112,9 @@ class EnvironmentActivateCommand extends CommandBase
         $success = true;
         if ($processed) {
             if (!$input->getOption('no-wait')) {
-                ActivityUtil::waitMultiple($activities, $this->stdErr, $this->getSelectedProject());
+                /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+                $activityMonitor = $this->getService('activity_monitor');
+                $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
             }
             $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
         }

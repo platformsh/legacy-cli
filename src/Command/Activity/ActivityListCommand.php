@@ -3,8 +3,8 @@ namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -24,7 +24,7 @@ class ActivityListCommand extends CommandBase
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check activities on all environments')
             ->setDescription('Get a list of activities for an environment or project');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List recent activities for the current environment')
@@ -62,7 +62,8 @@ class ActivityListCommand extends CommandBase
             return 1;
         }
 
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
 
         $rows = [];
         foreach ($activities as $activity) {
@@ -71,7 +72,7 @@ class ActivityListCommand extends CommandBase
                 date('Y-m-d H:i:s', strtotime($activity['created_at'])),
                 $activity->getDescription(),
                 $activity->getCompletionPercent(),
-                ActivityUtil::formatState($activity->state),
+                ActivityMonitor::formatState($activity->state),
             ];
             if (!$environmentSpecific) {
                 $row[] = implode(', ', $activity->environments);

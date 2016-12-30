@@ -3,10 +3,8 @@ namespace Platformsh\Cli\Command\Project;
 
 use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\ShellHelper;
-use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -50,6 +48,7 @@ class ProjectGetCommand extends CommandBase
                 InputOption::VALUE_NONE,
                 'Build the project after cloning'
             );
+        Ssh::configureInput($this->getDefinition());
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
 
@@ -81,31 +80,27 @@ class ProjectGetCommand extends CommandBase
             return 1;
         }
 
-        $environments = $this->api()->getEnvironments($project);
         if ($environmentOption) {
-            if (!isset($environments[$environmentOption])) {
-                // Reload the environments list.
-                $environments = $this->api()->getEnvironments($project, true);
-                if (!isset($environments[$environmentOption])) {
-                    $this->stdErr->writeln("Environment not found: <error>$environmentOption</error>");
-                }
-
-                return 1;
-            }
             $environmentId = $environmentOption;
-        } elseif (count($environments) === 1) {
-            $environmentId = key($environments);
         } else {
-            $environmentId = 'master';
+            $environments = $this->api()->getEnvironments($project);
+            $environmentId = count($environments) === 1 ? key($environments) : 'master';
+        }
+
+        $environment = $this->api()->getEnvironment($environmentId, $project, null, true);
+        if (!$environment) {
+            $this->stdErr->writeln("Environment not found: <error>$environmentId</error>");
+
+            return 1;
         }
 
         $directory = $input->getArgument('directory');
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
-            $directory = $questionHelper->askInput('Directory', $directory);
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $directory = $questionHelper->askInput('Directory', $directory, [$directory, $projectId]);
         }
 
         if ($projectRoot = $this->getProjectRoot()) {
@@ -129,16 +124,20 @@ class ProjectGetCommand extends CommandBase
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
 
-        $gitHelper = new GitHelper(new ShellHelper($this->stdErr));
-        $gitHelper->ensureInstalled();
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $git->ensureInstalled();
+        $git->setSshCommand($ssh->getSshCommand());
 
         // First check if the repo actually exists.
         try {
-            $exists = $gitHelper->remoteRepoExists($gitUrl);
+            $exists = $git->remoteRepoExists($gitUrl);
         }
         catch (\Exception $e) {
             // The ls-remote command failed.
-            $this->stdErr->writeln('<error>Failed to connect to the ' . self::$config->get('service.name') . ' Git server</error>');
+            $this->stdErr->writeln('<error>Failed to connect to the ' . $this->config()->get('service.name') . ' Git server</error>');
 
             // Suggest SSH key commands.
             $sshKeys = [];
@@ -152,10 +151,10 @@ class ProjectGetCommand extends CommandBase
             if (!empty($sshKeys)) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please check your SSH credentials');
-                $this->stdErr->writeln('You can list your keys with: <comment>' . self::$config->get('application.executable') . ' ssh-keys</comment>');
+                $this->stdErr->writeln('You can list your keys with: <comment>' . $this->config()->get('application.executable') . ' ssh-keys</comment>');
             }
             else {
-                $this->stdErr->writeln('You probably need to add an SSH key, with: <comment>' . self::$config->get('application.executable') . ' ssh-key:add</comment>');
+                $this->stdErr->writeln('You probably need to add an SSH key, with: <comment>' . $this->config()->get('application.executable') . ' ssh-key:add</comment>');
             }
 
             return 1;
@@ -169,6 +168,9 @@ class ProjectGetCommand extends CommandBase
             $projectConfig['host'] = $host;
         }
 
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+
         // If the remote repository exists, then locally we need to create the
         // folder, run git init, and attach the remote.
         if (!$exists) {
@@ -181,18 +183,18 @@ class ProjectGetCommand extends CommandBase
 
             // Initialize the repo and attach our remotes.
             $this->debug('Initializing the repository');
-            $gitHelper->init($projectRoot, true);
+            $git->init($projectRoot, true);
 
             // As soon as there is a Git repo present, add the project config file.
-            $this->localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
+            $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
 
             $this->debug('Adding Git remote(s)');
-            $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
+            $localProject->ensureGitRemote($projectRoot, $gitUrl);
 
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('Your project has been initialized and connected to <info>' . self::$config->get('service.name') . '</info>!');
+            $this->stdErr->writeln('Your project has been initialized and connected to <info>' . $this->config()->get('service.name') . '</info>!');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('Commit and push to the <info>master</info> branch of the <info>' . self::$config->get('detection.git_remote_name') . '</info> Git remote, and ' . self::$config->get('service.name') . ' will build your project automatically.');
+            $this->stdErr->writeln('Commit and push to the <info>master</info> branch of the <info>' . $this->config()->get('detection.git_remote_name') . '</info> Git remote, and ' . $this->config()->get('service.name') . ' will build your project automatically.');
 
             return 0;
         }
@@ -202,29 +204,29 @@ class ProjectGetCommand extends CommandBase
         $this->stdErr->writeln('Downloading project ' . $projectLabel);
         $cloneArgs = [
             '--branch',
-            $environmentId,
+            $environment->id,
             '--origin',
-            self::$config->get('detection.git_remote_name'),
+            $this->config()->get('detection.git_remote_name'),
         ];
         if ($output->isDecorated()) {
             $cloneArgs[] = '--progress';
         }
-        $cloned = $gitHelper->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
+        $cloned = $git->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
-            $this->stdErr->writeln('Please check your SSH credentials or contact ' . self::$config->get('service.name') . ' support');
+            $this->stdErr->writeln('Please check your SSH credentials or contact ' . $this->config()->get('service.name') . ' support');
 
             return 1;
         }
 
         $this->setProjectRoot($projectRoot);
 
-        $this->localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
-        $this->localProject->ensureGitRemote($projectRoot, $gitUrl);
+        $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
+        $localProject->ensureGitRemote($projectRoot, $gitUrl);
 
-        $gitHelper->updateSubmodules(true, $projectRoot);
+        $git->updateSubmodules(true, $projectRoot);
 
         $this->stdErr->writeln("\nThe project <info>$projectLabel</info> was successfully downloaded to: <info>$directory</info>");
 
@@ -251,16 +253,16 @@ class ProjectGetCommand extends CommandBase
         if ($input->getOption('build')) {
             // Launch the first build.
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . self::$config->get('application.executable') . ' build</info> to repeat this.');
-            $options = ['environmentId' => $environmentId, 'noClean' => true];
-            $builder = new LocalBuild($options, self::$config, $output);
-            $success = $builder->build($projectRoot);
-        }
-        else {
+            $this->stdErr->writeln('Building the project locally for the first time. Run <info>' . $this->config()->get('application.executable') . ' build</info> to repeat this.');
+            $options = ['no-clean' => true];
+            /** @var \Platformsh\Cli\Local\LocalBuild $builder */
+            $builder = $this->getService('local.build');
+            $success = $builder->build($options, $projectRoot);
+        } else {
             $this->stdErr->writeln(
                 "\nYou can build the project with: "
                 . "\n    cd $directory"
-                . "\n    " . self::$config->get('application.executable') . " build"
+                . "\n    " . $this->config()->get('application.executable') . " build"
             );
         }
 
@@ -282,7 +284,7 @@ class ProjectGetCommand extends CommandBase
         }
         $text = "Enter a number to choose which project to clone:";
 
-        return $this->getHelper('question')
+        return $this->getService('question_helper')
                     ->choose($projectList, $text, $input, $this->stdErr);
     }
 

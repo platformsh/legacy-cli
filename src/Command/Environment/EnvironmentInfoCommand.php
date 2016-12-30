@@ -3,9 +3,8 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\ActivityUtil;
-use Platformsh\Cli\Util\Table;
-use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentInfoCommand extends CommandBase
 {
-    /** @var PropertyFormatter */
+    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
     /**
@@ -29,7 +28,7 @@ class EnvironmentInfoCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for an environment');
         PropertyFormatter::configureInput($this->getDefinition());
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption();
@@ -53,10 +52,10 @@ class EnvironmentInfoCommand extends CommandBase
 
         $property = $input->getArgument('property');
 
-        $this->formatter = new PropertyFormatter($input);
+        $this->formatter = $this->getService('property_formatter');
 
         if (!$property) {
-            return $this->listProperties($environment, new Table($input, $output));
+            return $this->listProperties($environment);
         }
 
         $value = $input->getArgument('value');
@@ -64,7 +63,14 @@ class EnvironmentInfoCommand extends CommandBase
             return $this->setProperty($property, $value, $environment, $input->getOption('no-wait'));
         }
 
-        $value = $this->api()->getNestedProperty($environment, $property);
+        switch ($property) {
+            case 'url':
+                $value = $environment->getUri(true);
+                break;
+
+            default:
+                $value = $this->api()->getNestedProperty($environment, $property);
+        }
 
         $output->writeln($this->formatter->format($value, $property));
 
@@ -74,11 +80,9 @@ class EnvironmentInfoCommand extends CommandBase
     /**
      * @param Environment $environment
      *
-     * @param Table       $table
-     *
      * @return int
      */
-    protected function listProperties(Environment $environment, Table $table)
+    protected function listProperties(Environment $environment)
     {
         $headings = [];
         $values = [];
@@ -86,6 +90,8 @@ class EnvironmentInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $table->renderSimple($values, $headings);
 
         return 0;
@@ -125,7 +131,9 @@ class EnvironmentInfoCommand extends CommandBase
         $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
         if ($result->countActivities() && !$noWait) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
         elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
             $this->rebuildWarning();

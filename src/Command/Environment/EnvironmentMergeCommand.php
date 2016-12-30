@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -40,7 +39,9 @@ class EnvironmentMergeCommand extends CommandBase
         $parentId = $selectedEnvironment->parent;
 
         $confirmText = "Are you sure you want to merge <info>$environmentId</info> with its parent, <info>$parentId</info>?";
-        if (!$this->getHelper('question')->confirm($confirmText)) {
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
 
@@ -50,9 +51,10 @@ class EnvironmentMergeCommand extends CommandBase
 
         $activity = $selectedEnvironment->merge();
         if (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitAndLog(
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitAndLog(
                 $activity,
-                $this->stdErr,
                 'Merge complete',
                 'Merge failed'
             );
