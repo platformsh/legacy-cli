@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
@@ -31,7 +32,9 @@ class LocalProject
      */
     protected function parseGitUrl($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($this->config->get('detection.git_domain')) . '):\1\.git$/', $gitUrl, $matches)) {
+        $gitDomain = $this->config->get('detection.git_domain');
+        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
+        if (!preg_match($pattern, $gitUrl, $matches)) {
             return false;
         }
 
@@ -133,6 +136,29 @@ class LocalProject
     }
 
     /**
+     * Initialize a directory as a project root.
+     *
+     * @param string $directory
+     *   The Git repository that should be initialized.
+     * @param Project $project
+     *   The project.
+     */
+    public function initialize($directory, Project $project)
+    {
+        if (!file_exists($directory . '/.git')) {
+            throw new \InvalidArgumentException('Not a Git repository: ' . $directory);
+        }
+        $projectConfig = [
+            'id' => $project->id,
+        ];
+        if ($host = parse_url($project->getUri(), PHP_URL_HOST)) {
+            $projectConfig['host'] = $host;
+        }
+        $this->writeCurrentProjectConfig($projectConfig, $directory);
+        $this->ensureGitRemote($directory, $project->getGitUrl());
+    }
+
+    /**
      * Find the legacy root of the current project, from CLI versions <3.
      *
      * @return string|false
@@ -175,7 +201,7 @@ class LocalProject
     /**
      * Get the configuration for the current project.
      *
-     * @param string $projectRoot
+     * @param string|null $projectRoot
      *
      * @return array|null
      *   The current project's configuration.
@@ -192,8 +218,7 @@ class LocalProject
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
             self::$projectConfigs[$projectRoot] = $projectConfig;
-        }
-        elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
+        } elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $gitUrl = $this->getGitRemoteUrl($projectRoot);
             if ($gitUrl && ($projectConfig = $this->parseGitUrl($gitUrl))) {
                 $this->writeCurrentProjectConfig($projectConfig, $projectRoot);
