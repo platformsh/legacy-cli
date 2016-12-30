@@ -607,7 +607,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
         }
 
-        return $project;
+        $this->project = $project;
+
+        return $this->project;
     }
 
     /**
@@ -618,10 +620,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * @param string|null $environmentId
      *   The environment ID specified by the user, or null to auto-detect the
      *   environment.
-     *
-     * @return Environment
+     * @param bool $required
+     *   Whether it's required to have an environment.
      */
-    protected function selectEnvironment($environmentId = null)
+    protected function selectEnvironment($environmentId = null, $required = true)
     {
         if (!empty($environmentId)) {
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
@@ -629,22 +631,26 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 throw new \RuntimeException('Specified environment not found: ' . $environmentId);
             }
 
-            return $environment;
+            $this->environment = $environment;
+            return;
         }
 
         // If no ID is specified, try to auto-detect the current environment.
         if ($environment = $this->getCurrentEnvironment($this->project)) {
-            return $environment;
+            $this->environment = $environment;
+            return;
         }
 
-        if ($this->getProjectRoot()) {
-            $message = 'Could not determine the current environment.'
-                . "\n" . 'Specify it manually using --environment (-e).';
-        } else {
-            $message = 'No environment specified.'
-                . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
+        if ($required) {
+            if ($this->getProjectRoot()) {
+                $message = 'Could not determine the current environment.'
+                    . "\n" . 'Specify it manually using --environment (-e).';
+            } else {
+                $message = 'No environment specified.'
+                    . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
+            }
+            throw new \RuntimeException($message);
         }
-        throw new \RuntimeException($message);
     }
 
     /**
@@ -779,7 +785,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         // Select the project.
-        $this->project = $this->selectProject($projectId, $projectHost);
+        $this->selectProject($projectId, $projectHost);
 
         // Select the environment.
         $envOptionName = 'environment';
@@ -799,16 +805,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
-                $this->environment = $this->selectEnvironment($argument);
+                $this->selectEnvironment($argument);
             }
         } elseif ($input->hasOption($envOptionName)) {
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
-            if (!$environmentId && $envNotRequired) {
-                $this->environment = $this->getCurrentEnvironment($this->project);
-            }
-            else {
-                $this->environment = $this->selectEnvironment($environmentId);
-            }
+            $this->selectEnvironment($environmentId, !$envNotRequired);
         }
 
         $this->debug('Validated input');
