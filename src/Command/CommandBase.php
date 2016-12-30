@@ -731,8 +731,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $host = parse_url($url, PHP_URL_HOST);
         $path = parse_url($url, PHP_URL_PATH);
+        $site_domains_pattern = '(' . implode('|', array_map('preg_quote', $this->config()->get('detection.site_domains'))) . ')';
+        $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
         if (!strpos($path, '/projects/')
-            && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote($this->config()->get('detection.site_domain')) . '$/', $host)) {
+            && preg_match($site_pattern, $host)) {
             list($env_project_app,) = explode('.', $host, 2);
             if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
                 $env_project_app = substr($env_project_app, $tripleDashPos + 3);

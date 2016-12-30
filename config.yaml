@@ -60,7 +60,7 @@ api:
 detection:
   git_remote_name: 'platform'
   git_domain: 'platform.sh'
-  site_domain: 'platform.sh'
+  site_domains: ['platform.sh', 'platformsh.site']
 
 # Automatic updates.
 # This can be overridden in the user config file.
