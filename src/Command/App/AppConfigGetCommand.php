@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -45,25 +44,9 @@ class AppConfigGetCommand extends CommandBase
         $args[] = 'echo $' . $this->config()->get('service.env_prefix') . 'APPLICATION';
         $result = $shell->execute($args, null, true);
         $appConfig = json_decode(base64_decode($result), true);
-        $value = $appConfig;
-        $key = null;
-
-        if ($property = $input->getOption('property')) {
-            $parents = explode('.', $property);
-            $key = end($parents);
-            $value = NestedArrayUtil::getNestedArrayValue($appConfig, $parents, $keyExists);
-            if (!$keyExists) {
-                $this->stdErr->writeln("Configuration property not found: <error>$property</error>");
-
-                return 1;
-            }
-        }
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
-        $formatter->yamlInline = 10;
-        $output->writeln($formatter->format($value, $key));
-
-        return 0;
+        $formatter->displayData($output, $appConfig, $input->getOption('property'));
     }
 }
