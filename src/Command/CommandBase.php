@@ -56,9 +56,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     /** @var OutputInterface|null */
     private $output;
 
-    /** @var array */
-    protected $state = [];
-
     /**
      * @see self::setHiddenAliases()
      *
@@ -1056,30 +1053,5 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         return $this->synopsis[$key];
-    }
-
-    protected function getState()
-    {
-        if (empty($this->state)) {
-            $filename = $this->config()->getUserConfigDir() . '/' . $this->getName() . '.json';
-            if (file_exists($filename)) {
-                $this->debug(sprintf('Loading command state from %s', $filename));
-                $this->state = (array) json_decode(file_get_contents($filename), TRUE);
-            }
-        }
-    }
-
-    protected function saveState()
-    {
-        $filename = $this->config()->getUserConfigDir() . '/' . $this->getName() . '.json';
-        if (!empty($this->state)) {
-            $this->debug('Saving command state info to: ' . $filename);
-            if (!file_put_contents($filename, json_encode($this->state))) {
-                throw new \RuntimeException('Failed to write command state to: ' . $filename);
-            }
-        }
-        else {
-            unlink($filename);
-        }
     }
 }

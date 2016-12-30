@@ -9,8 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectSshConfigCommand extends CommandBase
 {
-    protected $cmdConfig = [];
-
     protected function configure()
     {
         $this
@@ -25,36 +23,29 @@ class ProjectSshConfigCommand extends CommandBase
     /**
      * Automatically determine the best port for a new tunnel.
      *
-     * @param string $project Project ID
-     *
-     * @param string $environment Environment name
-     *
-     * @param stirng $relationship Relationship name
-     *
-     * @param int $default Default port starting number
+     * @param string $project      Project ID
+     * @param string $environment  Environment name
+     * @param string $relationship Relationship name
+     * @param array  &$cache       Cache
      *
      * @return int
      */
-    protected function getPort($project, $environment, $relationship, $default = 30000)
+    protected function getPort($project, $environment, $relationship, array &$cache)
     {
-        if (!isset($this->state['ports'][$project][$environment][$relationship])) {
-            $port = PortUtil::getPort(isset($this->state['last']) ? $this->state['last'] + 1 : $default);
-            $this->state['last'] = $port;
-        }
-        else
-        {
-            $port = $this->state['ports'][$project][$environment][$relationship];
+        if (isset($cache[$project][$environment][$relationship])) {
+            return $cache[$project][$environment][$relationship];
         }
 
-        $this->state['ports'][$project][$environment][$relationship] = $port;
+        $port = PortUtil::getPort(isset($cache['last']) ? $cache['last'] + 1 : 30000);
+        $cache['last'] = $port;
+
+        $cache[$project][$environment][$relationship] = $port;
 
         return $port;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->getState();
-
         $this->validateInput($input);
         $project = $this->getSelectedProject();
 
@@ -73,7 +64,7 @@ class ProjectSshConfigCommand extends CommandBase
                 $localProject = $this->getService('local.project');
                 $projectConfig = $localProject->getProjectConfig($projectRoot);
             }
-            $alias = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $project->getProperty('id');
+            $alias = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $project->id;
         }
 
         $appName = $this->selectApp($input);
@@ -81,32 +72,40 @@ class ProjectSshConfigCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Relationships $relationshipsUtil */
         $relationshipsUtil = $this->getService('relationships');
 
+        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+        $cache = $this->getService('cache');
+        $portsCacheKey = 'ssh-config:ports';
+        $portsCache = $cache->fetch($portsCacheKey) ?: [];
+
+        $indent = str_repeat(' ', 2);
+
         foreach ($environments as $environment) {
-            if ($environment->hasLink('ssh')) {
-                $sshUrl = $environment->getSshUrl($appName);
-                $sshUrlParts = explode("@", $sshUrl);
-                $indent = str_repeat(' ', 2);
-
-                $output->writeln("Host $alias.{$environment->id}");
-                $output->writeln($indent . "Hostname {$sshUrlParts[1]}");
-                $output->writeln($indent . "User {$sshUrlParts[0]}");
-
-                $relationships = $relationshipsUtil->getRelationships($sshUrl);
-
-                if ($relationships) {
-                    foreach ($relationships as $relationship => $services) {
-                        foreach ($services as $serviceKey => $service) {
-                            $localPort = $this->getPort($project->getProperty('id'), $environment->id, $relationship);
-                            $output->writeln($indent . "LocalForward $localPort {$service['host']}:{$service['port']}");
-                        }
-                    }
-                }
-
-                $output->writeln('');
+            if (!$environment->hasLink('ssh')) {
+                continue;
             }
+            $sshUrl = $environment->getSshUrl($appName);
+            $sshUrlParts = explode("@", $sshUrl);
+
+            $output->writeln("Host $alias.{$environment->id}");
+            $output->writeln($indent . "Hostname {$sshUrlParts[1]}");
+            $output->writeln($indent . "User {$sshUrlParts[0]}");
+
+            foreach ($relationshipsUtil->getRelationships($sshUrl) as $relationship => $services) {
+                foreach ($services as $serviceKey => $service) {
+                    $localPort = $this->getPort($project->id, $environment->id, $relationship, $portsCache);
+                    $output->writeln($indent . sprintf(
+                        'LocalForward %d %s:%d',
+                        $localPort,
+                        $service['host'],
+                        $service['port']
+                    ));
+                }
+            }
+
+            $output->writeln('');
         }
 
-        $this->saveState();
+        $cache->save($portsCacheKey, $portsCache);
 
         return 0;
     }
