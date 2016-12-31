@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Project\Variable;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -60,7 +61,7 @@ class ProjectVariableGetCommand extends CommandBase
         }
 
         if ($input->getOption('pipe')) {
-            throw new \InvalidArgumentException('Specify a variable name to use --pipe');
+            throw new InvalidArgumentException('Specify a variable name to use --pipe');
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */

@@ -6,6 +6,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -215,7 +216,7 @@ class ProjectGetCommand extends CommandBase
             if ($input->isInteractive() && ($projects = $this->api()->getProjects(true))) {
                 $projectId = $this->offerProjectChoice($projects, $input);
             } else {
-                throw new \InvalidArgumentException('No project specified');
+                throw new InvalidArgumentException('No project specified');
             }
         } else {
             $result = $this->parseProjectId($projectId);
@@ -244,15 +245,15 @@ class ProjectGetCommand extends CommandBase
 
         if ($projectRoot = $this->getProjectRoot()) {
             if (strpos(realpath(dirname($directory)), $projectRoot) === 0) {
-                throw new \InvalidArgumentException('A project cannot be cloned inside another project.');
+                throw new InvalidArgumentException('A project cannot be cloned inside another project.');
             }
         }
 
         if (file_exists($directory)) {
-            throw new \InvalidArgumentException('The directory already exists: ' . $directory);
+            throw new InvalidArgumentException('The directory already exists: ' . $directory);
         }
         if (!$parent = realpath(dirname($directory))) {
-            throw new \InvalidArgumentException("Not a directory: " . dirname($directory));
+            throw new InvalidArgumentException("Not a directory: " . dirname($directory));
         }
         $this->projectRoot = $parent . '/' . basename($directory);
     }

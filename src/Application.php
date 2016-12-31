@@ -5,6 +5,9 @@ use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
+use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
+use Symfony\Component\Console\Exception\InvalidOptionException as ConsoleInvalidOptionException;
+use Symfony\Component\Console\Exception\RuntimeException as ConsoleRuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -264,6 +267,7 @@ class Application extends ParentApplication
     public function renderException(\Exception $e, OutputInterface $output)
     {
         $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+        $main = $e;
 
         do {
             $exceptionName = get_class($e);
@@ -328,12 +332,16 @@ class Application extends ParentApplication
             }
         } while ($e = $e->getPrevious());
 
-        if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
+        if (isset($this->currentCommand)
+            && $this->currentCommand->getName() !== 'welcome'
+            && ($main instanceof ConsoleInvalidArgumentException
+                || $main instanceof ConsoleInvalidOptionException
+                || $main instanceof ConsoleRuntimeException
+            )) {
             $output->writeln(sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
             $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', $this->cliConfig->get('application.executable'), $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
         }
     }
-
 }

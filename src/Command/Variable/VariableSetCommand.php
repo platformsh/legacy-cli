@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -38,7 +39,7 @@ class VariableSetCommand extends CommandBase
         $json = $input->getOption('json');
 
         if ($json && !$this->validateJson($variableValue)) {
-            throw new \Exception("Invalid JSON: <error>$variableValue</error>");
+            throw new InvalidArgumentException("Invalid JSON: <error>$variableValue</error>");
         }
 
         // Check whether the variable already exists. If there is no change,

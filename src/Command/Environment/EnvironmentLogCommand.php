@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -36,7 +37,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $this->validateInput($input);
 
         if ($input->getOption('tail') && $this->runningViaMulti) {
-            throw new \InvalidArgumentException('The --tail option cannot be used with "multi"');
+            throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
         $selectedEnvironment = $this->getSelectedEnvironment();

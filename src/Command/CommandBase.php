@@ -12,6 +12,7 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -595,7 +596,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!empty($projectId)) {
             $project = $this->api()->getProject($projectId, $host);
             if (!$project) {
-                throw new \RuntimeException('Specified project not found: ' . $projectId);
+                throw new ConsoleInvalidArgumentException('Specified project not found: ' . $projectId);
             }
         } else {
             $project = $this->getCurrentProject();
@@ -628,7 +629,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!empty($environmentId)) {
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
-                throw new \RuntimeException('Specified environment not found: ' . $environmentId);
+                throw new ConsoleInvalidArgumentException('Specified environment not found: ' . $environmentId);
             }
 
             $this->environment = $environment;
@@ -649,7 +650,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 $message = 'No environment specified.'
                     . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
             }
-            throw new \RuntimeException($message);
+            throw new ConsoleInvalidArgumentException($message);
         }
     }
 
@@ -757,7 +758,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
         }
         if (empty($result['projectId']) || preg_match('/\W/', $result['projectId'])) {
-            throw new \InvalidArgumentException(sprintf('Invalid project URL: %s', $url));
+            throw new ConsoleInvalidArgumentException(sprintf('Invalid project URL: %s', $url));
         }
 
         return $result;
@@ -793,7 +794,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $envOptionName = 'environment';
         if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
-                throw new \InvalidArgumentException(
+                throw new ConsoleInvalidArgumentException(
                     sprintf(
                         'You cannot use both the <%s> argument and the --%s option',
                         $this->envArgName,

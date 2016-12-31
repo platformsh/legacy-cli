@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -44,7 +45,7 @@ class EnvironmentSshCommand extends CommandBase
 
         $remoteCommand = $input->getArgument('cmd');
         if (!$remoteCommand && $this->runningViaMulti) {
-            throw new \InvalidArgumentException('The cmd argument is required when running via "multi"');
+            throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
