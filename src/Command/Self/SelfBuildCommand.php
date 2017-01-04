@@ -35,6 +35,12 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
+        if (ini_get('phar.readonly')) {
+            $this->stdErr->writeln('The <error>phar.readonly</error> PHP setting is enabled.');
+            $this->stdErr->writeln('Disable it in your php.ini configuration.');
+            return 1;
+        }
+
         $outputFilename = $input->getOption('output');
         if ($outputFilename && !is_writable(dirname($outputFilename))) {
             $this->stdErr->writeln("Not writable: <error>$outputFilename</error>");
