@@ -171,6 +171,23 @@ class ProjectCreateCommand extends CommandBase
     }
 
     /**
+     * Return a list of regions.
+     *
+     * The default list (from the API client) can be overridden by user config.
+     *
+     * @return string[]
+     */
+    protected function getAvailableRegions()
+    {
+        $config = $this->config();
+        if ($config->has('experimental.available_regions')) {
+            return $config->get('experimental.available_regions');
+        }
+
+        return Subscription::$availableRegions;
+    }
+
+    /**
      * Returns a list of ConsoleForm form fields for this command.
      *
      * @return Field[]
@@ -186,7 +203,7 @@ class ProjectCreateCommand extends CommandBase
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
-            'options' => Subscription::$availableRegions,
+            'options' => $this->getAvailableRegions(),
           ]),
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
