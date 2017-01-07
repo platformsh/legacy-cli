@@ -98,25 +98,27 @@ class EnvironmentPushCommand extends CommandBase
             $target
         ));
 
-        // Determine whether to activate the environment after pushing.
         $activate = false;
-        if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
-            $activate = $input->getOption('activate')
-                || $questionHelper->confirm(sprintf(
-                    'Activate <info>%s</info> after pushing?',
-                    $target
-                ));
-        }
-
-        // If activating, determine what the environment's parent should be.
         $parentId = null;
-        if ($activate && $target !== 'master') {
-            $parentId = $input->getOption('parent');
-            if (!$parentId) {
-                $autoCompleterValues = array_keys($this->api()->getEnvironments($project));
-                $parentId = $autoCompleterValues === ['master']
-                    ? 'master'
-                    : $questionHelper->askInput('Parent environment', 'master', $autoCompleterValues);
+        if ($target !== 'master') {
+            // Determine whether to activate the environment after pushing.
+            if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
+                $activate = $input->getOption('activate')
+                    || $questionHelper->confirm(sprintf(
+                        'Activate <info>%s</info> after pushing?',
+                        $target
+                    ));
+            }
+
+            // If activating, determine what the environment's parent should be.
+            if ($activate) {
+                $parentId = $input->getOption('parent');
+                if (!$parentId) {
+                    $autoCompleterValues = array_keys($this->api()->getEnvironments($project));
+                    $parentId = $autoCompleterValues === ['master']
+                        ? 'master'
+                        : $questionHelper->askInput('Parent environment', 'master', $autoCompleterValues);
+                }
             }
         }
 
