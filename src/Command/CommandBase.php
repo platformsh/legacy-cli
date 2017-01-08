@@ -1045,7 +1045,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $key = $short ? 'short' : 'long';
 
         if (!isset($this->synopsis[$key])) {
-            $aliases = $this->getAliases();
+            $aliases = $this->getVisibleAliases();
             $name = $this->getName();
             $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             $this->synopsis[$key] = trim(sprintf(

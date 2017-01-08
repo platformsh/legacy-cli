@@ -73,7 +73,6 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText("\n");
             $this->writeText('<comment>Examples:</comment>', $options);
             $name = $command->getName();
-            $aliases = $command->getAliases();
             $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             foreach ($examples as $arguments => $description) {
                 $this->writeText("\n $description:\n   <info>" . $this->cliExecutableName . " $shortName $arguments</info>\n");
