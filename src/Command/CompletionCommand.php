@@ -51,22 +51,26 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         $projectIds = array_keys($this->projects);
 
         $this->handler->addHandlers([
-            Completion::makeGlobalHandler(
+            new Completion(
+                Completion::ALL_COMMANDS,
                 'project',
                 Completion::TYPE_OPTION,
                 $projectIds
             ),
-            Completion::makeGlobalHandler(
+            new Completion(
+                Completion::ALL_COMMANDS,
                 'project',
                 Completion::TYPE_ARGUMENT,
                 $projectIds
             ),
-            Completion::makeGlobalHandler(
+            new Completion(
+                Completion::ALL_COMMANDS,
                 'environment',
                 Completion::TYPE_ARGUMENT,
                 [$this, 'getEnvironments']
             ),
-            Completion::makeGlobalHandler(
+            new Completion(
+                Completion::ALL_COMMANDS,
                 'environment',
                 Completion::TYPE_OPTION,
                 [$this, 'getEnvironments']
@@ -141,17 +145,22 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 'directory',
                 Completion::TYPE_ARGUMENT
             ),
-            Completion::makeGlobalHandler(
+            new Completion(
+                Completion::ALL_COMMANDS,
                 'app',
                 Completion::TYPE_OPTION,
                 [$this, 'getAppNames']
             ),
-            Completion::makeGlobalHandler(
-                'identity-file',
+            new Completion(
+                Completion::ALL_COMMANDS,
+                'app',
                 Completion::TYPE_OPTION,
-                function () {
-                    exit(Completion\ShellPathCompletion::PATH_COMPLETION_EXIT_CODE);
-                }
+                [$this, 'getAppNames']
+            ),
+            new Completion\ShellPathCompletion(
+                Completion::ALL_COMMANDS,
+                'identity-file',
+                Completion::TYPE_OPTION
             ),
         ]);
 
