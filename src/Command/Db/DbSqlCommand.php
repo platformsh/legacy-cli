@@ -46,14 +46,12 @@ class DbSqlCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $sqlCommand = "psql postgresql://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
+                $sqlCommand = 'psql ' . $relationships->getSqlCommandArgs('psql', $database);
                 $queryOption = ' -c ';
                 break;
 
             default:
-                $sqlCommand = "mysql --no-auto-rehash --database={$database['path']}"
-                    . " --host={$database['host']} --port={$database['port']}"
-                    . " --user={$database['username']} --password={$database['password']}";
+                $sqlCommand = 'mysql --no-auto-rehash ' . $relationships->getSqlCommandArgs('mysql', $database);
                 $queryOption = ' --execute ';
                 break;
         }

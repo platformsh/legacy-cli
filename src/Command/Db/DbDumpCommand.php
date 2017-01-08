@@ -108,26 +108,12 @@ class DbDumpCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = sprintf(
-                    "pg_dump --clean 'postgresql://%s:%s@%s:%d/%s'",
-                    $database['username'],
-                    $database['password'],
-                    $database['host'],
-                    $database['port'],
-                    $database['path']
-                );
+                $dumpCommand = 'pg_dump --clean ' . $relationships->getSqlCommandArgs('pg_dump', $database);
                 break;
 
             default:
-                $dumpCommand = sprintf(
-                    'mysqldump --no-autocommit --single-transaction --opt --quote-names'
-                    . " '--user=%s' '--password=%s' '--host=%s' --port=%d '%s'",
-                    $database['username'],
-                    $database['password'],
-                    $database['host'],
-                    $database['port'],
-                    $database['path']
-                );
+                $dumpCommand = 'mysqldump --no-autocommit --single-transaction --opt --quote-names '
+                    . $relationships->getSqlCommandArgs('mysqldump', $database);
                 break;
         }
 
