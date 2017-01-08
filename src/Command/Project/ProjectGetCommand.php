@@ -22,9 +22,10 @@ class ProjectGetCommand extends CommandBase
             ->setName('project:get')
             ->setAliases(['get'])
             ->setDescription('Clone a project locally')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The project ID')
-            ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title')
-            ->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master'")
+            ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
+            ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title');
+        $this->addProjectOption();
+        $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master'")
             ->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname")
             ->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
         Ssh::configureInput($this->getDefinition());
@@ -209,7 +210,10 @@ class ProjectGetCommand extends CommandBase
      */
     protected function validateInput(InputInterface $input, $envNotRequired = false)
     {
-        $projectId = $input->getArgument('id');
+        if ($input->getOption('project') && $input->getArgument('project')) {
+            throw new InvalidArgumentException('You cannot use both the --project option and the <project> argument.');
+        }
+        $projectId = $input->getOption('project') ?: $input->getArgument('project');
         $environmentId = $input->getOption('environment');
         $host = $input->getOption('host');
         if (empty($projectId)) {
