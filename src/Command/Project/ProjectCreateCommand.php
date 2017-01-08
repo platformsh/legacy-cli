@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command\Project;
 
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
