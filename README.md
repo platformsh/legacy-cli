@@ -86,7 +86,7 @@ auth
   auth:login (login)                        Log in to Platform.sh
   auth:logout (logout)                      Log out of Platform.sh
 db
-  db:dump (sql-dump)                        Create a local dump of the remote database
+  db:dump                                   Create a local dump of the remote database
   db:size                                   Estimate the disk usage of a database
   db:sql (sql)                              Run SQL on the remote database
 domain
@@ -131,7 +131,7 @@ self
   self:install                              Install or update CLI configuration files
   self:update (self-update)                 Update the CLI to the latest version
 snapshot
-  snapshot:create (backup)                  Make a snapshot of an environment
+  snapshot:create                           Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment
   snapshot:restore                          Restore an environment snapshot
 ssh-key

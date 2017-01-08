@@ -14,7 +14,6 @@ class DbDumpCommand extends CommandBase
     protected function configure()
     {
         $this->setName('db:dump')
-            ->setAliases(['sql-dump'])
             ->setDescription('Create a local dump of the remote database');
         $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip')
@@ -23,7 +22,9 @@ class DbDumpCommand extends CommandBase
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->setHiddenAliases(['environment:sql-dump']);
+        $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
+        $this->addExample('Create an SQL dump file');
+        $this->addExample('Create a gzipped SQL dump file named "test.sql.gz"', '-z -f test.sql.gz');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
