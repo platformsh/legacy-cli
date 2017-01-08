@@ -156,28 +156,25 @@ class Relationships implements InputConfiguringInterface
         switch ($command) {
             case 'psql':
             case 'pg_dump':
-                return sprintf(
-                    "'postgresql://%s:%s@%s:%d/%s'",
-                    $database['username'],
-                    $database['password'],
-                    $database['host'],
-                    $database['port'],
-                    $database['path']
-                );
+                $arguments = "'--username=%s' '--password=%s' '--host=%s' --port=%d '--dbname=%s'";
+                break;
 
             case 'mysql':
             case 'mysqldump':
-                return sprintf(
-                    "'--user=%s' '--password=%s' '--host=%s' --port=%d '%s'",
-                    $database['username'],
-                    $database['password'],
-                    $database['host'],
-                    $database['port'],
-                    $database['path']
-                );
+                $arguments = "'--user=%s' '--password=%s' '--host=%s' --port=%d '%s'";
+                break;
 
             default:
                 throw new \InvalidArgumentException('Unrecognised command: ' . $command);
         }
+
+        return sprintf(
+            $arguments,
+            $database['username'],
+            $database['password'],
+            $database['host'],
+            $database['port'],
+            $database['path']
+        );
     }
 }
