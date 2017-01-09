@@ -156,7 +156,7 @@ class Relationships implements InputConfiguringInterface
         switch ($command) {
             case 'psql':
             case 'pg_dump':
-                $arguments = "'--username=%s' '--password=%s' '--host=%s' --port=%d '--dbname=%s'";
+                $arguments = "'postgresql://%s:%s@%s:%d/%s'";
                 break;
 
             case 'mysql':
