@@ -140,4 +140,41 @@ class Relationships implements InputConfiguringInterface
     {
         $this->cache->delete('relationships-' . $sshUrl);
     }
+
+    /**
+     * Returns command-line arguments to connect to a database.
+     *
+     * @param string $command  The command that will need arguments (one of
+     *                         'psql', 'pg_dump', 'mysql', or 'mysqldump').
+     * @param array  $database The database definition from the relationship.
+     *
+     * @return string
+     *   The command line arguments (excluding the $command).
+     */
+    public function getSqlCommandArgs($command, array $database)
+    {
+        switch ($command) {
+            case 'psql':
+            case 'pg_dump':
+                $arguments = "'postgresql://%s:%s@%s:%d/%s'";
+                break;
+
+            case 'mysql':
+            case 'mysqldump':
+                $arguments = "'--user=%s' '--password=%s' '--host=%s' --port=%d '%s'";
+                break;
+
+            default:
+                throw new \InvalidArgumentException('Unrecognised command: ' . $command);
+        }
+
+        return sprintf(
+            $arguments,
+            $database['username'],
+            $database['password'],
+            $database['host'],
+            $database['port'],
+            $database['path']
+        );
+    }
 }

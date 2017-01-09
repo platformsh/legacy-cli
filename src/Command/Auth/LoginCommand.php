@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Auth;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
@@ -30,7 +31,7 @@ class LoginCommand extends CommandBase
         }
         // Login can only happen during interactive use.
         if (!$input->isInteractive()) {
-            throw new \Exception('Non-interactive login not supported');
+            throw new RuntimeException('Non-interactive login not supported');
         }
 
         $this->stdErr->writeln('Please log in using your <info>' . $this->config()->get('service.name') . '</info> account.');

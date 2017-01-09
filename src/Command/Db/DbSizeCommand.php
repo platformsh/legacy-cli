@@ -141,13 +141,9 @@ class DbSizeCommand extends CommandBase
           . ' GROUP BY pg_class.relkind, nspname'
           . ' ORDER BY sum(pg_relation_size(pg_class.oid)) DESC;';
 
-        $dbUrl = sprintf(
-            'postgresql://%s:%s@%s/%s',
-            $database['username'],
-            $database['password'],
-            $database['host'],
-            $database['path']
-        );
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+        $dbUrl = $relationships->getSqlCommandArgs('psql', $database);
 
         return sprintf(
             "psql --echo-hidden -t --no-align %s -c '%s' 2>&1",
@@ -173,14 +169,9 @@ class DbSizeCommand extends CommandBase
             . '/' . (1048576 + 150) . ' AS estimated_actual_disk_usage'
             . ' FROM information_schema.tables';
 
-        $connectionParams = sprintf(
-            '--user=%s --password=%s --host=%s --database=%s --port=%d',
-            $database['username'],
-            $database['password'],
-            $database['host'],
-            $database['path'],
-            $database['port']
-        );
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+        $connectionParams = $relationships->getSqlCommandArgs('mysql', $database);
 
         return sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s' 2>&1",

@@ -2,17 +2,16 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
 class PropertyFormatter implements InputConfiguringInterface
 {
     const DEFAULT_DATE_FORMAT = 'c';
-
-    /** @var int */
-    public $yamlInline = 2;
 
     /** @var InputInterface|null */
     protected $input;
@@ -49,7 +48,7 @@ class PropertyFormatter implements InputConfiguringInterface
         }
 
         if (!is_string($value)) {
-            $value = rtrim(Yaml::dump($value, $this->yamlInline));
+            $value = rtrim(Yaml::dump($value, 2));
         }
 
         return $value;
@@ -110,5 +109,33 @@ class PropertyFormatter implements InputConfiguringInterface
         }, $info['basic_auth']);
 
         return $this->format($info);
+    }
+
+    /**
+     * Display a complex data structure.
+     *
+     * @param OutputInterface $output     An output object.
+     * @param array           $data       The data to display.
+     * @param string|null     $property   The property of the data to display
+     *                                    (a dot-separated string).
+     */
+    public function displayData(OutputInterface $output, array $data, $property = null)
+    {
+        $key = null;
+
+        if ($property) {
+            $parents = explode('.', $property);
+            $key = end($parents);
+            $data = NestedArrayUtil::getNestedArrayValue($data, $parents, $keyExists);
+            if (!$keyExists) {
+                throw new \InvalidArgumentException('Property not found: ' . $property);
+            }
+        }
+
+        if (!is_string($data)) {
+            $output->write(Yaml::dump($data, 5, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+        } else {
+            $output->writeln($this->format($data, $key));
+        }
     }
 }

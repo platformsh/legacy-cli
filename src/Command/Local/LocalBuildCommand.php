@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -127,7 +128,7 @@ class LocalBuildCommand extends CommandBase
         if ($sourceDirOption) {
             $sourceDir = realpath($sourceDirOption);
             if (!is_dir($sourceDir)) {
-                throw new \InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
+                throw new InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
             }
             // Sensible handling if the user provides a project root as the
             // source directory.
@@ -165,7 +166,7 @@ class LocalBuildCommand extends CommandBase
 
         // Ensure no conflicts between source and destination.
         if (strpos($sourceDir, $destination) === 0) {
-            throw new \InvalidArgumentException("The destination '$destination' conflicts with the source '$sourceDir'");
+            throw new InvalidArgumentException("The destination '$destination' conflicts with the source '$sourceDir'");
         }
 
         // Ask the user about overwriting the destination, if a project root was

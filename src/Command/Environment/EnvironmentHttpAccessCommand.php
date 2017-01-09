@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -46,7 +47,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
     /**
      * @param $auth
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      *
      * @return array
      */
@@ -55,18 +56,18 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $parts = explode(':', $auth, 2);
         if (count($parts) != 2) {
             $message = sprintf('Auth "<error>%s</error>" is not valid. The format should be username:password', $auth);
-            throw new \InvalidArgumentException($message);
+            throw new InvalidArgumentException($message);
         }
 
         if (!preg_match('#^[a-zA-Z0-9]{2,}$#', $parts[0])) {
             $message = sprintf('The username "<error>%s</error>" for --auth is not valid', $parts[0]);
-            throw new \InvalidArgumentException($message);
+            throw new InvalidArgumentException($message);
         }
 
         $minLength = 6;
         if (strlen($parts[1]) < $minLength) {
             $message = sprintf('The minimum password length for --auth is %d characters', $minLength);
-            throw new \InvalidArgumentException($message);
+            throw new InvalidArgumentException($message);
         }
 
         return ["username" => $parts[0], "password" => $parts[1]];
@@ -75,7 +76,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
     /**
      * @param $access
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      *
      * @return array
      */
@@ -87,7 +88,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 'Access "<error>%s</error>" is not valid, please use the format: permission:address',
                 $access
             );
-            throw new \InvalidArgumentException($message);
+            throw new InvalidArgumentException($message);
         }
 
         if (!in_array($parts[0], ['allow', 'deny'])) {
@@ -95,7 +96,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 "The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'",
                 $parts[0]
             );
-            throw new \InvalidArgumentException($message);
+            throw new InvalidArgumentException($message);
         }
 
         list($permission, $address) = $parts;
@@ -116,7 +117,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
     /**
      * @param string $address
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function validateAddress($address)
     {
@@ -126,7 +127,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $extractIp = preg_match('#^([^/]+)(/([0-9]{1,2}))?$#', $address, $matches);
         if (!$extractIp || !filter_var($matches[1], FILTER_VALIDATE_IP) || (isset($matches[3]) && $matches[3] > 32)) {
             $message = sprintf('The address "<error>%s</error>" is not a valid IP address or CIDR', $address);
-            throw new \InvalidArgumentException($message);
+            throw new InvalidArgumentException($message);
         }
     }
 

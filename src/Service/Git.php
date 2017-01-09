@@ -409,6 +409,19 @@ class Git
     }
 
     /**
+     * Check whether a file is excluded via .gitignore or similar configuration.
+     *
+     * @param string $file
+     * @param string $dir
+     *
+     * @return bool
+     */
+    public function checkIgnore($file, $dir = null)
+    {
+        return (bool) $this->execute(['check-ignore', $file], $dir);
+    }
+
+    /**
      * Update and/or initialize submodules.
      *
      * @param bool        $recursive

@@ -12,6 +12,7 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -595,7 +596,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!empty($projectId)) {
             $project = $this->api()->getProject($projectId, $host);
             if (!$project) {
-                throw new \RuntimeException('Specified project not found: ' . $projectId);
+                throw new ConsoleInvalidArgumentException('Specified project not found: ' . $projectId);
             }
         } else {
             $project = $this->getCurrentProject();
@@ -607,7 +608,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
         }
 
-        return $project;
+        $this->project = $project;
+
+        return $this->project;
     }
 
     /**
@@ -618,33 +621,37 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * @param string|null $environmentId
      *   The environment ID specified by the user, or null to auto-detect the
      *   environment.
-     *
-     * @return Environment
+     * @param bool $required
+     *   Whether it's required to have an environment.
      */
-    protected function selectEnvironment($environmentId = null)
+    protected function selectEnvironment($environmentId = null, $required = true)
     {
         if (!empty($environmentId)) {
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
-                throw new \RuntimeException('Specified environment not found: ' . $environmentId);
+                throw new ConsoleInvalidArgumentException('Specified environment not found: ' . $environmentId);
             }
 
-            return $environment;
+            $this->environment = $environment;
+            return;
         }
 
         // If no ID is specified, try to auto-detect the current environment.
         if ($environment = $this->getCurrentEnvironment($this->project)) {
-            return $environment;
+            $this->environment = $environment;
+            return;
         }
 
-        if ($this->getProjectRoot()) {
-            $message = 'Could not determine the current environment.'
-                . "\n" . 'Specify it manually using --environment (-e).';
-        } else {
-            $message = 'No environment specified.'
-                . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
+        if ($required) {
+            if ($this->getProjectRoot()) {
+                $message = 'Could not determine the current environment.'
+                    . "\n" . 'Specify it manually using --environment (-e).';
+            } else {
+                $message = 'No environment specified.'
+                    . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
+            }
+            throw new ConsoleInvalidArgumentException($message);
         }
-        throw new \RuntimeException($message);
     }
 
     /**
@@ -725,8 +732,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $host = parse_url($url, PHP_URL_HOST);
         $path = parse_url($url, PHP_URL_PATH);
+        $site_domains_pattern = '(' . implode('|', array_map('preg_quote', $this->config()->get('detection.site_domains'))) . ')';
+        $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
         if (!strpos($path, '/projects/')
-            && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote($this->config()->get('detection.site_domain')) . '$/', $host)) {
+            && preg_match($site_pattern, $host)) {
             list($env_project_app,) = explode('.', $host, 2);
             if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
                 $env_project_app = substr($env_project_app, $tripleDashPos + 3);
@@ -749,7 +758,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
         }
         if (empty($result['projectId']) || preg_match('/\W/', $result['projectId'])) {
-            throw new \InvalidArgumentException(sprintf('Invalid project URL: %s', $url));
+            throw new ConsoleInvalidArgumentException(sprintf('Invalid project URL: %s', $url));
         }
 
         return $result;
@@ -779,13 +788,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         // Select the project.
-        $this->project = $this->selectProject($projectId, $projectHost);
+        $this->selectProject($projectId, $projectHost);
 
         // Select the environment.
         $envOptionName = 'environment';
         if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
-                throw new \InvalidArgumentException(
+                throw new ConsoleInvalidArgumentException(
                     sprintf(
                         'You cannot use both the <%s> argument and the --%s option',
                         $this->envArgName,
@@ -799,16 +808,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
-                $this->environment = $this->selectEnvironment($argument);
+                $this->selectEnvironment($argument);
             }
         } elseif ($input->hasOption($envOptionName)) {
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
-            if (!$environmentId && $envNotRequired) {
-                $this->environment = $this->getCurrentEnvironment($this->project);
-            }
-            else {
-                $this->environment = $this->selectEnvironment($environmentId);
-            }
+            $this->selectEnvironment($environmentId, !$envNotRequired);
         }
 
         $this->debug('Validated input');
@@ -1041,7 +1045,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $key = $short ? 'short' : 'long';
 
         if (!isset($this->synopsis[$key])) {
-            $aliases = $this->getAliases();
+            $aliases = $this->getVisibleAliases();
             $name = $this->getName();
             $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             $this->synopsis[$key] = trim(sprintf(

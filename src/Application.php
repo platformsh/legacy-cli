@@ -5,11 +5,15 @@ use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
+use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
+use Symfony\Component\Console\Exception\InvalidOptionException as ConsoleInvalidOptionException;
+use Symfony\Component\Console\Exception\RuntimeException as ConsoleRuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
@@ -264,6 +268,7 @@ class Application extends ParentApplication
     public function renderException(\Exception $e, OutputInterface $output)
     {
         $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+        $main = $e;
 
         do {
             $exceptionName = get_class($e);
@@ -274,11 +279,7 @@ class Application extends ParentApplication
 
             $len = strlen($title);
 
-            $width = $this->getTerminalWidth() ? $this->getTerminalWidth() - 1 : PHP_INT_MAX;
-            // HHVM only accepts 32 bits integer in str_split, even when PHP_INT_MAX is a 64 bit integer: https://github.com/facebook/hhvm/issues/1327
-            if (defined('HHVM_VERSION') && $width > 1 << 31) {
-                $width = 1 << 31;
-            }
+            $width = (new Terminal())->getWidth() - 1;
             $formatter = $output->getFormatter();
             $lines = array();
             foreach (preg_split('/\r?\n/', $e->getMessage()) as $line) {
@@ -328,12 +329,16 @@ class Application extends ParentApplication
             }
         } while ($e = $e->getPrevious());
 
-        if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
+        if (isset($this->currentCommand)
+            && $this->currentCommand->getName() !== 'welcome'
+            && ($main instanceof ConsoleInvalidArgumentException
+                || $main instanceof ConsoleInvalidOptionException
+                || $main instanceof ConsoleRuntimeException
+            )) {
             $output->writeln(sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
             $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', $this->cliConfig->get('application.executable'), $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
         }
     }
-
 }

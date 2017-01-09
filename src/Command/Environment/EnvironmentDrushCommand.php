@@ -8,6 +8,7 @@ use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 
 class EnvironmentDrushCommand extends CommandBase
 {
@@ -89,9 +90,7 @@ class EnvironmentDrushCommand extends CommandBase
             $this->debug('<comment>Warning:</comment> using $' . $documentRootEnvVar . ' for the Drupal root. This fails in cases where the document_root is /.');
         }
 
-        $dimensions = $this->getApplication()
-                           ->getTerminalDimensions();
-        $columns = $dimensions[0] ?: 80;
+        $columns = (new Terminal())->getWidth();
 
         $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";
         if ($environmentUrl = $selectedEnvironment->getLink('public-url')) {

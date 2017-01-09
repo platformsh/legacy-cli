@@ -46,7 +46,7 @@ class AuthInfoCommand extends CommandBase
 
         if ($property) {
             if (!isset($info[$property])) {
-                throw new \InvalidArgumentException('Property not found: ' . $property);
+                throw new InvalidArgumentException('Property not found: ' . $property);
             }
             $output->writeln($formatter->format($info[$property], $property));
 

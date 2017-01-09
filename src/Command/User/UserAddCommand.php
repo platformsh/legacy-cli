@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\ProjectAccess;
+use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -160,7 +161,7 @@ class UserAddCommand extends CommandBase
     public function validateRole($value)
     {
         if (empty($value) || !in_array(strtolower($value), ['admin', 'contributor', 'viewer', 'none', 'a', 'c', 'v', 'n'])) {
-            throw new \RuntimeException("Invalid role: $value");
+            throw new RuntimeException("Invalid role: $value");
         }
 
         return $value;
@@ -174,7 +175,7 @@ class UserAddCommand extends CommandBase
     public function validateEmail($value)
     {
         if (empty($value) || !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            throw new \RuntimeException("Invalid email address: $value");
+            throw new RuntimeException("Invalid email address: $value");
         }
 
         return $value;
@@ -198,6 +199,6 @@ class UserAddCommand extends CommandBase
                 return $possibleRole;
             }
         }
-        throw new \Exception("Role not found: $givenRole");
+        throw new RuntimeException("Role not found: $givenRole");
     }
 }

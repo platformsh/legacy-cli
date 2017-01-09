@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Service\Table;
-use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -61,20 +60,9 @@ class TunnelInfoCommand extends TunnelCommandBase
             return 0;
         }
 
-        $value = $relationships;
-        if ($property = $input->getOption('property')) {
-            $value = NestedArrayUtil::getNestedArrayValue($relationships, explode('.', $property), $keyExists);
-            if (!$keyExists) {
-                $this->stdErr->writeln("Property not found: <error>$property</error>");
-
-                return 1;
-            }
-        }
-
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
-        $formatter->yamlInline = 10;
-        $output->writeln($formatter->format($value, $property));
+        $formatter->displayData($output, $relationships, $input->getOption('property'));
 
         return 0;
     }

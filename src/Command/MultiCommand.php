@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -32,7 +33,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $commandArgs = explode(' ', $commandLine);
         $commandName = reset($commandArgs);
         if (!$commandName) {
-            throw new \InvalidArgumentException('Invalid command: ' . $commandLine);
+            throw new InvalidArgumentException('Invalid command: ' . $commandLine);
         }
         /** @var \Platformsh\Cli\Application $application */
         $application = $this->getApplication();
