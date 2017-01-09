@@ -18,7 +18,10 @@ class DbDumpCommand extends CommandBase
         $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
-            ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
+            ->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file')
+            ->addOption('table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to include')
+            ->addOption('exclude-table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to exclude')
+            ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
@@ -36,6 +39,9 @@ class DbDumpCommand extends CommandBase
         $sshUrl = $environment->getSshUrl($appName);
         $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;
         $gzip = $input->getOption('gzip');
+        $includedTables = $input->getOption('table');
+        $excludedTables = $input->getOption('exclude-table');
+        $schemaOnly = $input->getOption('schema-only');
 
         $dumpFile = null;
         if (!$input->getOption('stdout')) {
@@ -43,6 +49,15 @@ class DbDumpCommand extends CommandBase
             $defaultFilename = $project->id . '--' . $environment->id;
             if ($appName !== null) {
                 $defaultFilename .= '--' . $appName;
+            }
+            if ($includedTables) {
+                $defaultFilename .= '--' . implode(',', $includedTables);
+            }
+            if ($excludedTables) {
+                $defaultFilename .= '--excl-' . implode(',', $excludedTables);
+            }
+            if ($schemaOnly) {
+                $defaultFilename .= '--schema';
             }
             if ($timestamp !== null) {
                 $defaultFilename .= '--' . $timestamp;
@@ -109,11 +124,29 @@ class DbDumpCommand extends CommandBase
         switch ($database['scheme']) {
             case 'pgsql':
                 $dumpCommand = 'pg_dump --clean ' . $relationships->getSqlCommandArgs('pg_dump', $database);
+                if ($schemaOnly) {
+                    $dumpCommand .= ' --schema-only';
+                }
+                foreach ($includedTables as $table) {
+                    $dumpCommand .= ' ' . escapeshellarg('--table=' . $table);
+                }
+                foreach ($excludedTables as $table) {
+                    $dumpCommand .= ' ' . escapeshellarg('--exclude-table=' . $table);
+                }
                 break;
 
             default:
                 $dumpCommand = 'mysqldump --no-autocommit --single-transaction --opt --quote-names '
                     . $relationships->getSqlCommandArgs('mysqldump', $database);
+                if ($schemaOnly) {
+                    $dumpCommand .= ' --no-data';
+                }
+                foreach ($excludedTables as $table) {
+                    $dumpCommand .= ' ' . escapeshellarg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
+                }
+                if ($includedTables) {
+                    $dumpCommand .= ' --tables ' . implode(' ', array_map('escapeshellarg', $includedTables));
+                }
                 break;
         }
 
