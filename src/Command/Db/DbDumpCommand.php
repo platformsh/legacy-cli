@@ -43,6 +43,9 @@ class DbDumpCommand extends CommandBase
         $excludedTables = $input->getOption('exclude-table');
         $schemaOnly = $input->getOption('schema-only');
 
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
+
         $dumpFile = null;
         if (!$input->getOption('stdout')) {
             // Determine a default dump filename.
@@ -66,18 +69,14 @@ class DbDumpCommand extends CommandBase
             if ($gzip) {
                 $defaultFilename .= '.gz';
             }
-            $projectRoot = $this->getProjectRoot();
-            $directory = $projectRoot ?: getcwd();
-            $dumpFile = $directory . '/' . $defaultFilename;
+            if ($projectRoot = $this->getProjectRoot()) {
+                $defaultFilename = $projectRoot . '/' . $defaultFilename;
+            }
+            $dumpFile = $defaultFilename;
 
             // Process the user --file option.
             if ($input->getOption('file')) {
                 $dumpFile = rtrim($input->getOption('file'), '/');
-
-                // Make the filename absolute.
-                /** @var \Platformsh\Cli\Service\Filesystem $fs */
-                $fs = $this->getService('fs');
-                $dumpFile = $fs->makePathAbsolute($dumpFile);
 
                 // Ensure the filename is not a directory.
                 if (is_dir($dumpFile)) {
@@ -96,6 +95,9 @@ class DbDumpCommand extends CommandBase
                     $dumpFile = $prefix . $basename;
                 }
             }
+
+            // Make the filename absolute.
+            $dumpFile = $fs->makePathAbsolute($dumpFile);
         }
 
         if ($dumpFile) {
@@ -172,6 +174,21 @@ class DbDumpCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
 
-        return $shell->executeSimple($command);
+        $exitCode = $shell->executeSimple($command);
+        if ($exitCode === 0 && $dumpFile && isset($projectRoot)) {
+            /** @var \Platformsh\Cli\Service\Git $git */
+            $git = $this->getService('git');
+            $relative = $fs->makePathRelative($dumpFile, $projectRoot);
+            if (!$git->checkIgnore($relative, $projectRoot)) {
+                $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
+                if (strpos($dumpFile, '--dump.sql')) {
+                    $this->stdErr->writeln('  You should probably exclude these files using .gitignore:');
+                    $this->stdErr->writeln('    *--dump.sql');
+                    $this->stdErr->writeln('    *--dump.sql.gz');
+                }
+            }
+        }
+
+        return $exitCode;
     }
 }
