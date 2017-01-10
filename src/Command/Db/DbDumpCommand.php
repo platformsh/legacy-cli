@@ -190,9 +190,9 @@ class DbDumpCommand extends CommandBase
         $shell = $this->getService('shell');
         $exitCode = $shell->executeSimple($command);
 
-        // If a dump file has been created successfully, check that it's
-        // excluded in the project's .gitignore file.
-        if ($exitCode === 0 && $dumpFile && isset($projectRoot) && strpos($dumpFile, $projectRoot) === 0) {
+        // If a dump file exists, check that it's excluded in the project's
+        // .gitignore configuration.
+        if ($dumpFile && file_exists($dumpFile) && isset($projectRoot) && strpos($dumpFile, $projectRoot) === 0) {
             /** @var \Platformsh\Cli\Service\Git $git */
             $git = $this->getService('git');
             $relative = $fs->makePathRelative($dumpFile, $projectRoot);

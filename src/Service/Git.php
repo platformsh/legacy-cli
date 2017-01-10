@@ -411,8 +411,8 @@ class Git
     /**
      * Check whether a file is excluded via .gitignore or similar configuration.
      *
-     * @param string $file
-     * @param string $dir
+     * @param string      $file
+     * @param string|null $dir
      *
      * @return bool
      */
