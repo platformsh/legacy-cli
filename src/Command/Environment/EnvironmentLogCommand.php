@@ -68,7 +68,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             if (!$result = $cache->fetch($cacheKey)) {
                 $result = $shell->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
 
-                // Cache the list for 1 hour.
+                // Cache the list for 1 day.
                 $cache->save($cacheKey, $result, 86400);
             }
 
