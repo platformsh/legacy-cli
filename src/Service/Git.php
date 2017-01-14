@@ -106,7 +106,7 @@ class Git
      */
     public function getMergedBranches($ref = 'HEAD', $remote = false, $dir = null, $mustRun = false)
     {
-        $args = ['branch', '--list', '--no-column', '--merged', $ref];
+        $args = ['branch', '--list', '--no-column', '--no-color', '--merged', $ref];
         if ($remote) {
             $args[] = '--remote';
         }
@@ -206,12 +206,12 @@ class Git
         // The porcelain command 'git branch' is less strict about character
         // encoding than (otherwise simpler) plumbing commands such as
         // 'git show-ref'.
-        $result = $this->execute(['branch'], $dir, $mustRun);
+        $result = $this->execute(['branch', '--list', '--no-color', '--no-column'], $dir, $mustRun);
         $branches = array_map(function ($line) {
             return trim(ltrim($line, '* '));
         }, explode("\n", $result));
 
-        return in_array($branchName, $branches, TRUE);
+        return in_array($branchName, $branches, true);
     }
 
     /**
