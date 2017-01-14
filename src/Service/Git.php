@@ -38,7 +38,7 @@ class Git
      * @return string|false
      *   The version number, or false on failure.
      */
-    public function getVersion()
+    protected function getVersion()
     {
         static $version;
         if (!$version) {

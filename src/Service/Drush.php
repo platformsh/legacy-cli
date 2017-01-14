@@ -65,7 +65,7 @@ class Drush
      * @throws DependencyMissingException
      *   If Drush is not installed.
      */
-    public function getVersion($reset = false)
+    protected function getVersion($reset = false)
     {
         static $version;
         if (!$reset && isset($version)) {
@@ -99,6 +99,16 @@ class Drush
             throw new DependencyMissingException('Drush is not installed');
         }
         $installed = true;
+    }
+
+    /**
+     * Checks whether Drush supports the --lock argument for the 'make' command.
+     *
+     * @return bool
+     */
+    public function supportsMakeLock()
+    {
+        return version_compare($this->getVersion(), '7.0.0-rc1', '>=');
     }
 
     /**

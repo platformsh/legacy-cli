@@ -234,7 +234,7 @@ class Drupal extends ToolstackBase
         );
 
         // Create a lock file automatically.
-        if (!strpos($projectMake, '.lock') && version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['lock'])) {
+        if (!strpos($projectMake, '.lock') && !empty($this->settings['lock']) && $drushHelper->supportsMakeLock()) {
             $args[] = "--lock=$projectMake.lock";
         }
 
@@ -279,7 +279,7 @@ class Drupal extends ToolstackBase
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
         $drushFlags = $this->getDrushFlags();
-        $updateLock = version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['lock']);
+        $updateLock = !empty($this->settings['lock']) && $drushHelper->supportsMakeLock();
 
         $projectMake = $this->findDrushMakeFile(true);
         $projectCoreMake = $this->findDrushMakeFile(true, true);
