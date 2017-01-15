@@ -45,8 +45,7 @@ class VariableGetCommand extends CommandBase
 
             if ($input->getOption('pipe')) {
                 $output->writeln($variable->value);
-            }
-            else {
+            } else {
                 $output->writeln(sprintf('<info>%s</info>: %s', $variable->name, $variable->value));
             }
 
@@ -83,5 +82,4 @@ class VariableGetCommand extends CommandBase
 
         return 0;
     }
-
 }

@@ -27,7 +27,10 @@ class UserRoleCommand extends CommandBase
              ->addNoWaitOption();
         $this->addExample("View Alice's role on the project", 'alice@example.com');
         $this->addExample("View Alice's role on the environment", 'alice@example.com --level environment');
-        $this->addExample("Give Alice the 'contributor' role on the environment 'test'", 'alice@example.com --level environment --environment test --role contributor');
+        $this->addExample(
+            "Give Alice the 'contributor' role on the environment 'test'",
+            'alice@example.com --level environment --environment test --role contributor'
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -52,8 +55,7 @@ class UserRoleCommand extends CommandBase
                 'environment' => sprintf('The environment (%s)', $environment->id),
             ]);
             $level = $questionHelper->ask($input, $output, $question);
-        }
-        elseif ($level === null && $role) {
+        } elseif ($level === null && $role) {
             $level = 'project';
         }
 
@@ -80,16 +82,14 @@ class UserRoleCommand extends CommandBase
         if ($level !== 'environment') {
             $currentRole = $projectAccess->role;
             $environmentAccess = false;
-        }
-        else {
+        } else {
             $environmentAccess = $this->getSelectedEnvironment()->getUser($projectAccess->id);
             $currentRole = $environmentAccess === false ? 'none' : $environmentAccess->role;
         }
 
         if ($role === $currentRole) {
             $this->stdErr->writeln("There is nothing to change");
-        }
-        elseif ($role && $project->owner === $projectAccess->id) {
+        } elseif ($role && $project->owner === $projectAccess->id) {
             $this->stdErr->writeln(sprintf(
                 'The user <error>%s</error> is the owner of the project %s.',
                 $email,
@@ -97,8 +97,7 @@ class UserRoleCommand extends CommandBase
             ));
             $this->stdErr->writeln("You cannot change the role of the project's owner.");
             return 1;
-        }
-        elseif ($role && $level === 'environment' && $projectAccess->role === ProjectAccess::ROLE_ADMIN) {
+        } elseif ($role && $level === 'environment' && $projectAccess->role === ProjectAccess::ROLE_ADMIN) {
             $this->stdErr->writeln(sprintf(
                 'The user <error>%s</error> is an admin on the project %s.',
                 $email,
@@ -106,22 +105,18 @@ class UserRoleCommand extends CommandBase
             ));
             $this->stdErr->writeln('You cannot change the environment-level role of a project admin.');
             return 1;
-        }
-        elseif ($role && $level !== 'environment') {
+        } elseif ($role && $level !== 'environment') {
             $result = $projectAccess->update(['role' => $role]);
             $this->stdErr->writeln("User <info>$email</info> updated");
-        }
-        elseif ($role && $level === 'environment') {
+        } elseif ($role && $level === 'environment') {
             $environment = $this->getSelectedEnvironment();
             if ($role === 'none') {
                 if ($environmentAccess instanceof EnvironmentAccess) {
                     $result = $environmentAccess->delete();
                 }
-            }
-            elseif ($environmentAccess instanceof EnvironmentAccess) {
+            } elseif ($environmentAccess instanceof EnvironmentAccess) {
                 $result = $environmentAccess->update(['role' => $role]);
-            }
-            else {
+            } else {
                 $result = $environment->addUser($projectAccess->id, $role);
             }
             $this->stdErr->writeln("User <info>$email</info> updated");
@@ -151,8 +146,7 @@ class UserRoleCommand extends CommandBase
         $environments = [];
         if ($level === 'environment') {
             $environments = [$this->getSelectedEnvironment()];
-        }
-        elseif ($level === null && $projectAccess->role !== ProjectAccess::ROLE_ADMIN) {
+        } elseif ($level === null && $projectAccess->role !== ProjectAccess::ROLE_ADMIN) {
             $environments = $this->api()->getEnvironments($project);
             $this->api()->sortResources($environments, 'id');
             if ($this->hasSelectedEnvironment()) {
@@ -164,7 +158,11 @@ class UserRoleCommand extends CommandBase
 
         foreach ($environments as $environment) {
             $access = $environment->getUser($projectAccess->id);
-            $output->writeln(sprintf('Role for environment %s: <info>%s</info>', $environment->id, $access ? $access->role : 'none'));
+            $output->writeln(sprintf(
+                'Role for environment %s: <info>%s</info>',
+                $environment->id,
+                $access ? $access->role : 'none'
+            ));
         }
 
         return 0;

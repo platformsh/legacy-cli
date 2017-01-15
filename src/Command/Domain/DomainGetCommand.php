@@ -82,8 +82,11 @@ class DomainGetCommand extends DomainCommandBase
         $table->renderSimple($values, $properties);
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('To update a domain, run: <info>' . $this->config()->get('application.executable') . ' domain:update [domain-name]</info>');
-        $this->stdErr->writeln('To delete a domain, run: <info>' . $this->config()->get('application.executable') . ' domain:delete [domain-name]</info>');
+        $executable = $this->config()->get('application.executable');
+        $this->stdErr->writeln([
+            'To update a domain, run: <info>' . $executable . ' domain:update [domain-name]</info>',
+            'To delete a domain, run: <info>' . $executable . ' domain:delete [domain-name]</info>',
+        ]);
 
         return 0;
     }

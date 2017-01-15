@@ -44,7 +44,10 @@ EOF
         $legacyRoot = $localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {
             if ($this->getProjectRoot()) {
-                $this->stdErr->writeln('This project is already compatible with the ' . $this->config()->get('application.name') . ' version 3.x.');
+                $this->stdErr->writeln(sprintf(
+                    'This project is already compatible with the %s version 3.x.',
+                    $this->config()->get('application.name')
+                ));
 
                 return 0;
             }
@@ -61,8 +64,7 @@ EOF
             $this->stdErr->writeln('Directory not found: <error>' . $repositoryDir . '</error>');
 
             return 1;
-        }
-        elseif (!is_dir($repositoryDir . '/.git')) {
+        } elseif (!is_dir($repositoryDir . '/.git')) {
             $this->stdErr->writeln('Not a Git repository: <error>' . $repositoryDir . '</error>');
 
             return 1;
@@ -72,7 +74,11 @@ EOF
             $backup = rtrim($legacyRoot, '\\/') . '-backup.tar.gz';
             if (file_exists($backup)) {
                 $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
-                $this->stdErr->writeln('Move (or delete) the backup, then run <comment>' . $this->config()->get('application.executable') . ' legacy-migrate</comment> to continue.');
+                $this->stdErr->writeln(
+                    'Move (or delete) the backup, then run <comment>'
+                    . $this->config()->get('application.executable')
+                    . ' legacy-migrate</comment> to continue.'
+                );
 
                 return 1;
             }
@@ -89,15 +95,17 @@ EOF
             if (is_dir($repositoryDir . '/' . $this->config()->get('local.shared_dir'))) {
                 $fs->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . $this->config()->get('local.shared_dir'));
                 $fs->remove($legacyRoot . '/shared');
-            }
-            else {
+            } else {
                 rename($legacyRoot . '/shared', $repositoryDir . '/' . $this->config()->get('local.shared_dir'));
             }
         }
 
         if (file_exists($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'))) {
             $this->stdErr->writeln('Moving project config file.');
-            $fs->copy($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'), $legacyRoot . '/' . $this->config()->get('local.project_config'));
+            $fs->copy(
+                $legacyRoot . '/' . $this->config()->get('local.project_config_legacy'),
+                $legacyRoot . '/' . $this->config()->get('local.project_config')
+            );
             $fs->remove($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'));
         }
 
@@ -128,9 +136,11 @@ EOF
             $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');
 
             return 1;
-        }
-        elseif (file_exists($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'))) {
-            $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . $this->config()->get('local.project_config_legacy') . '</error>');
+        } elseif (file_exists($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'))) {
+            $this->stdErr->writeln(sprintf(
+                'Error: file still exists: <error>%s</error>',
+                $legacyRoot . '/' . $this->config()->get('local.project_config_legacy')
+            ));
 
             return 1;
         }

@@ -53,21 +53,22 @@ class DomainListCommand extends DomainCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-
         $project = $this->getSelectedProject();
-
+        $executable = $this->config()->get('application.executable');
 
         try {
             $domains = $project->getDomains();
-        }
-        catch (ClientException $e) {
+        } catch (ClientException $e) {
             $this->handleApiException($e, $project);
             return 1;
         }
 
         if (empty($domains)) {
             $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
-            $this->stdErr->writeln("\nAdd a domain to the project by running <info>" . $this->config()->get('application.executable') . " domain:add [domain-name]</info>");
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(
+                'Add a domain to the project by running <info>' . $executable . ' domain:add [domain-name]</info>'
+            );
 
             return 1;
         }
@@ -87,9 +88,11 @@ class DomainListCommand extends DomainCommandBase
         $table->render($rows, $header);
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('To add a new domain, run: <info>' . $this->config()->get('application.executable') . ' domain:add [domain-name]</info>');
-        $this->stdErr->writeln('To view a domain, run: <info>' . $this->config()->get('application.executable') . ' domain:get [domain-name]</info>');
-        $this->stdErr->writeln('To delete a domain, run: <info>' . $this->config()->get('application.executable') . ' domain:delete [domain-name]</info>');
+        $this->stdErr->writeln([
+            'To add a new domain, run: <info>' . $executable . ' domain:add [domain-name]</info>',
+            'To view a domain, run: <info>' . $executable . ' domain:get [domain-name]</info>',
+            'To delete a domain, run: <info>' . $executable . ' domain:delete [domain-name]</info>',
+        ]);
 
         return 0;
     }

@@ -94,7 +94,13 @@ class EnvironmentListCommand extends CommandBase
 
             $rows[] = $row;
             if (isset($this->children[$environment->id])) {
-                $rows = array_merge($rows, $this->buildEnvironmentRows($this->children[$environment->id], $indent, $indicateCurrent, $indentAmount + 1));
+                $childRows = $this->buildEnvironmentRows(
+                    $this->children[$environment->id],
+                    $indent,
+                    $indicateCurrent,
+                    $indentAmount + 1
+                );
+                $rows = array_merge($rows, $childRows);
             }
         }
 
@@ -183,33 +189,40 @@ class EnvironmentListCommand extends CommandBase
         $this->stdErr->writeln("<info>*</info> - Indicates the current environment\n");
 
         $currentEnvironment = $this->currentEnvironment;
+        $executable = $this->config()->get('application.executable');
 
-        $this->stdErr->writeln("Check out a different environment by running <info>" . $this->config()->get('application.executable') . " checkout [id]</info>");
+        $this->stdErr->writeln(
+            'Check out a different environment by running <info>' . $executable . ' checkout [id]</info>'
+        );
 
         if ($currentEnvironment->operationAvailable('branch')) {
             $this->stdErr->writeln(
-                "Branch a new environment by running <info>" . $this->config()->get('application.executable') . " environment:branch [new-name]</info>"
+                'Branch a new environment by running <info>' . $executable . ' environment:branch [new-name]</info>'
             );
         }
         if ($currentEnvironment->operationAvailable('activate')) {
             $this->stdErr->writeln(
-                "Activate the current environment by running <info>" . $this->config()->get('application.executable') . " environment:activate</info>"
+                'Activate the current environment by running <info>' . $executable . ' environment:activate</info>'
             );
         }
         if ($currentEnvironment->operationAvailable('delete')) {
-            $this->stdErr->writeln("Delete the current environment by running <info>" . $this->config()->get('application.executable') . " environment:delete</info>");
+            $this->stdErr->writeln(
+                'Delete the current environment by running <info>' . $executable . ' environment:delete</info>'
+            );
         }
         if ($currentEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-                "Make a snapshot of the current environment by running <info>" . $this->config()->get('application.executable') . " snapshot:create</info>"
+                'Make a snapshot of the current environment by running <info>' . $executable . ' snapshot:create</info>'
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {
-            $this->stdErr->writeln("Merge the current environment by running <info>" . $this->config()->get('application.executable') . " environment:merge</info>");
+            $this->stdErr->writeln(
+                'Merge the current environment by running <info>' . $executable . ' environment:merge</info>'
+            );
         }
         if ($currentEnvironment->operationAvailable('synchronize')) {
             $this->stdErr->writeln(
-                "Sync the current environment by running <info>" . $this->config()->get('application.executable') . " environment:synchronize</info>"
+                'Sync the current environment by running <info>' . $executable . ' environment:synchronize</info>'
             );
         }
     }

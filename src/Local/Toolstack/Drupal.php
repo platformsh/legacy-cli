@@ -62,7 +62,8 @@ class Drupal extends ToolstackBase
                ->name('composer.json');
         foreach ($finder as $file) {
             $composerJson = json_decode(file_get_contents($file), true);
-            if (isset($composerJson['require']['drupal/core']) || isset($composerJson['require']['drupal/phing-drush-task'])) {
+            if (isset($composerJson['require']['drupal/core'])
+                || isset($composerJson['require']['drupal/phing-drush-task'])) {
                 return true;
             }
         }
@@ -194,8 +195,10 @@ class Drupal extends ToolstackBase
 
         if ($required) {
             throw new \Exception(
-                ($core ? "Couldn't find a core make file in the directory." : "Couldn't find a make file in the directory.")
-                . " Possible filenames: " . implode(',', $candidates)
+                ($core
+                    ? "Couldn't find a core make file in the directory."
+                    : "Couldn't find a make file in the directory."
+                ) . " Possible filenames: " . implode(',', $candidates)
             );
         }
 
@@ -332,8 +335,7 @@ class Drupal extends ToolstackBase
 
         if ($this->copy) {
             $this->stdErr->writeln("Copying existing app files to the profile");
-        }
-        else {
+        } else {
             $this->stdErr->writeln("Symlinking existing app files to the profile");
         }
 

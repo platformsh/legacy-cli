@@ -47,5 +47,4 @@ class UserListCommand extends CommandBase
         $table->render(array_values($rows), ['Email address', 'Name', 'Project role']);
         return 0;
     }
-
 }

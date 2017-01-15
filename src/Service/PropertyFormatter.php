@@ -61,9 +61,13 @@ class PropertyFormatter implements InputConfiguringInterface
      */
     public static function configureInput(InputDefinition $definition)
     {
-        $description = 'The date format (as a PHP date format string)';
-        $option = new InputOption('date-fmt', null, InputOption::VALUE_REQUIRED, $description, self::DEFAULT_DATE_FORMAT);
-        $definition->addOption($option);
+        $definition->addOption(new InputOption(
+            'date-fmt',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'The date format (as a PHP date format string)',
+            self::DEFAULT_DATE_FORMAT
+        ));
     }
 
     /**

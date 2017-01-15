@@ -72,5 +72,4 @@ class LocalCleanCommand extends CommandBase
             $this->stdErr->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
         }
     }
-
 }

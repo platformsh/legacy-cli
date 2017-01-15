@@ -34,8 +34,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
             $this->stdErr->writeln('An integration ID is required.');
 
             return 1;
-        }
-        elseif (!$id) {
+        } elseif (!$id) {
             $integrations = $project->getIntegrations();
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
@@ -57,8 +56,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
         if ($property = $input->getOption('property')) {
             if ($property === 'hook_url' && $integration->hasLink('#hook')) {
                 $value = $integration->getLink('#hook');
-            }
-            else {
+            } else {
                 $value = $this->api()->getNestedProperty($integration, $property);
             }
 

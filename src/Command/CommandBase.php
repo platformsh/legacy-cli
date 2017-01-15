@@ -169,12 +169,16 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $promptMigrate = true;
             if ($projectRoot) {
                 $projectConfig = $localProject->getProjectConfig($projectRoot);
-                if (isset($projectConfig['migrate']['3.x']['last_asked']) && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
+                if (isset($projectConfig['migrate']['3.x']['last_asked'])
+                    && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
                     $promptMigrate = false;
                 }
             }
 
-            $this->stdErr->writeln('You are in a project using an old file structure, from previous versions of the ' . $this->config()->get('application.name') .'.');
+            $this->stdErr->writeln(sprintf(
+                'You are in a project using an old file structure, from previous versions of the %s.',
+                $this->config()->get('application.name')
+            ));
             if ($this->input->isInteractive() && $promptMigrate) {
                 if ($projectRoot && isset($projectConfig)) {
                     $projectConfig['migrate']['3.x']['last_asked'] = $timestamp;
@@ -186,9 +190,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                     $code = $this->runOtherCommand('legacy-migrate');
                     exit($code);
                 }
-            }
-            else {
-                $this->stdErr->writeln('Fix this with: <comment>' . $this->config()->get('application.executable') . ' legacy-migrate</comment>');
+            } else {
+                $this->stdErr->writeln(sprintf(
+                    'Fix this with: <comment>%s legacy-migrate</comment>',
+                    $this->config()->get('application.executable')
+                ));
             }
             $this->stdErr->writeln('');
         }
@@ -201,7 +207,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         // Work around a bug in Console which means the default command's input
         // is always considered to be interactive.
-        if ($this->getName() === 'welcome' && isset($GLOBALS['argv']) && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
+        if ($this->getName() === 'welcome'
+            && isset($GLOBALS['argv'])
+            && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
             $input->setInteractive(false);
             return;
         }
@@ -231,8 +239,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         if (!$config->get('updates.check')) {
             return;
-        }
-        elseif (!$reset && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
+        } elseif (!$reset
+            && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
             return;
         }
 
@@ -346,8 +354,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                     $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
                     $message = "Project not found: " . $projectUrl
                         . "\nThe project probably no longer exists.";
-                }
-                else {
+                } else {
                     $message = "Project not found: " . $config['id']
                         . "\nEither you do not have access to the project or it no longer exists.";
                 }
@@ -509,8 +516,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function rebuildWarning()
     {
-        $this->stdErr->writeln('<comment>The remote environment must be rebuilt for the change to take effect.</comment>');
-        $this->stdErr->writeln("Use 'git push' with new commit(s) to trigger a rebuild.");
+        $this->stdErr->writeln([
+            '<comment>The remote environment must be rebuilt for the change to take effect.</comment>',
+            "Use 'git push' with new commit(s) to trigger a rebuild."
+        ]);
     }
 
     /**
@@ -558,6 +567,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function addEnvironmentOption()
     {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, 'The environment ID');
     }
 
@@ -568,6 +578,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function addAppOption()
     {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, 'The remote application name');
     }
 
@@ -580,6 +591,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
     {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('no-wait', null, InputOption::VALUE_NONE, $description);
     }
 
@@ -1015,6 +1027,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         static $config;
         if (!isset($config)) {
+            /** @var \Platformsh\Cli\Service\Config $config */
             $config = $this->getService('config');
         }
 

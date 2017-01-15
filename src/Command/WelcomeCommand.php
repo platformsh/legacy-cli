@@ -25,6 +25,8 @@ class WelcomeCommand extends CommandBase
         // delegated commands below will not have interactive input.
         $this->api()->getClient();
 
+        $executable = $this->config()->get('application.executable');
+
         if ($project = $this->getCurrentProject()) {
             $projectUri = $project->getLink('#ui');
             $this->stdErr->writeln("Project title: <info>{$project->title}</info>");
@@ -46,16 +48,15 @@ class WelcomeCommand extends CommandBase
 
             // Show the environments.
             $this->runOtherCommand('environments');
-            $this->stdErr->writeln("\nYou can list other projects by running <info>" . $this->config()->get('application.executable') . " projects</info>\n");
+            $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>\n");
         } else {
             // The project is not known. Show all projects.
             $this->runOtherCommand('projects', ['--refresh' => 0]);
             $this->stdErr->writeln('');
         }
 
-        $this->stdErr->writeln("Manage your SSH keys by running <info>" . $this->config()->get('application.executable') . " ssh-keys</info>\n");
+        $this->stdErr->writeln("Manage your SSH keys by running <info>$executable ssh-keys</info>\n");
 
-        $this->stdErr->writeln("Type <info>" . $this->config()->get('application.executable') . " list</info> to see all available commands.");
+        $this->stdErr->writeln("Type <info>$executable list</info> to see all available commands.");
     }
-
 }

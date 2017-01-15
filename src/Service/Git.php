@@ -345,8 +345,7 @@ class Git
         $args = ['branch'];
         if ($upstream !== false) {
             $args[] = '--set-upstream-to=' . $upstream;
-        }
-        else {
+        } else {
             $args[] = '--unset-upstream';
         }
 

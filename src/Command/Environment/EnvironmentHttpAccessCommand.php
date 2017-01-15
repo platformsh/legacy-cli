@@ -180,7 +180,6 @@ class EnvironmentHttpAccessCommand extends CommandBase
             }
 
             if ($current != $accessOpts) {
-
                 // The API only accepts {} for an empty "basic_auth" value,
                 // rather than [].
                 if (isset($accessOpts['basic_auth']) && $accessOpts['basic_auth'] === []) {
@@ -198,8 +197,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 $success = true;
                 if (!$result->countActivities()) {
                     $this->rebuildWarning();
-                }
-                elseif (!$input->getOption('no-wait')) {
+                } elseif (!$input->getOption('no-wait')) {
                     /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
                     $activityMonitor = $this->getService('activity_monitor');
                     $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

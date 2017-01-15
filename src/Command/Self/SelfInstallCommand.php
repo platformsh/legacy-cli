@@ -64,7 +64,10 @@ EOT
                 . PHP_EOL
                 . $suggestedShellConfig;
 
-            $this->stdErr->writeln(sprintf('To set up the CLI, add the following lines to: <comment>%s</comment>', $shellConfigFile));
+            $this->stdErr->writeln(sprintf(
+                'To set up the CLI, add the following lines to: <comment>%s</comment>',
+                $shellConfigFile
+            ));
             $this->stdErr->writeln(preg_replace('/^/m', '  ', $suggestedShellConfig));
             return 1;
         }

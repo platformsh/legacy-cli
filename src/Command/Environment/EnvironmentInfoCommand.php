@@ -117,14 +117,20 @@ class EnvironmentInfoCommand extends CommandBase
         settype($value, $type);
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
-            $this->stdErr->writeln(
-                "Property <info>$property</info> already set as: " . $this->formatter->format($environment->getProperty($property, false), $property)
-            );
+            $this->stdErr->writeln(sprintf(
+                'Property <info>%s</info> already set as: %s',
+                $property,
+                $this->formatter->format($environment->getProperty($property, false), $property)
+            ));
 
             return 0;
         }
         $result = $environment->update([$property => $value]);
-        $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($environment->$property, $property));
+        $this->stdErr->writeln(sprintf(
+            'Property <info>%s</info> set to: %s',
+            $property,
+            $this->formatter->format($environment->$property, $property)
+        ));
 
         $this->api()->clearEnvironmentsCache($environment->project);
 
@@ -134,8 +140,7 @@ class EnvironmentInfoCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
-        }
-        elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
+        } elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
             $this->rebuildWarning();
         }
 
@@ -194,13 +199,11 @@ class EnvironmentInfoCommand extends CommandBase
                     $valid = false;
                 }
                 break;
-
         }
         switch ($type) {
             case 'boolean':
                 $valid = in_array($value, ['1', '0', 'false', 'true']);
                 break;
-
         }
         if (!$valid) {
             if ($message) {
@@ -214,5 +217,4 @@ class EnvironmentInfoCommand extends CommandBase
 
         return true;
     }
-
 }

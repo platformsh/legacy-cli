@@ -84,5 +84,4 @@ class ProjectVariableSetCommand extends CommandBase
 
         return !$null || ($null && $string === 'null');
     }
-
 }

@@ -104,7 +104,9 @@ class ProjectListCommand extends CommandBase
                     . '</comment>';
                 $this->stdErr->writeln('No projects found (filters in use: ' . $filtersUsed . ').');
             } else {
-                $this->stdErr->writeln('You do not have any ' . $this->config()->get('service.name') . ' projects yet.');
+                $this->stdErr->writeln(
+                    'You do not have any ' . $this->config()->get('service.name') . ' projects yet.'
+                );
             }
 
             return 0;

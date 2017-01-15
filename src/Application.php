@@ -335,9 +335,16 @@ class Application extends ParentApplication
                 || $main instanceof ConsoleInvalidOptionException
                 || $main instanceof ConsoleRuntimeException
             )) {
-            $output->writeln(sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()), OutputInterface::VERBOSITY_QUIET);
+            $output->writeln(
+                sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()),
+                OutputInterface::VERBOSITY_QUIET
+            );
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-            $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', $this->cliConfig->get('application.executable'), $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);
+            $output->writeln(sprintf(
+                'For more information, type: <info>%s help %s</info>',
+                $this->cliConfig->get('application.executable'),
+                $this->currentCommand->getName()
+            ), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
         }
     }

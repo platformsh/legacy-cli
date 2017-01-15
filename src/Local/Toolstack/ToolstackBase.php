@@ -188,8 +188,7 @@ abstract class ToolstackBase implements ToolstackInterface
                 }
                 if ($this->copy) {
                     $this->stdErr->writeln("Copying $relSource to $relDestination");
-                }
-                else {
+                } else {
                     $this->stdErr->writeln("Symlinking $relSource to $relDestination");
                 }
                 // Delete existing files, emitting a warning.
@@ -204,8 +203,7 @@ abstract class ToolstackBase implements ToolstackInterface
                 }
                 if ($this->copy) {
                     $this->fsHelper->copy($source, $destination);
-                }
-                else {
+                } else {
                     $this->fsHelper->symlink($source, $destination);
                 }
             }
@@ -265,11 +263,9 @@ abstract class ToolstackBase implements ToolstackInterface
         }
         if (!empty($this->settings['clone'])) {
             $this->cloneToBuildDir($buildDir);
-        }
-        elseif ($this->copy) {
+        } elseif ($this->copy) {
             $this->fsHelper->copyAll($this->appRoot, $buildDir, $this->ignoredFiles, true);
-        }
-        else {
+        } else {
             $this->fsHelper->symlink($this->appRoot, $buildDir);
         }
 
@@ -347,7 +343,9 @@ abstract class ToolstackBase implements ToolstackInterface
             if (!file_exists($target)) {
                 $this->fsHelper->mkdir($target, 0775);
             }
-            $this->stdErr->writeln('  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>');
+            $this->stdErr->writeln(
+                '  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>'
+            );
             $this->fsHelper->symlink($target, $link);
         }
     }
@@ -369,9 +367,10 @@ abstract class ToolstackBase implements ToolstackInterface
             if (!file_exists($sharedSettingsLocal)) {
                 $this->stdErr->writeln("Creating file: <info>$relative</info>");
                 $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);
-                $this->stdErr->writeln('Edit this file to add your database credentials and other Drupal configuration.');
-            }
-            else {
+                $this->stdErr->writeln(
+                    'Edit this file to add your database credentials and other Drupal configuration.'
+                );
+            } else {
                 $this->stdErr->writeln("Symlinking <info>$relative</info> into sites/default");
             }
             $this->fsHelper->symlink($sharedSettingsLocal, $settingsLocal);
@@ -413,5 +412,4 @@ abstract class ToolstackBase implements ToolstackInterface
             copy($source, $appGitIgnore);
         }
     }
-
 }

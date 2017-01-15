@@ -50,7 +50,10 @@ class Shell
      */
     public function executeSimple($commandline, $dir = null, array $env = [])
     {
-        $this->stdErr->writeln('Running command: <info>' . $commandline . '</info>', OutputInterface::VERBOSITY_VERBOSE);
+        $this->stdErr->writeln(
+            'Running command: <info>' . $commandline . '</info>',
+            OutputInterface::VERBOSITY_VERBOSE
+        );
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
@@ -88,7 +91,10 @@ class Shell
         $process = $builder->getProcess();
         $process->setTimeout($this->defaultTimeout);
 
-        $this->stdErr->writeln("Running command: <info>" . $process->getCommandLine() . "</info>", OutputInterface::VERBOSITY_VERBOSE);
+        $this->stdErr->writeln(
+            "Running command: <info>" . $process->getCommandLine() . "</info>",
+            OutputInterface::VERBOSITY_VERBOSE
+        );
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
@@ -218,8 +224,7 @@ class Shell
         if (!isset($result[$command])) {
             if (is_executable($command)) {
                 $result[$command] = $command;
-            }
-            else {
+            } else {
                 $args = ['command', '-v', $command];
                 if (strpos(PHP_OS, 'WIN') !== false) {
                     $args = ['where', $command];

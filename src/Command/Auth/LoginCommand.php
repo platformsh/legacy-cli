@@ -13,13 +13,16 @@ class LoginCommand extends CommandBase
 
     protected function configure()
     {
+        $service = $this->config()->get('service.name');
+        $accountsUrl = $this->config()->get('service.accounts_url');
         $this
             ->setName('auth:login')
             ->setAliases(['login'])
-            ->setDescription('Log in to ' . $this->config()->get('service.name'));
-        $help = 'Use this command to log in to your ' . $this->config()->get('service.name') . ' account.'
-            . "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.accounts_url') . '</info>'
-            . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>" . $this->config()->get('service.accounts_url') . '/user/password</info>';
+            ->setDescription('Log in to ' . $service);
+        $help = 'Use this command to log in to your ' . $service . ' account.'
+            . "\n\nYou can create an account at:\n    <info>" . $accountsUrl . '</info>'
+            . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>"
+            . $accountsUrl . '/user/password</info>';
         $this->setHelp($help);
     }
 
@@ -34,7 +37,9 @@ class LoginCommand extends CommandBase
             throw new RuntimeException('Non-interactive login not supported');
         }
 
-        $this->stdErr->writeln('Please log in using your <info>' . $this->config()->get('service.name') . '</info> account.');
+        $this->stdErr->writeln(
+            'Please log in using your <info>' . $this->config()->get('service.name') . '</info> account.'
+        );
         $this->stdErr->writeln('');
         $this->configureAccount($input, $this->stdErr);
 
@@ -100,8 +105,7 @@ class LoginCommand extends CommandBase
                         $this->api()->getClient(false)
                             ->getConnector()
                             ->logIn($email, $password, true, $answer);
-                    }
-                    catch (BadResponseException $e) {
+                    } catch (BadResponseException $e) {
                         // If there is a two-factor authentication error, show
                         // the error description that the server provides.
                         //
@@ -110,8 +114,7 @@ class LoginCommand extends CommandBase
                         if ($e->getResponse()->getHeader('X-Drupal-TFA')) {
                             $json = $e->getResponse()->json();
                             throw new \RuntimeException($json['error_description']);
-                        }
-                        else {
+                        } else {
                             throw $e;
                         }
                     }
@@ -121,17 +124,19 @@ class LoginCommand extends CommandBase
                 $question->setMaxAttempts(5);
                 $output->writeln("\nTwo-factor authentication is required.");
                 $questionHelper->ask($input, $output, $question);
-            }
-            elseif ($e->getResponse()->getStatusCode() === 401) {
-                $output->writeln("\n<error>Login failed. Please check your credentials.</error>\n");
-                $output->writeln("Forgot your password? Or don't have a password yet? Visit:");
-                $output->writeln("  <comment>" . $this->config()->get('service.accounts_url') . "/user/password</comment>\n");
+            } elseif ($e->getResponse()->getStatusCode() === 401) {
+                $output->writeln([
+                    '',
+                    '<error>Login failed. Please check your credentials.</error>',
+                    '',
+                    "Forgot your password? Or don't have a password yet? Visit:",
+                    '  <comment>' . $this->config()->get('service.accounts_url') . '/user/password</comment>',
+                    '',
+                ]);
                 $this->configureAccount($input, $output);
-            }
-            else {
+            } else {
                 throw $e;
             }
         }
     }
-
 }

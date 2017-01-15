@@ -75,7 +75,7 @@ class CustomTextDescriptor extends TextDescriptor
             $name = $command->getName();
             $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             foreach ($examples as $arguments => $description) {
-                $this->writeText("\n $description:\n   <info>" . $this->cliExecutableName . " $shortName $arguments</info>\n");
+                $this->writeText("\n $description:\n   <info>{$this->cliExecutableName} $shortName $arguments</info>\n");
             }
         }
     }
@@ -239,5 +239,4 @@ class CustomTextDescriptor extends TextDescriptor
 
         return $width;
     }
-
 }

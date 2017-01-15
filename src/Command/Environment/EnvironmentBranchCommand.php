@@ -96,14 +96,18 @@ class EnvironmentBranchCommand extends CommandBase
                 . " Make sure to run '" . $this->config()->get('application.executable') . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
             );
         } elseif (!$projectRoot) {
-            $this->stdErr->writeln("<error>You must run this command inside the project root, or specify --force.</error>");
+            $this->stdErr->writeln(
+                '<error>You must run this command inside the project root, or specify --force.</error>'
+            );
 
             return 1;
         }
 
-        $this->stdErr->writeln(
-            "Creating a new environment <info>$branchName</info>, branched from <info>{$parentEnvironment->title}</info>"
-        );
+        $this->stdErr->writeln(sprintf(
+            'Creating a new environment <info>%s</info>, branched from <info>%s</info>',
+            $branchName,
+            $environment->title
+        ));
 
         $title = $input->getOption('title') ?: $branchName;
         $activity = $parentEnvironment->branch($title, $branchName);
@@ -159,7 +163,8 @@ class EnvironmentBranchCommand extends CommandBase
                 // 'origin' remote, then it has priority.
                 $upstreamRemote = $this->config()->get('detection.git_remote_name');
                 $originRemoteUrl = $git->getConfig('remote.origin.url');
-                if ($originRemoteUrl !== $selectedProject->getGitUrl(false) && $git->remoteBranchExists('origin', $branchName)) {
+                if ($originRemoteUrl !== $selectedProject->getGitUrl(false)
+                    && $git->remoteBranchExists('origin', $branchName)) {
                     $upstreamRemote = 'origin';
                 }
 

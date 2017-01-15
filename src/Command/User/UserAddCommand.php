@@ -35,8 +35,7 @@ class UserAddCommand extends CommandBase
         $email = $input->getArgument('email');
         if ($email && !$this->validateEmail($email)) {
             return 1;
-        }
-        elseif (!$email) {
+        } elseif (!$email) {
             $question = new Question('Email address: ');
             $question->setValidator([$this, 'validateEmail']);
             $question->setMaxAttempts(5);
@@ -54,8 +53,7 @@ class UserAddCommand extends CommandBase
         if ($projectRole && !in_array($projectRole, ProjectAccess::$roles)) {
             $this->stdErr->writeln("Valid project-level roles are 'admin' or 'viewer'");
             return 1;
-        }
-        elseif (!$projectRole) {
+        } elseif (!$projectRole) {
             if (!$input->isInteractive()) {
                 $this->stdErr->writeln('You must specify a project role for the user.');
                 return 1;
@@ -72,13 +70,20 @@ class UserAddCommand extends CommandBase
         if ($projectRole !== 'admin') {
             $environments = $this->api()->getEnvironments($project);
             if ($input->isInteractive()) {
-                $this->stdErr->writeln("The user's environment-level roles can be 'viewer', 'contributor', 'admin', or 'none'.");
+                $this->stdErr->writeln(
+                    "The user's environment-level roles can be 'viewer', 'contributor', 'admin', or 'none'."
+                );
             }
             foreach ($environments as $environment) {
-                $question = new Question('<info>' . $environment->id . '</info> environment role <question>[v/c/a/N]</question>: ', 'none');
+                $question = new Question(
+                    '<info>' . $environment->id . '</info> environment role <question>[v/c/a/N]</question>: ',
+                    'none'
+                );
                 $question->setValidator([$this, 'validateRole']);
                 $question->setMaxAttempts(5);
-                $environmentRoles[$environment->id] = $this->standardizeRole($questionHelper->ask($input, $this->stdErr, $question));
+                $environmentRoles[$environment->id] = $this->standardizeRole(
+                    $questionHelper->ask($input, $this->stdErr, $question)
+                );
             }
         }
 
@@ -133,8 +138,7 @@ class UserAddCommand extends CommandBase
                 if ($access) {
                     $this->stdErr->writeln("Modifying the user's role on the environment: <info>$environmentId</info>");
                     $result = $access->update(['role' => $role]);
-                }
-                else {
+                } else {
                     $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
                     $result = $environments[$environmentId]->addUser($uuid, $role);
                 }
@@ -160,7 +164,8 @@ class UserAddCommand extends CommandBase
      */
     public function validateRole($value)
     {
-        if (empty($value) || !in_array(strtolower($value), ['admin', 'contributor', 'viewer', 'none', 'a', 'c', 'v', 'n'])) {
+        if (empty($value)
+            || !in_array(strtolower($value), ['admin', 'contributor', 'viewer', 'none', 'a', 'c', 'v', 'n'])) {
             throw new RuntimeException("Invalid role: $value");
         }
 

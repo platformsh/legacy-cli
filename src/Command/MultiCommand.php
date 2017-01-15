@@ -24,7 +24,10 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property by which to sort the list of project options', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the order of project options');
-        $this->addExample('List variables on the "master" environment for multiple projects', "--projects l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx 'variable:get --environment master'");
+        $this->addExample(
+            'List variables on the "master" environment for multiple projects',
+            "--projects l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx 'variable:get --environment master'"
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -39,11 +42,17 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $application = $this->getApplication();
         $command = $application->find($commandName);
         if (!$command instanceof MultiAwareInterface || !$command->canBeRunMultipleTimes()) {
-            $this->stdErr->writeln(sprintf('The command <error>%s</error> cannot be run via "%s multi".', $commandName, $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf(
+                'The command <error>%s</error> cannot be run via "%s multi".',
+                $commandName,
+                $this->config()->get('application.executable')
+            ));
             return 1;
-        }
-        elseif (!$command->getDefinition()->hasOption('project')) {
-            $this->stdErr->writeln(sprintf('The command <error>%s</error> does not have a --project option.', $commandName));
+        } elseif (!$command->getDefinition()->hasOption('project')) {
+            $this->stdErr->writeln(sprintf(
+                'The command <error>%s</error> does not have a --project option.',
+                $commandName
+            ));
             return 1;
         }
 
@@ -74,8 +83,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
                 if ($returnCode !== 0) {
                     $success = false;
                 }
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 if (!$continue) {
                     throw $e;
                 }
@@ -183,17 +191,14 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
                 $this->stdErr->writeln(sprintf('Project ID(s) not found: <error>%s</error>', implode(', ', $invalid)));
                 return false;
             }
-        }
-        elseif (!$input->isInteractive()) {
+        } elseif (!$input->isInteractive()) {
             $this->stdErr->writeln('In non-interactive mode, the --projects option must be specified.');
             return false;
-        }
-        elseif (!$shell->commandExists('dialog')) {
+        } elseif (!$shell->commandExists('dialog')) {
             $this->stdErr->writeln('The "dialog" utility is required for interactive use.');
             $this->stdErr->writeln('You can specify projects via the --projects option.');
             return false;
-        }
-        else {
+        } else {
             $projectOptions = [];
             foreach ($projects as $project) {
                 $projectOptions[$project->id] = $project->title ?: $project->id;
@@ -226,7 +231,9 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         if ($argumentName === 'cmd') {
             $commandNames = [];
             foreach ($this->getApplication()->all() as $command) {
-                if ($command instanceof MultiAwareInterface && $command->canBeRunMultipleTimes() && $command->getDefinition()->hasOption('project')) {
+                if ($command instanceof MultiAwareInterface
+                    && $command->canBeRunMultipleTimes()
+                    && $command->getDefinition()->hasOption('project')) {
                     $commandNames[] = $command->getName();
                 }
             }

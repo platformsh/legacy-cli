@@ -106,10 +106,11 @@ class ProjectInfoCommand extends CommandBase
      */
     protected function setProperty($property, $value, Project $project, $noWait)
     {
-        if (!$this->validateValue($property, $value)) {
+        $type = $this->getType($property);
+        if (!$type) {
+            $this->stdErr->writeln("Property not writable: <error>$property</error>");
             return 1;
         }
-        $type = $this->getType($property);
         if ($type === 'boolean' && $value === 'false') {
             $value = false;
         }
@@ -125,7 +126,11 @@ class ProjectInfoCommand extends CommandBase
 
         $project->ensureFull();
         $result = $project->update([$property => $value]);
-        $this->stdErr->writeln("Property <info>$property</info> set to: " . $this->formatter->format($value, $property));
+        $this->stdErr->writeln(sprintf(
+            'Property <info>%s</info> set to: %s',
+            $property,
+            $this->formatter->format($value, $property)
+        ));
 
         $this->api()->clearProjectsCache();
 
@@ -152,23 +157,4 @@ class ProjectInfoCommand extends CommandBase
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }
-
-    /**
-     * @param string          $property
-     * @param string          $value
-     *
-     * @return bool
-     */
-    protected function validateValue($property, $value)
-    {
-        $type = $this->getType($property);
-        if (!$type) {
-            $this->stdErr->writeln("Property not writable: <error>$property</error>");
-
-            return false;
-        }
-
-        return true;
-    }
-
 }

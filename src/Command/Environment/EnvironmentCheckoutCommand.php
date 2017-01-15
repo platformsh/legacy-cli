@@ -42,8 +42,7 @@ class EnvironmentCheckoutCommand extends CommandBase
                 if (empty($branch)) {
                     return 1;
                 }
-            }
-            else {
+            } else {
                 $this->stdErr->writeln('No branch specified.');
 
                 return 1;
@@ -132,7 +131,10 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
         }
         if (!count($environmentList)) {
-            $this->stdErr->writeln("Use <info>" . $this->config()->get('application.executable') . " branch</info> to create an environment.");
+            $this->stdErr->writeln(sprintf(
+                'Use <info>%s branch</info> to create an environment.',
+                $this->config()->get('application.executable')
+            ));
 
             return false;
         }
@@ -145,14 +147,13 @@ class EnvironmentCheckoutCommand extends CommandBase
             $chooseEnvironmentText = "Enter a number to check out another environment:";
             return $helper->choose($environmentList, $chooseEnvironmentText);
         }
+
         // If there's only one choice, QuestionHelper::choose() does not
-        // interact. But we still need interactive confirmation at this
-        // point.
-        elseif ($helper->confirm(sprintf('Check out environment <info>%s</info>?', reset($environmentList)))) {
+        // interact. But we still need interactive confirmation at this point.
+        if ($helper->confirm(sprintf('Check out environment <info>%s</info>?', reset($environmentList)))) {
             return key($environmentList);
         }
 
         return false;
     }
-
 }
