@@ -24,7 +24,10 @@ class SshKeyListCommand extends CommandBase
                      ->getSshKeys();
 
         if (empty($keys)) {
-            $this->stdErr->writeln("You do not yet have any SSH public keys in your " . $this->config()->get('service.name') . " account");
+            $this->stdErr->writeln(sprintf(
+                'You do not yet have any SSH public keys in your %s account.',
+                $this->config()->get('service.name')
+            ));
         } else {
             /** @var \Platformsh\Cli\Service\Table $table */
             $table = $this->getService('table');
@@ -45,8 +48,9 @@ class SshKeyListCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $this->stdErr->writeln("Add a new SSH key with: <info>" . $this->config()->get('application.executable') . " ssh-key:add</info>");
-        $this->stdErr->writeln("Delete an SSH key with: <info>" . $this->config()->get('application.executable') . " ssh-key:delete [id]</info>");
+        $executable = $this->config()->get('application.executable');
+        $this->stdErr->writeln("Add a new SSH key with: <info>$executable ssh-key:add</info>");
+        $this->stdErr->writeln("Delete an SSH key with: <info>$executable ssh-key:delete [id]</info>");
 
         return !empty($keys) ? 0 : 1;
     }

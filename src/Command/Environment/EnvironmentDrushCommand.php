@@ -79,8 +79,7 @@ class EnvironmentDrushCommand extends CommandBase
         // the correct Drupal root.
         if (isset($app)) {
             $drupalRoot = '/app/' . $app->getDocumentRoot();
-        }
-        else {
+        } else {
             // Fall back to the PLATFORM_DOCUMENT_ROOT environment variable,
             // which is usually correct, except where the document_root was
             // specified as '/'.

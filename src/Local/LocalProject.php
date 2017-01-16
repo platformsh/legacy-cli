@@ -78,12 +78,17 @@ class LocalProject
         $currentUrl = $this->git->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);
         if (!$currentUrl) {
             $this->git->execute(['remote', 'add', $this->config->get('detection.git_remote_name'), $url], $dir, true);
-        }
-        elseif ($currentUrl != $url) {
-            $this->git->execute(['remote', 'set-url', $this->config->get('detection.git_remote_name'), $url], $dir, true);
+        } elseif ($currentUrl != $url) {
+            $this->git->execute([
+                'remote',
+                'set-url',
+                $this->config->get('detection.git_remote_name'),
+                $url
+            ], $dir, true);
         }
         // Add an origin remote too.
-        if ($this->config->get('detection.git_remote_name') !== 'origin' && !$this->git->getConfig("remote.origin.url", $dir)) {
+        if ($this->config->get('detection.git_remote_name') !== 'origin'
+            && !$this->git->getConfig("remote.origin.url", $dir)) {
             $this->git->execute(['remote', 'add', 'origin', $url]);
         }
     }
@@ -313,7 +318,6 @@ EOF
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
             if (strpos($existing, $this->config->get('application.name')) !== false) {
-
                 // Backwards compatibility between versions 3.0.0 and 3.0.2.
                 $newRoot = "\n" . '/' . $this->config->get('application.name') . "\n";
                 $oldRoot = "\n" . '/.www' . "\n";

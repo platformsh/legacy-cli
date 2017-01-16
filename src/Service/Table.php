@@ -138,8 +138,7 @@ class Table implements InputConfiguringInterface
     {
         if ($this->output instanceof StreamOutput) {
             $stream = $this->output->getStream();
-        }
-        else {
+        } else {
             throw new \RuntimeException('A stream output is required for the CSV format');
         }
         if ($header) {

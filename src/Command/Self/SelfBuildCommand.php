@@ -67,8 +67,7 @@ class SelfBuildCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\Filesystem $fs */
             $fs = $this->getService('fs');
             $boxConfig['output'] = $fs->makePathAbsolute($outputFilename);
-        }
-        else {
+        } else {
             // Default output: CLI_PHAR in the current directory.
             $cwd = getcwd();
             if ($cwd && $cwd !== CLI_ROOT) {
@@ -79,7 +78,9 @@ class SelfBuildCommand extends CommandBase
             $boxConfig['key'] = realpath($keyFilename);
         }
 
-        $phar = isset($boxConfig['output']) ? $boxConfig['output'] : CLI_ROOT . '/' . $this->config()->get('application.phar');
+        $phar = isset($boxConfig['output'])
+            ? $boxConfig['output']
+            : CLI_ROOT . '/' . $this->config()->get('application.phar');
         if (file_exists($phar)) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');

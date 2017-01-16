@@ -27,7 +27,7 @@ class DbDumpCommand extends CommandBase
         Ssh::configureInput($this->getDefinition());
         $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
         $this->addExample('Create an SQL dump file');
-        $this->addExample('Create a gzipped SQL dump file named "test.sql.gz"', '-z -f test.sql.gz');
+        $this->addExample('Create a gzipped SQL dump file named "dump.sql.gz"', '--gzip -f dump.sql.gz');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -159,11 +159,13 @@ class DbDumpCommand extends CommandBase
         if ($gzip) {
             $dumpCommand .= ' | gzip --stdout';
         } else {
+            // Compress data transparently as it's sent over the SSH connection.
             $sshCommand .= ' -C';
         }
 
         set_time_limit(0);
 
+        // Build the complete SSH command.
         $command = $sshCommand
             . ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($dumpCommand);
@@ -171,20 +173,23 @@ class DbDumpCommand extends CommandBase
             $command .= ' > ' . escapeshellarg($dumpFile);
         }
 
+        // Execute the SSH command.
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
-
         $exitCode = $shell->executeSimple($command);
-        if ($exitCode === 0 && $dumpFile && isset($projectRoot)) {
+
+        // If a dump file exists, check that it's excluded in the project's
+        // .gitignore configuration.
+        if ($dumpFile && file_exists($dumpFile) && isset($projectRoot) && strpos($dumpFile, $projectRoot) === 0) {
             /** @var \Platformsh\Cli\Service\Git $git */
             $git = $this->getService('git');
             $relative = $fs->makePathRelative($dumpFile, $projectRoot);
             if (!$git->checkIgnore($relative, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
-                if (strpos($dumpFile, '--dump.sql')) {
+                if ($pos = strrpos($dumpFile, '--dump.sql')) {
+                    $extension = substr($dumpFile, $pos);
                     $this->stdErr->writeln('  You should probably exclude these files using .gitignore:');
-                    $this->stdErr->writeln('    *--dump.sql');
-                    $this->stdErr->writeln('    *--dump.sql.gz');
+                    $this->stdErr->writeln('    *' . $extension);
                 }
             }
         }

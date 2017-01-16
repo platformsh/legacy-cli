@@ -18,7 +18,10 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
-        $this->addExample('Switch on the "fetch branches" option for a specific integration', 'ZXhhbXBsZSB --fetch-branches 1');
+        $this->addExample(
+            'Switch on the "fetch branches" option for a specific integration',
+            'ZXhhbXBsZSB --fetch-branches 1'
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

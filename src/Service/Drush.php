@@ -65,7 +65,7 @@ class Drush
      * @throws DependencyMissingException
      *   If Drush is not installed.
      */
-    public function getVersion($reset = false)
+    protected function getVersion($reset = false)
     {
         static $version;
         if (!$reset && isset($version)) {
@@ -95,10 +95,21 @@ class Drush
     public function ensureInstalled()
     {
         static $installed;
-        if (empty($installed) && $this->getDrushExecutable() === 'drush' && !$this->shellHelper->commandExists('drush')) {
+        if (empty($installed) && $this->getDrushExecutable() === 'drush'
+            && !$this->shellHelper->commandExists('drush')) {
             throw new DependencyMissingException('Drush is not installed');
         }
         $installed = true;
+    }
+
+    /**
+     * Checks whether Drush supports the --lock argument for the 'make' command.
+     *
+     * @return bool
+     */
+    public function supportsMakeLock()
+    {
+        return version_compare($this->getVersion(), '7.0.0-rc1', '>=');
     }
 
     /**
@@ -169,7 +180,11 @@ class Drush
      */
     protected function getAutoRemoveKey()
     {
-        return preg_replace('/[^a-z-]+/', '-', str_replace('.', '', strtolower($this->config->get('application.name')))) . '-auto-remove';
+        return preg_replace(
+            '/[^a-z-]+/',
+            '-',
+            str_replace('.', '', strtolower($this->config->get('application.name')))
+        ) . '-auto-remove';
     }
 
     /**
@@ -283,7 +298,9 @@ class Drush
                 $local = array_replace_recursive($aliases[$localAliasName], $local);
                 unset($aliases[$localAliasName]);
             }
-            $localAlias .= sprintf("\n// Automatically generated alias for the local environment, application \"%s\".\n", $appId)
+            $localAlias .= "\n"
+                . sprintf('// Automatically generated alias for the local environment, application "%s"', $appId)
+                . "\n"
                 . $this->exportAlias($localAliasName, $local);
         }
 

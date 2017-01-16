@@ -29,11 +29,11 @@ class UserListCommand extends CommandBase
         $i = 0;
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        foreach ($project->getUsers() as $user) {
-            $account = $this->api()->getAccount($user);
-            $role = $user['role'];
+        foreach ($project->getUsers() as $projectAccess) {
+            $account = $this->api()->getAccount($projectAccess);
+            $role = $projectAccess->role;
             $weight = $i++;
-            if ($project->owner === $user->id) {
+            if ($project->owner === $projectAccess->id) {
                 $weight = -1;
                 if (!$table->formatIsMachineReadable()) {
                     $role .= ' (owner)';
@@ -47,5 +47,4 @@ class UserListCommand extends CommandBase
         $table->render(array_values($rows), ['Email address', 'Name', 'Project role']);
         return 0;
     }
-
 }

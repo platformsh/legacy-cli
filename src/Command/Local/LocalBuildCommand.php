@@ -130,17 +130,16 @@ class LocalBuildCommand extends CommandBase
             if (!is_dir($sourceDir)) {
                 throw new InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
             }
+
             // Sensible handling if the user provides a project root as the
             // source directory.
-            elseif (file_exists($sourceDir . $this->config()->get('local.project_config'))) {
+            if (file_exists($sourceDir . $this->config()->get('local.project_config'))) {
                 $projectRoot = $sourceDir;
                 $sourceDir = $projectRoot;
             }
-        }
-        elseif (!$projectRoot) {
+        } elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');
-        }
-        else {
+        } else {
             $sourceDir = $projectRoot;
         }
 
@@ -148,7 +147,9 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
-            $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd() ? $this->config()->get('local.web_root') : null;
+            $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd()
+                ? $this->config()->get('local.web_root')
+                : null;
             $destination = $questionHelper->askInput('Build destination', $default);
         }
 
@@ -156,11 +157,11 @@ class LocalBuildCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\Filesystem $fs */
             $fs = $this->getService('fs');
             $destination = $fs->makePathAbsolute($destination);
-        }
-        elseif (!$projectRoot) {
-            throw new RootNotFoundException('Project root not found. Specify --destination or go to a project directory.');
-        }
-        else {
+        } elseif (!$projectRoot) {
+            throw new RootNotFoundException(
+                'Project root not found. Specify --destination or go to a project directory.'
+            );
+        } else {
             $destination = $projectRoot . '/' . $this->config()->get('local.web_root');
         }
 
@@ -177,7 +178,10 @@ class LocalBuildCommand extends CommandBase
                 return 1;
             }
             $default = is_link($destination);
-            if (!$questionHelper->confirm("The destination exists: <comment>$destination</comment>. Overwrite?", $default)) {
+            if (!$questionHelper->confirm(
+                "The destination exists: <comment>$destination</comment>. Overwrite?",
+                $default
+            )) {
                 return 1;
             }
         }

@@ -68,5 +68,4 @@ class UserDeleteCommand extends CommandBase
 
         return 0;
     }
-
 }

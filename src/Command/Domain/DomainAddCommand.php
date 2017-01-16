@@ -41,15 +41,13 @@ class DomainAddCommand extends DomainCommandBase
         try {
             $this->stdErr->writeln("Adding the domain <info>{$this->domainName}</info>");
             $result = $project->addDomain($this->domainName, $this->sslOptions);
-        }
-        catch (ClientException $e) {
+        } catch (ClientException $e) {
             // Catch 409 Conflict errors.
             $response = $e->getResponse();
             if ($response && $response->getStatusCode() === 409) {
                 $this->stdErr->writeln("The domain <error>{$this->domainName}</error> already exists on the project.");
                 $this->stdErr->writeln("Use <info>domain:delete</info> to delete an existing domain");
-            }
-            else {
+            } else {
                 $this->handleApiException($e, $project);
             }
 

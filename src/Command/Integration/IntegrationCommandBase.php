@@ -142,5 +142,4 @@ abstract class IntegrationCommandBase extends CommandBase
 
         $table->renderSimple(array_values($info), array_keys($info));
     }
-
 }

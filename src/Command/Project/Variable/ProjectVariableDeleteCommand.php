@@ -64,8 +64,7 @@ class ProjectVariableDeleteCommand extends CommandBase
         $success = true;
         if (!$result->countActivities()) {
             $this->rebuildWarning();
-        }
-        elseif (!$input->getOption('no-wait')) {
+        } elseif (!$input->getOption('no-wait')) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
@@ -73,5 +72,4 @@ class ProjectVariableDeleteCommand extends CommandBase
 
         return $success ? 0 : 1;
     }
-
 }

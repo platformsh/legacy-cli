@@ -51,8 +51,7 @@ class ActivityListCommand extends CommandBase
             $environmentSpecific = true;
             $environment = $this->getSelectedEnvironment();
             $activities = $environment->getActivities($limit, $input->getOption('type'), $startsAt);
-        }
-        else {
+        } else {
             $environmentSpecific = false;
             $activities = $project->getActivities($limit, $input->getOption('type'), $startsAt);
         }
@@ -89,8 +88,7 @@ class ActivityListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             if ($environmentSpecific && isset($environment)) {
                 $this->stdErr->writeln("Activities for the environment <info>" . $environment->id . "</info>");
-            }
-            elseif (!$environmentSpecific) {
+            } elseif (!$environmentSpecific) {
                 $this->stdErr->writeln("Activities for the project <info>" . $project->id . "</info>");
             }
         }
@@ -99,5 +97,4 @@ class ActivityListCommand extends CommandBase
 
         return 0;
     }
-
 }

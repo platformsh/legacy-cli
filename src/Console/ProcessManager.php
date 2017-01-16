@@ -67,8 +67,7 @@ class ProcessManager
         $pid = pcntl_fork();
         if ($pid === -1) {
             throw new \RuntimeException('Failed to fork PHP process');
-        }
-        elseif ($pid > 0) {
+        } elseif ($pid > 0) {
             // This is the parent process. If the child process succeeds, this
             // receives SIGCHLD. If it fails, this receives SIGTERM.
             declare (ticks = 1);
@@ -83,8 +82,7 @@ class ProcessManager
             // finish.
             sleep(60);
             throw new \RuntimeException('Timeout in parent process');
-        }
-        elseif (posix_setsid() === -1) {
+        } elseif (posix_setsid() === -1) {
             throw new \RuntimeException('Child process failed to become session leader');
         }
     }
@@ -161,15 +159,18 @@ class ProcessManager
                     $log->writeln(sprintf('Process stopped: %s', $process->getCommandLine()));
                     $process->stop();
                     unset($this->processes[$pidFile]);
-                }
-                // If the process has been stopped via another method, remove it
-                // from the list, and log a message.
-                elseif (!$process->isRunning()) {
+                } elseif (!$process->isRunning()) {
+                    // If the process has been stopped via another method, remove it
+                    // from the list, and log a message.
                     $exitCode = $process->getExitCode();
                     if ($exitCode === 143 || $exitCode === 147) {
                         $log->writeln(sprintf('Process killed: %s', $process->getCommandLine()));
                     } elseif ($exitCode > 0) {
-                        $log->writeln(sprintf('Process stopped unexpectedly with exit code %s: %s', $exitCode, $process->getCommandLine()));
+                        $log->writeln(sprintf(
+                            'Process stopped unexpectedly with exit code %s: %s',
+                            $exitCode,
+                            $process->getCommandLine()
+                        ));
                     }
                     unlink($pidFile);
                     unset($this->processes[$pidFile]);

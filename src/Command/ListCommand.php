@@ -29,5 +29,4 @@ class ListCommand extends ParentListCommand
             ]
         );
     }
-
 }

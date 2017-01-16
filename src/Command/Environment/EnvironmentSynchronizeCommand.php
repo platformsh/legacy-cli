@@ -65,7 +65,11 @@ EOT
             }
             $syncCode = in_array('code', $synchronize) || in_array('both', $synchronize);
             $syncData = in_array('data', $synchronize) || in_array('both', $synchronize);
-            $confirmText = "Are you sure you want to synchronize <info>$parentId</info> to <info>$environmentId</info>?";
+            $confirmText = sprintf(
+                'Are you sure you want to synchronize <info>%s</info> to <info>%s</info>?',
+                $parentId,
+                $environmentId
+            );
             if (!$questionHelper->confirm($confirmText)) {
                 return 1;
             }

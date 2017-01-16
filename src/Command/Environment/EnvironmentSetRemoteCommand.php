@@ -44,7 +44,8 @@ class EnvironmentSetRemoteCommand extends CommandBase
         $git->setDefaultRepositoryDir($projectRoot);
 
         $specifiedEnvironmentId = $input->getArgument('environment');
-        if ($specifiedEnvironmentId != '0' && !$specifiedEnvironment = $this->api()->getEnvironment($specifiedEnvironmentId, $project)) {
+        if ($specifiedEnvironmentId != '0'
+            && !($specifiedEnvironment = $this->api()->getEnvironment($specifiedEnvironmentId, $project))) {
             $this->stdErr->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
             return 1;
         }
@@ -55,14 +56,15 @@ class EnvironmentSetRemoteCommand extends CommandBase
                 $this->stdErr->writeln("Branch not found: <error>$specifiedBranch</error>");
                 return 1;
             }
-        }
-        else {
+        } else {
             $specifiedBranch = $git->getCurrentBranch();
         }
 
         // Check whether the branch is mapped by default (its name or its Git
         // upstream is the same as the remote environment ID).
-        $mappedByDefault = isset($specifiedEnvironment) && $specifiedEnvironment->status != 'inactive' && $specifiedEnvironmentId === $specifiedBranch;
+        $mappedByDefault = isset($specifiedEnvironment)
+            && $specifiedEnvironment->status != 'inactive'
+            && $specifiedEnvironmentId === $specifiedBranch;
         if ($specifiedEnvironmentId != '0' && !$mappedByDefault) {
             $upstream = $git->getUpstream($specifiedBranch);
             if (strpos($upstream, '/')) {
@@ -72,7 +74,9 @@ class EnvironmentSetRemoteCommand extends CommandBase
                 $mappedByDefault = true;
             }
             if (!$mappedByDefault && $git->branchExists($specifiedEnvironmentId)) {
-                $this->stdErr->writeln("A local branch already exists named <comment>$specifiedEnvironmentId</comment>");
+                $this->stdErr->writeln(
+                    "A local branch already exists named <comment>$specifiedEnvironmentId</comment>"
+                );
             }
         }
 
@@ -84,9 +88,9 @@ class EnvironmentSetRemoteCommand extends CommandBase
         if ($mappedByDefault || $specifiedEnvironmentId == '0') {
             unset($projectConfig['mapping'][$specifiedBranch]);
             $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
-        }
-        else {
-            if (isset($projectConfig['mapping']) && ($current = array_search($specifiedEnvironmentId, $projectConfig['mapping'])) !== false) {
+        } else {
+            if (isset($projectConfig['mapping'])
+                && ($current = array_search($specifiedEnvironmentId, $projectConfig['mapping'])) !== false) {
                 unset($projectConfig['mapping'][$current]);
             }
             $projectConfig['mapping'][$specifiedBranch] = $specifiedEnvironmentId;
@@ -96,14 +100,23 @@ class EnvironmentSetRemoteCommand extends CommandBase
         // Check the success of the operation.
         if (isset($projectConfig['mapping'][$specifiedBranch])) {
             $actualRemoteEnvironment = $projectConfig['mapping'][$specifiedBranch];
-            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is mapped to the remote environment <info>$actualRemoteEnvironment</info>");
-        }
-        elseif ($mappedByDefault) {
+            $this->stdErr->writeln(sprintf(
+                'The local branch <info>%s</info> is mapped to the remote environment <info>%s</info>',
+                $specifiedBranch,
+                $actualRemoteEnvironment
+            ));
+        } elseif ($mappedByDefault) {
             $actualRemoteEnvironment = $specifiedBranch;
-            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is mapped to the default remote environment, <info>$specifiedBranch</info>");
-        }
-        else {
-            $this->stdErr->writeln("The local branch <info>$specifiedBranch</info> is not mapped to a remote environment");
+            $this->stdErr->writeln(sprintf(
+                'The local branch <info>%s</info> is mapped to the default remote environment, <info>%s</info>',
+                $specifiedBranch,
+                $actualRemoteEnvironment
+            ));
+        } else {
+            $this->stdErr->writeln(sprintf(
+                'The local branch <info>%s</info> is not mapped to a remote environment',
+                $specifiedBranch
+            ));
         }
 
         $success = !empty($actualRemoteEnvironment)

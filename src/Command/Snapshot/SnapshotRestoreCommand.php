@@ -72,7 +72,9 @@ class SnapshotRestoreCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
         $name = $selectedActivity['payload']['backup_name'];
         $date = date('Y-m-d H:i', strtotime($selectedActivity['created_at']));
-        if (!$questionHelper->confirm("Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment>?")) {
+        if (!$questionHelper->confirm(
+            "Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment>?"
+        )) {
             return 1;
         }
 

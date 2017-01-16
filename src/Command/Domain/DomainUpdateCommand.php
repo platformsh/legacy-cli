@@ -17,7 +17,10 @@ class DomainUpdateCommand extends DomainCommandBase
             ->setDescription('Update a domain');
         $this->addDomainOptions();
         $this->addProjectOption()->addNoWaitOption();
-        $this->addExample('Update the certificate for the domain example.com', 'example.com --cert secure-example-com.crt --key secure-example-com.key');
+        $this->addExample(
+            'Update the certificate for the domain example.com',
+            'example.com --cert secure-example-com.crt --key secure-example-com.key'
+        );
     }
 
     /**
@@ -43,8 +46,7 @@ class DomainUpdateCommand extends DomainCommandBase
         foreach (['key' => '', 'certificate' => '', 'chain' => []] as $option => $default) {
             if (empty($this->sslOptions[$option])) {
                 $this->sslOptions[$option] = $domain->ssl[$option] ?: $default;
-            }
-            elseif ($this->sslOptions[$option] != $domain->ssl[$option]) {
+            } elseif ($this->sslOptions[$option] != $domain->ssl[$option]) {
                 $needsUpdate = true;
             }
         }

@@ -62,7 +62,8 @@ class Drupal extends ToolstackBase
                ->name('composer.json');
         foreach ($finder as $file) {
             $composerJson = json_decode(file_get_contents($file), true);
-            if (isset($composerJson['require']['drupal/core']) || isset($composerJson['require']['drupal/phing-drush-task'])) {
+            if (isset($composerJson['require']['drupal/core'])
+                || isset($composerJson['require']['drupal/phing-drush-task'])) {
                 return true;
             }
         }
@@ -194,8 +195,10 @@ class Drupal extends ToolstackBase
 
         if ($required) {
             throw new \Exception(
-                ($core ? "Couldn't find a core make file in the directory." : "Couldn't find a make file in the directory.")
-                . " Possible filenames: " . implode(',', $candidates)
+                ($core
+                    ? "Couldn't find a core make file in the directory."
+                    : "Couldn't find a make file in the directory."
+                ) . " Possible filenames: " . implode(',', $candidates)
             );
         }
 
@@ -234,7 +237,7 @@ class Drupal extends ToolstackBase
         );
 
         // Create a lock file automatically.
-        if (!strpos($projectMake, '.lock') && version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['lock'])) {
+        if (!strpos($projectMake, '.lock') && !empty($this->settings['lock']) && $drushHelper->supportsMakeLock()) {
             $args[] = "--lock=$projectMake.lock";
         }
 
@@ -279,7 +282,7 @@ class Drupal extends ToolstackBase
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
         $drushFlags = $this->getDrushFlags();
-        $updateLock = version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['lock']);
+        $updateLock = !empty($this->settings['lock']) && $drushHelper->supportsMakeLock();
 
         $projectMake = $this->findDrushMakeFile(true);
         $projectCoreMake = $this->findDrushMakeFile(true, true);
@@ -332,8 +335,7 @@ class Drupal extends ToolstackBase
 
         if ($this->copy) {
             $this->stdErr->writeln("Copying existing app files to the profile");
-        }
-        else {
+        } else {
             $this->stdErr->writeln("Symlinking existing app files to the profile");
         }
 

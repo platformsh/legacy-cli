@@ -121,5 +121,4 @@ class EnvironmentActivateCommand extends CommandBase
 
         return $processed >= $count && $success;
     }
-
 }

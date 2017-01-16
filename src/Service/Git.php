@@ -38,7 +38,7 @@ class Git
      * @return string|false
      *   The version number, or false on failure.
      */
-    public function getVersion()
+    protected function getVersion()
     {
         static $version;
         if (!$version) {
@@ -106,7 +106,7 @@ class Git
      */
     public function getMergedBranches($ref = 'HEAD', $remote = false, $dir = null, $mustRun = false)
     {
-        $args = ['branch', '--list', '--no-column', '--merged', $ref];
+        $args = ['branch', '--list', '--no-column', '--no-color', '--merged', $ref];
         if ($remote) {
             $args[] = '--remote';
         }
@@ -206,12 +206,12 @@ class Git
         // The porcelain command 'git branch' is less strict about character
         // encoding than (otherwise simpler) plumbing commands such as
         // 'git show-ref'.
-        $result = $this->execute(['branch'], $dir, $mustRun);
+        $result = $this->execute(['branch', '--list', '--no-color', '--no-column'], $dir, $mustRun);
         $branches = array_map(function ($line) {
             return trim(ltrim($line, '* '));
         }, explode("\n", $result));
 
-        return in_array($branchName, $branches, TRUE);
+        return in_array($branchName, $branches, true);
     }
 
     /**
@@ -345,8 +345,7 @@ class Git
         $args = ['branch'];
         if ($upstream !== false) {
             $args[] = '--set-upstream-to=' . $upstream;
-        }
-        else {
+        } else {
             $args[] = '--unset-upstream';
         }
 
@@ -411,8 +410,8 @@ class Git
     /**
      * Check whether a file is excluded via .gitignore or similar configuration.
      *
-     * @param string $file
-     * @param string $dir
+     * @param string      $file
+     * @param string|null $dir
      *
      * @return bool
      */

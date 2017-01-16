@@ -54,5 +54,4 @@ class IntegrationDeleteCommand extends CommandBase
 
         return 0;
     }
-
 }

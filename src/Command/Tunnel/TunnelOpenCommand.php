@@ -35,7 +35,9 @@ class TunnelOpenCommand extends TunnelCommandBase
         if ($environment->id === 'master') {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            if (!$questionHelper->confirm('Are you sure you want to open SSH tunnel(s) to the <comment>master</comment> (production) environment?', false)) {
+            $confirmText = 'Are you sure you want to open SSH tunnel(s) to the'
+                . ' <comment>master</comment> (production) environment?';
+            if (!$questionHelper->confirm($confirmText, false)) {
                 return 1;
             }
         }
@@ -90,7 +92,11 @@ class TunnelOpenCommand extends TunnelCommandBase
                 $relationshipString = $this->formatTunnelRelationship($tunnel);
 
                 if ($openTunnelInfo = $this->isTunnelOpen($tunnel)) {
-                    $this->stdErr->writeln(sprintf("A tunnel is already open on port %s for the relationship: <info>%s</info>", $openTunnelInfo['localPort'], $relationshipString));
+                    $this->stdErr->writeln(sprintf(
+                        'A tunnel is already open on port %s for the relationship: <info>%s</info>',
+                        $openTunnelInfo['localPort'],
+                        $relationshipString
+                    ));
                     continue;
                 }
 
@@ -100,9 +106,12 @@ class TunnelOpenCommand extends TunnelCommandBase
 
                 try {
                     $pid = $processManager->startProcess($process, $pidFile, $log);
-                }
-                catch (\Exception $e) {
-                    $this->stdErr->writeln(sprintf('Failed to open tunnel for relationship <error>%s</error>: %s', $relationshipString, $e->getMessage()));
+                } catch (\Exception $e) {
+                    $this->stdErr->writeln(sprintf(
+                        'Failed to open tunnel for relationship <error>%s</error>: %s',
+                        $relationshipString,
+                        $e->getMessage()
+                    ));
                     $error = true;
                     continue;
                 }
@@ -111,7 +120,10 @@ class TunnelOpenCommand extends TunnelCommandBase
                 usleep(100000);
                 if (!$process->isRunning() && !$process->isSuccessful()) {
                     $this->stdErr->writeln(trim($process->getErrorOutput()));
-                    $this->stdErr->writeln(sprintf('Failed to open tunnel for relationship: <error>%s</error>', $relationshipString));
+                    $this->stdErr->writeln(sprintf(
+                        'Failed to open tunnel for relationship: <error>%s</error>',
+                        $relationshipString
+                    ));
                     unlink($pidFile);
                     $error = true;
                     continue;
@@ -122,7 +134,11 @@ class TunnelOpenCommand extends TunnelCommandBase
                 $this->tunnelInfo[] = $tunnel;
                 $this->saveTunnelInfo();
 
-                $this->stdErr->writeln(sprintf('SSH tunnel opened on port %s to relationship: <info>%s</info>', $localPort, $relationshipString));
+                $this->stdErr->writeln(sprintf(
+                    'SSH tunnel opened on port %s to relationship: <info>%s</info>',
+                    $localPort,
+                    $relationshipString
+                ));
                 $processIds[] = $pid;
             }
         }
@@ -132,10 +148,11 @@ class TunnelOpenCommand extends TunnelCommandBase
         }
 
         if (!$error) {
+            $executable = $this->config()->get('application.executable');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln("List tunnels with: <info>" . $this->config()->get('application.executable') . " tunnels</info>");
-            $this->stdErr->writeln("View tunnel details with: <info>" . $this->config()->get('application.executable') . " tunnel:info</info>");
-            $this->stdErr->writeln("Close tunnels with: <info>" . $this->config()->get('application.executable') . " tunnel:close</info>");
+            $this->stdErr->writeln("List tunnels with: <info>$executable tunnels</info>");
+            $this->stdErr->writeln("View tunnel details with: <info>$executable tunnel:info</info>");
+            $this->stdErr->writeln("Close tunnels with: <info>$executable tunnel:close</info>");
         }
 
         $processManager->killParent($error);

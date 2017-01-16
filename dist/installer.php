@@ -282,7 +282,7 @@ if ($installedInHomeDir) {
         output('  ' . CLI_EXECUTABLE);
     } else {
         output(PHP_EOL . "Add this to your shell configuration file:", 'info');
-        output('  export PATH="' . $home . '/.' . CLI_CONFIG_DIR . '/bin:$PATH"');
+        output('  export PATH="' . $home . '/' . CLI_CONFIG_DIR . '/bin:$PATH"');
         output('  . ' . escapeshellarg($rcDestination) . ' 2>/dev/null');
         output(PHP_EOL . "Start a new shell, and then you can run '" . CLI_EXECUTABLE . "'", 'info');
     }
