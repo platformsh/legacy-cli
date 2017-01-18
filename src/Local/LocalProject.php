@@ -160,7 +160,7 @@ class LocalProject
             $projectConfig['host'] = $host;
         }
         $this->writeCurrentProjectConfig($projectConfig, $directory, true);
-        $this->ensureGitRemote($directory, $project->getGitUrl(false));
+        $this->ensureGitRemote($directory, $project->getGitUrl());
     }
 
     /**
