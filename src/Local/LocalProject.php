@@ -148,7 +148,7 @@ class LocalProject
      * @param Project $project
      *   The project.
      */
-    public function initialize($directory, Project $project)
+    public function mapDirectory($directory, Project $project)
     {
         if (!file_exists($directory . '/.git')) {
             throw new \InvalidArgumentException('Not a Git repository: ' . $directory);
@@ -159,8 +159,8 @@ class LocalProject
         if ($host = parse_url($project->getUri(), PHP_URL_HOST)) {
             $projectConfig['host'] = $host;
         }
-        $this->writeCurrentProjectConfig($projectConfig, $directory);
-        $this->ensureGitRemote($directory, $project->getGitUrl());
+        $this->writeCurrentProjectConfig($projectConfig, $directory, true);
+        $this->ensureGitRemote($directory, $project->getGitUrl(false));
     }
 
     /**

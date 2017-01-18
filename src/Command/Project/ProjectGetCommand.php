@@ -85,7 +85,7 @@ class ProjectGetCommand extends CommandBase
             $git->init($projectRoot, true);
 
             $this->debug('Initializing the project');
-            $localProject->initialize($projectRoot, $project);
+            $localProject->mapDirectory($projectRoot, $project);
 
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
@@ -129,7 +129,7 @@ class ProjectGetCommand extends CommandBase
         }
 
         $this->debug('Initializing the project');
-        $localProject->initialize($projectRoot, $project);
+        $localProject->mapDirectory($projectRoot, $project);
         $this->setProjectRoot($projectRoot);
 
         $this->debug('Downloading submodules (if any)');
