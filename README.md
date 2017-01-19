@@ -127,6 +127,7 @@ project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
+  project:set-remote                        Set the remote project for the current Git repository
 self
   self:install                              Install or update CLI configuration files
   self:update (self-update)                 Update the CLI to the latest version

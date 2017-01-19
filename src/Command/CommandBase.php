@@ -360,7 +360,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 }
                 throw new ProjectNotFoundException($message);
             }
-            $this->debug('Selecting project ' . $config['id'] . ' based on project root');
+            $this->debug('Project ' . $config['id'] . ' is mapped to the current directory');
         }
         $this->currentProject = $project;
 
@@ -484,7 +484,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     public function getProjectRoot()
     {
         if (!isset(self::$projectRoot)) {
-            $this->debug('Finding the project root based on the CWD');
+            $this->debug('Finding the project root');
             /** @var \Platformsh\Cli\Local\LocalProject $localProject */
             $localProject = $this->getService('local.project');
             self::$projectRoot = $localProject->getProjectRoot();
