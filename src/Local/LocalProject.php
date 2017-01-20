@@ -63,10 +63,12 @@ class LocalProject
     }
 
     /**
-     * Ensure there are appropriate Git remotes in the repository.
+     * Ensure there is an appropriate Git remote in the repository.
      *
      * @param string $dir
+     *   The repository directory.
      * @param string $url
+     *   The Git URL.
      */
     public function ensureGitRemote($dir, $url)
     {
@@ -74,22 +76,23 @@ class LocalProject
             throw new \InvalidArgumentException('The directory is not a Git repository');
         }
         $this->git->ensureInstalled();
-        $this->git->setDefaultRepositoryDir($dir);
-        $currentUrl = $this->git->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);
+        $currentUrl = $this->git->getConfig(
+            sprintf('remote.%s.url', $this->config->get('detection.git_remote_name')),
+            $dir
+        );
         if (!$currentUrl) {
-            $this->git->execute(['remote', 'add', $this->config->get('detection.git_remote_name'), $url], $dir, true);
-        } elseif ($currentUrl != $url) {
+            $this->git->execute(
+                ['remote', 'add', $this->config->get('detection.git_remote_name'), $url],
+                $dir,
+                true
+            );
+        } elseif ($currentUrl !== $url) {
             $this->git->execute([
                 'remote',
                 'set-url',
                 $this->config->get('detection.git_remote_name'),
                 $url
             ], $dir, true);
-        }
-        // Add an origin remote too.
-        if ($this->config->get('detection.git_remote_name') !== 'origin'
-            && !$this->git->getConfig("remote.origin.url", $dir)) {
-            $this->git->execute(['remote', 'add', 'origin', $url]);
         }
     }
 
@@ -148,7 +151,7 @@ class LocalProject
      * @param Project $project
      *   The project.
      */
-    public function initialize($directory, Project $project)
+    public function mapDirectory($directory, Project $project)
     {
         if (!file_exists($directory . '/.git')) {
             throw new \InvalidArgumentException('Not a Git repository: ' . $directory);
@@ -159,7 +162,7 @@ class LocalProject
         if ($host = parse_url($project->getUri(), PHP_URL_HOST)) {
             $projectConfig['host'] = $host;
         }
-        $this->writeCurrentProjectConfig($projectConfig, $directory);
+        $this->writeCurrentProjectConfig($projectConfig, $directory, true);
         $this->ensureGitRemote($directory, $project->getGitUrl());
     }
 

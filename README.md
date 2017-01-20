@@ -127,6 +127,10 @@ project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
+  project:set-remote                        Set the remote project for the current Git repository
+  project:variable:delete                   Delete a variable from a project
+  project:variable:get (project-variables, pvget)   View variable(s) for a project
+  project:variable:set (pvset)              Set a variable for a project
 self
   self:install                              Install or update CLI configuration files
   self:update (self-update)                 Update the CLI to the latest version

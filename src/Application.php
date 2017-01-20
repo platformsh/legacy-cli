@@ -134,6 +134,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Project\ProjectGetCommand();
         $commands[] = new Command\Project\ProjectListCommand();
         $commands[] = new Command\Project\ProjectInfoCommand();
+        $commands[] = new Command\Project\ProjectSetRemoteCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableDeleteCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableGetCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableSetCommand();

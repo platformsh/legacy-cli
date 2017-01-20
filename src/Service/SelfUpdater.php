@@ -86,8 +86,12 @@ class SelfUpdater
     {
         $currentVersion = $currentVersion ?: $this->config->get('application.version');
         $manifestUrl = $manifestUrl ?: $this->config->get('application.manifest_url');
+        $applicationName = $this->config->get('application.name');
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
-            $this->stdErr->writeln('This instance of the CLI was not installed as a Phar archive.');
+            $this->stdErr->writeln(sprintf(
+                'This instance of the %s was not installed as a Phar archive.',
+                $applicationName
+            ));
 
             // Instructions for users who are running a global Composer install.
             if (defined('CLI_ROOT') && file_exists(CLI_ROOT . '/../../autoload.php')) {
@@ -99,7 +103,11 @@ class SelfUpdater
             return false;
         }
 
-        $this->stdErr->writeln(sprintf('Checking for updates (current version: <info>%s</info>)', $currentVersion));
+        $this->stdErr->writeln(sprintf(
+            'Checking for %s updates (current version: <info>%s</info>)',
+            $applicationName,
+            $currentVersion
+        ));
 
         $updater = new Updater(null, false);
         $strategy = new ManifestStrategy($currentVersion, $manifestUrl, $this->allowMajor, $this->allowUnstable);
@@ -128,7 +136,11 @@ class SelfUpdater
 
         $updater->update();
 
-        $this->stdErr->writeln("Successfully updated to version <info>$newVersionString</info>");
+        $this->stdErr->writeln(sprintf(
+            'The %s has been successfully updated to version <info>%s</info>',
+            $applicationName,
+            $newVersionString
+        ));
 
         return $newVersionString;
     }

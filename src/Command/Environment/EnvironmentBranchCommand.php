@@ -163,7 +163,7 @@ class EnvironmentBranchCommand extends CommandBase
                 // 'origin' remote, then it has priority.
                 $upstreamRemote = $this->config()->get('detection.git_remote_name');
                 $originRemoteUrl = $git->getConfig('remote.origin.url');
-                if ($originRemoteUrl !== $selectedProject->getGitUrl(false)
+                if ($originRemoteUrl !== $selectedProject->getGitUrl()
                     && $git->remoteBranchExists('origin', $branchName)) {
                     $upstreamRemote = 'origin';
                 }

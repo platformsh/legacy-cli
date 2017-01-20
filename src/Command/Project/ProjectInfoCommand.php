@@ -60,11 +60,11 @@ class ProjectInfoCommand extends CommandBase
 
         switch ($property) {
             case 'git':
-                $value = $project->getGitUrl(false);
+                $value = $project->getGitUrl();
                 break;
 
             case 'url':
-                $value = $project->getUri(true);
+                $value = $project->getUri();
                 break;
 
             default:
