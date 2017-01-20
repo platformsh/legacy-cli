@@ -36,6 +36,11 @@ class IntegrationGetCommand extends IntegrationCommandBase
             return 1;
         } elseif (!$id) {
             $integrations = $project->getIntegrations();
+            if (empty($integrations)) {
+                $this->stdErr->writeln('No integrations found.');
+
+                return 1;
+            }
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             $choices = [];
