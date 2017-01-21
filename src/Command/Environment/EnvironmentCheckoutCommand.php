@@ -88,7 +88,7 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         $upstream = $upstreamRemote . '/' . $branch;
 
-        $this->stdErr->writeln(sprintf('Creating branch %s based on upstream %s', $branch, $upstream));
+        $this->stdErr->writeln(sprintf('Creating local branch %s based on upstream %s', $branch, $upstream));
 
         // Create the new branch, and set the correct upstream.
         $success = $git->checkOutNew($branch, null, $upstream);

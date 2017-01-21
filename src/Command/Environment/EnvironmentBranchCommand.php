@@ -106,7 +106,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Creating a new environment <info>%s</info>, branched from <info>%s</info>',
             $branchName,
-            $environment->title
+            $parentEnvironment->title
         ));
 
         $title = $input->getOption('title') ?: $branchName;
@@ -121,6 +121,7 @@ class EnvironmentBranchCommand extends CommandBase
         $ssh = $this->getService('ssh');
         $git->setSshCommand($ssh->getSshCommand());
 
+        $localSuccess = false;
         if ($projectRoot) {
             $git->setDefaultRepositoryDir($projectRoot);
 
@@ -133,6 +134,8 @@ class EnvironmentBranchCommand extends CommandBase
                     if (!$force) {
                         return 1;
                     }
+                } else {
+                    $localSuccess = true;
                 }
             } else {
                 // Create a new branch, using the parent if it exists locally.
@@ -144,6 +147,8 @@ class EnvironmentBranchCommand extends CommandBase
                     if (!$force) {
                         return 1;
                     }
+                } else {
+                    $localSuccess = true;
                 }
             }
         }
@@ -158,15 +163,8 @@ class EnvironmentBranchCommand extends CommandBase
                 '<error>Branching failed</error>'
             );
 
-            if ($remoteSuccess && $projectRoot) {
-                // Determine the correct upstream for the new branch. If there is an
-                // 'origin' remote, then it has priority.
+            if ($remoteSuccess && $projectRoot && $localSuccess) {
                 $upstreamRemote = $this->config()->get('detection.git_remote_name');
-                $originRemoteUrl = $git->getConfig('remote.origin.url');
-                if ($originRemoteUrl !== $selectedProject->getGitUrl()
-                    && $git->remoteBranchExists('origin', $branchName)) {
-                    $upstreamRemote = 'origin';
-                }
 
                 // Fetch the branch from the upstream remote.
                 $git->fetch($upstreamRemote, $branchName);
