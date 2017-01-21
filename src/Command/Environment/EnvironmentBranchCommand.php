@@ -106,7 +106,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Creating a new environment <info>%s</info>, branched from <info>%s</info>',
             $branchName,
-            $environment->title
+            $parentEnvironment->title
         ));
 
         $title = $input->getOption('title') ?: $branchName;
