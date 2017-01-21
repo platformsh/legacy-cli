@@ -1,7 +1,7 @@
 # Metadata about the CLI application itself.
 application:
   name: 'Platform.sh CLI'
-  version: '3.12.x-dev'
+  version: '3.12.0'
   executable: 'platform'
   phar: 'platform.phar'
   package_name: 'platformsh/cli'
