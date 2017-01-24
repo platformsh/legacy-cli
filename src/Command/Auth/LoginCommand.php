@@ -94,7 +94,7 @@ class LoginCommand extends CommandBase
                 ->logIn($email, $password, true);
         } catch (BadResponseException $e) {
             // If a two-factor authentication challenge is received, then ask
-            // the user for their TOTP code, and then retry authenticateUser().
+            // the user for their TOTP code, and then retry logging in.
             if ($e->getResponse()->getHeader('X-Drupal-TFA')) {
                 $question = new Question("Your application verification code: ");
                 $question->setValidator(function ($answer) use ($email, $password) {
