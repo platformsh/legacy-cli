@@ -14,6 +14,8 @@ class Config
 
     protected $env = [];
 
+    protected $globalConfig = null;
+
     protected $userConfig = null;
 
     /**
@@ -28,7 +30,8 @@ class Config
         if (empty(self::$config) || $reset) {
             $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
             self::$config = $this->loadConfigFromFile($defaultsFile);
-            $this->applyUserConfigOverrides();
+            $this->applyConfigOverrides($this->getGlobalConfig());
+            $this->applyConfigOverrides($this->getUserConfig());
             $this->applyEnvironmentOverrides();
         }
     }
@@ -127,19 +130,44 @@ class Config
     }
 
     /**
+     * Returns user configuration.
+     *
      * @return array
      */
     public function getUserConfig()
     {
         if (!isset($this->userConfig)) {
             $this->userConfig = [];
-            $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
+            $userConfigFile = $this->getUserConfigDir()
+                . '/'
+                . $this->get('application.user_config_file');
             if (file_exists($userConfigFile)) {
                 $this->userConfig = $this->loadConfigFromFile($userConfigFile);
             }
         }
 
         return $this->userConfig;
+    }
+
+    /**
+     * Returns global (system-level) configuration.
+     *
+     * @return array
+     */
+    protected function getGlobalConfig()
+    {
+        if (!isset($this->globalConfig)) {
+            $this->globalConfig = [];
+            $candidates = (array) $this->get('application.global_config_files');
+            foreach ($candidates as $filename) {
+                if (file_exists($filename)) {
+                    $this->globalConfig = $this->loadConfigFromFile($filename);
+                    break;
+                }
+            }
+        }
+
+        return $this->globalConfig;
     }
 
     /**
@@ -168,8 +196,17 @@ class Config
         $this->userConfig = $config;
     }
 
-    protected function applyUserConfigOverrides()
+    /**
+     * Merge in a set of configuration, partially overriding the current state.
+     *
+     * @param array $config
+     */
+    protected function applyConfigOverrides(array $config)
     {
+        if (empty($config)) {
+            return;
+        }
+
         // A whitelist of allowed overrides.
         $overrideMap = [
             'api' => 'api',
@@ -179,22 +216,20 @@ class Config
             'updates' => 'updates',
         ];
 
-        $userConfig = $this->getUserConfig();
-        if (!empty($userConfig)) {
-            foreach ($overrideMap as $userConfigKey => $configKey) {
-                $value = NestedArrayUtil::getNestedArrayValue($userConfig, explode('.', $userConfigKey), $exists);
-                if ($exists) {
-                    $configParents = explode('.', $configKey);
-                    $default = NestedArrayUtil::getNestedArrayValue(self::$config, $configParents, $defaultExists);
-                    if ($defaultExists && is_array($default)) {
-                        if (!is_array($value)) {
-                            continue;
-                        }
-                        $value = array_replace_recursive($default, $value);
-                    }
-                    NestedArrayUtil::setNestedArrayValue(self::$config, $configParents, $value, true);
-                }
+        foreach ($overrideMap as $userConfigKey => $configKey) {
+            $value = NestedArrayUtil::getNestedArrayValue($config, explode('.', $userConfigKey), $exists);
+            if (!$exists) {
+                continue;
             }
+            $configParents = explode('.', $configKey);
+            $default = NestedArrayUtil::getNestedArrayValue(self::$config, $configParents, $defaultExists);
+            if ($defaultExists && is_array($default)) {
+                if (!is_array($value)) {
+                    continue;
+                }
+                $value = array_replace_recursive($default, $value);
+            }
+            NestedArrayUtil::setNestedArrayValue(self::$config, $configParents, $value, true);
         }
     }
 }

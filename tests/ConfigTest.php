@@ -50,6 +50,38 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
         $this->assertNotEquals($config->get('application.name'), 'Attempted override');
     }
 
+    /**
+     * Test that global config can override initial config.
+     */
+    public function testGlobalConfigOverrides()
+    {
+        // Set up so that the current directory does not include global config,
+        // and so that user config is available.
+        $cwd = getcwd();
+        chdir(__DIR__);
+        $home = getenv('HOME');
+        putenv('HOME=' . __DIR__ . '/data');
+        $config = new Config([], __DIR__ . '/data/mock-cli-config.yaml', true);
+
+        // Assert that global config is not yet loaded.
+        $this->assertFalse($config->has('experimental.test_global'));
+
+        // Set up so that the current directory does include global config.
+        chdir(__DIR__ . '/data');
+        $config = new Config([], __DIR__ . '/data/mock-cli-config.yaml', true);
+
+        // Assert that global config is loaded.
+        $this->assertTrue($config->get('experimental.test_global'));
+
+        // Assert that user config is also loaded, and that it has not been
+        // overridden by the global config.
+        $this->assertTrue($config->get('experimental.test'));
+
+        // Clean up.
+        chdir($cwd);
+        putenv('HOME=' . $home);
+    }
+
     public function tearDown()
     {
         new Config(null, null, true);

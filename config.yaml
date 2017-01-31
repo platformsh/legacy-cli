@@ -7,8 +7,12 @@ application:
   package_name: 'platformsh/cli'
   installer_url: 'https://platform.sh/cli/installer'
   manifest_url: 'https://platform.sh/cli/manifest.json'
-  user_config_dir: '.platformsh'
   env_prefix: 'PLATFORMSH_CLI_'
+  user_config_dir: '.platformsh'
+  user_config_file: 'config.yaml'
+  global_config_files:
+      - '/usr/local/etc/platformsh/cli.yaml'
+      - '/etc/platformsh/cli.yaml'
 
 # Configuration for working with projects locally.
 local:

@@ -191,6 +191,12 @@ updates:
   check_interval: 86400
 ```
 
+Possible configuration filenames are:
+
+* `~/.platformsh/config.yaml`
+* `/usr/local/etc/platformsh/cli.yaml`
+* `/etc/platformsh/cli.yaml`
+
 Other customization is available via environment variables:
 
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
