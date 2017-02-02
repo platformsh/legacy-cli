@@ -65,6 +65,8 @@ detection:
 # Automatic updates.
 # This can be overridden in the user config file.
 updates:
-  check: true
   last_checked: null
   check_interval: 86400
+
+  # Overridden by {application.env_prefix}UPDATES_CHECK env var.
+  check: true

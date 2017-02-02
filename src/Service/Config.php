@@ -96,6 +96,7 @@ class Config
             'SESSION_ID' => 'api.session_id',
             'SKIP_SSL' => 'api.skip_ssl',
             'ACCOUNTS_API' => 'api.accounts_api_url',
+            'UPDATES_CHECK' => 'updates.check',
         ];
 
         foreach ($overrideMap as $var => $key) {
