@@ -25,7 +25,7 @@ class ProjectGetCommand extends CommandBase
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title');
         $this->addProjectOption();
-        $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master'")
+        $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master' or the first available environment")
             ->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname")
             ->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
         Ssh::configureInput($this->getDefinition());
@@ -233,7 +233,7 @@ class ProjectGetCommand extends CommandBase
 
         if (!$environmentId) {
             $environments = $this->api()->getEnvironments($project);
-            $environmentId = count($environments) === 1 ? key($environments) : 'master';
+            $environmentId = isset($environments['master']) ? 'master' : key($environments);
         }
 
         $this->selectEnvironment($environmentId);
