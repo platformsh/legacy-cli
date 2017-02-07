@@ -197,6 +197,7 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
+* `PLATFORMSH_CLI_CONFIG_DIR`: override the configuration and login session files directory (default: `~/.platformsh`)
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 
 ## Contributing

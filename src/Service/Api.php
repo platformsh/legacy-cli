@@ -106,7 +106,7 @@ class Api
     protected function loadTokenFromFile($filename)
     {
         if (strpos($filename, '/') !== 0 && strpos($filename, '\\') !== 0) {
-            $filename = $this->config->getUserConfigDir() . '/' . $filename;
+            $filename = $this->config->getConfigDir() . '/' . $filename;
         }
 
         $content = file_get_contents($filename);
@@ -184,7 +184,7 @@ class Api
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
             $session->setId('cli-' . $this->sessionId);
-            $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
+            $session->setStorage(new File($this->config->getUserStateDir() . '/.session'));
 
             $this->client = new PlatformClient($connector);
 
