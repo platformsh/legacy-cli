@@ -109,16 +109,18 @@ class EnvironmentActivateCommand extends CommandBase
             }
         }
 
-        $success = true;
+        $success = $processed >= $count;
+
         if ($processed) {
             if (!$input->getOption('no-wait')) {
                 /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
                 $activityMonitor = $this->getService('activity_monitor');
-                $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
+                $result = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
+                $success = $success && $result;
             }
             $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
         }
 
-        return $processed >= $count && $success;
+        return $success;
     }
 }
