@@ -2,8 +2,7 @@
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,13 +19,14 @@ class AuthInfoCommand extends CommandBase
             ->addArgument('property', InputArgument::OPTIONAL, 'The account property to view')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The account property to view (alternate syntax)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $info = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
-        $formatter = new PropertyFormatter($input);
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
         $propertyWhitelist = ['id', 'uuid', 'display_name', 'username', 'mail', 'has_key'];
         $info = array_intersect_key($info, array_flip($propertyWhitelist));
 
@@ -46,7 +46,7 @@ class AuthInfoCommand extends CommandBase
 
         if ($property) {
             if (!isset($info[$property])) {
-                throw new \InvalidArgumentException('Property not found: ' . $property);
+                throw new InvalidArgumentException('Property not found: ' . $property);
             }
             $output->writeln($formatter->format($info[$property], $property));
 
@@ -62,7 +62,8 @@ class AuthInfoCommand extends CommandBase
                 $header[] = $property;
             }
         }
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $table->renderSimple($values, $header);
 
         return 0;

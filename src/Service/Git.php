@@ -1,50 +1,35 @@
 <?php
 
-namespace Platformsh\Cli\Helper;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Exception\DependencyMissingException;
-use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Helper class which runs Git CLI commands and interprets the results.
  */
-class GitHelper extends Helper implements OutputAwareInterface
+class Git
 {
 
     /** @var string */
     protected $repositoryDir = '.';
 
-    /** @var ShellHelperInterface */
+    /** @var Shell */
     protected $shellHelper;
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'git';
-    }
+    /** @var array */
+    protected $env = [];
+
+    /** @var string|null */
+    protected $sshCommandFile;
 
     /**
      * Constructor.
      *
-     * @param ShellHelperInterface|null $shellHelper
+     * @param Shell|null $shellHelper
      */
-    public function __construct(ShellHelperInterface $shellHelper = null)
+    public function __construct(Shell $shellHelper = null)
     {
-        $this->shellHelper = $shellHelper ?: new ShellHelper();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setOutput(OutputInterface $output)
-    {
-        if ($this->shellHelper instanceof OutputAwareInterface) {
-            $this->shellHelper->setOutput($output);
-        }
+        $this->shellHelper = $shellHelper ?: new Shell();
     }
 
     /**
@@ -53,7 +38,7 @@ class GitHelper extends Helper implements OutputAwareInterface
      * @return string|false
      *   The version number, or false on failure.
      */
-    public function getVersion()
+    protected function getVersion()
     {
         static $version;
         if (!$version) {
@@ -121,7 +106,7 @@ class GitHelper extends Helper implements OutputAwareInterface
      */
     public function getMergedBranches($ref = 'HEAD', $remote = false, $dir = null, $mustRun = false)
     {
-        $args = ['branch', '--list', '--no-column', '--merged', $ref];
+        $args = ['branch', '--list', '--no-column', '--no-color', '--merged', $ref];
         if ($remote) {
             $args[] = '--remote';
         }
@@ -148,6 +133,7 @@ class GitHelper extends Helper implements OutputAwareInterface
      *   Enable exceptions if the Git command fails.
      * @param bool         $quiet
      *   Suppress command output.
+     * @param array        $env
      *
      * @throws \Exception
      *   If the command fails and $mustRun is enabled.
@@ -156,7 +142,7 @@ class GitHelper extends Helper implements OutputAwareInterface
      *   The command output, true if there is no output, or false if the command
      *   fails.
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [])
     {
         // If enabled, set the working directory to the repository.
         if ($dir !== false) {
@@ -165,7 +151,7 @@ class GitHelper extends Helper implements OutputAwareInterface
         // Run the command.
         array_unshift($args, 'git');
 
-        return $this->shellHelper->execute($args, $dir, $mustRun, $quiet);
+        return $this->shellHelper->execute($args, $dir, $mustRun, $quiet, $env + $this->env);
     }
 
     /**
@@ -220,12 +206,12 @@ class GitHelper extends Helper implements OutputAwareInterface
         // The porcelain command 'git branch' is less strict about character
         // encoding than (otherwise simpler) plumbing commands such as
         // 'git show-ref'.
-        $result = $this->execute(['branch'], $dir, $mustRun);
+        $result = $this->execute(['branch', '--list', '--no-color', '--no-column'], $dir, $mustRun);
         $branches = array_map(function ($line) {
             return trim(ltrim($line, '* '));
         }, explode("\n", $result));
 
-        return in_array($branchName, $branches, TRUE);
+        return in_array($branchName, $branches, true);
     }
 
     /**
@@ -359,12 +345,19 @@ class GitHelper extends Helper implements OutputAwareInterface
         $args = ['branch'];
         if ($upstream !== false) {
             $args[] = '--set-upstream-to=' . $upstream;
-        }
-        else {
+        } else {
             $args[] = '--unset-upstream';
         }
 
         return (bool) $this->execute($args, $dir, $mustRun);
+    }
+
+    /**
+     * @return bool
+     */
+    public function supportsGitSshCommand()
+    {
+        return version_compare($this->getVersion(), '2.3', '>=');
     }
 
     /**
@@ -415,6 +408,19 @@ class GitHelper extends Helper implements OutputAwareInterface
     }
 
     /**
+     * Check whether a file is excluded via .gitignore or similar configuration.
+     *
+     * @param string      $file
+     * @param string|null $dir
+     *
+     * @return bool
+     */
+    public function checkIgnore($file, $dir = null)
+    {
+        return (bool) $this->execute(['check-ignore', $file], $dir);
+    }
+
+    /**
      * Update and/or initialize submodules.
      *
      * @param bool        $recursive
@@ -453,5 +459,59 @@ class GitHelper extends Helper implements OutputAwareInterface
         $args = ['config', '--get', $key];
 
         return $this->execute($args, $dir, $mustRun);
+    }
+
+    /**
+     * Set the SSH command for Git to use.
+     *
+     * This will use GIT_SSH_COMMAND if supported, or GIT_SSH (and a temporary
+     * file) otherwise.
+     *
+     * @param string|null $sshCommand
+     *   The complete SSH command. An empty string or null will use Git's
+     *   default.
+     */
+    public function setSshCommand($sshCommand)
+    {
+        if (empty($sshCommand) || $sshCommand === 'ssh') {
+            unset($this->env['GIT_SSH_COMMAND'], $this->env['GIT_SSH']);
+        } elseif (!$this->supportsGitSshCommand()) {
+            $this->env['GIT_SSH'] = $this->writeSshFile($sshCommand . " \$*\n");
+        } else {
+            $this->env['GIT_SSH_COMMAND'] = $sshCommand;
+        }
+    }
+
+    /**
+     * Write an SSH command to a temporary file to be used with GIT_SSH.
+     *
+     * @param string $sshCommand
+     *
+     * @return string
+     */
+    public function writeSshFile($sshCommand)
+    {
+        $tempDir = sys_get_temp_dir();
+        $tempFile = tempnam($tempDir, 'cli-git-ssh');
+        if (!$tempFile) {
+            throw new \RuntimeException('Failed to create temporary file in: ' . $tempDir);
+        }
+        if (!file_put_contents($tempFile, trim($sshCommand) . "\n")) {
+            throw new \RuntimeException('Failed to write temporary file: ' . $tempFile);
+        }
+        if (!chmod($tempFile, 0750)) {
+            throw new \RuntimeException('Failed to make temporary SSH command file executable: ' . $tempFile);
+        }
+
+        $this->sshCommandFile = $tempFile;
+
+        return $tempFile;
+    }
+
+    public function __destruct()
+    {
+        if (isset($this->sshCommandFile)) {
+            @unlink($this->sshCommandFile);
+        }
     }
 }

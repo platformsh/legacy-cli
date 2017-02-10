@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,7 +18,7 @@ class TunnelListCommand extends TunnelCommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -41,7 +41,8 @@ class TunnelListCommand extends TunnelCommandBase
             }
         }
 
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $headers = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
         $rows = [];
         foreach ($tunnels as $tunnel) {
@@ -56,14 +57,20 @@ class TunnelListCommand extends TunnelCommandBase
         $table->render($rows, $headers);
 
         if (!$table->formatIsMachineReadable()) {
+            $executable = $this->config()->get('application.executable');
             $this->stdErr->writeln('');
 
             if (!$input->getOption('all') && count($tunnels) < $allTunnelsCount) {
-                $this->stdErr->writeln('List all tunnels with: <info>' . self::$config->get('application.executable') . ' tunnel:list --all</info>');
+                $this->stdErr->writeln(sprintf(
+                    'List all tunnels with: <info>%s tunnels --all</info>',
+                    $executable
+                ));
             }
 
-            $this->stdErr->writeln("View tunnel details with: <info>" . self::$config->get('application.executable') . " tunnel:info</info>");
-            $this->stdErr->writeln("Close tunnels with: <info>" . self::$config->get('application.executable') . " tunnel:close</info>");
+            $this->stdErr->writeln([
+                "View tunnel details with: <info>$executable tunnel:info</info>",
+                "Close tunnels with: <info>$executable tunnel:close</info>",
+            ]);
         }
 
         return 0;

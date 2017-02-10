@@ -14,16 +14,18 @@ class WelcomeCommand extends CommandBase
     {
         $this
             ->setName('welcome')
-            ->setDescription('Welcome to ' . self::$config->get('service.name'));
+            ->setDescription('Welcome to ' . $this->config()->get('service.name'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->stdErr->writeln("Welcome to " . self::$config->get('service.name') . "!\n");
+        $this->stdErr->writeln("Welcome to " . $this->config()->get('service.name') . "!\n");
 
         // Ensure the user is logged in in this parent command, because the
         // delegated commands below will not have interactive input.
         $this->api()->getClient();
+
+        $executable = $this->config()->get('application.executable');
 
         if ($project = $this->getCurrentProject()) {
             $projectUri = $project->getLink('#ui');
@@ -37,7 +39,7 @@ class WelcomeCommand extends CommandBase
                 $messages[] = '<comment>This project is suspended.</comment>';
                 if ($project->owner === $this->api()->getMyAccount()['uuid']) {
                     $messages[] = '<comment>Update your payment details to re-activate it: '
-                        . self::$config->get('service.accounts_url')
+                        . $this->config()->get('service.accounts_url')
                         . '</comment>';
                 }
                 $messages[] = '';
@@ -46,16 +48,15 @@ class WelcomeCommand extends CommandBase
 
             // Show the environments.
             $this->runOtherCommand('environments');
-            $this->stdErr->writeln("\nYou can list other projects by running <info>" . self::$config->get('application.executable') . " projects</info>\n");
+            $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>\n");
         } else {
             // The project is not known. Show all projects.
             $this->runOtherCommand('projects', ['--refresh' => 0]);
             $this->stdErr->writeln('');
         }
 
-        $this->stdErr->writeln("Manage your SSH keys by running <info>" . self::$config->get('application.executable') . " ssh-keys</info>\n");
+        $this->stdErr->writeln("Manage your SSH keys by running <info>$executable ssh-keys</info>\n");
 
-        $this->stdErr->writeln("Type <info>" . self::$config->get('application.executable') . " list</info> to see all available commands.");
+        $this->stdErr->writeln("Type <info>$executable list</info> to see all available commands.");
     }
-
 }

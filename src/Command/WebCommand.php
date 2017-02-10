@@ -2,18 +2,19 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class WebCommand extends UrlCommandBase
+class WebCommand extends CommandBase
 {
 
     protected function configure()
     {
-        parent::configure();
         $this
             ->setName('web')
             ->setDescription('Open the Web UI');
+        Url::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -23,18 +24,30 @@ class WebCommand extends UrlCommandBase
         // Attempt to select the appropriate project and environment.
         try {
             $this->validateInput($input);
+            $environmentId = $this->getSelectedEnvironment()->id;
         } catch (\Exception $e) {
-            // Ignore errors.
+            // If a project has been specified but is not found, then error out.
+            if ($input->getOption('project') && !$this->hasSelectedProject()) {
+                throw $e;
+            }
+
+            // If an environment ID has been specified but not found, then use
+            // the specified ID anyway. This allows building a URL when an
+            // environment doesn't yet exist.
+            $environmentId = $input->getOption('environment');
         }
 
-        $url = self::$config->get('service.accounts_url');
         if ($this->hasSelectedProject()) {
             $url = $this->getSelectedProject()->getLink('#ui');
-            if ($this->hasSelectedEnvironment()) {
-                $url .= '/environments/' . rawurlencode($this->getSelectedEnvironment()->id);
+            if (!empty($environmentId)) {
+                $url .= '/environments/' . rawurlencode($environmentId);
             }
+        } else {
+            $url = $this->config()->get('service.accounts_url');
         }
 
-        $this->openUrl($url, $input, $output);
+        /** @var \Platformsh\Cli\Service\Url $urlService */
+        $urlService = $this->getService('url');
+        $urlService->openUrl($url);
     }
 }

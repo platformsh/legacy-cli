@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -42,15 +41,13 @@ class DomainAddCommand extends DomainCommandBase
         try {
             $this->stdErr->writeln("Adding the domain <info>{$this->domainName}</info>");
             $result = $project->addDomain($this->domainName, $this->sslOptions);
-        }
-        catch (ClientException $e) {
+        } catch (ClientException $e) {
             // Catch 409 Conflict errors.
             $response = $e->getResponse();
             if ($response && $response->getStatusCode() === 409) {
                 $this->stdErr->writeln("The domain <error>{$this->domainName}</error> already exists on the project.");
                 $this->stdErr->writeln("Use <info>domain:delete</info> to delete an existing domain");
-            }
-            else {
+            } else {
                 $this->handleApiException($e, $project);
             }
 
@@ -58,7 +55,9 @@ class DomainAddCommand extends DomainCommandBase
         }
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $project);
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

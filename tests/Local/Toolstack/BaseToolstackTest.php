@@ -2,8 +2,8 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Service\Config as CliConfig;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Tests\HasTempDirTrait;
@@ -38,11 +38,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->builder = new LocalBuild(
-            $this->buildSettings,
-            null,
-            self::$output
-        );
+        $this->builder = new LocalBuild(self::$config, self::$output);
         $this->tempDirSetUp();
     }
 
@@ -62,10 +58,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     {
         $projectRoot = $this->createDummyProject($sourceDir);
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
-        $builder = $buildSettings
-            ? new LocalBuild($buildSettings + $this->buildSettings, null, self::$output)
-            : $this->builder;
-        $success = $builder->build($projectRoot);
+        $success = $this->builder->build($buildSettings + $this->buildSettings, $projectRoot);
         $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
 
         return $projectRoot;
@@ -85,7 +78,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         $projectRoot = $this->createTempSubDir('project');
 
         // Set up the project.
-        $fsHelper = new FilesystemHelper();
+        $fsHelper = new Filesystem();
         $fsHelper->copyAll($sourceDir, $projectRoot);
 
         // @todo perhaps make some of these steps unnecessary

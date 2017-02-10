@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,7 +18,7 @@ class IntegrationListCommand extends IntegrationCommandBase
             ->setName('integration:list')
             ->setAliases(['integrations'])
             ->setDescription('View a list of project integration(s)');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
 
@@ -34,7 +34,8 @@ class IntegrationListCommand extends IntegrationCommandBase
             return 1;
         }
 
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $header = ['ID', 'Type', 'Summary'];
         $rows = [];
 
@@ -48,11 +49,12 @@ class IntegrationListCommand extends IntegrationCommandBase
 
         $table->render($rows, $header);
 
+        $executable = $this->config()->get('application.executable');
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('View integration details with: <info>' . self::$config->get('application.executable') . ' integration:get [id]</info>');
+        $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('Add a new integration with: <info>' . self::$config->get('application.executable') . ' integration:add</info>');
-        $this->stdErr->writeln('Delete an integration with: <info>' . self::$config->get('application.executable') . ' integration:delete [id]</info>');
+        $this->stdErr->writeln('Add a new integration with: <info>' . $executable . ' integration:add</info>');
+        $this->stdErr->writeln('Delete an integration with: <info>' . $executable . ' integration:delete [id]</info>');
 
         return 0;
     }

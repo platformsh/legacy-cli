@@ -4,21 +4,17 @@
  * Overrides Symfony's QuestionHelper to provide --yes and --no options.
  */
 
-namespace Platformsh\Cli\Helper;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Console\OutputAwareInterface;
 use Symfony\Component\Console\Helper\QuestionHelper as BaseQuestionHelper;
-use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputAwareInterface;
-use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 
-class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface, InputAwareInterface
+class QuestionHelper extends BaseQuestionHelper
 {
     /** @var InputInterface */
     private $input;
@@ -28,28 +24,12 @@ class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface,
     /**
      * QuestionHelper constructor.
      *
-     * @param InputInterface|null  $input
-     * @param OutputInterface|null $output
+     * @param InputInterface  $input
+     * @param OutputInterface $output
      */
-    public function __construct(InputInterface $input = null, OutputInterface $output = null)
-    {
-        $this->input = $input ?: new ArgvInput();
-        $this->output = $output ?: new ConsoleOutput();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setInput(InputInterface $input)
+    public function __construct(InputInterface $input, OutputInterface $output)
     {
         $this->input = $input;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setOutput(OutputInterface $output)
-    {
         if ($output instanceof ConsoleOutputInterface) {
             $output = $output->getErrorOutput();
         }
@@ -118,19 +98,23 @@ class QuestionHelper extends BaseQuestionHelper implements OutputAwareInterface,
     /**
      * Ask a simple question which requires input.
      *
-     * @param string          $questionText
-     * @param mixed           $default
+     * @param string $questionText
+     * @param mixed  $default
+     * @param array  $autoCompleterValues
      *
      * @return string
      *   The user's answer.
      */
-    public function askInput($questionText, $default = null)
+    public function askInput($questionText, $default = null, array $autoCompleterValues = [])
     {
         if ($default !== null) {
             $questionText .= ' <question>[' . $default . ']</question>';
         }
         $questionText .= ': ';
         $question = new Question($questionText, $default);
+        if (!empty($autoCompleterValues)) {
+            $question->setAutocompleterValues($autoCompleterValues);
+        }
 
         return $this->ask($this->input, $this->output, $question);
     }

@@ -2,13 +2,13 @@
 
 namespace Platformsh\Cli\Tests;
 
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Service\Filesystem;
 
 class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
 {
     use HasTempDirTrait;
 
-    /** @var FilesystemHelper */
+    /** @var Filesystem */
     protected $filesystemHelper;
 
     /**
@@ -16,7 +16,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->filesystemHelper = new FilesystemHelper();
+        $this->filesystemHelper = new Filesystem();
         $this->tempDirSetUp();
     }
 

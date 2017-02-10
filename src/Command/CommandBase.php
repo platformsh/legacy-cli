@@ -2,42 +2,32 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Api;
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Helper\FilesystemHelper;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
-use Platformsh\Cli\SelfUpdate\SelfUpdater;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Input\InputAwareInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
 {
     use HasExamplesTrait;
 
-    /** @var string|null */
-    private static $homeDir;
-
     /** @var bool */
     private static $checkedUpdates;
-
-    /** @var bool */
-    protected static $interactive = false;
 
     /**
      * @see self::getProjectRoot()
@@ -48,9 +38,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     private static $projectRoot = null;
 
     /** @var OutputInterface|null */
-    protected $output;
-
-    /** @var OutputInterface|null */
     protected $stdErr;
 
     protected $envArgName = 'environment';
@@ -59,17 +46,16 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
 
-    /** @var CliConfig */
-    protected static $config;
+    private static $container;
 
-    /** @var LocalProject|null */
-    protected $localProject;
-
-    /** @var Api|null */
+    /** @var \Platformsh\Cli\Service\Api|null */
     private $api;
 
     /** @var InputInterface|null */
     private $input;
+
+    /** @var OutputInterface|null */
+    private $output;
 
     /**
      * @see self::setHiddenAliases()
@@ -106,24 +92,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     private $synopsis = [];
 
-    public function __construct($name = null)
-    {
-        // The config dependency is static for performance reasons: there are
-        // always many CommandBase objects instantiated, and the config does not
-        // need to change.
-        if (!isset(self::$config)) {
-            self::$config = new CliConfig();
-        }
-
-        $this->localProject = new LocalProject(self::$config);
-
-        parent::__construct($name);
-    }
-
     /**
      * {@inheritdoc}
      */
-    public function isHiddenInList() {
+    public function isHiddenInList()
+    {
         return $this->hiddenInList;
     }
 
@@ -134,23 +107,21 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         // Set up dependencies that are only needed once per command run.
         $this->output = $output;
+        $this->container()->set('output', $output);
         $this->input = $input;
+        $this->container()->set('input', $input);
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
-        self::$interactive = $input->isInteractive();
-
-        if (self::$config->get('api.debug')) {
-            $this->stdErr->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+        if ($this->config()->get('api.debug')) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
 
         // Tune error reporting based on the output verbosity.
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             error_reporting(E_ALL);
-        }
-        elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
+        } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
             error_reporting(false);
-        }
-        else {
+        } else {
             error_reporting(E_PARSE | E_ERROR);
         }
 
@@ -160,15 +131,18 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     /**
      * Set up the API object.
      *
-     * @return Api
+     * @return \Platformsh\Cli\Service\Api
      */
     protected function api()
     {
         if (!isset($this->api)) {
-            $dispatcher = new EventDispatcher();
-            $dispatcher->addListener('login_required', [$this, 'login']);
-            $dispatcher->addListener('environments_changed', [$this, 'updateDrushAliases']);
-            $this->api = new Api(self::$config, $dispatcher);
+            $this->api = $this->getService('api');
+            $this->api
+                ->dispatcher
+                ->addListener('login_required', [$this, 'login']);
+            $this->api
+                ->dispatcher
+                ->addListener('environments_changed', [$this, 'updateDrushAliases']);
         }
 
         return $this->api;
@@ -182,52 +156,48 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * configuration. If the input is not interactive, the user will be warned
      * (on every command run) that they should run the 'legacy-migrate' command.
      */
-    protected function promptLegacyMigrate()
+    private function promptLegacyMigrate()
     {
         static $asked = false;
-        if ($this->localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        if ($localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
             $asked = true;
 
             $projectRoot = $this->getProjectRoot();
             $timestamp = time();
             $promptMigrate = true;
             if ($projectRoot) {
-                $projectConfig = $this->localProject->getProjectConfig($projectRoot);
-                if (isset($projectConfig['migrate']['3.x']['last_asked']) && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
+                $projectConfig = $localProject->getProjectConfig($projectRoot);
+                if (isset($projectConfig['migrate']['3.x']['last_asked'])
+                    && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
                     $promptMigrate = false;
                 }
             }
 
-            $this->stdErr->writeln('You are in a project using an old file structure, from previous versions of the ' . self::$config->get('application.name') .'.');
+            $this->stdErr->writeln(sprintf(
+                'You are in a project using an old file structure, from previous versions of the %s.',
+                $this->config()->get('application.name')
+            ));
             if ($this->input->isInteractive() && $promptMigrate) {
                 if ($projectRoot && isset($projectConfig)) {
                     $projectConfig['migrate']['3.x']['last_asked'] = $timestamp;
-                    $this->localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
+                    $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
                 }
-                /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-                $questionHelper = $this->getHelper('question');
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
                 if ($questionHelper->confirm('Migrate to the new structure?')) {
                     $code = $this->runOtherCommand('legacy-migrate');
                     exit($code);
                 }
-            }
-            else {
-                $this->stdErr->writeln('Fix this with: <comment>' . self::$config->get('application.executable') . ' legacy-migrate</comment>');
+            } else {
+                $this->stdErr->writeln(sprintf(
+                    'Fix this with: <comment>%s legacy-migrate</comment>',
+                    $this->config()->get('application.executable')
+                ));
             }
             $this->stdErr->writeln('');
         }
-    }
-
-    /**
-     * @return string
-     */
-    protected function getHomeDir()
-    {
-        if (!isset(self::$homeDir)) {
-            self::$homeDir = FilesystemHelper::getHomeDirectory();
-        }
-
-        return self::$homeDir;
     }
 
     /**
@@ -237,9 +207,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         // Work around a bug in Console which means the default command's input
         // is always considered to be interactive.
-        if ($this->getName() === 'welcome' && isset($GLOBALS['argv']) && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
+        if ($this->getName() === 'welcome'
+            && isset($GLOBALS['argv'])
+            && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
             $input->setInteractive(false);
-            self::$interactive = false;
             return;
         }
 
@@ -264,15 +235,16 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $timestamp = time();
+        $config = $this->config();
 
-        if (!self::$config->get('updates.check')) {
+        if (!$config->get('updates.check')) {
+            return;
+        } elseif (!$reset
+            && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
             return;
         }
-        elseif (!$reset && self::$config->get('updates.last_checked') > $timestamp - self::$config->get('updates.check_interval')) {
-            return;
-        }
 
-        self::$config->writeUserConfig([
+        $config->writeUserConfig([
             'updates' => [
                 'check' => true,
                 'last_checked' => $timestamp,
@@ -281,13 +253,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
-        /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
-        $shellHelper = $this->getHelper('shell');
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
-        $currentVersion = self::$config->get('application.version');
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $currentVersion = $this->config()->get('application.version');
 
-        $cliUpdater = new SelfUpdater($this->input, $this->output, self::$config, $questionHelper);
+        /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
+        $cliUpdater = $this->getService('self_updater');
         $cliUpdater->setAllowMajor(true);
         $cliUpdater->setTimeout(10);
 
@@ -315,21 +288,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                     . "\n\n" . 'Continue?';
                 if ($questionHelper->confirm($questionText)) {
                     $this->stdErr->writeln('');
-                    $exitCode = $shellHelper->executeSimple($originalCommand);
+                    $exitCode = $shell->executeSimple($originalCommand);
                 }
             }
             exit($exitCode);
         }
 
         $this->stdErr->writeln('');
-    }
-
-    /**
-     * @return string
-     */
-    protected function getSessionsDir()
-    {
-        return self::$config->getUserConfigDir() . '/.session';
     }
 
     /**
@@ -341,7 +306,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function login()
     {
-        if (!$this->output || !self::$interactive) {
+        if (!$this->output || (isset($this->input) && !$this->input->isInteractive())) {
             throw new LoginRequiredException();
         }
         $exitCode = $this->runOtherCommand('login');
@@ -378,7 +343,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $project = false;
-        $config = $this->localProject->getProjectConfig($projectRoot);
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             // There is a chance that the project isn't available.
@@ -387,14 +354,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                     $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
                     $message = "Project not found: " . $projectUrl
                         . "\nThe project probably no longer exists.";
-                }
-                else {
+                } else {
                     $message = "Project not found: " . $config['id']
                         . "\nEither you do not have access to the project or it no longer exists.";
                 }
                 throw new ProjectNotFoundException($message);
             }
-            $this->debug('Selecting project ' . $config['id'] . ' based on project root');
+            $this->debug('Project ' . $config['id'] . ' is mapped to the current directory');
         }
         $this->currentProject = $project;
 
@@ -418,13 +384,16 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return false;
         }
 
-        $gitHelper = $this->getHelper('git');
-        $gitHelper->setDefaultRepositoryDir($this->getProjectRoot());
-        $config = $this->localProject->getProjectConfig($projectRoot);
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $git->setDefaultRepositoryDir($this->getProjectRoot());
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $config = $localProject->getProjectConfig($projectRoot);
 
         // Check if there is a manual mapping set for the current branch.
         if (!empty($config['mapping'])
-            && ($currentBranch = $gitHelper->getCurrentBranch())
+            && ($currentBranch = $git->getCurrentBranch())
             && !empty($config['mapping'][$currentBranch])) {
             $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
             if ($environment) {
@@ -432,13 +401,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 return $environment;
             } else {
                 unset($config['mapping'][$currentBranch]);
-                $this->localProject->writeCurrentProjectConfig($config, $projectRoot);
+                $localProject->writeCurrentProjectConfig($config, $projectRoot);
             }
         }
 
         // Check whether the user has a Git upstream set to a remote environment
         // ID.
-        $upstream = $gitHelper->getUpstream();
+        $upstream = $git->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
@@ -450,12 +419,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         // There is no Git remote set. Fall back to trying the current branch
         // name.
-        if (!empty($currentBranch) || ($currentBranch = $gitHelper->getCurrentBranch())) {
+        if (!empty($currentBranch) || ($currentBranch = $git->getCurrentBranch())) {
             $environment = $this->api()->getEnvironment($currentBranch, $project, $refresh);
             if (!$environment) {
                 // Try a sanitized version of the branch name too.
                 $currentBranchSanitized = Environment::sanitizeId($currentBranch);
-                $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+                if ($currentBranchSanitized !== $currentBranch) {
+                    $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+                }
             }
             if ($environment) {
                 $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
@@ -471,7 +442,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *
      * This is called via the 'environments_changed' event.
      *
-     * @see Api::getEnvironments()
+     * @see \Platformsh\Cli\Service\Api::getEnvironments()
      *
      * @param EnvironmentsChangedEvent $event
      */
@@ -491,10 +462,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return;
         }
         $this->debug('Updating Drush aliases');
-        /** @var \Platformsh\Cli\Helper\DrushHelper $drushHelper */
-        $drushHelper = $this->getHelper('drush');
-        $drushHelper->setHomeDir($this->getHomeDir());
-        $drushHelper->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
+        /** @var \Platformsh\Cli\Service\Drush $drush */
+        $drush = $this->getService('drush');
+        $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
     }
 
     /**
@@ -514,8 +484,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     public function getProjectRoot()
     {
         if (!isset(self::$projectRoot)) {
-            $this->debug('Finding the project root based on the CWD');
-            self::$projectRoot = $this->localProject->getProjectRoot();
+            $this->debug('Finding the project root');
+            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+            $localProject = $this->getService('local.project');
+            self::$projectRoot = $localProject->getProjectRoot();
             $this->debug(
                 self::$projectRoot
                     ? 'Project root found: ' . self::$projectRoot
@@ -544,8 +516,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function rebuildWarning()
     {
-        $this->stdErr->writeln('<comment>The remote environment must be rebuilt for the change to take effect.</comment>');
-        $this->stdErr->writeln("Use 'git push' with new commit(s) to trigger a rebuild.");
+        $this->stdErr->writeln([
+            '<comment>The remote environment must be rebuilt for the change to take effect.</comment>',
+            "Use 'git push' with new commit(s) to trigger a rebuild."
+        ]);
     }
 
     /**
@@ -593,6 +567,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function addEnvironmentOption()
     {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, 'The environment ID');
     }
 
@@ -603,6 +578,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function addAppOption()
     {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, 'The remote application name');
     }
 
@@ -615,6 +591,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
     {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('no-wait', null, InputOption::VALUE_NONE, $description);
     }
 
@@ -631,7 +608,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!empty($projectId)) {
             $project = $this->api()->getProject($projectId, $host);
             if (!$project) {
-                throw new \RuntimeException('Specified project not found: ' . $projectId);
+                throw new ConsoleInvalidArgumentException('Specified project not found: ' . $projectId);
             }
         } else {
             $project = $this->getCurrentProject();
@@ -643,7 +620,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
         }
 
-        return $project;
+        $this->project = $project;
+
+        return $this->project;
     }
 
     /**
@@ -654,33 +633,37 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * @param string|null $environmentId
      *   The environment ID specified by the user, or null to auto-detect the
      *   environment.
-     *
-     * @return Environment
+     * @param bool $required
+     *   Whether it's required to have an environment.
      */
-    protected function selectEnvironment($environmentId = null)
+    protected function selectEnvironment($environmentId = null, $required = true)
     {
         if (!empty($environmentId)) {
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
-                throw new \RuntimeException('Specified environment not found: ' . $environmentId);
+                throw new ConsoleInvalidArgumentException('Specified environment not found: ' . $environmentId);
             }
 
-            return $environment;
+            $this->environment = $environment;
+            return;
         }
 
         // If no ID is specified, try to auto-detect the current environment.
         if ($environment = $this->getCurrentEnvironment($this->project)) {
-            return $environment;
+            $this->environment = $environment;
+            return;
         }
 
-        if ($this->getProjectRoot()) {
-            $message = 'Could not determine the current environment.'
-                . "\n" . 'Specify it manually using --environment (-e).';
-        } else {
-            $message = 'No environment specified.'
-                . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
+        if ($required) {
+            if ($this->getProjectRoot()) {
+                $message = 'Could not determine the current environment.'
+                    . "\n" . 'Specify it manually using --environment (-e).';
+            } else {
+                $message = 'No environment specified.'
+                    . "\n" . 'Specify one using --environment (-e), or go to a project directory.';
+            }
+            throw new ConsoleInvalidArgumentException($message);
         }
-        throw new \RuntimeException($message);
     }
 
     /**
@@ -707,15 +690,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $this->debug('Searching for applications in local repository');
         /** @var LocalApplication[] $apps */
-        $apps = LocalApplication::getApplications($projectRoot, self::$config);
+        $apps = LocalApplication::getApplications($projectRoot, $this->config());
 
         if ($filter) {
             $apps = array_filter($apps, $filter);
         }
 
         if (count($apps) > 1 && $input->isInteractive()) {
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
             $choices = [];
             foreach ($apps as $app) {
                 $choices[$app->getName()] = $app->getName();
@@ -761,21 +744,25 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $host = parse_url($url, PHP_URL_HOST);
         $path = parse_url($url, PHP_URL_PATH);
-        if ((!$path || $path === '/') && preg_match('/\-\w+\.[a-z]{2}\.' . preg_quote(self::$config->get('detection.site_domain')) . '$/', $host)) {
+        $site_domains_pattern = '(' . implode('|', array_map('preg_quote', $this->config()->get('detection.site_domains'))) . ')';
+        $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
+        if (!strpos($path, '/projects/')
+            && preg_match($site_pattern, $host)) {
             list($env_project_app,) = explode('.', $host, 2);
+            if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
+                $env_project_app = substr($env_project_app, $tripleDashPos + 3);
+            }
             if (($doubleDashPos = strrpos($env_project_app, '--')) !== false) {
                 $env_project = substr($env_project_app, 0, $doubleDashPos);
                 $result['appId'] = substr($env_project_app, $doubleDashPos + 2);
-            }
-            else {
+            } else {
                 $env_project = $env_project_app;
             }
             if (($dashPos = strrpos($env_project, '-')) !== false) {
                 $result['projectId'] = substr($env_project, $dashPos + 1);
                 $result['environmentId'] = substr($env_project, 0, $dashPos);
             }
-        }
-        else {
+        } else {
             $result['host'] = $host;
             $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
             if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
@@ -783,7 +770,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
         }
         if (empty($result['projectId']) || preg_match('/\W/', $result['projectId'])) {
-            throw new \InvalidArgumentException(sprintf('Invalid project URL: %s', $url));
+            throw new ConsoleInvalidArgumentException(sprintf('Invalid project URL: %s', $url));
         }
 
         return $result;
@@ -813,13 +800,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         // Select the project.
-        $this->project = $this->selectProject($projectId, $projectHost);
+        $this->selectProject($projectId, $projectHost);
 
         // Select the environment.
         $envOptionName = 'environment';
         if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
-                throw new \InvalidArgumentException(
+                throw new ConsoleInvalidArgumentException(
                     sprintf(
                         'You cannot use both the <%s> argument and the --%s option',
                         $this->envArgName,
@@ -833,16 +820,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
-                $this->environment = $this->selectEnvironment($argument);
+                $this->selectEnvironment($argument);
             }
         } elseif ($input->hasOption($envOptionName)) {
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
-            if (!$environmentId && $envNotRequired) {
-                $this->environment = $this->getCurrentEnvironment($this->project);
-            }
-            else {
-                $this->environment = $this->selectEnvironment($environmentId);
-            }
+            $this->selectEnvironment($environmentId, !$envNotRequired);
         }
 
         $this->debug('Validated input');
@@ -931,9 +913,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $cmdInput = new ArrayInput(['command' => $name] + $arguments);
-        $cmdInput->setInteractive(self::$interactive);
+        if (!empty($arguments['--yes']) || !empty($arguments['--no'])) {
+            $cmdInput->setInteractive(false);
+        } elseif (isset($this->input)) {
+            $cmdInput->setInteractive($this->input->isInteractive());
+        }
 
         $this->debug('Running command: ' . $name);
+
+        $this->container()->reset();
 
         $application->setCurrentCommand($command);
         $result = $command->run($cmdInput, $output ?: $this->output);
@@ -984,7 +972,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $name = $this->getName();
 
         $placeholders = ['%command.name%', '%command.full_name%'];
-        $replacements = [$name, self::$config->get('application.executable') . ' ' . $name];
+        $replacements = [$name, $this->config()->get('application.executable') . ' ' . $name];
 
         return str_replace($placeholders, $replacements, $help);
     }
@@ -1002,19 +990,48 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * {@inheritdoc}
+     * Get a service object.
+     *
+     * Services are configured in services.yml, and loaded via the Symfony
+     * Dependency Injection component.
+     *
+     * @param string $name The service name. See services.yml for a list.
+     *
+     * @return object The associated service object.
      */
-    public function getHelper($name)
+    protected function getService($name)
     {
-        $helper = parent::getHelper($name);
-        if ($this->input !== null && $helper instanceof InputAwareInterface) {
-            $helper->setInput($this->input);
-        }
-        if ($this->output !== null && $helper instanceof OutputAwareInterface) {
-            $helper->setOutput($this->output);
+        return $this->container()->get($name);
+    }
+
+    /**
+     * @return ContainerBuilder
+     */
+    private function container()
+    {
+        if (!isset(self::$container)) {
+            self::$container = new ContainerBuilder();
+            $loader = new YamlFileLoader(self::$container, new FileLocator());
+            $loader->load(CLI_ROOT . '/services.yaml');
         }
 
-        return $helper;
+        return self::$container;
+    }
+
+    /**
+     * Get the configuration service.
+     *
+     * @return \Platformsh\Cli\Service\Config
+     */
+    protected function config()
+    {
+        static $config;
+        if (!isset($config)) {
+            /** @var \Platformsh\Cli\Service\Config $config */
+            $config = $this->getService('config');
+        }
+
+        return $config;
     }
 
     /**
@@ -1041,12 +1058,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $key = $short ? 'short' : 'long';
 
         if (!isset($this->synopsis[$key])) {
-            $aliases = $this->getAliases();
+            $aliases = $this->getVisibleAliases();
             $name = $this->getName();
             $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             $this->synopsis[$key] = trim(sprintf(
                 '%s %s %s',
-                self::$config->get('application.executable'),
+                $this->config()->get('application.executable'),
                 $shortName,
                 $this->getDefinition()->getSynopsis($short)
             ));

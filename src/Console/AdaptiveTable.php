@@ -2,12 +2,12 @@
 
 namespace Platformsh\Cli\Console;
 
-use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 
 /**
  * Extends the Symfony Console Table to make it adaptive to the terminal width.
@@ -36,22 +36,12 @@ class AdaptiveTable extends Table
     public function __construct(OutputInterface $output, $maxTableWidth = null, $minColumnWidth = 10)
     {
         $this->outputCopy = $output;
-        $this->maxTableWidth = $maxTableWidth !== null ? $maxTableWidth : $this->getTerminalWidth();
+        $this->maxTableWidth = $maxTableWidth !== null
+            ? $maxTableWidth
+            : (new Terminal())->getWidth();
         $this->minColumnWidth = $minColumnWidth;
 
         parent::__construct($output);
-    }
-
-    /**
-     * @param int $default
-     *
-     * @return int
-     */
-    protected function getTerminalWidth($default = 120)
-    {
-        $dimensions = (new Application())->getTerminalDimensions();
-
-        return $dimensions[0] !== null ? $dimensions[0] : $default;
     }
 
     /**

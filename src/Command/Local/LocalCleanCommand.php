@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Local\LocalBuild;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -47,7 +46,8 @@ class LocalCleanCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $builder = new LocalBuild([], self::$config, $this->stdErr);
+        /** @var \Platformsh\Cli\Local\LocalBuild $builder */
+        $builder = $this->getService('local.build');
         $result = $builder->cleanBuilds(
             $projectRoot,
             $input->getOption('max-age'),
@@ -72,5 +72,4 @@ class LocalCleanCommand extends CommandBase
             $this->stdErr->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
         }
     }
-
 }

@@ -2,8 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Service\Filesystem;
 
 class VanillaTest extends BaseToolstackTest
 {
@@ -46,20 +45,18 @@ class VanillaTest extends BaseToolstackTest
     {
         // Copy the 'vanilla' app to a temporary directory.
         $sourceDir = $this->createTempSubDir();
-        $fsHelper = new FilesystemHelper();
+        $fsHelper = new Filesystem();
         $fsHelper->copyAll('tests/data/apps/vanilla', $sourceDir);
 
         // Create another temporary directory.
         $destination = $this->createTempSubDir();
 
         // Test with symlinking.
-        $builder = new LocalBuild(['abslinks' => true], null, self::$output);
-        $builder->build($sourceDir, $destination);
+        $this->builder->build(['abslinks' => true], $sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 
         // Test with copying.
-        $builder = new LocalBuild(['copy' => true, 'abslinks' => true], null, self::$output);
-        $builder->build($sourceDir, $destination);
+        $this->builder->build(['copy' => true, 'abslinks' => true], $sourceDir, $destination);
         $this->assertFileExists($destination . '/index.html');
 
         // Remove the temporary files.
@@ -75,8 +72,7 @@ class VanillaTest extends BaseToolstackTest
 
         $destination = $projectRoot . '/web';
 
-        $builder = new LocalBuild($this->buildSettings, null, self::$output);
-        $builder->build($projectRoot, $destination);
+        $this->builder->build($this->buildSettings, $projectRoot, $destination);
         $this->assertFileExists($destination . '/index.html');
     }
 }

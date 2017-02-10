@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -39,17 +39,14 @@ class VariableSetCommand extends CommandBase
         $json = $input->getOption('json');
 
         if ($json && !$this->validateJson($variableValue)) {
-            throw new \Exception("Invalid JSON: <error>$variableValue</error>");
+            throw new InvalidArgumentException("Invalid JSON: <error>$variableValue</error>");
         }
 
         // Check whether the variable already exists. If there is no change,
         // quit early.
         $existing = $this->getSelectedEnvironment()
                          ->getVariable($variableName);
-        if ($existing && $existing->getProperty('value') === $variableValue && $existing->getProperty(
-                'is_json'
-            ) == $json
-        ) {
+        if ($existing && $existing->value === $variableValue && $existing->is_json == $json) {
             $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
 
             return 0;
@@ -64,9 +61,10 @@ class VariableSetCommand extends CommandBase
         $success = true;
         if (!$result->countActivities()) {
             $this->rebuildWarning();
-        }
-        elseif (!$input->getOption('no-wait')) {
-            $success = ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+        } elseif (!$input->getOption('no-wait')) {
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return $success ? 0 : 1;
@@ -83,5 +81,4 @@ class VariableSetCommand extends CommandBase
 
         return !$null || ($null && $string === 'null');
     }
-
 }

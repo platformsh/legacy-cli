@@ -2,8 +2,9 @@
 
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
@@ -12,12 +13,14 @@ class LocalProject
 {
     protected $config;
     protected $fs;
+    protected $git;
 
     protected static $projectConfigs = [];
 
-    public function __construct(CliConfig $config = null)
+    public function __construct(Config $config = null, Git $git = null)
     {
-        $this->config = $config ?: new CliConfig();
+        $this->config = $config ?: new Config();
+        $this->git = $git ?: new Git();
         $this->fs = new Filesystem();
     }
 
@@ -29,7 +32,9 @@ class LocalProject
      */
     protected function parseGitUrl($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($this->config->get('detection.git_domain')) . '):\1\.git$/', $gitUrl, $matches)) {
+        $gitDomain = $this->config->get('detection.git_domain');
+        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
+        if (!preg_match($pattern, $gitUrl, $matches)) {
             return false;
         }
 
@@ -47,10 +52,9 @@ class LocalProject
      */
     protected function getGitRemoteUrl($dir)
     {
-        $gitHelper = new GitHelper();
-        $gitHelper->ensureInstalled();
+        $this->git->ensureInstalled();
         foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
-            if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
+            if ($url = $this->git->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
         }
@@ -59,29 +63,36 @@ class LocalProject
     }
 
     /**
-     * Ensure there are appropriate Git remotes in the repository.
+     * Ensure there is an appropriate Git remote in the repository.
      *
      * @param string $dir
+     *   The repository directory.
      * @param string $url
+     *   The Git URL.
      */
     public function ensureGitRemote($dir, $url)
     {
         if (!file_exists($dir . '/.git')) {
             throw new \InvalidArgumentException('The directory is not a Git repository');
         }
-        $gitHelper = new GitHelper();
-        $gitHelper->ensureInstalled();
-        $gitHelper->setDefaultRepositoryDir($dir);
-        $currentUrl = $gitHelper->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);
+        $this->git->ensureInstalled();
+        $currentUrl = $this->git->getConfig(
+            sprintf('remote.%s.url', $this->config->get('detection.git_remote_name')),
+            $dir
+        );
         if (!$currentUrl) {
-            $gitHelper->execute(['remote', 'add', $this->config->get('detection.git_remote_name'), $url], $dir, true);
-        }
-        elseif ($currentUrl != $url) {
-            $gitHelper->execute(['remote', 'set-url', $this->config->get('detection.git_remote_name'), $url], $dir, true);
-        }
-        // Add an origin remote too.
-        if ($this->config->get('detection.git_remote_name') !== 'origin' && !$gitHelper->getConfig("remote.origin.url", $dir)) {
-            $gitHelper->execute(['remote', 'add', 'origin', $url]);
+            $this->git->execute(
+                ['remote', 'add', $this->config->get('detection.git_remote_name'), $url],
+                $dir,
+                true
+            );
+        } elseif ($currentUrl !== $url) {
+            $this->git->execute([
+                'remote',
+                'set-url',
+                $this->config->get('detection.git_remote_name'),
+                $url
+            ], $dir, true);
         }
     }
 
@@ -133,6 +144,29 @@ class LocalProject
     }
 
     /**
+     * Initialize a directory as a project root.
+     *
+     * @param string $directory
+     *   The Git repository that should be initialized.
+     * @param Project $project
+     *   The project.
+     */
+    public function mapDirectory($directory, Project $project)
+    {
+        if (!file_exists($directory . '/.git')) {
+            throw new \InvalidArgumentException('Not a Git repository: ' . $directory);
+        }
+        $projectConfig = [
+            'id' => $project->id,
+        ];
+        if ($host = parse_url($project->getUri(), PHP_URL_HOST)) {
+            $projectConfig['host'] = $host;
+        }
+        $this->writeCurrentProjectConfig($projectConfig, $directory, true);
+        $this->ensureGitRemote($directory, $project->getGitUrl());
+    }
+
+    /**
      * Find the legacy root of the current project, from CLI versions <3.
      *
      * @return string|false
@@ -176,7 +210,7 @@ class LocalProject
     /**
      * Get the configuration for the current project.
      *
-     * @param string $projectRoot
+     * @param string|null $projectRoot
      *
      * @return array|null
      *   The current project's configuration.
@@ -193,8 +227,7 @@ class LocalProject
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
             self::$projectConfigs[$projectRoot] = $projectConfig;
-        }
-        elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
+        } elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $gitUrl = $this->getGitRemoteUrl($projectRoot);
             if ($gitUrl && ($projectConfig = $this->parseGitUrl($gitUrl))) {
                 $this->writeCurrentProjectConfig($projectConfig, $projectRoot);
@@ -289,7 +322,6 @@ EOF
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
             if (strpos($existing, $this->config->get('application.name')) !== false) {
-
                 // Backwards compatibility between versions 3.0.0 and 3.0.2.
                 $newRoot = "\n" . '/' . $this->config->get('application.name') . "\n";
                 $oldRoot = "\n" . '/.www' . "\n";

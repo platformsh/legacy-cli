@@ -3,8 +3,8 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Util\Table;
-use Platformsh\Cli\Util\PropertyFormatter;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,7 +14,7 @@ class SubscriptionInfoCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
-    /** @var PropertyFormatter */
+    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
     /**
@@ -27,7 +27,7 @@ class SubscriptionInfoCommand extends CommandBase
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->setDescription('Read subscription properties');
         PropertyFormatter::configureInput($this->getDefinition());
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addExample('View all subscription properties')
              ->addExample('View the subscription status', 'status')
@@ -46,12 +46,12 @@ class SubscriptionInfoCommand extends CommandBase
 
             return 1;
         }
-        $this->formatter = new PropertyFormatter($input);
+        $this->formatter = $this->getService('property_formatter');
 
         $property = $input->getArgument('property');
 
         if (!$property) {
-            return $this->listProperties($subscription, new Table($input, $output));
+            return $this->listProperties($subscription);
         }
 
         switch ($property) {
@@ -70,11 +70,10 @@ class SubscriptionInfoCommand extends CommandBase
 
     /**
      * @param Subscription $subscription
-     * @param Table        $table
      *
      * @return int
      */
-    protected function listProperties(Subscription $subscription, Table $table)
+    protected function listProperties(Subscription $subscription)
     {
         $headings = [];
         $values = [];
@@ -82,6 +81,8 @@ class SubscriptionInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $table->renderSimple($values, $headings);
 
         return 0;

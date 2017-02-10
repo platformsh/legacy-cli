@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -12,7 +14,8 @@ class ProjectDeleteCommand extends CommandBase
     {
         $this
             ->setName('project:delete')
-            ->setDescription('Delete a project');
+            ->setDescription('Delete a project')
+            ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
         $this->addProjectOption();
     }
 
@@ -26,8 +29,8 @@ class ProjectDeleteCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $confirmQuestionLines = [
             'You are about to delete the project:',
@@ -65,5 +68,21 @@ class ProjectDeleteCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln('The project ' . $this->api()->getProjectLabel($project) . ' was deleted.');
         return 0;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function validateInput(InputInterface $input, $envNotRequired = false)
+    {
+        if ($projectId = $input->getArgument('project')) {
+            if ($input->getOption('project')) {
+                throw new ConsoleInvalidArgumentException(
+                    'You cannot use both the <project> argument and the --project option'
+                );
+            }
+            $input->setOption('project', $projectId);
+        }
+        parent::validateInput($input, $envNotRequired);
     }
 }

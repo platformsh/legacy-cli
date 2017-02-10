@@ -13,6 +13,7 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;
+use Symfony\Component\Console\Terminal;
 
 class CustomTextDescriptor extends TextDescriptor
 {
@@ -72,8 +73,9 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText("\n");
             $this->writeText('<comment>Examples:</comment>', $options);
             $name = $command->getName();
+            $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             foreach ($examples as $arguments => $description) {
-                $this->writeText("\n $description:\n   <info>" . $this->cliExecutableName . " $name $arguments</info>\n");
+                $this->writeText("\n $description:\n   <info>{$this->cliExecutableName} $shortName $arguments</info>\n");
             }
         }
     }
@@ -168,22 +170,6 @@ class CustomTextDescriptor extends TextDescriptor
     }
 
     /**
-     * @param int $default
-     *
-     * @return int
-     */
-    protected function getTerminalWidth($default = 80)
-    {
-        static $dimensions;
-        if (!$dimensions) {
-            $application = new ConsoleApplication();
-            $dimensions = $application->getTerminalDimensions();
-        }
-
-        return $dimensions[0] ?: $default;
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function writeText($content, array $options = [])
@@ -235,7 +221,7 @@ class CustomTextDescriptor extends TextDescriptor
         }
 
         // Limit to a maximum.
-        $terminalWidth = $this->getTerminalWidth();
+        $terminalWidth = (new Terminal())->getWidth();
         if ($width / $terminalWidth > 0.4) {
             $width = floor($terminalWidth * 0.4);
         }
@@ -253,5 +239,4 @@ class CustomTextDescriptor extends TextDescriptor
 
         return $width;
     }
-
 }

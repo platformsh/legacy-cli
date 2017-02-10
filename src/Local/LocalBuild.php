@@ -1,11 +1,11 @@
 <?php
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\ShellHelper;
-use Symfony\Component\Console\Output\NullOutput;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Shell;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -16,27 +16,54 @@ class LocalBuild
     // archives. Increment this number as breaking changes are released.
     const BUILD_VERSION = 3;
 
-    protected $settings;
+    /** @var array */
+    protected $settings = [];
 
     /** @var OutputInterface */
     protected $output;
 
-    /** @var FilesystemHelper */
+    /** @var Filesystem */
     protected $fsHelper;
 
-    /** @var GitHelper */
+    /** @var Git */
     protected $gitHelper;
 
-    /** @var ShellHelper */
+    /** @var Shell */
     protected $shellHelper;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
     /**
      * LocalBuild constructor.
      *
-     * @param array                $settings
+     * @param Config|null                             $config
+     * @param OutputInterface|null                    $output
+     * @param \Platformsh\Cli\Service\Shell|null      $shell
+     * @param \Platformsh\Cli\Service\Filesystem|null $fs
+     * @param \Platformsh\Cli\Service\Git|null        $git
+     */
+    public function __construct(
+        Config $config = null,
+        OutputInterface $output = null,
+        Shell $shell = null,
+        Filesystem $fs = null,
+        Git $git = null
+    ) {
+        $this->config = $config ?: new Config();
+        $this->output = $output ?: new ConsoleOutput();
+        if ($this->output instanceof ConsoleOutput) {
+            $this->output = $this->output->getErrorOutput();
+        }
+        $this->shellHelper = $shell ?: new Shell($this->output);
+        $this->fsHelper = $fs ?: new Filesystem($this->shellHelper);
+        $this->gitHelper = $git ?: new Git($this->shellHelper);
+    }
+
+    /**
+     * Build a project from any source directory, targeting any destination.
+     *
+     * @param array  $settings    An array of build settings.
      *     Possible settings:
      *     - clone (bool, default false) Clone the repository to the build
      *       directory before building, where possible.
@@ -57,25 +84,6 @@ class LocalBuild
      *     - lock (bool, default false) Create or update a lock
      *       file via Drush Make, if applicable.
      *     - run-deploy-hooks (bool, default false) Run deploy hooks.
-     * @param CliConfig|null       $config
-     *     Optionally, inject a specific CLI configuration object.
-     * @param OutputInterface|null $output
-     *     Optionally, inject a specific Symfony Console output object.
-     */
-    public function __construct(array $settings = [], CliConfig $config = null, OutputInterface $output = null)
-    {
-        $this->config = $config ?: new CliConfig();
-        $this->settings = $settings;
-        $this->output = $output ?: new NullOutput();
-        $this->shellHelper = new ShellHelper($this->output);
-        $this->fsHelper = new FilesystemHelper($this->shellHelper);
-        $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
-        $this->gitHelper = new GitHelper($this->shellHelper);
-    }
-
-    /**
-     * Build a project from any source directory, targeting any destination.
-     *
      * @param string $sourceDir   The absolute path to the source directory.
      * @param string $destination Where the web root(s) will be linked (absolute
      *                            path).
@@ -85,15 +93,17 @@ class LocalBuild
      *
      * @return bool
      */
-    public function build($sourceDir, $destination = null, array $apps = [])
+    public function build(array $settings, $sourceDir, $destination = null, array $apps = [])
     {
-        $success = true;
+        $this->settings = $settings;
+        $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
 
         if (file_exists($sourceDir . '/.git')) {
             (new LocalProject())->writeGitExclude($sourceDir);
         }
 
         $ids = [];
+        $success = true;
         foreach (LocalApplication::getApplications($sourceDir, $this->config) as $app) {
             $id = $app->getId();
             $ids[] = $id;
@@ -108,7 +118,7 @@ class LocalBuild
                 $this->output->writeln("Application not found: <comment>$notFound</comment>");
             }
         }
-        if (empty($this->settings['no-clean'])) {
+        if (empty($settings['no-clean'])) {
             $this->output->writeln("Cleaning up...");
             $this->cleanBuilds($sourceDir);
             $this->cleanArchives($sourceDir);
@@ -137,12 +147,23 @@ class LocalBuild
         if ($tree === false) {
             return false;
         }
-        $tree = preg_replace('#^|\n[^\n]+?' . preg_quote($this->config->get('service.project_config_dir')) . '\n|$#', "\n", $tree);
+        $tree = preg_replace(
+            '#^|\n[^\n]+?' . preg_quote($this->config->get('service.project_config_dir')) . '\n|$#',
+            "\n",
+            $tree
+        );
         $hashes[] = sha1($tree);
 
         // Include the hashes of untracked and modified files.
         $others = $this->gitHelper->execute(
-            ['ls-files', '--modified', '--others', '--exclude-standard', '-x ' . $this->config->get('service.project_config_dir'), '.'],
+            [
+                'ls-files',
+                '--modified',
+                '--others',
+                '--exclude-standard',
+                '-x ' . $this->config->get('service.project_config_dir'),
+                '.',
+            ],
             $appRoot
         );
         if ($others === false) {
@@ -174,7 +195,7 @@ class LocalBuild
     /**
      * @param LocalApplication $app
      * @param string           $sourceDir
-     * @param string           $destination
+     * @param string|null      $destination
      *
      * @return bool
      */
@@ -291,7 +312,10 @@ class LocalBuild
             }
         }
         if (!rename($tmpBuildDir, $buildDir)) {
-            $this->output->writeln(sprintf('Failed to move temporary build directory into <error>%s</error>', $buildDir));
+            $this->output->writeln(sprintf(
+                'Failed to move temporary build directory into <error>%s</error>',
+                $buildDir
+            ));
 
             return false;
         }
@@ -401,13 +425,11 @@ class LocalBuild
      *
      * This preserves the currently active build.
      *
-     * @param string $projectRoot
-     * @param int    $maxAge
-     * @param int    $keepMax
-     * @param bool   $includeActive
-     * @param bool   $quiet
-     *
-     * @deprecated No longer needed from 3.0.0.
+     * @param string   $projectRoot
+     * @param int|null $maxAge
+     * @param int      $keepMax
+     * @param bool     $includeActive
+     * @param bool     $quiet
      *
      * @return int[]
      *   The numbers of deleted and kept builds.
@@ -486,10 +508,10 @@ class LocalBuild
     /**
      * Remove old build archives.
      *
-     * @param string $projectRoot
-     * @param int    $maxAge
-     * @param int    $keepMax
-     * @param bool   $quiet
+     * @param string   $projectRoot
+     * @param int|null $maxAge
+     * @param int      $keepMax
+     * @param bool     $quiet
      *
      * @return int[]
      *   The numbers of deleted and kept builds.
@@ -508,11 +530,11 @@ class LocalBuild
     /**
      * Remove old files from a directory.
      *
-     * @param string $directory
-     * @param int    $maxAge
-     * @param int    $keepMax
-     * @param array  $blacklist
-     * @param bool   $quiet
+     * @param string   $directory
+     * @param int|null $maxAge
+     * @param int      $keepMax
+     * @param array    $blacklist
+     * @param bool     $quiet
      *
      * @return int[]
      */
@@ -540,14 +562,14 @@ class LocalBuild
                 $numKept++;
                 continue;
             }
-            if ($keepMax !== null && ($numKept >= $keepMax) || ($maxAge !== null && $now - filemtime($filename) > $maxAge)) {
+            if (($keepMax !== null && $numKept >= $keepMax)
+                || ($maxAge !== null && $now - filemtime($filename) > $maxAge)) {
                 if (!$quiet) {
                     $this->output->writeln("Deleting: " . basename($filename));
                 }
                 if ($this->fsHelper->remove($filename)) {
                     $numDeleted++;
-                }
-                elseif (!$quiet) {
+                } elseif (!$quiet) {
                     $this->output->writeln("Failed to delete: <error>" . basename($filename) . "</error>");
                 }
             } else {
@@ -557,5 +579,4 @@ class LocalBuild
 
         return [$numDeleted, $numKept];
     }
-
 }

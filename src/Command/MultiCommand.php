@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,7 +24,10 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property by which to sort the list of project options', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the order of project options');
-        $this->addExample('List variables on the "master" environment for multiple projects', "--projects l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx 'variable:get --environment master'");
+        $this->addExample(
+            'List variables on the "master" environment for multiple projects',
+            "--projects l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx 'variable:get --environment master'"
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -32,17 +36,23 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $commandArgs = explode(' ', $commandLine);
         $commandName = reset($commandArgs);
         if (!$commandName) {
-            throw new \InvalidArgumentException('Invalid command: ' . $commandLine);
+            throw new InvalidArgumentException('Invalid command: ' . $commandLine);
         }
         /** @var \Platformsh\Cli\Application $application */
         $application = $this->getApplication();
         $command = $application->find($commandName);
         if (!$command instanceof MultiAwareInterface || !$command->canBeRunMultipleTimes()) {
-            $this->stdErr->writeln(sprintf('The command <error>%s</error> cannot be run via "%s multi".', $commandName, self::$config->get('application.executable')));
+            $this->stdErr->writeln(sprintf(
+                'The command <error>%s</error> cannot be run via "%s multi".',
+                $commandName,
+                $this->config()->get('application.executable')
+            ));
             return 1;
-        }
-        elseif (!$command->getDefinition()->hasOption('project')) {
-            $this->stdErr->writeln(sprintf('The command <error>%s</error> does not have a --project option.', $commandName));
+        } elseif (!$command->getDefinition()->hasOption('project')) {
+            $this->stdErr->writeln(sprintf(
+                'The command <error>%s</error> does not have a --project option.',
+                $commandName
+            ));
             return 1;
         }
 
@@ -73,8 +83,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
                 if ($returnCode !== 0) {
                     $success = false;
                 }
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 if (!$continue) {
                     throw $e;
                 }
@@ -111,7 +120,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         }
 
         $dialogRc = file_get_contents(CLI_ROOT . '/resources/console/dialogrc');
-        $dialogRcFile = self::$config->getUserConfigDir() . '/dialogrc';
+        $dialogRcFile = $this->config()->getUserConfigDir() . '/dialogrc';
         if ($dialogRc !== false && (file_exists($dialogRcFile) || file_put_contents($dialogRcFile, $dialogRc))) {
             putenv('DIALOGRC=' . $dialogRcFile);
         }
@@ -173,23 +182,23 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $projectList = $input->getOption('projects');
         $projects = $this->getAllProjects($input);
 
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
         if (!empty($projectList)) {
             $projectIds = array_unique(preg_split('/[,\s]+/', $projectList));
             if ($invalid = array_diff($projectIds, array_keys($projects))) {
                 $this->stdErr->writeln(sprintf('Project ID(s) not found: <error>%s</error>', implode(', ', $invalid)));
                 return false;
             }
-        }
-        elseif (!$input->isInteractive()) {
+        } elseif (!$input->isInteractive()) {
             $this->stdErr->writeln('In non-interactive mode, the --projects option must be specified.');
             return false;
-        }
-        elseif (!$this->getHelper('shell')->commandExists('dialog')) {
+        } elseif (!$shell->commandExists('dialog')) {
             $this->stdErr->writeln('The "dialog" utility is required for interactive use.');
             $this->stdErr->writeln('You can specify projects via the --projects option.');
             return false;
-        }
-        else {
+        } else {
             $projectOptions = [];
             foreach ($projects as $project) {
                 $projectOptions[$project->id] = $project->title ?: $project->id;
@@ -222,7 +231,9 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         if ($argumentName === 'cmd') {
             $commandNames = [];
             foreach ($this->getApplication()->all() as $command) {
-                if ($command instanceof MultiAwareInterface && $command->canBeRunMultipleTimes() && $command->getDefinition()->hasOption('project')) {
+                if ($command instanceof MultiAwareInterface
+                    && $command->canBeRunMultipleTimes()
+                    && $command->getDefinition()->hasOption('project')) {
                     $commandNames[] = $command->getName();
                 }
             }

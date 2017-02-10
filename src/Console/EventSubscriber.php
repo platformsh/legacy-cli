@@ -4,8 +4,8 @@ namespace Platformsh\Cli\Console;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use Platformsh\Cli\Api;
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\ConnectionFailedException;
 use Platformsh\Cli\Exception\HttpException;
 use Platformsh\Cli\Exception\LoginRequiredException;
@@ -18,11 +18,12 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 class EventSubscriber implements EventSubscriberInterface
 {
     protected $config;
+    protected $api;
 
     /**
-     * @param \Platformsh\Cli\CliConfig $config
+     * @param \Platformsh\Cli\Service\Config $config
      */
-    public function __construct(CliConfig $config)
+    public function __construct(Config $config)
     {
         $this->config = $config;
     }
@@ -99,8 +100,7 @@ class EventSubscriber implements EventSubscriberInterface
         // When an environment is found to be in the wrong state, perhaps our
         // cache is old - we should invalidate it.
         if ($exception instanceof EnvironmentStateException) {
-            $api = new Api();
-            $api->clearEnvironmentsCache($exception->getEnvironment()->project);
+            (new Api())->clearEnvironmentsCache($exception->getEnvironment()->project);
         }
     }
 }

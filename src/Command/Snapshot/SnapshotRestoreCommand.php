@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -69,11 +68,13 @@ class SnapshotRestoreCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
         $name = $selectedActivity['payload']['backup_name'];
         $date = date('Y-m-d H:i', strtotime($selectedActivity['created_at']));
-        if (!$questionHelper->confirm("Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment>?")) {
+        if (!$questionHelper->confirm(
+            "Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment>?"
+        )) {
             return 1;
         }
 
@@ -81,12 +82,13 @@ class SnapshotRestoreCommand extends CommandBase
 
         $activity = $selectedActivity->restore();
         if (!$input->getOption('no-wait')) {
-            $this->stdErr->writeln("Waiting for the restore to complete...");
-            $success = ActivityUtil::waitAndLog(
+            $this->stdErr->writeln('Waiting for the restore to complete...');
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitAndLog(
                 $activity,
-                $this->stdErr,
-                "The snapshot was successfully restored",
-                "Restoring failed"
+                'The snapshot was successfully restored',
+                'Restoring failed'
             );
             if (!$success) {
                 return 1;

@@ -1,58 +1,57 @@
 <?php
 
-namespace Platformsh\Cli\Helper;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Console\OutputAwareInterface;
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Local\Toolstack\Drupal;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
-use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
-class DrushHelper extends Helper implements OutputAwareInterface
+class Drush
 {
+    /** @var string */
+    protected $homeDir;
 
-    protected $homeDir = '~';
-
-    /** @var ShellHelperInterface */
+    /** @var Shell */
     protected $shellHelper;
+
+    /** @var LocalProject */
+    protected $localProject;
 
     /** @var Filesystem */
     protected $fs;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
-    public function getName()
-    {
-        return 'drush';
+    /**
+     * @param Config|null       $config
+     * @param Shell|null        $shellHelper
+     * @param LocalProject|null $localProject
+     * @param Filesystem|null   $fs
+     */
+    public function __construct(
+        Config $config = null,
+        Shell $shellHelper = null,
+        LocalProject $localProject = null,
+        Filesystem $fs = null
+    ) {
+        $this->shellHelper = $shellHelper ?: new Shell();
+        $this->config = $config ?: new Config();
+        $this->localProject = $localProject ?: new LocalProject();
+        $fs = $fs ?: new Filesystem();
+        $this->homeDir = $fs->getHomeDirectory();
     }
 
     /**
-     * @param CliConfig|null            $config
-     * @param ShellHelperInterface|null $shellHelper
-     * @param Filesystem|null           $fs
+     * @param string $homeDir
      */
-    public function __construct(CliConfig $config = null, ShellHelperInterface $shellHelper = null, Filesystem $fs = null)
+    public function setHomeDir($homeDir)
     {
-        $this->shellHelper = $shellHelper ?: new ShellHelper();
-        $this->config = $config ?: new CliConfig();
-        $this->fs = $fs ?: new Filesystem();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setOutput(OutputInterface $output)
-    {
-        if ($this->shellHelper instanceof OutputAwareInterface) {
-            $this->shellHelper->setOutput($output);
-        }
+        $this->homeDir = $homeDir;
     }
 
     /**
@@ -66,7 +65,7 @@ class DrushHelper extends Helper implements OutputAwareInterface
      * @throws DependencyMissingException
      *   If Drush is not installed.
      */
-    public function getVersion($reset = false)
+    protected function getVersion($reset = false)
     {
         static $version;
         if (!$reset && isset($version)) {
@@ -96,20 +95,21 @@ class DrushHelper extends Helper implements OutputAwareInterface
     public function ensureInstalled()
     {
         static $installed;
-        if (empty($installed) && $this->getDrushExecutable() === 'drush' && !$this->shellHelper->commandExists('drush')) {
+        if (empty($installed) && $this->getDrushExecutable() === 'drush'
+            && !$this->shellHelper->commandExists('drush')) {
             throw new DependencyMissingException('Drush is not installed');
         }
         $installed = true;
     }
 
     /**
-     * Set the user's home directory.
+     * Checks whether Drush supports the --lock argument for the 'make' command.
      *
-     * @param string $homeDir
+     * @return bool
      */
-    public function setHomeDir($homeDir)
+    public function supportsMakeLock()
     {
-        $this->homeDir = $homeDir;
+        return version_compare($this->getVersion(), '7.0.0-rc1', '>=');
     }
 
     /**
@@ -180,7 +180,11 @@ class DrushHelper extends Helper implements OutputAwareInterface
      */
     protected function getAutoRemoveKey()
     {
-        return preg_replace('/[^a-z-]+/', '-', str_replace('.', '', strtolower($this->config->get('application.name')))) . '-auto-remove';
+        return preg_replace(
+            '/[^a-z-]+/',
+            '-',
+            str_replace('.', '', strtolower($this->config->get('application.name')))
+        ) . '-auto-remove';
     }
 
     /**
@@ -198,8 +202,7 @@ class DrushHelper extends Helper implements OutputAwareInterface
      */
     public function createAliases(Project $project, $projectRoot, $environments, $original = null, $merge = true)
     {
-        $localProject = new LocalProject();
-        $config = $localProject->getProjectConfig($projectRoot);
+        $config = $this->localProject->getProjectConfig($projectRoot);
         $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
         $autoRemoveKey = $this->getAutoRemoveKey();
 
@@ -295,7 +298,9 @@ class DrushHelper extends Helper implements OutputAwareInterface
                 $local = array_replace_recursive($aliases[$localAliasName], $local);
                 unset($aliases[$localAliasName]);
             }
-            $localAlias .= sprintf("\n// Automatically generated alias for the local environment, application \"%s\".\n", $appId)
+            $localAlias .= "\n"
+                . sprintf('// Automatically generated alias for the local environment, application "%s"', $appId)
+                . "\n"
                 . $this->exportAlias($localAliasName, $local);
         }
 
@@ -341,11 +346,12 @@ class DrushHelper extends Helper implements OutputAwareInterface
      */
     protected function writeAliasFile($filename, $contents)
     {
+        $fs = new SymfonyFilesystem();
         if (is_readable($filename) && $contents !== file_get_contents($filename)) {
             $backupName = dirname($filename) . '/' . str_replace('.php', '.bak.php', basename($filename));
-            $this->fs->rename($filename, $backupName, true);
+            $fs->rename($filename, $backupName, true);
         }
-        $this->fs->dumpFile($filename, $contents);
+        $fs->dumpFile($filename, $contents);
     }
 
     /**

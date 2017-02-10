@@ -109,8 +109,7 @@ abstract class DomainCommandBase extends CommandBase
                 foreach (explode($begin, $data) as $cert) {
                     $chain[] = $begin . $cert;
                 }
-            }
-            else {
+            } else {
                 $chain[] = $data;
             }
         }
@@ -175,13 +174,13 @@ abstract class DomainCommandBase extends CommandBase
         if ($response !== null && $response->getStatusCode() === 403) {
             $project->ensureFull();
             $data = $project->getData();
-            if (!$project->hasLink('#manage-domains') && !empty($data['subscription']['plan']) && $data['subscription']['plan'] === 'development') {
+            if (!$project->hasLink('#manage-domains')
+                && !empty($data['subscription']['plan'])
+                && $data['subscription']['plan'] === 'development') {
                 $this->stdErr->writeln('This project is on a Development plan. Upgrade the plan to add domains.');
             }
-        }
-        else {
+        } else {
             throw $e;
         }
     }
-
 }

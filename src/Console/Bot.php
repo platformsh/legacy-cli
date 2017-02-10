@@ -1,10 +1,10 @@
 <?php
 
-namespace Platformsh\Cli\Util;
+namespace Platformsh\Cli\Console;
 
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Bot extends ConsoleAnimation
+class Bot extends Animation
 {
     /**
      * @param OutputInterface $output

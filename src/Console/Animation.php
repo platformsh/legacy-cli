@@ -1,10 +1,10 @@
 <?php
 
-namespace Platformsh\Cli\Util;
+namespace Platformsh\Cli\Console;
 
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ConsoleAnimation
+class Animation
 {
     protected $interval;
     protected $frames = [];

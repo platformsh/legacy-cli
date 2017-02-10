@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,7 +18,10 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addNoWaitOption();
-        $this->addExample('Switch on the "fetch branches" option for a specific integration', 'ZXhhbXBsZSB --fetch-branches 1');
+        $this->addExample(
+            'Switch on the "fetch branches" option for a specific integration',
+            'ZXhhbXBsZSB --fetch-branches 1'
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -62,13 +64,14 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $result = $integration->update($values);
         $this->stdErr->writeln("Integration <info>$id</info> (<info>{$integration->type}</info>) updated");
 
-        $this->displayIntegration($integration, $input, $this->stdErr);
+        $this->displayIntegration($integration);
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return 0;
     }
-
 }

@@ -2,8 +2,7 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Domain;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,7 +18,7 @@ class DomainListCommand extends DomainCommandBase
             ->setName('domain:list')
             ->setAliases(['domains'])
             ->setDescription('Get a list of all domains');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
 
@@ -34,7 +33,8 @@ class DomainListCommand extends DomainCommandBase
     {
         $rows = [];
 
-        $formatter = new PropertyFormatter();
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
 
         foreach ($tree as $domain) {
             $rows[] = [
@@ -53,26 +53,28 @@ class DomainListCommand extends DomainCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-
         $project = $this->getSelectedProject();
-
+        $executable = $this->config()->get('application.executable');
 
         try {
             $domains = $project->getDomains();
-        }
-        catch (ClientException $e) {
+        } catch (ClientException $e) {
             $this->handleApiException($e, $project);
             return 1;
         }
 
         if (empty($domains)) {
             $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
-            $this->stdErr->writeln("\nAdd a domain to the project by running <info>" . self::$config->get('application.executable') . " domain:add [domain-name]</info>");
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(
+                'Add a domain to the project by running <info>' . $executable . ' domain:add [domain-name]</info>'
+            );
 
             return 1;
         }
 
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $header = ['Name', 'SSL enabled', 'Creation date'];
         $rows = $this->buildDomainRows($domains);
 
@@ -86,9 +88,11 @@ class DomainListCommand extends DomainCommandBase
         $table->render($rows, $header);
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('To add a new domain, run: <info>' . self::$config->get('application.executable') . ' domain:add [domain-name]</info>');
-        $this->stdErr->writeln('To view a domain, run: <info>' . self::$config->get('application.executable') . ' domain:get [domain-name]</info>');
-        $this->stdErr->writeln('To delete a domain, run: <info>' . self::$config->get('application.executable') . ' domain:delete [domain-name]</info>');
+        $this->stdErr->writeln([
+            'To add a new domain, run: <info>' . $executable . ' domain:add [domain-name]</info>',
+            'To view a domain, run: <info>' . $executable . ' domain:get [domain-name]</info>',
+            'To delete a domain, run: <info>' . $executable . ' domain:delete [domain-name]</info>',
+        ]);
 
         return 0;
     }

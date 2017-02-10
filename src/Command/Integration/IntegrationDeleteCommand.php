@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -35,9 +34,11 @@ class IntegrationDeleteCommand extends CommandBase
             return 1;
         }
 
-        $type = $integration->getProperty('type');
+        $type = $integration->type;
         $confirmText = "Delete the integration <info>$id</info> (type: $type)?";
-        if (!$this->getHelper('question')->confirm($confirmText)) {
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
 
@@ -46,10 +47,11 @@ class IntegrationDeleteCommand extends CommandBase
         $this->stdErr->writeln("Deleted integration <info>$id</info>");
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr, $this->getSelectedProject());
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return 0;
     }
-
 }

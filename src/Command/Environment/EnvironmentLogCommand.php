@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -36,12 +37,15 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $this->validateInput($input);
 
         if ($input->getOption('tail') && $this->runningViaMulti) {
-            throw new \InvalidArgumentException('The --tail option cannot be used with "multi"');
+            throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $appName = $this->selectApp($input);
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
+
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
 
         // Select the log file that the user specified.
         if ($logType = $input->getArgument('type')) {
@@ -54,18 +58,17 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $this->stdErr->writeln('No log type specified.');
             return 1;
         } else {
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
-            /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
-            $shellHelper = $this->getHelper('shell');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
 
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $sshUrl);
-            $cache = $this->api()->getCache();
+            /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+            $cache = $this->getService('cache');
             if (!$result = $cache->fetch($cacheKey)) {
-                $result = $shellHelper->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
+                $result = $shell->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
 
-                // Cache the list for 1 hour.
+                // Cache the list for 1 day.
                 $cache->save($cacheKey, $result, 86400);
             }
 
@@ -92,7 +95,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
 
-        return $this->getHelper('shell')->executeSimple($sshCommand);
+        return $shell->executeSimple($sshCommand);
     }
 
     /**

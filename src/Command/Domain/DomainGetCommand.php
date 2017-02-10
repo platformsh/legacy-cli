@@ -1,9 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
-use Platformsh\Cli\Helper\QuestionHelper;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,7 +21,7 @@ class DomainGetCommand extends DomainCommandBase
             ->setDescription('Show detailed information for a domain')
             ->addArgument('name', InputArgument::OPTIONAL, 'The domain name')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
@@ -47,8 +46,8 @@ class DomainGetCommand extends DomainCommandBase
             foreach ($domains as $domain) {
                 $options[$domain->name] = $domain->name;
             }
-            /** @var QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
             $domainName = $questionHelper->choose($options, 'Enter a number to choose a domain:');
         }
 
@@ -58,7 +57,8 @@ class DomainGetCommand extends DomainCommandBase
             return 1;
         }
 
-        $propertyFormatter = new PropertyFormatter($input);
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
+        $propertyFormatter = $this->getService('property_formatter');
 
         if ($property = $input->getOption('property')) {
             $value = $this->api()->getNestedProperty($domain, $property);
@@ -77,12 +77,16 @@ class DomainGetCommand extends DomainCommandBase
             $properties[] = $name;
             $values[] = $propertyFormatter->format($value, $name);
         }
-        $table = new Table($input, $output);
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $table->renderSimple($values, $properties);
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('To update a domain, run: <info>' . self::$config->get('application.executable') . ' domain:update [domain-name]</info>');
-        $this->stdErr->writeln('To delete a domain, run: <info>' . self::$config->get('application.executable') . ' domain:delete [domain-name]</info>');
+        $executable = $this->config()->get('application.executable');
+        $this->stdErr->writeln([
+            'To update a domain, run: <info>' . $executable . ' domain:update [domain-name]</info>',
+            'To delete a domain, run: <info>' . $executable . ' domain:delete [domain-name]</info>',
+        ]);
 
         return 0;
     }

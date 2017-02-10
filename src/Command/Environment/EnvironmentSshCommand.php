@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Ssh;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,6 +25,7 @@ class EnvironmentSshCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
+        Ssh::configureInput($this->getDefinition());
         $this->addExample('Read recent messages in the deploy log', "'tail /var/log/deploy.log'");
         $this->addExample('Open a shell over SSH');
     }
@@ -42,25 +45,19 @@ class EnvironmentSshCommand extends CommandBase
 
         $remoteCommand = $input->getArgument('cmd');
         if (!$remoteCommand && $this->runningViaMulti) {
-            throw new \InvalidArgumentException('The cmd argument is required when running via "multi"');
+            throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
-        $sshOptions = 't';
-
-        // Pass through the verbosity options to SSH.
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $sshOptions .= 'vv';
-        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-            $sshOptions .= 'v';
-        } elseif ($output->getVerbosity() <= OutputInterface::VERBOSITY_QUIET) {
-            $sshOptions .= 'q';
-        }
-
-        $command = "ssh -$sshOptions " . escapeshellarg($sshUrl);
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $command = $ssh->getSshCommand() . ' ' . escapeshellarg($sshUrl);
         if ($remoteCommand) {
             $command .= ' ' . escapeshellarg($remoteCommand);
         }
 
-        return $this->getHelper('shell')->executeSimple($command);
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        return $shell->executeSimple($command);
     }
 }

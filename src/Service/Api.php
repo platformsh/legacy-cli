@@ -1,12 +1,10 @@
 <?php
 
-namespace Platformsh\Cli;
+namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
-use Doctrine\Common\Cache\FilesystemCache;
-use Doctrine\Common\Cache\VoidCache;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Util\Util;
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -14,6 +12,7 @@ use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -21,69 +20,79 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 class Api
 {
-    /** @var CliConfig */
+    /** @var Config */
     protected $config;
 
-    /** @var null|EventDispatcherInterface */
-    protected $dispatcher;
+    /** @var \Doctrine\Common\Cache\CacheProvider */
+    protected $cache;
+
+    /** @var EventDispatcherInterface */
+    public $dispatcher;
 
     /** @var string */
-    protected static $sessionId = 'default';
+    protected $sessionId = 'default';
 
     /** @var string|null */
-    protected static $apiToken;
+    protected $apiToken;
 
     /** @var string */
-    protected static $apiTokenType = 'exchange';
-
-    /** @var \Doctrine\Common\Cache\CacheProvider */
-    protected static $cache;
+    protected $apiTokenType = 'exchange';
 
     /** @var PlatformClient */
-    protected static $client;
+    protected $client;
+
+    /** @var Environment[] */
+    protected static $environmentsCache = [];
+
+    /** @var bool */
+    protected static $environmentsCacheRefreshed = false;
+
+    /** @var array */
+    protected static $notFound = [];
 
     /**
      * Constructor.
      *
-     * @param CliConfig|null                $config
+     * @param Config|null                $config
+     * @param CacheProvider|null            $cache
      * @param EventDispatcherInterface|null $dispatcher
      */
-    public function __construct(CliConfig $config = null, EventDispatcherInterface $dispatcher = null)
-    {
-        $this->config = $config ?: new CliConfig();
-        $this->dispatcher = $dispatcher;
+    public function __construct(
+        Config $config = null,
+        CacheProvider $cache = null,
+        EventDispatcherInterface $dispatcher = null
+    ) {
+        $this->config = $config ?: new Config();
+        $this->dispatcher = $dispatcher ?: new EventDispatcher();
 
-        self::$sessionId = $this->config->get('api.session_id') ?: 'default';
-        if (self::$sessionId === 'api-token') {
-            throw new \InvalidArgumentException('Invalid session ID: ' . self::$sessionId);
+        $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
+
+        $this->sessionId = $this->config->get('api.session_id') ?: 'default';
+        if ($this->sessionId === 'api-token') {
+            throw new \InvalidArgumentException('Invalid session ID: ' . $this->sessionId);
         }
 
-        if (!isset(self::$apiToken)) {
+        if (!isset($this->apiToken)) {
             // Exchangeable API tokens: a token which is exchanged for a
             // temporary access token.
             if ($this->config->has('api.token_file')) {
-                self::$apiToken = $this->loadTokenFromFile($this->config->get('api.token_file'));
-                self::$apiTokenType = 'exchange';
-                self::$sessionId = 'api-token';
-            }
-            elseif ($this->config->has('api.token')) {
-                self::$apiToken = $this->config->get('api.token');
-                self::$apiTokenType = 'exchange';
-                self::$sessionId = 'api-token';
-            }
-            // Permanent, personal access token (deprecated) - an OAuth 2.0
-            // bearer token which is used directly in API requests.
-            elseif ($this->config->has('api.access_token_file')) {
-                self::$apiToken = $this->loadTokenFromFile($this->config->get('api.access_token_file'));
-                self::$apiTokenType = 'access';
-            }
-            elseif ($this->config->has('api.access_token')) {
-                self::$apiToken = $this->config->get('api.access_token');
-                self::$apiTokenType = 'access';
+                $this->apiToken = $this->loadTokenFromFile($this->config->get('api.token_file'));
+                $this->apiTokenType = 'exchange';
+                $this->sessionId = 'api-token';
+            } elseif ($this->config->has('api.token')) {
+                $this->apiToken = $this->config->get('api.token');
+                $this->apiTokenType = 'exchange';
+                $this->sessionId = 'api-token';
+            } elseif ($this->config->has('api.access_token_file')) {
+                // Permanent, personal access token (deprecated) - an OAuth 2.0
+                // bearer token which is used directly in API requests.
+                $this->apiToken = $this->loadTokenFromFile($this->config->get('api.access_token_file'));
+                $this->apiTokenType = 'access';
+            } elseif ($this->config->has('api.access_token')) {
+                $this->apiToken = $this->config->get('api.access_token');
+                $this->apiTokenType = 'access';
             }
         }
-
-        $this->setUpCache();
     }
 
     /**
@@ -115,7 +124,7 @@ class Api
      */
     public function hasApiToken()
     {
-        return isset(self::$apiToken);
+        return isset($this->apiToken);
     }
 
     /**
@@ -145,15 +154,15 @@ class Api
      */
     public function getClient($autoLogin = true)
     {
-        if (!isset(self::$client)) {
+        if (!isset($this->client)) {
             $connectorOptions = [];
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
             $connectorOptions['debug'] = $this->config->get('api.debug');
             $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
             $connectorOptions['user_agent'] = $this->getUserAgent();
-            $connectorOptions['api_token'] = self::$apiToken;
-            $connectorOptions['api_token_type'] = self::$apiTokenType;
+            $connectorOptions['api_token'] = $this->apiToken;
+            $connectorOptions['api_token_type'] = $this->apiTokenType;
 
             // Proxy support with the http_proxy or https_proxy environment
             // variables.
@@ -174,32 +183,17 @@ class Api
             // this will be stored in a JSON file:
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
-            $session->setId('cli-' . self::$sessionId);
+            $session->setId('cli-' . $this->sessionId);
             $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
 
-            self::$client = new PlatformClient($connector);
+            $this->client = new PlatformClient($connector);
 
-            if (isset($this->dispatcher) && $autoLogin && !$connector->isLoggedIn()) {
+            if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
             }
         }
 
-        return self::$client;
-    }
-
-    protected function setUpCache()
-    {
-        if (!isset(self::$cache)) {
-            if (!empty($this->config->get('api.disable_cache'))) {
-                self::$cache = new VoidCache();
-            } else {
-                self::$cache = new FilesystemCache(
-                    $this->config->getUserConfigDir() . '/cache',
-                    FilesystemCache::EXTENSION,
-                    0077 // Remove all permissions from the group and others.
-                );
-            }
-        }
+        return $this->client;
     }
 
     /**
@@ -211,12 +205,12 @@ class Api
      */
     public function getProjects($refresh = null)
     {
-        $cacheKey = sprintf('%s:projects', self::$sessionId);
+        $cacheKey = sprintf('%s:projects', $this->sessionId);
 
         /** @var Project[] $projects */
         $projects = [];
 
-        $cached = self::$cache->fetch($cacheKey);
+        $cached = $this->cache->fetch($cacheKey);
 
         if ($refresh === false && !$cached) {
             return [];
@@ -231,7 +225,7 @@ class Api
                 $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
             }
 
-            self::$cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
+            $this->cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
         } else {
             $guzzleClient = $this->getClient()->getConnector()->getClient();
             foreach ((array) $cached as $id => $data) {
@@ -261,8 +255,8 @@ class Api
         }
 
         // Find the project directly.
-        $cacheKey = sprintf('%s:project:%s:%s', self::$sessionId, $id, $host);
-        $cached = self::$cache->fetch($cacheKey);
+        $cacheKey = sprintf('%s:project:%s:%s', $this->sessionId, $id, $host);
+        $cached = $this->cache->fetch($cacheKey);
         if ($refresh || !$cached) {
             $scheme = 'https';
             if ($host !== null && (($pos = strpos($host, '//')) !== false)) {
@@ -274,7 +268,7 @@ class Api
             if ($project) {
                 $toCache = $project->getData();
                 $toCache['_endpoint'] = $project->getUri(true);
-                self::$cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
+                $this->cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
             }
         } else {
             $guzzleClient = $this->getClient()->getConnector()->getClient();
@@ -293,24 +287,22 @@ class Api
      * @param bool|null $refresh Whether to refresh the list.
      * @param bool      $events  Whether to update Drush aliases if the list changes.
      *
-     * @return Environment[] The user's environments.
+     * @return Environment[] The user's environments, keyed by ID.
      */
     public function getEnvironments(Project $project, $refresh = null, $events = true)
     {
-        $projectId = $project->getProperty('id');
+        $projectId = $project->id;
 
-        static $staticEnvironmentsCache;
-        if (!$refresh && isset($staticEnvironmentsCache[$projectId])) {
-            return $staticEnvironmentsCache[$projectId];
+        if (!$refresh && isset(self::$environmentsCache[$projectId])) {
+            return self::$environmentsCache[$projectId];
         }
 
         $cacheKey = 'environments:' . $projectId;
-        $cached = self::$cache->fetch($cacheKey);
+        $cached = $this->cache->fetch($cacheKey);
 
         if ($refresh === false && !$cached) {
             return [];
-        }
-        elseif ($refresh || !$cached) {
+        } elseif ($refresh || !$cached) {
             $environments = [];
             $toCache = [];
             foreach ($project->getEnvironments() as $environment) {
@@ -319,24 +311,25 @@ class Api
             }
 
             // Dispatch an event if the list of environments has changed.
-            if (isset($this->dispatcher) && $events && (!$cached || array_diff_key($environments, $cached))) {
+            if ($events && (!$cached || array_diff_key($environments, $cached))) {
                 $this->dispatcher->dispatch(
                     'environments_changed',
                     new EnvironmentsChangedEvent($project, $environments)
                 );
             }
 
-            self::$cache->save($cacheKey, $toCache, $this->config->get('api.environments_ttl'));
+            $this->cache->save($cacheKey, $toCache, $this->config->get('api.environments_ttl'));
+            self::$environmentsCacheRefreshed = true;
         } else {
             $environments = [];
-            $endpoint = $project->hasLink('self') ? $project->getLink('self', true) : $project->getProperty('endpoint');
+            $endpoint = $project->getUri();
             $guzzleClient = $this->getClient()->getConnector()->getClient();
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);
             }
         }
 
-        $staticEnvironmentsCache[$projectId] = $environments;
+        self::$environmentsCache[$projectId] = $environments;
 
         return $environments;
     }
@@ -355,16 +348,26 @@ class Api
     public function getEnvironment($id, Project $project, $refresh = null, $tryMachineName = false)
     {
         // Statically cache not found environments.
-        static $notFound = [];
         $cacheKey = $project->id . ':' . $id . ($tryMachineName ? ':mn' : '');
-        if (!$refresh && isset($notFound[$cacheKey])) {
+        if (!$refresh && isset(self::$notFound[$cacheKey])) {
             return false;
         }
 
         $environments = $this->getEnvironments($project, $refresh);
+
+        // Retry if the environment was not found in the cache.
+        if (!isset($environments[$id])
+            && $refresh === null
+            && !self::$environmentsCacheRefreshed) {
+            $environments = $this->getEnvironments($project, true);
+        }
+
+        // Look for the environment by ID.
         if (isset($environments[$id])) {
             return $environments[$id];
         }
+
+        // Look for the environment by machine name.
         if ($tryMachineName) {
             foreach ($environments as $environment) {
                 if ($environment->machine_name === $id) {
@@ -373,7 +376,7 @@ class Api
             }
         }
 
-        $notFound[$cacheKey] = true;
+        self::$notFound[$cacheKey] = true;
 
         return false;
     }
@@ -388,10 +391,10 @@ class Api
      */
     public function getMyAccount($reset = false)
     {
-        $cacheKey = sprintf('%s:my-account', self::$sessionId);
-        if ($reset || !($info = self::$cache->fetch($cacheKey))) {
+        $cacheKey = sprintf('%s:my-account', $this->sessionId);
+        if ($reset || !($info = $this->cache->fetch($cacheKey))) {
             $info = $this->getClient()->getAccountInfo($reset);
-            self::$cache->save($cacheKey, $info, $this->config->get('api.users_ttl'));
+            $this->cache->save($cacheKey, $info, $this->config->get('api.users_ttl'));
         }
 
         return $info;
@@ -409,20 +412,12 @@ class Api
     public function getAccount(ProjectAccess $user, $reset = false)
     {
         $cacheKey = 'account:' . $user->id;
-        if ($reset || !($details = self::$cache->fetch($cacheKey))) {
+        if ($reset || !($details = $this->cache->fetch($cacheKey))) {
             $details = $user->getAccount()->getProperties();
-            self::$cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
+            $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
         }
 
         return $details;
-    }
-
-    /**
-     * Clear the cache.
-     */
-    public function clearCache()
-    {
-        self::$cache->flushAll();
     }
 
     /**
@@ -434,7 +429,13 @@ class Api
      */
     public function clearEnvironmentsCache($projectId)
     {
-        self::$cache->delete('environments:' . $projectId);
+        $this->cache->delete('environments:' . $projectId);
+        unset(self::$environmentsCache[$projectId]);
+        foreach (array_keys(self::$notFound) as $key) {
+            if (strpos($key, $projectId . ':') === 0) {
+                unset(self::$notFound[$key]);
+            }
+        }
     }
 
     /**
@@ -442,16 +443,8 @@ class Api
      */
     public function clearProjectsCache()
     {
-        self::$cache->delete(sprintf('%s:projects', self::$sessionId));
-        self::$cache->delete(sprintf('%s:my-account', self::$sessionId));
-    }
-
-    /**
-     * @return CacheProvider
-     */
-    public function getCache()
-    {
-        return self::$cache;
+        $this->cache->delete(sprintf('%s:projects', $this->sessionId));
+        $this->cache->delete(sprintf('%s:my-account', $this->sessionId));
     }
 
     /**
@@ -505,9 +498,13 @@ class Api
         $propertyName = array_shift($parents);
         $property = $resource->getProperty($propertyName, true, $lazyLoad);
         if (!is_array($property)) {
-            throw new \InvalidArgumentException(sprintf('Invalid path "%s": the property "%s" is not an array.', $propertyPath, $propertyName));
+            throw new \InvalidArgumentException(sprintf(
+                'Invalid path "%s": the property "%s" is not an array.',
+                $propertyPath,
+                $propertyName
+            ));
         }
-        $value = Util::getNestedArrayValue($property, $parents, $keyExists);
+        $value = NestedArrayUtil::getNestedArrayValue($property, $parents, $keyExists);
         if (!$keyExists) {
             throw new \InvalidArgumentException('Property not found: ' . $propertyPath);
         }
@@ -560,5 +557,40 @@ class Api
         }
 
         return sprintf($pattern, $tag, $title, $project->id);
+    }
+
+    /**
+     * Get a cost estimate for a new project.
+     *
+     * @param string $plan
+     * @param int    $storage
+     * @param int    $environments
+     *
+     * @return array|false
+     */
+    public function getEstimate($plan, $storage, $environments)
+    {
+        $apiUrl = $this->config->get('api.accounts_api_url');
+        if (!$parts = parse_url($apiUrl)) {
+            throw new \RuntimeException('Failed to parse URL: ' . $apiUrl);
+        }
+        $baseUrl = $parts['scheme'] . '://' . $parts['host'];
+        $estimateUrl = $baseUrl . '/platform/estimate';
+        $guzzleClient = $this->getClient()->getConnector()->getClient();
+        $response = $guzzleClient->get($estimateUrl, [
+            'query' => [
+                'plan' => strtoupper('PLATFORM-ENVIRONMENT-' . $plan),
+                'storage' => $storage,
+                'environments' => $environments,
+                'user_licenses' => 1,
+            ],
+            'exceptions' => false,
+            'auth' => false,
+        ]);
+        if ($response->getStatusCode() != 200) {
+            return false;
+        }
+
+        return $response->json();
     }
 }

@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\SelfUpdate\SelfUpdater;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -25,10 +24,11 @@ class SelfUpdateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $manifestUrl = $input->getOption('manifest') ?: self::$config->get('application.manifest_url');
-        $currentVersion = $input->getOption('current-version') ?: self::$config->get('application.version');
+        $manifestUrl = $input->getOption('manifest') ?: $this->config()->get('application.manifest_url');
+        $currentVersion = $input->getOption('current-version') ?: $this->config()->get('application.version');
 
-        $cliUpdater = new SelfUpdater($input, $output, self::$config, $this->getHelper('question'));
+        /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
+        $cliUpdater = $this->getService('self_updater');
         $cliUpdater->setAllowMajor(!$input->getOption('no-major'));
         $cliUpdater->setAllowUnstable((bool) $input->getOption('unstable'));
         $cliUpdater->setTimeout($input->getOption('timeout'));

@@ -2,9 +2,8 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\RelationshipsUtil;
-use Platformsh\Client\Model\Environment;
-use Platformsh\Client\Model\Project;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\Relationships;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -15,13 +14,20 @@ class DbDumpCommand extends CommandBase
     protected function configure()
     {
         $this->setName('db:dump')
-            ->setAliases(['sql-dump'])
-            ->setDescription('Create a local dump of the remote database')
-            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A filename where the dump should be saved. Defaults to "<project ID>--<environment ID>--dump.sql" in the project root')
+            ->setDescription('Create a local dump of the remote database');
+        $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
+            ->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
-            ->addOption('stdout', null, InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
+            ->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file')
+            ->addOption('table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to include')
+            ->addOption('exclude-table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to exclude')
+            ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
-        $this->setHiddenAliases(['environment:sql-dump']);
+        Relationships::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
+        $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
+        $this->addExample('Create an SQL dump file');
+        $this->addExample('Create a gzipped SQL dump file named "dump.sql.gz"', '--gzip -f dump.sql.gz');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -31,15 +37,53 @@ class DbDumpCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
-        $timestamp = $input->getOption('timestamp') ? str_replace('+', '', date('Ymd-His-O')) : null;
+        $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;
+        $gzip = $input->getOption('gzip');
+        $includedTables = $input->getOption('table');
+        $excludedTables = $input->getOption('exclude-table');
+        $schemaOnly = $input->getOption('schema-only');
 
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
+
+        $dumpFile = null;
         if (!$input->getOption('stdout')) {
+            // Determine a default dump filename.
+            $defaultFilename = $project->id . '--' . $environment->id;
+            if ($appName !== null) {
+                $defaultFilename .= '--' . $appName;
+            }
+            if ($includedTables) {
+                $defaultFilename .= '--' . implode(',', $includedTables);
+            }
+            if ($excludedTables) {
+                $defaultFilename .= '--excl-' . implode(',', $excludedTables);
+            }
+            if ($schemaOnly) {
+                $defaultFilename .= '--schema';
+            }
+            if ($timestamp !== null) {
+                $defaultFilename .= '--' . $timestamp;
+            }
+            $defaultFilename .= '--dump.sql';
+            if ($gzip) {
+                $defaultFilename .= '.gz';
+            }
+            if ($projectRoot = $this->getProjectRoot()) {
+                $defaultFilename = $projectRoot . '/' . $defaultFilename;
+            }
+            $dumpFile = $defaultFilename;
+
+            // Process the user --file option.
             if ($input->getOption('file')) {
                 $dumpFile = rtrim($input->getOption('file'), '/');
-                /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-                $fsHelper = $this->getHelper('fs');
 
-                // Insert the timestamp into the filename.
+                // Ensure the filename is not a directory.
+                if (is_dir($dumpFile)) {
+                    $dumpFile .= '/' . $defaultFilename;
+                }
+
+                // Insert a timestamp into the filename.
                 if ($timestamp) {
                     $basename = basename($dumpFile);
                     $prefix = substr($dumpFile, 0, - strlen($basename));
@@ -50,85 +94,106 @@ class DbDumpCommand extends CommandBase
                     }
                     $dumpFile = $prefix . $basename;
                 }
-
-                // Make the filename absolute.
-                $dumpFile = $fsHelper->makePathAbsolute($dumpFile);
-
-                // Ensure the filename is not a directory.
-                if (is_dir($dumpFile)) {
-                    $dumpFile .= '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
-                }
-            } else {
-                $projectRoot = $this->getProjectRoot();
-                $directory = $projectRoot ?: getcwd();
-                $dumpFile = $directory
-                    . '/' . $this->getDefaultDumpFilename($project, $environment, $appName, $timestamp);
             }
+
+            // Make the filename absolute.
+            $dumpFile = $fs->makePathAbsolute($dumpFile);
         }
 
-        if (isset($dumpFile)) {
+        if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-                $questionHelper = $this->getHelper('question');
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
                 if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
                     return 1;
                 }
             }
-            $this->stdErr->writeln("Creating SQL dump file: <info>$dumpFile</info>");
+            $this->stdErr->writeln(sprintf(
+                'Creating %s file: <info>%s</info>',
+                $gzip ? 'gzipped SQL dump' : 'SQL dump',
+                $dumpFile
+            ));
         }
 
-        $util = new RelationshipsUtil($this->stdErr);
-        $database = $util->chooseDatabase($sshUrl, $input);
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+
+        $database = $relationships->chooseDatabase($sshUrl, $input);
         if (empty($database)) {
             return 1;
         }
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = "pg_dump --clean"
-                    . " postgresql://{$database['username']}:{$database['password']}@{$database['host']}/{$database['path']}";
+                $dumpCommand = 'pg_dump --clean ' . $relationships->getSqlCommandArgs('pg_dump', $database);
+                if ($schemaOnly) {
+                    $dumpCommand .= ' --schema-only';
+                }
+                foreach ($includedTables as $table) {
+                    $dumpCommand .= ' ' . escapeshellarg('--table=' . $table);
+                }
+                foreach ($excludedTables as $table) {
+                    $dumpCommand .= ' ' . escapeshellarg('--exclude-table=' . $table);
+                }
                 break;
 
             default:
-                $dumpCommand = "mysqldump --no-autocommit --single-transaction"
-                    . " --opt -Q {$database['path']}"
-                    . " --host={$database['host']} --port={$database['port']}"
-                    . " --user={$database['username']} --password={$database['password']}";
+                $dumpCommand = 'mysqldump --no-autocommit --single-transaction --opt --quote-names '
+                    . $relationships->getSqlCommandArgs('mysqldump', $database);
+                if ($schemaOnly) {
+                    $dumpCommand .= ' --no-data';
+                }
+                foreach ($excludedTables as $table) {
+                    $dumpCommand .= ' ' . escapeshellarg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
+                }
+                if ($includedTables) {
+                    $dumpCommand .= ' --tables ' . implode(' ', array_map('escapeshellarg', $includedTables));
+                }
                 break;
+        }
+
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $sshCommand = $ssh->getSshCommand();
+
+        if ($gzip) {
+            $dumpCommand .= ' | gzip --stdout';
+        } else {
+            // Compress data transparently as it's sent over the SSH connection.
+            $sshCommand .= ' -C';
         }
 
         set_time_limit(0);
 
-        $command = 'ssh -C ' . escapeshellarg($sshUrl)
+        // Build the complete SSH command.
+        $command = $sshCommand
+            . ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($dumpCommand);
-        if (isset($dumpFile)) {
+        if ($dumpFile) {
             $command .= ' > ' . escapeshellarg($dumpFile);
         }
 
-        return $this->getHelper('shell')->executeSimple($command);
-    }
+        // Execute the SSH command.
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+        $exitCode = $shell->executeSimple($command);
 
-    /**
-     * Get the default filename for an SQL dump.
-     *
-     * @param Project     $project
-     * @param Environment $environment
-     * @param string|null $appName
-     * @param string|null $timestamp
-     *
-     * @return string
-     */
-    protected function getDefaultDumpFilename(Project $project, Environment $environment, $appName = null, $timestamp = null)
-    {
-        $filename = $project->id . '--' . $environment->id;
-        if ($appName !== null) {
-            $filename .= '--' . $appName;
+        // If a dump file exists, check that it's excluded in the project's
+        // .gitignore configuration.
+        if ($dumpFile && file_exists($dumpFile) && isset($projectRoot) && strpos($dumpFile, $projectRoot) === 0) {
+            /** @var \Platformsh\Cli\Service\Git $git */
+            $git = $this->getService('git');
+            $relative = $fs->makePathRelative($dumpFile, $projectRoot);
+            if (!$git->checkIgnore($relative, $projectRoot)) {
+                $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
+                if ($pos = strrpos($dumpFile, '--dump.sql')) {
+                    $extension = substr($dumpFile, $pos);
+                    $this->stdErr->writeln('  You should probably exclude these files using .gitignore:');
+                    $this->stdErr->writeln('    *' . $extension);
+                }
+            }
         }
-        if ($timestamp !== null) {
-            $filename .= '--' . $timestamp;
-        }
-        $filename .= '--dump.sql';
 
-        return $filename;
+        return $exitCode;
     }
 }

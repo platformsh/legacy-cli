@@ -2,20 +2,18 @@
 namespace Platformsh\Cli;
 
 use Platformsh\Cli\Console\EventSubscriber;
-use Platformsh\Cli\Helper\DrushHelper;
-use Platformsh\Cli\Helper\FilesystemHelper;
-use Platformsh\Cli\Helper\GitHelper;
-use Platformsh\Cli\Helper\QuestionHelper;
-use Platformsh\Cli\Helper\ShellHelper;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
-use Symfony\Component\Console\Helper\FormatterHelper;
-use Symfony\Component\Console\Helper\HelperSet;
+use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
+use Symfony\Component\Console\Exception\InvalidOptionException as ConsoleInvalidOptionException;
+use Symfony\Component\Console\Exception\RuntimeException as ConsoleRuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
@@ -25,7 +23,7 @@ class Application extends ParentApplication
      */
     protected $currentCommand;
 
-    /** @var CliConfig */
+    /** @var Config */
     protected $cliConfig;
 
     /**
@@ -33,7 +31,7 @@ class Application extends ParentApplication
      */
     public function __construct()
     {
-        $this->cliConfig = new CliConfig();
+        $this->cliConfig = new Config();
         parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
 
         $this->setDefaultTimezone();
@@ -61,21 +59,6 @@ class Application extends ParentApplication
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
             new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts; disable interaction'),
             new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
-        ]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getDefaultHelperSet()
-    {
-        return new HelperSet([
-            new FormatterHelper(),
-            new QuestionHelper(),
-            new FilesystemHelper(),
-            new ShellHelper(),
-            new DrushHelper($this->cliConfig),
-            new GitHelper(),
         ]);
     }
 
@@ -130,6 +113,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentLogCommand();
         $commands[] = new Command\Environment\EnvironmentInfoCommand();
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
+        $commands[] = new Command\Environment\EnvironmentPushCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentRoutesCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
@@ -150,6 +134,10 @@ class Application extends ParentApplication
         $commands[] = new Command\Project\ProjectGetCommand();
         $commands[] = new Command\Project\ProjectListCommand();
         $commands[] = new Command\Project\ProjectInfoCommand();
+        $commands[] = new Command\Project\ProjectSetRemoteCommand();
+        $commands[] = new Command\Project\Variable\ProjectVariableDeleteCommand();
+        $commands[] = new Command\Project\Variable\ProjectVariableGetCommand();
+        $commands[] = new Command\Project\Variable\ProjectVariableSetCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
         $commands[] = new Command\Self\SelfInstallCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
@@ -204,14 +192,14 @@ class Application extends ParentApplication
     /**
      * {@inheritdoc}
      */
-    public function doRun(InputInterface $input, OutputInterface $output)
+    protected function configureIO(InputInterface $input, OutputInterface $output)
     {
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);
         }
 
-        return parent::doRun($input, $output);
+        parent::configureIO($input, $output);
     }
 
     /**
@@ -281,6 +269,7 @@ class Application extends ParentApplication
     public function renderException(\Exception $e, OutputInterface $output)
     {
         $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+        $main = $e;
 
         do {
             $exceptionName = get_class($e);
@@ -291,11 +280,7 @@ class Application extends ParentApplication
 
             $len = strlen($title);
 
-            $width = $this->getTerminalWidth() ? $this->getTerminalWidth() - 1 : PHP_INT_MAX;
-            // HHVM only accepts 32 bits integer in str_split, even when PHP_INT_MAX is a 64 bit integer: https://github.com/facebook/hhvm/issues/1327
-            if (defined('HHVM_VERSION') && $width > 1 << 31) {
-                $width = 1 << 31;
-            }
+            $width = (new Terminal())->getWidth() - 1;
             $formatter = $output->getFormatter();
             $lines = array();
             foreach (preg_split('/\r?\n/', $e->getMessage()) as $line) {
@@ -345,12 +330,23 @@ class Application extends ParentApplication
             }
         } while ($e = $e->getPrevious());
 
-        if (null !== $this->currentCommand && $this->currentCommand->getName() !== 'welcome') {
-            $output->writeln(sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()), OutputInterface::VERBOSITY_QUIET);
+        if (isset($this->currentCommand)
+            && $this->currentCommand->getName() !== 'welcome'
+            && ($main instanceof ConsoleInvalidArgumentException
+                || $main instanceof ConsoleInvalidOptionException
+                || $main instanceof ConsoleRuntimeException
+            )) {
+            $output->writeln(
+                sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()),
+                OutputInterface::VERBOSITY_QUIET
+            );
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-            $output->writeln(sprintf('For more information, type: <info>%s help %s</info>', $this->cliConfig->get('application.executable'), $this->currentCommand->getName()), OutputInterface::VERBOSITY_QUIET);
+            $output->writeln(sprintf(
+                'For more information, type: <info>%s help %s</info>',
+                $this->cliConfig->get('application.executable'),
+                $this->currentCommand->getName()
+            ), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
         }
     }
-
 }
