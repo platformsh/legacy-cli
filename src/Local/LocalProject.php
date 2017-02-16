@@ -33,7 +33,7 @@ class LocalProject
     protected function parseGitUrl($gitUrl)
     {
         $gitDomain = $this->config->get('detection.git_domain');
-        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
+        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
         if (!preg_match($pattern, $gitUrl, $matches)) {
             return false;
         }
