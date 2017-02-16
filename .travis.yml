@@ -24,4 +24,4 @@ install:
 
 script:
   - ./vendor/bin/security-checker security:check --no-interaction ./composer.lock
-  - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text
+  - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text --exclude-group slow

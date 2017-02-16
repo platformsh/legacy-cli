@@ -31,24 +31,29 @@ class LocalBuild
     /** @var Shell */
     protected $shellHelper;
 
+    /** @var DependencyInstaller */
+    protected $dependencyInstaller;
+
     /** @var Config */
     protected $config;
 
     /**
      * LocalBuild constructor.
      *
-     * @param Config|null                             $config
-     * @param OutputInterface|null                    $output
-     * @param \Platformsh\Cli\Service\Shell|null      $shell
-     * @param \Platformsh\Cli\Service\Filesystem|null $fs
-     * @param \Platformsh\Cli\Service\Git|null        $git
+     * @param Config|null                                    $config
+     * @param OutputInterface|null                           $output
+     * @param \Platformsh\Cli\Service\Shell|null             $shell
+     * @param \Platformsh\Cli\Service\Filesystem|null        $fs
+     * @param \Platformsh\Cli\Service\Git|null               $git
+     * @param \Platformsh\Cli\Local\DependencyInstaller|null $dependencyInstaller
      */
     public function __construct(
         Config $config = null,
         OutputInterface $output = null,
         Shell $shell = null,
         Filesystem $fs = null,
-        Git $git = null
+        Git $git = null,
+        DependencyInstaller $dependencyInstaller = null
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
@@ -58,6 +63,7 @@ class LocalBuild
         $this->shellHelper = $shell ?: new Shell($this->output);
         $this->fsHelper = $fs ?: new Filesystem($this->shellHelper);
         $this->gitHelper = $git ?: new Git($this->shellHelper);
+        $this->dependencyInstaller = $dependencyInstaller ?: new DependencyInstaller($this->output, $this->shellHelper);
     }
 
     /**
@@ -77,6 +83,8 @@ class LocalBuild
      *     - no-clean (bool, default false) Disable cleaning up old builds or
      *       old build archives.
      *     - no-build-hooks (bool, default false) Disable running build hooks.
+     *     - no-deps (bool, default false) Disable installing build
+     *       dependencies.
      *     - concurrency (int) Specify a concurrency for Drush Make, if
      *       applicable (when using the Drupal toolstack).
      *     - working-copy (bool, default false) Specify the --working-copy
@@ -142,7 +150,7 @@ class LocalBuild
         $hashes = [];
 
         // Get a hash representing all the files in the application, excluding
-        // the project config folder (CLI_PROJECT_CONFIG_DIR).
+        // the project config folder (configured in service.project_config_dir).
         $tree = $this->gitHelper->execute(['ls-files', '-s'], $appRoot);
         if ($tree === false) {
             return false;
@@ -182,7 +190,7 @@ class LocalBuild
         }
 
         // Include relevant build settings.
-        $relevant = ['abslinks', 'copy', 'clone', 'no-cache', 'working-copy', 'lock'];
+        $relevant = ['abslinks', 'copy', 'clone', 'no-cache', 'working-copy', 'lock', 'no-deps'];
         $settings = array_intersect_key($this->settings, array_flip($relevant));
         $hashes[] = serialize($settings);
 
@@ -269,6 +277,8 @@ class LocalBuild
             }
         }
 
+        $success = true;
+
         if ($archive && file_exists($archive)) {
             $message = "Extracting archive for application <info>$appId</info>";
             $this->output->writeln($message);
@@ -280,12 +290,31 @@ class LocalBuild
             }
             $this->output->writeln($message);
 
+            // Install dependencies.
+            if (isset($appConfig['dependencies'])) {
+                $depsDir = $sourceDir . '/' . $this->config->get('local.dependencies_dir');
+                if (!empty($this->settings['no-deps'])) {
+                    $this->output->writeln('Skipping build dependencies');
+                } else {
+                    $this->dependencyInstaller->installDependencies(
+                        $depsDir,
+                        $appConfig['dependencies']
+                    );
+                }
+
+                // Use the dependencies' PATH and other environment variables
+                // for the rest of this process (i.e. for the toolstack and for
+                // build hooks).
+                $this->dependencyInstaller->putEnv($depsDir, $appConfig['dependencies']);
+            }
+
             $toolstack->build();
 
             if ($this->runPostBuildHooks($appConfig, $toolstack->getAppDir()) === false) {
                 // The user may not care if build hooks fail, but we should
                 // not archive the result.
                 $archive = false;
+                $success = false;
             }
 
             if ($archive && $toolstack->canArchive()) {
@@ -347,7 +376,7 @@ class LocalBuild
         $this->output->writeln($message);
         $this->output->writeln("Web root: <info>$destination</info>\n");
 
-        return true;
+        return $success;
     }
 
     /**

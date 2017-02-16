@@ -87,6 +87,12 @@ class LocalBuildCommand extends CommandBase
                 'Do not run post-build hooks'
             )
             ->addOption(
+                'no-deps',
+                null,
+                InputOption::VALUE_NONE,
+                'Do not install build dependencies locally'
+            )
+            ->addOption(
                 'working-copy',
                 null,
                 InputOption::VALUE_NONE,

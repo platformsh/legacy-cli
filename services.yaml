@@ -24,7 +24,10 @@ services:
         arguments: ['@shell']
     local.build:
         class:     '\Platformsh\Cli\Local\LocalBuild'
-        arguments: ['@config', '@output', '@shell', '@fs', '@git']
+        arguments: ['@config', '@output', '@shell', '@fs', '@git', '@local.dependency_installer']
+    local.dependency_installer:
+        class:     '\Platformsh\Cli\Local\DependencyInstaller'
+        arguments: ['@output', '@shell']
     local.project:
         class:     '\Platformsh\Cli\Local\LocalProject'
         arguments: ['@config', '@git']
