@@ -23,9 +23,7 @@ class Pip extends DependencyManagerBase
     }
 
     /**
-     * @param string $path
-     *
-     * @param array  $dependencies
+     * {@inheritdoc}
      */
     public function install($path, array $dependencies)
     {
