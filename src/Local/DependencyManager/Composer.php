@@ -25,8 +25,12 @@ class Composer extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function install($path, array $dependencies)
+    public function install($path, array $dependencies, $global = false)
     {
+        if ($global) {
+            $this->installGlobal($dependencies);
+            return;
+        }
         $composerJson = $path . '/composer.json';
         $contents = file_exists($composerJson) ? file_get_contents($composerJson) : null;
         $newContents = json_encode(['require' => $dependencies]);
@@ -36,6 +40,25 @@ class Composer extends DependencyManagerBase
                 unlink($path . '/composer.lock');
             }
         }
+
         $this->runCommand('composer install --no-progress --prefer-dist --optimize-autoloader --no-interaction', $path);
+    }
+
+    /**
+     * Install dependencies globally.
+     *
+     * @param array $dependencies
+     */
+    private function installGlobal(array $dependencies)
+    {
+        $requirements = [];
+        foreach ($dependencies as $package => $version) {
+            $requirements[] = $version === '*' ? $package : $package . ':' . $version;
+        }
+        $this->runCommand(
+            'composer global require '
+            . '--no-progress --prefer-dist --optimize-autoloader --no-interaction '
+            . implode(' ', array_map('escapeshellarg', $requirements))
+        );
     }
 }

@@ -25,7 +25,7 @@ class Bundler extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function install($path, array $dependencies)
+    public function install($path, array $dependencies, $global = false)
     {
         $gemFile = $path . '/Gemfile';
         $gemFileContent = $this->formatGemfile($dependencies);
@@ -36,7 +36,11 @@ class Bundler extends DependencyManagerBase
                 unlink('Gemfile.lock');
             }
         }
-        $this->runCommand('bundler install --path=. --binstubs', $path);
+        if ($global) {
+            $this->runCommand('bundle install --system --gemfile=Gemfile', $path);
+        } else {
+            $this->runCommand('bundle install --path=. --binstubs --gemfile=Gemfile', $path);
+        }
     }
 
     /**

@@ -16,7 +16,7 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
     /**
      * {@inheritdoc}
      */
-    public function getCommandName()
+    public function getCommandName($global = false)
     {
         return $this->command;
     }
@@ -38,10 +38,10 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
     }
 
     /**
-     * @param string $command
-     * @param string $path
+     * @param string      $command
+     * @param string|null $path
      */
-    protected function runCommand($command, $path)
+    protected function runCommand($command, $path = null)
     {
         $code = $this->shell->executeSimple($command, $path);
         if ($code > 0) {

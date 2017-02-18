@@ -93,6 +93,12 @@ class LocalBuildCommand extends CommandBase
                 'Do not install build dependencies locally'
             )
             ->addOption(
+                'global-deps',
+                null,
+                InputOption::VALUE_NONE,
+                'Install build dependencies globally (user or system-wide)'
+            )
+            ->addOption(
                 'working-copy',
                 null,
                 InputOption::VALUE_NONE,

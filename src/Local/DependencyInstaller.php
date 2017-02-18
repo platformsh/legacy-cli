@@ -46,29 +46,30 @@ class DependencyInstaller
 
     /**
      * @param string $destination
-     * @param array $dependencies
+     * @param array  $dependencies
+     * @param bool   $global
      */
-    public function installDependencies($destination, array $dependencies)
+    public function installDependencies($destination, array $dependencies, $global = false)
     {
         foreach ($dependencies as $stack => $stackDependencies) {
             $manager = $this->getManager($stack);
             $this->output->writeln(sprintf(
                 "Installing <info>%s</info> dependencies with '%s': %s",
                 $stack,
-                $manager->getCommandName(),
+                $manager->getCommandName($global),
                 implode(', ', array_keys($stackDependencies))
             ));
             if (!$manager->isAvailable()) {
                 throw new \RuntimeException(rtrim(sprintf(
                     "Cannot install %s dependencies: '%s' is not installed\n%s",
                     $stack,
-                    $manager->getCommandName(),
+                    $manager->getCommandName($global),
                     $manager->getInstallHelp()
                 )));
             }
             $path = $destination . '/' . $stack;
             $this->ensureDirectory($path);
-            $manager->install($path, $stackDependencies);
+            $manager->install($path, $stackDependencies, $global);
         }
     }
 
