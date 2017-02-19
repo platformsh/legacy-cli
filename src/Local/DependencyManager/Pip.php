@@ -40,7 +40,22 @@ class Pip extends DependencyManagerBase
      */
     public function getEnvVars($path)
     {
-        return ['PYTHONPATH' => $path];
+        $envVars = [];
+
+        // The PYTHONPATH needs to be set as something like
+        // "lib/python2.7/site-packages". So here we are scanning "lib" to find
+        // the correct subdirectory.
+        if (file_exists($path . '/lib')) {
+            $subdirectories = scandir($path . '/lib') ?: [];
+            foreach ($subdirectories as $subdirectory) {
+                if (strpos($subdirectory, '.') !== 0) {
+                    $envVars['PYTHONPATH'] = $path . '/lib/' . $subdirectory . '/site-packages';
+                    break;
+                }
+            }
+        }
+
+        return $envVars;
     }
 
     /**
