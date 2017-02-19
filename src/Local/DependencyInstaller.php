@@ -56,14 +56,14 @@ class DependencyInstaller
             $this->output->writeln(sprintf(
                 "Installing <info>%s</info> dependencies with '%s': %s",
                 $stack,
-                $manager->getCommandName($global),
+                $manager->getCommandName(),
                 implode(', ', array_keys($stackDependencies))
             ));
             if (!$manager->isAvailable()) {
                 throw new \RuntimeException(rtrim(sprintf(
                     "Cannot install %s dependencies: '%s' is not installed\n%s",
                     $stack,
-                    $manager->getCommandName($global),
+                    $manager->getCommandName(),
                     $manager->getInstallHelp()
                 )));
             }
@@ -91,7 +91,7 @@ class DependencyInstaller
     protected function getManager($name)
     {
         $stacks = [
-            'nodejs' => new DependencyManager\Yarn($this->shell),
+            'nodejs' => new DependencyManager\Npm($this->shell),
             'python' => new DependencyManager\Pip($this->shell),
             'ruby' => new DependencyManager\Bundler($this->shell),
             'php' => new DependencyManager\Composer($this->shell),

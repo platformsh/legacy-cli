@@ -2,32 +2,17 @@
 
 namespace Platformsh\Cli\Local\DependencyManager;
 
-class Yarn extends DependencyManagerBase
+class Npm extends DependencyManagerBase
 {
-    protected $globalList;
+    protected $command = 'npm';
+    private $globalList;
 
     /**
      * {@inheritdoc}
      */
     public function getInstallHelp()
     {
-        return 'See https://yarnpkg.com/en/docs/install for installation instructions.';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCommandName($global = false)
-    {
-        return !$global && $this->shell->commandExists('yarn') ? 'yarn' : 'npm';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isAvailable()
-    {
-        return $this->shell->commandExists('yarn') || $this->shell->commandExists('npm');
+        return 'See https://docs.npmjs.com/getting-started/installing-node for installation instructions.';
     }
 
     /**
@@ -57,15 +42,8 @@ class Yarn extends DependencyManagerBase
         $current = file_exists($packageJsonFile) ? file_get_contents($packageJsonFile) : false;
         if ($current !== $packageJson) {
             file_put_contents($packageJsonFile, $packageJson);
-            if (file_exists($path . '/yarn.lock')) {
-                unlink($path . '/yarn.lock');
-            }
         }
-        if ($this->shell->commandExists('yarn')) {
-            $this->runCommand('yarn install', $path);
-        } else {
-            $this->runCommand('npm install --global-style', $path);
-        }
+        $this->runCommand('npm install --global-style', $path);
     }
 
     /**
@@ -76,30 +54,26 @@ class Yarn extends DependencyManagerBase
     private function installGlobal(array $dependencies)
     {
         foreach ($dependencies as $package => $version) {
-            if ($this->isInstalledGlobally($package, $version)) {
-                continue;
+            if (!$this->isInstalledGlobally($package)) {
+                $arg = $version === '*' ? $package : $package . '@' . $version;
+                $this->runCommand('npm install --global ' . escapeshellarg($arg));
             }
-            $arg = escapeshellarg($version === '*' ? $package : $package . ':' . $version);
-            $command = 'npm install --global ' . $arg;
-            $this->runCommand($command);
         }
     }
 
     /**
      * @param string $package
-     * @param string $version
      *
      * @return bool
      */
-    private function isInstalledGlobally($package, $version)
+    private function isInstalledGlobally($package)
     {
         if (!isset($this->globalList)) {
             $this->globalList = $this->shell->execute(
                 ['npm', 'ls', '--global', '--no-progress', '--depth=0']
             );
         }
-        $needle = $version === '*' ? $package : $package . '@' . $version;
 
-        return $this->globalList && strpos($this->globalList, $needle) !== false;
+        return $this->globalList && strpos($this->globalList, $package . '@') !== false;
     }
 }

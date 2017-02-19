@@ -6,12 +6,9 @@ interface DependencyManagerInterface
     /**
      * Returns the command name of the dependency manager to be used.
      *
-     * @param bool $global Whether the install is going to be global to the user
-     *                     or system.
-     *
      * @return string
      */
-    public function getCommandName($global = false);
+    public function getCommandName();
 
     /**
      * Checks whether the dependency manager itself is available (installed).
