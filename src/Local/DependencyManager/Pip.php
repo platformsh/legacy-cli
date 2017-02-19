@@ -25,10 +25,14 @@ class Pip extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function install($path, array $dependencies)
+    public function install($path, array $dependencies, $global = false)
     {
         file_put_contents($path . '/requirements.txt', $this->formatRequirementsTxt($dependencies));
-        $this->runCommand('pip install --requirement=requirements.txt --prefix=.', $path);
+        $command = 'pip install --requirement=requirements.txt';
+        if (!$global) {
+            $command .= ' --prefix=.';
+        }
+        $this->runCommand($command, $path);
     }
 
     /**

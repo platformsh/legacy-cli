@@ -298,7 +298,8 @@ class LocalBuild
                 } else {
                     $this->dependencyInstaller->installDependencies(
                         $depsDir,
-                        $appConfig['dependencies']
+                        $appConfig['dependencies'],
+                        !empty($this->settings['global-deps'])
                     );
                 }
 

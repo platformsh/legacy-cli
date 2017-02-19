@@ -46,9 +46,10 @@ class DependencyInstaller
 
     /**
      * @param string $destination
-     * @param array $dependencies
+     * @param array  $dependencies
+     * @param bool   $global
      */
-    public function installDependencies($destination, array $dependencies)
+    public function installDependencies($destination, array $dependencies, $global = false)
     {
         foreach ($dependencies as $stack => $stackDependencies) {
             $manager = $this->getManager($stack);
@@ -68,7 +69,7 @@ class DependencyInstaller
             }
             $path = $destination . '/' . $stack;
             $this->ensureDirectory($path);
-            $manager->install($path, $stackDependencies);
+            $manager->install($path, $stackDependencies, $global);
         }
     }
 
@@ -90,7 +91,7 @@ class DependencyInstaller
     protected function getManager($name)
     {
         $stacks = [
-            'nodejs' => new DependencyManager\Yarn($this->shell),
+            'nodejs' => new DependencyManager\Npm($this->shell),
             'python' => new DependencyManager\Pip($this->shell),
             'ruby' => new DependencyManager\Bundler($this->shell),
             'php' => new DependencyManager\Composer($this->shell),
