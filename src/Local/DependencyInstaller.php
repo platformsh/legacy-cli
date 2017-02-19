@@ -45,12 +45,20 @@ class DependencyInstaller
     }
 
     /**
+     * Install dependencies into a directory.
+     *
      * @param string $destination
      * @param array  $dependencies
      * @param bool   $global
+     *
+     * @throws \Exception If a dependency fails to install.
+     *
+     * @return bool
+     *     False if a dependency manager is not available; otherwise true.
      */
     public function installDependencies($destination, array $dependencies, $global = false)
     {
+        $success = true;
         foreach ($dependencies as $stack => $stackDependencies) {
             $manager = $this->getManager($stack);
             $this->output->writeln(sprintf(
@@ -60,17 +68,23 @@ class DependencyInstaller
                 implode(', ', array_keys($stackDependencies))
             ));
             if (!$manager->isAvailable()) {
-                throw new \RuntimeException(rtrim(sprintf(
-                    "Cannot install %s dependencies: '%s' is not installed\n%s",
+                $this->output->writeln(sprintf(
+                    "Cannot install <comment>%s</comment> dependencies: '%s' is not installed.",
                     $stack,
-                    $manager->getCommandName(),
-                    $manager->getInstallHelp()
-                )));
+                    $manager->getCommandName()
+                ));
+                if ($manager->getInstallHelp()) {
+                    $this->output->writeln($manager->getInstallHelp());
+                }
+                $success = false;
+                continue;
             }
             $path = $destination . '/' . $stack;
             $this->ensureDirectory($path);
             $manager->install($path, $stackDependencies, $global);
         }
+
+        return $success;
     }
 
     /**
