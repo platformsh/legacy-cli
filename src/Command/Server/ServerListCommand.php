@@ -12,6 +12,7 @@ class ServerListCommand extends ServerCommandBase
     {
         $this
           ->setName('server:list')
+          ->setAliases(['servers'])
           ->setDescription('List running local project web server(s)')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'List all servers');
         Table::configureInput($this->getDefinition());

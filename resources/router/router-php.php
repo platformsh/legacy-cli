@@ -4,6 +4,7 @@
  * Router for the PHP built-in web server.
  */
 
+define('ERROR_LOG_TYPE_SAPI', 4);
 $variables_prefix = isset($_ENV['_PLATFORM_VARIABLES_PREFIX']) ? $_ENV['_PLATFORM_VARIABLES_PREFIX'] : 'PLATFORM_';
 
 // Define a callback for running a PHP file (usually the passthru script).
@@ -18,13 +19,13 @@ $run_php = function ($filename) {
                 $_SERVER['REQUEST_METHOD'],
                 $_SERVER['REQUEST_URI']
             ),
-            4
+            ERROR_LOG_TYPE_SAPI
         );
     });
 
     // Workaround for https://bugs.php.net/64566
-    if (ini_get('auto_prepend_file') && !in_array(realpath(ini_get('auto_prepend_file')), get_included_files(), true)) {
-        require ini_get('auto_prepend_file');
+    if (ini_get('auto_prepend_file') && file_exists(ini_get('auto_prepend_file'))) {
+        require_once ini_get('auto_prepend_file');
     }
 
     chdir(dirname($filename));
@@ -34,17 +35,25 @@ $run_php = function ($filename) {
     require $filename;
 };
 
+$pregQuoteNginxPattern = function ($pattern) {
+    return '#' . str_replace('#', '\\#', $pattern) . '#';
+};
+
+$is_php = function ($filename) {
+    return preg_match('/\.php$/', $filename);
+};
+
 // Get the application configuration from the environment.
 if (!isset($_ENV[$variables_prefix . 'APPLICATION'])) {
     http_response_code(500);
-    error_log('Environment variable not found: ' . $variables_prefix . 'APPLICATION', 4);
+    error_log('Environment variable not found: ' . $variables_prefix . 'APPLICATION', ERROR_LOG_TYPE_SAPI);
     exit;
 }
 $app = json_decode(base64_decode($_ENV[$variables_prefix . 'APPLICATION']), true);
 
 // Support for Drupal features.
 // See: https://www.drupal.org/node/1543858
-if (!empty($app['is_drupal'])) {
+if (!empty($app['drupal_7_workaround'])) {
     // The Drupal 7 request_path() function has a strange check which causes
     // the path to be treated as the front page if ($path == basename($_SERVER['PHP_SELF']).
     // Setting $_GET['q'] manually works around this.
@@ -53,20 +62,18 @@ if (!empty($app['is_drupal'])) {
 }
 
 // Find the correct location.
-$locations = isset($app['web']['locations']) ? $app['web']['locations'] : ['/' => $app['web']];
-foreach ($locations as $path => $location_candidate) {
-    if ($path === '/' && $_SERVER['REQUEST_URI'] === '/') {
-        $location = $location_candidate;
-    } elseif (preg_match('#^' . preg_quote(ltrim($path, '/'), '#') . '#', $_SERVER['REQUEST_URI'])) {
-        $location = $location_candidate;
+$locations = isset($app['web']['locations']) ? $app['web']['locations'] : [];
+$location = ['allow' => true];
+$matchedLocation = '/';
+foreach (array_keys($locations) as $path) {
+    if (strpos($_SERVER['REQUEST_URI'], $path) === 0) {
+        $matchedLocation = $path;
+    } elseif (preg_match($pregQuoteNginxPattern($path), $_SERVER['REQUEST_URI'])) {
+        $matchedLocation = $path;
     }
 }
-if (!isset($location)) {
-    $location = isset($locations['/']) ? $locations['/'] : [
-        // @todo define a default location config
-        'allow' => true,
-        'passthru' => 'index.php',
-    ];
+if (isset($app['web']['locations'][$matchedLocation])) {
+    $location = $app['web']['locations'][$matchedLocation];
 }
 
 // Determine which passthru script, if any, should be used.
@@ -75,7 +82,7 @@ if (!empty($location['passthru'])) {
     $passthru = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . ltrim($location['passthru'], '/');
     if (!file_exists($passthru)) {
         http_response_code(500);
-        error_log(sprintf('Passthru file not found: %s', $passthru), 4);
+        error_log(sprintf('Passthru file not found: %s', $passthru), ERROR_LOG_TYPE_SAPI);
         exit;
     }
 }
@@ -87,8 +94,8 @@ $requested_file = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . ltrim($_SERV
 // server asks for 'index.php' if it exists).
 if (basename($requested_file) === 'index.php' || is_dir($requested_file)) {
     $index_files = ['index.php'];
-    if (isset($location['index_files'])) {
-        $index_files = (array) $location['index_files'];
+    if (isset($location['index'])) {
+        $index_files = (array) $location['index'];
     }
     $directory = is_dir($requested_file)
       ? rtrim($requested_file, DIRECTORY_SEPARATOR)
@@ -104,7 +111,7 @@ if (basename($requested_file) === 'index.php' || is_dir($requested_file)) {
     if (!$index_found) {
         if (!$passthru) {
             http_response_code(500);
-            error_log(sprintf('No index file found in directory: %s', $directory), 4);
+            error_log(sprintf('No index file found in directory: %s', $directory), ERROR_LOG_TYPE_SAPI);
             exit;
         }
         $requested_file = $passthru;
@@ -117,94 +124,48 @@ if ($passthru && ($requested_file === $passthru || !file_exists($requested_file)
     exit;
 }
 
-// Find the relative path to the requested file, for processing the whitelist or
-// blacklist.
+// Find the root-relative path to the requested file, for processing rules.
 $relative_path = ltrim(substr($requested_file, strlen($_SERVER['DOCUMENT_ROOT'])), DIRECTORY_SEPARATOR);
 
-// Process the blacklist. If the path matches, serve the passthru or a 403.
-if (!empty($app['web']['blacklist'])) {
-    $pattern = '#' . implode('|', (array) $app['web']['blacklist']) . '#';
-    if (preg_match($pattern, $relative_path)) {
-        if ($passthru) {
-            $requested_file = $passthru;
-        } else {
-            http_response_code(403);
-            echo "Access denied.";
-            error_log(sprintf('Access denied. File in blacklist: %s', $relative_path), 4);
-            exit;
+// Process the static files rules.
+$allow = isset($location['allow']) ? (bool) $location['allow'] : true;
+if (!empty($location['rules'])) {
+    foreach ($location['rules'] as $pattern => $rule) {
+        if (preg_match($pregQuoteNginxPattern($pattern), $relative_path)) {
+            if (isset($rule['allow'])) {
+                $allow = (bool) $rule['allow'];
+                if (!$allow) {
+                    error_log(sprintf(
+                        'Static file "%s" blocked by rule "%s"',
+                        $relative_path,
+                        $pattern
+                    ), ERROR_LOG_TYPE_SAPI);
+                }
+            }
+            break;
         }
     }
 }
 
-// Run the file, if it's PHP.
-if (preg_match('/\.php$/', $requested_file)) {
-    $run_php($requested_file);
-    exit;
+// Block scripts, if configured.
+if ($is_php($requested_file) && isset($location['scripts']) && !$location['scripts']) {
+    $allow = false;
 }
 
-// Process the whitelist. If the path doesn't match, serve a 403.
-$whitelist = isset($app['web']['whitelist']) ? (array) $app['web']['whitelist'] : [
-  // CSS and Javascript.
-  '\.css$',
-  '\.js$',
+// Handle files that are blocked.
+if (!$allow) {
+    if ($passthru) {
+        $requested_file = $passthru;
+    } else {
+        http_response_code(403);
+        echo "Access denied.";
+        exit;
+    }
+}
 
-  // image/* types.
-  '\.gif$',
-  '\.jpe?g$',
-  '\.png$',
-  '\.tiff?$',
-  '\.wbmp$',
-  '\.ico$',
-  '\.jng$',
-  '\.bmp$',
-  '\.svgz?$',
-
-  // audio/* types.
-  '\.midi?$',
-  '\.mpe?ga$',
-  '\.mp2$',
-  '\.mp3$',
-  '\.m4a$',
-  '\.ra$',
-  '\.weba$',
-
-  // video/* types.
-  '\.3gpp?$',
-  '\.mp4$',
-  '\.mpe?g$',
-  '\.mpe$',
-  '\.ogv$',
-  '\.mov$',
-  '\.webm$',
-  '\.flv$',
-  '\.mng$',
-  '\.asx$',
-  '\.asf$',
-  '\.wmv$',
-  '\.avi$',
-
-  // application/ogg.
-  '\.ogx$',
-
-  // application/x-shockwave-flash.
-  '\.swf$',
-
-  // application/java-archive.
-  '\.jar$',
-
-  // fonts types.
-  '\.ttf$',
-  '\.eot$',
-  '\.woff$',
-  '\.otf$',
-
-  // robots.txt.
-  '/robots\.txt$',
-];
-$pattern = '#' . implode('|', $whitelist) . '#';
-if (!preg_match($pattern, $relative_path)) {
-    http_response_code(403);
-    error_log(sprintf('Access denied. File not in whitelist: %s', $relative_path), 4);
+// Run the file, if it's PHP.
+if ($is_php($requested_file)) {
+    $run_php($requested_file);
     exit;
 }
 

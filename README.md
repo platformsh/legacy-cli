@@ -135,7 +135,7 @@ self
   self:install                              Install or update CLI configuration files
   self:update (self-update)                 Update the CLI to the latest version
 server
-  server:list                               List running local project web server(s)
+  server:list (servers)                     List running local project web server(s)
   server:run                                Run a local PHP web server
   server:start                              Run PHP web server(s) for the local project
   server:stop                               Stop local project web server(s)

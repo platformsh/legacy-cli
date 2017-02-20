@@ -69,11 +69,8 @@ abstract class ServerCommandBase extends CommandBase
         }
 
         list($hostname, $port) = explode(':', $address);
-        if (PortUtil::isPortInUse($port, $hostname)) {
-            return true;
-        }
 
-        return false;
+        return PortUtil::isPortInUse($port, $hostname);
     }
 
     /**
@@ -134,7 +131,11 @@ abstract class ServerCommandBase extends CommandBase
         if ($pid && function_exists('posix_kill')) {
             $success = posix_kill($pid, SIGTERM);
             if (!$success) {
-                $this->stdErr->writeln(sprintf('Failed to kill process <error>%d</error> (POSIX error %s)', $pid, posix_get_last_error()));
+                $this->stdErr->writeln(sprintf(
+                    'Failed to kill process <error>%d</error> (POSIX error %s)',
+                    $pid,
+                    posix_get_last_error()
+                ));
             }
         }
         $pidFile = $this->getPidFile($address);
@@ -257,21 +258,9 @@ abstract class ServerCommandBase extends CommandBase
         } else {
             // Bail out. We can't support non-PHP apps for now.
             throw new \Exception(sprintf(
-                "Not supported: the CLI doesn't yet support starting a server for the application type '%s'",
+                "Not supported: the CLI doesn't support starting a server for the application type '%s'",
                 $appConfig['type']
             ));
-
-            // The following code is a potential strategy for non-PHP apps, but
-            // it won't really work without starting more than one process,
-            // which would need a rethink.
-            /*
-            if (!empty($appConfig['web']['commands']['start'])) {
-                $process = new Process($appConfig['web']['commands']['start']);
-            }
-            else {
-                throw new \RuntimeException('The start command (`web.commands.start`) was not found.');
-            }
-            */
         }
 
         $process->setTimeout(null);

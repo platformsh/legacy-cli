@@ -100,7 +100,7 @@ class ServerRunCommand extends ServerCommandBase
 
         $appConfig = $app->getConfig();
         if (Drupal::isDrupal($app->getRoot())) {
-            $appConfig['is_drupal'] = true;
+            $appConfig['drupal_7_workaround'] = true;
         }
 
         $force = $input->getOption('force');

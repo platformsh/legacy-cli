@@ -55,6 +55,8 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
+        $executable = $this->config()->get('application.executable');
+
         $multiApp = count($apps) > 1;
         $webRoot = $projectRoot . '/' . $this->config()->get('local.web_root');
         $items = [];
@@ -62,8 +64,15 @@ class ServerStartCommand extends ServerCommandBase
             $appId = $app->getId();
             $docRoot = $multiApp ? $webRoot . '/' . $app->getWebPath() : $webRoot;
             if (!file_exists($docRoot)) {
-                $this->stdErr->writeln(sprintf('Document root not found for app <error>%s</error>: %s', $appId, $docRoot));
-                $this->stdErr->writeln(sprintf('Build the application with: <comment>platform build</comment>'));
+                $this->stdErr->writeln(sprintf(
+                    'Document root not found for app <error>%s</error>: %s',
+                    $appId,
+                    $docRoot
+                ));
+                $this->stdErr->writeln(sprintf(
+                    'Build the application with: <comment>%s build</comment>',
+                    $executable
+                ));
                 continue;
             }
             $items[$appId] = [
@@ -85,8 +94,14 @@ class ServerStartCommand extends ServerCommandBase
                     $bufferedOutput
                 );
                 if ($result != 0) {
-                    $this->stdErr->writeln(sprintf('Failed to get SSH tunnel information for the app <error>%s</error>', $appId));
-                    $this->stdErr->writeln('Run <comment>' . $this->config()->get('application.executable') . ' tunnel:open</comment> to create tunnels.');
+                    $this->stdErr->writeln(sprintf(
+                        'Failed to get SSH tunnel information for the app <error>%s</error>',
+                        $appId
+                    ));
+                    $this->stdErr->writeln(sprintf(
+                        'Run <comment>%s tunnel:open</comment> to create tunnels.',
+                        $executable
+                    ));
                     unset($items[$appId]);
                     continue;
                 }
@@ -99,7 +114,8 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        $logFile = $input->getOption('log') ?: $projectRoot . '/' . $this->config()->get('local.local_dir') . '/server.log';
+        $logFile = $input->getOption('log')
+            ?: $projectRoot . '/' . $this->config()->get('local.local_dir') . '/server.log';
         $log = $this->openLog($logFile);
         if (!$log) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: <error>%s</error>', $logFile));
@@ -192,12 +208,18 @@ class ServerStartCommand extends ServerCommandBase
                 continue;
             }
 
-            $this->stdErr->writeln(sprintf('Web server started at <info>http://%s</info> for app <info>%s</info>', $address, $appId));
+            $this->stdErr->writeln(sprintf(
+                'Web server started at <info>http://%s</info> for app <info>%s</info>',
+                $address,
+                $appId
+            ));
         }
 
         if (count($processes)) {
             $this->stdErr->writeln(sprintf('Logs are written to: %s', $logFile));
-            $this->stdErr->writeln('Use <comment>' . $this->config()->get('application.executable') . ' server:stop</comment> to stop server(s)');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln("List servers with: <info>$executable servers</info>");
+            $this->stdErr->writeln("Stop servers with: <info>$executable server:stop</info>");
         }
 
         // The terminal has received all necessary output, so we can stop the
