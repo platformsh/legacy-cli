@@ -279,8 +279,8 @@ abstract class ServerCommandBase extends CommandBase
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);
         $envPrefix = $this->config()->get('service.env_prefix');
-        if (isset($env[$envPrefix . '_APP_DIR'])) {
-            $process->setWorkingDirectory($env[$envPrefix . '_APP_DIR']);
+        if (isset($env[$envPrefix . 'APP_DIR'])) {
+            $process->setWorkingDirectory($env[$envPrefix . 'APP_DIR']);
         }
 
         return $process;
@@ -374,7 +374,7 @@ abstract class ServerCommandBase extends CommandBase
 
         list($env['IP'], $env['PORT']) = explode(':', $address);
 
-        if (dirname(dirname($realDocRoot)) === $projectRoot . '/' . $this->config()->get('local.local_dir')) {
+        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config()->get('local.build_dir')) {
             $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);
         }
 
