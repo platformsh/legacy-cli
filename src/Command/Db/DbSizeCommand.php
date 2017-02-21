@@ -10,7 +10,6 @@ use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Yaml;
 
 class DbSizeCommand extends CommandBase
 {
@@ -71,7 +70,9 @@ class DbSizeCommand extends CommandBase
         }
 
         // Load services yaml.
-        $services = Yaml::parse(file_get_contents($projectRoot . '/.platform/services.yaml'));
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $services = (array) $localProject->readProjectConfigFile($projectRoot, 'services.yaml');
         if (!empty($services[$dbServiceName]['disk'])) {
             $allocatedDisk = $services[$dbServiceName]['disk'];
         } else {

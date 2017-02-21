@@ -351,6 +351,35 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
+     * @param string $projectRoot
+     * @param string $address
+     *
+     * @return array
+     */
+    protected function getRoutesList($projectRoot, $address)
+    {
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $routesConfig = (array) $localProject->readProjectConfigFile($projectRoot, 'routes.yaml');
+
+        $routes = [];
+        foreach ($routesConfig as $route => $config) {
+            // If the route starts with http://{default}, replace it with the
+            // $address. This can't accommodate subdomains or HTTPS routes, so
+            // those are ignored.
+            $url = strpos($route, 'http://{default}') === 0
+                ? 'http://' . $address . substr($route, 16)
+                : $route;
+            if (strpos($url, '{default}') !== false) {
+                continue;
+            }
+            $routes[$url] = $config + ['original_url' => $route];
+        }
+
+        return $routes;
+    }
+
+    /**
      * Create the virtual environment variables for a local server.
      *
      * @param string $projectRoot
@@ -370,6 +399,7 @@ abstract class ServerCommandBase extends CommandBase
             $envPrefix . 'APPLICATION' => base64_encode(json_encode($appConfig)),
             $envPrefix . 'APPLICATION_NAME' => isset($appConfig['name']) ? $appConfig['name'] : '',
             $envPrefix . 'DOCUMENT_ROOT' => $realDocRoot,
+            $envPrefix . 'ROUTES' => base64_encode(json_encode($this->getRoutesList($projectRoot, $address))),
         ];
 
         list($env['IP'], $env['PORT']) = explode(':', $address);

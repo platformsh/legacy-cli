@@ -25,6 +25,26 @@ class LocalProject
     }
 
     /**
+     * Read a config file for a project.
+     *
+     * @param string $dir        The project root.
+     * @param string $configFile A config file such as 'services.yaml'.
+     *
+     * @return array|null
+     */
+    public function readProjectConfigFile($dir, $configFile)
+    {
+        $result = null;
+        $filename = $dir . '/' . $this->config->get('service.project_config_dir') . '/' . $configFile;
+        if (file_exists($filename)) {
+            $parser = new Parser();
+            $result = $parser->parse(file_get_contents($filename));
+        }
+
+        return $result;
+    }
+
+    /**
      * @param string $gitUrl
      *
      * @return array|false
