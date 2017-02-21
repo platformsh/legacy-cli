@@ -32,7 +32,7 @@ abstract class ServerCommandBase extends CommandBase
     {
         foreach ($this->getServerInfo() as $address => $server) {
             if ($server['appId'] === $appId && $server['projectRoot'] === $projectRoot) {
-                if (function_exists('posix_kill') && !posix_kill($server['pid'], 0)) {
+                if ($this->isProcessDead($server['pid'])) {
                     $this->stopServer($address);
                     continue;
                 }
@@ -41,6 +41,18 @@ abstract class ServerCommandBase extends CommandBase
         }
 
         return false;
+    }
+
+    /**
+     * Check whether a process is no longer running.
+     *
+     * @param int $pid
+     *
+     * @return bool
+     */
+    protected function isProcessDead($pid)
+    {
+        return function_exists('posix_kill') && !posix_kill($pid, 0);
     }
 
     /**
@@ -60,7 +72,7 @@ abstract class ServerCommandBase extends CommandBase
             $pid = $serverInfo[$address]['pid'];
         }
 
-        if (!empty($pid) && (!function_exists('posix_kill') || posix_kill($pid, 0))) {
+        if (!empty($pid) && !$this->isProcessDead($pid)) {
             return $pid;
         } elseif (!empty($pid)) {
             // The PID is no longer valid. Delete the lock file and
@@ -92,7 +104,7 @@ abstract class ServerCommandBase extends CommandBase
 
         if ($running) {
             return array_filter($this->serverInfo, function ($server) {
-                if (function_exists('posix_kill') && !posix_kill($server['pid'], 0)) {
+                if ($this->isProcessDead($server['pid'])) {
                     $this->stopServer($server['address']);
                     return false;
                 }
