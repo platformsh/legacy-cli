@@ -2,9 +2,9 @@
 
 namespace Platformsh\Cli\Command\Project;
 
-use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\Bot;
+use Platformsh\Cli\Console\Bot;
 use Platformsh\Client\Model\Subscription;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -22,7 +22,11 @@ class ProjectCreateCommand extends CommandBase
      */
     public function isEnabled()
     {
-        return parent::isEnabled() && self::$config->has('experimental.enable_create') && self::$config->get('experimental.enable_create');
+        $config = $this->config();
+
+        return parent::isEnabled()
+            && $config->has('experimental.enable_create')
+            && $config->get('experimental.enable_create');
     }
 
     /**
@@ -44,43 +48,61 @@ class ProjectCreateCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
-        $estimate = $this->getEstimate($options['plan'], $options['storage'], $options['environments']);
-        if (!$estimate) {
-            $costConfirm = "Failed to estimate project cost";
-        } else {
-            $costConfirm = "The estimated monthly cost of this project is: <comment>{$estimate['total']}</comment>";
-        }
-        $costConfirm .= "\n\nAre you sure you want to continue?";
+        $estimate = $this->api()
+            ->getClient()
+            ->getSubscriptionEstimate($options['plan'], $options['storage'], $options['environments'], 1);
+        $costConfirm = sprintf(
+            'The estimated monthly cost of this project is: <comment>%s</comment>'
+            . "\n\n"
+            . 'Are you sure you want to continue?',
+            $estimate['total']
+        );
         if (!$questionHelper->confirm($costConfirm)) {
             return 1;
         }
 
         $subscription = $this->api()->getClient()
-          ->createSubscription(
-            $options['region'],
-            $options['plan'],
-            $options['title'],
-            $options['storage'] * 1024,
-            $options['environments']
-          );
+            ->createSubscription(
+                $options['region'],
+                $options['plan'],
+                $options['title'],
+                $options['storage'] * 1024,
+                $options['environments']
+            );
 
         $this->api()->clearProjectsCache();
 
-        $this->stdErr->writeln(sprintf('Your %s project has been requested (subscription ID: <comment>%s</comment>)', self::$config->get('service.name'), $subscription->id));
+        $this->stdErr->writeln(sprintf(
+            'Your %s project has been requested (subscription ID: <comment>%s</comment>)',
+            $this->config()->get('service.name'),
+            $subscription->id
+        ));
 
-        $this->stdErr->writeln(sprintf("\nThe %s Bot is activating your project\n", self::$config->get('service.name')));
+        $this->stdErr->writeln(sprintf(
+            "\nThe %s Bot is activating your project\n",
+            $this->config()->get('service.name')
+        ));
+
         $bot = new Bot($this->stdErr);
         $start = time();
         while ($subscription->isPending() && time() - $start < 300) {
             $bot->render();
             if (!isset($lastCheck) || time() - $lastCheck >= 2) {
-                $subscription->refresh(['timeout' => 5, 'exceptions' => false]);
-                $lastCheck = time();
+                try {
+                    $subscription->refresh(['timeout' => 5, 'exceptions' => false]);
+                    $lastCheck = time();
+                } catch (ConnectException $e) {
+                    if (strpos($e->getMessage(), 'timed out') !== false) {
+                        $this->stdErr->writeln('<warning>' . $e->getMessage() . '</warning>');
+                    } else {
+                        throw $e;
+                    }
+                }
             }
         }
         $this->stdErr->writeln("");
@@ -99,40 +121,42 @@ class ProjectCreateCommand extends CommandBase
     }
 
     /**
-     * Get a cost estimate for the new project.
+     * Return a list of plans.
      *
-     * @param string $plan
-     * @param int $storage
-     * @param int $environments
+     * The default list (from the API client) can be overridden by user config.
      *
-     * @return array|false
+     * @return string[]
      */
-    protected function getEstimate($plan, $storage, $environments)
+    protected function getAvailablePlans()
     {
-        $apiUrl = self::$config->get('api.accounts_api_url');
-        if (!$parts = parse_url($apiUrl)) {
-            throw new \RuntimeException('Failed to parse URL: ' . $apiUrl);
-        }
-        $baseUrl = $parts['scheme'] . '://' . $parts['host'];
-        $estimateUrl = $baseUrl . '/platform/estimate';
-        $client = new Client();
-        $response = $client->get($estimateUrl, [
-            'query' => [
-                'plan' => strtoupper('PLATFORM-ENVIRONMENT-' . $plan),
-                'storage' => $storage,
-                'environments' => $environments,
-                'user_licenses' => 1,
-            ],
-            'exceptions' => false,
-        ]);
-        if ($response->getStatusCode() != 200) {
-            return false;
+        $config = $this->config();
+        if ($config->has('experimental.available_plans')) {
+            return $config->get('experimental.available_plans');
         }
 
-        return $response->json();
+        return Subscription::$availablePlans;
     }
 
     /**
+     * Return a list of regions.
+     *
+     * The default list (from the API client) can be overridden by user config.
+     *
+     * @return string[]
+     */
+    protected function getAvailableRegions()
+    {
+        $config = $this->config();
+        if ($config->has('experimental.available_regions')) {
+            return $config->get('experimental.available_regions');
+        }
+
+        return Subscription::$availableRegions;
+    }
+
+    /**
+     * Returns a list of ConsoleForm form fields for this command.
+     *
      * @return Field[]
      */
     protected function getFields()
@@ -146,12 +170,12 @@ class ProjectCreateCommand extends CommandBase
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
-            'options' => Subscription::$availableRegions,
+            'options' => $this->getAvailableRegions(),
           ]),
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
-            'options' => Subscription::$availablePlans,
+            'options' => $this->getAvailablePlans(),
             'default' => 'development',
           ]),
           'environments' => new Field('Environments', [

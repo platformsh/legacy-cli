@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -14,13 +13,12 @@ class SnapshotCreateCommand extends CommandBase
     {
         $this
             ->setName('snapshot:create')
-            ->setAliases(['backup'])
             ->setDescription('Make a snapshot of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addNoWaitOption('Do not wait for the snapshot to complete');
-        $this->setHiddenAliases(['environment:backup']);
+        $this->setHiddenAliases(['backup', 'environment:backup']);
         $this->addExample('Make a snapshot of the current environment');
     }
 
@@ -46,12 +44,13 @@ class SnapshotCreateCommand extends CommandBase
         $this->stdErr->writeln("Creating a snapshot of <info>$environmentId</info>");
 
         if (!$input->getOption('no-wait')) {
-            $this->stdErr->writeln("Waiting for the snapshot to complete...");
-            $success = ActivityUtil::waitAndLog(
+            $this->stdErr->writeln('Waiting for the snapshot to complete...');
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $success = $activityMonitor->waitAndLog(
                 $activity,
-                $this->stdErr,
-                "A snapshot of environment <info>$environmentId</info> has been created",
-                "The snapshot failed"
+                'A snapshot of environment <info>' . $environmentId . '</info> has been created',
+                'The snapshot failed'
             );
             if (!$success) {
                 return 1;

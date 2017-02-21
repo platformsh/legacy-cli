@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -15,7 +15,7 @@ class UserListCommand extends CommandBase
             ->setName('user:list')
             ->setAliases(['users'])
             ->setDescription('List project users');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
 
@@ -27,12 +27,13 @@ class UserListCommand extends CommandBase
 
         $rows = [];
         $i = 0;
-        $table = new Table($input, $output);
-        foreach ($project->getUsers() as $user) {
-            $account = $this->api()->getAccount($user);
-            $role = $user['role'];
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+        foreach ($project->getUsers() as $projectAccess) {
+            $account = $this->api()->getAccount($projectAccess);
+            $role = $projectAccess->role;
             $weight = $i++;
-            if ($project->owner === $user->id) {
+            if ($project->owner === $projectAccess->id) {
                 $weight = -1;
                 if (!$table->formatIsMachineReadable()) {
                     $role .= ' (owner)';
@@ -46,5 +47,4 @@ class UserListCommand extends CommandBase
         $table->render(array_values($rows), ['Email address', 'Name', 'Project role']);
         return 0;
     }
-
 }

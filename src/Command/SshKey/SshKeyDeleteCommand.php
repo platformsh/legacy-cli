@@ -26,8 +26,10 @@ class SshKeyDeleteCommand extends CommandBase
     {
         $id = $input->getArgument('id');
         if (empty($id) || !is_numeric($id)) {
-            $this->stdErr->writeln("<error>You must specify the ID of the SSH key to delete.</error>");
-            $this->stdErr->writeln("List your SSH keys with: <info>" . self::$config->get('application.executable') . " ssh-keys</info>");
+            $this->stdErr->writeln('<error>You must specify the ID of the SSH key to delete.</error>');
+            $this->stdErr->writeln(
+                'List your SSH keys with: <info>' . $this->config()->get('application.executable') . ' ssh-keys</info>'
+            );
 
             return 1;
         }
@@ -36,11 +38,17 @@ class SshKeyDeleteCommand extends CommandBase
                     ->getSshKey($id);
         if (!$key) {
             $this->stdErr->writeln("SSH key not found: <error>$id</error>");
+
+            return 1;
         }
 
         $key->delete();
 
-        $this->stdErr->writeln("The SSH key <info>$id</info> has been deleted from your " . self::$config->get('service.name') . " account.");
+        $this->stdErr->writeln(sprintf(
+            'The SSH key <info>%s</info> has been deleted from your %s account.',
+            $id,
+            $this->config()->get('service.name')
+        ));
 
         return 0;
     }

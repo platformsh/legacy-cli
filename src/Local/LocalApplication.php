@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
 use Symfony\Component\Finder\Finder;
@@ -18,15 +18,15 @@ class LocalApplication
 
     /**
      * @param string         $appRoot
-     * @param CliConfig|null $cliConfig
+     * @param Config|null $cliConfig
      * @param string|null    $sourceDir
      */
-    public function __construct($appRoot, CliConfig $cliConfig = null, $sourceDir = null)
+    public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null)
     {
         if (!is_dir($appRoot)) {
             throw new \InvalidArgumentException("Application directory not found: $appRoot");
         }
-        $this->cliConfig = $cliConfig ?: new CliConfig();
+        $this->cliConfig = $cliConfig ?: new Config();
         $this->appRoot = $appRoot;
         $this->sourceDir = $sourceDir ?: $appRoot;
     }
@@ -46,7 +46,7 @@ class LocalApplication
      */
     protected function getPath()
     {
-        return str_replace($this->sourceDir . '/' , '', $this->appRoot);
+        return str_replace($this->sourceDir . '/', '', $this->appRoot);
     }
 
     /**
@@ -65,6 +65,16 @@ class LocalApplication
     public function getRoot()
     {
         return $this->appRoot;
+    }
+
+    /**
+     * Get the destination relative path for the web root of this application.
+     *
+     * @return string
+     */
+    public function getWebPath()
+    {
+        return str_replace('/', '-', $this->getId());
     }
 
     /**
@@ -92,8 +102,7 @@ class LocalApplication
                     $parser = new Parser();
                     $config = (array) $parser->parse(file_get_contents($file));
                     $this->config = $this->normalizeConfig($config);
-                }
-                catch (ParseException $e) {
+                } catch (ParseException $e) {
                     throw new InvalidConfigException(
                         "Parse error in file '$file': \n" . $e->getMessage()
                     );
@@ -145,16 +154,23 @@ class LocalApplication
         }
 
         // The `web` section has changed to `web`.`locations`.
-        if (isset($config['web']) && !isset($config['web']['locations'])) {
-            $map = [
-                'document_root' => 'root',
-                'expires' => 'expires',
-                'passthru' => 'passthru',
-            ];
-            foreach ($map as $key => $newKey) {
-                if (array_key_exists($key, $config['web'])) {
-                    $config['web']['locations']['/'][$newKey] = $config['web'][$key];
-                }
+        if (isset($config['web']['document_root']) && !isset($config['web']['locations'])) {
+            $oldConfig = $config['web'] + $this->getOldWebDefaults();
+
+            $location = &$config['web']['locations']['/'];
+
+            $location['root'] = $oldConfig['document_root'];
+            $location['expires'] = $oldConfig['expires'];
+            $location['passthru'] = $oldConfig['passthru'];
+            $location['allow'] = true;
+
+            foreach ($oldConfig['whitelist'] as $pattern) {
+                $location['allow'] = false;
+                $location['rules'][$pattern]['allow'] = true;
+            }
+
+            foreach ($oldConfig['blacklist'] as $pattern) {
+                $location['rules'][$pattern]['allow'] = false;
             }
         }
 
@@ -204,6 +220,10 @@ class LocalApplication
             if ($toolstackChoice === 'php:default') {
                 $toolstackChoice = 'php:composer';
             }
+
+            if ($flavor === 'none') {
+                $toolstackChoice = 'none';
+            }
         }
 
         foreach (self::getToolstacks() as $toolstack) {
@@ -226,30 +246,30 @@ class LocalApplication
      *
      * @param string $directory
      *     The absolute path to a directory.
-     * @param CliConfig|null $config
+     * @param Config|null $config
      *     CLI configuration.
      *
-     * @return static[]
+     * @return LocalApplication[]
      */
-    public static function getApplications($directory, CliConfig $config = null)
+    public static function getApplications($directory, Config $config = null)
     {
         // Finder can be extremely slow with a deep directory structure. The
         // search depth is limited to safeguard against this.
         $finder = new Finder();
-        $config = $config ?: new CliConfig();
+        $config = $config ?: new Config();
         $finder->in($directory)
                ->ignoreDotFiles(false)
                ->name($config->get('service.app_config_file'))
                ->notPath('builds')
                ->notPath($config->get('local.local_dir'))
+               ->ignoreUnreadableDirs()
                ->depth('> 0')
                ->depth('< 5');
 
         $applications = [];
         if ($finder->count() == 0) {
             $applications[$directory] = new LocalApplication($directory, $config, $directory);
-        }
-        else {
+        } else {
             /** @var \Symfony\Component\Finder\SplFileInfo $file */
             foreach ($finder as $file) {
                 $appRoot = dirname($file->getRealPath());
@@ -258,6 +278,33 @@ class LocalApplication
         }
 
         return $applications;
+    }
+
+    /**
+     * Get a single application by name.
+     *
+     * @param string|null $name
+     *     The application name.
+     * @param string $directory
+     *     The absolute path to a directory.
+     * @param Config|null $config
+     *     CLI configuration.
+     *
+     * @return LocalApplication
+     */
+    public static function getApplication($name, $directory, Config $config = null)
+    {
+        $apps = self::getApplications($directory, $config);
+        if ($name === null && count($apps) === 1) {
+            return reset($apps);
+        }
+        foreach ($apps as $app) {
+            if ($app->getName() === $name) {
+                return $app;
+            }
+        }
+
+        throw new \InvalidArgumentException('App not found: ' . $name);
     }
 
     /**
@@ -293,5 +340,76 @@ class LocalApplication
         }
 
         return $this->getDocumentRoot() === 'public' && !is_dir($this->getRoot() . '/public');
+    }
+
+    /**
+     * @return array
+     */
+    protected function getOldWebDefaults()
+    {
+        return [
+            'document_root' => '/public',
+            'expires' => 0,
+            'passthru' => '/index.php',
+            'blacklist' => [],
+            'whitelist' => [
+                // CSS and Javascript.
+                '\.css$',
+                '\.js$',
+
+                // image/* types.
+                '\.gif$',
+                '\.jpe?g$',
+                '\.png$',
+                '\.tiff?$',
+                '\.wbmp$',
+                '\.ico$',
+                '\.jng$',
+                '\.bmp$',
+                '\.svgz?$',
+
+                // audio/* types.
+                '\.midi?$',
+                '\.mpe?ga$',
+                '\.mp2$',
+                '\.mp3$',
+                '\.m4a$',
+                '\.ra$',
+                '\.weba$',
+
+                // video/* types.
+                '\.3gpp?$',
+                '\.mp4$',
+                '\.mpe?g$',
+                '\.mpe$',
+                '\.ogv$',
+                '\.mov$',
+                '\.webm$',
+                '\.flv$',
+                '\.mng$',
+                '\.asx$',
+                '\.asf$',
+                '\.wmv$',
+                '\.avi$',
+
+                // application/ogg.
+                '\.ogx$',
+
+                // application/x-shockwave-flash.
+                '\.swf$',
+
+                // application/java-archive.
+                '\.jar$',
+
+                // fonts types.
+                '\.ttf$',
+                '\.eot$',
+                '\.woff$',
+                '\.otf$',
+
+                // robots.txt.
+                '/robots\.txt$',
+            ],
+        ];
     }
 }

@@ -2,8 +2,9 @@
 
 namespace Platformsh\Cli\Local;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
@@ -12,11 +13,35 @@ class LocalProject
 {
     protected $config;
     protected $fs;
+    protected $git;
 
-    public function __construct(CliConfig $config = null)
+    protected static $projectConfigs = [];
+
+    public function __construct(Config $config = null, Git $git = null)
     {
-        $this->config = $config ?: new CliConfig();
+        $this->config = $config ?: new Config();
+        $this->git = $git ?: new Git();
         $this->fs = new Filesystem();
+    }
+
+    /**
+     * Read a config file for a project.
+     *
+     * @param string $dir        The project root.
+     * @param string $configFile A config file such as 'services.yaml'.
+     *
+     * @return array|null
+     */
+    public function readProjectConfigFile($dir, $configFile)
+    {
+        $result = null;
+        $filename = $dir . '/' . $this->config->get('service.project_config_dir') . '/' . $configFile;
+        if (file_exists($filename)) {
+            $parser = new Parser();
+            $result = $parser->parse(file_get_contents($filename));
+        }
+
+        return $result;
     }
 
     /**
@@ -27,7 +52,9 @@ class LocalProject
      */
     protected function parseGitUrl($gitUrl)
     {
-        if (!preg_match('/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($this->config->get('detection.api_domain')) . '):\1\.git$/', $gitUrl, $matches)) {
+        $gitDomain = $this->config->get('detection.git_domain');
+        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
+        if (!preg_match($pattern, $gitUrl, $matches)) {
             return false;
         }
 
@@ -45,10 +72,9 @@ class LocalProject
      */
     protected function getGitRemoteUrl($dir)
     {
-        $gitHelper = new GitHelper();
-        $gitHelper->ensureInstalled();
+        $this->git->ensureInstalled();
         foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
-            if ($url = $gitHelper->getConfig("remote.$remote.url", $dir)) {
+            if ($url = $this->git->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
         }
@@ -57,29 +83,36 @@ class LocalProject
     }
 
     /**
-     * Ensure there are appropriate Git remotes in the repository.
+     * Ensure there is an appropriate Git remote in the repository.
      *
      * @param string $dir
+     *   The repository directory.
      * @param string $url
+     *   The Git URL.
      */
     public function ensureGitRemote($dir, $url)
     {
-        if (!file_exists("$dir/.git")) {
+        if (!file_exists($dir . '/.git')) {
             throw new \InvalidArgumentException('The directory is not a Git repository');
         }
-        $gitHelper = new GitHelper();
-        $gitHelper->ensureInstalled();
-        $gitHelper->setDefaultRepositoryDir($dir);
-        $currentUrl = $gitHelper->getConfig("remote." . $this->config->get('detection.git_remote_name') . ".url", $dir);
+        $this->git->ensureInstalled();
+        $currentUrl = $this->git->getConfig(
+            sprintf('remote.%s.url', $this->config->get('detection.git_remote_name')),
+            $dir
+        );
         if (!$currentUrl) {
-            $gitHelper->execute(['remote', 'add', $this->config->get('detection.git_remote_name'), $url], $dir, true);
-        }
-        elseif ($currentUrl != $url) {
-            $gitHelper->execute(['remote', 'set-url', $this->config->get('detection.git_remote_name'), $url], $dir, true);
-        }
-        // Add an origin remote too.
-        if ($this->config->get('detection.git_remote_name') !== 'origin' && !$gitHelper->getConfig("remote.origin.url", $dir)) {
-            $gitHelper->execute(['remote', 'add', 'origin', $url]);
+            $this->git->execute(
+                ['remote', 'add', $this->config->get('detection.git_remote_name'), $url],
+                $dir,
+                true
+            );
+        } elseif ($currentUrl !== $url) {
+            $this->git->execute([
+                'remote',
+                'set-url',
+                $this->config->get('detection.git_remote_name'),
+                $url
+            ], $dir, true);
         }
     }
 
@@ -131,6 +164,29 @@ class LocalProject
     }
 
     /**
+     * Initialize a directory as a project root.
+     *
+     * @param string $directory
+     *   The Git repository that should be initialized.
+     * @param Project $project
+     *   The project.
+     */
+    public function mapDirectory($directory, Project $project)
+    {
+        if (!file_exists($directory . '/.git')) {
+            throw new \InvalidArgumentException('Not a Git repository: ' . $directory);
+        }
+        $projectConfig = [
+            'id' => $project->id,
+        ];
+        if ($host = parse_url($project->getUri(), PHP_URL_HOST)) {
+            $projectConfig['host'] = $host;
+        }
+        $this->writeCurrentProjectConfig($projectConfig, $directory, true);
+        $this->ensureGitRemote($directory, $project->getGitUrl());
+    }
+
+    /**
      * Find the legacy root of the current project, from CLI versions <3.
      *
      * @return string|false
@@ -173,7 +229,7 @@ class LocalProject
     /**
      * Get the configuration for the current project.
      *
-     * @param string $projectRoot
+     * @param string|null $projectRoot
      *
      * @return array|null
      *   The current project's configuration.
@@ -181,16 +237,19 @@ class LocalProject
     public function getProjectConfig($projectRoot = null)
     {
         $projectRoot = $projectRoot ?: $this->getProjectRoot();
+        if (isset(self::$projectConfigs[$projectRoot])) {
+            return self::$projectConfigs[$projectRoot];
+        }
         $projectConfig = null;
         $configFilename = $this->config->get('local.project_config');
         if ($projectRoot && file_exists($projectRoot . '/' . $configFilename)) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
-        }
-        elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
+            self::$projectConfigs[$projectRoot] = $projectConfig;
+        } elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $gitUrl = $this->getGitRemoteUrl($projectRoot);
             if ($gitUrl && ($projectConfig = $this->parseGitUrl($gitUrl))) {
-                $this->writeConfigToFile($projectRoot . '/' . $configFilename, $projectConfig);
+                $this->writeCurrentProjectConfig($projectConfig, $projectRoot);
             }
         }
 
@@ -200,15 +259,22 @@ class LocalProject
     /**
      * Write configuration for a project.
      *
-     * @param array $config The configuration.
+     * Configuration is stored as YAML, in the location configured by
+     * 'local.project_config'.
+     *
+     * @param array $config
+     *   The configuration.
      * @param string $projectRoot
+     *   The project root.
+     * @param bool   $merge
+     *   Whether to merge with existing configuration.
      *
      * @throws \Exception On failure
      *
      * @return array
      *   The updated project configuration.
      */
-    public function writeCurrentProjectConfig(array $config, $projectRoot = null)
+    public function writeCurrentProjectConfig(array $config, $projectRoot = null, $merge = false)
     {
         $projectRoot = $projectRoot ?: $this->getProjectRoot();
         if (!$projectRoot) {
@@ -216,23 +282,16 @@ class LocalProject
         }
         $this->ensureLocalDir($projectRoot);
         $file = $projectRoot . '/' . $this->config->get('local.project_config');
-        $projectConfig = $this->getProjectConfig($projectRoot) ?: [];
-        $projectConfig = array_merge($projectConfig, $config);
-        $this->writeConfigToFile($file, $projectConfig);
+        if ($merge) {
+            $projectConfig = $this->getProjectConfig($projectRoot) ?: [];
+            $config = array_merge($projectConfig, $config);
+        }
+        $yaml = (new Dumper())->dump($config, 10);
+        $this->fs->dumpFile($file, $yaml);
 
-        return $projectConfig;
-    }
+        self::$projectConfigs[$projectRoot] = $config;
 
-    /**
-     * @param string $filename
-     * @param array $config
-     *
-     * @throws \Symfony\Component\Filesystem\Exception\IOException on failure
-     */
-    protected function writeConfigToFile($filename, array $config)
-    {
-        $dumper = new Dumper();
-        $this->fs->dumpFile($filename, $dumper->dump($config, 10));
+        return $config;
     }
 
     /**
@@ -244,7 +303,10 @@ class LocalProject
         $dir = $projectRoot . '/' . $localDirRelative;
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
-            $this->writeGitExclude($projectRoot);
+        }
+        $this->writeGitExclude($projectRoot);
+        if (!file_exists($dir . '/.gitignore')) {
+            file_put_contents($dir . '/.gitignore', '/' . PHP_EOL);
         }
         if (!file_exists($dir . '/README.txt')) {
             $cliName = $this->config->get('application.name');
@@ -279,7 +341,6 @@ EOF
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
             if (strpos($existing, $this->config->get('application.name')) !== false) {
-
                 // Backwards compatibility between versions 3.0.0 and 3.0.2.
                 $newRoot = "\n" . '/' . $this->config->get('application.name') . "\n";
                 $oldRoot = "\n" . '/.www' . "\n";

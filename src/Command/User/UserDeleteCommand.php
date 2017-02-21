@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\ActivityUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -34,13 +33,17 @@ class UserDeleteCommand extends CommandBase
         }
 
         if ($project->owner === $selectedUser->id) {
-            $this->stdErr->writeln("The user <error>$email</error> is the owner of the project <error>{$project->title}</error>.");
+            $this->stdErr->writeln(sprintf(
+                'The user <error>%s</error> is the owner of the project %s.',
+                $email,
+                $this->api()->getProjectLabel($project, 'error')
+            ));
             $this->stdErr->writeln("The project's owner cannot be deleted.");
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         if (!$questionHelper->confirm("Are you sure you want to delete the user <info>$email</info>?")) {
             return 1;
@@ -51,17 +54,18 @@ class UserDeleteCommand extends CommandBase
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
         if (!$input->getOption('no-wait')) {
-            ActivityUtil::waitMultiple($result->getActivities(), $this->stdErr);
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         // If the user was deleting themselves from the project, then invalidate
         // the projects cache.
-        $account = $this->api()->getClient()->getAccountInfo();
-        if ($account['uuid'] === $selectedUser->id) {
+        $myUuid = $this->api()->getMyAccount()['uuid'];
+        if ($myUuid === $selectedUser->id) {
             $this->api()->clearProjectsCache();
         }
 
         return 0;
     }
-
 }

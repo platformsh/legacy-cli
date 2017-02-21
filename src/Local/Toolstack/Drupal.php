@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Local\Toolstack;
 
-use Platformsh\Cli\Helper\DrushHelper;
+use Platformsh\Cli\Service\Drush;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -62,7 +62,8 @@ class Drupal extends ToolstackBase
                ->name('composer.json');
         foreach ($finder as $file) {
             $composerJson = json_decode(file_get_contents($file), true);
-            if (isset($composerJson['require']['drupal/core']) || isset($composerJson['require']['drupal/phing-drush-task'])) {
+            if (isset($composerJson['require']['drupal/core'])
+                || isset($composerJson['require']['drupal/phing-drush-task'])) {
                 return true;
             }
         }
@@ -87,7 +88,7 @@ class Drupal extends ToolstackBase
         } elseif ($projectMake) {
             $this->buildInProjectMode($projectMake);
         } else {
-            $this->output->writeln("Building in vanilla mode: you are missing out!");
+            $this->stdErr->writeln("Building in vanilla mode: you are missing out!");
 
             $this->copyToBuildDir();
 
@@ -109,14 +110,13 @@ class Drupal extends ToolstackBase
      */
     protected function checkIgnored($filename, $suggestion = null)
     {
-        if (empty($this->settings['sourceDir']) || !$this->gitHelper->isRepository($this->settings['sourceDir'])) {
+        if (!$repositoryDir = $this->gitHelper->getRoot($this->appRoot)) {
             return;
         }
-        $repositoryDir = $this->settings['sourceDir'];
         $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
-        if (!$this->gitHelper->execute(['check-ignore', $relative], $repositoryDir)) {
+        if (!$this->gitHelper->checkIgnore($relative, $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
-            $this->output->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
+            $this->stdErr->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
         }
     }
 
@@ -131,7 +131,7 @@ class Drupal extends ToolstackBase
             '--yes',
         ];
 
-        $verbosity = $this->output->getVerbosity();
+        $verbosity = $this->stdErr->getVerbosity();
         if ($verbosity === OutputInterface::VERBOSITY_QUIET) {
             $drushFlags[] = '--quiet';
         } elseif ($verbosity === OutputInterface::VERBOSITY_DEBUG) {
@@ -140,18 +140,18 @@ class Drupal extends ToolstackBase
             $drushFlags[] = '--verbose';
         }
 
-        if (!empty($this->settings['drushWorkingCopy'])) {
+        if (!empty($this->settings['working-copy'])) {
             $drushFlags[] = '--working-copy';
         }
 
-        if (!empty($this->settings['noCache'])) {
+        if (!empty($this->settings['no-cache'])) {
             $drushFlags[] = '--no-cache';
         } else {
             $drushFlags[] = '--cache-duration-releasexml=300';
         }
 
-        if (!empty($this->settings['drushConcurrency'])) {
-            $drushFlags[] = '--concurrency=' . $this->settings['drushConcurrency'];
+        if (!empty($this->settings['concurrency'])) {
+            $drushFlags[] = '--concurrency=' . $this->settings['concurrency'];
         }
 
         return $drushFlags;
@@ -176,7 +176,7 @@ class Drupal extends ToolstackBase
             'drupal-org.make.yml',
             'drupal-org.make',
         ];
-        if (empty($this->settings['drushUpdateLock'])) {
+        if (empty($this->settings['lock'])) {
             $candidates = array_merge([
                 'project.make.lock',
                 'project.make.yml.lock',
@@ -195,8 +195,10 @@ class Drupal extends ToolstackBase
 
         if ($required) {
             throw new \Exception(
-                ($core ? "Couldn't find a core make file in the directory." : "Couldn't find a make file in the directory.")
-                . " Possible filenames: " . implode(',', $candidates)
+                ($core
+                    ? "Couldn't find a core make file in the directory."
+                    : "Couldn't find a make file in the directory."
+                ) . " Possible filenames: " . implode(',', $candidates)
             );
         }
 
@@ -204,13 +206,13 @@ class Drupal extends ToolstackBase
     }
 
     /**
-     * @return DrushHelper
+     * @return Drush
      */
     protected function getDrushHelper()
     {
         static $drushHelper;
         if (!isset($drushHelper)) {
-            $drushHelper = new DrushHelper($this->config, $this->shellHelper);
+            $drushHelper = new Drush($this->config, $this->shellHelper);
         }
 
         return $drushHelper;
@@ -235,7 +237,7 @@ class Drupal extends ToolstackBase
         );
 
         // Create a lock file automatically.
-        if (!strpos($projectMake, '.lock') && version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['drushUpdateLock'])) {
+        if (!strpos($projectMake, '.lock') && !empty($this->settings['lock']) && $drushHelper->supportsMakeLock()) {
             $args[] = "--lock=$projectMake.lock";
         }
 
@@ -280,20 +282,26 @@ class Drupal extends ToolstackBase
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
         $drushFlags = $this->getDrushFlags();
-        $updateLock = version_compare($drushHelper->getVersion(), '7.0.0-rc1', '>=') && !empty($this->settings['drushUpdateLock']);
+        $updateLock = !empty($this->settings['lock']) && $drushHelper->supportsMakeLock();
 
         $projectMake = $this->findDrushMakeFile(true);
         $projectCoreMake = $this->findDrushMakeFile(true, true);
 
         $drupalRoot = $this->getWebRoot();
 
-        $this->output->writeln("Building profile <info>$profileName</info>");
+        $this->stdErr->writeln("Building profile <info>$profileName</info>");
 
         $profileDir = $drupalRoot . '/profiles/' . $profileName;
 
         if ($projectMake) {
+            // Create a temporary profile directory. If it already exists,
+            // ensure that it is empty.
             $tempProfileDir = $this->buildDir . '/tmp-' . $profileName;
+            if (file_exists($tempProfileDir)) {
+                $this->fsHelper->remove($tempProfileDir);
+            }
             $this->fsHelper->mkdir($tempProfileDir);
+
             $args = array_merge(
                 ['make', '--no-core', '--contrib-destination=.', $projectMake, $tempProfileDir],
                 $drushFlags
@@ -326,10 +334,9 @@ class Drupal extends ToolstackBase
         }
 
         if ($this->copy) {
-            $this->output->writeln("Copying existing app files to the profile");
-        }
-        else {
-            $this->output->writeln("Symlinking existing app files to the profile");
+            $this->stdErr->writeln("Copying existing app files to the profile");
+        } else {
+            $this->stdErr->writeln("Symlinking existing app files to the profile");
         }
 
         $this->ignoredFiles[] = '*.make';
@@ -374,9 +381,9 @@ class Drupal extends ToolstackBase
         }
         $settingsPhpFile = $this->appRoot . '/settings.php';
         if (file_exists($settingsPhpFile)) {
-            $this->output->writeln("Found a custom settings.php file: $settingsPhpFile");
+            $this->stdErr->writeln("Found a custom settings.php file: $settingsPhpFile");
             $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
-            $this->output->writeln(
+            $this->stdErr->writeln(
                 "  <comment>Your settings.php file has been copied (not symlinked) into the build directory."
                 . "\n  You will need to rebuild if you edit this file.</comment>"
             );
@@ -392,6 +399,11 @@ class Drupal extends ToolstackBase
         $sitesDefault = $this->getWebRoot() . '/sites/default';
         if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.php')) {
             $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.php.dist', $sitesDefault . '/settings.php');
+        }
+
+        // Create a settings.platformsh.php if it is missing.
+        if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.platformsh.php')) {
+            $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.platformsh.php.dist', $sitesDefault . '/settings.platformsh.php');
         }
 
         $this->installDrupalSettingsLocal();

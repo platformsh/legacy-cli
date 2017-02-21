@@ -2,14 +2,14 @@
 
 namespace Platformsh\Cli\Tests;
 
-use Platformsh\Cli\Helper\GitHelper;
+use Platformsh\Cli\Service\Git;
 
 class GitHelperTest extends \PHPUnit_Framework_TestCase
 {
 
     use HasTempDirTrait;
 
-    /** @var GitHelper */
+    /** @var Git */
     protected $gitHelper;
 
     /**
@@ -27,7 +27,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
             throw new \Exception("Failed to create directories.");
         }
 
-        $this->gitHelper = new GitHelper();
+        $this->gitHelper = new Git();
         $this->gitHelper->init($repository, true);
         $this->gitHelper->setDefaultRepositoryDir($repository);
         chdir($repository);
@@ -56,11 +56,15 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
     /**
      * Test GitHelper::isRepository().
      */
-    public function testIsRepository()
+    public function testGetRoot()
     {
-        $this->assertFalse($this->gitHelper->isRepository($this->tempDir));
-        $repository = $this->getRepositoryDir();
-        $this->assertTrue($this->gitHelper->isRepository($repository));
+        $this->assertFalse($this->gitHelper->getRoot($this->tempDir));
+        $repositoryDir = $this->getRepositoryDir();
+        $this->assertEquals($repositoryDir, $this->gitHelper->getRoot($repositoryDir));
+        mkdir($repositoryDir . '/1/2/3/4/5', 0755, true);
+        $this->assertEquals($repositoryDir, $this->gitHelper->getRoot($repositoryDir . '/1/2/3/4/5'));
+        $this->setExpectedException('Exception', 'Not a git repository');
+        $this->gitHelper->getRoot($this->tempDir, true);
     }
 
     /**
@@ -90,6 +94,15 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
         $this->gitHelper->checkOutNew('existent');
         $this->assertTrue($this->gitHelper->branchExists('existent'));
         $this->assertFalse($this->gitHelper->branchExists('nonexistent'));
+    }
+
+    /**
+     * Test GitHelper::branchExists() with unicode branch names.
+     */
+    public function testBranchExistsUnicode()
+    {
+        $this->gitHelper->checkOutNew('b®åñçh-wî†h-üní¢ø∂é');
+        $this->assertTrue($this->gitHelper->branchExists('b®åñçh-wî†h-üní¢ø∂é'));
     }
 
     /**

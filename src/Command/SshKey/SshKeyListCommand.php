@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\SshKey;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\Table;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -15,7 +15,7 @@ class SshKeyListCommand extends CommandBase
             ->setName('ssh-key:list')
             ->setAliases(['ssh-keys'])
             ->setDescription('Get a list of SSH keys in your account');
-        Table::addFormatOption($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -24,9 +24,13 @@ class SshKeyListCommand extends CommandBase
                      ->getSshKeys();
 
         if (empty($keys)) {
-            $this->stdErr->writeln("You do not yet have any SSH public keys in your " . self::$config->get('service.name') . " account");
+            $this->stdErr->writeln(sprintf(
+                'You do not yet have any SSH public keys in your %s account.',
+                $this->config()->get('service.name')
+            ));
         } else {
-            $table = new Table($input, $output);
+            /** @var \Platformsh\Cli\Service\Table $table */
+            $table = $this->getService('table');
             $headers = ['ID', 'Title', 'Fingerprint'];
             $rows = [];
             foreach ($keys as $key) {
@@ -44,8 +48,9 @@ class SshKeyListCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $this->stdErr->writeln("Add a new SSH key with: <info>" . self::$config->get('application.executable') . " ssh-key:add</info>");
-        $this->stdErr->writeln("Delete an SSH key with: <info>" . self::$config->get('application.executable') . " ssh-key:delete [id]</info>");
+        $executable = $this->config()->get('application.executable');
+        $this->stdErr->writeln("Add a new SSH key with: <info>$executable ssh-key:add</info>");
+        $this->stdErr->writeln("Delete an SSH key with: <info>$executable ssh-key:delete [id]</info>");
 
         return !empty($keys) ? 0 : 1;
     }

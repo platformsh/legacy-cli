@@ -16,8 +16,8 @@ class LegacyMigrateCommand extends CommandBase
             ->setName('legacy-migrate')
             ->setDescription('Migrate from the legacy file structure')
             ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
-        $cliName = self::$config->get('application.name');
-        $localDir = self::$config->get('local.local_dir');
+        $cliName = $this->config()->get('application.name');
+        $localDir = $this->config()->get('local.local_dir');
         $this->setHelp(<<<EOF
 Before version 3.x, the {$cliName} required a project to have a "repository"
 directory containing the Git repository, "builds", "shared" and others. From
@@ -31,15 +31,23 @@ EOF
 
     public function isHiddenInList()
     {
-        return $this->localProject->getLegacyProjectRoot() ? false : true;
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+
+        return $localProject->getLegacyProjectRoot() ? false : true;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $legacyRoot = $this->localProject->getLegacyProjectRoot();
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $legacyRoot = $localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {
             if ($this->getProjectRoot()) {
-                $this->stdErr->writeln('This project is already compatible with the ' . self::$config->get('application.name') . ' version 3.x.');
+                $this->stdErr->writeln(sprintf(
+                    'This project is already compatible with the %s version 3.x.',
+                    $this->config()->get('application.name')
+                ));
 
                 return 0;
             }
@@ -48,16 +56,15 @@ EOF
 
         $cwd = getcwd();
 
-        /** @var \Platformsh\Cli\Helper\FilesystemHelper $fsHelper */
-        $fsHelper = $this->getHelper('fs');
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
 
         $repositoryDir = $legacyRoot . '/repository';
         if (!is_dir($repositoryDir)) {
             $this->stdErr->writeln('Directory not found: <error>' . $repositoryDir . '</error>');
 
             return 1;
-        }
-        elseif (!is_dir($repositoryDir . '/.git')) {
+        } elseif (!is_dir($repositoryDir . '/.git')) {
             $this->stdErr->writeln('Not a Git repository: <error>' . $repositoryDir . '</error>');
 
             return 1;
@@ -67,65 +74,73 @@ EOF
             $backup = rtrim($legacyRoot, '\\/') . '-backup.tar.gz';
             if (file_exists($backup)) {
                 $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
-                $this->stdErr->writeln('Move (or delete) the backup, then run <comment>' . self::$config->get('application.executable') . ' legacy-migrate</comment> to continue.');
+                $this->stdErr->writeln(
+                    'Move (or delete) the backup, then run <comment>'
+                    . $this->config()->get('application.executable')
+                    . ' legacy-migrate</comment> to continue.'
+                );
 
                 return 1;
             }
 
             $this->stdErr->writeln('Backing up entire project to: ' . $backup);
-            $fsHelper->archiveDir($legacyRoot, $backup);
+            $fs->archiveDir($legacyRoot, $backup);
         }
 
-        $this->stdErr->writeln('Creating directory: ' . self::$config->get('local.local_dir'));
-        $this->localProject->ensureLocalDir($repositoryDir);
+        $this->stdErr->writeln('Creating directory: ' . $this->config()->get('local.local_dir'));
+        $localProject->ensureLocalDir($repositoryDir);
 
         if (file_exists($legacyRoot . '/shared')) {
             $this->stdErr->writeln('Moving "shared" directory.');
-            if (is_dir($repositoryDir . '/' . self::$config->get('local.shared_dir'))) {
-                $fsHelper->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . self::$config->get('local.shared_dir'));
-                $fsHelper->remove($legacyRoot . '/shared');
-            }
-            else {
-                rename($legacyRoot . '/shared', $repositoryDir . '/' . self::$config->get('local.shared_dir'));
+            if (is_dir($repositoryDir . '/' . $this->config()->get('local.shared_dir'))) {
+                $fs->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . $this->config()->get('local.shared_dir'));
+                $fs->remove($legacyRoot . '/shared');
+            } else {
+                rename($legacyRoot . '/shared', $repositoryDir . '/' . $this->config()->get('local.shared_dir'));
             }
         }
 
-        if (file_exists($legacyRoot . '/' . self::$config->get('local.project_config_legacy'))) {
+        if (file_exists($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'))) {
             $this->stdErr->writeln('Moving project config file.');
-            $fsHelper->copy($legacyRoot . '/' . self::$config->get('local.project_config_legacy'), $legacyRoot . '/' . self::$config->get('local.project_config'));
-            $fsHelper->remove($legacyRoot . '/' . self::$config->get('local.project_config_legacy'));
+            $fs->copy(
+                $legacyRoot . '/' . $this->config()->get('local.project_config_legacy'),
+                $legacyRoot . '/' . $this->config()->get('local.project_config')
+            );
+            $fs->remove($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'));
         }
 
         if (file_exists($legacyRoot . '/.build-archives')) {
             $this->stdErr->writeln('Removing old build archives.');
-            $fsHelper->remove($legacyRoot . '/.build-archives');
+            $fs->remove($legacyRoot . '/.build-archives');
         }
 
         if (file_exists($legacyRoot . '/builds')) {
             $this->stdErr->writeln('Removing old builds.');
-            $fsHelper->remove($legacyRoot . '/builds');
+            $fs->remove($legacyRoot . '/builds');
         }
 
         if (is_link($legacyRoot . '/www')) {
             $this->stdErr->writeln('Removing old "www" symlink.');
-            $fsHelper->remove($legacyRoot . '/www');
+            $fs->remove($legacyRoot . '/www');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('After running <comment>' . self::$config->get('application.executable') . ' build</comment>, your web root will be at: <comment>' . self::$config->get('local.web_root') . '</comment>');
+            $this->stdErr->writeln('After running <comment>' . $this->config()->get('application.executable') . ' build</comment>, your web root will be at: <comment>' . $this->config()->get('local.web_root') . '</comment>');
             $this->stdErr->writeln('You may need to update your local web server configuration.');
             $this->stdErr->writeln('');
         }
 
         $this->stdErr->writeln('Moving repository to be the new project root (this could take some time)...');
-        $fsHelper->copyAll($repositoryDir, $legacyRoot, [], true);
-        $fsHelper->remove($repositoryDir);
+        $fs->copyAll($repositoryDir, $legacyRoot, [], true);
+        $fs->remove($repositoryDir);
 
         if (!is_dir($legacyRoot . '/.git')) {
             $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');
 
             return 1;
-        }
-        elseif (file_exists($legacyRoot . '/' . self::$config->get('local.project_config_legacy'))) {
-            $this->stdErr->writeln('Error: file still exists: <error>' . $legacyRoot . '/' . self::$config->get('local.project_config_legacy') . '</error>');
+        } elseif (file_exists($legacyRoot . '/' . $this->config()->get('local.project_config_legacy'))) {
+            $this->stdErr->writeln(sprintf(
+                'Error: file still exists: <error>%s</error>',
+                $legacyRoot . '/' . $this->config()->get('local.project_config_legacy')
+            ));
 
             return 1;
         }

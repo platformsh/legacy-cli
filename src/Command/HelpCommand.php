@@ -6,7 +6,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\CliConfig;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
 use Symfony\Component\Console\Command\Command;
@@ -38,7 +38,7 @@ class HelpCommand extends ParentHelpCommand
                                   ->find($input->getArgument('command_name'));
         }
 
-        $config = new CliConfig();
+        $config = new Config();
 
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor($config->get('application.executable')));
@@ -52,5 +52,4 @@ class HelpCommand extends ParentHelpCommand
             ]
         );
     }
-
 }

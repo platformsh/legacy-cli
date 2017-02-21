@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -36,47 +37,56 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $this->validateInput($input);
 
         if ($input->getOption('tail') && $this->runningViaMulti) {
-            throw new \InvalidArgumentException('The --tail option cannot be used with "multi"');
+            throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $appName = $this->selectApp($input);
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
         // Select the log file that the user specified.
         if ($logType = $input->getArgument('type')) {
             // @todo this might need to be cleverer
+            if (substr($logType, -4) === '.log') {
+                $logType = substr($logType, 0, strlen($logType) - 4);
+            }
             $logFilename = '/var/log/' . $logType . '.log';
-        }
-        elseif (!$input->isInteractive()) {
+        } elseif (!$input->isInteractive()) {
             $this->stdErr->writeln('No log type specified.');
             return 1;
-        }
-        // Offer a choice of log files, if possible.
-        else {
-            /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-            $questionHelper = $this->getHelper('question');
-            /** @var \Platformsh\Cli\Helper\ShellHelper $shellHelper */
-            $shellHelper = $this->getHelper('shell');
+        } else {
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
 
-            $result = $shellHelper->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
-            if ($result) {
-                $files = explode("\n", $result);
-                $files = array_combine($files, array_map(function ($file) {
-                    return str_replace('.log', '', basename(trim($file)));
-                }, $files));
-            }
-            else {
-                $files = [
-                    '/var/log/access.log' => 'access',
-                    '/var/log/error.log' => 'error',
-                ];
+            // Read the list of files from the environment.
+            $cacheKey = sprintf('log-files:%s', $sshUrl);
+            /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+            $cache = $this->getService('cache');
+            if (!$result = $cache->fetch($cacheKey)) {
+                $result = $shell->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
+
+                // Cache the list for 1 day.
+                $cache->save($cacheKey, $result, 86400);
             }
 
+            // Provide a fallback list of files, in case the SSH command failed.
+            $defaultFiles = [
+                '/var/log/access.log',
+                '/var/log/error.log',
+            ];
+            $files = $result ? explode("\n", $result) : $defaultFiles;
+
+            // Ask the user to choose a file.
+            $files = array_combine($files, array_map(function ($file) {
+                return str_replace('.log', '', basename(trim($file)));
+            }, $files));
             $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 
-        $command = sprintf('tail -n %d %s', $input->getOption('lines'), escapeshellarg($logFilename));
+        $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), escapeshellarg($logFilename));
         if ($input->getOption('tail')) {
             $command .= ' -f';
         }
@@ -84,8 +94,8 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $sshUrl, $logFilename));
 
         $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
-        passthru($sshCommand, $returnVar);
-        return $returnVar;
+
+        return $shell->executeSimple($sshCommand);
     }
 
     /**
@@ -108,7 +118,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
                 'error',
                 'cron',
                 'deploy',
-                'php',
+                'app',
             ];
         }
 

@@ -23,23 +23,27 @@ class SshKeyAddCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
-        /** @var \Platformsh\Cli\Helper\ShellHelperInterface $shellHelper */
-        $shellHelper = $this->getHelper('shell');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        /** @var \Platformsh\Cli\Service\Shell $shellHelper */
+        $shellHelper = $this->getService('shell');
 
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
-            $defaultKeyPath = $this->getHomeDir() . '/.ssh/' . self::DEFAULT_BASENAME;
+            /** @var \Platformsh\Cli\Service\Filesystem $fs */
+            $fs = $this->getService('fs');
+            $defaultKeyPath = $fs->getHomeDirectory() . '/.ssh/' . self::DEFAULT_BASENAME;
             $defaultPublicKeyPath = $defaultKeyPath . '.pub';
 
             // Look for an existing local key.
             if (file_exists($defaultPublicKeyPath)
-                && $questionHelper->confirm("Use existing local key <info>" . basename($defaultPublicKeyPath) . "</info>?")) {
+                && $questionHelper->confirm(
+                    'Use existing local key <info>' . basename($defaultPublicKeyPath) . '</info>?'
+                )) {
                 $publicKeyPath = $defaultPublicKeyPath;
-            }
-            // Offer to generate a key.
-            elseif ($shellHelper->commandExists('ssh-keygen') && $questionHelper->confirm("Generate a new key?")) {
+            } elseif ($shellHelper->commandExists('ssh-keygen')
+                && $questionHelper->confirm('Generate a new key?')) {
+                // Offer to generate a key.
                 $newKeyPath = $this->getNewKeyPath();
                 $args = ['ssh-keygen', '-t', 'rsa', '-f', $newKeyPath, '-N', ''];
                 $shellHelper->execute($args, null, true);
@@ -52,8 +56,7 @@ class SshKeyAddCommand extends CommandBase
                     $this->stdErr->writeln('    eval $(ssh-agent)');
                     $this->stdErr->writeln('    ssh-add ' . escapeshellarg($newKeyPath));
                 }
-            }
-            else {
+            } else {
                 $this->stdErr->writeln("<error>You must specify the path to a public SSH key</error>");
                 return 1;
             }
@@ -85,17 +88,21 @@ class SshKeyAddCommand extends CommandBase
             // Extract the fingerprint from the command output.
             if (preg_match('/^\s*[0-9]+ +(MD5:)?([0-9a-z:]+)( |$)/i', $result, $matches)) {
                 $fingerprint = str_replace(':', '', $matches[2]);
-            }
-            else {
+            } else {
                 $this->debug("Unexpected output from ssh-keygen: $result");
             }
 
             // Check whether the public key already exists in the user's account.
             if (isset($fingerprint) && $this->keyExistsByFingerprint($fingerprint)) {
-                $this->stdErr->writeln(
-                    'An SSH key already exists in your ' . self::$config->get('service.name') . ' account with the same fingerprint: ' . $fingerprint
-                );
-                $this->stdErr->writeln("List your SSH keys with: <info>" . self::$config->get('application.executable') . " ssh-keys</info>");
+                $this->stdErr->writeln(sprintf(
+                    'An SSH key already exists in your %s account with the same fingerprint: %s',
+                    $this->config()->get('service.name'),
+                    $fingerprint
+                ));
+                $this->stdErr->writeln(sprintf(
+                    'List your SSH keys with: <info>%s ssh-keys</info>',
+                    $this->config()->get('application.executable')
+                ));
 
                 return 0;
             }
@@ -119,9 +126,11 @@ class SshKeyAddCommand extends CommandBase
         // Add the new key.
         $this->api()->getClient()->addSshKey($publicKey, $name);
 
-        $this->stdErr->writeln(
-            'The SSH key <info>' . basename($publicKeyPath) . '</info> has been successfully added to your ' . self::$config->get('service.name') . ' account.'
-        );
+        $this->stdErr->writeln(sprintf(
+            'The SSH key <info>%s</info> has been successfully added to your %s account.',
+            basename($publicKeyPath),
+            $this->config()->get('service.name')
+        ));
 
         return 0;
     }
@@ -159,14 +168,17 @@ class SshKeyAddCommand extends CommandBase
     {
         $basename = self::DEFAULT_BASENAME;
         if ($number > 1) {
-            $basename = strpos($basename, '.key') ? str_replace('.key', ".$number.key", $basename) : "$basename.$number";
+            $basename = strpos($basename, '.key')
+                ? str_replace('.key', '.' . $number . 'key', $basename)
+                : $basename . '.' . $number;
         }
-        $filename = $this->getHomeDir() . '/.ssh/' . $basename;
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
+        $filename = $fs->getHomeDirectory() . '/.ssh/' . $basename;
         if (file_exists($filename)) {
             return $this->getNewKeyPath(++$number);
         }
 
         return $filename;
     }
-
 }

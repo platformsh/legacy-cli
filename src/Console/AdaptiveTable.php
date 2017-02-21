@@ -2,12 +2,12 @@
 
 namespace Platformsh\Cli\Console;
 
-use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 
 /**
  * Extends the Symfony Console Table to make it adaptive to the terminal width.
@@ -36,22 +36,12 @@ class AdaptiveTable extends Table
     public function __construct(OutputInterface $output, $maxTableWidth = null, $minColumnWidth = 10)
     {
         $this->outputCopy = $output;
-        $this->maxTableWidth = $maxTableWidth !== null ? $maxTableWidth : $this->getTerminalWidth();
+        $this->maxTableWidth = $maxTableWidth !== null
+            ? $maxTableWidth
+            : (new Terminal())->getWidth();
         $this->minColumnWidth = $minColumnWidth;
 
         parent::__construct($output);
-    }
-
-    /**
-     * @param int $default
-     *
-     * @return int
-     */
-    protected function getTerminalWidth($default = 120)
-    {
-        $dimensions = (new Application())->getTerminalDimensions();
-
-        return $dimensions[0] !== null ? $dimensions[0] : $default;
     }
 
     /**
@@ -132,12 +122,33 @@ class AdaptiveTable extends Table
             foreach ($row as $column => &$cell) {
                 $cellWidth = $this->getCellWidth($cell);
                 if ($cellWidth > $maxColumnWidths[$column]) {
-                    $cell = wordwrap($cell, $maxColumnWidths[$column], PHP_EOL, true);
+                    $cell = $this->wrapCell($cell, $maxColumnWidths[$column]);
                 }
             }
         }
 
         return $rows;
+    }
+
+    /**
+     * Word-wrap the contents of a cell, so that they fit inside a max width.
+     *
+     * @param string $contents
+     * @param int    $width
+     *
+     * @return string
+     */
+    protected function wrapCell($contents, $width)
+    {
+        // Account for left-indented cells.
+        if (strpos($contents, ' ') === 0) {
+            $trimmed = ltrim($contents, ' ');
+            $indent = strlen($contents) - strlen($trimmed);
+
+            return str_repeat(' ', $indent) . wordwrap($trimmed, $width - $indent, PHP_EOL, true);
+        }
+
+        return wordwrap($contents, $width, PHP_EOL, true);
     }
 
     /**

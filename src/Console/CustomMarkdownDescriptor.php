@@ -42,7 +42,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             );
         }
 
-        $this->write("## Usage:\n\n```\n" . $this->cliExecutableName . " " . $command->getSynopsis() . "\n```\n\n");
+        $this->write("## Usage:\n\n```\n" . $command->getSynopsis() . "\n```\n\n");
 
         if ($help = $command->getProcessedHelp()) {
             $this->write($help);
@@ -58,8 +58,9 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write('## Examples');
             $this->write("\n");
             $name = $command->getName();
+            $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             foreach ($examples as $arguments => $description) {
-                $this->write("\n* $description:  \n  ```\n  " . $this->cliExecutableName . " $name $arguments\n  ```\n");
+                $this->write("\n* $description:  \n  ```\n  {$this->cliExecutableName} $shortName $arguments\n  ```\n");
             }
             $this->write("\n");
         }
@@ -97,8 +98,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
         $notes = [];
         if ($option->isArray()) {
             $notes[] = 'multiple values allowed';
-        }
-        elseif ($option->acceptValue()) {
+        } elseif ($option->acceptValue()) {
             $notes[] = 'expects a value';
         }
         if ($notes) {

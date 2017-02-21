@@ -3,13 +3,10 @@ namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\PropertyFormatter;
-use Platformsh\Client\Model\Domain;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class DomainCommandBase extends CommandBase
 {
@@ -49,22 +46,6 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         return true;
-    }
-
-    /**
-     * Display domain information.
-     *
-     * @param Domain          $domain
-     * @param OutputInterface $output
-     * @param int $indent
-     */
-    protected function displayDomain(Domain $domain, OutputInterface $output, $indent = 2)
-    {
-        $formatter = new PropertyFormatter();
-        $indent = str_repeat(' ', $indent);
-        $output->writeln($indent . "Name: $domain->name");
-        $output->writeln($indent . "Has SSL certificate: " . $formatter->format(!empty($domain->ssl['has_certificate'])));
-        $output->writeln($indent . "Added: " . $formatter->format($domain->created_at, 'created_at'));
     }
 
     protected function addDomainOptions()
@@ -128,8 +109,7 @@ abstract class DomainCommandBase extends CommandBase
                 foreach (explode($begin, $data) as $cert) {
                     $chain[] = $begin . $cert;
                 }
-            }
-            else {
+            } else {
                 $chain[] = $data;
             }
         }
@@ -194,13 +174,13 @@ abstract class DomainCommandBase extends CommandBase
         if ($response !== null && $response->getStatusCode() === 403) {
             $project->ensureFull();
             $data = $project->getData();
-            if (!$project->hasLink('#manage-domains') && !empty($data['subscription']['plan']) && $data['subscription']['plan'] === 'development') {
+            if (!$project->hasLink('#manage-domains')
+                && !empty($data['subscription']['plan'])
+                && $data['subscription']['plan'] === 'development') {
                 $this->stdErr->writeln('This project is on a Development plan. Upgrade the plan to add domains.');
             }
-        }
-        else {
+        } else {
             throw $e;
         }
     }
-
 }

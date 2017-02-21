@@ -38,8 +38,8 @@ class TunnelCloseCommand extends TunnelCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $error = false;
         foreach ($tunnels as $tunnel) {
@@ -48,14 +48,25 @@ class TunnelCloseCommand extends TunnelCommandBase
             if ($tunnel['appName']) {
                 $appString .= '--' . $tunnel['appName'];
             }
-            $questionText = sprintf("Close tunnel to relationship <comment>%s</comment> on %s?", $relationshipString, $appString);
+            $questionText = sprintf(
+                'Close tunnel to relationship <comment>%s</comment> on %s?',
+                $relationshipString,
+                $appString
+            );
             if ($questionHelper->confirm($questionText)) {
                 if ($this->closeTunnel($tunnel)) {
-                    $this->stdErr->writeln(sprintf('Closed tunnel to <info>%s</info> on %s', $relationshipString, $appString));
-                }
-                else {
+                    $this->stdErr->writeln(sprintf(
+                        'Closed tunnel to <info>%s</info> on %s',
+                        $relationshipString,
+                        $appString
+                    ));
+                } else {
                     $error = true;
-                    $this->stdErr->writeln(sprintf('Failed closing tunnel to <error>%s</error> on %s', $relationshipString, $appString));
+                    $this->stdErr->writeln(sprintf(
+                        'Failed to close tunnel to <error>%s</error> on %s',
+                        $relationshipString,
+                        $appString
+                    ));
                 }
             }
         }

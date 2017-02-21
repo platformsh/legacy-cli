@@ -2,8 +2,8 @@
 
 namespace Platformsh\Cli\Tests\Toolstack;
 
-use Platformsh\Cli\CliConfig;
-use Platformsh\Cli\Helper\FilesystemHelper;
+use Platformsh\Cli\Service\Config as CliConfig;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Tests\HasTempDirTrait;
@@ -22,7 +22,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
     /** @var LocalBuild */
     protected $builder;
 
-    protected $buildSettings = ['noClean' => true];
+    protected $buildSettings = ['no-clean' => true];
 
     /**
      * {@inheritdoc}
@@ -38,11 +38,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->builder = new LocalBuild(
-            $this->buildSettings,
-            null,
-            self::$output
-        );
+        $this->builder = new LocalBuild(self::$config, self::$output);
         $this->tempDirSetUp();
     }
 
@@ -52,21 +48,20 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
      * @param string $sourceDir
      *   A directory containing source code for the project or app. Files will
      *   be copied into a dummy project.
-     * @param array $buildSettings
+     * @param array  $buildSettings
      *   An array of custom build settings.
+     * @param bool   $expectedResult
+     *   The expected build result.
      *
      * @return string
      *   The project root for the dummy project.
      */
-    protected function assertBuildSucceeds($sourceDir, array $buildSettings = [])
+    protected function assertBuildSucceeds($sourceDir, array $buildSettings = [], $expectedResult = true)
     {
         $projectRoot = $this->createDummyProject($sourceDir);
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
-        $builder = $buildSettings
-            ? new LocalBuild($buildSettings + $this->buildSettings, null, self::$output)
-            : $this->builder;
-        $success = $builder->build($projectRoot);
-        $this->assertTrue($success, 'Build success for dir: ' . $sourceDir);
+        $success = $this->builder->build($buildSettings + $this->buildSettings, $projectRoot);
+        $this->assertSame($expectedResult, $success, 'Build for dir: ' . $sourceDir);
 
         return $projectRoot;
     }
@@ -85,7 +80,7 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         $projectRoot = $this->createTempSubDir('project');
 
         // Set up the project.
-        $fsHelper = new FilesystemHelper();
+        $fsHelper = new Filesystem();
         $fsHelper->copyAll($sourceDir, $projectRoot);
 
         // @todo perhaps make some of these steps unnecessary
@@ -95,7 +90,6 @@ abstract class BaseToolstackTest extends \PHPUnit_Framework_TestCase
         exec('git init');
         chdir($cwd);
         $local->ensureGitRemote($projectRoot, 'testProjectId');
-        $local->writeGitExclude($projectRoot);
         $local->writeCurrentProjectConfig(['id' => 'testProjectId'], $projectRoot);
 
         return $projectRoot;

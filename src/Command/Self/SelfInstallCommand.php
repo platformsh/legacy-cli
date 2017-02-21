@@ -14,7 +14,7 @@ class SelfInstallCommand extends CommandBase
         $this->setName('self:install')
              ->setDescription('Install or update CLI configuration files');
         $this->setHiddenAliases(['local:install']);
-        $cliName = self::$config->get('application.name');
+        $cliName = $this->config()->get('application.name');
         $this->setHelp(<<<EOT
 This command automatically installs shell configuration for the {$cliName},
 adding autocompletion support and handy aliases. Bash and ZSH are supported.
@@ -24,8 +24,7 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $homeDir = $this->getHomeDir();
-        $configDir = self::$config->getUserConfigDir();
+        $configDir = $this->config()->getUserConfigDir();
 
         $shellConfig = file_get_contents(CLI_ROOT . '/shell-config.rc');
         if ($shellConfig === false) {
@@ -41,7 +40,7 @@ EOT
 
         $this->stdErr->writeln(sprintf('Successfully copied CLI configuration to: %s', $shellConfigDestination));
 
-        if (!$shellConfigFile = $this->findShellConfigFile($homeDir)) {
+        if (!$shellConfigFile = $this->findShellConfigFile()) {
             $this->stdErr->writeln('Failed to find a shell configuration file.');
             return 1;
         }
@@ -57,22 +56,25 @@ EOT
         $suggestedShellConfig = "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
             . '. ' . escapeshellarg($shellConfigDestination) . " 2>/dev/null";
 
-        /** @var \Platformsh\Cli\Helper\QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
         if (!$questionHelper->confirm('Do you want to update the file automatically?')) {
             $suggestedShellConfig = PHP_EOL
-                . '# ' . self::$config->get('application.name') . ' configuration'
+                . '# ' . $this->config()->get('application.name') . ' configuration'
                 . PHP_EOL
                 . $suggestedShellConfig;
 
-            $this->stdErr->writeln(sprintf('To set up the CLI, add the following lines to: <comment>%s</comment>', $shellConfigFile));
+            $this->stdErr->writeln(sprintf(
+                'To set up the CLI, add the following lines to: <comment>%s</comment>',
+                $shellConfigFile
+            ));
             $this->stdErr->writeln(preg_replace('/^/m', '  ', $suggestedShellConfig));
             return 1;
         }
 
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
             . PHP_EOL . PHP_EOL
-            . '# Automatically added by the ' . self::$config->get('application.name')
+            . '# Automatically added by the ' . $this->config()->get('application.name')
             . PHP_EOL . $suggestedShellConfig;
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');
@@ -100,15 +102,15 @@ EOT
     /**
      * Finds a shell configuration file for the user.
      *
-     * @param string $homeDir
-     *   The user's home directory.
-     *
      * @return string|false
      *   The absolute path to an existing shell config file, or false on
      *   failure.
      */
-    protected function findShellConfigFile($homeDir)
+    protected function findShellConfigFile()
     {
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
+        $homeDir = $fs->getHomeDirectory();
         $candidates = ['.zshrc', '.bashrc', '.bash_profile', '.profile'];
         $shell = str_replace('/bin/', '', getenv('SHELL'));
         if (!empty($shell)) {

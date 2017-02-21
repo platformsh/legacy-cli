@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Api;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Application;
 use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
@@ -52,22 +52,25 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
 
         $this->handler->addHandlers([
             new Completion(
-                'project:get',
-                'id',
-                Completion::TYPE_ARGUMENT,
-                $projectIds
-            ),
-            Completion::makeGlobalHandler(
+                Completion::ALL_COMMANDS,
                 'project',
                 Completion::TYPE_OPTION,
                 $projectIds
             ),
-            Completion::makeGlobalHandler(
+            new Completion(
+                Completion::ALL_COMMANDS,
+                'project',
+                Completion::TYPE_ARGUMENT,
+                $projectIds
+            ),
+            new Completion(
+                Completion::ALL_COMMANDS,
                 'environment',
                 Completion::TYPE_ARGUMENT,
                 [$this, 'getEnvironments']
             ),
-            Completion::makeGlobalHandler(
+            new Completion(
+                Completion::ALL_COMMANDS,
                 'environment',
                 Completion::TYPE_OPTION,
                 [$this, 'getEnvironments']
@@ -142,11 +145,33 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 'directory',
                 Completion::TYPE_ARGUMENT
             ),
-            Completion::makeGlobalHandler(
+            new Completion(
+                Completion::ALL_COMMANDS,
                 'app',
                 Completion::TYPE_OPTION,
                 [$this, 'getAppNames']
             ),
+            new Completion(
+                Completion::ALL_COMMANDS,
+                'app',
+                Completion::TYPE_OPTION,
+                [$this, 'getAppNames']
+            ),
+            new Completion\ShellPathCompletion(
+                Completion::ALL_COMMANDS,
+                'identity-file',
+                Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+                'server:run',
+                'log',
+                Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+                'server:start',
+                'log',
+                Completion::TYPE_OPTION
+            )
         ]);
 
         try {
@@ -212,8 +237,8 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
      * Get the preferred project for autocompletion.
      *
      * The project is either defined by an ID that the user has specified in
-     * the command (via the 'id' argument of 'get', or the '--project' option),
-     * or it is determined from the current path.
+     * the command (via the 'project' argument or '--project' option), or it is
+     * determined from the current path.
      *
      * @return \Platformsh\Client\Model\Project|false
      */
@@ -228,8 +253,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
         if (!$currentProjectId && ($currentProject = $this->welcomeCommand->getCurrentProject())) {
             return $currentProject;
-        }
-        elseif (isset($this->projects[$currentProjectId])) {
+        } elseif (isset($this->projects[$currentProjectId])) {
             return $this->projects[$currentProjectId];
         }
 
@@ -264,8 +288,8 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         }
 
         $emails = [];
-        foreach ($project->getUsers() as $user) {
-            $account = $this->api->getAccount($user);
+        foreach ($project->getUsers() as $projectAccess) {
+            $account = $this->api->getAccount($projectAccess);
             $emails[] = $account['email'];
         }
 
@@ -287,5 +311,4 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
 
         return false;
     }
-
 }
