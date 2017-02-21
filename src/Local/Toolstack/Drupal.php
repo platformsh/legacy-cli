@@ -401,6 +401,11 @@ class Drupal extends ToolstackBase
             $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.php.dist', $sitesDefault . '/settings.php');
         }
 
+        // Create a settings.platformsh.php if it is missing.
+        if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.platformsh.php')) {
+            $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.platformsh.php.dist', $sitesDefault . '/settings.platformsh.php');
+        }
+
         $this->installDrupalSettingsLocal();
 
         // Symlink all files and folders from shared into sites/default.
