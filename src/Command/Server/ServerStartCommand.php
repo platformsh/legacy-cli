@@ -83,7 +83,7 @@ class ServerStartCommand extends ServerCommandBase
                 'env' => [],
             ];
             if (Drupal::isDrupal($app->getRoot())) {
-                $items[$appId]['config']['is_drupal'] = true;
+                $items[$appId]['config']['drupal_7_workaround'] = true;
             }
 
             if ($input->getOption('tunnel')) {
