@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\App\Platform\NodeJs;
 use Platformsh\Cli\Command\App\Platform\Php;
 use Platformsh\Cli\Command\App\Platform\PlatformInterface;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Helper\QuestionHelper;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -13,7 +12,6 @@ use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Yaml\Yaml;
 
 class AppInitCommand extends CommandBase
 {
@@ -22,7 +20,7 @@ class AppInitCommand extends CommandBase
     /** @var Form */
     protected $form;
 
-    static $platforms = [
+    protected static $platforms = [
         'php' => Php::class,
         'nodejs' => NodeJs::class,
     ];
@@ -47,7 +45,9 @@ class AppInitCommand extends CommandBase
     protected function getPlatforms()
     {
         /** @var PlatformInterface[] $platforms */
-        return array_map(function($class) { return new $class; }, static::$platforms);
+        return array_map(function ($className) {
+            return new $className;
+        }, static::$platforms);
     }
 
     /**
@@ -67,7 +67,9 @@ class AppInitCommand extends CommandBase
 
         $platforms = $this->getPlatforms();
 
-        $languages = array_map(function(PlatformInterface $platform) { return $platform->name(); }, $platforms);
+        $languages = array_map(function (PlatformInterface $platform) {
+            return $platform->name();
+        }, $platforms);
 
         $fields['type'] = new OptionsField('Application type', [
             'optionName' => 'type',
@@ -75,7 +77,7 @@ class AppInitCommand extends CommandBase
             'default' => 'php',
         ]);
 
-        $fields = array_reduce($platforms, function($fields, PlatformInterface $platform) {
+        $fields = array_reduce($platforms, function ($fields, PlatformInterface $platform) {
             return $fields + $platform->getFields();
         }, $fields);
 
@@ -117,19 +119,22 @@ class AppInitCommand extends CommandBase
     {
         // The project root is a Git repository, as we assume there are no
         // config files yet.
-        $projectRoot = $this->findTopDirectoryContaining('.git');
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $projectRoot = $git->getRoot(null, true);
 
-        /** @var QuestionHelper $questionHelper */
-        $questionHelper = $this->getHelper('question');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
-        $configFile = self::$config->get('service.app_config_file');
+        $configFile = $this->config()->get('service.app_config_file');
 
         $configFileAbsolute = isset($options['directory'])
             ? sprintf('%s/%s/%s', $projectRoot, $options['directory'], $configFile)
             : sprintf('%s/%s', $projectRoot, $configFile);
 
-        if (file_exists($configFileAbsolute) && !$questionHelper->confirm('The config file already exists. Overwrite?')) {
+        if (file_exists($configFileAbsolute)
+            && !$questionHelper->confirm('The config file already exists. Overwrite?')) {
             return 1;
         }
 
@@ -182,9 +187,7 @@ class AppInitCommand extends CommandBase
     {
         $this->stdErr->writeln('Creating routes file.');
 
-        mkdir($projectRoot . '/.platform');
-
-        $routingYaml = <<<END
+        $yaml = <<<END
 # The routes.yaml file describes how an incoming URL is going
 # to be processed by Platform.sh.  With the defaults below, all requests to
 # The the domain name configured in the UI will pass through to the application
@@ -202,7 +205,7 @@ class AppInitCommand extends CommandBase
 
 END;
 
-        (new Filesystem())->dumpFile($projectRoot . '/.platform/routes.yaml', $routingYaml);
+        $this->writeConfigFile($yaml, $projectRoot, 'routes.yaml');
     }
 
     /**
@@ -215,9 +218,7 @@ END;
     {
         $this->stdErr->writeln('Creating services file.');
 
-        mkdir($projectRoot . '/.platform');
-
-        $routingYaml = <<<END
+        $yaml = <<<END
 # The services.yaml file defines what other services will be part of your cluster,
 # such as a database or caching server. The keys are the name of the service, which
 # you will reference in the .platform.app.yaml relationships section. The type specifies the
@@ -240,53 +241,19 @@ END;
 
 END;
 
-        (new Filesystem())->dumpFile($projectRoot . '/.platform/services.yaml', $routingYaml);
+        $this->writeConfigFile($yaml, $projectRoot, 'services.yaml');
     }
 
     /**
-     * Find the highest level directory that contains a file.
+     * Create a configuration file in the project's project_config_dir.
      *
-     * @param string $file
-     *   The filename to look for.
-     * @param callable $callback
-     *   A callback to validate the directory when found. Accepts one argument
-     *   (the directory path). Return true to use the directory, or false to
-     *   continue traversing upwards.
-     *
-     * @return string|false
-     *   The path to the directory, or false if the file is not found.
+     * @param string $content     The file contents.
+     * @param string $projectRoot The project root.
+     * @param string $filename    A filename such as 'services.yaml'.
      */
-    protected static function findTopDirectoryContaining($file, callable $callback = null)
+    protected function writeConfigFile($content, $projectRoot, $filename)
     {
-        static $roots = [];
-        $cwd = getcwd();
-        if ($cwd === false) {
-            return false;
-        }
-        if (isset($roots[$cwd][$file])) {
-            return $roots[$cwd][$file];
-        }
-
-        $roots[$cwd][$file] = false;
-        $root = &$roots[$cwd][$file];
-
-        $currentDir = $cwd;
-        while (!$root) {
-            if (file_exists($currentDir . '/' . $file)) {
-                if ($callback === null || $callback($currentDir)) {
-                    $root = $currentDir;
-                    break;
-                }
-            }
-
-            // The file was not found, go one directory up.
-            $levelUp = dirname($currentDir);
-            if ($levelUp === $currentDir || $levelUp === '.') {
-                break;
-            }
-            $currentDir = $levelUp;
-        }
-
-        return $root;
+        $config_dir = $this->config()->get('service.project_config_dir');
+        (new Filesystem())->dumpFile($projectRoot . '/' . $config_dir . '/' . $filename, $content);
     }
 }
