@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Server;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Cli\Console\ProcessManager;
 use Symfony\Component\Console\Input\InputInterface;
@@ -23,6 +24,7 @@ class ServerStartCommand extends ServerCommandBase
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port of the first server')
           ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to ' . $this->config()->get('local.local_dir') . '/server.log')
           ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote ' . $this->config()->get('service.name') . ' environments as relationships');
+        Url::configureInput($this->getDefinition());
     }
 
     public function isEnabled()
@@ -217,6 +219,15 @@ class ServerStartCommand extends ServerCommandBase
 
         if (count($processes)) {
             $this->stdErr->writeln(sprintf('Logs are written to: %s', $logFile));
+
+            /** @var Url $urlService */
+            $urlService = $this->getService('url');
+            foreach ($processes as $address => $process) {
+                if ($process->isRunning()) {
+                    $urlService->openUrl('http://' . $address);
+                }
+            }
+
             $this->stdErr->writeln('');
             $this->stdErr->writeln("List servers with: <info>$executable servers</info>");
             $this->stdErr->writeln("Stop servers with: <info>$executable server:stop</info>");

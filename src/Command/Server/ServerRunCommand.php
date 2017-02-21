@@ -175,7 +175,9 @@ class ServerRunCommand extends ServerCommandBase
         sleep(1);
 
         if ($process->isRunning()) {
-            $this->getService('url')->openUrl('http://' . $address, $input, $output, true);
+            /** @var Url $urlService */
+            $urlService = $this->getService('url');
+            $urlService->openUrl('http://' . $address);
         }
 
         try {
