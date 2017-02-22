@@ -68,6 +68,16 @@ class LocalApplication
     }
 
     /**
+     * Get the destination relative path for the web root of this application.
+     *
+     * @return string
+     */
+    public function getWebPath()
+    {
+        return str_replace('/', '-', $this->getId());
+    }
+
+    /**
      * Override the application config.
      *
      * @param array $config
@@ -144,16 +154,23 @@ class LocalApplication
         }
 
         // The `web` section has changed to `web`.`locations`.
-        if (isset($config['web']) && !isset($config['web']['locations'])) {
-            $map = [
-                'document_root' => 'root',
-                'expires' => 'expires',
-                'passthru' => 'passthru',
-            ];
-            foreach ($map as $key => $newKey) {
-                if (array_key_exists($key, $config['web'])) {
-                    $config['web']['locations']['/'][$newKey] = $config['web'][$key];
-                }
+        if (isset($config['web']['document_root']) && !isset($config['web']['locations'])) {
+            $oldConfig = $config['web'] + $this->getOldWebDefaults();
+
+            $location = &$config['web']['locations']['/'];
+
+            $location['root'] = $oldConfig['document_root'];
+            $location['expires'] = $oldConfig['expires'];
+            $location['passthru'] = $oldConfig['passthru'];
+            $location['allow'] = true;
+
+            foreach ($oldConfig['whitelist'] as $pattern) {
+                $location['allow'] = false;
+                $location['rules'][$pattern]['allow'] = true;
+            }
+
+            foreach ($oldConfig['blacklist'] as $pattern) {
+                $location['rules'][$pattern]['allow'] = false;
             }
         }
 
@@ -323,5 +340,76 @@ class LocalApplication
         }
 
         return $this->getDocumentRoot() === 'public' && !is_dir($this->getRoot() . '/public');
+    }
+
+    /**
+     * @return array
+     */
+    protected function getOldWebDefaults()
+    {
+        return [
+            'document_root' => '/public',
+            'expires' => 0,
+            'passthru' => '/index.php',
+            'blacklist' => [],
+            'whitelist' => [
+                // CSS and Javascript.
+                '\.css$',
+                '\.js$',
+
+                // image/* types.
+                '\.gif$',
+                '\.jpe?g$',
+                '\.png$',
+                '\.tiff?$',
+                '\.wbmp$',
+                '\.ico$',
+                '\.jng$',
+                '\.bmp$',
+                '\.svgz?$',
+
+                // audio/* types.
+                '\.midi?$',
+                '\.mpe?ga$',
+                '\.mp2$',
+                '\.mp3$',
+                '\.m4a$',
+                '\.ra$',
+                '\.weba$',
+
+                // video/* types.
+                '\.3gpp?$',
+                '\.mp4$',
+                '\.mpe?g$',
+                '\.mpe$',
+                '\.ogv$',
+                '\.mov$',
+                '\.webm$',
+                '\.flv$',
+                '\.mng$',
+                '\.asx$',
+                '\.asf$',
+                '\.wmv$',
+                '\.avi$',
+
+                // application/ogg.
+                '\.ogx$',
+
+                // application/x-shockwave-flash.
+                '\.swf$',
+
+                // application/java-archive.
+                '\.jar$',
+
+                // fonts types.
+                '\.ttf$',
+                '\.eot$',
+                '\.woff$',
+                '\.otf$',
+
+                // robots.txt.
+                '/robots\.txt$',
+            ],
+        ];
     }
 }

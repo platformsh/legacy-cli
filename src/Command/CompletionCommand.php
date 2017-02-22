@@ -162,6 +162,16 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 'identity-file',
                 Completion::TYPE_OPTION
             ),
+            new Completion\ShellPathCompletion(
+                'server:run',
+                'log',
+                Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+                'server:start',
+                'log',
+                Completion::TYPE_OPTION
+            )
         ]);
 
         try {

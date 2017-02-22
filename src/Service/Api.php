@@ -558,39 +558,4 @@ class Api
 
         return sprintf($pattern, $tag, $title, $project->id);
     }
-
-    /**
-     * Get a cost estimate for a new project.
-     *
-     * @param string $plan
-     * @param int    $storage
-     * @param int    $environments
-     *
-     * @return array|false
-     */
-    public function getEstimate($plan, $storage, $environments)
-    {
-        $apiUrl = $this->config->get('api.accounts_api_url');
-        if (!$parts = parse_url($apiUrl)) {
-            throw new \RuntimeException('Failed to parse URL: ' . $apiUrl);
-        }
-        $baseUrl = $parts['scheme'] . '://' . $parts['host'];
-        $estimateUrl = $baseUrl . '/platform/estimate';
-        $guzzleClient = $this->getClient()->getConnector()->getClient();
-        $response = $guzzleClient->get($estimateUrl, [
-            'query' => [
-                'plan' => strtoupper('PLATFORM-ENVIRONMENT-' . $plan),
-                'storage' => $storage,
-                'environments' => $environments,
-                'user_licenses' => 1,
-            ],
-            'exceptions' => false,
-            'auth' => false,
-        ]);
-        if ($response->getStatusCode() != 200) {
-            return false;
-        }
-
-        return $response->json();
-    }
 }

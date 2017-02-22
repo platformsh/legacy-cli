@@ -25,6 +25,26 @@ class LocalProject
     }
 
     /**
+     * Read a config file for a project.
+     *
+     * @param string $dir        The project root.
+     * @param string $configFile A config file such as 'services.yaml'.
+     *
+     * @return array|null
+     */
+    public function readProjectConfigFile($dir, $configFile)
+    {
+        $result = null;
+        $filename = $dir . '/' . $this->config->get('service.project_config_dir') . '/' . $configFile;
+        if (file_exists($filename)) {
+            $parser = new Parser();
+            $result = $parser->parse(file_get_contents($filename));
+        }
+
+        return $result;
+    }
+
+    /**
      * @param string $gitUrl
      *
      * @return array|false
@@ -33,7 +53,7 @@ class LocalProject
     protected function parseGitUrl($gitUrl)
     {
         $gitDomain = $this->config->get('detection.git_domain');
-        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
+        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
         if (!preg_match($pattern, $gitUrl, $matches)) {
             return false;
         }

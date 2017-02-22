@@ -53,13 +53,15 @@ class ProjectCreateCommand extends CommandBase
 
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
-        $estimate = $this->api()->getEstimate($options['plan'], $options['storage'], $options['environments']);
-        if (!$estimate) {
-            $costConfirm = "Failed to estimate project cost";
-        } else {
-            $costConfirm = "The estimated monthly cost of this project is: <comment>{$estimate['total']}</comment>";
-        }
-        $costConfirm .= "\n\nAre you sure you want to continue?";
+        $estimate = $this->api()
+            ->getClient()
+            ->getSubscriptionEstimate($options['plan'], $options['storage'], $options['environments'], 1);
+        $costConfirm = sprintf(
+            'The estimated monthly cost of this project is: <comment>%s</comment>'
+            . "\n\n"
+            . 'Are you sure you want to continue?',
+            $estimate['total']
+        );
         if (!$questionHelper->confirm($costConfirm)) {
             return 1;
         }
