@@ -116,7 +116,7 @@ class Relationships implements InputConfiguringInterface
     {
         $cacheKey = 'relationships-' . $sshUrl;
         $relationships = $this->cache->fetch($cacheKey);
-        if ($refresh || empty($relationships)) {
+        if ($refresh || $relationships === false) {
             $args = ['ssh'];
             if (isset($this->ssh)) {
                 $args = array_merge($args, $this->ssh->getSshArgs());
