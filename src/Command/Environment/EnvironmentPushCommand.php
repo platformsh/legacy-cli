@@ -161,9 +161,10 @@ class EnvironmentPushCommand extends CommandBase
         if ($this->hasSelectedEnvironment()) {
             try {
                 $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
-                /** @var \Platformsh\Cli\Service\Relationships $relationships */
-                $relationships = $this->getService('relationships');
-                $relationships->clearCache($sshUrl);
+                /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+                $cache = $this->getService('cache');
+                $cache->delete('relationships-' . $sshUrl);
+                $cache->delete('routes-' . $sshUrl);
             } catch (EnvironmentStateException $e) {
                 // Ignore environments with a missing SSH URL.
             }

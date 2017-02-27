@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -40,15 +41,13 @@ class EnvironmentRoutesCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
-        $header = ['Route', 'Type', 'To', 'Cache', 'SSI'];
+        $header = ['Route', 'Type', 'To'];
         $rows = [];
         foreach ($routes as $route) {
             $rows[] = [
-                $route->id,
+                new AdaptiveTableCell($route->id, ['wrap' => false]),
                 $route->type,
                 $route->type == 'upstream' ? $route->upstream : $route->to,
-                json_encode($route->cache),
-                json_encode($route->ssi),
             ];
         }
 
@@ -57,6 +56,14 @@ class EnvironmentRoutesCommand extends CommandBase
         }
 
         $table->render($rows, $header);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To view a single route, run: <info>%s route-get <route></info>',
+                $this->config()->get('application.executable')
+            ));
+        }
 
         return 0;
     }
