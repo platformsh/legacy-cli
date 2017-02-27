@@ -118,9 +118,7 @@ class Relationships implements InputConfiguringInterface
         $relationships = $this->cache->fetch($cacheKey);
         if ($refresh || $relationships === false) {
             $args = ['ssh'];
-            if (isset($this->ssh)) {
-                $args = array_merge($args, $this->ssh->getSshArgs());
-            }
+            $args = array_merge($args, $this->ssh->getSshArgs());
             $args[] = $sshUrl;
             $args[] = 'echo $' . $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
             $result = $this->shellHelper->execute($args, null, true);
@@ -129,16 +127,6 @@ class Relationships implements InputConfiguringInterface
         }
 
         return $relationships;
-    }
-
-    /**
-     * Clear the cache.
-     *
-     * @param string $sshUrl
-     */
-    public function clearCache($sshUrl)
-    {
-        $this->cache->delete('relationships-' . $sshUrl);
     }
 
     /**

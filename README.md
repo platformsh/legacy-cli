@@ -108,6 +108,7 @@ environment
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
   environment:relationships (relationships)   Show an environment's relationships
+  environment:route:get (route-get)         View a route
   environment:routes (routes)               List an environment's routes
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
