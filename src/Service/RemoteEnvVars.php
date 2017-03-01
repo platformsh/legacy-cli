@@ -59,4 +59,16 @@ class RemoteEnvVars
 
         return $cached;
     }
+
+    /**
+     * @param string $sshUrl
+     * @param array  $variables
+     */
+    public function clearCaches($sshUrl, array $variables = ['APPLICATION', 'RELATIONSHIPS', 'ROUTES'])
+    {
+        $prefix = $this->config->get('service.env_prefix');
+        foreach ($variables as $variable) {
+            $this->cache->delete('env-' . $sshUrl . '-' . $prefix . $variable);
+        }
+    }
 }
