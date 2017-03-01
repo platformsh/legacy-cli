@@ -16,17 +16,15 @@ class RemoteEnvVars
     protected $cache;
 
     /**
+     * Constructor (dependencies are injected via the DIC).
+     *
      * @param Ssh             $ssh
      * @param CacheProvider   $cache
      * @param Shell           $shellHelper
      * @param Config          $config
      */
-    public function __construct(
-        Ssh $ssh,
-        CacheProvider $cache,
-        Shell $shellHelper,
-        Config $config
-    ) {
+    public function __construct(Ssh $ssh, CacheProvider $cache, Shell $shellHelper, Config $config)
+    {
         $this->ssh = $ssh;
         $this->cache = $cache;
         $this->shellHelper = $shellHelper;
@@ -61,8 +59,10 @@ class RemoteEnvVars
     }
 
     /**
-     * @param string $sshUrl
-     * @param array  $variables
+     * Clear caches for remote environment variables.
+     *
+     * @param string $sshUrl    The SSH URL to the application.
+     * @param array  $variables A list of unprefixed variables.
      */
     public function clearCaches($sshUrl, array $variables = ['APPLICATION', 'RELATIONSHIPS', 'ROUTES'])
     {
