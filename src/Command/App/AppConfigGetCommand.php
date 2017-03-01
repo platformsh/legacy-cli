@@ -17,7 +17,8 @@ class AppConfigGetCommand extends CommandBase
         $this
             ->setName('app:config-get')
             ->setDescription('View the configuration of an app')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view');
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -31,18 +32,13 @@ class AppConfigGetCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        /** @var \Platformsh\Cli\Service\Ssh $sshService */
-        $sshService = $this->getService('ssh');
+        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
+        $envVarService = $this->getService('remote_env_vars');
 
         $sshUrl = $this->getSelectedEnvironment()
             ->getSshUrl($this->selectApp($input));
-        $args = ['ssh'];
-        $args = array_merge($args, $sshService->getSshArgs());
-        $args[] = $sshUrl;
-        $args[] = 'echo $' . $this->config()->get('service.env_prefix') . 'APPLICATION';
-        $result = $shell->execute($args, null, true);
+
+        $result = $envVarService->getEnvVar('APPLICATION', $sshUrl, $input->getOption('refresh'));
         $appConfig = json_decode(base64_decode($result), true);
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */

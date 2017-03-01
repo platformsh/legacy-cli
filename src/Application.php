@@ -115,7 +115,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
         $commands[] = new Command\Environment\EnvironmentPushCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
-        $commands[] = new Command\Environment\EnvironmentRoutesCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
@@ -138,6 +137,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Project\Variable\ProjectVariableDeleteCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableGetCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableSetCommand();
+        $commands[] = new Command\Route\RouteListCommand();
+        $commands[] = new Command\Route\RouteGetCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
         $commands[] = new Command\Self\SelfInstallCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();

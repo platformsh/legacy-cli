@@ -108,7 +108,6 @@ environment
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
   environment:relationships (relationships)   Show an environment's relationships
-  environment:routes (routes)               List an environment's routes
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment
@@ -131,6 +130,9 @@ project
   project:variable:delete                   Delete a variable from a project
   project:variable:get (project-variables, pvget)   View variable(s) for a project
   project:variable:set (pvset)              Set a variable for a project
+route
+  route:get                                 View a route
+  route:list (routes)                       List all routes for an environment
 self
   self:install                              Install or update CLI configuration files
   self:update (self-update)                 Update the CLI to the latest version

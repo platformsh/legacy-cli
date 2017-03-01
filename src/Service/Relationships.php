@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Service;
 
-use Doctrine\Common\Cache\CacheProvider;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -12,31 +11,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Relationships implements InputConfiguringInterface
 {
 
-    protected $output;
-    protected $shellHelper;
-    protected $config;
-    protected $ssh;
-    protected $cache;
+    protected $envVarService;
 
     /**
-     * @param OutputInterface $output
-     * @param Ssh             $ssh
-     * @param CacheProvider   $cache
-     * @param Shell           $shellHelper
-     * @param Config          $config
+     * @param RemoteEnvVars $envVarService
      */
-    public function __construct(
-        OutputInterface $output,
-        Ssh $ssh,
-        CacheProvider $cache,
-        Shell $shellHelper,
-        Config $config
-    ) {
-        $this->output = $output;
-        $this->ssh = $ssh;
-        $this->cache = $cache;
-        $this->shellHelper = $shellHelper;
-        $this->config = $config;
+    public function __construct(RemoteEnvVars $envVarService)
+    {
+        $this->envVarService = $envVarService;
     }
 
     /**
@@ -52,12 +34,13 @@ class Relationships implements InputConfiguringInterface
     /**
      * @param string          $sshUrl
      * @param InputInterface  $input
+     * @param OutputInterface $output
      *
      * @return array|false
      */
-    public function chooseDatabase($sshUrl, InputInterface $input)
+    public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
     {
-        $stdErr = $this->output instanceof ConsoleOutput ? $this->output->getErrorOutput() : $this->output;
+        $stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
         $relationships = $this->getRelationships($sshUrl);
 
         // Filter to find database (mysql and pgsql) relationships.
@@ -86,7 +69,7 @@ class Relationships implements InputConfiguringInterface
             $relationships = array_intersect_key($relationships, [$relationshipName => true]);
         }
 
-        $questionHelper = new QuestionHelper($input, $this->output);
+        $questionHelper = new QuestionHelper($input, $output);
         $choices = [];
         $separator = '.';
         foreach ($relationships as $name => $relationship) {
@@ -114,31 +97,9 @@ class Relationships implements InputConfiguringInterface
      */
     public function getRelationships($sshUrl, $refresh = false)
     {
-        $cacheKey = 'relationships-' . $sshUrl;
-        $relationships = $this->cache->fetch($cacheKey);
-        if ($refresh || empty($relationships)) {
-            $args = ['ssh'];
-            if (isset($this->ssh)) {
-                $args = array_merge($args, $this->ssh->getSshArgs());
-            }
-            $args[] = $sshUrl;
-            $args[] = 'echo $' . $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
-            $result = $this->shellHelper->execute($args, null, true);
-            $relationships = json_decode(base64_decode($result), true);
-            $this->cache->save($cacheKey, $relationships, 3600);
-        }
+        $value = $this->envVarService->getEnvVar('RELATIONSHIPS', $sshUrl, $refresh);
 
-        return $relationships;
-    }
-
-    /**
-     * Clear the cache.
-     *
-     * @param string $sshUrl
-     */
-    public function clearCache($sshUrl)
-    {
-        $this->cache->delete('relationships-' . $sshUrl);
+        return json_decode(base64_decode($value), true) ?: [];
     }
 
     /**

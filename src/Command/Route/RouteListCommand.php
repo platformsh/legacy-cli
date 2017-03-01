@@ -1,13 +1,14 @@
 <?php
-namespace Platformsh\Cli\Command\Environment;
+namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentRoutesCommand extends CommandBase
+class RouteListCommand extends CommandBase
 {
     /**
      * {@inheritdoc}
@@ -15,10 +16,11 @@ class EnvironmentRoutesCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:routes')
+            ->setName('route:list')
             ->setAliases(['routes'])
-            ->setDescription('List an environment\'s routes')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+            ->setDescription('List all routes for an environment')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID');
+        $this->setHiddenAliases(['environment:routes']);
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
@@ -40,15 +42,13 @@ class EnvironmentRoutesCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
-        $header = ['Route', 'Type', 'To', 'Cache', 'SSI'];
+        $header = ['Route', 'Type', 'To'];
         $rows = [];
         foreach ($routes as $route) {
             $rows[] = [
-                $route->id,
+                new AdaptiveTableCell($route->id, ['wrap' => false]),
                 $route->type,
                 $route->type == 'upstream' ? $route->upstream : $route->to,
-                json_encode($route->cache),
-                json_encode($route->ssi),
             ];
         }
 
@@ -57,6 +57,14 @@ class EnvironmentRoutesCommand extends CommandBase
         }
 
         $table->render($rows, $header);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To view a single route, run: <info>%s route:get <route></info>',
+                $this->config()->get('application.executable')
+            ));
+        }
 
         return 0;
     }

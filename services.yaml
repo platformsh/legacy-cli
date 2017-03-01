@@ -39,9 +39,12 @@ services:
     question_helper:
         class:     '\Platformsh\Cli\Service\QuestionHelper'
         arguments: ['@input', '@output']
+    remote_env_vars:
+        class:     '\Platformsh\Cli\Service\RemoteEnvVars'
+        arguments: ['@ssh', '@cache', '@shell', '@config']
     relationships:
         class:     '\Platformsh\Cli\Service\Relationships'
-        arguments: ['@output', '@ssh', '@cache', '@shell', '@config']
+        arguments: ['@remote_env_vars']
     self_updater:
         class:     '\Platformsh\Cli\Service\SelfUpdater'
         arguments: ['@input', '@output', '@config', '@question_helper']
