@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,6 +23,7 @@ class RouteGetCommand extends CommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         PropertyFormatter::configureInput($this->getDefinition());
+        Ssh::configureInput($this->getDefinition());
         $this->addProjectOption()
             ->addEnvironmentOption()
             ->addAppOption();
@@ -36,9 +38,11 @@ class RouteGetCommand extends CommandBase
 
         $sshUrl = $environment->getSshUrl($this->selectApp($input));
 
-        /** @var \Platformsh\Cli\Service\Routes $routesService */
-        $routesService = $this->getService('routes');
-        $routes = $routesService->getRoutes($sshUrl, $input->getOption('refresh'));
+        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
+        $envVarService = $this->getService('remote_env_vars');
+        $value = $envVarService->getEnvVar('ROUTES', $sshUrl, $input->getOption('refresh'));
+
+        $routes = json_decode(base64_decode($value), true) ?: [];
 
         $selectedRoute = false;
         $originalUrl = $input->getArgument('route');

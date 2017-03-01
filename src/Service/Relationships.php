@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Service;
 
-use Doctrine\Common\Cache\CacheProvider;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,30 +12,16 @@ class Relationships implements InputConfiguringInterface
 {
 
     protected $output;
-    protected $shellHelper;
-    protected $config;
-    protected $ssh;
-    protected $cache;
+    protected $envVarService;
 
     /**
      * @param OutputInterface $output
-     * @param Ssh             $ssh
-     * @param CacheProvider   $cache
-     * @param Shell           $shellHelper
-     * @param Config          $config
+     * @param RemoteEnvVars   $envVarService
      */
-    public function __construct(
-        OutputInterface $output,
-        Ssh $ssh,
-        CacheProvider $cache,
-        Shell $shellHelper,
-        Config $config
-    ) {
+    public function __construct(OutputInterface $output, RemoteEnvVars $envVarService)
+    {
         $this->output = $output;
-        $this->ssh = $ssh;
-        $this->cache = $cache;
-        $this->shellHelper = $shellHelper;
-        $this->config = $config;
+        $this->envVarService = $envVarService;
     }
 
     /**
@@ -114,19 +99,9 @@ class Relationships implements InputConfiguringInterface
      */
     public function getRelationships($sshUrl, $refresh = false)
     {
-        $cacheKey = 'relationships-' . $sshUrl;
-        $relationships = $this->cache->fetch($cacheKey);
-        if ($refresh || $relationships === false) {
-            $args = ['ssh'];
-            $args = array_merge($args, $this->ssh->getSshArgs());
-            $args[] = $sshUrl;
-            $args[] = 'echo $' . $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
-            $result = $this->shellHelper->execute($args, null, true);
-            $relationships = json_decode(base64_decode($result), true);
-            $this->cache->save($cacheKey, $relationships, 3600);
-        }
+        $value = $this->envVarService->getEnvVar('RELATIONSHIPS', $sshUrl, $refresh);
 
-        return $relationships;
+        return json_decode(base64_decode($value), true) ?: [];
     }
 
     /**

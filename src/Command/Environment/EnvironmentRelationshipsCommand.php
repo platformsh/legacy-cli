@@ -21,7 +21,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
             ->setDescription('Show an environment\'s relationships')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
-            ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the relationships', '0');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the relationships');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
@@ -41,7 +41,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $sshUrl = $environment->getSshUrl($app);
         /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
         $relationshipsService = $this->getService('relationships');
-        $value = $relationshipsService->getRelationships($sshUrl);
+        $value = $relationshipsService->getRelationships($sshUrl, $input->getOption('refresh'));
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
