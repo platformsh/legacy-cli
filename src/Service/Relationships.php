@@ -11,16 +11,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Relationships implements InputConfiguringInterface
 {
 
-    protected $output;
     protected $envVarService;
 
     /**
-     * @param OutputInterface $output
-     * @param RemoteEnvVars   $envVarService
+     * @param RemoteEnvVars $envVarService
      */
-    public function __construct(OutputInterface $output, RemoteEnvVars $envVarService)
+    public function __construct(RemoteEnvVars $envVarService)
     {
-        $this->output = $output;
         $this->envVarService = $envVarService;
     }
 
@@ -37,12 +34,13 @@ class Relationships implements InputConfiguringInterface
     /**
      * @param string          $sshUrl
      * @param InputInterface  $input
+     * @param OutputInterface $output
      *
      * @return array|false
      */
-    public function chooseDatabase($sshUrl, InputInterface $input)
+    public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
     {
-        $stdErr = $this->output instanceof ConsoleOutput ? $this->output->getErrorOutput() : $this->output;
+        $stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
         $relationships = $this->getRelationships($sshUrl);
 
         // Filter to find database (mysql and pgsql) relationships.
@@ -71,7 +69,7 @@ class Relationships implements InputConfiguringInterface
             $relationships = array_intersect_key($relationships, [$relationshipName => true]);
         }
 
-        $questionHelper = new QuestionHelper($input, $this->output);
+        $questionHelper = new QuestionHelper($input, $output);
         $choices = [];
         $separator = '.';
         foreach ($relationships as $name => $relationship) {
