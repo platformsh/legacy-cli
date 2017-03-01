@@ -1,5 +1,5 @@
 <?php
-namespace Platformsh\Cli\Command\Environment\Route;
+namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -16,9 +16,8 @@ class RouteGetCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:route:get')
-            ->setAliases(['route-get'])
-            ->setDescription('View a route')
+            ->setName('route:get')
+            ->setDescription('View a resolved route')
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');

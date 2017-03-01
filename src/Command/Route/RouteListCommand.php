@@ -1,5 +1,5 @@
 <?php
-namespace Platformsh\Cli\Command\Environment;
+namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentRoutesCommand extends CommandBase
+class RouteListCommand extends CommandBase
 {
     /**
      * {@inheritdoc}
@@ -16,10 +16,11 @@ class EnvironmentRoutesCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:routes')
+            ->setName('route:list')
             ->setAliases(['routes'])
-            ->setDescription('List an environment\'s routes')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+            ->setDescription('List all routes for an environment')
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID');
+        $this->setHiddenAliases(['environment:routes']);
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
@@ -60,7 +61,7 @@ class EnvironmentRoutesCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
-                'To view a single route, run: <info>%s route-get <route></info>',
+                'To view a single route, run: <info>%s route:get <route></info>',
                 $this->config()->get('application.executable')
             ));
         }
