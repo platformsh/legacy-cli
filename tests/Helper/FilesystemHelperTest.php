@@ -109,28 +109,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($testDir, $path);
 
         $this->setExpectedException('InvalidArgumentException');
-        $path = $this->filesystemHelper->makePathAbsolute('nonexistent/test.txt');
-    }
-
-    /**
-     * Test FilesystemHelper::makePathRelative().
-     */
-    public function testMakePathRelative()
-    {
-        $testDir = $this->tempDir();
-        mkdir($testDir . '/test/1/2/3', 0777, true);
-
-        $path = $this->filesystemHelper->makePathRelative($testDir . '/test/1/2/3', $testDir);
-        $this->assertEquals('test/1/2/3', $path);
-
-        $path = $this->filesystemHelper->makePathRelative($testDir . '/test/1/2/3/4', $testDir);
-        $this->assertEquals('test/1/2/3/4', $path);
-
-        $path = $this->filesystemHelper->makePathRelative($testDir, $testDir . '/test/1/2/3');
-        $this->assertEquals('../../../..', $path);
-
-        $path = $this->filesystemHelper->makePathRelative($testDir, $testDir . '/test/1/2/3/nonexistent');
-        $this->assertEquals('../../../../..', $path);
+        $this->filesystemHelper->makePathAbsolute('nonexistent/test.txt');
     }
 
     /**

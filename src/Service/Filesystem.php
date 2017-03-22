@@ -221,7 +221,7 @@ class Filesystem
             throw new \InvalidArgumentException('Target not found: ' . $target);
         }
         if ($this->relative) {
-            $target = $this->makePathRelative($target, dirname($link));
+            $target = rtrim($this->fs->makePathRelative($target, dirname($link)), '/');
         }
         $this->fs->symlink($target, $link, $this->copyOnWindows);
     }
@@ -306,19 +306,6 @@ class Filesystem
             }
         }
         closedir($sourceDirectory);
-    }
-
-    /**
-     * Make a absolute path into a relative one.
-     *
-     * @param string $path      Absolute path.
-     * @param string $reference Reference directory path.
-     *
-     * @return string The first path, made relative to the second path.
-     */
-    public function makePathRelative($path, $reference)
-    {
-        return rtrim($this->fs->makePathRelative($path, $reference), '/');
     }
 
     /**
