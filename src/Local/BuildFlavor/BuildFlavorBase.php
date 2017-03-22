@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
@@ -11,7 +11,7 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class ToolstackBase implements ToolstackInterface
+abstract class BuildFlavorBase implements BuildFlavorInterface
 {
 
     /**
@@ -380,9 +380,9 @@ abstract class ToolstackBase implements ToolstackInterface
     /**
      * @inheritdoc
      */
-    public function getKey()
+    public function getKeys()
     {
-        return false;
+        return ['default'];
     }
 
     /**

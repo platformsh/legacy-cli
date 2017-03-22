@@ -1,0 +1,4 @@
+name: symfony
+type: php
+build:
+  flavor: symfony

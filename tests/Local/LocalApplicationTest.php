@@ -2,59 +2,47 @@
 
 namespace Platformsh\Cli\Tests;
 
+use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Local\BuildFlavor\NoBuildFlavor;
+use Platformsh\Cli\Local\BuildFlavor\Symfony;
 use Platformsh\Cli\Local\LocalApplication;
 
 class LocalApplicationTest extends \PHPUnit_Framework_TestCase
 {
 
-    const TOOLSTACK_NAMESPACE = 'Platformsh\\Cli\\Local\\Toolstack\\';
-
-    public function testToolstackDetectionDrupal()
+    public function testBuildFlavorDetectionDrupal()
     {
-        $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'Drupal';
         $appRoot = 'tests/data/apps/drupal/project';
 
         $app = new LocalApplication($appRoot);
 
-        $toolstackWithConfig = $app->getToolstack();
-        $this->assertInstanceOf($toolstackClassName, $toolstackWithConfig, 'Detect Drupal app from config');
-
-        $app->setConfig([]);
-        $toolstackNoConfig = $app->getToolstack();
-        $this->assertInstanceOf($toolstackClassName, $toolstackNoConfig, 'Detect Drupal app from makefile-based file structure');
+        $this->assertInstanceOf(Drupal::class, $app->getBuildFlavor());
     }
 
-    public function testToolstackDetectionSymfony()
+    public function testBuildFlavorDetectionSymfony()
     {
-        $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'Symfony';
         $appRoot = 'tests/data/apps/symfony';
 
         $app = new LocalApplication($appRoot);
 
-        $toolstackWithConfig = $app->getToolstack();
-        $this->assertInstanceOf($toolstackClassName, $toolstackWithConfig, 'Detect Symfony app from config');
-
-        $app->setConfig([]);
-        $toolstackNoConfig = $app->getToolstack();
-        $this->assertInstanceOf($toolstackClassName, $toolstackNoConfig, 'Detect Symfony app from file structure');
+        $this->assertInstanceOf(Symfony::class, $app->getBuildFlavor());
     }
 
     /**
-     * Test the special case of HHVM toolstack types being the same as PHP.
+     * Test the special case of HHVM buildFlavor types being the same as PHP.
      */
-    public function testToolstackAliasHhvm()
+    public function testBuildFlavorAliasHhvm()
     {
-        $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'Symfony';
         $appRoot = 'tests/data/apps/vanilla';
 
         $app = new LocalApplication($appRoot);
         $app->setConfig(['type' => 'hhvm:3.7', 'build' => ['flavor' => 'symfony']]);;
-        $toolstack = $app->getToolstack();
+        $buildFlavor = $app->getBuildFlavor();
 
-        $this->assertInstanceOf($toolstackClassName, $toolstack, 'Detect HHVM Symfony app from config');
+        $this->assertInstanceOf(Symfony::class, $buildFlavor);
     }
 
-    public function testToolstackDetectionMultiple()
+    public function testBuildFlavorDetectionMultiple()
     {
         $fakeRepositoryRoot = 'tests/data/repositories/multiple';
 
@@ -62,13 +50,12 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(6, $applications, 'Detect multiple apps');
     }
 
-    public function testToolstackDetectionNone()
+    public function testBuildFlavorDetectionNone()
     {
-        $toolstackClassName = self::TOOLSTACK_NAMESPACE . 'NoToolstack';
-        $fakeAppRoot = 'tests/data/apps';
+        $fakeAppRoot = 'tests/data/apps/none';
 
         $app = new LocalApplication($fakeAppRoot);
-        $this->assertInstanceOf($toolstackClassName, $app->getToolstack(), 'File structure does not indicate a specific toolstack');
+        $this->assertInstanceOf(NoBuildFlavor::class, $app->getBuildFlavor(), 'Config does not indicate a specific build flavor');
     }
 
     public function testGetAppConfig()

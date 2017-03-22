@@ -1,10 +1,10 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Toolstack;
+namespace Platformsh\Cli\Tests\BuildFlavor;
 
 use Platformsh\Cli\Service\Filesystem;
 
-class DrupalTest extends BaseToolstackTest
+class DrupalTest extends BaseBuildFlavorTest
 {
 
     public function testBuildDrupalInProjectMode()
@@ -46,7 +46,7 @@ class DrupalTest extends BaseToolstackTest
 
         // Thirdly, the ability for any files in 'shared' to be symlinked into
         // sites/default (this is a legacy feature of the CLI's Drupal
-        // toolstack).
+        // build flavor).
         $this->assertFileExists($webRoot . '/sites/default/symlink_me');
 
         // Test custom build hooks' results.

@@ -1,10 +1,10 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Toolstack;
+namespace Platformsh\Cli\Tests\BuildFlavor;
 
 use Platformsh\Cli\Service\Filesystem;
 
-class VanillaTest extends BaseToolstackTest
+class VanillaTest extends BaseBuildFlavorTest
 {
     public function testBuildVanilla()
     {

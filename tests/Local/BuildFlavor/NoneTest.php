@@ -1,8 +1,8 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Toolstack;
+namespace Platformsh\Cli\Tests\BuildFlavor;
 
-class NoneTest extends BaseToolstackTest
+class NoneTest extends BaseBuildFlavorTest
 {
     public function testBuildNone()
     {

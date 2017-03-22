@@ -1,17 +1,22 @@
 <?php
 
-namespace Platformsh\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Drush;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
-class Drupal extends ToolstackBase
+class Drupal extends BuildFlavorBase
 {
 
-    public function getKey()
+    public function getStacks()
     {
-        return 'php:drupal';
+        return ['php', 'hhvm'];
+    }
+
+    public function getKeys()
+    {
+        return ['drupal'];
     }
 
     /**
@@ -69,11 +74,6 @@ class Drupal extends ToolstackBase
         }
 
         return false;
-    }
-
-    public function detect($appRoot)
-    {
-        return self::isDrupal($appRoot, 0);
     }
 
     public function build()

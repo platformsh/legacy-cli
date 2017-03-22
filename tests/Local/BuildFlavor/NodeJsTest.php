@@ -1,8 +1,8 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Toolstack;
+namespace Platformsh\Cli\Tests\BuildFlavor;
 
-class NodeJsTest extends BaseToolstackTest
+class NodeJsTest extends BaseBuildFlavorTest
 {
     public function testBuildNodeJs()
     {
