@@ -1,11 +1,11 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Toolstack;
+namespace Platformsh\Cli\Tests\BuildFlavor;
 
 /**
  * @group slow
  */
-class DependenciesTest extends BaseToolstackTest
+class DependenciesTest extends BaseBuildFlavorTest
 {
     protected $sourceDir = 'tests/data/apps/build-deps';
 

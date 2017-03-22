@@ -86,7 +86,7 @@ class LocalBuild
      *     - no-deps (bool, default false) Disable installing build
      *       dependencies.
      *     - concurrency (int) Specify a concurrency for Drush Make, if
-     *       applicable (when using the Drupal toolstack).
+     *       applicable (when using the Drupal build flavor).
      *     - working-copy (bool, default false) Specify the --working-copy
      *       option to Drush Make, if applicable.
      *     - lock (bool, default false) Create or update a lock
@@ -217,12 +217,7 @@ class LocalBuild
         $multiApp = $appRoot != $sourceDir;
         $appId = $app->getId();
 
-        $toolstack = $app->getToolstack();
-        if (!$toolstack) {
-            $this->output->writeln("Toolstack not found for application <error>$appId</error>");
-
-            return false;
-        }
+        $buildFlavor = $app->getBuildFlavor();
 
         // Find the right build directory.
         $buildName = $multiApp ? str_replace('/', '-', $appId) : 'default';
@@ -240,7 +235,7 @@ class LocalBuild
         // If the destination is inside the source directory, ensure it isn't
         // copied or symlinked into the build.
         if (strpos($destination, $sourceDir) === 0) {
-            $toolstack->addIgnoredFiles([
+            $buildFlavor->addIgnoredFiles([
                 ltrim(substr($destination, strlen($sourceDir)), '/'),
             ]);
         }
@@ -258,13 +253,13 @@ class LocalBuild
             }
         }
 
-        $toolstack->setOutput($this->output);
+        $buildFlavor->setOutput($this->output);
 
         $buildSettings = $this->settings + [
             'multiApp' => $multiApp,
             'sourceDir' => $sourceDir,
         ];
-        $toolstack->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
+        $buildFlavor->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
 
         $archive = false;
         if (empty($this->settings['no-archive']) && empty($this->settings['no-cache'])) {
@@ -304,21 +299,20 @@ class LocalBuild
                 }
 
                 // Use the dependencies' PATH and other environment variables
-                // for the rest of this process (i.e. for the toolstack and for
-                // build hooks).
+                // for the rest of this process (for the build and build hooks).
                 $this->dependencyInstaller->putEnv($depsDir, $appConfig['dependencies']);
             }
 
-            $toolstack->build();
+            $buildFlavor->build();
 
-            if ($this->runPostBuildHooks($appConfig, $toolstack->getAppDir()) === false) {
+            if ($this->runPostBuildHooks($appConfig, $buildFlavor->getAppDir()) === false) {
                 // The user may not care if build hooks fail, but we should
                 // not archive the result.
                 $archive = false;
                 $success = false;
             }
 
-            if ($archive && $toolstack->canArchive()) {
+            if ($archive && $buildFlavor->canArchive()) {
                 $this->output->writeln("Saving build archive");
                 if (!is_dir(dirname($archive))) {
                     mkdir(dirname($archive));
@@ -350,12 +344,12 @@ class LocalBuild
             return false;
         }
 
-        $toolstack->setBuildDir($buildDir);
-        $toolstack->install();
+        $buildFlavor->setBuildDir($buildDir);
+        $buildFlavor->install();
 
         $this->runPostDeployHooks($appConfig, $buildDir);
 
-        $webRoot = $toolstack->getWebRoot();
+        $webRoot = $buildFlavor->getWebRoot();
 
         // Symlink the built web root ($webRoot) into www or www/appId.
         if (!is_dir($webRoot)) {
