@@ -117,10 +117,11 @@ class DrupalTest extends BaseBuildFlavorTest
         // Run these tests twice to check that a previous build does not affect
         // the next one.
         for ($i = 1; $i <= 2; $i++) {
-            $this->assertTrue($this->builder->build($this->buildSettings, $repository, $wwwDir));
-            $this->assertFileExists($wwwDir . '/sites/default/settings.php');
-            $this->assertFileNotExists($wwwDir . '/sites/default/builds');
-            $this->assertFileNotExists($wwwDir . '/sites/default/www');
+            $message = "Attempt $i";
+            $this->assertTrue($this->builder->build($this->buildSettings, $repository, $wwwDir), $message);
+            $this->assertFileExists($wwwDir . '/sites/default/settings.php', $message);
+            $this->assertFileNotExists($wwwDir . '/sites/default/builds', $message);
+            $this->assertFileNotExists($wwwDir . '/sites/default/www', $message);
         }
     }
 }

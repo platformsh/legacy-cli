@@ -48,8 +48,8 @@ class VanillaTest extends BaseBuildFlavorTest
         $fsHelper = new Filesystem();
         $fsHelper->copyAll('tests/data/apps/vanilla', $sourceDir);
 
-        // Create another temporary directory.
-        $destination = $this->createTempSubDir();
+        $destSubDir = $this->createTempSubDir();
+        $destination = $destSubDir . '/custom-destination';
 
         // Test with symlinking.
         $this->builder->build(['abslinks' => true], $sourceDir, $destination);
@@ -60,7 +60,7 @@ class VanillaTest extends BaseBuildFlavorTest
         $this->assertFileExists($destination . '/index.html');
 
         // Remove the temporary files.
-        exec('rm -R ' . escapeshellarg($destination) . ' ' . escapeshellarg($sourceDir));
+        exec('rm -R ' . escapeshellarg($destSubDir) . ' ' . escapeshellarg($sourceDir));
     }
 
     /**
