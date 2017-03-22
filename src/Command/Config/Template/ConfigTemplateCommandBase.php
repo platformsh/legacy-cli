@@ -148,4 +148,20 @@ abstract class ConfigTemplateCommandBase extends CommandBase
         }
         throw new \RuntimeException("No template found for type $type");
     }
+
+    /**
+     * @param string $url
+     *
+     * @return string
+     */
+    protected function download($url)
+    {
+        $context = stream_context_create(['http' => ['timeout' => 5]]);
+        $content = file_get_contents($url, FILE_BINARY, $context);
+        if ($content === false) {
+            throw new \RuntimeException("Failed to download file: $url");
+        }
+
+        return $content;
+    }
 }
