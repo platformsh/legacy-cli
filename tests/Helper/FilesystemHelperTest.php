@@ -109,7 +109,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($testDir, $path);
 
         $this->setExpectedException('InvalidArgumentException');
-        $path = $this->filesystemHelper->makePathAbsolute('nonexistent/test.txt');
+        $this->filesystemHelper->makePathAbsolute('nonexistent/test.txt');
     }
 
     /**

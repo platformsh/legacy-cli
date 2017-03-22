@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Drush;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 
 class Drupal extends BuildFlavorBase
@@ -113,7 +114,7 @@ class Drupal extends BuildFlavorBase
         if (!$repositoryDir = $this->gitHelper->getRoot($this->appRoot)) {
             return;
         }
-        $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
+        $relative = (new Filesystem())->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
         if (!$this->gitHelper->checkIgnore($relative, $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
             $this->stdErr->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");

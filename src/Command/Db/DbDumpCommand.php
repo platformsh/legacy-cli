@@ -183,8 +183,7 @@ class DbDumpCommand extends CommandBase
         if ($dumpFile && file_exists($dumpFile) && isset($projectRoot) && strpos($dumpFile, $projectRoot) === 0) {
             /** @var \Platformsh\Cli\Service\Git $git */
             $git = $this->getService('git');
-            $relative = $fs->makePathRelative($dumpFile, $projectRoot);
-            if (!$git->checkIgnore($relative, $projectRoot)) {
+            if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
                 if ($pos = strrpos($dumpFile, '--dump.sql')) {
                     $extension = substr($dumpFile, $pos);
