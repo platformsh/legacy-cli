@@ -64,6 +64,13 @@ abstract class ConfigTemplateCommandBase extends CommandBase
                     : 'The application name can only consist of lower-case letters and numbers.';
             },
         ]);
+        $global['application_disk'] = new Field('Application disk size (MB)', [
+            'optionName' => 'disk',
+            'default' => 2048,
+            'validator' => function ($value) {
+                return is_numeric($value) && $value >= 512 && $value < 512000;
+            },
+        ]);
 
         return array_merge($global, $fields);
     }

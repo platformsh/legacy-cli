@@ -31,7 +31,7 @@ web:
           expires: -1
 
 # The size in megabytes of persistent disk space to reserve as part of this application.
-disk: 512
+disk: {{ application_disk }}
 
 # Each mount is a pairing of the local path on the application container to
 # the persistent mount where it lives. At this time, only 'shared:files' is

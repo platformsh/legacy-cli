@@ -10,7 +10,7 @@ web:
       passthru: '{{ front_controller }}'
       root: '{{ webroot }}'
 
-disk: 2048
+disk: {{ application_disk }}
 
 mounts:
   "/{{ webroot }}/uploads": "shared:files/public-uploads"

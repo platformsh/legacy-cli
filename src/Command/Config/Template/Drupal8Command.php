@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Config\Template;
 
 use Platformsh\ConsoleForm\Field\BooleanField;
+use Platformsh\ConsoleForm\Field\Field;
 
 class Drupal8Command extends ConfigTemplateCommandBase
 {
@@ -29,6 +30,14 @@ class Drupal8Command extends ConfigTemplateCommandBase
     {
         $fields['php_version'] = PhpCommand::getCommonFields()['php_version'];
 
+        $fields['db_disk'] = new Field('Database disk size (MB)', [
+            'optionName' => 'db-disk',
+            'default' => 2048,
+            'validator' => function ($value) {
+                return is_numeric($value) && $value > 1024;
+            },
+        ]);
+
         $fields['with_redis_cache'] = new BooleanField('Add a Redis cache service', [
             'optionName' => 'redis-cache',
             'default' => false,
@@ -44,8 +53,9 @@ class Drupal8Command extends ConfigTemplateCommandBase
     {
         $parameters['services']['mysqldb'] = [
             'type' => 'mysql:10.0',
-            'disk' => 2048,
+            'disk' => $parameters['db_disk'],
         ];
+        unset($parameters['db_disk']);
         $parameters['relationships']['database'] = [
             'service' => 'mysqldb',
             'endpoint' => 'mysql',
