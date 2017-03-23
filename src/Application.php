@@ -101,7 +101,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Certificate\CertificateGetCommand();
         $commands[] = new Command\Certificate\CertificateListCommand();
         $commands[] = new Command\Config\ConfigGenerateCommand();
-        $commands[] = new Command\Config\Template\DrupalCommand();
+        $commands[] = new Command\Config\Template\Drupal8Command();
         $commands[] = new Command\Config\Template\Drupal7Command();
         $commands[] = new Command\Config\Template\NodejsCommand();
         $commands[] = new Command\Config\Template\PhpCommand();

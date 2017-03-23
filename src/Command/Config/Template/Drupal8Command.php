@@ -4,14 +4,14 @@ namespace Platformsh\Cli\Command\Config\Template;
 
 use Platformsh\ConsoleForm\Field\OptionsField;
 
-class DrupalCommand extends ConfigTemplateCommandBase
+class Drupal8Command extends ConfigTemplateCommandBase
 {
     /**
      * {@inheritdoc}
      */
     protected function getKey()
     {
-        return 'drupal';
+        return 'drupal8';
     }
 
     /**
@@ -19,7 +19,7 @@ class DrupalCommand extends ConfigTemplateCommandBase
      */
     protected function getLabel()
     {
-        return 'Drupal';
+        return 'Drupal 8';
     }
 
     /**
