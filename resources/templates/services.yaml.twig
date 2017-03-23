@@ -16,7 +16,7 @@
 {% for service_name,service in services %}
 '{{ service_name }}':
     type: '{{ service.type }}'
-{% if service.disk %}
+{% if service.disk is defined %}
     disk: {{ service.disk }}
 {% endif %}
 {% endfor %}
