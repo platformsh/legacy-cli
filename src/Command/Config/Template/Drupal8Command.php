@@ -2,8 +2,6 @@
 
 namespace Platformsh\Cli\Command\Config\Template;
 
-use Platformsh\ConsoleForm\Field\OptionsField;
-
 class Drupal8Command extends ConfigTemplateCommandBase
 {
     /**
@@ -27,11 +25,7 @@ class Drupal8Command extends ConfigTemplateCommandBase
      */
     protected function getFields()
     {
-        $fields['php_version'] = new OptionsField('PHP version', [
-            'optionName' => 'php-version',
-            'options' => ['7.1', '7.0', '5.6'],
-            'default' => '7.1',
-        ]);
+        $fields['php_version'] = PhpCommand::getCommonFields()['php_version'];
 
         return $fields;
     }

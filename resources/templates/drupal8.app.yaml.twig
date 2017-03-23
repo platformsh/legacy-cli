@@ -1,3 +1,6 @@
+{%
+set webroot = 'web'
+%}
 # This file describes an application. You can have multiple applications
 # in the same project.
 #
@@ -21,7 +24,7 @@ web:
             # The folder from which to serve static assets, for this location.
             #
             # This is a filesystem path, relative to the application root.
-            root: 'web'
+            root: '{{ webroot }}'
 
             # How long to allow static assets from this location to be cached.
             #
@@ -55,7 +58,7 @@ web:
             allow: true
             expires: 5m
             passthru: '/index.php'
-            root: 'web/sites/default/files'
+            root: '{{ webroot }}/sites/default/files'
 
             # Do not execute PHP scripts.
             scripts: false
@@ -72,7 +75,7 @@ disk: 2048
 # directory paths, relative to the application root. The values are strings such as
 # 'shared:files/NAME', where NAME is just a unique name for the mount.
 mounts:
-    '/web/sites/default/files': 'shared:files/files'
+    '/{{ webroot }}/sites/default/files': 'shared:files/files'
     '/tmp': 'shared:files/tmp'
     '/private': 'shared:files/private'
     '/drush-backups': 'shared:files/drush-backups'
@@ -81,7 +84,7 @@ mounts:
 hooks:
     # The deploy hook runs after your application has been deployed and started.
     deploy: |
-      cd web
+      cd {{ webroot }}
       drush -y cache-rebuild
       drush -y updatedb
       drush -y config-import
@@ -91,6 +94,6 @@ hooks:
 crons:
     drupal:
         spec: '*/20 * * * *'
-        cmd: 'cd web ; drush core-cron'
+        cmd: 'cd {{ webroot }} ; drush core-cron'
 
 {% include 'includes/relationships.yaml.twig' %}

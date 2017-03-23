@@ -2,9 +2,6 @@
 
 namespace Platformsh\Cli\Command\Config\Template;
 
-use Platformsh\ConsoleForm\Field\Field;
-use Platformsh\ConsoleForm\Field\OptionsField;
-
 class Drupal7Command extends ConfigTemplateCommandBase
 {
     /**
@@ -28,21 +25,10 @@ class Drupal7Command extends ConfigTemplateCommandBase
      */
     protected function getFields()
     {
-        $currentApp = $this->getCurrentApplication();
-        $appConfig = $currentApp ? $currentApp->getConfig() : [];
+        $commonFields = PhpCommand::getCommonFields();
 
-        $fields['php_version'] = new OptionsField('PHP version', [
-            'optionName' => 'php-version',
-            'options' => ['7.1', '7.0', '5.6'],
-            'default' => '7.1',
-        ]);
-
-        $fields['webroot'] = new Field('Web root', [
-            'optionName' => 'webroot',
-            'default' => isset($appConfig['web']['locations']['/']['root'])
-                ? ltrim($appConfig['web']['locations']['/']['root'], '/')
-                : 'public',
-        ]);
+        $fields['php_version'] = $commonFields['php_version'];
+        $fields['webroot'] = $commonFields['webroot'];
 
         return $fields;
     }

@@ -24,13 +24,15 @@ class PhpCommand extends ConfigTemplateCommandBase
     }
 
     /**
-     * {@inheritdoc}
+     * @return string<Field>
      */
-    protected function getFields()
+    public static function getCommonFields()
     {
+        $fields = [];
+
         $fields['php_version'] = new OptionsField('PHP version', [
             'optionName' => 'php-version',
-            'options' => ['7.1', '7.0', '5.6'],
+            'options' => ['5.6', '7.0', '7.1'],
             'default' => '7.1',
         ]);
 
@@ -69,5 +71,13 @@ class PhpCommand extends ConfigTemplateCommandBase
         ]);
 
         return $fields;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getFields()
+    {
+        return self::getCommonFields();
     }
 }
