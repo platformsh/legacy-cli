@@ -24,23 +24,6 @@ class Loader implements \Twig_LoaderInterface
     /**
      * {@inheritdoc}
      */
-    public function getSourceContext($name)
-    {
-        if ($this->isUrl($name)) {
-            return new Twig_Source($this->download($name), $name);
-        }
-        $fileName = $this->filePath . '/' . $name;
-        $content = file_get_contents($fileName);
-        if ($content === false) {
-            throw new Twig_Error_Loader("Failed to load from file: $fileName");
-        }
-
-        return new Twig_Source($content, $name, $this->filePath);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getCacheKey($name)
     {
         return $name;
@@ -52,14 +35,6 @@ class Loader implements \Twig_LoaderInterface
     public function isFresh($name, $time)
     {
         return time() - $time < 300;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function exists($name)
-    {
-        return $this->isUrl($name) ? true : file_exists($this->filePath . '/' . $name);
     }
 
     protected function isUrl($name)
@@ -85,6 +60,23 @@ class Loader implements \Twig_LoaderInterface
             throw new Twig_Error_Loader("Failed to download file: $url");
         }
         $this->cache->save($url, $content, 300);
+
+        return $content;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSource($name)
+    {
+        if ($this->isUrl($name)) {
+            return new Twig_Source($this->download($name), $name);
+        }
+        $fileName = $this->filePath . '/' . $name;
+        $content = file_get_contents($fileName);
+        if ($content === false) {
+            throw new Twig_Error_Loader("Failed to load from file: $fileName");
+        }
 
         return $content;
     }
