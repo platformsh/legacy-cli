@@ -46,18 +46,4 @@ class Drupal7Command extends ConfigTemplateCommandBase
 
         return $fields;
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getTemplate($type)
-    {
-        $templates = [
-            'app' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform.app.yaml.twig',
-            'routes' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform/routes.yaml.twig',
-            'services' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform/services.yaml.twig',
-        ];
-
-        return $templates[$type];
-    }
 }
