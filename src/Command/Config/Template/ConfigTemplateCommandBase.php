@@ -8,6 +8,7 @@
 namespace Platformsh\Cli\Command\Config\Template;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,6 +19,12 @@ abstract class ConfigTemplateCommandBase extends CommandBase
 {
     /** @var Form */
     private $form;
+
+    /** @var string|null */
+    private $repoRoot;
+
+    /** @var false|null|\Platformsh\Cli\Local\LocalApplication */
+    private static $currentApplication;
 
     /**
      * @return string
@@ -41,10 +48,12 @@ abstract class ConfigTemplateCommandBase extends CommandBase
      */
     private function addGlobalFields(array $fields)
     {
+        $currentApp = $this->getCurrentApplication();
+
         $global = [];
         $global['application_name'] = new Field('Application name', [
             'optionName' => 'name',
-            'default' => 'app',
+            'default' => $currentApp ? $currentApp->getName() : 'app',
             'validator' => function ($value) {
                 return preg_match('/^[a-z0-9-]+$/', $value)
                     ? true
@@ -63,21 +72,54 @@ abstract class ConfigTemplateCommandBase extends CommandBase
         $this->form->configureInputDefinition($this->getDefinition());
     }
 
+    /**
+     * @return false|\Platformsh\Cli\Local\LocalApplication
+     */
+    protected function getCurrentApplication()
+    {
+        if (!isset(self::$currentApplication)) {
+            self::$currentApplication = false;
+            if ($repoRoot = $this->getRepositoryRoot()) {
+                $apps = LocalApplication::getApplications($repoRoot);
+                self::$currentApplication = count($apps) === 1 ? reset($apps) : false;
+            }
+        }
+
+        return self::$currentApplication;
+    }
+
+    /**
+     * @return string|false
+     */
+    protected function getRepositoryRoot()
+    {
+        if (isset($this->repoRoot)) {
+            return $this->repoRoot;
+        }
+        $this->repoRoot = $this->getProjectRoot();
+        if (!$this->repoRoot) {
+            /** @var \Platformsh\Cli\Service\Git $git */
+            $git = $this->getService('git');
+            $this->repoRoot = $git->getRoot();
+        }
+
+        return $this->repoRoot;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // The project root is a Git repository, as we assume there are no
-        // config files yet.
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
-        $projectRoot = $git->getRoot(null, true);
+        $repoRoot = $this->getRepositoryRoot();
+        if (!$repoRoot) {
+
+        }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
         $directory = isset($options['directory'])
-            ? $projectRoot . '/' . $options['directory']
-            : $projectRoot;
+            ? $repoRoot . '/' . $options['directory']
+            : $repoRoot;
 
         unset($options['directory'], $options['subdir']);
 

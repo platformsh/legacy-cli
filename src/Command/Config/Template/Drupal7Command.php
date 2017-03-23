@@ -28,6 +28,9 @@ class Drupal7Command extends ConfigTemplateCommandBase
      */
     protected function getFields()
     {
+        $currentApp = $this->getCurrentApplication();
+        $appConfig = $currentApp ? $currentApp->getConfig() : [];
+
         $fields['php_version'] = new OptionsField('PHP version', [
             'optionName' => 'php-version',
             'options' => ['7.1', '7.0', '5.6'],
@@ -36,7 +39,9 @@ class Drupal7Command extends ConfigTemplateCommandBase
 
         $fields['webroot'] = new Field('Web root', [
             'optionName' => 'webroot',
-            'default' => 'public',
+            'default' => isset($appConfig['web']['locations']['/']['root'])
+                ? ltrim($appConfig['web']['locations']['/']['root'], '/')
+                : 'public',
         ]);
 
         return $fields;
