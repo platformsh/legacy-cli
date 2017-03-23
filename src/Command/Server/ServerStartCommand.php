@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Cli\Console\ProcessManager;
