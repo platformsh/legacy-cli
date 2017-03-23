@@ -15,6 +15,7 @@ use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Dumper;
 
 abstract class ConfigTemplateCommandBase extends CommandBase
 {
@@ -167,6 +168,10 @@ abstract class ConfigTemplateCommandBase extends CommandBase
                 'autoescape' => false,
             ];
             $this->engine = new \Twig_Environment(new Loader(CLI_ROOT . '/resources/templates', $cache), $options);
+            $dumper = new Dumper();
+            $this->engine->addFilter('yaml', new \Twig_SimpleFilter('yaml', function ($input) use ($dumper) {
+                return $dumper->dump($input, 5);
+            }));
         }
 
         return $this->engine->render($template, $parameters);

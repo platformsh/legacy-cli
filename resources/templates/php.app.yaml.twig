@@ -2,7 +2,7 @@ name: '{{ application_name }}'
 type: 'php:{{ php_version }}'
 
 build:
-    flavor: {{ build_flavor }}
+    flavor: {{ build_flavor|yaml }}
 
 web:
   locations:
@@ -10,7 +10,7 @@ web:
       passthru: '{{ front_controller }}'
       root: '{{ webroot }}'
 
-disk: {{ application_disk }}
+disk: {{ application_disk|yaml }}
 
 mounts:
   "/{{ webroot }}/uploads": "shared:files/public-uploads"

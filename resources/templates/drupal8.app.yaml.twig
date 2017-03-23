@@ -69,7 +69,7 @@ web:
                     expires: 2w
 
 # The size of the persistent disk of the application (in MB).
-disk: {{ application_disk }}
+disk: {{ application_disk|yaml }}
 
 # The 'mounts' describe writable, persistent filesystem mounts in the application. The keys are
 # directory paths, relative to the application root. The values are strings such as
