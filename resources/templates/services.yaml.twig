@@ -13,10 +13,10 @@
 #     type: mysql:5.5
 #     disk: 2048
 
-{% for service in services %}
-'{{ service.name }}':
+{% for service_name,service in services %}
+'{{ service_name }}':
     type: '{{ service.type }}'
-  {% if service.disk %}
+{% if service.disk %}
     disk: {{ service.disk }}
-  {% endif %}
+{% endif %}
 {% endfor %}

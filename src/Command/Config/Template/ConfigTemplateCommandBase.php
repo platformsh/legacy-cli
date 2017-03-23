@@ -8,6 +8,7 @@
 namespace Platformsh\Cli\Command\Config\Template;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Form;
@@ -28,10 +29,6 @@ abstract class ConfigTemplateCommandBase extends CommandBase
 
     /** @var \Twig_Environment */
     private $engine;
-
-    protected $services = [];
-
-    protected $relationships = [];
 
     /**
      * @return string
@@ -117,21 +114,19 @@ abstract class ConfigTemplateCommandBase extends CommandBase
     {
         $repoRoot = $this->getRepositoryRoot();
         if (!$repoRoot) {
-
+            throw new RootNotFoundException('Repository not found. This can only be run in a project directory or Git repository.');
         }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
-
         $directory = isset($options['directory'])
             ? $repoRoot . '/' . $options['directory']
             : $repoRoot;
-
         unset($options['directory'], $options['subdir']);
+        $parameters = $options + ['services' => [], 'relationships' => []];
 
-        $options['services'] = $this->services;
-        $options['relationships'] = $this->relationships;
+        $this->alterParameters($parameters);
 
         $fs = new Filesystem();
         foreach ($this->getTemplateTypes() as $templateType => $destination) {
@@ -141,11 +136,19 @@ abstract class ConfigTemplateCommandBase extends CommandBase
                 continue;
             }
             $template = $this->getTemplate($templateType);
-            $content = $this->renderTemplate($template, $options);
+            $content = $this->renderTemplate($template, $parameters);
             $fs->dumpFile($destinationAbsolute, $content);
         }
 
         return 0;
+    }
+
+    /**
+     * @param array &$parameters
+     */
+    protected function alterParameters(array &$parameters)
+    {
+        // Override this to modify parameters.
     }
 
     /**
@@ -177,7 +180,7 @@ abstract class ConfigTemplateCommandBase extends CommandBase
                 'strict_variables' => true,
                 'autoescape' => false,
             ];
-            $this->engine = new \Twig_Environment(new Loader($cache), $options);
+            $this->engine = new \Twig_Environment(new Loader(CLI_ROOT . '/resources/templates', $cache), $options);
         }
 
         return $this->engine->render($template, $parameters);
@@ -194,12 +197,13 @@ abstract class ConfigTemplateCommandBase extends CommandBase
     protected function getTemplate($type)
     {
         $key = $this->getKey();
+        $path = CLI_ROOT . '/resources/templates';
         $candidates = [
-            CLI_ROOT . "/resources/templates/$key.$type.yaml.twig",
-            CLI_ROOT . "/resources/templates/$type.yaml.twig",
+            "$key.$type.yaml.twig",
+            "$type.yaml.twig",
         ];
         foreach ($candidates as $candidate) {
-            if (file_exists($candidate)) {
+            if (file_exists($path . '/' . $candidate)) {
                 return $candidate;
             }
         }

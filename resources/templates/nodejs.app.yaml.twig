@@ -13,11 +13,6 @@ dependencies:
   nodejs:
     pm2: "^0.15.10"
 
-relationships:
-    database: "mysql:mysql"
-    solr: "solr:solr"
-    redis: "redis:redis"
-
 web:
   # The commands section lists programs to start when the container is deployed,
   # typically starting your node application.
@@ -43,3 +38,5 @@ disk: 512
 # a supported mount.
 mounts:
   "/run": "shared:files/run"
+
+{% include 'includes/relationships.yaml.twig' %}

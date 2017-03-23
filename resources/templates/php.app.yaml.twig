@@ -16,9 +16,4 @@ mounts:
   "/{{ webroot }}/uploads": "shared:files/public-uploads"
   "/private": "shared:files/private"
 
-{% if relationships %}
-relationships:
-  {% for relationship in relationships %}
-    '{{ relationship.name }}': '{{ relationship.service_name }}:{{ relationship.endpoint }}'
-  {% endfor %}
-{% endif %}
+{% include 'includes/relationships.yaml.twig' %}

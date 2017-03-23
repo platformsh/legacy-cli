@@ -8,13 +8,16 @@ use Twig_Source;
 
 class Loader implements \Twig_LoaderInterface
 {
+    protected $filePath;
     protected $cache;
 
     /**
+     * @param string                               $filePath
      * @param \Doctrine\Common\Cache\CacheProvider $cache
      */
-    public function __construct(CacheProvider $cache)
+    public function __construct($filePath, CacheProvider $cache)
     {
+        $this->filePath = $filePath;
         $this->cache = $cache;
     }
 
@@ -26,12 +29,13 @@ class Loader implements \Twig_LoaderInterface
         if ($this->isUrl($name)) {
             return new Twig_Source($this->download($name), $name);
         }
-        $content = file_get_contents($name);
+        $fileName = $this->filePath . '/' . $name;
+        $content = file_get_contents($fileName);
         if ($content === false) {
-            throw new Twig_Error_Loader("Failed to load from file: $name");
+            throw new Twig_Error_Loader("Failed to load from file: $fileName");
         }
 
-        return new Twig_Source($content, $name, $name);
+        return new Twig_Source($content, $name, $this->filePath);
     }
 
     /**
@@ -55,7 +59,7 @@ class Loader implements \Twig_LoaderInterface
      */
     public function exists($name)
     {
-        return $this->isUrl($name) ? true : file_exists($name);
+        return $this->isUrl($name) ? true : file_exists($this->filePath . '/' . $name);
     }
 
     protected function isUrl($name)

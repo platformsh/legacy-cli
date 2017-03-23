@@ -46,4 +46,19 @@ class Drupal7Command extends ConfigTemplateCommandBase
 
         return $fields;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function alterParameters(array &$parameters)
+    {
+        $parameters['services']['mysqldb'] = [
+            'type' => 'mysql:10.10',
+            'disk' => 2048,
+        ];
+        $parameters['relationships']['database'] = [
+            'service' => 'mysqldb',
+            'endpoint' => 'mysql',
+        ];
+    }
 }
