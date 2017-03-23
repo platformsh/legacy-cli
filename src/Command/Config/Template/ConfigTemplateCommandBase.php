@@ -24,9 +24,6 @@ abstract class ConfigTemplateCommandBase extends CommandBase
     /** @var string|null */
     private $repoRoot;
 
-    /** @var false|null|\Platformsh\Cli\Local\LocalApplication */
-    private static $currentApplication;
-
     /** @var \Twig_Environment */
     private $engine;
 
@@ -52,12 +49,10 @@ abstract class ConfigTemplateCommandBase extends CommandBase
      */
     private function addGlobalFields(array $fields)
     {
-        $currentApp = $this->getCurrentApplication();
-
         $global = [];
         $global['application_name'] = new Field('Application name', [
             'optionName' => 'name',
-            'default' => $currentApp && $currentApp->getName() ? $currentApp->getName() : 'app',
+            'default' => 'app',
             'validator' => function ($value) {
                 return preg_match('/^[a-z0-9-]+$/', $value)
                     ? true
@@ -66,7 +61,7 @@ abstract class ConfigTemplateCommandBase extends CommandBase
         ]);
         $global['application_disk'] = new Field('Application disk size (MB)', [
             'optionName' => 'disk',
-            'default' => 2048,
+            'default' => !empty($currentConfig['disk']) ? $currentConfig['disk'] : 2048,
             'validator' => function ($value) {
                 return is_numeric($value) && $value >= 512 && $value < 512000;
             },
@@ -81,22 +76,6 @@ abstract class ConfigTemplateCommandBase extends CommandBase
         $this->setDescription('Configure a project with the ' . $this->getLabel() . ' template');
         $this->form = Form::fromArray($this->addGlobalFields($this->getFields()));
         $this->form->configureInputDefinition($this->getDefinition());
-    }
-
-    /**
-     * @return false|\Platformsh\Cli\Local\LocalApplication
-     */
-    protected function getCurrentApplication()
-    {
-        if (!isset(self::$currentApplication)) {
-            self::$currentApplication = false;
-            if ($repoRoot = $this->getRepositoryRoot()) {
-                $apps = LocalApplication::getApplications($repoRoot);
-                self::$currentApplication = count($apps) === 1 ? reset($apps) : false;
-            }
-        }
-
-        return self::$currentApplication;
     }
 
     /**
