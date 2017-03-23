@@ -147,7 +147,7 @@ class DbSizeCommand extends CommandBase
         $dbUrl = $relationships->getSqlCommandArgs('psql', $database);
 
         return sprintf(
-            "psql --echo-hidden -t --no-align %s -c '%s' 2>&1",
+            "psql --echo-hidden -t --no-align %s -c '%s'",
             $dbUrl,
             $query
         );
@@ -175,7 +175,7 @@ class DbSizeCommand extends CommandBase
         $connectionParams = $relationships->getSqlCommandArgs('mysql', $database);
 
         return sprintf(
-            "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s' 2>&1",
+            "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
             $connectionParams,
             $query
         );
