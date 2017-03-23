@@ -47,6 +47,6 @@ class DrupalCommand extends ConfigTemplateCommandBase
             'services' => 'https://github.com/pjcdawkins/config-templates/raw/drupal/.platform/services.yaml',
         ];
 
-        return $this->download($templates[$type]);
+        return $templates[$type];
     }
 }

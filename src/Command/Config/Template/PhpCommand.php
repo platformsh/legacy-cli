@@ -36,7 +36,7 @@ class PhpCommand extends ConfigTemplateCommandBase
 
         $fields['build_flavor'] = new OptionsField('Build flavor', [
             'optionName' => 'flavor',
-            'options' => ['composer', 'drupal', 'none'],
+            'options' => ['composer', 'none'],
             'default' => 'composer',
         ]);
 

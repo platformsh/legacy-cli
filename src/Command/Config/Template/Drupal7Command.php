@@ -53,11 +53,11 @@ class Drupal7Command extends ConfigTemplateCommandBase
     protected function getTemplate($type)
     {
         $templates = [
-            'app' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform.app.yaml',
-            'routes' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform/routes.yaml',
-            'services' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform/services.yaml',
+            'app' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform.app.yaml.twig',
+            'routes' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform/routes.yaml.twig',
+            'services' => 'https://github.com/pjcdawkins/config-templates/raw/drupal7/.platform/services.yaml.twig',
         ];
 
-        return $this->download($templates[$type]);
+        return $templates[$type];
     }
 }

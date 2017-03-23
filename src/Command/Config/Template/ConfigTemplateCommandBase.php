@@ -26,6 +26,13 @@ abstract class ConfigTemplateCommandBase extends CommandBase
     /** @var false|null|\Platformsh\Cli\Local\LocalApplication */
     private static $currentApplication;
 
+    /** @var \Twig_Environment */
+    private $engine;
+
+    protected $services = [];
+
+    protected $relationships = [];
+
     /**
      * @return string
      */
@@ -53,7 +60,7 @@ abstract class ConfigTemplateCommandBase extends CommandBase
         $global = [];
         $global['application_name'] = new Field('Application name', [
             'optionName' => 'name',
-            'default' => $currentApp ? $currentApp->getName() : 'app',
+            'default' => $currentApp && $currentApp->getName() ? $currentApp->getName() : 'app',
             'validator' => function ($value) {
                 return preg_match('/^[a-z0-9-]+$/', $value)
                     ? true
@@ -123,6 +130,9 @@ abstract class ConfigTemplateCommandBase extends CommandBase
 
         unset($options['directory'], $options['subdir']);
 
+        $options['services'] = $this->services;
+        $options['relationships'] = $this->relationships;
+
         $fs = new Filesystem();
         foreach ($this->getTemplateTypes() as $templateType => $destination) {
             $this->stdErr->writeln('Creating file: ' . $destination);
@@ -152,20 +162,25 @@ abstract class ConfigTemplateCommandBase extends CommandBase
 
     /**
      * @param string $template
-     * @param array  $options
-     *
-     * @todo switch this to use Twig or similar
+     * @param array  $parameters
      *
      * @return string
      */
-    protected function renderTemplate($template, array $options)
+    protected function renderTemplate($template, array $parameters)
     {
-        $replace = [];
-        foreach ($options as $key => $value) {
-            $replace['{' . $key . '}'] = $value;
+        if (!$this->engine) {
+            /** @var \Doctrine\Common\Cache\CacheProvider $cache */
+            $cache = $this->getService('cache');
+            $options = [
+                'debug' => true,
+                'cache' => false,
+                'strict_variables' => true,
+                'autoescape' => false,
+            ];
+            $this->engine = new \Twig_Environment(new Loader($cache), $options);
         }
 
-        return strtr($template, $replace);
+        return $this->engine->render($template, $parameters);
     }
 
     /**
@@ -174,36 +189,20 @@ abstract class ConfigTemplateCommandBase extends CommandBase
      * @param string $type The template type (e.g. 'app', 'routes', or
      *                     'services').
      *
-     * @return string The template contents.
+     * @return string The template URL or filename.
      */
     protected function getTemplate($type)
     {
         $key = $this->getKey();
         $candidates = [
-            CLI_ROOT . "/resources/templates/$key.$type.template.yaml",
-            CLI_ROOT . "/resources/templates/$type.template.yaml",
+            CLI_ROOT . "/resources/templates/$key.$type.yaml.twig",
+            CLI_ROOT . "/resources/templates/$type.yaml.twig",
         ];
         foreach ($candidates as $candidate) {
             if (file_exists($candidate)) {
-                return (string) file_get_contents($candidate);
+                return $candidate;
             }
         }
         throw new \RuntimeException("No template found for type $type");
-    }
-
-    /**
-     * @param string $url
-     *
-     * @return string
-     */
-    protected function download($url)
-    {
-        $context = stream_context_create(['http' => ['timeout' => 5]]);
-        $content = file_get_contents($url, FILE_BINARY, $context);
-        if ($content === false) {
-            throw new \RuntimeException("Failed to download file: $url");
-        }
-
-        return $content;
     }
 }

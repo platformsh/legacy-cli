@@ -1,0 +1,24 @@
+name: '{{ application_name }}'
+type: 'php:{{ php_version }}'
+
+build:
+    flavor: {{ build_flavor }}
+
+web:
+  locations:
+    '/':
+      passthru: '{{ front_controller }}'
+      root: '{{ webroot }}'
+
+disk: 2048
+
+mounts:
+  "/{{ webroot }}/uploads": "shared:files/public-uploads"
+  "/private": "shared:files/private"
+
+{% if relationships %}
+relationships:
+  {% for relationship in relationships %}
+    '{{ relationship.name }}': '{{ relationship.service_name }}:{{ relationship.endpoint }}'
+  {% endfor %}
+{% endif %}

@@ -5,7 +5,7 @@
 
 'https://{default}/':
     type: upstream
-    upstream: '{application_name}:http'
+    upstream: '{{ application_name }}:http'
 
 'https://www.{default}/':
     type: redirect

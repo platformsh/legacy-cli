@@ -7,13 +7,16 @@
 #
 # See https://docs.platform.sh/user_guide/reference/services-yaml.html for more information.
 
-#mysqldb:
-#    type: mysql:5.5
-#    disk: 2048
+# Example MySQL service
+#
+# mysqldb:
+#     type: mysql:5.5
+#     disk: 2048
 
-#rediscache:
-#    type: redis:3.0
-
-#solrsearch:
-#    type: solr:3.6
-#    disk: 1024
+{% for service in services %}
+'{{ service.name }}':
+    type: '{{ service.type }}'
+  {% if service.disk %}
+    disk: {{ service.disk }}
+  {% endif %}
+{% endfor %}

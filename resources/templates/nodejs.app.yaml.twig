@@ -4,8 +4,8 @@
 # but wil likely need additional customization for your application.
 # See URL for more information.
 
-name: {application_name}
-type: nodejs:{nodejs_version}
+name: {{ application_name }}
+type: nodejs:{{ nodejs_version }}
 
 # Dependencies list tools that are not part of your application but that are needed
 # to build or run it.
@@ -38,7 +38,7 @@ web:
 # The size in megabytes of persistent disk space to reserve as part of this application.
 disk: 512
 
-# Each mount is a pairint of the local path on the application container to
+# Each mount is a pairing of the local path on the application container to
 # the persistent mount where it lives. At this time, only 'shared:files' is
 # a supported mount.
 mounts:
