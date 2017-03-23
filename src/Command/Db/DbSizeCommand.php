@@ -94,13 +94,13 @@ class DbSizeCommand extends CommandBase
         switch ($database['scheme']) {
             case 'pgsql':
                 $command[] = $this->psqlQuery($database);
-                $result = $shell->execute($command);
+                $result = $shell->execute($command, null, true);
                 $resultArr = explode(PHP_EOL, $result);
                 $estimatedUsage = array_sum($resultArr) / 1048576;
                 break;
             default:
                 $command[] = $this->mysqlQuery($database);
-                $estimatedUsage = $shell->execute($command);
+                $estimatedUsage = $shell->execute($command, null, true);
                 break;
         }
 
