@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Project;
 
 use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -11,6 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
 class ProjectGetCommand extends CommandBase
 {
@@ -46,9 +47,8 @@ class ProjectGetCommand extends CommandBase
         $git = $this->getService('git');
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
-        $projectRootRelative = $fs->makePathRelative($projectRoot, getcwd());
+
+        $projectRootRelative = (new Filesystem())->makePathRelative($projectRoot, getcwd());
 
         $git->ensureInstalled();
         $git->setSshCommand($ssh->getSshCommand());

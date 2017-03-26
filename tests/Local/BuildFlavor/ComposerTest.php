@@ -1,8 +1,8 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Toolstack;
+namespace Platformsh\Cli\Tests\BuildFlavor;
 
-class ComposerTest extends BaseToolstackTest
+class ComposerTest extends BaseBuildFlavorTest
 {
 
     public function testBuildComposer()
@@ -41,7 +41,7 @@ class ComposerTest extends BaseToolstackTest
     }
 
     /**
-     * Test the case where a user has specified "php:symfony" as the toolstack,
+     * Test the case where a user has specified "symfony" as the build flavor,
      * for an application which does not contain a composer.json file. The build
      * may not do much, but at least it should not throw an exception.
      */
