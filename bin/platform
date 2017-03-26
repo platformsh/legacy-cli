@@ -1,10 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-// Ensure that errors are only reported once.
-ini_set('display_errors', 1);
-ini_set('log_errors', 0);
-
 if (version_compare(PHP_VERSION, '5.5.9', '<')) {
     printf("This tool requires at least PHP 5.5.9. You currently have %s installed. Please upgrade your PHP version.\n", PHP_VERSION);
     exit(1);

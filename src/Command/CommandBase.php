@@ -117,8 +117,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         // Tune error reporting based on the output verbosity.
+        ini_set('log_errors', 0);
+        ini_set('display_errors', 0);
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             error_reporting(E_ALL);
+            ini_set('display_errors', 1);
         } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
             error_reporting(false);
         } else {
