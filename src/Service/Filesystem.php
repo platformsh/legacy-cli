@@ -116,21 +116,23 @@ class Filesystem
     }
 
     /**
-     * @return string The absolute path to the user's home directory.
+     * @return string The absolute path to the user's home directory
      */
     public static function getHomeDirectory()
     {
-        $home = getenv('HOME');
-        if (empty($home)) {
-            // Windows compatibility.
-            if ($userProfile = getenv('USERPROFILE')) {
-                $home = $userProfile;
-            } elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
-                $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+        foreach (['HOME', 'USERPROFILE'] as $envVar) {
+            if ($value = getenv($envVar)) {
+                if (!is_dir($value)) {
+                    throw new \RuntimeException(
+                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
+                    );
+                }
+
+                return $value;
             }
         }
 
-        return $home;
+        throw new \RuntimeException('Could not determine home directory');
     }
 
     /**
