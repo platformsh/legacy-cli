@@ -121,34 +121,27 @@ class EnvironmentBranchCommand extends CommandBase
         $ssh = $this->getService('ssh');
         $git->setSshCommand($ssh->getSshCommand());
 
-        $localSuccess = false;
         if ($projectRoot) {
-            $git->setDefaultRepositoryDir($projectRoot);
-
             // If the Git branch already exists locally, just check it out.
-            $existsLocally = $git->branchExists($branchName);
+            $existsLocally = $git->branchExists($branchName, $projectRoot);
             if ($existsLocally) {
                 $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
-                if (!$git->checkOut($branchName)) {
+                if (!$git->checkOut($branchName, $projectRoot)) {
                     $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
                     }
-                } else {
-                    $localSuccess = true;
                 }
             } else {
                 // Create a new branch, using the parent if it exists locally.
-                $parent = $git->branchExists($parentEnvironment->id) ? $parentEnvironment->id : null;
+                $parent = $git->branchExists($parentEnvironment->id, $projectRoot) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
 
-                if (!$git->checkOutNew($branchName, $parent)) {
+                if (!$git->checkOutNew($branchName, $parent, null, $projectRoot)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
                     }
-                } else {
-                    $localSuccess = true;
                 }
             }
         }
@@ -163,15 +156,12 @@ class EnvironmentBranchCommand extends CommandBase
                 '<error>Branching failed</error>'
             );
 
-            if ($remoteSuccess && $projectRoot && $localSuccess) {
+            // Set the local branch to track the remote branch. This requires
+            // first fetching the new branch from the remote.
+            if ($remoteSuccess && $projectRoot && $git->getCurrentBranch($projectRoot) === $branchName) {
                 $upstreamRemote = $this->config()->get('detection.git_remote_name');
-
-                // Fetch the branch from the upstream remote.
-                $git->fetch($upstreamRemote, $branchName);
-
-                $upstream = $upstreamRemote . '/' . $branchName;
-
-                $git->setUpstream($upstream);
+                $git->fetch($upstreamRemote, $branchName, $projectRoot);
+                $git->setUpstream($upstreamRemote . '/' . $branchName, $projectRoot);
             }
         }
 
