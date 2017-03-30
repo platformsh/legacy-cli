@@ -158,10 +158,10 @@ class EnvironmentBranchCommand extends CommandBase
 
             // Set the local branch to track the remote branch. This requires
             // first fetching the new branch from the remote.
-            if ($remoteSuccess && $projectRoot && $git->getCurrentBranch($projectRoot) === $branchName) {
+            if ($remoteSuccess && $projectRoot) {
                 $upstreamRemote = $this->config()->get('detection.git_remote_name');
                 $git->fetch($upstreamRemote, $branchName, $projectRoot);
-                $git->setUpstream($upstreamRemote . '/' . $branchName, $projectRoot);
+                $git->setUpstream($upstreamRemote . '/' . $branchName, $branchName, $projectRoot);
             }
         }
 
