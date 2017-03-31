@@ -51,15 +51,16 @@ class SnapshotListCommand extends CommandBase
             return 1;
         }
 
-        $headers = ['Created', '% Complete', 'Snapshot name'];
+        $headers = ['Created', 'Snapshot name', '% Complete', 'Result'];
         $rows = [];
         foreach ($results as $result) {
             $payload = $result->payload;
             $snapshot_name = !empty($payload['backup_name']) ? $payload['backup_name'] : 'N/A';
             $rows[] = [
                 date('Y-m-d H:i:s', strtotime($result->created_at)),
-                $result->getCompletionPercent(),
                 new AdaptiveTableCell($snapshot_name, ['wrap' => false]),
+                $result->getCompletionPercent(),
+                str_replace('Failure', '<error>Failure</error>', ucfirst($result->result)),
             ];
         }
 
