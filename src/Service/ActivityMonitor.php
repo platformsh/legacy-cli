@@ -12,6 +12,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ActivityMonitor
 {
 
+    protected static $resultNames = [
+        Activity::RESULT_FAILURE => 'failure',
+        Activity::RESULT_SUCCESS => 'success',
+    ];
+
     protected static $stateNames = [
         Activity::STATE_PENDING => 'pending',
         Activity::STATE_COMPLETE => 'complete',
@@ -232,6 +237,20 @@ class ActivityMonitor
     public static function formatState($state)
     {
         return isset(self::$stateNames[$state]) ? self::$stateNames[$state] : $state;
+    }
+
+    /**
+     * Format a result.
+     *
+     * @param string $result
+     *
+     * @return string
+     */
+    public static function formatResult($result)
+    {
+        $name = isset(self::$stateNames[$result]) ? self::$stateNames[$result] : $result;
+
+        return $result === Activity::RESULT_FAILURE ? '<error>' . $name . '</error>' : $name;
     }
 
     /**
