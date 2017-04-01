@@ -95,6 +95,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthInfoCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
+        $commands[] = new Command\Certificate\CertificateGetCommand();
+        $commands[] = new Command\Certificate\CertificateListCommand();
         $commands[] = new Command\Db\DbSqlCommand();
         $commands[] = new Command\Db\DbDumpCommand();
         $commands[] = new Command\Db\DbSizeCommand();
