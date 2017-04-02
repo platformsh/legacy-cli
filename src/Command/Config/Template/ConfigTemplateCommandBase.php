@@ -9,7 +9,6 @@ namespace Platformsh\Cli\Command\Config\Template;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Form;
