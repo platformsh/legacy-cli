@@ -1,10 +1,10 @@
 <?php
 
-namespace Platformsh\Cli\Command\Config\Template;
+namespace Platformsh\Cli\Command\Config;
 
 use Platformsh\ConsoleForm\Field\OptionsField;
 
-class NodejsCommand extends ConfigTemplateCommandBase
+class NodejsCommand extends ConfigGenerateCommandBase
 {
     /**
      * {@inheritdoc}

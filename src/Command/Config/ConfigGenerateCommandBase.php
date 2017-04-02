@@ -5,7 +5,7 @@
  * Base class for a command that configures a project using a set of templates.
  */
 
-namespace Platformsh\Cli\Command\Config\Template;
+namespace Platformsh\Cli\Command\Config;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -18,8 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 
-abstract class ConfigTemplateCommandBase extends CommandBase
+abstract class ConfigGenerateCommandBase extends CommandBase
 {
+    /** {@inheritdoc} */
+    protected $hiddenInList = true;
 
     /** @var string|null */
     protected $appRoot;
@@ -218,7 +220,7 @@ abstract class ConfigTemplateCommandBase extends CommandBase
                 'strict_variables' => true,
                 'autoescape' => false,
             ];
-            $this->engine = new \Twig_Environment(new Loader(CLI_ROOT . '/resources/templates', $cache), $options);
+            $this->engine = new \Twig_Environment(new TemplateLoader(CLI_ROOT . '/resources/templates', $cache), $options);
             $dumper = new Dumper();
             $this->engine->addFilter('yaml', new \Twig_SimpleFilter('yaml', function ($input) use ($dumper) {
                 return $dumper->dump($input, 5);

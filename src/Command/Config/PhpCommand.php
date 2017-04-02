@@ -1,11 +1,11 @@
 <?php
 
-namespace Platformsh\Cli\Command\Config\Template;
+namespace Platformsh\Cli\Command\Config;
 
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 
-class PhpCommand extends ConfigTemplateCommandBase
+class PhpCommand extends ConfigGenerateCommandBase
 {
     /**
      * {@inheritdoc}

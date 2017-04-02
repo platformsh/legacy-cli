@@ -1,11 +1,11 @@
 <?php
 
-namespace Platformsh\Cli\Command\Config\Template;
+namespace Platformsh\Cli\Command\Config;
 
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 
-class Drupal8Command extends ConfigTemplateCommandBase
+class Drupal8Command extends ConfigGenerateCommandBase
 {
     /**
      * {@inheritdoc}

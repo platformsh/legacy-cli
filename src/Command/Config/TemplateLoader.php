@@ -1,12 +1,11 @@
 <?php
 
-namespace Platformsh\Cli\Command\Config\Template;
+namespace Platformsh\Cli\Command\Config;
 
 use Doctrine\Common\Cache\CacheProvider;
 use Twig_Error_Loader;
-use Twig_Source;
 
-class Loader implements \Twig_LoaderInterface
+class TemplateLoader implements \Twig_LoaderInterface
 {
     protected $filePath;
     protected $cache;

@@ -1,8 +1,8 @@
 <?php
 
-namespace Platformsh\Cli\Command\Config\Template;
+namespace Platformsh\Cli\Command\Config;
 
-class Drupal7Command extends ConfigTemplateCommandBase
+class Drupal7Command extends ConfigGenerateCommandBase
 {
     /**
      * {@inheritdoc}
