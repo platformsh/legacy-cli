@@ -33,6 +33,11 @@ class Drupal8Command extends ConfigTemplateCommandBase
         $fields['php_version'] = $commonFields['php_version'];
         $fields['webroot'] = $commonFields['webroot'];
 
+        $fields['install_profile'] = new Field('Install profile', [
+            'optionName' => 'install-profile',
+            'default' => 'standard',
+        ]);
+
         $fields['db_disk'] = new Field('Database disk size (MB)', [
             'optionName' => 'db-disk',
             'default' => 2048,
