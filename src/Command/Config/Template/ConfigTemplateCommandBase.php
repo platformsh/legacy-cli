@@ -13,6 +13,7 @@ use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
@@ -98,6 +99,7 @@ abstract class ConfigTemplateCommandBase extends CommandBase
     {
         $this->setName('config:generate:' . $this->getKey());
         $this->setDescription('Configure a project with the ' . $this->getLabel() . ' template');
+        $this->addOption('no-overwrite', null, InputOption::VALUE_NONE, 'Do not overwrite any files');
         $this->form = Form::fromArray($this->addGlobalFields($this->getFields()));
         $this->form->configureInputDefinition($this->getDefinition());
     }
@@ -139,14 +141,21 @@ abstract class ConfigTemplateCommandBase extends CommandBase
         $this->parameters = $parameters;
         $this->appRoot = $appRoot;
 
+        $noOverwrite = $input->getOption('no-overwrite');
         foreach ($this->getTemplateTypes() as $templateType => $destination) {
-            $this->stdErr->writeln('Creating file: ' . $destination);
-            $destinationAbsolute = $appRoot . '/' . $destination;
-            if (file_exists($destinationAbsolute) && !$questionHelper->confirm('The destination file already exists. Overwrite?')) {
-                continue;
-            }
             $template = $this->getTemplate($templateType);
             $content = $this->renderTemplate($template, $parameters);
+            $destinationAbsolute = $appRoot . '/' . $destination;
+            if (file_exists($destinationAbsolute)) {
+                $this->stdErr->write(sprintf('The file <comment>%s</comment> already exists.', $destination));
+                if ($noOverwrite) {
+                    $this->stdErr->writeln('');
+                    continue;
+                } elseif (!$questionHelper->confirm(' Overwrite?')) {
+                    continue;
+                }
+            }
+            $this->stdErr->writeln(sprintf('Writing file <info>%s</info>', $destination));
             $this->dumpFile($destinationAbsolute, $content);
         }
 
