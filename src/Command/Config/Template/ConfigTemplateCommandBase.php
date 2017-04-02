@@ -74,6 +74,7 @@ abstract class ConfigTemplateCommandBase extends CommandBase
             'validator' => function ($value) {
                 return is_numeric($value) && $value >= 512 && $value < 512000;
             },
+            'normalizer' => 'intval',
         ]);
 
         $post = [];

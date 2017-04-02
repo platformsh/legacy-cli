@@ -42,8 +42,9 @@ class Drupal8Command extends ConfigTemplateCommandBase
             'optionName' => 'db-disk',
             'default' => 2048,
             'validator' => function ($value) {
-                return is_numeric($value) && $value > 1024;
+                return is_numeric($value) && $value >= 512 && $value < 512000;
             },
+            'normalizer' => 'intval',
         ]);
 
         $fields['with_redis_cache'] = new BooleanField('Add a Redis cache service', [
