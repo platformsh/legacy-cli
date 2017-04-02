@@ -24,7 +24,7 @@ class PhpCommand extends ConfigGenerateCommandBase
     }
 
     /**
-     * @return string<Field>
+     * @return Field[]
      */
     public static function getCommonFields()
     {

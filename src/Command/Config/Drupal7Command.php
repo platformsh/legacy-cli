@@ -28,7 +28,8 @@ class Drupal7Command extends ConfigGenerateCommandBase
         $commonFields = PhpCommand::getCommonFields();
 
         $fields['php_version'] = $commonFields['php_version'];
-        $fields['webroot'] = $commonFields['webroot'];
+        $fields['webroot'] = $commonFields['webroot']
+            ->set('default', 'public');
 
         return $fields;
     }
