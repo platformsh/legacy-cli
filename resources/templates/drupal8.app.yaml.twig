@@ -1,6 +1,3 @@
-{%
-set webroot = 'web'
-%}
 # This file describes an application. You can have multiple applications
 # in the same project.
 #
@@ -95,5 +92,11 @@ crons:
     drupal:
         spec: '*/20 * * * *'
         cmd: 'cd {{ webroot }} ; drush core-cron'
+
+{% if with_redis_cache %}
+runtime:
+    extensions:
+        - redis
+{% endif %}
 
 {% include 'includes/relationships.yaml.twig' %}

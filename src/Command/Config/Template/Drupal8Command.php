@@ -28,7 +28,10 @@ class Drupal8Command extends ConfigTemplateCommandBase
      */
     protected function getFields()
     {
-        $fields['php_version'] = PhpCommand::getCommonFields()['php_version'];
+        $commonFields = PhpCommand::getCommonFields();
+
+        $fields['php_version'] = $commonFields['php_version'];
+        $fields['webroot'] = $commonFields['webroot'];
 
         $fields['db_disk'] = new Field('Database disk size (MB)', [
             'optionName' => 'db-disk',
@@ -68,7 +71,19 @@ class Drupal8Command extends ConfigTemplateCommandBase
                 'service' => 'rediscache',
                 'endpoint' => 'redis',
             ];
-            unset($parameters['with_redis_cache']);
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getTemplateTypes()
+    {
+        $types = parent::getTemplateTypes();
+        $webRoot = isset($this->parameters['webroot']) ? $this->parameters['webroot'] : 'web';
+        $types['settings.php'] = $webRoot . '/sites/default/settings.php';
+        $types['settings.platformsh.php'] = $webRoot . '/sites/default/settings.platformsh.php';
+
+        return $types;
     }
 }

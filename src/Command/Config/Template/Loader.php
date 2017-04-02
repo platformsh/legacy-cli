@@ -70,7 +70,7 @@ class Loader implements \Twig_LoaderInterface
     public function getSource($name)
     {
         if ($this->isUrl($name)) {
-            return new Twig_Source($this->download($name), $name);
+            return $this->download($name);
         }
         $fileName = $this->filePath . '/' . $name;
         $content = file_get_contents($fileName);

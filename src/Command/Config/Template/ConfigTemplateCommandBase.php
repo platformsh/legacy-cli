@@ -10,6 +10,7 @@ namespace Platformsh\Cli\Command\Config\Template;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,11 +20,18 @@ use Symfony\Component\Yaml\Dumper;
 
 abstract class ConfigTemplateCommandBase extends CommandBase
 {
-    /** @var Form */
-    private $form;
+
+    /** @var string|null */
+    protected $appRoot;
+
+    /** @var array */
+    protected $parameters = [];
 
     /** @var string|null */
     private $repoRoot;
+
+    /** @var Form */
+    private $form;
 
     /** @var \Twig_Environment */
     private $engine;
@@ -50,8 +58,8 @@ abstract class ConfigTemplateCommandBase extends CommandBase
      */
     private function addGlobalFields(array $fields)
     {
-        $global = [];
-        $global['application_name'] = new Field('Application name', [
+        $pre = [];
+        $pre['application_name'] = new Field('Application name', [
             'optionName' => 'name',
             'default' => 'app',
             'validator' => function ($value) {
@@ -60,7 +68,7 @@ abstract class ConfigTemplateCommandBase extends CommandBase
                     : 'The application name can only consist of lower-case letters and numbers.';
             },
         ]);
-        $global['application_disk'] = new Field('Application disk size (MB)', [
+        $pre['application_disk'] = new Field('Application disk size (MB)', [
             'optionName' => 'disk',
             'default' => !empty($currentConfig['disk']) ? $currentConfig['disk'] : 2048,
             'validator' => function ($value) {
@@ -68,7 +76,23 @@ abstract class ConfigTemplateCommandBase extends CommandBase
             },
         ]);
 
-        return array_merge($global, $fields);
+        $post = [];
+        $post['application_subdir'] = new BooleanField('Create the application in a subdirectory', [
+            'optionName' => 'subdir',
+            'default' => false,
+        ]);
+        $post['application_root'] = new Field('Directory name', [
+            'conditions' => ['application_subdir' => true],
+            'optionName' => 'subdir-name',
+            'defaultCallback' => function (array $previousValues) {
+                return $previousValues['application_name'];
+            },
+            'normalizer' => function ($value) {
+                return trim($value, '/');
+            },
+        ]);
+
+        return array_merge($pre, $fields, $post);
     }
 
     protected function configure()
@@ -106,28 +130,46 @@ abstract class ConfigTemplateCommandBase extends CommandBase
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $options = $this->form->resolveOptions($input, $output, $questionHelper);
-        $directory = isset($options['directory'])
-            ? $repoRoot . '/' . $options['directory']
+        $parameters = $this->form->resolveOptions($input, $output, $questionHelper);
+        $appRoot = isset($parameters['application_root'])
+            ? $repoRoot . '/' . $parameters['application_root']
             : $repoRoot;
-        unset($options['directory'], $options['subdir']);
-        $parameters = $options + ['services' => [], 'relationships' => []];
-
+        unset($parameters['application_root'], $parameters['application_subdir']);
+        $parameters += ['services' => [], 'relationships' => []];
         $this->alterParameters($parameters);
+        $this->parameters = $parameters;
+        $this->appRoot = $appRoot;
 
-        $fs = new Filesystem();
         foreach ($this->getTemplateTypes() as $templateType => $destination) {
             $this->stdErr->writeln('Creating file: ' . $destination);
-            $destinationAbsolute = $directory . '/' . $destination;
+            $destinationAbsolute = $appRoot . '/' . $destination;
             if (file_exists($destinationAbsolute) && !$questionHelper->confirm('The destination file already exists. Overwrite?')) {
                 continue;
             }
             $template = $this->getTemplate($templateType);
             $content = $this->renderTemplate($template, $parameters);
-            $fs->dumpFile($destinationAbsolute, $content);
+            $this->dumpFile($destinationAbsolute, $content);
         }
 
         return 0;
+    }
+
+    /**
+     * Wraps Symfony Filesystem's dumpFile() to try making a directory writable.
+     *
+     * @param string $filename
+     * @param string $content
+     */
+    protected function dumpFile($filename, $content)
+    {
+        $fs = new Filesystem();
+
+        $dir = dirname($filename);
+        if (is_dir($dir) && !is_writable($dir)) {
+            $fs->chmod($dir, 0700);
+        }
+
+        $fs->dumpFile($filename, $content);
     }
 
     /**
@@ -144,9 +186,9 @@ abstract class ConfigTemplateCommandBase extends CommandBase
     protected function getTemplateTypes()
     {
         return [
-            'app' => $this->config()->get('service.app_config_file'),
-            'routes' => $this->config()->get('service.project_config_dir') . '/routes.yaml',
-            'services' => $this->config()->get('service.project_config_dir') . '/services.yaml',
+            'app.yaml' => $this->config()->get('service.app_config_file'),
+            'routes.yaml' => $this->config()->get('service.project_config_dir') . '/routes.yaml',
+            'services.yaml' => $this->config()->get('service.project_config_dir') . '/services.yaml',
         ];
     }
 
@@ -190,8 +232,8 @@ abstract class ConfigTemplateCommandBase extends CommandBase
         $key = $this->getKey();
         $path = CLI_ROOT . '/resources/templates';
         $candidates = [
-            "$key.$type.yaml.twig",
-            "$type.yaml.twig",
+            "$key.$type.twig",
+            "$type.twig",
         ];
         foreach ($candidates as $candidate) {
             if (file_exists($path . '/' . $candidate)) {
