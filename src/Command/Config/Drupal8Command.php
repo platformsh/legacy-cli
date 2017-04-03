@@ -47,11 +47,6 @@ class Drupal8Command extends ConfigGenerateCommandBase
             'normalizer' => 'intval',
         ]);
 
-        $fields['with_redis_cache'] = new BooleanField('Add a Redis cache service', [
-            'optionName' => 'redis-cache',
-            'default' => false,
-        ]);
-
         return $fields;
     }
 
@@ -65,12 +60,6 @@ class Drupal8Command extends ConfigGenerateCommandBase
             'disk' => $parameters['db_disk'],
         ];
         $parameters['relationships']['database'] = 'mysqldb:mysql';
-        if ($parameters['with_redis_cache']) {
-            $parameters['services']['rediscache'] = [
-                'type' => 'redis:3.0',
-            ];
-            $parameters['relationships']['redis'] = 'rediscache:redis';
-        }
     }
 
     /**

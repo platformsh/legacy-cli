@@ -93,10 +93,4 @@ crons:
         spec: '*/20 * * * *'
         cmd: 'cd {{ webroot }} ; drush core-cron'
 
-{% if with_redis_cache %}
-runtime:
-    extensions:
-        - redis
-{% endif %}
-
 {% include 'includes/relationships.yaml.twig' %}
