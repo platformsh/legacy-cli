@@ -55,6 +55,7 @@ class ActivityListCommand extends CommandBase
             $environmentSpecific = false;
             $activities = $project->getActivities($limit, $input->getOption('type'), $startsAt);
         }
+        /** @var \Platformsh\Client\Model\Activity[] $activities */
         if (!$activities) {
             $this->stdErr->writeln('No activities found');
 
@@ -70,8 +71,9 @@ class ActivityListCommand extends CommandBase
                 new AdaptiveTableCell($activity->id, ['wrap' => false]),
                 date('Y-m-d H:i:s', strtotime($activity['created_at'])),
                 $activity->getDescription(),
-                $activity->getCompletionPercent(),
+                $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
+                ActivityMonitor::formatResult($activity->result),
             ];
             if (!$environmentSpecific) {
                 $row[] = implode(', ', $activity->environments);
@@ -79,7 +81,7 @@ class ActivityListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        $headers = ['ID', 'Created', 'Description', '% Complete', 'State'];
+        $headers = ['ID', 'Created', 'Description', 'Progress', 'State', 'Result'];
 
         if (!$environmentSpecific) {
             $headers[] = 'Environment(s)';

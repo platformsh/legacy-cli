@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -49,6 +50,9 @@ class SnapshotRestoreCommand extends CommandBase
             $environmentId = $environment->id;
             $this->stdErr->writeln("Finding the most recent snapshot for the environment <info>$environmentId</info>");
             $snapshotActivities = $environment->getActivities(1, 'environment.backup');
+            $snapshotActivities = array_filter($snapshotActivities, function (Activity $activity) {
+                return $activity->result === Activity::RESULT_SUCCESS;
+            });
             if (!$snapshotActivities) {
                 $this->stdErr->writeln("No snapshots found");
 

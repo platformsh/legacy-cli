@@ -338,7 +338,8 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
             $targetRelative = $sharedDirRelative . '/' . $sharedPath;
             $link = $this->buildDir . '/' . $appPath;
             if (file_exists($link) && !is_link($link)) {
-                $this->stdErr->writeln('  Overwriting existing file <comment>' . $appPath . '</comment>');
+                $this->stdErr->writeln('  Removing existing file <comment>' . $appPath . '</comment>');
+                $this->fsHelper->remove($link);
             }
             if (!file_exists($target)) {
                 $this->fsHelper->mkdir($target, 0775);
