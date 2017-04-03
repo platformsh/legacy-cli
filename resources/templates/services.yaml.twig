@@ -7,16 +7,12 @@
 #
 # See https://docs.platform.sh/user_guide/reference/services-yaml.html for more information.
 
+{% if services %}
+{{ services|yaml }}
+{% else %}
 # Example MySQL service
 #
 # mysqldb:
 #     type: mysql:5.5
 #     disk: 2048
-
-{% for service_name,service in services %}
-'{{ service_name }}':
-    type: '{{ service.type }}'
-{% if service.disk is defined %}
-    disk: {{ service.disk }}
 {% endif %}
-{% endfor %}

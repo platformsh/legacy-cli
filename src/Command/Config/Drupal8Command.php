@@ -64,19 +64,12 @@ class Drupal8Command extends ConfigGenerateCommandBase
             'type' => 'mysql:10.0',
             'disk' => $parameters['db_disk'],
         ];
-        unset($parameters['db_disk']);
-        $parameters['relationships']['database'] = [
-            'service' => 'mysqldb',
-            'endpoint' => 'mysql',
-        ];
+        $parameters['relationships']['database'] = 'mysqldb:mysql';
         if ($parameters['with_redis_cache']) {
             $parameters['services']['rediscache'] = [
                 'type' => 'redis:3.0',
             ];
-            $parameters['relationships']['redis'] = [
-                'service' => 'rediscache',
-                'endpoint' => 'redis',
-            ];
+            $parameters['relationships']['redis'] = 'rediscache:redis';
         }
     }
 

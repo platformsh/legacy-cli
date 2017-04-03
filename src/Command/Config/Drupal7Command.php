@@ -43,9 +43,6 @@ class Drupal7Command extends ConfigGenerateCommandBase
             'type' => 'mysql:10.0',
             'disk' => 2048,
         ];
-        $parameters['relationships']['database'] = [
-            'service' => 'mysqldb',
-            'endpoint' => 'mysql',
-        ];
+        $parameters['relationships']['database'] = 'mysqldb:mysql';
     }
 }
