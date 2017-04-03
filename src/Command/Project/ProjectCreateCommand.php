@@ -90,12 +90,17 @@ class ProjectCreateCommand extends CommandBase
 
         $bot = new Bot($this->stdErr);
         $timedOut = false;
-        $start = time();
+        $start = $lastCheck = time();
         while ($subscription->isPending() && !$timedOut) {
             $bot->render();
-            if (!isset($lastCheck) || time() - $lastCheck >= 2) {
+            // Attempt to check the subscription every 3 seconds. This also
+            // waits 3 seconds before the first check, which allows the server
+            // a little more leeway to act on the initial request.
+            if (time() - $lastCheck >= 3) {
                 try {
-                    $subscription->refresh(['timeout' => 10, 'exceptions' => false]);
+                    // Each request can only last up to 3 seconds (otherwise the
+                    // animation would be blocked).
+                    $subscription->refresh(['timeout' => 3, 'exceptions' => false]);
                     $lastCheck = time();
                 } catch (ConnectException $e) {
                     if (strpos($e->getMessage(), 'timed out') !== false) {
@@ -105,6 +110,7 @@ class ProjectCreateCommand extends CommandBase
                     }
                 }
             }
+            // Time out after 15 minutes.
             $timedOut = time() - $start > 900;
         }
         $this->stdErr->writeln('');
