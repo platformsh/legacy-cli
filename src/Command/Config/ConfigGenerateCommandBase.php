@@ -243,7 +243,7 @@ abstract class ConfigGenerateCommandBase extends CommandBase
         $key = $this->getKey();
         $path = CLI_ROOT . '/resources/templates';
         $candidates = [
-            "$key.$type.twig",
+            "$key/$type.twig",
             "$type.twig",
         ];
         foreach ($candidates as $candidate) {
