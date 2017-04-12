@@ -388,16 +388,12 @@ function findShellConfigFile($home)
 {
     $candidates = array(
         $home . '/.bash_profile',
-        $home . '/.profile',
         $home . '/.bashrc',
     );
     $shell = str_replace('/bin/', '', getenv('SHELL'));
     if ($shell === 'zsh') {
         array_unshift($candidates, $home . '/.zshrc');
         array_unshift($candidates, $home . '/.zprofile');
-    } elseif ($shell === 'tcsh') {
-        array_unshift($candidates, $home . '/.cshrc');
-        array_unshift($candidates, $home . '/.tcshrc');
     }
     foreach ($candidates as $candidate) {
         if (file_exists($candidate)) {
