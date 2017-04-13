@@ -33,6 +33,14 @@ service:
   project_config_dir: '.platform'
   docs_url: 'https://docs.platform.sh'
   accounts_url: 'https://accounts.platform.sh'
+  available_regions:
+    - eu.platform.sh
+    - us.platform.sh
+  available_plans:
+    - development
+    - standard
+    - medium
+    - large
 
 # Configuration relating to API calls.
 # This can be overridden in the user config file.
