@@ -1,21 +1,15 @@
 <?php
 
-namespace Platformsh\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class NodeJs extends ToolstackBase
+class NodeJs extends BuildFlavorBase
 {
-    public function getKey()
+    public function getStacks()
     {
-        return 'nodejs:default';
-    }
-
-    public function detect($appRoot)
-    {
-        // Refuse to detect automatically.
-        return false;
+        return ['nodejs'];
     }
 
     public function build()

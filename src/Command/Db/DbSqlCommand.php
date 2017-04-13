@@ -39,7 +39,7 @@ class DbSqlCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-        $database = $relationships->chooseDatabase($sshUrl, $input);
+        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             return 1;
         }

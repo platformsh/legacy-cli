@@ -1,27 +1,27 @@
 <?php
 
-namespace Platformsh\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Composer extends ToolstackBase
+class Composer extends BuildFlavorBase
 {
-    public function getKey()
+    public function getStacks()
     {
-        return 'php:composer';
+        return ['php', 'hhvm'];
     }
 
-    public function detect($appRoot)
+    public function getKeys()
     {
-        return file_exists("$appRoot/composer.json");
+        return ['composer', 'default'];
     }
 
     public function build()
     {
         $buildDir = $this->copyToBuildDir();
 
-        // The composer.json file may not exist at this stage, if the user has
-        // manually specified a Composer toolstack (e.g. php:symfony).
+        // The composer.json file may not exist at this stage, even if the user
+        // has manually specified the `composer` build flavor.
         if (file_exists($buildDir . '/composer.json')) {
             $this->stdErr->writeln("Found a composer.json file; installing dependencies");
 

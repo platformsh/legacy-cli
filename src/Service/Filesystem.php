@@ -116,21 +116,23 @@ class Filesystem
     }
 
     /**
-     * @return string The absolute path to the user's home directory.
+     * @return string The absolute path to the user's home directory
      */
     public static function getHomeDirectory()
     {
-        $home = getenv('HOME');
-        if (empty($home)) {
-            // Windows compatibility.
-            if ($userProfile = getenv('USERPROFILE')) {
-                $home = $userProfile;
-            } elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
-                $home = $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+        foreach (['HOME', 'USERPROFILE'] as $envVar) {
+            if ($value = getenv($envVar)) {
+                if (!is_dir($value)) {
+                    throw new \RuntimeException(
+                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
+                    );
+                }
+
+                return $value;
             }
         }
 
-        return $home;
+        throw new \RuntimeException('Could not determine home directory');
     }
 
     /**
@@ -212,27 +214,18 @@ class Filesystem
     /**
      * Create a symbolic link to a file or directory.
      *
-     * @param $target
-     * @param $link
-     *
-     * @return string
-     *   The final symlink target, which could be a relative path, depending on
-     *   $this->relative.
+     * @param string $target
+     * @param string $link
      */
     public function symlink($target, $link)
     {
-        if ($target === $link) {
-            throw new \InvalidArgumentException("Cannot symlink $link to itself");
-        }
-        if (file_exists($link)) {
-            $this->fs->remove($link);
+        if (!file_exists($target)) {
+            throw new \InvalidArgumentException('Target not found: ' . $target);
         }
         if ($this->relative) {
-            $target = $this->makePathRelative($target, $link);
+            $target = rtrim($this->fs->makePathRelative($target, dirname($link)), '/');
         }
         $this->fs->symlink($target, $link, $this->copyOnWindows);
-
-        return $target;
     }
 
     /**
@@ -311,36 +304,10 @@ class Filesystem
             if ($copy) {
                 $this->copyAll($sourceFile, $linkFile, $blacklist);
             } else {
-                if ($this->relative) {
-                    $sourceFile = $this->makePathRelative($sourceFile, $linkFile);
-                    chdir($destination);
-                }
-
-                $this->fs->symlink($sourceFile, $linkFile, $this->copyOnWindows);
+                $this->symlink($sourceFile, $linkFile);
             }
         }
         closedir($sourceDirectory);
-    }
-
-    /**
-     * Make a absolute path into a relative one.
-     *
-     * @param string $path1 Absolute path.
-     * @param string $path2 Target path.
-     *
-     * @return string The first path, made relative to the second path.
-     */
-    public function makePathRelative($path1, $path2)
-    {
-        if (!is_dir($path2)) {
-            $path2 = realpath(dirname($path2));
-            if (!$path2) {
-                return $path1;
-            }
-        }
-        $result = rtrim($this->fs->makePathRelative($path1, $path2), DIRECTORY_SEPARATOR);
-
-        return $result;
     }
 
     /**
@@ -450,6 +417,6 @@ class Filesystem
      */
     protected function isWindows()
     {
-        return strpos(PHP_OS, 'WIN') !== false;
+        return stripos(PHP_OS, 'WIN') === 0;
     }
 }

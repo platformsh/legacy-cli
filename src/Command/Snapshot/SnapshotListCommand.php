@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -45,21 +46,22 @@ class SnapshotListCommand extends CommandBase
             $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");
         }
 
-        $results = $environment->getActivities($input->getOption('limit'), 'environment.backup', $startsAt);
-        if (!$results) {
+        $activities = $environment->getActivities($input->getOption('limit'), 'environment.backup', $startsAt);
+        if (!$activities) {
             $this->stdErr->writeln('No snapshots found');
             return 1;
         }
 
-        $headers = ['Created', '% Complete', 'Snapshot name'];
+        $headers = ['Created', 'Snapshot name', 'Progress', 'State', 'Result'];
         $rows = [];
-        foreach ($results as $result) {
-            $payload = $result->payload;
-            $snapshot_name = !empty($payload['backup_name']) ? $payload['backup_name'] : 'N/A';
+        foreach ($activities as $activity) {
+            $snapshot_name = !empty($activity->payload['backup_name']) ? $activity->payload['backup_name'] : 'N/A';
             $rows[] = [
-                date('Y-m-d H:i:s', strtotime($result->created_at)),
-                $result->getCompletionPercent(),
+                date('Y-m-d H:i:s', strtotime($activity->created_at)),
                 new AdaptiveTableCell($snapshot_name, ['wrap' => false]),
+                $activity->getCompletionPercent() . '%',
+                ActivityMonitor::formatState($activity->state),
+                ActivityMonitor::formatResult($activity->result),
             ];
         }
 

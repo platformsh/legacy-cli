@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Command\Project;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
-use Platformsh\Client\Model\Subscription;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
@@ -53,13 +52,15 @@ class ProjectCreateCommand extends CommandBase
 
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
-        $estimate = $this->api()->getEstimate($options['plan'], $options['storage'], $options['environments']);
-        if (!$estimate) {
-            $costConfirm = "Failed to estimate project cost";
-        } else {
-            $costConfirm = "The estimated monthly cost of this project is: <comment>{$estimate['total']}</comment>";
-        }
-        $costConfirm .= "\n\nAre you sure you want to continue?";
+        $estimate = $this->api()
+            ->getClient()
+            ->getSubscriptionEstimate($options['plan'], $options['storage'], $options['environments'], 1);
+        $costConfirm = sprintf(
+            'The estimated monthly cost of this project is: <comment>%s</comment>'
+            . "\n\n"
+            . 'Are you sure you want to continue?',
+            $estimate['total']
+        );
         if (!$questionHelper->confirm($costConfirm)) {
             return 1;
         }
@@ -87,26 +88,39 @@ class ProjectCreateCommand extends CommandBase
         ));
 
         $bot = new Bot($this->stdErr);
-        $start = time();
-        while ($subscription->isPending() && time() - $start < 300) {
+        $timedOut = false;
+        $start = $lastCheck = time();
+        while ($subscription->isPending() && !$timedOut) {
             $bot->render();
-            if (!isset($lastCheck) || time() - $lastCheck >= 2) {
+            // Attempt to check the subscription every 3 seconds. This also
+            // waits 3 seconds before the first check, which allows the server
+            // a little more leeway to act on the initial request.
+            if (time() - $lastCheck >= 3) {
                 try {
-                    $subscription->refresh(['timeout' => 5, 'exceptions' => false]);
+                    // Each request can only last up to 3 seconds (otherwise the
+                    // animation would be blocked).
+                    $subscription->refresh(['timeout' => 3, 'exceptions' => false]);
                     $lastCheck = time();
                 } catch (ConnectException $e) {
                     if (strpos($e->getMessage(), 'timed out') !== false) {
-                        $this->stdErr->writeln('<warning>' . $e->getMessage() . '</warning>');
+                        $this->debug($e->getMessage());
                     } else {
                         throw $e;
                     }
                 }
             }
+            // Time out after 15 minutes.
+            $timedOut = time() - $start > 900;
         }
-        $this->stdErr->writeln("");
+        $this->stdErr->writeln('');
 
         if (!$subscription->isActive()) {
-            $this->stdErr->writeln("<error>The project failed to activate</error>");
+            if ($timedOut) {
+                $this->stdErr->writeln('<error>The project failed to activate on time</error>');
+                $this->stdErr->writeln('View your active projects at: ' . $this->config()->get('service.accounts_url'));
+            } else {
+                $this->stdErr->writeln('<error>The project failed to activate</error>');
+            }
             return 1;
         }
 
@@ -121,7 +135,8 @@ class ProjectCreateCommand extends CommandBase
     /**
      * Return a list of plans.
      *
-     * The default list (from the API client) can be overridden by user config.
+     * The default list is in the config `service.available_plans`. This can be
+     * overridden by the user config `experimental.available_plans`.
      *
      * @return string[]
      */
@@ -132,13 +147,14 @@ class ProjectCreateCommand extends CommandBase
             return $config->get('experimental.available_plans');
         }
 
-        return Subscription::$availablePlans;
+        return $config->get('service.available_plans');
     }
 
     /**
      * Return a list of regions.
      *
-     * The default list (from the API client) can be overridden by user config.
+     * The default list is in the config `service.available_regions`. This can
+     * be overridden by the user config `experimental.available_regions`.
      *
      * @return string[]
      */
@@ -149,7 +165,7 @@ class ProjectCreateCommand extends CommandBase
             return $config->get('experimental.available_regions');
         }
 
-        return Subscription::$availableRegions;
+        return $config->get('service.available_regions');
     }
 
     /**
@@ -174,7 +190,7 @@ class ProjectCreateCommand extends CommandBase
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
-            'default' => 'development',
+            'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
           ]),
           'environments' => new Field('Environments', [
             'optionName' => 'environments',

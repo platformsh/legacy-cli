@@ -15,6 +15,7 @@ local:
   local_dir: '.sensiocloud/local'
   archive_dir: '.sensiocloud/local/build-archives'
   build_dir: '.sensiocloud/local/builds'
+  dependencies_dir: '.sensiocloud/local/deps'
   project_config: '.sensiocloud/local/project.yaml'
   project_config_legacy: '.platform-project'
   shared_dir: '.sensiocloud/local/shared'
@@ -32,6 +33,13 @@ service:
   project_config_dir: '.sensiocloud'
   docs_url: 'https://docs.sensio.cloud'
   accounts_url: 'https://accounts.sensio.cloud'
+  available_regions:
+    - eu.sensio.cloud
+  available_plans:
+    - development
+    - standard
+    - medium
+    - large
 
 # Configuration relating to API calls.
 # This can be overridden in the user config file.

@@ -87,7 +87,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'hipchat',
                 ]],
                 'validator' => 'is_numeric',
-                'name' => 'HipChat room ID',
+                'optionName' => 'room',
             ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
@@ -102,15 +102,16 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'default' => ['*'],
                 'description' => 'Events to report, e.g. environment.push',
+                'optionName' => 'events',
             ]),
             'states' => new ArrayField('States to report', [
                 'conditions' => ['type' => [
                     'hipchat',
                     'webhook',
                 ]],
-                'name' => 'States to report',
                 'default' => ['complete'],
                 'description' => 'States to report, e.g. pending, in_progress, complete',
+                'optionName' => 'states',
             ]),
             'environments' => new ArrayField('Environments', [
                 'conditions' => ['type' => [

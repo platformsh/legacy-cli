@@ -7,7 +7,7 @@ use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\Toolstack\Drupal;
+use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
@@ -117,8 +117,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         // Tune error reporting based on the output verbosity.
+        ini_set('log_errors', 0);
+        ini_set('display_errors', 0);
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             error_reporting(E_ALL);
+            ini_set('display_errors', 1);
         } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
             error_reporting(false);
         } else {

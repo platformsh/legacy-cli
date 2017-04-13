@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Db;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
+use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -118,7 +119,7 @@ class DbDumpCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
 
-        $database = $relationships->chooseDatabase($sshUrl, $input);
+        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             return 1;
         }
@@ -174,17 +175,25 @@ class DbDumpCommand extends CommandBase
         }
 
         // Execute the SSH command.
+        $start = microtime(true);
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
         $exitCode = $shell->executeSimple($command);
+
+        if ($exitCode === 0) {
+            $this->stdErr->writeln('The dump completed successfully', OutputInterface::VERBOSITY_VERBOSE);
+            $this->stdErr->writeln(sprintf('  Time: %ss', number_format(microtime(true) - $start, 2)), OutputInterface::VERBOSITY_VERBOSE);
+            if ($dumpFile && ($size = filesize($dumpFile)) !== false) {
+                $this->stdErr->writeln(sprintf('  Size: %s', Helper::formatMemory($size)), OutputInterface::VERBOSITY_VERBOSE);
+            }
+        }
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
         if ($dumpFile && file_exists($dumpFile) && isset($projectRoot) && strpos($dumpFile, $projectRoot) === 0) {
             /** @var \Platformsh\Cli\Service\Git $git */
             $git = $this->getService('git');
-            $relative = $fs->makePathRelative($dumpFile, $projectRoot);
-            if (!$git->checkIgnore($relative, $projectRoot)) {
+            if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
                 if ($pos = strrpos($dumpFile, '--dump.sql')) {
                     $extension = substr($dumpFile, $pos);

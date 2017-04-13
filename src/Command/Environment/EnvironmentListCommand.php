@@ -38,16 +38,22 @@ class EnvironmentListCommand extends CommandBase
     /**
      * Build a tree out of a list of environments.
      *
-     * @param Environment[] $environments
-     * @param string        $parent
+     * @param Environment[] $environments The list of environments, keyed by ID.
+     * @param string|null   $parent       The parent environment for which to
+     *                                    build a tree.
      *
-     * @return array
+     * @return Environment[] A list of the children of $parent, keyed by ID.
+     *                       Children of all environments are stored in the
+     *                       property $this->children.
      */
     protected function buildEnvironmentTree(array $environments, $parent = null)
     {
         $children = [];
         foreach ($environments as $environment) {
-            if ($environment->parent === $parent) {
+            // Root nodes are both the environments whose parent is null, and
+            // environments whose parent does not exist.
+            if ($environment->parent === $parent
+                || ($parent === null && !isset($environments[$environment->parent]))) {
                 $this->children[$environment->id] = $this->buildEnvironmentTree(
                     $environments,
                     $environment->id
@@ -150,15 +156,6 @@ class EnvironmentListCommand extends CommandBase
         }
 
         $tree = $this->buildEnvironmentTree($environments);
-
-        // Add orphaned environments (those whose parents do not exist) and
-        // their children to the tree.
-        foreach ($environments as $id => $environment) {
-            if (!isset($tree[$id]) && !empty($environment->parent) && !isset($environments[$environment->parent])) {
-                $tree[$id] = $environment;
-                $this->children[$id] = $this->buildEnvironmentTree($environments, $id);
-            }
-        }
 
         // To make the display nicer, we move all the children of master
         // to the top level.

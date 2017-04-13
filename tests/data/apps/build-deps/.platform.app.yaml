@@ -1,0 +1,27 @@
+name: build-deps
+type: nodejs
+build:
+  flavor: none
+dependencies:
+  nodejs:
+    less: '*'
+  python:
+    awscli: '*'
+  php:
+    platformsh/cli: '*'
+  ruby:
+    compass: '*'
+hooks:
+  # Test that the four CLI tools installed above are present and run correctly.
+  # The AWS CLI needs an environment variable (PYTHONPATH) to be set in
+  # \Platformsh\Cli\Local\DependencyInstaller::putEnv().
+  build: |
+    set -xe
+    command -v lessc
+    command -v aws
+    command -v platform
+    command -v compass
+    lessc --version
+    aws --version
+    platform --version
+    compass version

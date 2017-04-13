@@ -1,17 +1,23 @@
 <?php
 
-namespace Platformsh\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Drush;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 
-class Drupal extends ToolstackBase
+class Drupal extends BuildFlavorBase
 {
 
-    public function getKey()
+    public function getStacks()
     {
-        return 'php:drupal';
+        return ['php', 'hhvm'];
+    }
+
+    public function getKeys()
+    {
+        return ['drupal'];
     }
 
     /**
@@ -71,11 +77,6 @@ class Drupal extends ToolstackBase
         return false;
     }
 
-    public function detect($appRoot)
-    {
-        return self::isDrupal($appRoot, 0);
-    }
-
     public function build()
     {
         $profiles = glob($this->appRoot . '/*.profile');
@@ -113,7 +114,7 @@ class Drupal extends ToolstackBase
         if (!$repositoryDir = $this->gitHelper->getRoot($this->appRoot)) {
             return;
         }
-        $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
+        $relative = (new Filesystem())->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
         if (!$this->gitHelper->checkIgnore($relative, $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
             $this->stdErr->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");
@@ -399,6 +400,11 @@ class Drupal extends ToolstackBase
         $sitesDefault = $this->getWebRoot() . '/sites/default';
         if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.php')) {
             $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.php.dist', $sitesDefault . '/settings.php');
+        }
+
+        // Create a settings.platformsh.php if it is missing.
+        if (is_dir($sitesDefault) && !file_exists($sitesDefault . '/settings.platformsh.php')) {
+            $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.platformsh.php.dist', $sitesDefault . '/settings.platformsh.php');
         }
 
         $this->installDrupalSettingsLocal();

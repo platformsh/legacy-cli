@@ -10,7 +10,6 @@ use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Yaml;
 
 class DbSizeCommand extends CommandBase
 {
@@ -51,7 +50,7 @@ class DbSizeCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
 
-        $database = $relationships->chooseDatabase($sshUrl, $input);
+        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;
@@ -71,7 +70,9 @@ class DbSizeCommand extends CommandBase
         }
 
         // Load services yaml.
-        $services = Yaml::parse(file_get_contents($projectRoot . '/.platform/services.yaml'));
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $services = (array) $localProject->readProjectConfigFile($projectRoot, 'services.yaml');
         if (!empty($services[$dbServiceName]['disk'])) {
             $allocatedDisk = $services[$dbServiceName]['disk'];
         } else {
@@ -93,13 +94,13 @@ class DbSizeCommand extends CommandBase
         switch ($database['scheme']) {
             case 'pgsql':
                 $command[] = $this->psqlQuery($database);
-                $result = $shell->execute($command);
+                $result = $shell->execute($command, null, true);
                 $resultArr = explode(PHP_EOL, $result);
                 $estimatedUsage = array_sum($resultArr) / 1048576;
                 break;
             default:
                 $command[] = $this->mysqlQuery($database);
-                $estimatedUsage = $shell->execute($command);
+                $estimatedUsage = $shell->execute($command, null, true);
                 break;
         }
 
@@ -146,7 +147,7 @@ class DbSizeCommand extends CommandBase
         $dbUrl = $relationships->getSqlCommandArgs('psql', $database);
 
         return sprintf(
-            "psql --echo-hidden -t --no-align %s -c '%s' 2>&1",
+            "psql --echo-hidden -t --no-align %s -c '%s'",
             $dbUrl,
             $query
         );
@@ -174,7 +175,7 @@ class DbSizeCommand extends CommandBase
         $connectionParams = $relationships->getSqlCommandArgs('mysql', $database);
 
         return sprintf(
-            "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s' 2>&1",
+            "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
             $connectionParams,
             $query
         );

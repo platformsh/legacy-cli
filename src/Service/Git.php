@@ -333,6 +333,8 @@ class Git
      *
      * @param string|false $upstream
      *   The upstream name, or false to unset the upstream.
+     * @param string|null  $branch
+     *   The branch to act on (defaults to the current branch).
      * @param string|null  $dir
      *   The path to a Git repository.
      * @param bool         $mustRun
@@ -340,13 +342,16 @@ class Git
      *
      * @return bool
      */
-    public function setUpstream($upstream, $dir = null, $mustRun = false)
+    public function setUpstream($upstream, $branch = null, $dir = null, $mustRun = false)
     {
         $args = ['branch'];
         if ($upstream !== false) {
             $args[] = '--set-upstream-to=' . $upstream;
         } else {
             $args[] = '--unset-upstream';
+        }
+        if ($branch !== null) {
+            $args[] = $branch;
         }
 
         return (bool) $this->execute($args, $dir, $mustRun);

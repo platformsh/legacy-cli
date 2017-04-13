@@ -1,36 +1,34 @@
 <?php
 
-namespace Platformsh\Cli\Local\Toolstack;
+namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Output\OutputInterface;
 
-interface ToolstackInterface
+interface BuildFlavorInterface
 {
 
     /**
-     * Get the configuration key for the toolstack.
+     * Get the compatible stack(s) for the build flavor.
      *
-     * @return string|false
+     * @return array
      */
-    public function getKey();
+    public function getStacks();
 
     /**
-     * Set the output stream for the toolstack.
+     * Get the possible configuration keys for the build flavor.
+     *
+     * @return array
+     */
+    public function getKeys();
+
+    /**
+     * Set the output stream for the build flavor.
      *
      * @param OutputInterface $output
      */
     public function setOutput(OutputInterface $output);
-
-    /**
-     * Detect if the files in a given directory belong to this toolstack.
-     *
-     * @param   string $appRoot The absolute path to the application folder
-     *
-     * @return  bool    Whether this toolstack is a valid choice or not
-     */
-    public function detect($appRoot);
 
     /**
      * Prepare this application to be built.

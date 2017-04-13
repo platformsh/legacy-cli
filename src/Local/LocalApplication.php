@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
-use Platformsh\Cli\Local\Toolstack\ToolstackInterface;
+use Platformsh\Cli\Local\BuildFlavor\BuildFlavorInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Parser;
@@ -65,6 +65,16 @@ class LocalApplication
     public function getRoot()
     {
         return $this->appRoot;
+    }
+
+    /**
+     * Get the destination relative path for the web root of this application.
+     *
+     * @return string
+     */
+    public function getWebPath()
+    {
+        return str_replace('/', '-', $this->getId());
     }
 
     /**
@@ -144,16 +154,23 @@ class LocalApplication
         }
 
         // The `web` section has changed to `web`.`locations`.
-        if (isset($config['web']) && !isset($config['web']['locations'])) {
-            $map = [
-                'document_root' => 'root',
-                'expires' => 'expires',
-                'passthru' => 'passthru',
-            ];
-            foreach ($map as $key => $newKey) {
-                if (array_key_exists($key, $config['web'])) {
-                    $config['web']['locations']['/'][$newKey] = $config['web'][$key];
-                }
+        if (isset($config['web']['document_root']) && !isset($config['web']['locations'])) {
+            $oldConfig = $config['web'] + $this->getOldWebDefaults();
+
+            $location = &$config['web']['locations']['/'];
+
+            $location['root'] = $oldConfig['document_root'];
+            $location['expires'] = $oldConfig['expires'];
+            $location['passthru'] = $oldConfig['passthru'];
+            $location['allow'] = true;
+
+            foreach ($oldConfig['whitelist'] as $pattern) {
+                $location['allow'] = false;
+                $location['rules'][$pattern]['allow'] = true;
+            }
+
+            foreach ($oldConfig['blacklist'] as $pattern) {
+                $location['rules'][$pattern]['allow'] = false;
             }
         }
 
@@ -161,67 +178,42 @@ class LocalApplication
     }
 
     /**
-     * @return ToolstackInterface[]
+     * @return BuildFlavorInterface[]
      */
-    public function getToolstacks()
+    public function getBuildFlavors()
     {
         return [
-            new Toolstack\Drupal(),
-            new Toolstack\Symfony(),
-            new Toolstack\Composer(),
-            new Toolstack\NodeJs(),
-            new Toolstack\NoToolstack(),
+            new BuildFlavor\Drupal(),
+            new BuildFlavor\Symfony(),
+            new BuildFlavor\Composer(),
+            new BuildFlavor\NodeJs(),
+            new BuildFlavor\NoBuildFlavor(),
         ];
     }
 
     /**
-     * Get the toolstack for the application.
+     * Get the build flavor for the application.
      *
-     * @throws \Exception   If a specified toolstack is not found.
+     * @throws InvalidConfigException If a build flavor is not found.
      *
-     * @return ToolstackInterface|false
+     * @return BuildFlavorInterface
      */
-    public function getToolstack()
+    public function getBuildFlavor()
     {
-        $toolstackChoice = false;
-
-        // For now, we reconstruct a toolstack string based on the 'type' and
-        // 'build.flavor' config keys.
         $appConfig = $this->getConfig();
-        if (isset($appConfig['type'])) {
-            list($stack, ) = explode(':', $appConfig['type'], 2);
-            $flavor = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
-
-            // Toolstack classes for HHVM are the same as PHP.
-            if ($stack === 'hhvm') {
-                $stack = 'php';
-            }
-
-            $toolstackChoice = "$stack:$flavor";
-
-            // Alias php:default to php:composer.
-            if ($toolstackChoice === 'php:default') {
-                $toolstackChoice = 'php:composer';
-            }
-
-            if ($flavor === 'none') {
-                $toolstackChoice = 'none';
-            }
+        if (!isset($appConfig['type'])) {
+            throw new InvalidConfigException('Application configuration key not found: `type`');
         }
 
-        foreach (self::getToolstacks() as $toolstack) {
-            $key = $toolstack->getKey();
-            if ((!$toolstackChoice && $toolstack->detect($this->getRoot()))
-                || ($key && $toolstackChoice === $key)
-            ) {
-                return $toolstack;
+        $key = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
+        list($stack, ) = explode(':', $appConfig['type'], 2);
+        foreach (self::getBuildFlavors() as $candidate) {
+            if (in_array($key, $candidate->getKeys())
+                && ($candidate->getStacks() === [] || in_array($stack, $candidate->getStacks()))) {
+                return $candidate;
             }
         }
-        if ($toolstackChoice) {
-            throw new \Exception("Toolstack not found: $toolstackChoice");
-        }
-
-        return false;
+        throw new InvalidConfigException('Build flavor not found: ' . $key);
     }
 
     /**
@@ -323,5 +315,76 @@ class LocalApplication
         }
 
         return $this->getDocumentRoot() === 'public' && !is_dir($this->getRoot() . '/public');
+    }
+
+    /**
+     * @return array
+     */
+    protected function getOldWebDefaults()
+    {
+        return [
+            'document_root' => '/public',
+            'expires' => 0,
+            'passthru' => '/index.php',
+            'blacklist' => [],
+            'whitelist' => [
+                // CSS and Javascript.
+                '\.css$',
+                '\.js$',
+
+                // image/* types.
+                '\.gif$',
+                '\.jpe?g$',
+                '\.png$',
+                '\.tiff?$',
+                '\.wbmp$',
+                '\.ico$',
+                '\.jng$',
+                '\.bmp$',
+                '\.svgz?$',
+
+                // audio/* types.
+                '\.midi?$',
+                '\.mpe?ga$',
+                '\.mp2$',
+                '\.mp3$',
+                '\.m4a$',
+                '\.ra$',
+                '\.weba$',
+
+                // video/* types.
+                '\.3gpp?$',
+                '\.mp4$',
+                '\.mpe?g$',
+                '\.mpe$',
+                '\.ogv$',
+                '\.mov$',
+                '\.webm$',
+                '\.flv$',
+                '\.mng$',
+                '\.asx$',
+                '\.asf$',
+                '\.wmv$',
+                '\.avi$',
+
+                // application/ogg.
+                '\.ogx$',
+
+                // application/x-shockwave-flash.
+                '\.swf$',
+
+                // application/java-archive.
+                '\.jar$',
+
+                // fonts types.
+                '\.ttf$',
+                '\.eot$',
+                '\.woff$',
+                '\.otf$',
+
+                // robots.txt.
+                '/robots\.txt$',
+            ],
+        ];
     }
 }
