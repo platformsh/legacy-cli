@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -226,7 +227,7 @@ abstract class TunnelCommandBase extends CommandBase
     protected function createTunnelProcess($url, $remoteHost, $remotePort, $localPort, array $extraArgs = [])
     {
         $args = ['ssh', '-n', '-N', '-L', implode(':', [$localPort, $remoteHost, $remotePort]), $url];
-        if (strpos(PHP_OS, 'WIN') === false) {
+        if (!OsUtil::isWindows()) {
             array_unshift($args, 'exec');
         }
         $args = array_merge($args, $extraArgs);

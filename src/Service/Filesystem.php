@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
@@ -46,7 +47,7 @@ class Filesystem
     public function setRelativeLinks($relative = true)
     {
         // This is not possible on Windows.
-        if ($this->isWindows()) {
+        if (OsUtil::isWindows()) {
             $relative = false;
         }
         $this->relative = $relative;
@@ -385,7 +386,7 @@ class Filesystem
      */
     protected function fixTarPath($path)
     {
-        if ($this->isWindows()) {
+        if (OsUtil::isWindows()) {
             $path = preg_replace_callback(
                 '#^([A-Z]):/#i',
                 function (array $matches) {
@@ -410,13 +411,5 @@ class Filesystem
             }
         }
         throw new \RuntimeException("Tar command not found");
-    }
-
-    /**
-     * @return bool
-     */
-    protected function isWindows()
-    {
-        return stripos(PHP_OS, 'WIN') === 0;
     }
 }
