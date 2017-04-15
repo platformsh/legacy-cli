@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Command\Project;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
-use Platformsh\Client\Model\Subscription;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
@@ -136,7 +135,8 @@ class ProjectCreateCommand extends CommandBase
     /**
      * Return a list of plans.
      *
-     * The default list (from the API client) can be overridden by user config.
+     * The default list is in the config `service.available_plans`. This can be
+     * overridden by the user config `experimental.available_plans`.
      *
      * @return string[]
      */
@@ -147,13 +147,14 @@ class ProjectCreateCommand extends CommandBase
             return $config->get('experimental.available_plans');
         }
 
-        return Subscription::$availablePlans;
+        return $config->get('service.available_plans');
     }
 
     /**
      * Return a list of regions.
      *
-     * The default list (from the API client) can be overridden by user config.
+     * The default list is in the config `service.available_regions`. This can
+     * be overridden by the user config `experimental.available_regions`.
      *
      * @return string[]
      */
@@ -164,7 +165,7 @@ class ProjectCreateCommand extends CommandBase
             return $config->get('experimental.available_regions');
         }
 
-        return Subscription::$availableRegions;
+        return $config->get('service.available_regions');
     }
 
     /**
@@ -189,7 +190,7 @@ class ProjectCreateCommand extends CommandBase
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
-            'default' => 'development',
+            'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
           ]),
           'environments' => new Field('Environments', [
             'optionName' => 'environments',

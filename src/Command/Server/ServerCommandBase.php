@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
@@ -261,7 +262,7 @@ abstract class ServerCommandBase extends CommandBase
             ]);
 
             // An 'exec' is needed to stop creating two processes on some OSs.
-            if (strpos(PHP_OS, 'WIN') === false) {
+            if (!OsUtil::isWindows()) {
                 array_unshift($arguments, 'exec');
             }
 

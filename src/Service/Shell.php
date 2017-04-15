@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -226,7 +227,7 @@ class Shell
                 $result[$command] = $command;
             } else {
                 $args = ['command', '-v', $command];
-                if (strpos(PHP_OS, 'WIN') !== false) {
+                if (OsUtil::isWindows()) {
                     $args = ['where', $command];
                 }
                 $result[$command] = $this->execute($args, null, false, true);
