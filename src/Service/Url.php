@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,12 +14,16 @@ class Url implements InputConfiguringInterface
     protected $input;
     protected $shell;
     protected $output;
+    protected $stdErr;
 
     public function __construct(Shell $shell, InputInterface $input, OutputInterface $output)
     {
         $this->shell = $shell;
         $this->input = $input;
         $this->output = $output;
+        $this->stdErr = $this->output instanceof ConsoleOutputInterface
+            ? $this->output->getErrorOutput()
+            : $this->output;
     }
 
     /**
@@ -47,45 +52,50 @@ class Url implements InputConfiguringInterface
      */
     public function openUrl($url)
     {
-        $stdErr = $this->output instanceof ConsoleOutputInterface
-            ? $this->output->getErrorOutput()
-            : $this->output;
-        $browser = $this->input->hasOption('browser') ? $this->input->getOption('browser') : null;
-
-        if ($this->input->hasOption('pipe') && $this->input->getOption('pipe')) {
-            $this->output->writeln($url);
-            return;
-        }
-
-        if (!getenv('DISPLAY') && strpos(PHP_OS, 'WIN') === false) {
-            if ($browser !== '0' && $this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-                $stdErr->writeln(sprintf('Not opening URL %s (no display found)', $url));
-            }
-            return;
-        }
-
-        if ($browser === '0') {
-            // The user has requested not to use a browser.
-            $browser = false;
-        } elseif (empty($browser)) {
-            // Find a default browser to use.
-            $browser = $this->getDefaultBrowser();
-        } elseif (!$this->shell->commandExists($browser)) {
-            // The user has specified a browser, but it can't be found.
-            $stdErr->writeln("<error>Browser not found: $browser</error>");
-            $browser = false;
-        }
-
-        if ($browser) {
-            $opened = $this->shell->execute(array($browser, $url));
-            if ($opened) {
-                $stdErr->writeln("Opened: $url");
-
-                return;
-            }
+        if ($browser = $this->getBrowser()) {
+            $this->shell->executeSimple($browser . ' ' . escapeshellarg($url));
         }
 
         $this->output->writeln($url);
+    }
+
+    /**
+     * Finds the browser to use.
+     *
+     * @return string|false A browser command, or false if no browser can or
+     *                      should be used.
+     */
+    protected function getBrowser()
+    {
+        $browser = $this->input->hasOption('browser') ? $this->input->getOption('browser') : null;
+
+        // If the user wants to pipe the output to another command, stop here.
+        if ($this->input->hasOption('pipe') && $this->input->getOption('pipe')) {
+            return false;
+        }
+
+        // Check if the user has requested not to use a browser.
+        if ($browser === '0') {
+            return false;
+        }
+
+        // Check for a display (if not on Windows or OS X).
+        if (!getenv('DISPLAY') && !OsUtil::isWindows() && !OsUtil::isOsX()) {
+            $this->stdErr->writeln('Not opening URL (no display found)', OutputInterface::VERBOSITY_VERBOSE);
+            return false;
+        }
+
+        if (!empty($browser)) {
+            list($command, ) = explode(' ', $browser, 2);
+            if (!$this->shell->commandExists($command)) {
+                $this->stdErr->writeln(sprintf('Command not found: <error>%s</error>', $command));
+                return false;
+            }
+
+            return $browser;
+        }
+
+        return $this->getDefaultBrowser();
     }
 
     /**
