@@ -1020,6 +1020,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * Services are configured in services.yml, and loaded via the Symfony
      * Dependency Injection component.
      *
+     * When using this method, always store the result in a temporary variable,
+     * so that the service's type can be hinted in a variable docblock (allowing
+     * IDEs and other analysers to check subsequent code). For example:
+     * <code>
+     *   /** @var \Platformsh\Cli\Service\Filesystem $fs *\/
+     *   $fs = $this->getService('fs');
+     * </code>
+     *
      * @param string $name The service name. See services.yml for a list.
      *
      * @return object The associated service object.

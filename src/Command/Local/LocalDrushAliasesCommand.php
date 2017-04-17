@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Local;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Service\Filesystem;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -85,7 +86,7 @@ class LocalDrushAliasesCommand extends CommandBase
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
             if ($new_group != $current_group) {
-                $drushDir = $this->getService('fs')->getHomeDirectory() . '/.drush';
+                $drushDir = Filesystem::getHomeDirectory() . '/.drush';
                 $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
                 if (file_exists($oldFile)) {
                     if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
