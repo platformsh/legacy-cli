@@ -218,6 +218,25 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         $this->checkUpdates();
+
+        if ($input->hasOption('project') && !$input->getOption('project')) {
+            if ($currentProject = $this->getCurrentProject()) {
+                $input->setOption('project', $currentProject->id);
+            } else {
+                $input->setOption('project', $this->offerProjectChoice($this->api()->getProjects()));
+            }
+        }
+        if ($input->hasOption('environment') && !$input->getOption('environment')) {
+            if ($currentEnvironment = $this->getCurrentEnvironment()) {
+                $input->setOption('environment', $currentEnvironment->id);
+            } elseif ($input->hasOption('project')) {
+                $project = $this->selectProject($input->getOption('project'));
+                $input->setOption(
+                    'environment',
+                    $this->offerEnvironmentChoice($this->api()->getEnvironments($project))
+                );
+            }
+        }
     }
 
     /**
@@ -799,6 +818,26 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $questionHelper = $this->getService('question_helper');
 
         return $questionHelper->choose($projectList, $text);
+    }
+
+    /**
+     * @param Environment[] $environments
+     * @param string        $text
+     *
+     * @return string
+     *   The chosen environment ID.
+     */
+    protected function offerEnvironmentChoice(array $environments, $text = 'Enter a number to choose an environment:')
+    {
+        $list = [];
+        foreach ($environments as $environment) {
+            $list[$environment->id] = $environment->title;
+        }
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        return $questionHelper->choose($list, $text);
     }
 
     /**
