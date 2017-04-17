@@ -780,6 +780,28 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
+     * Offer the user an interactive choice of projects.
+     *
+     * @param Project[] $projects
+     * @param string    $text
+     *
+     * @return string
+     *   The chosen project ID.
+     */
+    protected function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    {
+        $projectList = [];
+        foreach ($projects as $project) {
+            $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
+        }
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        return $questionHelper->choose($projectList, $text);
+    }
+
+    /**
      * @param InputInterface  $input
      * @param bool $envNotRequired
      */
@@ -997,6 +1019,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *
      * Services are configured in services.yml, and loaded via the Symfony
      * Dependency Injection component.
+     *
+     * When using this method, always store the result in a temporary variable,
+     * so that the service's type can be hinted in a variable docblock (allowing
+     * IDEs and other analysers to check subsequent code). For example:
+     * <code>
+     *   /** @var \Platformsh\Cli\Service\Filesystem $fs *\/
+     *   $fs = $this->getService('fs');
+     * </code>
      *
      * @param string $name The service name. See services.yml for a list.
      *

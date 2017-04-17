@@ -187,25 +187,6 @@ class ProjectGetCommand extends CommandBase
     }
 
     /**
-     * @param Project[]       $projects
-     * @param InputInterface  $input
-     *
-     * @return string
-     *   The chosen project ID.
-     */
-    protected function offerProjectChoice(array $projects, InputInterface $input)
-    {
-        $projectList = [];
-        foreach ($projects as $project) {
-            $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
-        }
-        $text = "Enter a number to choose which project to clone:";
-
-        return $this->getService('question_helper')
-                    ->choose($projectList, $text, $input, $this->stdErr);
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function validateInput(InputInterface $input, $envNotRequired = false)
@@ -218,7 +199,7 @@ class ProjectGetCommand extends CommandBase
         $host = $input->getOption('host');
         if (empty($projectId)) {
             if ($input->isInteractive() && ($projects = $this->api()->getProjects(true))) {
-                $projectId = $this->offerProjectChoice($projects, $input);
+                $projectId = $this->offerProjectChoice($projects, 'Enter a number to choose which project to clone:');
             } else {
                 throw new InvalidArgumentException('No project specified');
             }

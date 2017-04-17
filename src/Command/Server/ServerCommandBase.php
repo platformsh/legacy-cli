@@ -247,7 +247,7 @@ abstract class ServerCommandBase extends CommandBase
 
             $this->showSecurityWarning();
 
-            $arguments[] = $this->getService('shell')->resolveCommand('php');
+            $arguments[] = 'php';
 
             foreach ($this->getServerPhpConfig() as $item => $value) {
                 $arguments[] = sprintf('-d %s="%s"', $item, $value);

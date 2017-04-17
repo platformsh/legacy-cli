@@ -215,8 +215,8 @@ class Filesystem
     /**
      * Create a symbolic link to a file or directory.
      *
-     * @param string $target
-     * @param string $link
+     * @param string $target The target to link to (must already exist).
+     * @param string $link   The name of the symbolic link.
      */
     public function symlink($target, $link)
     {
@@ -224,7 +224,7 @@ class Filesystem
             throw new \InvalidArgumentException('Target not found: ' . $target);
         }
         if ($this->relative) {
-            $target = rtrim($this->fs->makePathRelative($target, dirname($link)), '/');
+            $target = rtrim($this->fs->makePathRelative(realpath($target), dirname($link)), '/');
         }
         $this->fs->symlink($target, $link, $this->copyOnWindows);
     }
