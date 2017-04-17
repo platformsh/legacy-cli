@@ -6,6 +6,7 @@ use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\Shell;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -57,7 +58,7 @@ class LocalBuild
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
-        if ($this->output instanceof ConsoleOutput) {
+        if ($this->output instanceof ConsoleOutputInterface) {
             $this->output = $this->output->getErrorOutput();
         }
         $this->shellHelper = $shell ?: new Shell($this->output);

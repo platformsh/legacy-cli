@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Service;
 use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -38,7 +38,7 @@ class ActivityMonitor
      */
     protected function getStdErr()
     {
-        return $this->output instanceof ConsoleOutput ? $this->output->getErrorOutput() : $this->output;
+        return $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
     }
 
     /**
