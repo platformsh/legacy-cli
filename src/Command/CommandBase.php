@@ -780,6 +780,28 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
+     * Offer the user an interactive choice of projects.
+     *
+     * @param Project[] $projects
+     * @param string    $text
+     *
+     * @return string
+     *   The chosen project ID.
+     */
+    protected function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    {
+        $projectList = [];
+        foreach ($projects as $project) {
+            $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
+        }
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        return $questionHelper->choose($projectList, $text);
+    }
+
+    /**
      * @param InputInterface  $input
      * @param bool $envNotRequired
      */
