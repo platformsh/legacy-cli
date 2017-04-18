@@ -243,14 +243,17 @@ class ActivityMonitor
      * Format a result.
      *
      * @param string $result
+     * @param bool   $decorate
      *
      * @return string
      */
-    public static function formatResult($result)
+    public static function formatResult($result, $decorate = true)
     {
         $name = isset(self::$stateNames[$result]) ? self::$stateNames[$result] : $result;
 
-        return $result === Activity::RESULT_FAILURE ? '<error>' . $name . '</error>' : $name;
+        return $decorate && $result === Activity::RESULT_FAILURE
+            ? '<error>' . $name . '</error>'
+            : $name;
     }
 
     /**

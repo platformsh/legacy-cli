@@ -73,7 +73,7 @@ class ActivityListCommand extends CommandBase
                 $activity->getDescription(),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
-                ActivityMonitor::formatResult($activity->result),
+                ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
             ];
             if (!$environmentSpecific) {
                 $row[] = implode(', ', $activity->environments);
