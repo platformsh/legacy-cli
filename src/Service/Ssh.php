@@ -74,6 +74,10 @@ class Ssh implements InputConfiguringInterface
             $options[] = 'IdentityFile ' . $file;
         }
 
+        if ($this->output->isDecorated()) {
+            $options[] = 'RequestTty yes';
+        }
+
         return $options;
     }
 

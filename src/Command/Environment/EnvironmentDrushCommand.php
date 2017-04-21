@@ -95,7 +95,7 @@ class EnvironmentDrushCommand extends CommandBase
         if ($environmentUrl = $selectedEnvironment->getLink('public-url')) {
             $sshDrushCommand .= " --uri=" . escapeshellarg($environmentUrl);
         }
-        $sshDrushCommand .= ' ' . $drushCommand . ' 2>&1';
+        $sshDrushCommand .= ' ' . $drushCommand;
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
