@@ -65,9 +65,6 @@ class DbSqlCommand extends CommandBase
         $ssh = $this->getService('ssh');
 
         $sshCommand = $ssh->getSshCommand();
-        if ($this->isTerminal($output)) {
-            $sshCommand .= ' -t';
-        }
         $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sqlCommand);
 
