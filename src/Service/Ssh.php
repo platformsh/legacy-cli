@@ -46,13 +46,6 @@ class Ssh implements InputConfiguringInterface
             $args[] = '-q';
         }
 
-        if ($this->output->isDecorated()) {
-            $args[] = '-t';
-            if (!$this->output->isVerbose()) {
-                $options[] = 'LogLevel Quiet';
-            }
-        }
-
         foreach ($options as $option) {
             $args[] = '-o';
             $args[] = $option;
@@ -79,6 +72,10 @@ class Ssh implements InputConfiguringInterface
             }
             $options[] = 'IdentitiesOnly yes';
             $options[] = 'IdentityFile ' . $file;
+        }
+
+        if ($this->output->isDecorated()) {
+            $options[] = 'RequestTty yes';
         }
 
         return $options;
