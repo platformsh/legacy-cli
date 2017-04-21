@@ -14,6 +14,7 @@ class CertificateListCommand extends CommandBase
     {
         $this
             ->setName('certificate:list')
+            ->setAliases(['certificates'])
             ->setDescription('List project certificates');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
