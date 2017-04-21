@@ -46,6 +46,13 @@ class Ssh implements InputConfiguringInterface
             $args[] = '-q';
         }
 
+        if ($this->output->isDecorated()) {
+            $args[] = '-t';
+            if (!$this->output->isVerbose()) {
+                $options[] = 'LogLevel Quiet';
+            }
+        }
+
         foreach ($options as $option) {
             $args[] = '-o';
             $args[] = $option;
