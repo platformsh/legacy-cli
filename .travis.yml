@@ -23,5 +23,5 @@ install:
   - composer install --no-interaction
 
 script:
-  - ./vendor/bin/security-checker security:check --no-interaction ./composer.lock
+  - 'curl -H "Accept: text/plain" https://security.sensiolabs.org/check_lock -F lock=@./composer.lock'
   - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text --exclude-group slow
