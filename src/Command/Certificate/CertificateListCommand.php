@@ -4,7 +4,9 @@ namespace Platformsh\Cli\Command\Certificate;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Certificate;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class CertificateListCommand extends CommandBase
@@ -16,6 +18,10 @@ class CertificateListCommand extends CommandBase
             ->setName('certificate:list')
             ->setAliases(['certificates'])
             ->setDescription('List project certificates');
+        $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
+        $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');
+        $this->addOption('provisioned', null, InputOption::VALUE_NONE, 'Show only auto-provisioned certificates');
+        $this->addOption('no-provisioned', null, InputOption::VALUE_NONE, 'Show only manually added certificates');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
@@ -24,9 +30,27 @@ class CertificateListCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+
+        $filters = [];
+        foreach (['domain', 'issuer', 'provisioned', 'no-provisioned'] as $filterOption) {
+            if ($value = $input->getOption($filterOption)) {
+                $filters[$filterOption] = $value;
+            }
+        }
+
         $project = $this->getSelectedProject();
 
         $certs = $project->getCertificates();
+
+        $this->filterCerts($certs, $filters);
+
+        if (!empty($filters)) {
+            $filtersUsed = '<comment>--'
+                . implode('</comment>, <comment>--', array_keys($filters))
+                . '</comment>';
+            $this->stdErr->writeln(sprintf('Filters in use: %s', $filtersUsed));
+        }
+
         if (empty($certs)) {
             $this->stdErr->writeln("No certificates found");
 
@@ -64,5 +88,48 @@ class CertificateListCommand extends CommandBase
         }
 
         return 0;
+    }
+
+    protected function filterCerts(array &$certs, array $filters)
+    {
+        foreach ($filters as $filter => $value) {
+            switch ($filter) {
+                case 'domain':
+                    $certs = array_filter($certs, function (Certificate $cert) use ($value) {
+                        foreach ($cert->domains as $domain) {
+                            if (stripos($domain, $value) !== false) {
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    });
+                    break;
+
+                case 'issuer':
+                    $certs = array_filter($certs, function (Certificate $cert) use ($value) {
+                        foreach ($cert->issuer as $issuer) {
+                            if (isset($issuer['value']) && $issuer['value'] === $value) {
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    });
+                    break;
+
+                case 'provisioned':
+                    $certs = array_filter($certs, function (Certificate $cert) {
+                        return (bool) $cert->is_provisioned;
+                    });
+                    break;
+
+                case 'no-provisioned':
+                    $certs = array_filter($certs, function (Certificate $cert) {
+                        return !$cert->is_provisioned;
+                    });
+                    break;
+            }
+        }
     }
 }
