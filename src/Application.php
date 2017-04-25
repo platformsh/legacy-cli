@@ -243,7 +243,8 @@ class Application extends ParentApplication
      */
     protected function setDefaultTimezone()
     {
-        $timezone = 'UTC';
+        $timezone = date_default_timezone_get();
+
         if (is_link('/etc/localtime')) {
             // Mac OS X (and older Linuxes)
             // /etc/localtime is a symlink to the timezone in /usr/share/zoneinfo.
