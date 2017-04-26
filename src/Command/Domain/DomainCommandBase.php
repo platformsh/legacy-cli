@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\SslUtil;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,10 +16,6 @@ abstract class DomainCommandBase extends CommandBase
     protected $sslOptions = [];
 
     protected $domainName;
-
-    protected $certPath;
-    protected $keyPath;
-    protected $chainPaths;
 
     /**
      * @param InputInterface $input
@@ -34,15 +31,22 @@ abstract class DomainCommandBase extends CommandBase
             return false;
         }
 
-        $this->certPath = $input->getOption('cert');
-        $this->keyPath = $input->getOption('key');
-        $this->chainPaths = $input->getOption('chain');
-        if ($this->certPath || $this->keyPath || $this->chainPaths) {
-            if (!isset($this->certPath, $this->keyPath)) {
+        $certPath = $input->getOption('cert');
+        $keyPath = $input->getOption('key');
+        $chainPaths = $input->getOption('chain');
+        if ($certPath || $keyPath || $chainPaths) {
+            if (!isset($certPath, $keyPath)) {
                 $this->stdErr->writeln("Both the --cert and the --key are required for SSL certificates");
                 return false;
             }
-            return $this->validateSslOptions();
+            try {
+                $this->sslOptions = (new SslUtil())->validate($certPath, $keyPath, $chainPaths);
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return false;
+            }
+
+            return true;
         }
 
         return true;
@@ -57,74 +61,6 @@ abstract class DomainCommandBase extends CommandBase
     }
 
     /**
-     * @return bool
-     */
-    protected function validateSslOptions()
-    {
-        // Get the contents.
-        if (!is_readable($this->certPath)) {
-            $this->stdErr->writeln("The certificate file could not be read: " . $this->certPath);
-            return false;
-        }
-        $sslCert = trim(file_get_contents($this->certPath));
-        // Do a bit of validation.
-        $certResource = openssl_x509_read($sslCert);
-        if (!$certResource) {
-            $this->stdErr->writeln("The certificate file is not a valid X509 certificate: " . $this->certPath);
-            return false;
-        }
-        // Then the key. Does it match?
-        if (!is_readable($this->keyPath)) {
-            $this->stdErr->writeln("The private key file could not be read: " . $this->keyPath);
-            return false;
-        }
-        $sslPrivateKey = trim(file_get_contents($this->keyPath));
-        $keyResource = openssl_pkey_get_private($sslPrivateKey);
-        if (!$keyResource) {
-            $this->stdErr->writeln("Private key not valid, or passphrase-protected: " . $this->keyPath);
-            return false;
-        }
-        $keyMatch = openssl_x509_check_private_key($certResource, $keyResource);
-        if (!$keyMatch) {
-            $this->stdErr->writeln("The provided certificate does not match the provided private key.");
-            return false;
-        }
-
-        // Each chain needs to contain one or more valid certificates.
-        $chainFileContents = $this->readChainFiles($this->chainPaths);
-        foreach ($chainFileContents as $filePath => $data) {
-            $chainResource = openssl_x509_read($data);
-            if (!$chainResource) {
-                $this->stdErr->writeln("File contains an invalid X509 certificate: " . $filePath);
-                return false;
-            }
-            openssl_x509_free($chainResource);
-        }
-
-        // Split up the chain file contents.
-        $chain = [];
-        $begin = '-----BEGIN CERTIFICATE-----';
-        foreach ($chainFileContents as $data) {
-            if (substr_count($data, $begin) > 1) {
-                foreach (explode($begin, $data) as $cert) {
-                    $chain[] = $begin . $cert;
-                }
-            } else {
-                $chain[] = $data;
-            }
-        }
-
-        // Yay we win.
-        $this->sslOptions = [
-            'certificate' => $sslCert,
-            'key' => $sslPrivateKey,
-            'chain' => $chain,
-        ];
-
-        return true;
-    }
-
-    /**
      * Validate a domain.
      *
      * @param string $domain
@@ -135,29 +71,6 @@ abstract class DomainCommandBase extends CommandBase
     {
         // @todo: Use symfony/Validator here once it gets the ability to validate just domain.
         return (bool) preg_match('/^([^\.]{1,63}\.)+[^\.]{2,63}$/', $domain);
-    }
-
-    /**
-     * Get the contents of multiple chain files.
-     *
-     * @param string[] $chainPaths
-     *
-     * @throws \Exception If any one of the files is not readable.
-     *
-     * @return array
-     *   An array of file contents (whitespace trimmed) keyed by file name.
-     */
-    protected function readChainFiles(array $chainPaths)
-    {
-        $chainFiles = [];
-        foreach ($chainPaths as $chainPath) {
-            if (!is_readable($chainPath)) {
-                throw new \Exception("The chain file could not be read: $chainPath");
-            }
-            $chainFiles[$chainPath] = trim(file_get_contents($chainPath));
-        }
-
-        return $chainFiles;
     }
 
     /**

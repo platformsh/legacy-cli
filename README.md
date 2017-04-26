@@ -85,6 +85,11 @@ auth
   auth:info                                 Display your account information
   auth:login (login)                        Log in to Platform.sh
   auth:logout (logout)                      Log out of Platform.sh
+certificate
+  certificate:add                           Add an SSL certificate to the project
+  certificate:delete                        Delete a certificate from the project
+  certificate:get                           View a certificate
+  certificate:list (certificates)           List project certificates
 db
   db:dump                                   Create a local dump of the remote database
   db:size                                   Estimate the disk usage of a database
