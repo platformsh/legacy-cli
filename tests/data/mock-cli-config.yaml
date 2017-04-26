@@ -5,6 +5,9 @@ application:
   phar: 'mock.phar'
   env_prefix: 'MOCK_CLI_'
   user_config_dir: 'mock-cli-user-config'
+  user_config_file: 'config.yaml'
+  global_config_files:
+    - 'mock-global-cli-config.yaml'
 
 service:
   name: 'Mock Service'
