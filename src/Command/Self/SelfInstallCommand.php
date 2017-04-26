@@ -24,7 +24,7 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $configDir = $this->config()->getUserConfigDir();
+        $configDir = $this->config()->getConfigDir();
 
         $shellConfig = file_get_contents(CLI_ROOT . '/shell-config.rc');
         if ($shellConfig === false) {

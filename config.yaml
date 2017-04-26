@@ -1,3 +1,13 @@
+# This file defines the default configuration for the CLI.
+#
+# Some parts can be overridden by environment variables, and/or by user-supplied
+# configuration in the user's YAML "config file" at:
+#
+# {application.config_dir}/{application.config_file}
+#
+# However, the keys that can be overridden are intentionally limited to simplify
+# usage and documentation. They are noted below.
+
 # Metadata about the CLI application itself.
 application:
   name: 'Platform.sh CLI'
@@ -7,8 +17,14 @@ application:
   package_name: 'platformsh/cli'
   installer_url: 'https://platform.sh/cli/installer'
   manifest_url: 'https://platform.sh/cli/manifest.json'
-  user_config_dir: '.platformsh'
   env_prefix: 'PLATFORMSH_CLI_'
+  user_state_dir: '.platformsh'
+
+  # Overridden by the {application.env_prefix}CONFIG_DIR env var.
+  # A tilde at the start of the string will be expanded, like in Bash.
+  config_dir: '~/.platformsh'
+
+  config_file: 'config.yaml'
 
 # Configuration for working with projects locally.
 local:
@@ -22,7 +38,7 @@ local:
   web_root: '_www'
 
   # This can be overridden by the {application.env_prefix}COPY_ON_WINDOWS env
-  # var, or via the user config file.
+  # var, or via the user's config file.
   copy_on_windows: false
 
 # Details about the cloud service that the CLI works with.
@@ -43,7 +59,7 @@ service:
     - large
 
 # Configuration relating to API calls.
-# This can be overridden in the user config file.
+# This can be overridden in the user's config file.
 api:
   oauth2_client_id: 'platform-cli'
   projects_ttl: 3600
@@ -72,7 +88,7 @@ detection:
   site_domains: ['platform.sh', 'platformsh.site']
 
 # Automatic updates.
-# This can be overridden in the user config file.
+# This can be overridden in the user's config file.
 updates:
   last_checked: null
   check_interval: 86400

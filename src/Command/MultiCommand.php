@@ -120,7 +120,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         }
 
         $dialogRc = file_get_contents(CLI_ROOT . '/resources/console/dialogrc');
-        $dialogRcFile = $this->config()->getUserConfigDir() . '/dialogrc';
+        $dialogRcFile = $this->config()->getUserStateDir() . '/dialogrc';
         if ($dialogRc !== false && (file_exists($dialogRcFile) || file_put_contents($dialogRcFile, $dialogRc))) {
             putenv('DIALOGRC=' . $dialogRcFile);
         }

@@ -28,7 +28,7 @@ class Config
         if (empty(self::$config) || $reset) {
             $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
             self::$config = $this->loadConfigFromFile($defaultsFile);
-            $this->applyUserConfigOverrides();
+            $this->applyConfigOverrides($this->getUserConfig());
             $this->applyEnvironmentOverrides();
         }
     }
@@ -62,11 +62,43 @@ class Config
     }
 
     /**
+     * Returns a user-specific directory for state storage.
+     *
      * @return string
      */
-    public function getUserConfigDir()
+    public function getUserStateDir()
     {
-        return Filesystem::getHomeDirectory() . '/' . $this->get('application.user_config_dir');
+        return Filesystem::getHomeDirectory() . '/' . $this->get('application.user_state_dir');
+    }
+
+    /**
+     * Returns the directory for user-defined configuration.
+     *
+     * @return string
+     */
+    public function getConfigDir()
+    {
+        $configDir = $this->getEnv('CONFIG_DIR') ?: $this->get('application.config_dir');
+
+        return $this->expandTilde($configDir);
+    }
+
+    /**
+     * Replaces ~ at the start of a string with the home directory, like Bash.
+     *
+     * @param string $str
+     *
+     * @return string
+     */
+    protected function expandTilde($str)
+    {
+        if ($str === '~') {
+            return Filesystem::getHomeDirectory();
+        } elseif (strpos($str, '~/') === 0) {
+            return Filesystem::getHomeDirectory() . substr($str, 1);
+        }
+
+        return $str;
     }
 
     /**
@@ -133,7 +165,7 @@ class Config
     {
         if (!isset($this->userConfig)) {
             $this->userConfig = [];
-            $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
+            $userConfigFile = $this->getConfigDir() . '/' . $this->get('application.config_file');
             if (file_exists($userConfigFile)) {
                 $this->userConfig = $this->loadConfigFromFile($userConfigFile);
             }
@@ -149,9 +181,9 @@ class Config
      */
     public function writeUserConfig(array $config)
     {
-        $dir = $this->getUserConfigDir();
+        $dir = $this->getConfigDir();
         if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
-            trigger_error('Failed to create user config directory: ' . $dir, E_USER_WARNING);
+            trigger_error('Failed to create config directory: ' . $dir, E_USER_WARNING);
         }
         $existingConfig = $this->getUserConfig();
         $config = array_replace_recursive($existingConfig, $config);
@@ -168,8 +200,17 @@ class Config
         $this->userConfig = $config;
     }
 
-    protected function applyUserConfigOverrides()
+    /**
+     * Selectively merges the supplied config with the existing config.
+     *
+     * @param array $config
+     */
+    protected function applyConfigOverrides(array $config)
     {
+        if (empty($config)) {
+            return;
+        }
+
         // A whitelist of allowed overrides.
         $overrideMap = [
             'api' => 'api',
@@ -179,22 +220,20 @@ class Config
             'updates' => 'updates',
         ];
 
-        $userConfig = $this->getUserConfig();
-        if (!empty($userConfig)) {
-            foreach ($overrideMap as $userConfigKey => $configKey) {
-                $value = NestedArrayUtil::getNestedArrayValue($userConfig, explode('.', $userConfigKey), $exists);
-                if ($exists) {
-                    $configParents = explode('.', $configKey);
-                    $default = NestedArrayUtil::getNestedArrayValue(self::$config, $configParents, $defaultExists);
-                    if ($defaultExists && is_array($default)) {
-                        if (!is_array($value)) {
-                            continue;
-                        }
-                        $value = array_replace_recursive($default, $value);
-                    }
-                    NestedArrayUtil::setNestedArrayValue(self::$config, $configParents, $value, true);
-                }
+        foreach ($overrideMap as $overrideKey => $configKey) {
+            $value = NestedArrayUtil::getNestedArrayValue($config, explode('.', $overrideKey), $exists);
+            if (!$exists) {
+                continue;
             }
+            $configParents = explode('.', $configKey);
+            $default = NestedArrayUtil::getNestedArrayValue(self::$config, $configParents, $defaultExists);
+            if ($defaultExists && is_array($default)) {
+                if (!is_array($value)) {
+                    continue;
+                }
+                $value = array_replace_recursive($default, $value);
+            }
+            NestedArrayUtil::setNestedArrayValue(self::$config, $configParents, $value, true);
         }
     }
 }
