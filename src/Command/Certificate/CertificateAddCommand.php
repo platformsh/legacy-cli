@@ -31,8 +31,8 @@ class CertificateAddCommand extends CommandBase
         $keyPath = $input->getOption('key');
         $chainPaths = $input->getOption('chain');
         if (!isset($certPath, $keyPath)) {
-            $this->stdErr->writeln('The --cert and --key are required');
-            return false;
+            $this->stdErr->writeln('The --cert and --key options are required');
+            return 1;
         }
 
         list($certificate, $key, $chain) = (new SslUtil())->validate($certPath, $keyPath, $chainPaths);
