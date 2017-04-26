@@ -93,9 +93,7 @@ class Ssh implements InputConfiguringInterface
         $command = 'ssh';
         $args = $this->getSshArgs($extraOptions);
         if (!empty($args)) {
-            $command .= ' ' . implode(' ', array_map(function($arg) {
-                return escapeshellarg($arg);
-            }, $args));
+            $command .= ' ' . implode(' ', array_map('escapeshellarg', $args));
         }
 
         return $command;
