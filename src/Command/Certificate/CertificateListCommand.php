@@ -20,8 +20,8 @@ class CertificateListCommand extends CommandBase
             ->setDescription('List project certificates');
         $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');
-        $this->addOption('provisioned', null, InputOption::VALUE_NONE, 'Show only auto-provisioned certificates');
-        $this->addOption('no-provisioned', null, InputOption::VALUE_NONE, 'Show only manually added certificates');
+        $this->addOption('only-auto', null, InputOption::VALUE_NONE, 'Show only auto-provisioned certificates');
+        $this->addOption('no-auto', null, InputOption::VALUE_NONE, 'Show only manually added certificates');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
@@ -31,12 +31,8 @@ class CertificateListCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        $filters = [];
-        foreach (['domain', 'issuer', 'provisioned', 'no-provisioned'] as $filterOption) {
-            if ($value = $input->getOption($filterOption)) {
-                $filters[$filterOption] = $value;
-            }
-        }
+        $filterOptions = ['domain', 'issuer', 'only-auto', 'no-auto'];
+        $filters = array_filter(array_intersect_key($input->getOptions(), array_flip($filterOptions)));
 
         $project = $this->getSelectedProject();
 
@@ -118,13 +114,13 @@ class CertificateListCommand extends CommandBase
                     });
                     break;
 
-                case 'provisioned':
+                case 'only-auto':
                     $certs = array_filter($certs, function (Certificate $cert) {
                         return (bool) $cert->is_provisioned;
                     });
                     break;
 
-                case 'no-provisioned':
+                case 'no-auto':
                     $certs = array_filter($certs, function (Certificate $cert) {
                         return !$cert->is_provisioned;
                     });
