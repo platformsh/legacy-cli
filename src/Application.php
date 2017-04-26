@@ -235,11 +235,10 @@ class Application extends ParentApplication
     }
 
     /**
-     * Set the default timezone.
+     * Set the default PHP timezone according to the system timezone.
      *
-     * PHP 5.4 has removed the autodetection of the system timezone,
-     * so it needs to be done manually.
-     * UTC is the fallback in case autodetection fails.
+     * PHP >=5.4 removed the autodetection of the system timezone, so it is
+     * re-implemented here.
      */
     protected function setDefaultTimezone()
     {
