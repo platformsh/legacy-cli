@@ -51,10 +51,6 @@ class Ssh implements InputConfiguringInterface
             $args[] = $option;
         }
 
-        $args = array_map(function($arg) {
-            return escapeshellarg($arg);
-        }, $args);
-
         return $args;
     }
 
@@ -97,7 +93,9 @@ class Ssh implements InputConfiguringInterface
         $command = 'ssh';
         $args = $this->getSshArgs($extraOptions);
         if (!empty($args)) {
-            $command .= ' '.implode(' ', $args);
+            $command .= ' ' . implode(' ', array_map(function($arg) {
+                return escapeshellarg($arg);
+            }, $args));
         }
 
         return $command;
