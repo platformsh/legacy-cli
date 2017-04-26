@@ -29,12 +29,12 @@ class CertificateGetCommand extends CommandBase
 
         $id = $input->getArgument('id');
         if (!$id) {
-            if (!$input->isInteractive()) {
+            $certs = $project->getCertificates();
+            if (!$input->isInteractive() || count($certs) > 5) {
                 $this->stdErr->writeln('The certificate ID is required.');
 
                 return 1;
             }
-            $certs = $project->getCertificates();
             $options = [];
             foreach ($certs as $cert) {
                 $options[$cert->id] = sprintf(

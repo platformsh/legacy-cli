@@ -86,6 +86,7 @@ auth
   auth:login (login)                        Log in to Platform.sh
   auth:logout (logout)                      Log out of Platform.sh
 certificate
+  certificate:add                           Add an SSL certificate to the project
   certificate:delete                        Delete a certificate from the project
   certificate:get                           View a certificate
   certificate:list (certificates)           List project certificates
