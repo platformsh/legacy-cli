@@ -38,7 +38,7 @@ class CertificateDeleteCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if (!$questionHelper->confirm('Are you sure you want to delete the certificate <info>%s</info>?', $certificate->id)) {
+        if (!$questionHelper->confirm(sprintf('Are you sure you want to delete the certificate <info>%s</info>?', $certificate->id))) {
             return 1;
         }
 
