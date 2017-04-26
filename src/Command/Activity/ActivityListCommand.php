@@ -73,7 +73,7 @@ class ActivityListCommand extends CommandBase
                 $activity->getDescription(),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
-                ActivityMonitor::formatResult($activity->result),
+                ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
             ];
             if (!$environmentSpecific) {
                 $row[] = implode(', ', $activity->environments);
@@ -89,13 +89,33 @@ class ActivityListCommand extends CommandBase
 
         if (!$table->formatIsMachineReadable()) {
             if ($environmentSpecific && isset($environment)) {
-                $this->stdErr->writeln("Activities for the environment <info>" . $environment->id . "</info>");
+                $this->stdErr->writeln(
+                    sprintf(
+                        'Activities for the environment <info>%s</info>:',
+                        $environment->id
+                    )
+                );
             } elseif (!$environmentSpecific) {
-                $this->stdErr->writeln("Activities for the project <info>" . $project->id . "</info>");
+                $this->stdErr->writeln(
+                    sprintf(
+                        'Activities for the project <info>%s</info>:',
+                        $project->id
+                    )
+                );
             }
         }
 
         $table->render($rows, $headers);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(
+                sprintf(
+                    'To view the log for an activity, run: <info>%s activity:log [id]</info>',
+                    $this->config()->get('application.executable')
+                )
+            );
+        }
 
         return 0;
     }

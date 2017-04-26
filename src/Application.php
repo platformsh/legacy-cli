@@ -95,6 +95,10 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthInfoCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
+        $commands[] = new Command\Certificate\CertificateAddCommand();
+        $commands[] = new Command\Certificate\CertificateDeleteCommand();
+        $commands[] = new Command\Certificate\CertificateGetCommand();
+        $commands[] = new Command\Certificate\CertificateListCommand();
         $commands[] = new Command\Db\DbSqlCommand();
         $commands[] = new Command\Db\DbDumpCommand();
         $commands[] = new Command\Db\DbSizeCommand();
@@ -235,15 +239,15 @@ class Application extends ParentApplication
     }
 
     /**
-     * Set the default timezone.
+     * Set the default PHP timezone according to the system timezone.
      *
-     * PHP 5.4 has removed the autodetection of the system timezone,
-     * so it needs to be done manually.
-     * UTC is the fallback in case autodetection fails.
+     * PHP >=5.4 removed the autodetection of the system timezone, so it is
+     * re-implemented here.
      */
     protected function setDefaultTimezone()
     {
-        $timezone = 'UTC';
+        $timezone = date_default_timezone_get();
+
         if (is_link('/etc/localtime')) {
             // Mac OS X (and older Linuxes)
             // /etc/localtime is a symlink to the timezone in /usr/share/zoneinfo.

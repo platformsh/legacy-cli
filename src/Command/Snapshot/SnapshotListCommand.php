@@ -61,7 +61,7 @@ class SnapshotListCommand extends CommandBase
                 new AdaptiveTableCell($snapshot_name, ['wrap' => false]),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
-                ActivityMonitor::formatResult($activity->result),
+                ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
             ];
         }
 

@@ -526,31 +526,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Detect automatically whether the output is a TTY terminal.
-     *
-     * @param OutputInterface $output
-     *
-     * @return bool
-     */
-    protected function isTerminal(OutputInterface $output)
-    {
-        if (!$output instanceof StreamOutput) {
-            return false;
-        }
-        // If the POSIX extension doesn't exist, default to true. It's better
-        // for Windows users if we assume the output is a terminal.
-        if (!function_exists('posix_isatty')) {
-            return true;
-        }
-        // This uses the same test as StreamOutput::hasColorSupport().
-        $stream = $output->getStream();
-
-        /** @noinspection PhpParamsInspection */
-
-        return @posix_isatty($stream);
-    }
-
-    /**
      * Add the --project and --host options.
      *
      * @return CommandBase

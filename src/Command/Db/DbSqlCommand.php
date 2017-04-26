@@ -58,16 +58,13 @@ class DbSqlCommand extends CommandBase
 
         $query = $input->getArgument('query');
         if ($query) {
-            $sqlCommand .= $queryOption . escapeshellarg($query) . ' 2>&1';
+            $sqlCommand .= $queryOption . escapeshellarg($query);
         }
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
 
         $sshCommand = $ssh->getSshCommand();
-        if ($this->isTerminal($output)) {
-            $sshCommand .= ' -t';
-        }
         $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sqlCommand);
 
