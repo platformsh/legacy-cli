@@ -16,7 +16,7 @@ class CertificateGetCommand extends CommandBase
         $this
             ->setName('certificate:get')
             ->setDescription('View a certificate')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The certificate ID')
+            ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The certificate property to view');
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption();
@@ -28,31 +28,14 @@ class CertificateGetCommand extends CommandBase
         $project = $this->getSelectedProject();
 
         $id = $input->getArgument('id');
-        if (!$id) {
-            $certs = $project->getCertificates();
-            if (!$input->isInteractive() || count($certs) > 5) {
-                $this->stdErr->writeln('The certificate ID is required.');
+        $cert = $project->getCertificate($id);
+        if (!$cert) {
+            $cert = $this->matchCertificateId($id, $project->getCertificates());
+            if (!$cert) {
+                $this->stdErr->writeln(sprintf('Certificate not found: %s', $id));
 
                 return 1;
             }
-            $options = [];
-            foreach ($certs as $cert) {
-                $options[$cert->id] = sprintf(
-                    "%s (%s)",
-                    substr($cert->id, 0, 12) . '...',
-                    implode(', ', $cert->domains)
-                );
-            }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $id = $questionHelper->choose($options, 'Enter a number to choose a certificate:');
-        }
-
-        $cert = $project->getCertificate($id);
-        if (!$cert) {
-            $this->stdErr->writeln(sprintf('Certificate not found: %s', $id));
-
-            return 1;
         }
 
         /** @var PropertyFormatter $propertyFormatter */
@@ -61,5 +44,24 @@ class CertificateGetCommand extends CommandBase
         $propertyFormatter->displayData($output, $cert->getProperties(), $input->getOption('property'));
 
         return 0;
+    }
+
+    /**
+     * @param string                                 $id
+     * @param \Platformsh\Client\Model\Certificate[] $certs
+     *
+     * @return \Platformsh\Client\Model\Certificate|null
+     */
+    protected function matchCertificateId($id, array $certs)
+    {
+        if (strlen($id) > 5) {
+            foreach ($certs as $candidate) {
+                if (strpos($candidate->id, $id) === 0) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
     }
 }
