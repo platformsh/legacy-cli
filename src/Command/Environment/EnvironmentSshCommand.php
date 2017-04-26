@@ -20,7 +20,7 @@ class EnvironmentSshCommand extends CommandBase
             ->setName('environment:ssh')
             ->setAliases(['ssh'])
             ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, "Output the SSH URL only.")
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
             ->setDescription('SSH to the current environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
