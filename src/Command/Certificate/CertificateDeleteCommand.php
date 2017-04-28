@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -42,7 +43,16 @@ class CertificateDeleteCommand extends CommandBase
             return 1;
         }
 
-        $result = $certificate->delete();
+        try {
+            $result = $certificate->delete();
+        } catch (BadResponseException $e) {
+            if (($response = $e->getResponse()) && $response->getStatusCode() === 403 && $certificate->is_provisioned) {
+                $this->stdErr->writeln(sprintf('The certificate <error>%s</error> is automatically provisioned; it cannot be deleted.', $certificate->id));
+                return 1;
+            }
+
+            throw $e;
+        }
 
         $this->stdErr->writeln(sprintf('The certificate <info>%s</info> has been deleted.', $certificate->id));
 
