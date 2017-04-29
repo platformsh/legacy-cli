@@ -17,7 +17,7 @@ class CertificateDeleteCommand extends CommandBase
         $this
             ->setName('certificate:delete')
             ->setDescription('Delete a certificate from the project')
-            ->addArgument('id', InputArgument::REQUIRED, 'The full certificate ID');
+            ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
         $this->addProjectOption();
     }
 
@@ -33,8 +33,12 @@ class CertificateDeleteCommand extends CommandBase
 
         $certificate = $project->getCertificate($id);
         if (!$certificate) {
-            $this->stdErr->writeln(sprintf('Certificate not found: <error>%s</error>', $id));
-            return 1;
+            try {
+                $certificate = $this->api()->matchPartialId($id, $project->getCertificates(), 'Certificate');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return 1;
+            }
         }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */

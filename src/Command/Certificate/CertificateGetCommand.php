@@ -30,10 +30,10 @@ class CertificateGetCommand extends CommandBase
         $id = $input->getArgument('id');
         $cert = $project->getCertificate($id);
         if (!$cert) {
-            $cert = $this->matchCertificateId($id, $project->getCertificates());
-            if (!$cert) {
-                $this->stdErr->writeln(sprintf('Certificate not found: %s', $id));
-
+            try {
+                $cert = $this->api()->matchPartialId($id, $project->getCertificates(), 'Certificate');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
                 return 1;
             }
         }
@@ -44,24 +44,5 @@ class CertificateGetCommand extends CommandBase
         $propertyFormatter->displayData($output, $cert->getProperties(), $input->getOption('property'));
 
         return 0;
-    }
-
-    /**
-     * @param string                                 $id
-     * @param \Platformsh\Client\Model\Certificate[] $certs
-     *
-     * @return \Platformsh\Client\Model\Certificate|null
-     */
-    protected function matchCertificateId($id, array $certs)
-    {
-        if (strlen($id) > 5) {
-            foreach ($certs as $candidate) {
-                if (strpos($candidate->id, $id) === 0) {
-                    return $candidate;
-                }
-            }
-        }
-
-        return null;
     }
 }
