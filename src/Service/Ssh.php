@@ -70,7 +70,7 @@ class Ssh implements InputConfiguringInterface
             $options['LogLevel'] = 'DEBUG';
         } elseif ($this->output->isVeryVerbose()) {
             $options['LogLevel'] = 'VERBOSE';
-        } elseif (!$this->output->isVerbose()) {
+        } elseif ($this->output->isQuiet()) {
             $options['LogLevel'] = 'QUIET';
         }
 
