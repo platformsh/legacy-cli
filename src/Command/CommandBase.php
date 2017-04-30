@@ -1079,4 +1079,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         return $this->synopsis[$key];
     }
+
+    /**
+     * @param resource|int $descriptor
+     *
+     * @return bool
+     */
+    protected function isTerminal($descriptor)
+    {
+        return !function_exists('posix_isatty') || posix_isatty($descriptor);
+    }
 }

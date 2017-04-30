@@ -50,7 +50,12 @@ class EnvironmentSshCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $command = $ssh->getSshCommand() . ' ' . escapeshellarg($sshUrl);
+        $sshOptions = [];
+        if ($this->isTerminal(STDIN)) {
+            $sshOptions['RequestTty'] = 'yes';
+        }
+        $command = $ssh->getSshCommand($sshOptions);
+        $command .= ' ' . escapeshellarg($sshUrl);
         if ($remoteCommand) {
             $command .= ' ' . escapeshellarg($remoteCommand);
         }
