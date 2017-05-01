@@ -142,32 +142,6 @@ class Config
         return $this->userConfig;
     }
 
-    /**
-     * Update user configuration.
-     *
-     * @param array $config
-     */
-    public function writeUserConfig(array $config)
-    {
-        $dir = $this->getUserConfigDir();
-        if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
-            trigger_error('Failed to create user config directory: ' . $dir, E_USER_WARNING);
-        }
-        $existingConfig = $this->getUserConfig();
-        $config = array_replace_recursive($existingConfig, $config);
-        $configFile = $dir . '/config.yaml';
-        $new = !file_exists($configFile);
-        if (file_put_contents($configFile, Yaml::dump($config, 10)) === false) {
-            trigger_error('Failed to write user config to: ' . $configFile, E_USER_WARNING);
-        }
-        // If the config file was newly created, then chmod to be r/w only by
-        // the user.
-        if ($new) {
-            chmod($configFile, 0600);
-        }
-        $this->userConfig = $config;
-    }
-
     protected function applyUserConfigOverrides()
     {
         // A whitelist of allowed overrides.

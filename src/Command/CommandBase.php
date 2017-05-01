@@ -255,8 +255,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $embargoTime = $timestamp - $config->get('updates.check_interval');
 
         // Stop if updates were last checked after the embargo time.
-        $lastChecked = $config->get('updates.last_checked');
-        if ($lastChecked > $embargoTime) {
+        if ($config->has('updates.last_checked') && $config->get('updates.last_checked') > $embargoTime) {
             return;
         }
 
@@ -264,13 +263,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (filemtime($pharFilename) > $embargoTime) {
             return;
         }
-
-        $config->writeUserConfig([
-            'updates' => [
-                'check' => true,
-                'last_checked' => $timestamp,
-            ],
-        ]);
 
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
