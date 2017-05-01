@@ -13,6 +13,7 @@ use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -301,14 +302,17 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $exitCode = 0;
             list($currentMajorVersion,) = explode('.', $currentVersion, 2);
             list($newMajorVersion,) = explode('.', $newVersion, 2);
-            if ($newMajorVersion === $currentMajorVersion && isset($GLOBALS['argv'])) {
-                $originalCommand = implode(' ', array_map('escapeshellarg', $GLOBALS['argv']));
+            if ($newMajorVersion === $currentMajorVersion
+                && isset($this->input)
+                && $this->input instanceof ArgvInput
+                && is_executable($pharFilename)) {
+                $originalCommand = $this->input->__toString();
                 $questionText = "\n"
                     . 'Original command: <info>' . $originalCommand . '</info>'
                     . "\n\n" . 'Continue?';
                 if ($questionHelper->confirm($questionText)) {
                     $this->stdErr->writeln('');
-                    $exitCode = $shell->executeSimple($originalCommand);
+                    $exitCode = $shell->executeSimple(escapeshellarg($pharFilename) . ' ' . $originalCommand);
                 }
             }
             exit($exitCode);
