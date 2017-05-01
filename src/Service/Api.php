@@ -39,7 +39,7 @@ class Api
     protected $apiTokenType = 'exchange';
 
     /** @var PlatformClient */
-    protected $client;
+    protected static $client;
 
     /** @var Environment[] */
     protected static $environmentsCache = [];
@@ -154,7 +154,7 @@ class Api
      */
     public function getClient($autoLogin = true)
     {
-        if (!isset($this->client)) {
+        if (!isset(self::$client)) {
             $connectorOptions = [];
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
@@ -186,14 +186,14 @@ class Api
             $session->setId('cli-' . $this->sessionId);
             $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
 
-            $this->client = new PlatformClient($connector);
+            self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
             }
         }
 
-        return $this->client;
+        return self::$client;
     }
 
     /**
