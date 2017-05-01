@@ -921,11 +921,18 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $this->debug('Running command: ' . $name);
 
-        $this->container()->reset();
+        // Give the other command an entirely new service container, because the
+        // "input" and "output" parameters, and all their dependents, need to
+        // change.
+        $container = self::$container;
+        self::$container = null;
 
         $application->setCurrentCommand($command);
         $result = $command->run($cmdInput, $output ?: $this->output);
         $application->setCurrentCommand($this);
+
+        // Restore the old service container.
+        self::$container = $container;
 
         return $result;
     }
@@ -1078,5 +1085,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         return $this->synopsis[$key];
+    }
+
+    /**
+     * @param resource|int $descriptor
+     *
+     * @return bool
+     */
+    protected function isTerminal($descriptor)
+    {
+        return !function_exists('posix_isatty') || posix_isatty($descriptor);
     }
 }

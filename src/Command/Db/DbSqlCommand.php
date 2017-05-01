@@ -7,6 +7,7 @@ use Platformsh\Cli\Service\Relationships;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DbSqlCommand extends CommandBase
@@ -17,7 +18,8 @@ class DbSqlCommand extends CommandBase
         $this->setName('db:sql')
             ->setAliases(['sql'])
             ->setDescription('Run SQL on the remote database')
-            ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute');
+            ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
+            ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
@@ -44,27 +46,38 @@ class DbSqlCommand extends CommandBase
             return 1;
         }
 
+        $query = $input->getArgument('query');
+
         switch ($database['scheme']) {
             case 'pgsql':
                 $sqlCommand = 'psql ' . $relationships->getSqlCommandArgs('psql', $database);
-                $queryOption = ' -c ';
+                if ($query) {
+                    if ($input->getOption('raw')) {
+                        $sqlCommand .= ' -t';
+                    }
+                    $sqlCommand .= ' -c ' . escapeshellarg($query);
+                }
                 break;
 
             default:
                 $sqlCommand = 'mysql --no-auto-rehash ' . $relationships->getSqlCommandArgs('mysql', $database);
-                $queryOption = ' --execute ';
+                if ($query) {
+                    if ($input->getOption('raw')) {
+                        $sqlCommand .= ' --batch --raw';
+                    }
+                    $sqlCommand .= ' --execute ' . escapeshellarg($query);
+                }
                 break;
-        }
-
-        $query = $input->getArgument('query');
-        if ($query) {
-            $sqlCommand .= $queryOption . escapeshellarg($query);
         }
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
 
-        $sshCommand = $ssh->getSshCommand();
+        $sshOptions = [];
+        if ($this->isTerminal(STDIN)) {
+            $sshOptions['RequestTty'] = 'yes';
+        }
+        $sshCommand = $ssh->getSshCommand($sshOptions);
         $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($sqlCommand);
 

@@ -38,17 +38,9 @@ class Ssh implements InputConfiguringInterface
         $options = array_merge($this->getSshOptions(), $extraOptions);
 
         $args = [];
-        if ($this->output->isDebug()) {
-            $args[] = '-vv';
-        } elseif ($this->output->isVeryVerbose()) {
-            $args[] = '-v';
-        } elseif ($this->output->isQuiet()) {
-            $args[] = '-q';
-        }
-
-        foreach ($options as $option) {
+        foreach ($options as $name => $value) {
             $args[] = '-o';
-            $args[] = $option;
+            $args[] = $name . ' ' . $value;
         }
 
         return $args;
@@ -63,19 +55,23 @@ class Ssh implements InputConfiguringInterface
     {
         $options = [];
 
-        $options[] = 'SendEnv TERM';
+        $options['SendEnv'] = 'TERM';
 
         if ($this->input->hasOption('identity-file') && $this->input->getOption('identity-file')) {
             $file = $this->input->getOption('identity-file');
             if (!file_exists($file)) {
                 throw new \InvalidArgumentException('Identity file not found: ' . $file);
             }
-            $options[] = 'IdentitiesOnly yes';
-            $options[] = 'IdentityFile ' . $file;
+            $options['IdentitiesOnly'] = 'yes';
+            $options['IdentityFile'] = $file;
         }
 
-        if ($this->output->isDecorated()) {
-            $options[] = 'RequestTty yes';
+        if ($this->output->isDebug()) {
+            $options['LogLevel'] = 'DEBUG';
+        } elseif ($this->output->isVeryVerbose()) {
+            $options['LogLevel'] = 'VERBOSE';
+        } elseif ($this->output->isQuiet()) {
+            $options['LogLevel'] = 'QUIET';
         }
 
         return $options;

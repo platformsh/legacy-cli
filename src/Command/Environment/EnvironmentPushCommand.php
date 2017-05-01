@@ -145,7 +145,7 @@ class EnvironmentPushCommand extends CommandBase
         $extraSshOptions = [];
         $env = [];
         if ($input->getOption('no-wait')) {
-            $extraSshOptions[] = 'SendEnv PLATFORMSH_PUSH_NO_WAIT';
+            $extraSshOptions['SendEnv'] = 'PLATFORMSH_PUSH_NO_WAIT';
             $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }
         $git->setSshCommand($ssh->getSshCommand($extraSshOptions));

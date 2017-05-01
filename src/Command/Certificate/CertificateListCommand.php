@@ -58,7 +58,7 @@ class CertificateListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->getService('property_formatter');
 
-        $header = ['ID', 'Domain(s)', 'Created', 'Expires'];
+        $header = ['ID', 'Domain(s)', 'Created', 'Expires', 'Issuer'];
         $rows = [];
         foreach ($certs as $cert) {
             $rows[] = [
@@ -66,6 +66,7 @@ class CertificateListCommand extends CommandBase
                 implode("\n", $cert->domains),
                 $propertyFormatter->format($cert->created_at, 'created_at'),
                 $propertyFormatter->format($cert->expires_at, 'expires_at'),
+                $this->getCertificateIssuerByAlias($cert, 'commonName') ?: '',
             ];
         }
 
@@ -127,5 +128,21 @@ class CertificateListCommand extends CommandBase
                     break;
             }
         }
+    }
+
+    /**
+     * @param \Platformsh\Client\Model\Certificate $cert
+     * @param string                               $alias
+     *
+     * @return string|bool
+     */
+    protected function getCertificateIssuerByAlias(Certificate $cert, $alias) {
+        foreach ($cert->issuer as $issuer) {
+            if (isset($issuer['alias'], $issuer['value']) && $issuer['alias'] === $alias) {
+                return $issuer['value'];
+            }
+        }
+
+        return false;
     }
 }

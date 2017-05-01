@@ -39,7 +39,7 @@ class Api
     protected $apiTokenType = 'exchange';
 
     /** @var PlatformClient */
-    protected $client;
+    protected static $client;
 
     /** @var Environment[] */
     protected static $environmentsCache = [];
@@ -154,7 +154,7 @@ class Api
      */
     public function getClient($autoLogin = true)
     {
-        if (!isset($this->client)) {
+        if (!isset(self::$client)) {
             $connectorOptions = [];
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
@@ -186,14 +186,14 @@ class Api
             $session->setId('cli-' . $this->sessionId);
             $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
 
-            $this->client = new PlatformClient($connector);
+            self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
             }
         }
 
-        return $this->client;
+        return self::$client;
     }
 
     /**
@@ -557,5 +557,38 @@ class Api
         }
 
         return sprintf($pattern, $tag, $title, $project->id);
+    }
+
+    /**
+     * Get a resource, matching on the beginning of the ID.
+     *
+     * @param string        $id
+     * @param ApiResource[] $resources
+     * @param string        $name
+     *
+     * @return ApiResource
+     *   The resource, if one (and only one) is matched.
+     */
+    public function matchPartialId($id, array $resources, $name = 'Resource')
+    {
+        $matched = array_filter($resources, function (ApiResource $resource) use ($id) {
+            return strpos($resource->getProperty('id'), $id) === 0;
+        });
+
+        if (count($matched) > 1) {
+            $matchedIds = array_map(function (ApiResource $resource) {
+                return $resource->id;
+            }, $matched);
+            throw new \InvalidArgumentException(sprintf(
+                'The partial ID "<error>%s</error>" is ambiguous; it matches the following %s IDs: %s',
+                $id,
+                strtolower($name),
+                "\n  " . implode("\n  ", $matchedIds)
+            ));
+        } elseif (count($matched) === 0) {
+            throw new \InvalidArgumentException(sprintf('%s not found: "<error>%s</error>"', $name, $id));
+        }
+
+        return reset($matched);
     }
 }
