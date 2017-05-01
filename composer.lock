@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "8acb4c493c567e587fb99c666135f5f2",
+    "content-hash": "c3322283a273a90a18178d15f6e44acc",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -91,6 +91,11 @@
                 "phpunit/phpunit": "~4.5"
             },
             "type": "library",
+            "extra": {
+                "patches_applied": {
+                    "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch"
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "CommerceGuys\\Guzzle\\Oauth2\\": "src"

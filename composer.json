@@ -49,5 +49,10 @@
     ],
     "bin": [
         "bin/platform"
-    ]
+    ],
+    "extra": {
+        "patches": {
+            "commerceguys/guzzle-oauth2-plugin": {}
+        }
+    }
 }

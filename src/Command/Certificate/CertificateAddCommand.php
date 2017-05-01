@@ -35,9 +35,9 @@ class CertificateAddCommand extends CommandBase
             return 1;
         }
 
-        list($certificate, $key, $chain) = (new SslUtil())->validate($certPath, $keyPath, $chainPaths);
+        $options = (new SslUtil())->validate($certPath, $keyPath, $chainPaths);
 
-        $result = $project->addCertificate($certificate, $key, $chain);
+        $result = $project->addCertificate($options['certificate'], $options['key'], $options['chain']);
 
         if (!$input->getOption('no-wait')) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */

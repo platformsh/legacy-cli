@@ -13,6 +13,7 @@ use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -222,37 +223,46 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
     /**
      * Check for updates.
-     *
-     * @param bool $reset
      */
-    protected function checkUpdates($reset = false)
+    protected function checkUpdates()
     {
-        if (!$reset && self::$checkedUpdates) {
+        // Avoid checking more than once in this process.
+        if (self::$checkedUpdates) {
             return;
         }
         self::$checkedUpdates = true;
 
-        // Check that this instance of the CLI was installed as a Phar.
-        if (!extension_loaded('Phar') || !\Phar::running(false)) {
+        // Check that the Phar extension is available.
+        if (!extension_loaded('Phar')) {
             return;
         }
 
-        $timestamp = time();
-        $config = $this->config();
+        // Get the filename of the Phar, or stop if this instance of the CLI is
+        // not a Phar.
+        $pharFilename = \Phar::running(false);
+        if (!$pharFilename) {
+            return;
+        }
 
+        // Check if updates are configured.
+        $config = $this->config();
         if (!$config->get('updates.check')) {
             return;
-        } elseif (!$reset
-            && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
+        }
+
+        // Determine an embargo time, after which updates can be checked.
+        $timestamp = time();
+        $embargoTime = $timestamp - $config->get('updates.check_interval');
+
+        // Stop if updates were last checked after the embargo time.
+        if ($config->has('updates.last_checked') && $config->get('updates.last_checked') > $embargoTime) {
             return;
         }
 
-        $config->writeUserConfig([
-            'updates' => [
-                'check' => true,
-                'last_checked' => $timestamp,
-            ],
-        ]);
+        // Stop if the Phar was updated after the embargo time.
+        if (filemtime($pharFilename) > $embargoTime) {
+            return;
+        }
 
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
@@ -284,14 +294,17 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $exitCode = 0;
             list($currentMajorVersion,) = explode('.', $currentVersion, 2);
             list($newMajorVersion,) = explode('.', $newVersion, 2);
-            if ($newMajorVersion === $currentMajorVersion && isset($GLOBALS['argv'])) {
-                $originalCommand = implode(' ', array_map('escapeshellarg', $GLOBALS['argv']));
+            if ($newMajorVersion === $currentMajorVersion
+                && isset($this->input)
+                && $this->input instanceof ArgvInput
+                && is_executable($pharFilename)) {
+                $originalCommand = $this->input->__toString();
                 $questionText = "\n"
                     . 'Original command: <info>' . $originalCommand . '</info>'
                     . "\n\n" . 'Continue?';
                 if ($questionHelper->confirm($questionText)) {
                     $this->stdErr->writeln('');
-                    $exitCode = $shell->executeSimple($originalCommand);
+                    $exitCode = $shell->executeSimple(escapeshellarg($pharFilename) . ' ' . $originalCommand);
                 }
             }
             exit($exitCode);

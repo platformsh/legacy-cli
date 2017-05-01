@@ -47,7 +47,7 @@ class SelfUpdateCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function checkUpdates($reset = false)
+    protected function checkUpdates()
     {
         // Don't check for updates automatically when running self-update.
     }
