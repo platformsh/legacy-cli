@@ -222,28 +222,45 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
     /**
      * Check for updates.
-     *
-     * @param bool $reset
      */
-    protected function checkUpdates($reset = false)
+    protected function checkUpdates()
     {
-        if (!$reset && self::$checkedUpdates) {
+        // Avoid checking more than once in this process.
+        if (self::$checkedUpdates) {
             return;
         }
         self::$checkedUpdates = true;
 
-        // Check that this instance of the CLI was installed as a Phar.
-        if (!extension_loaded('Phar') || !\Phar::running(false)) {
+        // Check that the Phar extension is available.
+        if (!extension_loaded('Phar')) {
             return;
         }
 
-        $timestamp = time();
-        $config = $this->config();
+        // Get the filename of the Phar, or stop if this instance of the CLI is
+        // not a Phar.
+        $pharFilename = \Phar::running(false);
+        if (!$pharFilename) {
+            return;
+        }
 
+        // Check if updates are configured.
+        $config = $this->config();
         if (!$config->get('updates.check')) {
             return;
-        } elseif (!$reset
-            && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
+        }
+
+        // Determine an embargo time, after which updates can be checked.
+        $timestamp = time();
+        $embargoTime = $timestamp - $config->get('updates.check_interval');
+
+        // Stop if updates were last checked after the embargo time.
+        $lastChecked = $config->get('updates.last_checked');
+        if ($lastChecked > $embargoTime) {
+            return;
+        }
+
+        // Stop if the Phar was updated after the embargo time.
+        if (filemtime($pharFilename) > $embargoTime) {
             return;
         }
 
