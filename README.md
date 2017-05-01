@@ -185,6 +185,7 @@ You can configure the CLI via the user configuration file `~/.platformsh/config.
 ```yaml
 api:
   # A path (relative or absolute) to a file containing an API token.
+  # The file should be stored with minimal permissions.
   # Run 'platform logout --all' if you change this value.
   token_file: null
 
@@ -208,6 +209,7 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
+* `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It is usually preferable to use `config.yaml` as above.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 

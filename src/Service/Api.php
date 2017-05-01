@@ -83,13 +83,15 @@ class Api
                 $this->apiToken = $this->config->get('api.token');
                 $this->apiTokenType = 'exchange';
                 $this->sessionId = 'api-token';
-            } elseif ($this->config->has('api.access_token_file')) {
+            } elseif ($this->config->has('api.access_token_file') || $this->config->has('api.access_token')) {
                 // Permanent, personal access token (deprecated) - an OAuth 2.0
                 // bearer token which is used directly in API requests.
-                $this->apiToken = $this->loadTokenFromFile($this->config->get('api.access_token_file'));
-                $this->apiTokenType = 'access';
-            } elseif ($this->config->has('api.access_token')) {
-                $this->apiToken = $this->config->get('api.access_token');
+                @trigger_error('This type of API token (a permanent access token) is deprecated. Please generate a new API token when possible.', E_USER_DEPRECATED);
+                if ($this->config->has('api.access_token_file')) {
+                    $this->apiToken = $this->loadTokenFromFile($this->config->get('api.access_token_file'));
+                } else {
+                    $this->apiToken = $this->config->get('api.access_token');
+                }
                 $this->apiTokenType = 'access';
             }
         }
