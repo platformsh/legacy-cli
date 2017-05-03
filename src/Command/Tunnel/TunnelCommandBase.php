@@ -67,6 +67,7 @@ abstract class TunnelCommandBase extends CommandBase
     {
         if (!isset($this->tunnelInfo)) {
             $this->tunnelInfo = [];
+            // @todo move this to State service (in a new major version)
             $filename = $this->config()->getUserConfigDir() . '/tunnel-info.json';
             if (file_exists($filename)) {
                 $this->debug(sprintf('Loading tunnel info from %s', $filename));

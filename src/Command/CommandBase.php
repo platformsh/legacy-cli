@@ -19,7 +19,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
@@ -255,7 +254,9 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $embargoTime = $timestamp - $config->get('updates.check_interval');
 
         // Stop if updates were last checked after the embargo time.
-        if ($config->has('updates.last_checked') && $config->get('updates.last_checked') > $embargoTime) {
+        /** @var \Platformsh\Cli\Service\State $state */
+        $state = $this->getService('state');
+        if ($state->get('updates.last_checked') > $embargoTime) {
             return;
         }
 
@@ -287,6 +288,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 throw $e;
             }
         }
+
+        $state->set('updates.last_checked', $timestamp);
 
         // If the update was successful, and it's not a major version change,
         // then prompt the user to continue after updating.
