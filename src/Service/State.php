@@ -59,13 +59,10 @@ class State
      */
     public function save()
     {
-        $filename = $this->getFilename();
-        $fs = new SymfonyFilesystem();
-        if (empty($this->state)) {
-            $fs->remove($filename);
-        } else {
-            $fs->dumpFile($filename, json_encode($this->state));
-        }
+        (new SymfonyFilesystem())->dumpFile(
+            $this->getFilename(),
+            json_encode($this->state)
+        );
     }
 
     /**
