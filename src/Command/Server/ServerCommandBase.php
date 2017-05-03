@@ -97,6 +97,7 @@ abstract class ServerCommandBase extends CommandBase
     {
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
+            // @todo move this to State service (in a new major version)
             $filename = $this->config()->getUserConfigDir() . '/local-servers.json';
             if (file_exists($filename)) {
                 $this->serverInfo = (array) json_decode(file_get_contents($filename), true);
