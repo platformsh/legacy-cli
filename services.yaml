@@ -54,6 +54,9 @@ services:
     ssh:
         class:     '\Platformsh\Cli\Service\Ssh'
         arguments: ['@input', '@output']
+    state:
+        class:     '\Platformsh\Cli\Service\State'
+        arguments: ['@config']
     table:
         class:     '\Platformsh\Cli\Service\Table'
         arguments: ['@input', '@output']
