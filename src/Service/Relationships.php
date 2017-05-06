@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Service;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Relationships implements InputConfiguringInterface
@@ -40,7 +40,7 @@ class Relationships implements InputConfiguringInterface
      */
     public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
     {
-        $stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
+        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $relationships = $this->getRelationships($sshUrl);
 
         // Filter to find database (mysql and pgsql) relationships.

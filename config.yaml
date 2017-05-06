@@ -8,6 +8,7 @@ application:
   installer_url: 'https://accounts.sensio.cloud/cli/installer'
   manifest_url: 'https://accounts.sensio.cloud/cli/manifest.json'
   user_config_dir: '.sensiocloud'
+  user_state_file: '.sensiocloud/state.json'
   env_prefix: 'SENSIOCLOUD_CLI_'
 
 # Configuration for working with projects locally.
@@ -73,7 +74,6 @@ detection:
 # Automatic updates.
 # This can be overridden in the user config file.
 updates:
-  last_checked: null
   check_interval: 86400
 
   # Overridden by {application.env_prefix}UPDATES_CHECK env var.

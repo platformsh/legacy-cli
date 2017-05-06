@@ -13,12 +13,12 @@ use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
@@ -222,37 +222,48 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
     /**
      * Check for updates.
-     *
-     * @param bool $reset
      */
-    protected function checkUpdates($reset = false)
+    protected function checkUpdates()
     {
-        if (!$reset && self::$checkedUpdates) {
+        // Avoid checking more than once in this process.
+        if (self::$checkedUpdates) {
             return;
         }
         self::$checkedUpdates = true;
 
-        // Check that this instance of the CLI was installed as a Phar.
-        if (!extension_loaded('Phar') || !\Phar::running(false)) {
+        // Check that the Phar extension is available.
+        if (!extension_loaded('Phar')) {
             return;
         }
 
-        $timestamp = time();
-        $config = $this->config();
+        // Get the filename of the Phar, or stop if this instance of the CLI is
+        // not a Phar.
+        $pharFilename = \Phar::running(false);
+        if (!$pharFilename) {
+            return;
+        }
 
+        // Check if updates are configured.
+        $config = $this->config();
         if (!$config->get('updates.check')) {
             return;
-        } elseif (!$reset
-            && $config->get('updates.last_checked') > $timestamp - $config->get('updates.check_interval')) {
+        }
+
+        // Determine an embargo time, after which updates can be checked.
+        $timestamp = time();
+        $embargoTime = $timestamp - $config->get('updates.check_interval');
+
+        // Stop if updates were last checked after the embargo time.
+        /** @var \Platformsh\Cli\Service\State $state */
+        $state = $this->getService('state');
+        if ($state->get('updates.last_checked') > $embargoTime) {
             return;
         }
 
-        $config->writeUserConfig([
-            'updates' => [
-                'check' => true,
-                'last_checked' => $timestamp,
-            ],
-        ]);
+        // Stop if the Phar was updated after the embargo time.
+        if (filemtime($pharFilename) > $embargoTime) {
+            return;
+        }
 
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
@@ -278,20 +289,25 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
         }
 
+        $state->set('updates.last_checked', $timestamp);
+
         // If the update was successful, and it's not a major version change,
         // then prompt the user to continue after updating.
         if ($newVersion !== false) {
             $exitCode = 0;
             list($currentMajorVersion,) = explode('.', $currentVersion, 2);
             list($newMajorVersion,) = explode('.', $newVersion, 2);
-            if ($newMajorVersion === $currentMajorVersion && isset($GLOBALS['argv'])) {
-                $originalCommand = implode(' ', array_map('escapeshellarg', $GLOBALS['argv']));
+            if ($newMajorVersion === $currentMajorVersion
+                && isset($this->input)
+                && $this->input instanceof ArgvInput
+                && is_executable($pharFilename)) {
+                $originalCommand = $this->input->__toString();
                 $questionText = "\n"
                     . 'Original command: <info>' . $originalCommand . '</info>'
                     . "\n\n" . 'Continue?';
                 if ($questionHelper->confirm($questionText)) {
                     $this->stdErr->writeln('');
-                    $exitCode = $shell->executeSimple($originalCommand);
+                    $exitCode = $shell->executeSimple(escapeshellarg($pharFilename) . ' ' . $originalCommand);
                 }
             }
             exit($exitCode);
@@ -526,31 +542,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Detect automatically whether the output is a TTY terminal.
-     *
-     * @param OutputInterface $output
-     *
-     * @return bool
-     */
-    protected function isTerminal(OutputInterface $output)
-    {
-        if (!$output instanceof StreamOutput) {
-            return false;
-        }
-        // If the POSIX extension doesn't exist, default to true. It's better
-        // for Windows users if we assume the output is a terminal.
-        if (!function_exists('posix_isatty')) {
-            return true;
-        }
-        // This uses the same test as StreamOutput::hasColorSupport().
-        $stream = $output->getStream();
-
-        /** @noinspection PhpParamsInspection */
-
-        return @posix_isatty($stream);
-    }
-
-    /**
      * Add the --project and --host options.
      *
      * @return CommandBase
@@ -780,6 +771,28 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
+     * Offer the user an interactive choice of projects.
+     *
+     * @param Project[] $projects
+     * @param string    $text
+     *
+     * @return string
+     *   The chosen project ID.
+     */
+    protected function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    {
+        $projectList = [];
+        foreach ($projects as $project) {
+            $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
+        }
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        return $questionHelper->choose($projectList, $text);
+    }
+
+    /**
      * @param InputInterface  $input
      * @param bool $envNotRequired
      */
@@ -924,11 +937,18 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $this->debug('Running command: ' . $name);
 
-        $this->container()->reset();
+        // Give the other command an entirely new service container, because the
+        // "input" and "output" parameters, and all their dependents, need to
+        // change.
+        $container = self::$container;
+        self::$container = null;
 
         $application->setCurrentCommand($command);
         $result = $command->run($cmdInput, $output ?: $this->output);
         $application->setCurrentCommand($this);
+
+        // Restore the old service container.
+        self::$container = $container;
 
         return $result;
     }
@@ -997,6 +1017,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *
      * Services are configured in services.yml, and loaded via the Symfony
      * Dependency Injection component.
+     *
+     * When using this method, always store the result in a temporary variable,
+     * so that the service's type can be hinted in a variable docblock (allowing
+     * IDEs and other analysers to check subsequent code). For example:
+     * <code>
+     *   /** @var \Platformsh\Cli\Service\Filesystem $fs *\/
+     *   $fs = $this->getService('fs');
+     * </code>
      *
      * @param string $name The service name. See services.yml for a list.
      *
@@ -1073,5 +1101,15 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         }
 
         return $this->synopsis[$key];
+    }
+
+    /**
+     * @param resource|int $descriptor
+     *
+     * @return bool
+     */
+    protected function isTerminal($descriptor)
+    {
+        return !function_exists('posix_isatty') || posix_isatty($descriptor);
     }
 }

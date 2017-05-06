@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DependencyInstaller
@@ -33,7 +34,7 @@ class DependencyInstaller
         }
         $paths = array_filter(array_map('realpath', $paths));
         if (!empty($paths)) {
-            $pathVariable = stripos(PHP_OS, 'WIN') === 0 ? 'Path' : 'PATH';
+            $pathVariable = OsUtil::isWindows() ? 'Path' : 'PATH';
             $env[$pathVariable] = implode(':', $paths);
             if (getenv($pathVariable)) {
                 $env[$pathVariable] .= ':' . getenv($pathVariable);

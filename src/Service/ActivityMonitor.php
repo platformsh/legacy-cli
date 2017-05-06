@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Service;
 use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -38,7 +38,7 @@ class ActivityMonitor
      */
     protected function getStdErr()
     {
-        return $this->output instanceof ConsoleOutput ? $this->output->getErrorOutput() : $this->output;
+        return $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
     }
 
     /**
@@ -243,14 +243,17 @@ class ActivityMonitor
      * Format a result.
      *
      * @param string $result
+     * @param bool   $decorate
      *
      * @return string
      */
-    public static function formatResult($result)
+    public static function formatResult($result, $decorate = true)
     {
         $name = isset(self::$stateNames[$result]) ? self::$stateNames[$result] : $result;
 
-        return $result === Activity::RESULT_FAILURE ? '<error>' . $name . '</error>' : $name;
+        return $decorate && $result === Activity::RESULT_FAILURE
+            ? '<error>' . $name . '</error>'
+            : $name;
     }
 
     /**

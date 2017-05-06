@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
@@ -96,6 +97,7 @@ abstract class ServerCommandBase extends CommandBase
     {
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
+            // @todo move this to State service (in a new major version)
             $filename = $this->config()->getUserConfigDir() . '/local-servers.json';
             if (file_exists($filename)) {
                 $this->serverInfo = (array) json_decode(file_get_contents($filename), true);
@@ -246,7 +248,7 @@ abstract class ServerCommandBase extends CommandBase
 
             $this->showSecurityWarning();
 
-            $arguments[] = $this->getService('shell')->resolveCommand('php');
+            $arguments[] = 'php';
 
             foreach ($this->getServerPhpConfig() as $item => $value) {
                 $arguments[] = sprintf('-d %s="%s"', $item, $value);
@@ -261,7 +263,7 @@ abstract class ServerCommandBase extends CommandBase
             ]);
 
             // An 'exec' is needed to stop creating two processes on some OSs.
-            if (strpos(PHP_OS, 'WIN') === false) {
+            if (!OsUtil::isWindows()) {
                 array_unshift($arguments, 'exec');
             }
 
