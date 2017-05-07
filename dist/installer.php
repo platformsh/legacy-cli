@@ -381,23 +381,25 @@ function is_ansi()
  * @param string $home
  *   The user's home directory.
  *
+ * @see \Platformsh\Cli\Command\Self\SelfInstallCommand::findShellConfigFile()
+ *
  * @return string|false
  *   The absolute path to an existing shell config file, or false on failure.
  */
 function findShellConfigFile($home)
 {
     $candidates = array(
-        $home . '/.bash_profile',
-        $home . '/.bashrc',
+        '.bash_profile',
+        '.bashrc',
     );
     $shell = str_replace('/bin/', '', getenv('SHELL'));
     if ($shell === 'zsh') {
-        array_unshift($candidates, $home . '/.zshrc');
-        array_unshift($candidates, $home . '/.zprofile');
+        array_unshift($candidates, '.zshrc');
+        array_unshift($candidates, '.zprofile');
     }
     foreach ($candidates as $candidate) {
-        if (file_exists($candidate)) {
-            return $candidate;
+        if (file_exists($home . DIRECTORY_SEPARATOR . $candidate)) {
+            return $home . DIRECTORY_SEPARATOR . $candidate;
         }
     }
 
