@@ -70,10 +70,8 @@ class DbDumpCommand extends CommandBase
             if ($gzip) {
                 $defaultFilename .= '.gz';
             }
-            if ($projectRoot = $this->getProjectRoot()) {
-                $defaultFilename = $projectRoot . '/' . $defaultFilename;
-            }
-            $dumpFile = $defaultFilename;
+            $projectRoot = $this->getProjectRoot();
+            $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
 
             // Process the user --file option.
             if ($input->getOption('file')) {
