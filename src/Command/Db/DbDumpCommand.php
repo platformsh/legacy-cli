@@ -80,18 +80,17 @@ class DbDumpCommand extends CommandBase
                 // Ensure the filename is not a directory.
                 if (is_dir($dumpFile)) {
                     $dumpFile .= '/' . $defaultFilename;
-                }
-
-                // Insert a timestamp into the filename.
-                if ($timestamp) {
+                } elseif ($timestamp) {
+                    // Insert a timestamp into the filename, before the
+                    // extension.
                     $basename = basename($dumpFile);
                     $prefix = substr($dumpFile, 0, - strlen($basename));
-                    if ($dotPos = strrpos($basename, '.')) {
-                        $basename = substr($basename, 0, $dotPos) . '--' . $timestamp . substr($basename, $dotPos);
+                    if (($dotPos = strpos($basename, '.')) > 0) {
+                        $basenameWithTimestamp = substr($basename, 0, $dotPos) . '--' . $timestamp . substr($basename, $dotPos);
                     } else {
-                        $basename .= '--' . $timestamp;
+                        $basenameWithTimestamp = $basename . '--' . $timestamp;
                     }
-                    $dumpFile = $prefix . $basename;
+                    $dumpFile = $prefix . $basenameWithTimestamp;
                 }
             }
 
