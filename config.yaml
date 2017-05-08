@@ -32,6 +32,7 @@ service:
   app_config_file: '.platform.app.yaml'
   project_config_dir: '.platform'
   docs_url: 'https://docs.platform.sh'
+  docs_search_url: 'https://docs.platform.sh/?q={{ terms }}'
   accounts_url: 'https://accounts.platform.sh'
   available_regions:
     - eu.platform.sh

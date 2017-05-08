@@ -28,13 +28,7 @@ class DocsCommand extends CommandBase
         if ($search) {
             $query = $this->getSearchQuery($search);
 
-            // @todo provide native or other search options?
-            //$url .= '/search?q=' . urlencode($term);
-
-            // Use Google search.
-            $hostname = parse_url($this->config()->get('service.docs_url'), PHP_URL_HOST);
-            $url = 'https://www.google.com/search?q='
-                . urlencode('site:' . $hostname . ' ' . $query);
+            $url = str_replace('{{ terms }}', urlencode($query), $this->config()->get('service.docs_search_url'));
         }
 
         /** @var \Platformsh\Cli\Service\Url $urlService */
