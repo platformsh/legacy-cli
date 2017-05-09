@@ -180,7 +180,8 @@ the command `platform clear-cache` (or `platform cc` for short).
 
 ## Customization
 
-You can configure the CLI via the user configuration file `~/.platformsh/config.yaml`:
+You can configure the CLI via the user configuration file `~/.platformsh/config.yaml`.
+These are the possible keys, and their default values:
 
 ```yaml
 api:
