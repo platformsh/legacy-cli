@@ -71,6 +71,8 @@ class ProjectCurlCommand extends CommandBase
 
         if ($output->isVeryVerbose()) {
             $commandline .= ' --verbose';
+        } else {
+            $commandline .= ' --silent --show-error';
         }
 
         $this->stdErr->writeln(sprintf('Running command: <info>%s</info>', str_replace($token, '[token]', $commandline)), OutputInterface::VERBOSITY_VERBOSE);
