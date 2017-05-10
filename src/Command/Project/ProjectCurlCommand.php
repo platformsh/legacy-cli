@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectCurlCommand extends CommandBase
@@ -41,7 +42,7 @@ class ProjectCurlCommand extends CommandBase
             $url .= '/' . ltrim($path, '/');
         }
 
-        $token = $this->getAccessToken();
+        $token = $this->api()->getAccessToken();
         $commandline = sprintf(
             'curl -H %s %s',
             escapeshellarg('Authorization: Bearer ' . $token),
@@ -77,22 +78,5 @@ class ProjectCurlCommand extends CommandBase
         $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
 
         return proc_close($process);
-    }
-
-    /**
-     * @return string
-     */
-    protected function getAccessToken()
-    {
-        $session = $this->api()->getClient()->getConnector()->getSession();
-        if (!$token = $session->get('accessToken')) {
-            // Force a connection to the API to ensure there is an access token.
-            $this->api()->getMyAccount(true);
-            if (!$token = $session->get('accessToken')) {
-                throw new \RuntimeException('No access token found');
-            }
-        }
-
-        return $token;
     }
 }
