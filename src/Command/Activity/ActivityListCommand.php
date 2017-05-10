@@ -5,8 +5,10 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityListCommand extends CommandBase
@@ -49,12 +51,33 @@ class ActivityListCommand extends CommandBase
 
         if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
             $environmentSpecific = true;
-            $environment = $this->getSelectedEnvironment();
-            $activities = $environment->getActivities($limit, $input->getOption('type'), $startsAt);
+            $apiResource = $this->getSelectedEnvironment();
         } else {
             $environmentSpecific = false;
-            $activities = $project->getActivities($limit, $input->getOption('type'), $startsAt);
+            $apiResource = $project;
         }
+
+        $activities = [];
+        $type = $input->getOption('type');
+        $progress = new ProgressBar($output->isDecorated() ? $this->stdErr : new NullOutput());
+        $progress->setMessage('Loading activities...');
+        $progress->setFormat('%message% %current% (max: %max%)');
+        $progress->start($limit);
+        while (count($activities) < $limit) {
+            if ($activity = end($activities)) {
+                $startsAt = strtotime($activity->created_at);
+            }
+            $nextActivities = $apiResource->getActivities($limit - count($activities), $type, $startsAt);
+            if (!count($nextActivities)) {
+                break;
+            }
+            foreach ($nextActivities as $activity) {
+                $activities[$activity->id] = $activity;
+            }
+            $progress->setProgress(count($activities));
+        }
+        $progress->clear();
+
         /** @var \Platformsh\Client\Model\Activity[] $activities */
         if (!$activities) {
             $this->stdErr->writeln('No activities found');
@@ -88,18 +111,18 @@ class ActivityListCommand extends CommandBase
         }
 
         if (!$table->formatIsMachineReadable()) {
-            if ($environmentSpecific && isset($environment)) {
+            if ($environmentSpecific) {
                 $this->stdErr->writeln(
                     sprintf(
                         'Activities for the environment <info>%s</info>:',
-                        $environment->id
+                        $apiResource->id
                     )
                 );
-            } elseif (!$environmentSpecific) {
+            } else {
                 $this->stdErr->writeln(
                     sprintf(
                         'Activities for the project <info>%s</info>:',
-                        $project->id
+                        $this->api()->getProjectLabel($project)
                     )
                 );
             }

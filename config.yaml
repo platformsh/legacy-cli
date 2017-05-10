@@ -3,7 +3,6 @@ application:
   name: 'Platform.sh CLI'
   version: '3.15.4'
   executable: 'platform'
-  phar: 'platform.phar'
   package_name: 'platformsh/cli'
   installer_url: 'https://platform.sh/cli/installer'
   manifest_url: 'https://platform.sh/cli/manifest.json'
@@ -33,6 +32,7 @@ service:
   app_config_file: '.platform.app.yaml'
   project_config_dir: '.platform'
   docs_url: 'https://docs.platform.sh'
+  docs_search_url: 'https://docs.platform.sh/?q={{ terms }}'
   accounts_url: 'https://accounts.platform.sh'
   available_regions:
     - eu.platform.sh
@@ -75,7 +75,6 @@ detection:
 # Automatic updates.
 # This can be overridden in the user config file.
 updates:
-  last_checked: ~
   check_interval: 86400
 
   # Overridden by {application.env_prefix}UPDATES_CHECK env var.

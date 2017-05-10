@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -62,25 +63,23 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
+        $version = $this->config()->get('application.version');
+
         $boxConfig = [];
         if ($outputFilename) {
             /** @var \Platformsh\Cli\Service\Filesystem $fs */
             $fs = $this->getService('fs');
             $boxConfig['output'] = $fs->makePathAbsolute($outputFilename);
+            $phar = $boxConfig['output'];
         } else {
-            // Default output: CLI_PHAR in the current directory.
-            $cwd = getcwd();
-            if ($cwd && $cwd !== CLI_ROOT) {
-                $boxConfig['output'] = getcwd() . '/' . $this->config()->get('application.phar');
-            }
+            // Default output: cli-VERSION.phar in the current directory.
+            $boxConfig['output'] = getcwd() . '/cli-' . $version . '.phar';
+            $phar = $boxConfig['output'];
         }
         if ($keyFilename) {
             $boxConfig['key'] = realpath($keyFilename);
         }
 
-        $phar = isset($boxConfig['output'])
-            ? $boxConfig['output']
-            : CLI_ROOT . '/' . $this->config()->get('application.phar');
         if (file_exists($phar)) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
@@ -118,7 +117,7 @@ class SelfBuildCommand extends CommandBase
             $boxArgs[] = '--configuration=' . $tmpJson;
         }
 
-        $this->stdErr->writeln("Building Phar package using Box");
+        $this->stdErr->writeln('Building Phar package using Box');
         $result = $shell->execute($boxArgs, CLI_ROOT, false, true);
 
         // Clean up the temporary file, regardless of errors.
@@ -131,18 +130,20 @@ class SelfBuildCommand extends CommandBase
         }
 
         if (!file_exists($phar)) {
-            $this->stdErr->writeln("File not found: <error>$phar</error>");
+            $this->stdErr->writeln(sprintf('Build failed: file not found: <error>%s</error>', $phar));
             return 1;
         }
 
         $sha1 = sha1_file($phar);
-        $version = $this->config()->get('application.version');
         $size = filesize($phar);
 
-        $output->writeln("Package built: <info>$phar</info>");
-        $this->stdErr->writeln("  Size: " . number_format($size) . " B");
-        $this->stdErr->writeln("  SHA1: $sha1");
-        $this->stdErr->writeln("  Version: $version");
+        $this->stdErr->writeln('The package was built successfully');
+        $output->writeln($phar);
+        $this->stdErr->writeln([
+            sprintf('Size: %s', FormatterHelper::formatMemory($size)),
+            sprintf('SHA1: %s', $sha1),
+            sprintf('Version: %s', $version),
+        ]);
         return 0;
     }
 }

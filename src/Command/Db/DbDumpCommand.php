@@ -17,6 +17,7 @@ class DbDumpCommand extends CommandBase
         $this->setName('db:dump')
             ->setDescription('Create a local dump of the remote database');
         $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
+            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'A custom directory for the dump')
             ->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
             ->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file')
@@ -63,38 +64,45 @@ class DbDumpCommand extends CommandBase
             if ($schemaOnly) {
                 $defaultFilename .= '--schema';
             }
-            if ($timestamp !== null) {
-                $defaultFilename .= '--' . $timestamp;
-            }
             $defaultFilename .= '--dump.sql';
             if ($gzip) {
                 $defaultFilename .= '.gz';
             }
-            if ($projectRoot = $this->getProjectRoot()) {
-                $defaultFilename = $projectRoot . '/' . $defaultFilename;
-            }
-            $dumpFile = $defaultFilename;
+            $projectRoot = $this->getProjectRoot();
+            $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
 
             // Process the user --file option.
-            if ($input->getOption('file')) {
-                $dumpFile = rtrim($input->getOption('file'), '/');
+            if ($fileOption = $input->getOption('file')) {
+                if (is_dir($fileOption)) {
+                    $this->stdErr->writeln(sprintf('Filename is a directory: <error>%s</error>', $fileOption));
+                    $this->stdErr->writeln('Use the --directory option to specify a directory.');
 
-                // Ensure the filename is not a directory.
-                if (is_dir($dumpFile)) {
-                    $dumpFile .= '/' . $defaultFilename;
+                    return 1;
                 }
+                $dumpFile = rtrim($fileOption, '/');
+            }
 
-                // Insert a timestamp into the filename.
-                if ($timestamp) {
-                    $basename = basename($dumpFile);
-                    $prefix = substr($dumpFile, 0, - strlen($basename));
-                    if ($dotPos = strrpos($basename, '.')) {
-                        $basename = substr($basename, 0, $dotPos) . '--' . $timestamp . substr($basename, $dotPos);
-                    } else {
-                        $basename .= '--' . $timestamp;
-                    }
-                    $dumpFile = $prefix . $basename;
+            // Process the user --directory option.
+            if ($directoryOption = $input->getOption('directory')) {
+                if (!is_dir($directoryOption)) {
+                    $this->stdErr->writeln(sprintf('Directory not found: <error>%s</error>', $directoryOption));
+
+                    return 1;
                 }
+                $dumpFile = rtrim($directoryOption, '/') . '/' . basename($dumpFile);
+            }
+
+            // Insert a timestamp into the filename, before the
+            // extension.
+            if ($timestamp !== null && strpos($dumpFile, $timestamp) === false) {
+                $basename = basename($dumpFile);
+                $prefix = substr($dumpFile, 0, - strlen($basename));
+                if (($dotPos = strpos($basename, '.')) > 0) {
+                    $basenameWithTimestamp = substr($basename, 0, $dotPos) . '--' . $timestamp . substr($basename, $dotPos);
+                } else {
+                    $basenameWithTimestamp = $basename . '--' . $timestamp;
+                }
+                $dumpFile = $prefix . $basenameWithTimestamp;
             }
 
             // Make the filename absolute.

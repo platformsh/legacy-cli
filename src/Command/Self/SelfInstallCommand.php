@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Filesystem;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -108,14 +109,16 @@ EOT
      */
     protected function findShellConfigFile()
     {
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
-        $homeDir = $fs->getHomeDirectory();
-        $candidates = ['.zshrc', '.bashrc', '.bash_profile', '.profile'];
+        $candidates = [
+            '.bash_profile',
+            '.bashrc',
+        ];
         $shell = str_replace('/bin/', '', getenv('SHELL'));
-        if (!empty($shell)) {
-            array_unshift($candidates, '.' . $shell . 'rc');
+        if ($shell === 'zsh') {
+            array_unshift($candidates, '.zshrc');
+            array_unshift($candidates, '.zprofile');
         }
+        $homeDir = Filesystem::getHomeDirectory();
         foreach ($candidates as $candidate) {
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
                 return $homeDir . DIRECTORY_SEPARATOR . $candidate;
