@@ -224,9 +224,31 @@ class Filesystem
             throw new \InvalidArgumentException('Target not found: ' . $target);
         }
         if ($this->relative) {
-            $target = rtrim($this->fs->makePathRelative(realpath($target), dirname($link)), '/');
+            $target = $this->makePathRelative($target, dirname($link));
         }
         $this->fs->symlink($target, $link, $this->copyOnWindows);
+    }
+
+    /**
+     * Wraps Symfony Filesystem's makePathRelative() with enhancements.
+     *
+     * This ensures both parts of the path are realpaths, if possible, before
+     * calculating the relative path. It also trims trailing slashes.
+     *
+     * @param string $path      An absolute path.
+     * @param string $reference The path to which it will be made relative.
+     *
+     * @see SymfonyFilesystem::makePathRelative()
+     *
+     * @return string
+     *   The $path, relative to the $reference.
+     */
+    public function makePathRelative($path, $reference)
+    {
+        $path = realpath($path) ?: $path;
+        $reference = realpath($reference) ?: $reference;
+
+        return rtrim($this->fs->makePathRelative($path, $reference), DIRECTORY_SEPARATOR);
     }
 
     /**
