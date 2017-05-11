@@ -243,7 +243,7 @@ class Filesystem
      * @return string
      *   The $path, relative to the $reference.
      */
-    protected function makePathRelative($path, $reference)
+    public function makePathRelative($path, $reference)
     {
         $path = realpath($path) ?: $path;
         $reference = realpath($reference) ?: $reference;
