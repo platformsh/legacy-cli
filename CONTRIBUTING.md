@@ -12,6 +12,12 @@ If you clone this repository locally, you can build it with:
 composer install
 ```
 
+Run the CLI from the local source with:
+
+```sh
+./bin/platform
+```
+
 Run tests with:
 
 ```sh
