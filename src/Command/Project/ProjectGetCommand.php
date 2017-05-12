@@ -46,7 +46,7 @@ class ProjectGetCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
         /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('ssh');
+        $fs = $this->getService('fs');
 
         $projectRootRelative = $fs->makePathRelative($projectRoot, getcwd());
 
