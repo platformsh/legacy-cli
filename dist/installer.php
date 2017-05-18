@@ -259,7 +259,7 @@ if ($home = getHomeDirectory()) {
             $currentShellConfig .= PHP_EOL . PHP_EOL
                 . "# Automatically added by " . CLI_NAME . " installer" . PHP_EOL
                 . "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-                . '. ' . escapeshellarg($rcDestination) . " 2>/dev/null" . PHP_EOL;
+                . '. ' . escapeshellarg($rcDestination) . " 2>/dev/null || true" . PHP_EOL;
             if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
                 $configured = false;
                 output("  Failed to configure the shell automatically.", 'warning');
@@ -283,7 +283,7 @@ if ($installedInHomeDir) {
     } else {
         output(PHP_EOL . "Add this to your shell configuration file:", 'info');
         output('  export PATH="' . $home . '/' . CLI_CONFIG_DIR . '/bin:$PATH"');
-        output('  . ' . escapeshellarg($rcDestination) . ' 2>/dev/null');
+        output('  . ' . escapeshellarg($rcDestination) . ' 2>/dev/null || true');
         output(PHP_EOL . "Start a new shell, and then you can run '" . CLI_EXECUTABLE . "'", 'info');
     }
 } else {

@@ -71,8 +71,8 @@ class ProjectGetCommand extends CommandBase
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
 
-        // If the remote repository exists, then locally we need to create the
-        // folder, run git init, and attach the remote.
+        // If the remote repository doesn't exist, then locally we need to
+        // create the folder, run git init, and attach the remote.
         if (!$repoExists) {
             $this->stdErr->writeln('Creating project directory: <info>' . $projectRootRelative . '</info>');
             if (mkdir($projectRoot) === false) {

@@ -55,7 +55,7 @@ EOT
         }
 
         $suggestedShellConfig = "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-            . '. ' . escapeshellarg($shellConfigDestination) . " 2>/dev/null";
+            . '. ' . escapeshellarg($shellConfigDestination) . " 2>/dev/null || true";
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');

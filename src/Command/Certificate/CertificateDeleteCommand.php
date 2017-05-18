@@ -19,6 +19,7 @@ class CertificateDeleteCommand extends CommandBase
             ->setDescription('Delete a certificate from the project')
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
         $this->addProjectOption();
+        $this->addNoWaitOption();
     }
 
     /**
