@@ -257,7 +257,7 @@ if ($home = getHomeDirectory()) {
 
         if (strpos($currentShellConfig, $configDir . "/bin") === false) {
             $currentShellConfig .= PHP_EOL . PHP_EOL
-                . "# Automatically added by " . CLI_NAME . " installer" . PHP_EOL
+                . "# Automatically added by the " . CLI_NAME . " installer" . PHP_EOL
                 . "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
                 . '. ' . escapeshellarg($rcDestination) . " 2>/dev/null || true" . PHP_EOL;
             if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
