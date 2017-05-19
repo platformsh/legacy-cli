@@ -257,9 +257,9 @@ if ($home = getHomeDirectory()) {
 
         if (strpos($currentShellConfig, $configDir . "/bin") === false) {
             $currentShellConfig .= PHP_EOL . PHP_EOL
-                . "# Automatically added by " . CLI_NAME . " installer" . PHP_EOL
+                . "# Automatically added by the " . CLI_NAME . " installer" . PHP_EOL
                 . "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-                . '. ' . escapeshellarg($rcDestination) . " 2>/dev/null" . PHP_EOL;
+                . '. ' . escapeshellarg($rcDestination) . " 2>/dev/null || true" . PHP_EOL;
             if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
                 $configured = false;
                 output("  Failed to configure the shell automatically.", 'warning');
@@ -283,7 +283,7 @@ if ($installedInHomeDir) {
     } else {
         output(PHP_EOL . "Add this to your shell configuration file:", 'info');
         output('  export PATH="' . $home . '/' . CLI_CONFIG_DIR . '/bin:$PATH"');
-        output('  . ' . escapeshellarg($rcDestination) . ' 2>/dev/null');
+        output('  . ' . escapeshellarg($rcDestination) . ' 2>/dev/null || true');
         output(PHP_EOL . "Start a new shell, and then you can run '" . CLI_EXECUTABLE . "'", 'info');
     }
 } else {
@@ -381,23 +381,25 @@ function is_ansi()
  * @param string $home
  *   The user's home directory.
  *
+ * @see \Platformsh\Cli\Command\Self\SelfInstallCommand::findShellConfigFile()
+ *
  * @return string|false
  *   The absolute path to an existing shell config file, or false on failure.
  */
 function findShellConfigFile($home)
 {
     $candidates = array(
-        $home . '/.bash_profile',
-        $home . '/.bashrc',
+        '.bash_profile',
+        '.bashrc',
     );
     $shell = str_replace('/bin/', '', getenv('SHELL'));
     if ($shell === 'zsh') {
-        array_unshift($candidates, $home . '/.zshrc');
-        array_unshift($candidates, $home . '/.zprofile');
+        array_unshift($candidates, '.zshrc');
+        array_unshift($candidates, '.zprofile');
     }
     foreach ($candidates as $candidate) {
-        if (file_exists($candidate)) {
-            return $candidate;
+        if (file_exists($home . DIRECTORY_SEPARATOR . $candidate)) {
+            return $home . DIRECTORY_SEPARATOR . $candidate;
         }
     }
 

@@ -3,7 +3,6 @@ application:
   name: 'SensioCloud CLI'
   version: '1.x-dev'
   executable: 'sensiocloud'
-  phar: 'sensiocloud.phar'
   package_name: ~
   installer_url: 'https://accounts.sensio.cloud/cli/installer'
   manifest_url: 'https://accounts.sensio.cloud/cli/manifest.json'
@@ -32,7 +31,8 @@ service:
   env_prefix: 'SENSIOCLOUD_'
   app_config_file: '.sensiocloud.app.yaml'
   project_config_dir: '.sensiocloud'
-  docs_url: 'https://docs.sensio.cloud'
+  docs_url: 'https://sensio.cloud'
+  docs_search_url: 'https://www.google.com/search?q=site%3Asensio.cloud%20{{ terms }}'
   accounts_url: 'https://accounts.sensio.cloud'
   available_regions:
     - eu.sensio.cloud

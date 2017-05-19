@@ -22,19 +22,11 @@ class DocsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $url = $this->config()->get('service.docs_url');
-
-        $search = $input->getArgument('search');
-        if ($search) {
-            $query = $this->getSearchQuery($search);
-
-            // @todo provide native or other search options?
-            //$url .= '/search?q=' . urlencode($term);
-
-            // Use Google search.
-            $hostname = parse_url($this->config()->get('service.docs_url'), PHP_URL_HOST);
-            $url = 'https://www.google.com/search?q='
-                . urlencode('site:' . $hostname . ' ' . $query);
+        if ($searchArguments = $input->getArgument('search')) {
+            $query = $this->getSearchQuery($searchArguments);
+            $url = str_replace('{{ terms }}', urlencode($query), $this->config()->get('service.docs_search_url'));
+        } else {
+            $url = $this->config()->get('service.docs_url');
         }
 
         /** @var \Platformsh\Cli\Service\Url $urlService */
@@ -43,24 +35,19 @@ class DocsCommand extends CommandBase
     }
 
     /**
-     * @param array $args
+     * Turn a list of command arguments into a search query.
+     *
+     * Arguments containing a space would have been quoted on the command line,
+     * so quotes are added again here.
+     *
+     * @param string[] $args
      *
      * @return string
      */
     protected function getSearchQuery(array $args)
     {
-        $quoted = array_map([$this, 'quoteTerm'], $args);
-
-        return implode(' ', $quoted);
-    }
-
-    /**
-     * @param string $term
-     *
-     * @return string
-     */
-    public function quoteTerm($term)
-    {
-        return strpos($term, ' ') ? '"' . $term . '"' : $term;
+        return implode(' ', array_map(function ($term) {
+            return strpos($term, ' ') ? '"' . $term . '"' : $term;
+        }, $args));
     }
 }

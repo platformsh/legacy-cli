@@ -593,4 +593,25 @@ class Api
 
         return reset($matched);
     }
+
+    /**
+     * Returns the OAuth 2 access token.
+     *
+     * @return string
+     */
+    public function getAccessToken()
+    {
+        $session = $this->getClient()->getConnector()->getSession();
+        $token = $session->get('accessToken');
+        $expires = $session->get('expires');
+        if (!$token || $expires < time()) {
+            // Force a connection to the API to ensure there is an access token.
+            $this->getMyAccount(true);
+            if (!$token = $session->get('accessToken')) {
+                throw new \RuntimeException('No access token found');
+            }
+        }
+
+        return $token;
+    }
 }
