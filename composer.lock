@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "c3322283a273a90a18178d15f6e44acc",
+    "content-hash": "2f96c4c4c7449d8115643ed6246dff2b",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -642,16 +642,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.8",
+            "version": "v0.0.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "7e9daa322d6c3d9cb939dfb7749d975e0d242205"
+                "reference": "6c4af8274d97fb7e9c4eaa8d0a72e79f4bbef0f9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/7e9daa322d6c3d9cb939dfb7749d975e0d242205",
-                "reference": "7e9daa322d6c3d9cb939dfb7749d975e0d242205",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/6c4af8274d97fb7e9c4eaa8d0a72e79f4bbef0f9",
+                "reference": "6c4af8274d97fb7e9c4eaa8d0a72e79f4bbef0f9",
                 "shasum": ""
             },
             "require": {
@@ -676,7 +676,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2016-02-25T11:38:45+00:00"
+            "time": "2017-04-02T11:43:41+00:00"
         },
         {
             "name": "psr/log",
