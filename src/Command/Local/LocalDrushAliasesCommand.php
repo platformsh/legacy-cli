@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
@@ -63,6 +64,9 @@ class LocalDrushAliasesCommand extends CommandBase
         $drush->ensureInstalled();
 
         $aliases = $drush->getAliases($current_group);
+        if (!$aliases && !$new_group && $project && $current_group === $project->id) {
+            $new_group = (new Slugify())->slugify($project->title);
+        }
 
         if (($new_group && $new_group != $current_group) || !$aliases || $input->getOption('recreate')) {
             $new_group = $new_group ?: $current_group;

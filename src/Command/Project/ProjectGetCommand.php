@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Project;
 
 use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -150,14 +151,11 @@ class ProjectGetCommand extends CommandBase
         // Ensure that Drush aliases are created.
         if (Drupal::isDrupal($projectRoot)) {
             $this->stdErr->writeln('');
-            $this->runOtherCommand(
-                'local:drush-aliases',
-                [
-                    // The default Drush alias group is the final part of the
-                    // directory path.
-                    '--group' => basename($projectRoot),
-                ]
-            );
+            try {
+                $this->runOtherCommand('local:drush-aliases');
+            } catch (DependencyMissingException $e) {
+                $this->stdErr->writeln(sprintf('<comment>%s</comment>', $e->getMessage()));
+            }
         }
 
         // Launch the first build.
