@@ -25,6 +25,7 @@ class SubscriptionInfoCommand extends CommandBase
         $this
             ->setName('subscription:info')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+            ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->setDescription('Read subscription properties');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
@@ -52,6 +53,11 @@ class SubscriptionInfoCommand extends CommandBase
 
         if (!$property) {
             return $this->listProperties($subscription);
+        }
+
+        $value = $input->getArgument('value');
+        if ($value !== null) {
+            return $this->setProperty($property, $value, $subscription);
         }
 
         switch ($property) {
@@ -86,5 +92,57 @@ class SubscriptionInfoCommand extends CommandBase
         $table->renderSimple($values, $headings);
 
         return 0;
+    }
+
+    /**
+     * @param string       $property
+     * @param string       $value
+     * @param Subscription $resource
+     *
+     * @return int
+     */
+    protected function setProperty($property, $value, Subscription $resource)
+    {
+        $type = $this->getType($property);
+        if (!$type) {
+            $this->stdErr->writeln("Property not writable: <error>$property</error>");
+            return 1;
+        }
+        if ($type === 'boolean' && $value === 'false') {
+            $value = false;
+        }
+        settype($value, $type);
+        $currentValue = $resource->getProperty($property);
+        // @todo make this a === comparison when the API returns the right type
+        if ($currentValue == $value) {
+            $this->stdErr->writeln(
+                "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
+            );
+
+            return 0;
+        }
+
+        $resource->update([$property => $value]);
+        $this->stdErr->writeln(sprintf(
+            'Property <info>%s</info> set to: %s',
+            $property,
+            $this->formatter->format($value, $property)
+        ));
+
+        return 0;
+    }
+
+    /**
+     * Get the type of a writable property.
+     *
+     * @param string $property
+     *
+     * @return string|false
+     */
+    protected function getType($property)
+    {
+        $writableProperties = ['plan' => 'string', 'environments' => 'int', 'storage' => 'int'];
+
+        return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }
 }
