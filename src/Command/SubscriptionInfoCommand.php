@@ -97,11 +97,11 @@ class SubscriptionInfoCommand extends CommandBase
     /**
      * @param string       $property
      * @param string       $value
-     * @param Subscription $resource
+     * @param Subscription $subscription
      *
      * @return int
      */
-    protected function setProperty($property, $value, Subscription $resource)
+    protected function setProperty($property, $value, Subscription $subscription)
     {
         $type = $this->getType($property);
         if (!$type) {
@@ -112,7 +112,7 @@ class SubscriptionInfoCommand extends CommandBase
             $value = false;
         }
         settype($value, $type);
-        $currentValue = $resource->getProperty($property);
+        $currentValue = $subscription->getProperty($property);
         // @todo make this a === comparison when the API returns the right type
         if ($currentValue == $value) {
             $this->stdErr->writeln(
@@ -122,7 +122,24 @@ class SubscriptionInfoCommand extends CommandBase
             return 0;
         }
 
-        $resource->update([$property => $value]);
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $confirmMessage = sprintf(
+            "Are you sure you want to change property '%s' from <comment>%s</comment> to <comment>%s</comment>?",
+            $property,
+            $this->formatter->format($currentValue, $property),
+            $this->formatter->format($value, $property)
+        );
+        $warning = sprintf(
+            '<comment>This action may %s the cost of your subscription.</comment>',
+            is_numeric($value) && $value > $currentValue ? 'increase' : 'change'
+        );
+        $confirmMessage = $warning . "\n" . $confirmMessage;
+        if (!$questionHelper->confirm($confirmMessage)) {
+            return 1;
+        }
+
+        $subscription->update([$property => $value]);
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
