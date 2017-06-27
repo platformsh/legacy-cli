@@ -665,38 +665,25 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *
      * @param InputInterface $input
      *   The user input object.
-     * @param callable|null $filter
-     *   A filter callback that takes one argument: a LocalApplication object.
      *
      * @return string|null
      *   The application name, or null if it could not be found.
      */
-    protected function selectApp(InputInterface $input, callable $filter = null)
+    protected function selectApp(InputInterface $input)
     {
         $appName = $input->getOption('app');
         if ($appName) {
             return $appName;
         }
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot || !$this->selectedProjectIsCurrent()) {
-            return null;
-        }
 
-        $this->debug('Searching for applications in local repository');
-        /** @var LocalApplication[] $apps */
-        $apps = LocalApplication::getApplications($projectRoot, $this->config());
-
-        if ($filter) {
-            $apps = array_filter($apps, $filter);
-        }
-
-        if (count($apps) > 1 && $input->isInteractive()) {
+        $environment = $this->getSelectedEnvironment();
+        $apps = array_keys($environment->getSshUrls());
+        if (count($apps) === 1) {
+            $appName = reset($apps);
+        } elseif ($input->isInteractive()) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            $choices = [];
-            foreach ($apps as $app) {
-                $choices[$app->getName()] = $app->getName();
-            }
+            $choices = array_combine($apps, $apps);
             $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:');
         }
 
