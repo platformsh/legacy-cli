@@ -61,9 +61,7 @@ class EnvironmentDrushCommand extends CommandBase
             $drushCommand .= " --quiet";
         }
 
-        $appName = $this->selectApp($input, function (LocalApplication $app) {
-            return Drupal::isDrupal($app->getRoot());
-        });
+        $appName = $this->selectApp($input);
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
