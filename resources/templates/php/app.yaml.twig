@@ -1,0 +1,19 @@
+name: '{{ application_name }}'
+type: 'php:{{ php_version }}'
+
+build:
+    flavor: {{ build_flavor|yaml }}
+
+web:
+  locations:
+    '/':
+      passthru: '{{ front_controller }}'
+      root: '{{ webroot }}'
+
+disk: {{ application_disk|yaml }}
+
+mounts:
+  "/{{ webroot }}/uploads": "shared:files/public-uploads"
+  "/private": "shared:files/private"
+
+{% include 'includes/relationships.yaml.twig' %}
