@@ -113,8 +113,7 @@ class SubscriptionInfoCommand extends CommandBase
         }
         settype($value, $type);
         $currentValue = $subscription->getProperty($property);
-        // @todo make this a === comparison when the API returns the right type
-        if ($currentValue == $value) {
+        if ($currentValue === $value) {
             $this->stdErr->writeln(
                 "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
             );
