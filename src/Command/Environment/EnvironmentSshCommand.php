@@ -21,6 +21,7 @@ class EnvironmentSshCommand extends CommandBase
             ->setAliases(['ssh'])
             ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
+            ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
             ->setDescription('SSH to the current environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -33,9 +34,15 @@ class EnvironmentSshCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $environment = $this->getSelectedEnvironment();
 
-        $sshUrl = $this->getSelectedEnvironment()
-                       ->getSshUrl($this->selectApp($input));
+        if ($input->getOption('all')) {
+            $output->write(array_values($environment->getSshUrls()));
+
+            return 0;
+        }
+
+        $sshUrl = $environment->getSshUrl($this->selectApp($input));
 
         if ($input->getOption('pipe')) {
             $output->write($sshUrl);
