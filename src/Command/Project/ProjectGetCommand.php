@@ -210,19 +210,13 @@ class ProjectGetCommand extends CommandBase
 
         $project = $this->selectProject($projectId, $host);
 
-        if (!$environmentId) {
-            $environments = $this->api()->getEnvironments($project);
-            $environmentId = isset($environments['master']) ? 'master' : key($environments);
-        }
-
-        $this->selectEnvironment($environmentId);
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $directory = $input->getArgument('directory');
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
             $directory = $questionHelper->askInput('Directory', $directory, [$directory, $projectId]);
         }
 
@@ -239,6 +233,14 @@ class ProjectGetCommand extends CommandBase
             throw new InvalidArgumentException("Not a directory: " . dirname($directory));
         }
         $this->projectRoot = $parent . '/' . basename($directory);
+
+        if (!$environmentId) {
+            $environments = $this->api()->getEnvironments($project);
+            $default = isset($environments['master']) ? 'master' : key($environments);
+            $environmentId = $questionHelper->askInput('Environment', $default, array_keys($environments));
+        }
+
+        $this->selectEnvironment($environmentId);
     }
 
     /**
