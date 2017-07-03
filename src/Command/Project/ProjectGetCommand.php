@@ -236,8 +236,10 @@ class ProjectGetCommand extends CommandBase
 
         if (!$environmentId) {
             $environments = $this->api()->getEnvironments($project);
-            $default = isset($environments['master']) ? 'master' : key($environments);
-            $environmentId = $questionHelper->askInput('Environment', $default, array_keys($environments));
+            $environmentId = isset($environments['master']) ? 'master' : key($environments);
+            if (count($environments) > 1) {
+                $environmentId = $questionHelper->askInput('Environment', $environmentId, array_keys($environments));
+            }
         }
 
         $this->selectEnvironment($environmentId);
