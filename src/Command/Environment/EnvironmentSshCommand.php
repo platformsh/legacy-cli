@@ -37,7 +37,7 @@ class EnvironmentSshCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         if ($input->getOption('all')) {
-            $output->write(array_values($environment->getSshUrls()));
+            $output->writeln(array_values($environment->getSshUrls()));
 
             return 0;
         }
