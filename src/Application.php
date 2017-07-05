@@ -117,6 +117,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentListCommand();
         $commands[] = new Command\Environment\EnvironmentLogCommand();
         $commands[] = new Command\Environment\EnvironmentInfoCommand();
+        $commands[] = new Command\Environment\EnvironmentInitCommand();
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
         $commands[] = new Command\Environment\EnvironmentPushCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
