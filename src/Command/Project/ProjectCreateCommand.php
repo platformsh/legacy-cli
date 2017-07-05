@@ -125,6 +125,9 @@ class ProjectCreateCommand extends CommandBase
         }
 
         $this->stdErr->writeln("The project is now ready!");
+        $output->writeln($subscription->project_id);
+        $this->stdErr->writeln('');
+
         $this->stdErr->writeln("  Region: <info>{$subscription->project_region}</info>");
         $this->stdErr->writeln("  Project ID: <info>{$subscription->project_id}</info>");
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
