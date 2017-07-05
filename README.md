@@ -127,7 +127,6 @@ local
   local:dir (dir)                           Find the local project root
   local:drush-aliases (drush-aliases)       Find the project's Drush aliases
 project
-  project:create (create)                   Create a new project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
