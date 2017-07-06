@@ -153,7 +153,10 @@ class ProjectInfoCommand extends CommandBase
      */
     protected function getType($property)
     {
-        $writableProperties = ['title' => 'string'];
+        $writableProperties = [
+            'title' => 'string',
+            'default_domain' => 'string',
+        ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }
