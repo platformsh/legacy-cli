@@ -21,7 +21,7 @@ class ProjectVariableSetCommand extends CommandBase
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('no-visible-build', null, InputOption::VALUE_NONE, 'Do not expose this variable at build time')
-            ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable in runtime')
+            ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime')
             ->setDescription('Set a variable for a project');
         $this->addProjectOption()
              ->addNoWaitOption();
