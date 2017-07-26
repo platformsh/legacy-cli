@@ -632,6 +632,16 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function selectEnvironment($environmentId = null, $required = true)
     {
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
+            $environmentId = getenv($envPrefix . 'BRANCH');
+            $this->stdErr->writeln(sprintf(
+                'Environment ID read from environment variable %s: %s',
+                $envPrefix . 'BRANCH',
+                $environmentId
+            ), OutputInterface::VERBOSITY_VERBOSE);
+        }
+
         if (!empty($environmentId)) {
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
@@ -642,7 +652,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return;
         }
 
-        // If no ID is specified, try to auto-detect the current environment.
         if ($environment = $this->getCurrentEnvironment($this->project)) {
             $this->environment = $environment;
             return;
@@ -798,9 +807,36 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $environmentId = $result['environmentId'];
         }
 
-        // Set the --app option based on the parsed project URL, if relevant.
-        if (isset($result['appId']) && $input->hasOption('app') && !$input->getOption('app')) {
-            $input->setOption('app', $result['appId']);
+        // Load the project ID from an environment variable, if available.
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if ($projectId === null && getenv($envPrefix . 'PROJECT')) {
+            $projectId = getenv($envPrefix . 'PROJECT');
+            $this->stdErr->writeln(sprintf(
+                'Project ID read from environment variable %s: %s',
+                $envPrefix . 'PROJECT',
+                $projectId
+            ), OutputInterface::VERBOSITY_VERBOSE);
+        }
+
+        // Set the --app option.
+        if ($input->hasOption('app') && !$input->getOption('app')) {
+            // An app ID might be provided from the parsed project URL.
+            if (isset($result['appId'])) {
+                $input->setOption('app', $result['appId']);
+                $this->debug(sprintf(
+                    'App name detected from project URL as: %s',
+                    $input->getOption('app')
+                ));
+            }
+            // Or from an environment variable.
+            elseif (getenv($envPrefix . 'APPLICATION_NAME')) {
+                $input->setOption('app', getenv($envPrefix . 'APPLICATION_NAME'));
+                $this->stdErr->writeln(sprintf(
+                    'App name read from environment variable %s: %s',
+                    $envPrefix . 'APPLICATION_NAME',
+                    $input->getOption('app')
+                ), OutputInterface::VERBOSITY_VERBOSE);
+            }
         }
 
         // Select the project.
