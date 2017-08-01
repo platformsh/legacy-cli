@@ -105,10 +105,10 @@ class EnvironmentPushCommand extends CommandBase
             // Determine whether to activate the environment after pushing.
             if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
                 $activate = $input->getOption('activate')
-                    || $questionHelper->confirm(sprintf(
+                    || ($input->isInteractive() && $questionHelper->confirm(sprintf(
                         'Activate <info>%s</info> after pushing?',
                         $target
-                    ));
+                    )));
             }
 
             // If activating, determine what the environment's parent should be.
