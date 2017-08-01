@@ -76,6 +76,12 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'GitHub: build pull requests as environments',
             ]),
+            'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
+              'conditions' => ['type' => [
+                'github',
+              ]],
+              'description' => 'GitHub: build pull requests based on their post-merge state',
+            ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'github',
