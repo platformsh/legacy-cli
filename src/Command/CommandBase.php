@@ -687,6 +687,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $environment = $this->getSelectedEnvironment();
         $apps = array_keys($environment->getSshUrls());
+        if (!count($apps)) {
+          return null;
+        }
+
         $this->debug('Found app(s): ' . implode(',', $apps));
         if (count($apps) === 1) {
             $appName = reset($apps);
