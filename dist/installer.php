@@ -179,7 +179,7 @@ if (!file_put_contents(CLI_PHAR, file_get_contents($latest->url))) {
 }
 
 output("  Checking file integrity...");
-if ($latest->sha1 !== sha1_file(CLI_PHAR)) {
+if ($latest->sha256 !== hash_file('sha256', CLI_PHAR)) {
     unlink(CLI_PHAR);
     output("  The download was corrupted.", 'error');
     exit(1);
