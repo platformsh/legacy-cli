@@ -614,4 +614,25 @@ class Api
 
         return $token;
     }
+
+    /**
+     * Sort URLs, preferring shorter ones with HTTPS.
+     *
+     * @param string $a
+     * @param string $b
+     *
+     * @return int
+    */
+    public function urlSort($a, $b)
+    {
+        $result = 0;
+        foreach ([$a, $b] as $key => $url) {
+            if (parse_url($url, PHP_URL_SCHEME) === 'https') {
+                $result += $key === 0 ? -2 : 2;
+            }
+        }
+        $result += strlen($a) <= strlen($b) ? -1 : 1;
+
+        return $result;
+    }
 }

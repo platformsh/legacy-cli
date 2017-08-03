@@ -58,6 +58,7 @@ class RouteGetCommand extends CommandBase
             foreach ($routes as $route) {
                 $items[$route['original_url']] = $route['original_url'];
             }
+            uksort($items, [$this->api(), 'urlSort']);
             $originalUrl = $questionHelper->choose($items, 'Enter a number to choose a route:');
         }
 

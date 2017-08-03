@@ -135,13 +135,15 @@ class SelfBuildCommand extends CommandBase
         }
 
         $sha1 = sha1_file($phar);
+        $sha256 = hash_file('sha256', $phar);
         $size = filesize($phar);
 
         $this->stdErr->writeln('The package was built successfully');
         $output->writeln($phar);
         $this->stdErr->writeln([
             sprintf('Size: %s', FormatterHelper::formatMemory($size)),
-            sprintf('SHA1: %s', $sha1),
+            sprintf('SHA-1: %s', $sha1),
+            sprintf('SHA-256: %s', $sha256),
             sprintf('Version: %s', $version),
         ]);
         return 0;
