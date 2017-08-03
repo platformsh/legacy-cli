@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * Sensio Cloud CLI installer.
+ * SensioCloud CLI installer.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', 'https://sensio.cloud/cli/manifest.json');
-define('CLI_CONFIG_DIR', '.sensio-cloud');
-define('CLI_EXECUTABLE', 'sensio-cloud');
-define('CLI_NAME', 'Sensio Cloud CLI');
+define('CLI_UPDATE_MANIFEST_URL', 'https://accounts.sensio.cloud/cli/manifest.json');
+define('CLI_CONFIG_DIR', '.sensiocloud');
+define('CLI_EXECUTABLE', 'sensiocloud');
+define('CLI_NAME', 'SensioCloud CLI');
 define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
 
 set_error_handler(
