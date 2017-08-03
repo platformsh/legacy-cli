@@ -32,19 +32,7 @@ class EnvironmentUrlCommand extends CommandBase
             return 1;
         }
 
-        // Sort the URLs heuristically. Prefer short URLs with HTTPS.
-        usort($urls, function ($a, $b) {
-            $result = 0;
-            if (parse_url($a, PHP_URL_SCHEME) === 'https') {
-                $result -= 2;
-            }
-            if (parse_url($b, PHP_URL_SCHEME) === 'https') {
-                $result += 2;
-            }
-            $result += strlen($a) <= strlen($b) ? -1 : 1;
-
-            return $result;
-        });
+        usort($urls, [$this->api(), 'urlSort']);
 
         // Just display the URLs if --browser is 0 or if --pipe is set.
         if ($input->getOption('pipe') || $input->getOption('browser') === '0') {
