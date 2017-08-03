@@ -241,20 +241,6 @@ if ($home = getHomeDirectory()) {
             $currentShellConfig = '';
         }
 
-        // Backwards compatibility for the old 'platform.rc'.
-        // @todo remove any time after about late 2016.
-        $oldRcLocation = str_replace('/shell-config.rc', '/platform.rc', $rcDestination);
-        if (file_exists($oldRcLocation)) {
-            @unlink($oldRcLocation);
-        }
-        if (strpos($currentShellConfig, $oldRcLocation) !== false) {
-            $currentShellConfig = str_replace($oldRcLocation, $rcDestination, $currentShellConfig);
-            if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
-                output("  Failed to configure the shell automatically.", 'warning');
-            }
-        }
-        // End backwards compatibility section.
-
         if (strpos($currentShellConfig, $configDir . "/bin") === false) {
             $currentShellConfig .= PHP_EOL . PHP_EOL
                 . "# Automatically added by the " . CLI_NAME . " installer" . PHP_EOL
