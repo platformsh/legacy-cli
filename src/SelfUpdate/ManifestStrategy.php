@@ -28,7 +28,7 @@ class ManifestStrategy implements StrategyInterface
     private $allowUnstable = false;
 
     /** @var array */
-    private static $requiredKeys = ['sha1', 'version', 'url'];
+    private static $requiredKeys = ['sha256', 'version', 'url'];
 
     /** @var int */
     private $manifestTimeout = 10;
@@ -45,7 +45,7 @@ class ManifestStrategy implements StrategyInterface
      * @param string $localVersion  The local version.
      * @param string $manifestUrl   The URL to a JSON manifest file. The
      *                              manifest contains an array of objects, each
-     *                              containing a 'version', 'sha1', and 'url'.
+     *                              containing a 'version', 'sha256', and 'url'.
      * @param bool   $allowMajor    Whether to allow updating between major
      *                              versions.
      * @param bool   $allowUnstable Whether to allow updating to an unstable
@@ -152,13 +152,13 @@ class ManifestStrategy implements StrategyInterface
             throw new \RuntimeException(sprintf('Failed to write file: %s', $tmpFilename));
         }
 
-        $tmpSha = sha1_file($tmpFilename);
-        if ($tmpSha !== $versionInfo['sha1']) {
+        $tmpSha = hash_file('sha256', $tmpFilename);
+        if ($tmpSha !== $versionInfo['sha256']) {
             unlink($tmpFilename);
             throw new \RuntimeException(
                 sprintf(
-                    'SHA-1 verification failed: expected %s, actual %s',
-                    $versionInfo['sha1'],
+                    'SHA-256 verification failed: expected %s, actual %s',
+                    $versionInfo['sha256'],
                     $tmpSha
                 )
             );
@@ -170,7 +170,7 @@ class ManifestStrategy implements StrategyInterface
      *
      * @return array
      *   An array keyed by the version name, whose elements are arrays
-     *   containing version information ('name', 'sha1', and 'url').
+     *   containing version information ('version', 'sha256', and 'url').
      */
     private function getAvailableVersions()
     {
