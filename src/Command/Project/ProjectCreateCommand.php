@@ -56,11 +56,16 @@ class ProjectCreateCommand extends CommandBase
             ->getClient()
             ->getSubscriptionEstimate($options['plan'], $options['storage'], $options['environments'], 1);
         $costConfirm = sprintf(
-            'The estimated monthly cost of this project is: <comment>%s</comment>'
-            . "\n\n"
-            . 'Are you sure you want to continue?',
+            'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
         );
+        if ($this->config()->has('service.pricing_url')) {
+            $costConfirm .= sprintf(
+                "\nPricing information: <comment>%s</comment>",
+                $this->config()->get('service.pricing_url')
+            );
+        }
+        $costConfirm .= "\n\nAre you sure you want to continue?";
         if (!$questionHelper->confirm($costConfirm)) {
             return 1;
         }

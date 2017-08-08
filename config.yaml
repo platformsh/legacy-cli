@@ -34,6 +34,7 @@ service:
   docs_url: 'https://docs.platform.sh'
   docs_search_url: 'https://docs.platform.sh/?q={{ terms }}'
   accounts_url: 'https://accounts.platform.sh'
+  pricing_url: 'https://platform.sh/pricing'
   available_regions:
     - eu.platform.sh
     - us.platform.sh
