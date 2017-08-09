@@ -586,7 +586,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
     {
         /** @noinspection PhpIncompatibleReturnTypeInspection */
-        return $this->addOption('no-wait', null, InputOption::VALUE_NONE, $description);
+        return $this->addOption('no-wait', 'W', InputOption::VALUE_NONE, $description);
     }
 
     /**
