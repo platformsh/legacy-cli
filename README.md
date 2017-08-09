@@ -161,7 +161,7 @@ tunnel
   tunnel:open                               Open SSH tunnels to an app's relationships
 user
   user:add                                  Add a user to the project
-  user:delete                               Delete a user
+  user:delete                               Delete a user from the project
   user:list (users)                         List project users
   user:role                                 View or change a user's role
 variable
