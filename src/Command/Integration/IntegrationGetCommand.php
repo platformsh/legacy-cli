@@ -50,12 +50,14 @@ class IntegrationGetCommand extends IntegrationCommandBase
             $id = $questionHelper->choose($choices, 'Enter a number to choose an integration:');
         }
 
-        $integration = $this->getSelectedProject()
-                            ->getIntegration($id);
+        $integration = $project->getIntegration($id);
         if (!$integration) {
-            $this->stdErr->writeln("Integration not found: <error>$id</error>");
-
-            return 1;
+            try {
+                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return 1;
+            }
         }
 
         if ($property = $input->getOption('property')) {
