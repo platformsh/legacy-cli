@@ -86,6 +86,18 @@ class IntegrationListCommand extends IntegrationCommandBase
                 $summary = sprintf('URL: %s', $details['url']);
                 break;
 
+            case 'health.email':
+                $summary = sprintf("From: %s\nTo: %s", $details['from_address'], implode(', ', $details['recipients']));
+                break;
+
+            case 'health.slack':
+                $summary = sprintf('Channel: %s', $details['channel']);
+                break;
+
+            case 'health.pagerduty':
+                $summary = sprintf('Routing key: %s', $details['routing_key']);
+                break;
+
             default:
                 $summary = json_encode($details);
         }
