@@ -35,6 +35,7 @@ abstract class IntegrationCommandBase extends CommandBase
         $types = [
             'github',
             'hipchat',
+            'slack',
             'webhook',
         ];
 
@@ -48,6 +49,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'github',
                     'hipchat',
+                    'slack',
                 ]],
                 'description' => 'An OAuth token for the integration',
                 'validator' => function ($string) {
@@ -95,6 +97,12 @@ abstract class IntegrationCommandBase extends CommandBase
                 'validator' => 'is_numeric',
                 'optionName' => 'room',
             ]),
+            'channel' => new Field('Slack channel', [
+                'conditions' => ['type' => [
+                    'slack',
+                ]],
+                'optionName' => 'channel',
+            ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
                     'webhook',
@@ -104,6 +112,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'events' => new ArrayField('Events to report', [
                 'conditions' => ['type' => [
                     'hipchat',
+                    'slack',
                     'webhook',
                 ]],
                 'default' => ['*'],
@@ -113,6 +122,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'states' => new ArrayField('States to report', [
                 'conditions' => ['type' => [
                     'hipchat',
+                    'slack',
                     'webhook',
                 ]],
                 'default' => ['complete'],
