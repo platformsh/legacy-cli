@@ -579,7 +579,7 @@ class Api
 
         if (count($matched) > 1) {
             $matchedIds = array_map(function (ApiResource $resource) {
-                return $resource->id;
+                return $resource->getProperty('id');
             }, $matched);
             throw new \InvalidArgumentException(sprintf(
                 'The partial ID "<error>%s</error>" is ambiguous; it matches the following %s IDs: %s',

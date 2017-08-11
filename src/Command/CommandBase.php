@@ -824,7 +824,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         // Set the --app option.
         if ($input->hasOption('app') && !$input->getOption('app')) {
             // An app ID might be provided from the parsed project URL.
-            if (isset($result['appId'])) {
+            if (isset($result) && isset($result['appId'])) {
                 $input->setOption('app', $result['appId']);
                 $this->debug(sprintf(
                     'App name detected from project URL as: %s',
