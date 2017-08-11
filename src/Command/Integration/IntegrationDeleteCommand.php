@@ -25,17 +25,19 @@ class IntegrationDeleteCommand extends CommandBase
         $this->validateInput($input);
 
         $id = $input->getArgument('id');
+        $project = $this->getSelectedProject();
 
-        $integration = $this->getSelectedProject()
-                            ->getIntegration($id);
+        $integration = $project->getIntegration($id);
         if (!$integration) {
-            $this->stdErr->writeln("Integration not found: <error>$id</error>");
-
-            return 1;
+            try {
+                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return 1;
+            }
         }
 
-        $type = $integration->type;
-        $confirmText = "Delete the integration <info>$id</info> (type: $type)?";
+        $confirmText = sprintf('Delete the integration <info>%s</info> (type: %s)?', $integration->id, $integration->type);
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         if (!$questionHelper->confirm($confirmText)) {
@@ -44,7 +46,7 @@ class IntegrationDeleteCommand extends CommandBase
 
         $result = $integration->delete();
 
-        $this->stdErr->writeln("Deleted integration <info>$id</info>");
+        $this->stdErr->writeln(sprintf('Deleted integration <info>%s</info>', $integration->id));
 
         if (!$input->getOption('no-wait')) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */

@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
+use Platformsh\ConsoleForm\Field\EmailAddressField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
@@ -36,6 +37,9 @@ abstract class IntegrationCommandBase extends CommandBase
             'github',
             'hipchat',
             'webhook',
+            'health.email',
+            'health.pagerduty',
+            'health.slack',
         ];
 
         return [
@@ -48,11 +52,9 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'github',
                     'hipchat',
+                    'health.slack',
                 ]],
                 'description' => 'An OAuth token for the integration',
-                'validator' => function ($string) {
-                    return base64_decode($string, true) !== false;
-                },
             ]),
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
@@ -125,6 +127,43 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'default' => ['*'],
                 'description' => 'Generic webhook: the environments relevant to the hook',
+            ]),
+            'from_address' => new EmailAddressField('From address', [
+                'conditions' => ['type' => [
+                    'health.email',
+                ]],
+                'description' => 'The From address for alert emails',
+            ]),
+            'recipients' => new ArrayField('Recipients', [
+                'conditions' => ['type' => [
+                    'health.email',
+                ]],
+                'description' => 'The recipient email address(es)',
+                'validator' => function ($emails) {
+                    $invalid = array_filter($emails, function ($email) {
+                        return !filter_var($email, FILTER_VALIDATE_EMAIL);
+                    });
+                    if (count($invalid)) {
+                        return sprintf('Invalid email address(es): %s', implode(', ', $invalid));
+                    }
+
+                    return true;
+                },
+            ]),
+            'channel' => new Field('Channel', [
+                'conditions' => ['type' => [
+                    'health.slack',
+                ]],
+                'description' => 'The Slack channel (beginning with the #)',
+                'validator' => function ($string) {
+                    return strpos($string, '#') === 0;
+                },
+            ]),
+            'routing_key' => new Field('Routing key', [
+                'conditions' => ['type' => [
+                    'health.pagerduty',
+                ]],
+                'description' => 'The PagerDuty routing key',
             ]),
         ];
     }

@@ -29,12 +29,15 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $this->validateInput($input);
 
         $id = $input->getArgument('id');
-        $integration = $this->getSelectedProject()
-                            ->getIntegration($id);
+        $project = $this->getSelectedProject();
+        $integration = $project->getIntegration($id);
         if (!$integration) {
-            $this->stdErr->writeln("Integration not found: <error>$id</error>");
-
-            return 1;
+            try {
+                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return 1;
+            }
         }
 
         $values = [];
@@ -62,7 +65,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         }
 
         $result = $integration->update($values);
-        $this->stdErr->writeln("Integration <info>$id</info> (<info>{$integration->type}</info>) updated");
+        $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
 
         $this->displayIntegration($integration);
 
