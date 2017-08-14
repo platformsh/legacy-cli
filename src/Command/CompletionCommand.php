@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Application;
 use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
@@ -14,14 +13,14 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     /** @var Api */
     protected $api;
 
-    /** @var CommandBase */
-    protected $welcomeCommand;
-
     /**
      * A list of the user's projects.
      * @var array
      */
     protected $projects = [];
+
+    /** @var CommandBase|null */
+    private $welcomeCommand;
 
     /**
      * {@inheritdoc}
@@ -32,22 +31,12 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     }
 
     /**
-     * {@inheritdoc}
-     */
-    protected function setUp()
-    {
-        $this->api = new Api();
-        $this->projects = $this->api->isLoggedIn() ? $this->api->getProjects(false) : [];
-        $this->welcomeCommand = new WelcomeCommand('welcome');
-        $this->welcomeCommand->setApplication(new Application());
-    }
-
-    /**
      * @inheritdoc
      */
     protected function runCompletion()
     {
-        $this->setUp();
+        $this->api = new Api();
+        $this->projects = $this->api->isLoggedIn() ? $this->api->getProjects(false) : [];
         $projectIds = array_keys($this->projects);
 
         $this->handler->addHandlers([
@@ -185,18 +174,31 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     }
 
     /**
+     * @return WelcomeCommand
+     */
+    protected function getWelcomeCommand()
+    {
+        if (!isset($this->welcomeCommand)) {
+            $this->welcomeCommand = new WelcomeCommand('welcome');
+            $this->welcomeCommand->setApplication($this->getApplication());
+        }
+
+        return $this->welcomeCommand;
+    }
+
+    /**
      * Get a list of environments IDs that can be checked out.
      *
      * @return string[]
      */
     public function getEnvironmentsForCheckout()
     {
-        $project = $this->welcomeCommand->getCurrentProject();
+        $project = $this->getWelcomeCommand()->getCurrentProject();
         if (!$project) {
             return [];
         }
         try {
-            $currentEnvironment = $this->welcomeCommand->getCurrentEnvironment($project, false);
+            $currentEnvironment = $this->getWelcomeCommand()->getCurrentEnvironment($project, false);
         } catch (\Exception $e) {
             $currentEnvironment = false;
         }
@@ -221,7 +223,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     public function getAppNames()
     {
         $apps = [];
-        if ($projectRoot = $this->welcomeCommand->getProjectRoot()) {
+        if ($projectRoot = $this->getWelcomeCommand()->getProjectRoot()) {
             foreach (LocalApplication::getApplications($projectRoot) as $app) {
                 $name = $app->getName();
                 if ($name !== null) {
@@ -251,7 +253,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         $commandLine = $this->handler->getContext()
             ->getCommandLine();
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
-        if (!$currentProjectId && ($currentProject = $this->welcomeCommand->getCurrentProject())) {
+        if (!$currentProjectId && ($currentProject = $this->getWelcomeCommand()->getCurrentProject())) {
             return $currentProject;
         } elseif (isset($this->projects[$currentProjectId])) {
             return $this->projects[$currentProjectId];
