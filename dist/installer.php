@@ -179,7 +179,7 @@ if (!file_put_contents(CLI_PHAR, file_get_contents($latest->url))) {
 }
 
 output("  Checking file integrity...");
-if ($latest->sha1 !== sha1_file(CLI_PHAR)) {
+if ($latest->sha256 !== hash_file('sha256', CLI_PHAR)) {
     unlink(CLI_PHAR);
     output("  The download was corrupted.", 'error');
     exit(1);
@@ -240,20 +240,6 @@ if ($home = getHomeDirectory()) {
         if ($currentShellConfig === false) {
             $currentShellConfig = '';
         }
-
-        // Backwards compatibility for the old 'platform.rc'.
-        // @todo remove any time after about late 2016.
-        $oldRcLocation = str_replace('/shell-config.rc', '/platform.rc', $rcDestination);
-        if (file_exists($oldRcLocation)) {
-            @unlink($oldRcLocation);
-        }
-        if (strpos($currentShellConfig, $oldRcLocation) !== false) {
-            $currentShellConfig = str_replace($oldRcLocation, $rcDestination, $currentShellConfig);
-            if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
-                output("  Failed to configure the shell automatically.", 'warning');
-            }
-        }
-        // End backwards compatibility section.
 
         if (strpos($currentShellConfig, $configDir . "/bin") === false) {
             $currentShellConfig .= PHP_EOL . PHP_EOL

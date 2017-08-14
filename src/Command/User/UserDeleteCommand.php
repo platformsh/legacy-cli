@@ -13,7 +13,7 @@ class UserDeleteCommand extends CommandBase
     {
         $this
             ->setName('user:delete')
-            ->setDescription('Delete a user')
+            ->setDescription('Delete a user from the project')
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample('Delete Alice from the project', 'alice@example.com');
