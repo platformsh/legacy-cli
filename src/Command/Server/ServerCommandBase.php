@@ -98,7 +98,7 @@ abstract class ServerCommandBase extends CommandBase
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
             // @todo move this to State service (in a new major version)
-            $filename = $this->config()->getUserConfigDir() . '/local-servers.json';
+            $filename = $this->config()->getWritableUserDir() . '/local-servers.json';
             if (file_exists($filename)) {
                 $this->serverInfo = (array) json_decode(file_get_contents($filename), true);
             }
@@ -120,7 +120,7 @@ abstract class ServerCommandBase extends CommandBase
 
     protected function saveServerInfo()
     {
-        $filename = $this->config()->getUserConfigDir() . '/local-servers.json';
+        $filename = $this->config()->getWritableUserDir() . '/local-servers.json';
         if (!empty($this->serverInfo)) {
             if (!file_put_contents($filename, json_encode($this->serverInfo))) {
                 throw new \RuntimeException('Failed to write server info to: ' . $filename);
@@ -206,7 +206,7 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function getPidFile($address)
     {
-        return $this->config()->getUserConfigDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
+        return $this->config()->getWritableUserDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
     }
 
     /**
