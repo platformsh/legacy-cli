@@ -9,6 +9,7 @@ define('CLI_CONFIG_DIR', '.platformsh');
 define('CLI_EXECUTABLE', 'platform');
 define('CLI_NAME', 'Platform.sh CLI');
 define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
+define('CLI_SERVICE_ENV_PREFIX', 'PLATFORM_');
 
 set_error_handler(
     function ($code, $message) {
@@ -236,7 +237,7 @@ if ($home = getHomeDirectory()) {
     if ($shellConfigFile = findShellConfigFile($home)) {
         output("  Configuring the shell...");
         $configured = true;
-        $currentShellConfig = file_get_contents($shellConfigFile);
+        $currentShellConfig = file_exists($shellConfigFile) ? file_get_contents($shellConfigFile) : false;
         if ($currentShellConfig === false) {
             $currentShellConfig = '';
         }
@@ -374,6 +375,13 @@ function is_ansi()
  */
 function findShellConfigFile($home)
 {
+    // Special handling for the .environment file on Platform.sh environments.
+    if (getenv(CLI_SERVICE_ENV_PREFIX . 'PROJECT') !== false
+        && getenv(CLI_SERVICE_ENV_PREFIX . 'APP_DIR') !== false
+        && getenv(CLI_SERVICE_ENV_PREFIX . 'APP_DIR') === $home) {
+        return getenv(CLI_SERVICE_ENV_PREFIX . 'APP_DIR') . '/.environment';
+    }
+
     $candidates = array(
         '.bash_profile',
         '.bashrc',
