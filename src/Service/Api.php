@@ -186,7 +186,7 @@ class Api
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
             $session->setId('cli-' . $this->sessionId);
-            $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
+            $session->setStorage(new File($this->config->getWritableUserDir() . '/.session'));
 
             self::$client = new PlatformClient($connector);
 

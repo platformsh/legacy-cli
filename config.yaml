@@ -9,6 +9,7 @@ application:
   user_config_dir: '.platformsh'
   user_state_file: '.platformsh/state.json'
   env_prefix: 'PLATFORMSH_CLI_'
+  tmp_sub_dir: 'platformsh-cli-tmp'
 
 # Configuration for working with projects locally.
 local:

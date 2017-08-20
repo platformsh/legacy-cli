@@ -53,7 +53,7 @@ class LogoutCommand extends CommandBase
         $this->stdErr->writeln('You are now logged out.');
 
         $config = $this->config();
-        $sessionsDir = $config->getUserConfigDir() . '/.session';
+        $sessionsDir = $config->getWritableUserDir() . '/.session';
         if ($input->getOption('all')) {
             if (is_dir($sessionsDir)) {
                 /** @var \Platformsh\Cli\Service\Filesystem $fs */
