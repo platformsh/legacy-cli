@@ -146,6 +146,20 @@ class Drush
             return $this->config->get('local.drush_executable');
         }
 
+        // Find a locally installed Drush instance, either directly via Composer
+        // or indirectly via the local build dependencies.
+        if ($projectRoot = $this->localProject->getProjectRoot()) {
+            $drushLocal = $projectRoot . '/vendor/bin/drush';
+            if (is_executable($drushLocal)) {
+                return $drushLocal;
+            }
+
+            $drushDep = $projectRoot . '/' . $this->config->get('local.dependencies_dir') . '/php/vendor/bin/drush';
+            if (is_executable($drushDep)) {
+                return $drushDep;
+            }
+        }
+
         return $this->shellHelper->resolveCommand('drush');
     }
 
