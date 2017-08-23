@@ -33,7 +33,7 @@ service:
   app_config_file: '.platform.app.yaml'
   project_config_dir: '.platform'
   docs_url: 'https://docs.platform.sh'
-  docs_search_url: 'https://docs.platform.sh/?q={{ terms }}'
+  docs_search_url: 'https://www.google.com/search?q=site%3Adocs.platform.sh%20{{ terms }}'
   accounts_url: 'https://accounts.platform.sh'
   pricing_url: 'https://platform.sh/pricing'
   available_regions:
