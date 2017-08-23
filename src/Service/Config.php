@@ -70,6 +70,22 @@ class Config
     }
 
     /**
+     * @return string
+     */
+    public function getWritableUserDir()
+    {
+        $configDir = $this->getUserConfigDir();
+
+        // If the config directory is not writable (e.g. if we are on a
+        // Platform.sh environment), use a temporary directory instead.
+        if (!is_writable($configDir)) {
+            return sys_get_temp_dir() . '/' . $this->get('application.tmp_sub_dir');
+        }
+
+        return $configDir;
+    }
+
+    /**
      * @param string $filename
      *
      * @return array

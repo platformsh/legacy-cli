@@ -109,6 +109,14 @@ EOT
      */
     protected function findShellConfigFile()
     {
+        // Special handling for the .environment file on Platform.sh environments.
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if (getenv($envPrefix . 'PROJECT') !== false
+            && getenv($envPrefix . 'APP_DIR') !== false
+            && getenv($envPrefix . 'APP_DIR') === Filesystem::getHomeDirectory()) {
+            return getenv($envPrefix . 'APP_DIR') . '/.environment';
+        }
+
         $candidates = [
             '.bash_profile',
             '.bashrc',

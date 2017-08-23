@@ -186,7 +186,7 @@ class Api
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
             $session->setId('cli-' . $this->sessionId);
-            $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
+            $session->setStorage(new File($this->config->getWritableUserDir() . '/.session'));
 
             self::$client = new PlatformClient($connector);
 
@@ -579,7 +579,7 @@ class Api
 
         if (count($matched) > 1) {
             $matchedIds = array_map(function (ApiResource $resource) {
-                return $resource->id;
+                return $resource->getProperty('id');
             }, $matched);
             throw new \InvalidArgumentException(sprintf(
                 'The partial ID "<error>%s</error>" is ambiguous; it matches the following %s IDs: %s',

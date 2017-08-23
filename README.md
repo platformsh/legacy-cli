@@ -1,4 +1,4 @@
-The **Sensio Cloud CLI** is the official command-line interface for [Sensio Cloud](https://sensio.cloud). Use this tool to interact with your projects and to build them locally for development purposes.
+The **SensioCloud CLI** is a command-line interface for [SensioCloud](https://sensio.cloud). Use this tool to interact with your projects and to build them locally for development purposes.
 
 ## Requirements
 

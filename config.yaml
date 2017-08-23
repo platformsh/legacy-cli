@@ -9,6 +9,7 @@ application:
   user_config_dir: '.sensiocloud'
   user_state_file: '.sensiocloud/state.json'
   env_prefix: 'SENSIOCLOUD_CLI_'
+  tmp_sub_dir: 'sensiocloud-cli-tmp'
 
 # Configuration for working with projects locally.
 local:
@@ -34,6 +35,7 @@ service:
   docs_url: 'https://sensio.cloud'
   docs_search_url: 'https://www.google.com/search?q=site%3Asensio.cloud%20{{ terms }}'
   accounts_url: 'https://accounts.sensio.cloud'
+  pricing_url: ~
   available_regions:
     - eu.sensio.cloud
   available_plans:

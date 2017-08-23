@@ -6,7 +6,6 @@ use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -586,7 +585,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
     {
         /** @noinspection PhpIncompatibleReturnTypeInspection */
-        return $this->addOption('no-wait', null, InputOption::VALUE_NONE, $description);
+        return $this->addOption('no-wait', 'W', InputOption::VALUE_NONE, $description);
     }
 
     /**
@@ -825,7 +824,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         // Set the --app option.
         if ($input->hasOption('app') && !$input->getOption('app')) {
             // An app ID might be provided from the parsed project URL.
-            if (isset($result['appId'])) {
+            if (isset($result) && isset($result['appId'])) {
                 $input->setOption('app', $result['appId']);
                 $this->debug(sprintf(
                     'App name detected from project URL as: %s',

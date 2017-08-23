@@ -68,7 +68,7 @@ abstract class TunnelCommandBase extends CommandBase
         if (!isset($this->tunnelInfo)) {
             $this->tunnelInfo = [];
             // @todo move this to State service (in a new major version)
-            $filename = $this->config()->getUserConfigDir() . '/tunnel-info.json';
+            $filename = $this->config()->getWritableUserDir() . '/tunnel-info.json';
             if (file_exists($filename)) {
                 $this->debug(sprintf('Loading tunnel info from %s', $filename));
                 $this->tunnelInfo = (array) json_decode(file_get_contents($filename), true);
@@ -97,7 +97,7 @@ abstract class TunnelCommandBase extends CommandBase
 
     protected function saveTunnelInfo()
     {
-        $filename = $this->config()->getUserConfigDir() . '/tunnel-info.json';
+        $filename = $this->config()->getWritableUserDir() . '/tunnel-info.json';
         if (!empty($this->tunnelInfo)) {
             $this->debug('Saving tunnel info to: ' . $filename);
             if (!file_put_contents($filename, json_encode($this->tunnelInfo))) {
@@ -208,7 +208,7 @@ abstract class TunnelCommandBase extends CommandBase
     protected function getPidFile(array $tunnel)
     {
         $key = $this->getTunnelKey($tunnel);
-        $dir = $this->config()->getUserConfigDir() . '/.tunnels';
+        $dir = $this->config()->getWritableUserDir() . '/.tunnels';
         if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $dir);
         }
