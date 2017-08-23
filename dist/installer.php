@@ -265,9 +265,7 @@ if ($installedInHomeDir) {
     if ($configured) {
         output(PHP_EOL . "To get started, run:", 'info');
         $toSource = getcwd() === $home ? str_replace(getcwd() . '/', '', $shellConfigFile) : $shellConfigFile;
-        if ($toSource !== '.environment') {
-            output('  source ' . $toSource);
-        }
+        output('  source ' . $toSource);
         output('  ' . CLI_EXECUTABLE);
     } else {
         output(PHP_EOL . "Add this to your shell configuration file:", 'info');
