@@ -160,6 +160,12 @@ class Drush
             }
         }
 
+        // Find Drush if it is installed within the CLI.
+        $drushCli = CLI_ROOT . '/vendor/bin/drush';
+        if (is_executable($drushCli)) {
+            return $drushCli;
+        }
+
         return $this->shellHelper->resolveCommand('drush');
     }
 
