@@ -53,7 +53,7 @@ class TunnelOpenCommand extends TunnelCommandBase
             return 1;
         }
 
-        $logFile = $this->config()->getUserConfigDir() . '/tunnels.log';
+        $logFile = $this->config()->getWritableUserDir() . '/tunnels.log';
         if (!$log = $this->openLog($logFile)) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: %s', $logFile));
             return 1;
