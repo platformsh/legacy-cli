@@ -246,7 +246,7 @@ if ($home = getHomeDirectory()) {
             $currentShellConfig .= PHP_EOL . PHP_EOL
                 . "# Automatically added by the " . CLI_NAME . " installer" . PHP_EOL
                 . "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-                . '. ' . escapeshellarg($rcDestination) . " 2>/dev/null || true" . PHP_EOL;
+                . '{[ "$BASH" ] || [ "$ZSH" ]} && . ' . escapeshellarg($rcDestination) . " 2>/dev/null || true" . PHP_EOL;
             if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
                 $configured = false;
                 output("  Failed to configure the shell automatically.", 'warning');
