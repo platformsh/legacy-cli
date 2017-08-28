@@ -84,6 +84,12 @@ abstract class IntegrationCommandBase extends CommandBase
               ]],
               'description' => 'GitHub: build pull requests based on their post-merge state',
             ]),
+            'pull_requests_clone_parent_data' => new BooleanField('Clone data for pull requests', [
+                'conditions' => ['type' => [
+                    'github',
+                ]],
+                'description' => 'GitHub: clone data for pull requests',
+            ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'github',
