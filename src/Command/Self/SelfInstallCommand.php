@@ -49,13 +49,18 @@ EOT
         $this->stdErr->writeln(sprintf('Reading shell configuration file: %s', $shellConfigFile));
 
         $currentShellConfig = file_get_contents($shellConfigFile);
+        if ($currentShellConfig === false) {
+            $this->stdErr->writeln('Failed to read file');
+            return 1;
+        }
+
         if (strpos($currentShellConfig, $configDir . "/bin") !== false) {
             $this->stdErr->writeln(sprintf('Already configured: <info>%s</info>', $shellConfigFile));
             return 0;
         }
 
-        $suggestedShellConfig = "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-            . '. ' . escapeshellarg($shellConfigDestination) . " 2>/dev/null || true";
+        $suggestedShellConfig = 'export PATH=' . escapeshellarg($configDir . '/bin') . ':"$PATH"' . PHP_EOL
+            . '{[ "$BASH" ] || [ "$ZSH" ]} && . ' . escapeshellarg($shellConfigDestination) . ' 2>/dev/null || true';
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -76,7 +81,7 @@ EOT
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
             . PHP_EOL . PHP_EOL
             . '# Automatically added by the ' . $this->config()->get('application.name')
-            . PHP_EOL . $suggestedShellConfig;
+            . PHP_EOL . $suggestedShellConfig . PHP_EOL;
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');
 
@@ -109,6 +114,14 @@ EOT
      */
     protected function findShellConfigFile()
     {
+        // Special handling for the .environment file on Platform.sh environments.
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if (getenv($envPrefix . 'PROJECT') !== false
+            && getenv($envPrefix . 'APP_DIR') !== false
+            && getenv($envPrefix . 'APP_DIR') === Filesystem::getHomeDirectory()) {
+            return getenv($envPrefix . 'APP_DIR') . '/.environment';
+        }
+
         $candidates = [
             '.bash_profile',
             '.bashrc',
