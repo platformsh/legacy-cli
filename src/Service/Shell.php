@@ -66,6 +66,7 @@ class Shell
         $this->showWorkingDirMessage($dir);
 
         $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir, $env);
+        array_walk($pipes, 'fclose');
 
         return proc_close($process);
     }
