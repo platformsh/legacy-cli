@@ -275,7 +275,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
         $cliUpdater = $this->getService('self_updater');
         $cliUpdater->setAllowMajor(true);
-        $cliUpdater->setTimeout(10);
+        $cliUpdater->setTimeout(5);
 
         try {
             $newVersion = $cliUpdater->update(null, $currentVersion);
