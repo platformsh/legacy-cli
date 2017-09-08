@@ -202,7 +202,9 @@ chmod(CLI_PHAR, 0755);
 // Attempt automatic configuration of the shell (including the PATH).
 $installedInHomeDir = false;
 $configured = false;
-if ($home = getHomeDirectory()) {
+$home = getHomeDirectory();
+$shellConfigFile = findShellConfigFile($home);
+if ($home) {
     $configDir = $home . '/' . CLI_CONFIG_DIR;
 
     if (!file_exists($configDir . '/bin')) {
@@ -233,28 +235,11 @@ if ($home = getHomeDirectory()) {
     }
 
     $suggestedShellConfig = 'export PATH=' . escapeshellarg($configDir . '/bin') . ':"$PATH"' . PHP_EOL
-        . '{[ "$BASH" ] || [ "$ZSH" ]} && . ' . escapeshellarg($shellConfigDestination) . ' 2>/dev/null || true';
+        . '[ "$BASH" ] || [ "$ZSH" ] && . ' . escapeshellarg($shellConfigDestination) . ' 2>/dev/null || true';
 
-    // Configure the user's shell to add to the $PATH and to source the
-    // shell-config.rc file.
-    if ($shellConfigFile = findShellConfigFile($home)) {
-        output('  Configuring the shell...');
-        $configured = true;
-        $currentShellConfig = file_exists($shellConfigFile) ? file_get_contents($shellConfigFile) : false;
-        if ($currentShellConfig !== false && strpos($currentShellConfig, $configDir . '/bin') === false) {
-            $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
-                . PHP_EOL . PHP_EOL
-                . '# Automatically added by the ' . CLI_NAME . ' installer' . PHP_EOL
-                . $suggestedShellConfig . PHP_EOL;
-
-            copy($shellConfigFile, $shellConfigFile . '.cli.bak');
-
-            if (!file_put_contents($shellConfigFile, $newShellConfig)) {
-                $configured = false;
-                output('  Failed to configure the shell automatically.', 'warning');
-            }
-        }
-    }
+    $configured = $shellConfigFile
+        ? writeShellConfig($shellConfigFile, $suggestedShellConfig, escapeshellarg($configDir . '/bin'))
+        : false;
 }
 
 output(
@@ -286,6 +271,43 @@ if ($installedInHomeDir) {
     output(PHP_EOL . 'Or install it globally on your system:', 'info');
     output('  mv ' . CLI_PHAR . ' /usr/local/bin/' . CLI_EXECUTABLE);
     output('  ' . CLI_EXECUTABLE);
+}
+
+/**
+ * Write to a shell config file.
+ *
+ * @param string $shellConfigFile
+ * @param string $suggestedShellConfig
+ * @param string $key
+ *
+ * @return bool
+ */
+function writeShellConfig($shellConfigFile, $suggestedShellConfig, $key) {
+    output('  Configuring the shell...');
+
+    $newShellConfig = '# Automatically added by the ' . CLI_NAME . ' installer'
+        . PHP_EOL
+        . trim($suggestedShellConfig, PHP_EOL)
+        . PHP_EOL;
+    if (file_exists($shellConfigFile)) {
+        if (!$currentShellConfig = file_get_contents($shellConfigFile)) {
+            return false;
+        }
+        if (strpos($key, $currentShellConfig) !== false) {
+            return true;
+        }
+        $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
+            . PHP_EOL . PHP_EOL
+            . $newShellConfig;
+        copy($shellConfigFile, $shellConfigFile . '.cli.bak');
+    }
+
+    if (!file_put_contents($shellConfigFile, $newShellConfig)) {
+        output('  Failed to configure the shell automatically.', 'warning');
+        return false;
+    }
+
+    return true;
 }
 
 /**
