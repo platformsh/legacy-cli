@@ -224,15 +224,10 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function createServerProcess($address, $docRoot, $projectRoot, array $appConfig, array $env = [])
     {
-        $stack = 'php';
         if (isset($appConfig['type'])) {
             $type = explode(':', $appConfig['type'], 2);
-            $stack = $type[0];
             $version = isset($type[1]) ? $type[1] : false;
-            if ($stack === 'hhvm') {
-                $stack = 'php';
-            }
-            if ($stack === 'php' && $version && version_compare(PHP_VERSION, $version, '<')) {
+            if ($type[0] === 'php' && $version && version_compare(PHP_VERSION, $version, '<')) {
                 $this->stdErr->writeln(sprintf(
                     '<comment>Warning:</comment> your local PHP version is %s, but the app expects %s',
                     PHP_VERSION,
@@ -243,39 +238,38 @@ abstract class ServerCommandBase extends CommandBase
 
         $arguments = [];
 
-        if ($stack === 'php') {
-            $router = $this->createRouter('php', $projectRoot);
-
-            $this->showSecurityWarning();
-
-            $arguments[] = 'php';
-
-            foreach ($this->getServerPhpConfig() as $item => $value) {
-                $arguments[] = sprintf('-d %s="%s"', $item, $value);
-            }
-
-            $arguments = array_merge($arguments, [
-              '-t',
-              $docRoot,
-              '-S',
-              $address,
-              $router,
-            ]);
-
-            // An 'exec' is needed to stop creating two processes on some OSs.
-            if (!OsUtil::isWindows()) {
-                array_unshift($arguments, 'exec');
-            }
-
-            $builder = new ProcessBuilder($arguments);
-            $process = $builder->getProcess();
-        } else {
-            // Bail out. We can't support non-PHP apps for now.
-            throw new \Exception(sprintf(
-                "Not supported: the CLI doesn't support starting a server for the application type '%s'",
-                $appConfig['type']
-            ));
+        if (isset($appConfig['web']['commands']['start'])) {
+            // Bail out. We can't support custom 'start' commands for now.
+            throw new \Exception(
+                "Not supported: the CLI doesn't support starting a server with a custom 'start' command"
+            );
         }
+
+        $router = $this->createRouter($projectRoot);
+
+        $this->showSecurityWarning();
+
+        $arguments[] = 'php';
+
+        foreach ($this->getServerPhpConfig() as $item => $value) {
+            $arguments[] = sprintf('-d %s="%s"', $item, $value);
+        }
+
+        $arguments = array_merge($arguments, [
+          '-t',
+          $docRoot,
+          '-S',
+          $address,
+          $router,
+        ]);
+
+        // An 'exec' is needed to stop creating two processes on some OSs.
+        if (!OsUtil::isWindows()) {
+            array_unshift($arguments, 'exec');
+        }
+
+        $builder = new ProcessBuilder($arguments);
+        $process = $builder->getProcess();
 
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
@@ -309,27 +303,24 @@ abstract class ServerCommandBase extends CommandBase
     /**
      * Create a router file.
      *
-     * @param string $stack
      * @param string $projectRoot
      *
-     * @return string|bool
-     *   The absolute path to the file on success, false on failure.
+     * @return string
+     *   The absolute path to the router file.
      */
-    protected function createRouter($stack, $projectRoot)
+    protected function createRouter($projectRoot)
     {
         static $created = [];
 
-        $router_src = sprintf('%s/resources/router/router-%s.php', CLI_ROOT, $stack);
+        $router_src = CLI_ROOT . '/resources/router/router.php';
         if (!file_exists($router_src)) {
-            $this->stdErr->writeln(sprintf('Router not found for stack: <error>%s</error>', $stack));
-            return false;
+            throw new \RuntimeException(sprintf('Router not found: <error>%s</error>', $router_src));
         }
 
         $router = $projectRoot . '/' . $this->config()->get('local.local_dir') . '/' . basename($router_src);
         if (!isset($created[$router])) {
             if (!file_put_contents($router, file_get_contents($router_src))) {
-                $this->stdErr->writeln(sprintf('Could not create router file: <error>%s</error>', $router));
-                return false;
+                throw new \RuntimeException(sprintf('Could not create router file: <error>%s</error>', $router));
             }
             $created[$router] = true;
         }
