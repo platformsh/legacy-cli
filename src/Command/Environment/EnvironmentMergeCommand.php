@@ -44,7 +44,7 @@ class EnvironmentMergeCommand extends CommandBase
         $parentId = $selectedEnvironment->parent;
 
         $confirmText = sprintf(
-            'Are you sure you want to merge <info>%s</info> with its parent, <info>%s</info>?',
+            'Are you sure you want to merge <info>%s</info> into its parent, <info>%s</info>?',
             $environmentId,
             $parentId
         );
@@ -55,7 +55,7 @@ class EnvironmentMergeCommand extends CommandBase
         }
 
         $this->stdErr->writeln(sprintf(
-            'Merging <info>%s</info> with <info>%s</info>',
+            'Merging <info>%s</info> into <info>%s</info>',
             $environmentId,
             $parentId
         ));
