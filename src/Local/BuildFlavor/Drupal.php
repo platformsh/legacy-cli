@@ -39,6 +39,7 @@ class Drupal extends BuildFlavorBase
         $finder->in($directory)
                ->files()
                ->depth($depth)
+               ->exclude(['node_modules', 'vendor'])
                ->name('project.make*')
                ->name('drupal-org.make*');
         foreach ($finder as $file) {

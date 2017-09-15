@@ -235,9 +235,14 @@ class LocalApplication
         $finder->in($directory)
                ->ignoreDotFiles(false)
                ->name($config->get('service.app_config_file'))
-               ->notPath('builds')
-               ->notPath($config->get('local.local_dir'))
                ->ignoreUnreadableDirs()
+               ->exclude([
+                   '.idea',
+                   $config->get('local.local_dir'),
+                   'builds',
+                   'node_modules',
+                   'vendor',
+               ])
                ->depth('> 0')
                ->depth('< 5');
 
