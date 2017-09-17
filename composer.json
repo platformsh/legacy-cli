@@ -54,5 +54,10 @@
         "patches": {
             "commerceguys/guzzle-oauth2-plugin": {}
         }
+    },
+    "config": {
+        "platform": {
+            "php": "5.5.9"
+        }
     }
 }
