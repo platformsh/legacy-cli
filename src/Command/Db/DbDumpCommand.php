@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Environment;
-use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -37,7 +36,7 @@ class DbDumpCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $projectRoot = $this->getProjectRoot();
         $environment = $this->getSelectedEnvironment();
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
@@ -67,8 +66,7 @@ class DbDumpCommand extends CommandBase
                     $this->stdErr->writeln('');
                 }
             } else {
-                $dumpFile = $this->getDefaultFilename(
-                    $project,
+                $defaultFilename = $this->getDefaultFilename(
                     $environment,
                     $appName,
                     $includedTables,
@@ -76,6 +74,7 @@ class DbDumpCommand extends CommandBase
                     $schemaOnly,
                     $gzip
                 );
+                $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
             }
 
             // Process the user --directory option.
@@ -194,7 +193,7 @@ class DbDumpCommand extends CommandBase
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
-        if ($dumpFile && file_exists($dumpFile) && ($projectRoot = $this->getProjectRoot()) && strpos($dumpFile, $projectRoot) === 0) {
+        if ($dumpFile && file_exists($dumpFile) && $projectRoot && strpos($dumpFile, $projectRoot) === 0) {
             /** @var \Platformsh\Cli\Service\Git $git */
             $git = $this->getService('git');
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
@@ -213,7 +212,6 @@ class DbDumpCommand extends CommandBase
     /**
      * Get the default dump filename.
      *
-     * @param Project     $project
      * @param Environment $environment
      * @param string|null $appName
      * @param array       $includedTables
@@ -224,7 +222,6 @@ class DbDumpCommand extends CommandBase
      * @return string
      */
     private function getDefaultFilename(
-        Project $project,
         Environment $environment,
         $appName = null,
         array $includedTables = [],
@@ -232,8 +229,7 @@ class DbDumpCommand extends CommandBase
         $schemaOnly = false,
         $gzip = false)
     {
-        // Determine a default dump filename.
-        $defaultFilename = $project->id . '--' . $environment->id;
+        $defaultFilename = $environment->project . '--' . $environment->id;
         if ($appName !== null) {
             $defaultFilename .= '--' . $appName;
         }
@@ -250,8 +246,7 @@ class DbDumpCommand extends CommandBase
         if ($gzip) {
             $defaultFilename .= '.gz';
         }
-        $projectRoot = $this->getProjectRoot();
 
-        return $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
+        return $defaultFilename;
     }
 }
