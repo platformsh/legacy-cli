@@ -194,7 +194,7 @@ class DbDumpCommand extends CommandBase
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
-        if ($dumpFile && file_exists($dumpFile) && isset($projectRoot) && strpos($dumpFile, $projectRoot) === 0) {
+        if ($dumpFile && file_exists($dumpFile) && ($projectRoot = $this->getProjectRoot()) && strpos($dumpFile, $projectRoot) === 0) {
             /** @var \Platformsh\Cli\Service\Git $git */
             $git = $this->getService('git');
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
