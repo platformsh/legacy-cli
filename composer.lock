@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "d589d7bb674b631546cc4da11b28a4c4",
+    "content-hash": "5cd770732384ef14b287e70ef359e3e8",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -643,23 +643,24 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.11",
+            "version": "v0.0.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "f3971c9fde735a96b7a574f101724ee4a87a1d18"
+                "reference": "9291bf026158f0b571e50d96ffa0f837d1a5058d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/f3971c9fde735a96b7a574f101724ee4a87a1d18",
-                "reference": "f3971c9fde735a96b7a574f101724ee4a87a1d18",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/9291bf026158f0b571e50d96ffa0f837d1a5058d",
+                "reference": "9291bf026158f0b571e50d96ffa0f837d1a5058d",
                 "shasum": ""
             },
             "require": {
+                "php": ">=5.5.9",
                 "symfony/console": "^3.0 || ^2.6"
             },
             "require-dev": {
-                "phpunit/phpunit": "~4"
+                "phpunit/phpunit": "^5.0"
             },
             "type": "library",
             "autoload": {
@@ -677,7 +678,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2017-08-10T10:49:11+00:00"
+            "time": "2017-09-20T07:56:57+00:00"
         },
         {
             "name": "psr/container",

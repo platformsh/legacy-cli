@@ -39,6 +39,8 @@ service:
   available_regions:
     - eu.platform.sh
     - us.platform.sh
+    - au.platform.sh
+    - nl-1.platform.sh
   available_plans:
     - development
     - standard
