@@ -255,11 +255,14 @@ EOF
                 }
                 $environment->delete();
                 $output->writeln("Deleted remote Git branch <info>$environmentId</info>");
-                $output->writeln("Run <info>git fetch --prune</info> to remove the branch from your local cache.");
                 $deleted++;
             } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
+        }
+
+        if ($deleted > 0) {
+            $output->writeln("Run <info>git fetch --prune</info> to remove deleted branches from your local cache.");
         }
 
         if ($deleted < count($delete) || $deactivated < count($deactivate)) {
