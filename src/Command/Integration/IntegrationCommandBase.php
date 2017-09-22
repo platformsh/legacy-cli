@@ -140,6 +140,9 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.email',
                 ]],
                 'description' => 'The From address for alert emails',
+                'default' => $this->config()->has('service.default_from_address')
+                    ? $this->config()->get('service.default_from_address')
+                    : null,
             ]),
             'recipients' => new ArrayField('Recipients', [
                 'conditions' => ['type' => [
