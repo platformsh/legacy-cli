@@ -46,16 +46,25 @@ EOT
             return 1;
         }
 
-        $this->stdErr->writeln(sprintf('Reading shell configuration file: %s', $shellConfigFile));
+        $currentShellConfig = '';
 
-        $currentShellConfig = file_get_contents($shellConfigFile);
+        if (file_exists($shellConfigFile)) {
+            $this->stdErr->writeln(sprintf('Reading shell configuration file: %s', $shellConfigFile));
+
+            $currentShellConfig = file_get_contents($shellConfigFile);
+            if ($currentShellConfig === false) {
+                $this->stdErr->writeln('Failed to read file');
+                return 1;
+            }
+        }
+
         if (strpos($currentShellConfig, $configDir . "/bin") !== false) {
             $this->stdErr->writeln(sprintf('Already configured: <info>%s</info>', $shellConfigFile));
             return 0;
         }
 
-        $suggestedShellConfig = "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-            . '. ' . escapeshellarg($shellConfigDestination) . " 2>/dev/null || true";
+        $suggestedShellConfig = 'export PATH=' . escapeshellarg($configDir . '/bin') . ':"$PATH"' . PHP_EOL
+            . '[ "$BASH" ] || [ "$ZSH" ] && . ' . escapeshellarg($shellConfigDestination) . ' 2>/dev/null || true';
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -76,7 +85,7 @@ EOT
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
             . PHP_EOL . PHP_EOL
             . '# Automatically added by the ' . $this->config()->get('application.name')
-            . PHP_EOL . $suggestedShellConfig;
+            . PHP_EOL . $suggestedShellConfig . PHP_EOL;
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');
 
@@ -134,5 +143,42 @@ EOT
         }
 
         return false;
+    }
+
+    /**
+     * Write to a shell config file.
+     *
+     * @param string $shellConfigFile
+     * @param string $suggestedShellConfig
+     * @param string $key
+     *
+     * @return bool
+     */
+    protected function writeShellConfig($shellConfigFile, $suggestedShellConfig, $key) {
+        output('  Configuring the shell...');
+
+        $newShellConfig = '# Automatically added by the ' . CLI_NAME . ' installer'
+            . PHP_EOL
+            . trim($suggestedShellConfig, PHP_EOL)
+            . PHP_EOL;
+        if (file_exists($shellConfigFile)) {
+            if (!$currentShellConfig = file_get_contents($shellConfigFile)) {
+                return false;
+            }
+            if (strpos($key, $currentShellConfig) !== false) {
+                return true;
+            }
+            $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
+                . PHP_EOL . PHP_EOL
+                . $newShellConfig;
+            copy($shellConfigFile, $shellConfigFile . '.cli.bak');
+        }
+
+        if (!file_put_contents($shellConfigFile, $newShellConfig)) {
+            output('  Failed to configure the shell automatically.', 'warning');
+            return false;
+        }
+
+        return true;
     }
 }

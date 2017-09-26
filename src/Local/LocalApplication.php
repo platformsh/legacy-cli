@@ -235,21 +235,28 @@ class LocalApplication
         $finder->in($directory)
                ->ignoreDotFiles(false)
                ->name($config->get('service.app_config_file'))
-               ->notPath('builds')
-               ->notPath($config->get('local.local_dir'))
                ->ignoreUnreadableDirs()
-               ->depth('> 0')
+               ->exclude([
+                   '.idea',
+                   $config->get('local.local_dir'),
+                   'builds',
+                   'node_modules',
+                   'vendor',
+               ])
                ->depth('< 5');
 
         $applications = [];
-        if ($finder->count() == 0) {
+
+        /** @var \Symfony\Component\Finder\SplFileInfo $file */
+        foreach ($finder as $file) {
+            $appRoot = dirname($file->getRealPath());
+            $applications[$appRoot] = new LocalApplication($appRoot, $config, $directory);
+        }
+
+        // If there are no application config files found, treat the
+        // directory as a single application.
+        if (empty($applications)) {
             $applications[$directory] = new LocalApplication($directory, $config, $directory);
-        } else {
-            /** @var \Symfony\Component\Finder\SplFileInfo $file */
-            foreach ($finder as $file) {
-                $appRoot = dirname($file->getRealPath());
-                $applications[$appRoot] = new LocalApplication($appRoot, $config, $directory);
-            }
         }
 
         return $applications;

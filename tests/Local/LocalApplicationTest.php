@@ -68,6 +68,14 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('simple', $app->getId());
     }
 
+    public function testFindNestedApps()
+    {
+        $fakeAppRoot = 'tests/data/repositories/multiple/nest';
+
+        $apps = LocalApplication::getApplications($fakeAppRoot);
+        $this->assertEquals(count($apps), 3);
+    }
+
     public function testGetAppConfigNested()
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/nest/nested';

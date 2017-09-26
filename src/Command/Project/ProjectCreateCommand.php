@@ -193,12 +193,14 @@ class ProjectCreateCommand extends CommandBase
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
             'options' => $this->getAvailableRegions(),
+            'allowOther' => true,
           ]),
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
             'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
+            'allowOther' => true,
           ]),
           'environments' => new Field('Environments', [
             'optionName' => 'environments',

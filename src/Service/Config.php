@@ -78,11 +78,32 @@ class Config
 
         // If the config directory is not writable (e.g. if we are on a
         // Platform.sh environment), use a temporary directory instead.
-        if (!is_writable($configDir)) {
+        if (!$this->canWriteToDir($configDir)) {
             return sys_get_temp_dir() . '/' . $this->get('application.tmp_sub_dir');
         }
 
         return $configDir;
+    }
+
+    /**
+     * @param string $dir
+     *
+     * @return bool
+     */
+    protected function canWriteToDir($dir)
+    {
+        if (is_writable($dir)) {
+            return true;
+        }
+
+        $current = $dir;
+        while (!file_exists($current) && ($parent = dirname($current)) && $parent !== $current) {
+            if (is_writable($parent)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -261,6 +261,10 @@ EOF
             }
         }
 
+        if ($deleted > 0) {
+            $output->writeln("Run <info>git fetch --prune</info> to remove deleted branches from your local cache.");
+        }
+
         if ($deleted < count($delete) || $deactivated < count($deactivate)) {
             $error = true;
         }

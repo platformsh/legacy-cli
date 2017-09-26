@@ -144,18 +144,18 @@ check(
 );
 
 // The necessary checks have passed. Start downloading the right version.
-output(PHP_EOL . "Download", 'heading');
+output(PHP_EOL . 'Download', 'heading');
 
-output("  Finding the latest version...");
+output('  Finding the latest version...');
 $manifest = file_get_contents(CLI_UPDATE_MANIFEST_URL);
 if ($manifest === false) {
-    output("  Failed to download manifest file: " . CLI_UPDATE_MANIFEST_URL, 'error');
+    output('  Failed to download manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
     exit(1);
 }
 
 $manifest = json_decode($manifest);
 if ($manifest === null) {
-    output("  Failed to decode manifest file: " . CLI_UPDATE_MANIFEST_URL, 'error');
+    output('  Failed to decode manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
     exit(1);
 }
 
@@ -170,39 +170,41 @@ foreach ($manifest as $item) {
     }
 }
 if (empty($latest)) {
-    output("  No download was found.", 'error');
+    output('  No download was found.', 'error');
     exit(1);
 }
 
 output("  Downloading version {$latest->version}...");
 if (!file_put_contents(CLI_PHAR, file_get_contents($latest->url))) {
-    output("  The download failed.", 'error');
+    output('  The download failed.', 'error');
 }
 
-output("  Checking file integrity...");
+output('  Checking file integrity...');
 if ($latest->sha256 !== hash_file('sha256', CLI_PHAR)) {
     unlink(CLI_PHAR);
-    output("  The download was corrupted.", 'error');
+    output('  The download was corrupted.', 'error');
     exit(1);
 }
 
-output("  Checking that the file is a valid Phar (PHP Archive)...");
+output('  Checking that the file is a valid Phar (PHP Archive)...');
 
 try {
     new Phar(CLI_PHAR);
 } catch (Exception $e) {
-    output("  The file is not a valid Phar archive.", 'error');
+    output('  The file is not a valid Phar archive.', 'error');
 
     throw $e;
 }
 
-output("  Making the Phar executable...");
+output('  Making the Phar executable...');
 chmod(CLI_PHAR, 0755);
 
 // Attempt automatic configuration of the shell (including the PATH).
 $installedInHomeDir = false;
 $configured = false;
-if ($home = getHomeDirectory()) {
+$home = getHomeDirectory();
+$shellConfigFile = findShellConfigFile($home);
+if ($home) {
     $configDir = $home . '/' . CLI_CONFIG_DIR;
 
     if (!file_exists($configDir . '/bin')) {
@@ -213,74 +215,99 @@ if ($home = getHomeDirectory()) {
     // in the user's shell configuration. N.B. reading from a Phar only works
     // while it still has the '.phar' extension.
     output('  Extracting the shell configuration file...');
-    $rcDestination = $configDir . '/shell-config.rc';
+    $shellConfigDestination = $configDir . '/shell-config.rc';
     $rcSource = 'phar://' . CLI_PHAR . '/shell-config.rc';
     if (($rcContents = file_get_contents($rcSource)) === false) {
         output(sprintf('  Failed to read file: %s', $rcSource), 'warning');
     }
-    elseif (file_put_contents($rcDestination, $rcContents) === false) {
-        output(sprintf('  Failed to write file: %s', $rcDestination), 'warning');
+    elseif (file_put_contents($shellConfigDestination, $rcContents) === false) {
+        output(sprintf('  Failed to write file: %s', $shellConfigDestination), 'warning');
     }
 
-    output("  Installing the Phar into your home directory...");
+    output('  Installing the Phar into your home directory...');
     if (rename(CLI_PHAR, $configDir . '/bin/' . CLI_EXECUTABLE)) {
         $installedInHomeDir = true;
         output(
-            "  The Phar was saved to: " . $configDir . '/bin/' . CLI_EXECUTABLE
+            '  The Phar was saved to: ' . $configDir . '/bin/' . CLI_EXECUTABLE
         );
     } else {
-        output("  Failed to move the Phar.", 'warning');
+        output('  Failed to move the Phar.', 'warning');
     }
 
-    // Configure the user's shell to add to the $PATH and to source the
-    // shell-config.rc file.
-    if ($shellConfigFile = findShellConfigFile($home)) {
-        output("  Configuring the shell...");
-        $configured = true;
-        $currentShellConfig = file_exists($shellConfigFile) ? file_get_contents($shellConfigFile) : false;
-        if ($currentShellConfig === false) {
-            $currentShellConfig = '';
-        }
+    $suggestedShellConfig = 'export PATH=' . escapeshellarg($configDir . '/bin') . ':"$PATH"' . PHP_EOL
+        . '[ "$BASH" ] || [ "$ZSH" ] && . ' . escapeshellarg($shellConfigDestination) . ' 2>/dev/null || true';
 
-        if (strpos($currentShellConfig, $configDir . "/bin") === false) {
-            $currentShellConfig .= PHP_EOL . PHP_EOL
-                . "# Automatically added by the " . CLI_NAME . " installer" . PHP_EOL
-                . "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-                . '. ' . escapeshellarg($rcDestination) . " 2>/dev/null || true" . PHP_EOL;
-            if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
-                $configured = false;
-                output("  Failed to configure the shell automatically.", 'warning');
-            }
-        }
-    }
+    $configured = $shellConfigFile
+        ? writeShellConfig($shellConfigFile, $suggestedShellConfig, escapeshellarg($configDir . '/bin'))
+        : false;
 }
 
 output(
-    PHP_EOL . "The " . CLI_NAME . " v{$latest->version} was installed successfully!",
+    PHP_EOL . 'The ' . CLI_NAME . ' v' . $latest->version . ' was installed successfully!',
     'success'
 );
 
 // Tell the user what to do if the automatic installation succeeded.
 if ($installedInHomeDir) {
     if ($configured) {
-        output(PHP_EOL . "To get started, run:", 'info');
+        output(PHP_EOL . 'To get started, run:', 'info');
         $toSource = getcwd() === $home ? str_replace(getcwd() . '/', '', $shellConfigFile) : $shellConfigFile;
         output('  source ' . $toSource);
         output('  ' . CLI_EXECUTABLE);
     } else {
-        output(PHP_EOL . "Add this to your shell configuration file:", 'info');
-        output('  export PATH="' . $home . '/' . CLI_CONFIG_DIR . '/bin:$PATH"');
-        output('  . ' . escapeshellarg($rcDestination) . ' 2>/dev/null || true');
-        output(PHP_EOL . "Start a new shell, and then you can run '" . CLI_EXECUTABLE . "'", 'info');
+        $suggestedShellConfig = '# ' . CLI_NAME . ' configuration'
+            . PHP_EOL
+            . $suggestedShellConfig;
+
+        output(PHP_EOL . 'Add this to your shell configuration file:', 'info');
+        output(PHP_EOL . preg_replace('/^/m', '  ', $suggestedShellConfig));
+        output(PHP_EOL . 'Then start a new shell, and you can run: ' . CLI_EXECUTABLE, 'info');
     }
 } else {
     // Otherwise, the user still has a Phar file.
-    output(PHP_EOL . "Use it as a local file:", 'info');
+    output(PHP_EOL . 'Use it as a local file:', 'info');
     output('  php ' . CLI_PHAR);
 
-    output(PHP_EOL . "Or install it globally on your system:", 'info');
+    output(PHP_EOL . 'Or install it globally on your system:', 'info');
     output('  mv ' . CLI_PHAR . ' /usr/local/bin/' . CLI_EXECUTABLE);
     output('  ' . CLI_EXECUTABLE);
+}
+
+/**
+ * Write to a shell config file.
+ *
+ * @param string $shellConfigFile
+ * @param string $suggestedShellConfig
+ * @param string $key
+ *
+ * @return bool
+ */
+function writeShellConfig($shellConfigFile, $suggestedShellConfig, $key) {
+    output('  Configuring the shell...');
+
+    $newShellConfig = '# Automatically added by the ' . CLI_NAME . ' installer'
+        . PHP_EOL
+        . trim($suggestedShellConfig, PHP_EOL)
+        . PHP_EOL;
+    if (file_exists($shellConfigFile)) {
+        if (!$currentShellConfig = file_get_contents($shellConfigFile)) {
+            return false;
+        }
+        if (strpos($key, $currentShellConfig) !== false) {
+            return true;
+        }
+        $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
+            . PHP_EOL . PHP_EOL
+            . $newShellConfig;
+        copy($shellConfigFile, $shellConfigFile . '.cli.bak');
+    }
+
+    if (!file_put_contents($shellConfigFile, $newShellConfig)) {
+        output('  Failed to configure the shell automatically.', 'warning');
+        return false;
+    }
+
+    return true;
 }
 
 /**
