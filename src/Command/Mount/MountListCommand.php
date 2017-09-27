@@ -37,7 +37,7 @@ class MountListCommand extends CommandBase
 	    /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
 	    $envVarService = $this->getService('remote_env_vars');
 
-	    $sshUrl = $this->getCurrentEnvironment()
+	    $sshUrl = $this->getSelectedEnvironment()
 		    ->getSshUrl($this->selectApp($input));
 
 	    $result = $envVarService->getEnvVar('APPLICATION', $sshUrl, $input->getOption('refresh'));
