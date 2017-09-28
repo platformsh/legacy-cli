@@ -1,110 +1,86 @@
 <?php
+
 namespace Platformsh\Cli\Command\Mount;
 
-use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class MountPushCommand extends CommandBase
+class MountPushCommand extends MountSyncCommandBase
 {
 
+    /**
+     * {@inheritdoc}
+     */
     protected function configure()
     {
         $this
             ->setName('mount:push')
-	        ->setAliases(['mpush'])
-            ->setDescription('Upload contents to mounts')
-	        ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-	    $this->addProjectOption();
-	    $this->addEnvironmentOption();
-	    $this->addAppOption();
+            ->setAliases(['mpush'])
+            ->setDescription('Copy (sync) files to a mount')
+            ->addOption('source', null, InputOption::VALUE_REQUIRED, 'The directory containing the files to upload')
+            ->addOption('mount', null, InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)');
+        $this->addProjectOption();
+        $this->addEnvironmentOption();
+        $this->addAppOption();
     }
 
-	/**
-	 * @param InputInterface  $input
-	 * @param OutputInterface $output
-	 *
-	 * @return int|null|void
-	 * @throws \RuntimeException
-	 * @throws \Platformsh\Client\Exception\OperationUnavailableException
-	 * @throws \Platformsh\Client\Exception\EnvironmentStateException
-	 */
-	protected function execute(InputInterface $input, OutputInterface $output)
+    /**
+     * {@inheritdoc}
+     */
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
 
-	    /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
-	    $envVarService = $this->getService('remote_env_vars');
+        $sshUrl = $this->getSelectedEnvironment()
+            ->getSshUrl($this->selectApp($input));
 
-	    $sshUrl = $this->getSelectedEnvironment()
-		    ->getSshUrl($this->selectApp($input));
+        $appConfig = $this->getAppConfig($sshUrl);
 
-	    $result = $envVarService->getEnvVar('APPLICATION', $sshUrl, $input->getOption('refresh'));
-	    $appConfig = json_decode(base64_decode($result), true);
+        if (empty($appConfig['mounts'])) {
+            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
 
-	    $mounts = $appConfig['mounts'];
-	    if (empty($mounts)) {
-	    	$output->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
-	    	return;
-	    }
+            return 1;
+        }
 
-	    $app = LocalApplication::getApplication($input->getOption('app'), $this->getProjectRoot(), $this->config());
-	    $appRoot = $app->getRoot();
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
-	    $path = $this->selectMount($mounts);
-	    $this->runSync($path, $sshUrl, $appRoot);
+        if ($input->getOption('mount')) {
+            $path = $this->validateMountPath($input->getOption('mount'), $appConfig['mounts']);
+        } elseif ($input->isInteractive()) {
+            $path = $questionHelper->choose(
+                $this->getMountsAsOptions($appConfig['mounts']),
+                'Enter a number to choose a mount to upload to:'
+            );
+        } else {
+            $this->stdErr->writeln('The <error>--mount</error> option must be specified (in non-interactive mode).');
+
+            return 1;
+        }
+
+        $source = null;
+        if ($input->getOption('source')) {
+            $source = $input->getOption('source');
+        } elseif ($projectRoot = $this->getProjectRoot()) {
+            if ($sharedPath = $this->getSharedPath($path, $appConfig['mounts'])) {
+                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath)) {
+                    $source = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
+                }
+            }
+
+            $source = $questionHelper->askInput('Source directory', $source);
+        }
+        if (empty($source)) {
+            $this->stdErr->writeln('The source directory must be specified.');
+
+            return 1;
+        }
+
+        $this->validateDirectory($source);
+
+        $this->runSync($sshUrl, $path, $source, true);
+
+        return 0;
     }
-
-	/**
-	 * Find the mount the user wants to use.
-	 *
-	 * @param array $mounts
-	 *
-	 * @return null|string The path of the mount or null.
-	 * @throws \RuntimeException
-	 */
-	private function selectMount(array $mounts)
-	{
-		$options = array();
-		foreach ($mounts as $path => $id) {
-			$options[$path] = sprintf('"%s": "%s"', $path, $id);
-		}
-
-		/** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-		$questionHelper = $this->getService('question_helper');
-		$path = $questionHelper->choose($options, 'Enter a number to choose a mount to upload to:');
-
-		return $path;
-	}
-
-	/**
-	 * Push the local contents to the chosen mount
-	 *
-	 * @param $path
-	 * @param $sshUrl
-	 * @param $appRoot
-	 *
-	 * @return bool
-	 */
-	private function runSync($path, $sshUrl, $appRoot)
-	{
-		$command = sprintf('rsync -az %s%s/ %s:/app%s ', $appRoot, $path, $sshUrl, $path);
-		set_time_limit(0);
-
-		// Execute the command.
-		$start = microtime(true);
-		/** @var \Platformsh\Cli\Service\Shell $shell */
-		$shell = $this->getService('shell');
-		$exitCode = $shell->executeSimple($command);
-
-		if ($exitCode === 0) {
-			$this->stdErr->writeln('The upload completed successfully.', OutputInterface::OUTPUT_NORMAL);
-			$this->stdErr->writeln(sprintf('Time: %ss', number_format(microtime(true) - $start, 2)), OutputInterface::VERBOSITY_VERBOSE);
-			return true;
-		}
-		$this->stdErr->writeln('The upload failed. Try running the command with -vvv to gain more insight.', OutputInterface::OUTPUT_NORMAL);
-		return false;
-	}
 }

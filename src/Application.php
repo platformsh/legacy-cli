@@ -135,9 +135,9 @@ class Application extends ParentApplication
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
         $commands[] = new Command\Local\LocalDirCommand();
         $commands[] = new Command\Mount\MountListCommand();
-	    $commands[] = new Command\Mount\MountPullCommand();
-	    $commands[] = new Command\Mount\MountPushCommand();
-	    $commands[] = new Command\Project\ProjectCurlCommand();
+        $commands[] = new Command\Mount\MountPullCommand();
+        $commands[] = new Command\Mount\MountPushCommand();
+        $commands[] = new Command\Project\ProjectCurlCommand();
         $commands[] = new Command\Project\ProjectCreateCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
         $commands[] = new Command\Project\ProjectGetCommand();
