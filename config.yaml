@@ -36,6 +36,7 @@ service:
   docs_search_url: 'https://www.google.com/search?q=site%3Adocs.platform.sh%20{{ terms }}'
   accounts_url: 'https://accounts.platform.sh'
   pricing_url: 'https://platform.sh/pricing'
+  default_from_address: 'noreply@platform.sh'
   available_regions:
     - eu.platform.sh
     - us.platform.sh
