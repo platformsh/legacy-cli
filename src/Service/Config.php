@@ -101,6 +101,7 @@ class Config
             if (is_writable($parent)) {
                 return true;
             }
+            $current = $parent;
         }
 
         return false;
