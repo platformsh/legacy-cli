@@ -84,6 +84,13 @@ abstract class IntegrationCommandBase extends CommandBase
               ]],
               'description' => 'GitHub: build pull requests based on their post-merge state',
             ]),
+            'pull_requests_clone_parent_data' => new BooleanField('Clone data for pull requests', [
+                'optionName' => 'pull-requests-clone-parent-data',
+                'conditions' => ['type' => [
+                    'github',
+                ]],
+                'description' => 'GitHub: clone data for pull requests',
+            ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'github',
@@ -133,6 +140,9 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.email',
                 ]],
                 'description' => 'The From address for alert emails',
+                'default' => $this->config()->has('service.default_from_address')
+                    ? $this->config()->get('service.default_from_address')
+                    : null,
             ]),
             'recipients' => new ArrayField('Recipients', [
                 'conditions' => ['type' => [
