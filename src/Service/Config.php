@@ -16,6 +16,8 @@ class Config
 
     protected $userConfig = null;
 
+    private $fs;
+
     /**
      * @param array|null  $env
      * @param string|null $defaultsFile
@@ -66,7 +68,25 @@ class Config
      */
     public function getUserConfigDir()
     {
-        return Filesystem::getHomeDirectory() . '/' . $this->get('application.user_config_dir');
+        return $this->fs()->getHomeDirectory() . '/' . $this->get('application.user_config_dir');
+    }
+
+    /**
+     * Inject the filesystem service.
+     *
+     * @param Filesystem $fs
+     */
+    public function setFs(Filesystem $fs)
+    {
+        $this->fs = $fs;
+    }
+
+    /**
+     * @return \Platformsh\Cli\Service\Filesystem
+     */
+    private function fs()
+    {
+        return $this->fs ?: new Filesystem();
     }
 
     /**
@@ -78,33 +98,11 @@ class Config
 
         // If the config directory is not writable (e.g. if we are on a
         // Platform.sh environment), use a temporary directory instead.
-        if (!$this->canWriteToDir($configDir)) {
+        if (!$this->fs()->canWrite($configDir) || (file_exists($configDir) && !is_dir($configDir))) {
             return sys_get_temp_dir() . '/' . $this->get('application.tmp_sub_dir');
         }
 
         return $configDir;
-    }
-
-    /**
-     * @param string $dir
-     *
-     * @return bool
-     */
-    protected function canWriteToDir($dir)
-    {
-        if (is_writable($dir)) {
-            return true;
-        }
-
-        $current = $dir;
-        while (!file_exists($current) && ($parent = dirname($current)) && $parent !== $current) {
-            if (is_writable($parent)) {
-                return true;
-            }
-            $current = $parent;
-        }
-
-        return false;
     }
 
     /**
