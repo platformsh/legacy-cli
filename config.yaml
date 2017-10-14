@@ -36,6 +36,7 @@ service:
   docs_search_url: 'https://www.google.com/search?q=site%3Asensio.cloud%20{{ terms }}'
   accounts_url: 'https://accounts.sensio.cloud'
   pricing_url: ~
+  default_from_address: ~
   available_regions:
     - eu.sensio.cloud
   available_plans:

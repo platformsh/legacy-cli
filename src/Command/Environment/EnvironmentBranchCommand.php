@@ -25,6 +25,12 @@ class EnvironmentBranchCommand extends CommandBase
                 null,
                 InputOption::VALUE_NONE,
                 "Create the new environment even if the branch cannot be checked out locally"
+            )
+            ->addOption(
+                'no-clone-parent',
+                null,
+                InputOption::VALUE_NONE,
+                "Do not clone the parent branch's data"
             );
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -110,7 +116,7 @@ class EnvironmentBranchCommand extends CommandBase
         ));
 
         $title = $input->getOption('title') ?: $branchName;
-        $activity = $parentEnvironment->branch($title, $branchName);
+        $activity = $parentEnvironment->branch($title, $branchName, !$input->getOption('no-clone-parent'));
 
         // Clear the environments cache, as branching has started.
         $this->api()->clearEnvironmentsCache($selectedProject->id);

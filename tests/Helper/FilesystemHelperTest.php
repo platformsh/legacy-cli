@@ -152,6 +152,23 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
     }
 
+    public function testCanWrite()
+    {
+        $testDir = $this->createTempSubDir();
+        touch($testDir . '/test-file');
+        $this->assertTrue($this->filesystemHelper->canWrite($testDir . '/test-file'));
+        chmod($testDir . '/test-file', 0500);
+        $this->assertFalse($this->filesystemHelper->canWrite($testDir . '/test-file'));
+        mkdir($testDir . '/test-dir', 0700);
+        $this->assertTrue($this->filesystemHelper->canWrite($testDir . '/test-dir'));
+        $this->assertTrue($this->filesystemHelper->canWrite($testDir . '/test-dir/1'));
+        $this->assertTrue($this->filesystemHelper->canWrite($testDir . '/test-dir/1/2/3'));
+        mkdir($testDir . '/test-ro-dir', 0500);
+        $this->assertFalse(is_writable($testDir . '/test-ro-dir'));
+        $this->assertFalse($this->filesystemHelper->canWrite($testDir . '/test-ro-dir'));
+        $this->assertFalse($this->filesystemHelper->canWrite($testDir . '/test-ro-dir/1'));
+    }
+
     /**
      * Create a test directory with a unique name.
      *

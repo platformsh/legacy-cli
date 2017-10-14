@@ -364,6 +364,30 @@ class Filesystem
     }
 
     /**
+     * Test whether a file or directory is writable even if it does not exist.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function canWrite($name)
+    {
+        if (is_writable($name)) {
+            return true;
+        }
+
+        $current = $name;
+        while (!file_exists($current) && ($parent = dirname($current)) && $parent !== $current) {
+            if (is_writable($parent)) {
+                return true;
+            }
+            $current = $parent;
+        }
+
+        return false;
+    }
+
+    /**
      * Create a gzipped tar archive of a directory's contents.
      *
      * @param string $dir
