@@ -293,7 +293,7 @@ function writeShellConfig($shellConfigFile, $suggestedShellConfig, $key) {
         if (!$currentShellConfig = file_get_contents($shellConfigFile)) {
             return false;
         }
-        if (strpos($key, $currentShellConfig) !== false) {
+        if (strpos($currentShellConfig, $key) !== false) {
             return true;
         }
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
