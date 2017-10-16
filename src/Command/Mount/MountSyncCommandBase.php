@@ -12,15 +12,16 @@ abstract class MountSyncCommandBase extends CommandBase
      * Get the remote application config.
      *
      * @param string $sshUrl
+     * @param bool   $refresh
      *
      * @return array
      */
-    protected function getAppConfig($sshUrl)
+    protected function getAppConfig($sshUrl, $refresh = true)
     {
         /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
         $envVarService = $this->getService('remote_env_vars');
 
-        $result = $envVarService->getEnvVar('APPLICATION', $sshUrl, true);
+        $result = $envVarService->getEnvVar('APPLICATION', $sshUrl, $refresh);
 
         return (array) json_decode(base64_decode($result), true);
     }
@@ -121,8 +122,9 @@ abstract class MountSyncCommandBase extends CommandBase
      * @param string $mountPath
      * @param string $localPath
      * @param bool   $up
+     * @param bool   $delete
      */
-    protected function runSync($sshUrl, $mountPath, $localPath, $up)
+    protected function runSync($sshUrl, $mountPath, $localPath, $up, $delete = false)
     {
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
@@ -149,6 +151,10 @@ abstract class MountSyncCommandBase extends CommandBase
         } else {
             $params[] = sprintf('%s:%s/', $sshUrl, $mountPathAbsolute);
             $params[] = $localPath;
+        }
+
+        if ($delete) {
+            $params[] = '--delete';
         }
 
         $start = microtime(true);

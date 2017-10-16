@@ -20,7 +20,9 @@ class MountUploadCommand extends MountSyncCommandBase
             ->setName('mount:upload')
             ->setDescription('Upload files to a mount, using rsync')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'A directory containing files to upload')
-            ->addOption('mount', null, InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)');
+            ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
+            ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the mount')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -37,7 +39,7 @@ class MountUploadCommand extends MountSyncCommandBase
         $sshUrl = $this->getSelectedEnvironment()
             ->getSshUrl($appName);
 
-        $appConfig = $this->getAppConfig($sshUrl);
+        $appConfig = $this->getAppConfig($sshUrl, (bool) $input->getOption('refresh'));
 
         if (empty($appConfig['mounts'])) {
             $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
@@ -111,7 +113,7 @@ class MountUploadCommand extends MountSyncCommandBase
             return 1;
         }
 
-        $this->runSync($sshUrl, $mountPath, $source, true);
+        $this->runSync($sshUrl, $mountPath, $source, true, (bool) $input->getOption('delete'));
 
         return 0;
     }

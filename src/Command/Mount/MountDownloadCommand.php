@@ -19,8 +19,10 @@ class MountDownloadCommand extends MountSyncCommandBase
         $this
             ->setName('mount:download')
             ->setDescription('Download files from a mount, using rsync')
-            ->addOption('mount', null, InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
-            ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The directory to which files will be downloaded');
+            ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
+            ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The directory to which files will be downloaded')
+            ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the target directory')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -37,7 +39,7 @@ class MountDownloadCommand extends MountSyncCommandBase
         $sshUrl = $this->getSelectedEnvironment()
             ->getSshUrl($appName);
 
-        $appConfig = $this->getAppConfig($sshUrl);
+        $appConfig = $this->getAppConfig($sshUrl, (bool) $input->getOption('refresh'));
 
         if (empty($appConfig['mounts'])) {
             $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
@@ -111,7 +113,7 @@ class MountDownloadCommand extends MountSyncCommandBase
             return 1;
         }
 
-        $this->runSync($sshUrl, $mountPath, $target, false);
+        $this->runSync($sshUrl, $mountPath, $target, false, (bool) $input->getOption('delete'));
 
         return 0;
     }
