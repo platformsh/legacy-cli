@@ -252,6 +252,23 @@ class Filesystem
     }
 
     /**
+     * Format a path for display (use the relative path if it's simpler).
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    public function formatPathForDisplay($path)
+    {
+        $relative = $this->makePathRelative($path, getcwd());
+        if (strpos($relative, '../..') === false && strlen($relative) < strlen($path)) {
+            return $relative;
+        }
+
+        return rtrim(trim($path), '/');
+    }
+
+    /**
      * Check if a filename is in the blacklist.
      *
      * @param string   $filename

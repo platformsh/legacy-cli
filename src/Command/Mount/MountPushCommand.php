@@ -2,9 +2,11 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\Question;
 
 class MountPushCommand extends MountSyncCommandBase
 {
@@ -31,9 +33,10 @@ class MountPushCommand extends MountSyncCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $appName = $this->selectApp($input);
 
         $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($this->selectApp($input));
+            ->getSshUrl($appName);
 
         $appConfig = $this->getAppConfig($sshUrl);
 
@@ -45,11 +48,13 @@ class MountPushCommand extends MountSyncCommandBase
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
 
         if ($input->getOption('mount')) {
-            $path = $this->validateMountPath($input->getOption('mount'), $appConfig['mounts']);
+            $mountPath = $this->validateMountPath($input->getOption('mount'), $appConfig['mounts']);
         } elseif ($input->isInteractive()) {
-            $path = $questionHelper->choose(
+            $mountPath = $questionHelper->choose(
                 $this->getMountsAsOptions($appConfig['mounts']),
                 'Enter a number to choose a mount to upload to:'
             );
@@ -60,17 +65,39 @@ class MountPushCommand extends MountSyncCommandBase
         }
 
         $source = null;
+        $defaultSource = null;
         if ($input->getOption('source')) {
             $source = $input->getOption('source');
         } elseif ($projectRoot = $this->getProjectRoot()) {
-            if ($sharedPath = $this->getSharedPath($path, $appConfig['mounts'])) {
+            if ($sharedPath = $this->getSharedPath($mountPath, $appConfig['mounts'])) {
                 if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath)) {
-                    $source = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
+                    $defaultSource = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
                 }
             }
 
-            $source = $questionHelper->askInput('Source directory', $source);
+            $applications = LocalApplication::getApplications($projectRoot, $this->config());
+            $appPath = $projectRoot;
+            foreach ($applications as $path => $candidateApp) {
+                if ($candidateApp->getName() === $appName) {
+                    $appPath = $path;
+                    break;
+                }
+            }
+            if (is_dir($appPath . '/' . $mountPath)) {
+                $defaultSource = $appPath . '/' . $mountPath;
+            }
         }
+
+        if (empty($source) && $input->isInteractive()) {
+            $questionText = 'Source directory';
+            if ($defaultSource !== null) {
+                $formattedDefaultSource = $fs->formatPathForDisplay($defaultSource);
+                $questionText .= ' <question>[' . $formattedDefaultSource . ']</question>';
+            }
+            $questionText .= ': ';
+            $source = $questionHelper->ask($input, $this->stdErr, new Question($questionText, $defaultSource));
+        }
+
         if (empty($source)) {
             $this->stdErr->writeln('The source directory must be specified.');
 
@@ -79,7 +106,13 @@ class MountPushCommand extends MountSyncCommandBase
 
         $this->validateDirectory($source);
 
-        $this->runSync($sshUrl, $path, $source, true);
+        $confirmText = "\nThis will <options=bold>add, replace, and delete</> files in the remote mount '<info>$mountPath</info>'."
+            . "\n\nAre you sure you want to continue?";
+        if (!$questionHelper->confirm($confirmText)) {
+            return 1;
+        }
+
+        $this->runSync($sshUrl, $mountPath, $source, true);
 
         return 0;
     }

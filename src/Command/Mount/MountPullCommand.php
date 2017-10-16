@@ -2,9 +2,11 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\Question;
 
 class MountPullCommand extends MountSyncCommandBase
 {
@@ -32,8 +34,9 @@ class MountPullCommand extends MountSyncCommandBase
     {
         $this->validateInput($input);
 
+        $appName = $this->selectApp($input);
         $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($this->selectApp($input));
+            ->getSshUrl($appName);
 
         $appConfig = $this->getAppConfig($sshUrl);
 
@@ -45,6 +48,8 @@ class MountPullCommand extends MountSyncCommandBase
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
 
         if ($input->getOption('mount')) {
             $mountPath = $this->validateMountPath($input->getOption('mount'), $appConfig['mounts']);
@@ -60,24 +65,52 @@ class MountPullCommand extends MountSyncCommandBase
         }
 
         $target = null;
+        $defaultTarget = null;
         if ($input->getOption('target')) {
             $target = $input->getOption('target');
         } elseif ($projectRoot = $this->getProjectRoot()) {
             if ($sharedPath = $this->getSharedPath($mountPath, $appConfig['mounts'])) {
                 if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath)) {
-                    $target = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
+                    $defaultTarget = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
                 }
             }
 
-            $target = $questionHelper->askInput('Target directory', $target);
+            $applications = LocalApplication::getApplications($projectRoot, $this->config());
+            $appPath = $projectRoot;
+            foreach ($applications as $path => $candidateApp) {
+                if ($candidateApp->getName() === $appName) {
+                    $appPath = $path;
+                    break;
+                }
+            }
+            if (is_dir($appPath . '/' . $mountPath)) {
+                $defaultTarget = $appPath . '/' . $mountPath;
+            }
         }
+
+        if (empty($target) && $input->isInteractive()) {
+            $questionText = 'Target directory';
+            if ($defaultTarget !== null) {
+                $formattedDefaultTarget = $fs->formatPathForDisplay($defaultTarget);
+                $questionText .= ' <question>[' . $formattedDefaultTarget . ']</question>';
+            }
+            $questionText .= ': ';
+            $target = $questionHelper->ask($input, $this->stdErr, new Question($questionText, $defaultTarget));
+        }
+
         if (empty($target)) {
             $this->stdErr->writeln('The target directory must be specified.');
 
             return 1;
         }
 
-        $this->validateDirectory($target);
+        $this->validateDirectory($target, true);
+
+        $confirmText = "\nThis will <options=bold>add, replace, and delete</> files in the local directory '<comment>" . $fs->formatPathForDisplay($target) . "</comment>'."
+            . "\n\nAre you sure you want to continue?";
+        if (!$questionHelper->confirm($confirmText)) {
+            return 1;
+        }
 
         $this->runSync($sshUrl, $mountPath, $target, false);
 
