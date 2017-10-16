@@ -18,7 +18,7 @@ class MountListCommand extends CommandBase
         $this
             ->setName('mount:list')
             ->setAliases(['mounts'])
-            ->setDescription('List project mounts')
+            ->setDescription('Get a list of mounts')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $this->addProjectOption();

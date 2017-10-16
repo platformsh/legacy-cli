@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class MountPushCommand extends MountSyncCommandBase
+class MountDownloadCommand extends MountSyncCommandBase
 {
 
     /**
@@ -17,11 +17,10 @@ class MountPushCommand extends MountSyncCommandBase
     protected function configure()
     {
         $this
-            ->setName('mount:push')
-            ->setAliases(['mpush'])
-            ->setDescription('Copy (sync) files to a mount')
-            ->addOption('source', null, InputOption::VALUE_REQUIRED, 'The directory containing the files to upload')
-            ->addOption('mount', null, InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)');
+            ->setName('mount:download')
+            ->setDescription('Download files from a mount, using rsync')
+            ->addOption('mount', null, InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
+            ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The directory to which files will be downloaded');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -33,8 +32,8 @@ class MountPushCommand extends MountSyncCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $appName = $this->selectApp($input);
 
+        $appName = $this->selectApp($input);
         $sshUrl = $this->getSelectedEnvironment()
             ->getSshUrl($appName);
 
@@ -56,7 +55,7 @@ class MountPushCommand extends MountSyncCommandBase
         } elseif ($input->isInteractive()) {
             $mountPath = $questionHelper->choose(
                 $this->getMountsAsOptions($appConfig['mounts']),
-                'Enter a number to choose a mount to upload to:'
+                'Enter a number to choose a mount to download from:'
             );
         } else {
             $this->stdErr->writeln('The <error>--mount</error> option must be specified (in non-interactive mode).');
@@ -64,14 +63,14 @@ class MountPushCommand extends MountSyncCommandBase
             return 1;
         }
 
-        $source = null;
-        $defaultSource = null;
-        if ($input->getOption('source')) {
-            $source = $input->getOption('source');
+        $target = null;
+        $defaultTarget = null;
+        if ($input->getOption('target')) {
+            $target = $input->getOption('target');
         } elseif ($projectRoot = $this->getProjectRoot()) {
             if ($sharedPath = $this->getSharedPath($mountPath, $appConfig['mounts'])) {
                 if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath)) {
-                    $defaultSource = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
+                    $defaultTarget = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
                 }
             }
 
@@ -84,35 +83,35 @@ class MountPushCommand extends MountSyncCommandBase
                 }
             }
             if (is_dir($appPath . '/' . $mountPath)) {
-                $defaultSource = $appPath . '/' . $mountPath;
+                $defaultTarget = $appPath . '/' . $mountPath;
             }
         }
 
-        if (empty($source) && $input->isInteractive()) {
-            $questionText = 'Source directory';
-            if ($defaultSource !== null) {
-                $formattedDefaultSource = $fs->formatPathForDisplay($defaultSource);
-                $questionText .= ' <question>[' . $formattedDefaultSource . ']</question>';
+        if (empty($target) && $input->isInteractive()) {
+            $questionText = 'Target directory';
+            if ($defaultTarget !== null) {
+                $formattedDefaultTarget = $fs->formatPathForDisplay($defaultTarget);
+                $questionText .= ' <question>[' . $formattedDefaultTarget . ']</question>';
             }
             $questionText .= ': ';
-            $source = $questionHelper->ask($input, $this->stdErr, new Question($questionText, $defaultSource));
+            $target = $questionHelper->ask($input, $this->stdErr, new Question($questionText, $defaultTarget));
         }
 
-        if (empty($source)) {
-            $this->stdErr->writeln('The source directory must be specified.');
+        if (empty($target)) {
+            $this->stdErr->writeln('The target directory must be specified.');
 
             return 1;
         }
 
-        $this->validateDirectory($source);
+        $this->validateDirectory($target, true);
 
-        $confirmText = "\nThis will <options=bold>add, replace, and delete</> files in the remote mount '<info>$mountPath</info>'."
+        $confirmText = "\nThis will <options=bold>add, replace, and delete</> files in the local directory '<comment>" . $fs->formatPathForDisplay($target) . "</comment>'."
             . "\n\nAre you sure you want to continue?";
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
 
-        $this->runSync($sshUrl, $mountPath, $source, true);
+        $this->runSync($sshUrl, $mountPath, $target, false);
 
         return 0;
     }

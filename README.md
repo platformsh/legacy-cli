@@ -126,6 +126,10 @@ local
   local:build (build)                       Build the current project locally
   local:dir (dir)                           Find the local project root
   local:drush-aliases (drush-aliases)       Find the project's Drush aliases
+mount
+  mount:download                            Download files from a mount, using rsync
+  mount:list (mounts)                       Get a list of mounts
+  mount:upload                              Upload files to a mount, using rsync
 project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally

@@ -130,9 +130,9 @@ abstract class MountSyncCommandBase extends CommandBase
         $mountPathAbsolute = $this->getAppDir($sshUrl) . '/' . $mountPath;
 
         if ($up) {
-            $this->stdErr->writeln(sprintf('Syncing files from <info>%s</info> to the remote mount <info>%s</info>', $localPath, $mountPathAbsolute));
+            $this->stdErr->writeln(sprintf('Uploading files from <info>%s</info> to the remote mount <info>%s</info>', $localPath, $mountPathAbsolute));
         } else {
-            $this->stdErr->writeln(sprintf('Syncing files from the remote mount <info>%s</info> to <info>%s</info>', $mountPathAbsolute, $localPath));
+            $this->stdErr->writeln(sprintf('Downloading files from the remote mount <info>%s</info> to <info>%s</info>', $mountPathAbsolute, $localPath));
         }
 
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
