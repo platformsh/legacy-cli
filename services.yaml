@@ -13,9 +13,6 @@ services:
         class:     '\Platformsh\Cli\Service\CacheFactory'
     config:
         class:     '\Platformsh\Cli\Service\Config'
-        calls:
-          - method: setFs
-            arguments: ['@fs']
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
         arguments: ['@config', '@shell']
