@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Command\Mount;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class MountSyncCommandBase extends CommandBase
+abstract class MountCommandBase extends CommandBase
 {
 
     /**
