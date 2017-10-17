@@ -48,9 +48,13 @@ class LoginCommand extends CommandBase
         $cache->flushAll();
 
         $info = $this->api()->getClient(false)->getAccountInfo();
-        if (isset($info['mail'])) {
+        if (isset($info['username'], $info['mail'])) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('You are logged in as <info>' . $info['mail'] . '</info>.');
+            $this->stdErr->writeln(sprintf(
+                'You are logged in as <info>%s</info> (%s).',
+                $info['username'],
+                $info['mail']
+            ));
         }
     }
 
@@ -59,18 +63,8 @@ class LoginCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $question = new Question('Your email address: ');
-        $question->setValidator(
-            function ($answer) {
-                if (empty($answer) || !filter_var($answer, FILTER_VALIDATE_EMAIL)) {
-                    throw new \RuntimeException(
-                        'Please provide a valid email address.'
-                    );
-                }
-
-                return $answer;
-            }
-        );
+        $question = new Question('Your email address or username: ');
+        $question->setValidator([$this, 'validateUsernameOrEmail']);
         $question->setMaxAttempts(5);
         $email = $questionHelper->ask($input, $output, $question);
 
@@ -138,5 +132,36 @@ class LoginCommand extends CommandBase
                 throw $e;
             }
         }
+    }
+
+    /**
+     * Validation callback for the username or email address.
+     *
+     * @param string $username
+     *
+     * @return string
+     */
+    public function validateUsernameOrEmail($username)
+    {
+        $username = trim($username);
+        if (!strlen($username) || (!filter_var($username, FILTER_VALIDATE_EMAIL) && !$this->validateUsername($username))) {
+            throw new \RuntimeException(
+                'Please enter a valid email address or username.'
+            );
+        }
+
+        return $username;
+    }
+
+    /**
+     * Validate a username.
+     *
+     * @param string $username
+     *
+     * @return bool
+     */
+    protected function validateUsername($username)
+    {
+        return preg_match('/^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$/', $username) === 1;
     }
 }
