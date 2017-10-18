@@ -15,7 +15,7 @@ services:
         class:     '\Platformsh\Cli\Service\Config'
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
-        arguments: ['@config', '@shell']
+        arguments: ['@config', '@shell', '@local.project', '@fs']
     fs:
         class:     '\Platformsh\Cli\Service\Filesystem'
         arguments: ['@shell']
