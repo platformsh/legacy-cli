@@ -19,8 +19,6 @@ class Shell
     /** @var OutputInterface */
     protected $stdErr;
 
-    protected $defaultTimeout = 3600;
-
     public function __construct(OutputInterface $output = null)
     {
         $this->setOutput($output ?: new NullOutput());
@@ -78,6 +76,7 @@ class Shell
      * @param bool        $mustRun
      * @param bool        $quiet
      * @param array       $env
+     * @param int|null    $timeout
      *
      * @throws \Exception
      *   If $mustRun is enabled and the command fails.
@@ -86,11 +85,16 @@ class Shell
      *   False if the command fails, true if it succeeds with no output, or a
      *   string if it succeeds with output.
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [])
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
     {
         $builder = new ProcessBuilder($args);
         $process = $builder->getProcess();
-        $process->setTimeout($this->defaultTimeout);
+
+        if ($timeout === null) {
+            set_time_limit(0);
+        }
+
+        $process->setTimeout($timeout);
 
         $this->stdErr->writeln(
             "Running command: <info>" . $process->getCommandLine() . "</info>",

@@ -13,9 +13,6 @@ services:
         class:     '\Platformsh\Cli\Service\CacheFactory'
     config:
         class:     '\Platformsh\Cli\Service\Config'
-        calls:
-          - method: setFs
-            arguments: ['@fs']
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
         arguments: ['@config', '@shell']
@@ -35,7 +32,7 @@ services:
         class:     '\Platformsh\Cli\Local\LocalProject'
         arguments: ['@config', '@git']
     output:
-        class:     '\Symfony\Component\Console\Output\NullOutput'
+        class:     '\Symfony\Component\Console\Output\ConsoleOutput'
     property_formatter:
         class:     '\Platformsh\Cli\Service\PropertyFormatter'
         arguments: ['@input']

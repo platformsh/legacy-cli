@@ -103,7 +103,7 @@ class CustomTextDescriptor extends TextDescriptor
 
             if ($describedNamespace) {
                 $this->writeText(
-                    sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace),
+                    sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $application->findNamespace($describedNamespace)),
                     $options
                 );
             } else {
