@@ -113,6 +113,26 @@ class Drush
     }
 
     /**
+     * Checks whether Drush supports YAML-format alias files.
+     *
+     * @return bool
+     */
+    public function supportsYamlAliasFiles()
+    {
+        return version_compare($this->getVersion(), '9.0.0-alpha1', '>=');
+    }
+
+    /**
+     * Checks whether Drush supports PHP-format alias files.
+     *
+     * @return bool
+     */
+    public function supportsPhpAliasFiles()
+    {
+        return version_compare($this->getVersion(), '9.0.0', '<');
+    }
+
+    /**
      * Execute a Drush command.
      *
      * @param string[] $args
