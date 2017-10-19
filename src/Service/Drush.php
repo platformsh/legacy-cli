@@ -216,8 +216,6 @@ class Drush
      * @param string        $original     The original group name
      * @param bool          $merge        Whether to merge existing alias settings
      *
-     * @throws \Exception
-     *
      * @return bool Whether any aliases have been created.
      */
     public function createAliases(Project $project, $projectRoot, $environments, $original = null, $merge = true)
@@ -226,15 +224,22 @@ class Drush
         $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
         $autoRemoveKey = $this->getAutoRemoveKey();
 
-        // Ensure the existence of the .drush directory.
+        // Ensure the existence of the Drush aliases directory.
         $drushDir = $this->homeDir . '/.drush';
-        if (!is_dir($drushDir)) {
-            mkdir($drushDir);
+        if (file_exists($drushDir . '/site-aliases')) {
+            $drushDir = $drushDir . '/site-aliases';
+        }
+        if (!is_dir($drushDir) && !mkdir($drushDir, 0755) && !is_writable($drushDir)) {
+            trigger_error('Drush aliases directory not found or not writable: ' . $drushDir, E_USER_WARNING);
+
+            return false;
         }
 
         $filename = $drushDir . '/' . $group . '.aliases.drushrc.php';
-        if (!is_writable($drushDir) || (file_exists($filename) && !is_writable($filename))) {
-            throw new \Exception("Drush alias file not writable: $filename");
+        if (file_exists($filename) && !is_writable($filename)) {
+            trigger_error("Drush alias file not writable: $filename", E_USER_WARNING);
+
+            return false;
         }
 
         // Include the previous alias file(s) so that the user's own

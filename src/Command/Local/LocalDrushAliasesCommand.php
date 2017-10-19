@@ -63,6 +63,48 @@ class LocalDrushAliasesCommand extends CommandBase
         $drush = $this->getService('drush');
         $drush->ensureInstalled();
 
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        $drushDir = Filesystem::getHomeDirectory() . '/.drush/site-aliases';
+
+        // Migrate old alias file(s) to the new location (from .drush to
+        // .drush/site-aliases).
+        $oldDrushDir = dirname($drushDir);
+        if (file_exists($oldDrushDir)) {
+            $oldFilenames = glob($oldDrushDir . '/*.alias*.drushrc.*php', GLOB_NOSORT);
+            if (!empty($oldFilenames)) {
+                $confirmText = "Global Drush aliases are best stored in ~/.drush/site-aliases"
+                    . "\nThere are " . count($oldFilenames) . " alias file(s) still stored in ~/.drush"
+                    . "\nDo you want to move all your alias files from ~/.drush to ~/.drush/site-aliases?";
+                if ($questionHelper->confirm($confirmText)) {
+                    if (!file_exists($drushDir) && !mkdir($drushDir)) {
+                        $this->stdErr->writeln(sprintf('Failed to create directory: <error>%s</error>', $drushDir));
+
+                        return 1;
+                    }
+                    foreach ($oldFilenames as $oldFilename) {
+                        $newFilename = $drushDir . '/' . basename($oldFilename);
+                        if (file_exists($newFilename)) {
+                            $this->stdErr->writeln(sprintf('Failed to move file %s to %s (destination file already exists).', $oldFilename, $newFilename));
+                            $this->stdErr->writeln('Resolve the conflicting file manually, and try again.');
+
+                            return 1;
+                        }
+                        if (!rename($oldFilename, $newFilename)) {
+                            $this->stdErr->writeln(sprintf('Failed to move file %s to %s', $oldFilename, $newFilename));
+
+                            return 1;
+                        }
+                    }
+                    $this->stdErr->writeln(sprintf('Successfully moved alias files to: <info>%s</info>', $drushDir));
+                }
+                else {
+                    $drushDir = $oldDrushDir;
+                }
+            }
+        }
+
         $aliases = $drush->getAliases($current_group);
         if (!$aliases && !$new_group && $project && $current_group === $project->id) {
             $new_group = (new Slugify())->slugify($project->title);
@@ -73,8 +115,6 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $this->stdErr->writeln("Creating Drush aliases in the group <info>@$new_group</info>");
 
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
             if ($new_group != $current_group) {
                 $existing = $drush->getAliases($new_group);
                 if ($existing && $new_group != $current_group) {
@@ -90,7 +130,6 @@ class LocalDrushAliasesCommand extends CommandBase
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
             if ($new_group != $current_group) {
-                $drushDir = Filesystem::getHomeDirectory() . '/.drush';
                 $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
                 if (file_exists($oldFile)) {
                     if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
