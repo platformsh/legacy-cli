@@ -42,6 +42,26 @@ class LocalApplication
     }
 
     /**
+     * Test whether this application is the only one in the project.
+     */
+    public function isSingle()
+    {
+       return $this->sourceDir === $this->appRoot;
+    }
+
+    /**
+     * Get the source directory where the application was found.
+     *
+     * In a single-app project, this is usually the project root.
+     *
+     * @return string
+     */
+    public function getSourceDir()
+    {
+        return $this->sourceDir;
+    }
+
+    /**
      * @return string
      */
     protected function getPath()
