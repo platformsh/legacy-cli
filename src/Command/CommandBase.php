@@ -530,13 +530,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Warn the user that the remote environment needs rebuilding.
+     * Warn the user that the remote environment needs redeploying.
      */
-    protected function rebuildWarning()
+    protected function redeployWarning()
     {
         $this->stdErr->writeln([
-            '<comment>The remote environment must be rebuilt for the change to take effect.</comment>',
-            "Use 'git push' with new commit(s) to trigger a rebuild."
+            '<comment>The remote environment must be redeployed for the change to take effect.</comment>',
+            "Use 'git push' with new commit(s) to trigger a redeploy."
         ]);
     }
 
