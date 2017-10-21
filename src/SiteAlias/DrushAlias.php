@@ -12,6 +12,8 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
 abstract class DrushAlias implements SiteAliasTypeInterface
 {
+    const LOCAL_ALIAS_NAME = '_local';
+
     protected $drush;
     protected $config;
 
@@ -54,14 +56,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         $newAliases = $this->generateNewAliases($apps, $environments);
 
         // Merge new aliases with existing ones.
-        foreach ($newAliases as $aliasName => &$newAlias) {
-            // If the alias already exists, recursively replace existing
-            // settings with new ones.
-            if (isset($existingAliases[$aliasName])) {
-                $newAlias['alias'] = array_replace_recursive($existingAliases[$aliasName], $newAlias['alias']);
-                unset($existingAliases[$aliasName]);
-            }
-        }
+        $newAliases = $this->mergeExisting($newAliases, $existingAliases);
 
         // Add any user-defined (pre-existing) aliases.
         $autoRemoveKey = $this->getAutoRemoveKey();
@@ -85,6 +80,27 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         $this->writeAliasFile($filename, $content);
 
         return true;
+    }
+
+    /**
+     * Merge new aliases with existing ones.
+     *
+     * @param array $new
+     * @param array $existing
+     *
+     * @return array
+     */
+    private function mergeExisting($new, $existing)
+    {
+        foreach ($new as $aliasName => &$newAlias) {
+            // If the alias already exists, recursively replace existing
+            // settings with new ones.
+            if (isset($existing[$aliasName])) {
+                $newAlias['alias'] = array_replace_recursive($existing[$aliasName], $newAlias['alias']);
+            }
+        }
+
+        return $new;
     }
 
     /**
@@ -148,60 +164,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array
      */
-    private function generateNewAliases(array $apps, array $environments)
-    {
-        $autoRemoveKey = $this->getAutoRemoveKey();
-        $localWebRoot = $this->config->get('local.web_root');
-        $aliases = [];
-
-        foreach ($apps as $app) {
-            $appId = $app->getId();
-
-            // Generate aliases for the remote environments.
-            foreach ($environments as $environment) {
-                $alias = $this->generateRemoteAlias($environment, $app, !$app->isSingle());
-                if (!$alias) {
-                    continue;
-                }
-
-                $aliasName = $environment->id;
-                if (count($apps) > 1) {
-                    $aliasName .= '--' . $appId;
-                }
-
-                $aliases[$aliasName] = [
-                    'alias' => $alias,
-                    'comment' => sprintf(
-                        'Automatically generated alias for the environment "%s", application "%s".',
-                        $environment->title,
-                        $appId
-                    ),
-                ];
-            }
-
-            // Generate an alias for the local environment.
-            $localAliasName = '_local';
-            $webRoot = $app->getSourceDir() . '/' . $localWebRoot;
-            if (count($apps) > 1) {
-                $localAliasName .= '--' . $appId;
-            }
-            if (!$app->isSingle()) {
-                $webRoot .= '/' . $appId;
-            }
-            $aliases[$localAliasName] = [
-                'alias' => [
-                    'root' => $webRoot,
-                    $autoRemoveKey => true,
-                ],
-                'comment' => sprintf(
-                    'Automatically generated alias for the local environment, application "%s".',
-                    $appId
-                ),
-            ];
-        }
-
-        return $aliases;
-    }
+    abstract protected function generateNewAliases(array $apps, array $environments);
 
     /**
      * Format a list of aliases as a string.
@@ -211,26 +174,34 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return string
      */
-    protected function formatAliases(array $aliases)
-    {
-        $formatted = [];
-        foreach ($aliases as $aliasName => $newAlias) {
-            $formatted[] = $this->formatAlias($newAlias['alias'], $aliasName, isset($newAlias['comment']) ? $newAlias['comment'] : '');
-        }
-
-        return implode("\n", $formatted);
-    }
+    abstract protected function formatAliases(array $aliases);
 
     /**
-     * Format a single Drush site alias as a string.
+     * Generate an alias for the local environment.
      *
-     * @param string $name    The alias name (the name of the environment).
-     * @param array  $alias   The alias, as an array.
-     * @param string $comment A comment to to describe the alias (optional).
+     * @param \Platformsh\Cli\Local\LocalApplication $app
      *
-     * @return string
+     * @return array
      */
-    abstract protected function formatAlias(array $alias, $name, $comment = '');
+    protected function generateLocalAlias(LocalApplication $app)
+    {
+        $appId = $app->getId();
+        $webRoot = $app->getSourceDir() . '/' . $this->config->get('local.web_root');
+        if (!$app->isSingle()) {
+            $webRoot .= '/' . $appId;
+        }
+
+        return [
+            'alias' => [
+                'root' => $webRoot,
+                $this->getAutoRemoveKey() => true,
+            ],
+            'comment' => sprintf(
+                'Automatically generated alias for the local environment, application "%s".',
+                $appId
+            ),
+        ];
+    }
 
     /**
      * Generate a remote Drush alias.
@@ -241,7 +212,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array|false
      */
-    private function generateRemoteAlias($environment, $app, $multiApp = false)
+    protected function generateRemoteAlias($environment, $app, $multiApp = false)
     {
         if (!$environment->hasLink('ssh') || !$environment->hasLink('public-url')) {
             return false;

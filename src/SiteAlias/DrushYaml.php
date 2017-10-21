@@ -8,6 +8,47 @@ use Symfony\Component\Yaml\Yaml;
 class DrushYaml extends DrushAlias
 {
     /**
+     * Generate new aliases.
+     *
+     * @param array $apps
+     * @param array $environments
+     *
+     * @return array
+     */
+    protected function generateNewAliases(array $apps, array $environments)
+    {
+        $aliases = [];
+
+        foreach ($apps as $app) {
+            $appId = $app->getId();
+
+            // Generate aliases for the remote environments.
+            foreach ($environments as $environment) {
+                $alias = $this->generateRemoteAlias($environment, $app, !$app->isSingle());
+                if (!$alias) {
+                    continue;
+                }
+
+                $aliasName = $environment->id;
+
+                $aliases[$appId][$aliasName] = [
+                    'alias' => $alias,
+                    'comment' => sprintf(
+                        'Automatically generated alias for the environment "%s", application "%s".',
+                        $environment->title,
+                        $appId
+                    ),
+                ];
+            }
+
+            // Generate an alias for the local environment.
+            $aliases[$appId][self::LOCAL_ALIAS_NAME] = $this->generateLocalAlias($app);
+        }
+
+        return $aliases;
+    }
+
+    /**
      * {@inheritdoc}
      */
     protected function getFilename($groupName, $drushDir)
@@ -28,25 +69,23 @@ class DrushYaml extends DrushAlias
      */
     protected function formatAliases(array $aliases)
     {
-        $formatted = [];
-        foreach ($aliases as $aliasName => $newAlias) {
-            $formatted[] = $this->formatAlias($newAlias['alias'], $aliasName, isset($newAlias['comment']) ? $newAlias['comment'] : '');
+        $output = '';
+        $indent = str_repeat(' ', 4);
+
+        foreach ($aliases as $appName => $environments) {
+            $output .= $indent . "'" . str_replace("'", "\\'", $appName) . "':\n";
+            foreach ($environments as $environment => $alias) {
+                $aliasString = Yaml::dump([
+                    $environment => isset($alias['alias']) ? $alias['alias'] : $alias
+                ], 5, 4);
+                if (!empty($alias['comment'])) {
+                    $aliasString = $this->formatComment($alias['comment']) . "\n" . $aliasString;
+                }
+                $output .= preg_replace('/^/m', $indent . $indent, $aliasString) . "\n";
+            }
         }
 
-        return implode("\n", preg_replace('/^/m', '    ', $formatted));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function formatAlias(array $alias, $name, $comment = '')
-    {
-        $formatted = Yaml::dump([$name => $alias]);
-        if (!empty($comment)) {
-            $formatted = $this->formatComment($comment) .  "\n" . $formatted;
-        }
-
-        return $formatted;
+        return $output;
     }
 
     /**
@@ -58,9 +97,10 @@ class DrushYaml extends DrushAlias
         foreach ($filenames as $filename) {
             if (file_exists($filename) && ($content = file_get_contents($filename))) {
                 $parsed = (array) Yaml::parse($content);
-                if (!empty($parsed['sites'])) {
-                    $aliases = array_merge($aliases, (array) $parsed['sites']);
+                if (empty($parsed['sites'])) {
+                    continue;
                 }
+                $aliases = array_merge($aliases, $parsed['sites']);
             }
         }
 

@@ -23,9 +23,33 @@ class DrushPhp extends DrushAlias
     }
 
     /**
-     * {@inheritdoc}
+     * Format a list of aliases as a string.
+     *
+     * @param array $aliases
+     *   A list of aliases, each an element containing 'alias' and 'comment'.
+     *
+     * @return string
      */
-    protected function formatAlias(array $alias, $name, $comment = '')
+    protected function formatAliases(array $aliases)
+    {
+        $formatted = [];
+        foreach ($aliases as $aliasName => $newAlias) {
+            $formatted[] = $this->formatAlias($newAlias['alias'], $aliasName, isset($newAlias['comment']) ? $newAlias['comment'] : '');
+        }
+
+        return implode("\n", $formatted);
+    }
+
+    /**
+     * Format a single Drush site alias as a string.
+     *
+     * @param string $name    The alias name (the name of the environment).
+     * @param array  $alias   The alias, as an array.
+     * @param string $comment A comment to to describe the alias (optional).
+     *
+     * @return string
+     */
+    private function formatAlias(array $alias, $name, $comment = '')
     {
         $formatted = sprintf(
             "\$aliases['%s'] = %s;\n",
@@ -74,5 +98,53 @@ class DrushPhp extends DrushAlias
             . "\n * - Aliases for deleted or inactive environments will be deleted."
             . "\n * - All other information will be deleted."
             . "\n */\n\n";
+    }
+
+    /**
+     * Generate new aliases.
+     *
+     * @param array $apps
+     * @param array $environments
+     *
+     * @return array
+     */
+    protected function generateNewAliases(array $apps, array $environments)
+    {
+        $aliases = [];
+
+        foreach ($apps as $app) {
+            $appId = $app->getId();
+
+            // Generate aliases for the remote environments.
+            foreach ($environments as $environment) {
+                $alias = $this->generateRemoteAlias($environment, $app, !$app->isSingle());
+                if (!$alias) {
+                    continue;
+                }
+
+                $aliasName = $environment->id;
+                if (count($apps) > 1) {
+                    $aliasName .= '--' . $appId;
+                }
+
+                $aliases[$aliasName] = [
+                    'alias' => $alias,
+                    'comment' => sprintf(
+                        'Automatically generated alias for the environment "%s", application "%s".',
+                        $environment->title,
+                        $appId
+                    ),
+                ];
+            }
+
+            // Generate an alias for the local environment.
+            $localAliasName = self::LOCAL_ALIAS_NAME;
+            if (count($apps) > 1) {
+                $localAliasName .= '--' . $appId;
+            }
+            $aliases[$localAliasName] = $this->generateLocalAlias($app);
+        }
+
+        return $aliases;
     }
 }
