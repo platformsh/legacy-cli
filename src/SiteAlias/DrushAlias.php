@@ -66,15 +66,12 @@ abstract class DrushAlias implements SiteAliasTypeInterface
                 // This is probably for a deleted environment.
                 continue;
             }
-            $userDefinedAliases[$name] = [
-                'comment' => sprintf('User-defined alias "%s".', $name),
-                'alias' => $alias
-            ];
+            $userDefinedAliases[$name] = $alias;
         }
 
         $aliases = $userDefinedAliases + $newAliases;
 
-        // Format the aliases as a string (code and comments).
+        // Format the aliases as a string.
         $content = $this->getHeader($project) . $this->formatAliases($aliases);
 
         $this->writeAliasFile($filename, $content);
@@ -90,13 +87,13 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array
      */
-    private function mergeExisting($new, $existing)
+    protected function mergeExisting($new, $existing)
     {
         foreach ($new as $aliasName => &$newAlias) {
             // If the alias already exists, recursively replace existing
             // settings with new ones.
             if (isset($existing[$aliasName])) {
-                $newAlias['alias'] = array_replace_recursive($existing[$aliasName], $newAlias['alias']);
+                $newAlias = array_replace_recursive($existing[$aliasName], $newAlias);
             }
         }
 
@@ -121,15 +118,6 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      * @return string
      */
     abstract protected function getHeader(Project $project);
-
-    /**
-     * Format a comment.
-     *
-     * @param string $comment
-     *
-     * @return string
-     */
-    abstract protected function formatComment($comment);
 
     /**
      * Find the existing defined aliases so they can be merged with new ones.
@@ -170,7 +158,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      * Format a list of aliases as a string.
      *
      * @param array $aliases
-     *   A list of aliases, each an element containing 'alias' and 'comment'.
+     *   A list of aliases.
      *
      * @return string
      */
@@ -192,14 +180,8 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         }
 
         return [
-            'alias' => [
-                'root' => $webRoot,
-                $this->getAutoRemoveKey() => true,
-            ],
-            'comment' => sprintf(
-                'Automatically generated alias for the local environment, application "%s".',
-                $appId
-            ),
+            'root' => $webRoot,
+            $this->getAutoRemoveKey() => true,
         ];
     }
 

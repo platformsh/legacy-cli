@@ -17,24 +17,11 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function formatComment($comment)
-    {
-        return preg_replace('/^/m', '// $1', trim($comment));
-    }
-
-    /**
-     * Format a list of aliases as a string.
-     *
-     * @param array $aliases
-     *   A list of aliases, each an element containing 'alias' and 'comment'.
-     *
-     * @return string
-     */
     protected function formatAliases(array $aliases)
     {
         $formatted = [];
         foreach ($aliases as $aliasName => $newAlias) {
-            $formatted[] = $this->formatAlias($newAlias['alias'], $aliasName, isset($newAlias['comment']) ? $newAlias['comment'] : '');
+            $formatted[] = $this->formatAlias($newAlias, $aliasName);
         }
 
         return implode("\n", $formatted);
@@ -45,22 +32,16 @@ class DrushPhp extends DrushAlias
      *
      * @param string $name    The alias name (the name of the environment).
      * @param array  $alias   The alias, as an array.
-     * @param string $comment A comment to to describe the alias (optional).
      *
      * @return string
      */
-    private function formatAlias(array $alias, $name, $comment = '')
+    private function formatAlias(array $alias, $name)
     {
-        $formatted = sprintf(
+        return sprintf(
             "\$aliases['%s'] = %s;\n",
             str_replace("'", "\\'", $name),
             var_export($alias, true)
         );
-        if (!empty($comment)) {
-            $formatted = $this->formatComment($comment) .  "\n" . $formatted;
-        }
-
-        return $formatted;
     }
 
     /**
@@ -127,14 +108,7 @@ class DrushPhp extends DrushAlias
                     $aliasName .= '--' . $appId;
                 }
 
-                $aliases[$aliasName] = [
-                    'alias' => $alias,
-                    'comment' => sprintf(
-                        'Automatically generated alias for the environment "%s", application "%s".',
-                        $environment->title,
-                        $appId
-                    ),
-                ];
+                $aliases[$aliasName] = $alias;
             }
 
             // Generate an alias for the local environment.

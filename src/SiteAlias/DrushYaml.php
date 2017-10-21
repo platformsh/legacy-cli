@@ -31,14 +31,7 @@ class DrushYaml extends DrushAlias
 
                 $aliasName = $environment->id;
 
-                $aliases[$appId][$aliasName] = [
-                    'alias' => $alias,
-                    'comment' => sprintf(
-                        'Automatically generated alias for the environment "%s", application "%s".',
-                        $environment->title,
-                        $appId
-                    ),
-                ];
+                $aliases[$appId][$aliasName] = $alias;
             }
 
             // Generate an alias for the local environment.
@@ -59,33 +52,30 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function formatComment($comment)
+    protected function formatAliases(array $aliases)
     {
-        return preg_replace('/^/m', '# ', trim($comment));
+        return preg_replace('/^/m', '  ', Yaml::dump($aliases, 5, 2));
     }
 
     /**
-     * {@inheritdoc}
+     * Merge new aliases with existing ones.
+     *
+     * @param array $new
+     * @param array $existing
+     *
+     * @return array
      */
-    protected function formatAliases(array $aliases)
+    protected function mergeExisting($new, $existing)
     {
-        $output = '';
-        $indent = str_repeat(' ', 4);
-
-        foreach ($aliases as $appName => $environments) {
-            $output .= $indent . "'" . str_replace("'", "\\'", $appName) . "':\n";
-            foreach ($environments as $environment => $alias) {
-                $aliasString = Yaml::dump([
-                    $environment => isset($alias['alias']) ? $alias['alias'] : $alias
-                ], 5, 4);
-                if (!empty($alias['comment'])) {
-                    $aliasString = $this->formatComment($alias['comment']) . "\n" . $aliasString;
-                }
-                $output .= preg_replace('/^/m', $indent . $indent, $aliasString) . "\n";
+        foreach ($new as $aliasName => &$newAlias) {
+            // If the alias already exists, recursively replace existing
+            // settings with new ones.
+            if (isset($existing[$aliasName])) {
+                $newAlias = array_replace_recursive($existing[$aliasName], $newAlias);
             }
         }
 
-        return $output;
+        return $new;
     }
 
     /**
