@@ -58,27 +58,6 @@ class DrushYaml extends DrushAlias
     }
 
     /**
-     * Merge new aliases with existing ones.
-     *
-     * @param array $new
-     * @param array $existing
-     *
-     * @return array
-     */
-    protected function mergeExisting($new, $existing)
-    {
-        foreach ($new as $aliasName => &$newAlias) {
-            // If the alias already exists, recursively replace existing
-            // settings with new ones.
-            if (isset($existing[$aliasName])) {
-                $newAlias = array_replace_recursive($existing[$aliasName], $newAlias);
-            }
-        }
-
-        return $new;
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function getExistingAliases(array $filenames)
