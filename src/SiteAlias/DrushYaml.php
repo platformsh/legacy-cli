@@ -22,20 +22,16 @@ class DrushYaml extends DrushAlias
         foreach ($apps as $app) {
             $appId = $app->getId();
 
+            // Generate an alias for the local environment.
+            $aliases[$appId][self::LOCAL_ALIAS_NAME] = $this->generateLocalAlias($app);
+
             // Generate aliases for the remote environments.
             foreach ($environments as $environment) {
                 $alias = $this->generateRemoteAlias($environment, $app, !$app->isSingle());
-                if (!$alias) {
-                    continue;
+                if ($alias) {
+                    $aliases[$appId][$environment->id] = $alias;
                 }
-
-                $aliasName = $environment->id;
-
-                $aliases[$appId][$aliasName] = $alias;
             }
-
-            // Generate an alias for the local environment.
-            $aliases[$appId][self::LOCAL_ALIAS_NAME] = $this->generateLocalAlias($app);
         }
 
         return $aliases;

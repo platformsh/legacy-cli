@@ -21,27 +21,14 @@ class DrushPhp extends DrushAlias
     {
         $formatted = [];
         foreach ($aliases as $aliasName => $newAlias) {
-            $formatted[] = $this->formatAlias($newAlias, $aliasName);
+            $formatted[] = sprintf(
+                "\$aliases['%s'] = %s;\n",
+                str_replace("'", "\\'", $aliasName),
+                var_export($newAlias, true)
+            );
         }
 
         return implode("\n", $formatted);
-    }
-
-    /**
-     * Format a single Drush site alias as a string.
-     *
-     * @param string $name    The alias name (the name of the environment).
-     * @param array  $alias   The alias, as an array.
-     *
-     * @return string
-     */
-    private function formatAlias(array $alias, $name)
-    {
-        return sprintf(
-            "\$aliases['%s'] = %s;\n",
-            str_replace("'", "\\'", $name),
-            var_export($alias, true)
-        );
     }
 
     /**
@@ -96,6 +83,13 @@ class DrushPhp extends DrushAlias
         foreach ($apps as $app) {
             $appId = $app->getId();
 
+            // Generate an alias for the local environment.
+            $localAliasName = self::LOCAL_ALIAS_NAME;
+            if (count($apps) > 1) {
+                $localAliasName .= '--' . $appId;
+            }
+            $aliases[$localAliasName] = $this->generateLocalAlias($app);
+
             // Generate aliases for the remote environments.
             foreach ($environments as $environment) {
                 $alias = $this->generateRemoteAlias($environment, $app, !$app->isSingle());
@@ -110,13 +104,6 @@ class DrushPhp extends DrushAlias
 
                 $aliases[$aliasName] = $alias;
             }
-
-            // Generate an alias for the local environment.
-            $localAliasName = self::LOCAL_ALIAS_NAME;
-            if (count($apps) > 1) {
-                $localAliasName .= '--' . $appId;
-            }
-            $aliases[$localAliasName] = $this->generateLocalAlias($app);
         }
 
         return $aliases;
