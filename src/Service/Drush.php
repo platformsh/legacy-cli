@@ -58,7 +58,7 @@ class Drush
             return $version;
         }
         $this->ensureInstalled();
-        $command = $this->getDrushExecutable() . ' --version';
+        $command = $this->getDrushExecutable() . ' version';
         exec($command, $output, $returnCode);
         if ($returnCode > 0) {
             return false;
@@ -105,7 +105,7 @@ class Drush
      */
     public function supportsYamlAliasFiles()
     {
-        return version_compare($this->getVersion(), '9.0.0-alpha1', '>=');
+        return $this->getVersion() === false || version_compare($this->getVersion(), '9.0.0-alpha1', '>=');
     }
 
     /**
@@ -166,13 +166,18 @@ class Drush
             }
         }
 
-        // Find Drush if it is installed within the CLI.
+        // Use the global Drush, if there is one installed.
+        if ($this->shellHelper->commandExists('drush')) {
+            return $this->shellHelper->resolveCommand('drush');
+        }
+
+        // Fall back to the Drush that may be installed within the CLI.
         $drushCli = CLI_ROOT . '/vendor/bin/drush';
         if (is_executable($drushCli)) {
             return $drushCli;
         }
 
-        return $this->shellHelper->resolveCommand('drush');
+        return 'drush';
     }
 
     /**
@@ -194,7 +199,6 @@ class Drush
             [
                 '@none',
                 'site-alias',
-                '--pipe',
                 '--format=list',
                 '@' . $groupName,
             ]
@@ -236,16 +240,18 @@ class Drush
             }
         );
 
-        // Generate aliases according to the supported format.
+        $success = true;
+
+        // Generate aliases according to the supported format(s).
         if ($this->supportsYamlAliasFiles()) {
             $type = new DrushYaml($this, $this->config);
-            return $type->createAliases($project, $group, $apps, $environments, $original);
+            $success = $success && $type->createAliases($project, $group, $apps, $environments, $original);
         }
         if ($this->supportsPhpAliasFiles()) {
             $type = new DrushPhp($this, $this->config);
-            return $type->createAliases($project, $group, $apps, $environments, $original);
+            $success = $success && $type->createAliases($project, $group, $apps, $environments, $original);
         }
 
-        return false;
+        return $success;
     }
 }
