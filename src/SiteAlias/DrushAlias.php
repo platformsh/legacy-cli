@@ -4,7 +4,6 @@ namespace Platformsh\Cli\SiteAlias;
 
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -14,12 +13,10 @@ abstract class DrushAlias implements SiteAliasTypeInterface
 {
     const LOCAL_ALIAS_NAME = '_local';
 
-    protected $drush;
     protected $config;
 
-    public function __construct(Drush $drush, Config $config)
+    public function __construct(Config $config)
     {
-        $this->drush = $drush;
         $this->config = $config;
     }
 

@@ -240,15 +240,16 @@ class Drush
             }
         );
 
-        $success = true;
-
-        // Generate aliases according to the supported format(s).
+        $types = [];
         if ($this->supportsYamlAliasFiles()) {
-            $type = new DrushYaml($this, $this->config);
-            $success = $success && $type->createAliases($project, $group, $apps, $environments, $original);
+            $types[] = new DrushYaml($this->config);
         }
         if ($this->supportsPhpAliasFiles()) {
-            $type = new DrushPhp($this, $this->config);
+            $types[] = new DrushPhp($this->config);
+        }
+
+        $success = true;
+        foreach ($types as $type) {
             $success = $success && $type->createAliases($project, $group, $apps, $environments, $original);
         }
 
