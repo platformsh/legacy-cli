@@ -69,7 +69,8 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         $aliases = $userDefinedAliases + $newAliases;
 
         // Format the aliases as a string.
-        $content = $this->getHeader($project) . $this->formatAliases($aliases);
+        $header = rtrim($this->getHeader($project)) . "\n\n";
+        $content = $header . $this->formatAliases($aliases);
 
         $this->writeAliasFile($filename, $content);
 
