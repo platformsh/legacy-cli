@@ -25,6 +25,9 @@ class Drush
     /** @var Config */
     protected $config;
 
+    /** @var string|null */
+    protected $homeDir;
+
     /**
      * @param Config|null       $config
      * @param Shell|null        $shellHelper
@@ -38,6 +41,16 @@ class Drush
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
         $this->localProject = $localProject ?: new LocalProject();
+    }
+
+    public function setHomeDir($homeDir)
+    {
+        $this->homeDir = $homeDir;
+    }
+
+    public function getHomeDir()
+    {
+        return $this->homeDir ?: Filesystem::getHomeDirectory();
     }
 
     /**
@@ -152,18 +165,20 @@ class Drush
             return $this->config->get('local.drush_executable');
         }
 
-        // Find a locally installed Drush instance, either directly via Composer
-        // or indirectly via the local build dependencies.
-        if ($projectRoot = $this->localProject->getProjectRoot()) {
-            $drushLocal = $projectRoot . '/vendor/bin/drush';
-            if (is_executable($drushLocal)) {
-                return $drushLocal;
-            }
+        // Find a locally installed Drush instance: first check the Composer
+        // 'vendor' directory.
+        $projectRoot = $this->localProject->getProjectRoot();
+        $localDir = $projectRoot ?: getcwd();
+        $drushLocal = $localDir . '/vendor/bin/drush';
+        if (is_executable($drushLocal)) {
+            return $drushLocal;
+        }
 
-            $drushDep = $projectRoot . '/' . $this->config->get('local.dependencies_dir') . '/php/vendor/bin/drush';
-            if (is_executable($drushDep)) {
-                return $drushDep;
-            }
+        // Check the local dependencies directory (created via 'platform
+        // build').
+        $drushDep = $localDir . '/' . $this->config->get('local.dependencies_dir') . '/php/vendor/bin/drush';
+        if (is_executable($drushDep)) {
+            return $drushDep;
         }
 
         // Use the global Drush, if there is one installed.
@@ -242,10 +257,10 @@ class Drush
 
         $types = [];
         if ($this->supportsYamlAliasFiles()) {
-            $types[] = new DrushYaml($this->config);
+            $types[] = new DrushYaml($this->config, $this);
         }
         if ($this->supportsPhpAliasFiles()) {
-            $types[] = new DrushPhp($this->config);
+            $types[] = new DrushPhp($this->config, $this);
         }
 
         $success = true;

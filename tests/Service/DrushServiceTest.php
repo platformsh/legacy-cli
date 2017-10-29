@@ -7,12 +7,12 @@ use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 
-class DrushHelperTest extends \PHPUnit_Framework_TestCase
+class DrushServiceTest extends \PHPUnit_Framework_TestCase
 {
     use HasTempDirTrait;
 
     /** @var Drush */
-    protected $drushHelper;
+    protected $drush;
 
     /** @var Project */
     protected $project;
@@ -25,7 +25,7 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->drushHelper = new Drush();
+        $this->drush = new Drush();
 
         // Set up a dummy project with a remote environment.
         $this->project = new Project([
@@ -48,14 +48,20 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
-        $projectRoot = "$testDir/project";
+
+        $projectRoot = $testDir . '/project';
+
+        $fsHelper = new Filesystem();
+        $fsHelper->copyAll(__DIR__ . '/../data/apps/drupal/project', $projectRoot);
+
         $homeDir = "$testDir/home";
-        mkdir($projectRoot);
         mkdir($homeDir);
+        $this->drush->setHomeDir($homeDir);
 
         // Check that aliases are created.
-        $this->drushHelper->setHomeDir($homeDir);
-        $this->drushHelper->createAliases($this->project, $projectRoot, $this->environments);
+        $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);
+
+        $this->assertTrue($result);
         $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.
@@ -70,16 +76,18 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
         // Set up file structure.
         $testDir = $this->createTempSubDir();
 
-        $fsHelper = new Filesystem();
-        $fsHelper->copyAll(__DIR__ . '/../data/repositories/multiple', $testDir . '/project/repository');
         $projectRoot = $testDir . '/project';
+
+        $fsHelper = new Filesystem();
+        $fsHelper->copyAll(__DIR__ . '/../data/repositories/multiple', $projectRoot);
 
         $homeDir = "$testDir/home";
         mkdir($homeDir);
+        $this->drush->setHomeDir($homeDir);
 
         // Check that aliases are created.
-        $this->drushHelper->setHomeDir($homeDir);
-        $this->drushHelper->createAliases($this->project, $projectRoot, $this->environments);
+        $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);
+        $this->assertTrue($result);
         $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.
@@ -97,16 +105,18 @@ class DrushHelperTest extends \PHPUnit_Framework_TestCase
         // Set up file structure.
         $testDir = $this->createTempSubDir();
 
-        $fsHelper = new Filesystem();
-        $fsHelper->copyAll(__DIR__ . '/../data/repositories/multi-drupal', $testDir . '/project/repository');
         $projectRoot = $testDir . '/project';
+
+        $fsHelper = new Filesystem();
+        $fsHelper->copyAll(__DIR__ . '/../data/repositories/multi-drupal', $projectRoot);
 
         $homeDir = "$testDir/home";
         mkdir($homeDir);
+        $this->drush->setHomeDir($homeDir);
 
         // Check that aliases are created.
-        $this->drushHelper->setHomeDir($homeDir);
-        $this->drushHelper->createAliases($this->project, $projectRoot, $this->environments);
+        $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);
+        $this->assertTrue($result);
         $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.

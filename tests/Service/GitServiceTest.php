@@ -4,13 +4,13 @@ namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\Service\Git;
 
-class GitHelperTest extends \PHPUnit_Framework_TestCase
+class GitServiceTest extends \PHPUnit_Framework_TestCase
 {
 
     use HasTempDirTrait;
 
     /** @var Git */
-    protected $gitHelper;
+    protected $git;
 
     /**
      * @{inheritdoc}
@@ -27,13 +27,13 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
             throw new \Exception("Failed to create directories.");
         }
 
-        $this->gitHelper = new Git();
-        $this->gitHelper->init($repository, true);
-        $this->gitHelper->setDefaultRepositoryDir($repository);
+        $this->git = new Git();
+        $this->git->init($repository, true);
+        $this->git->setDefaultRepositoryDir($repository);
         chdir($repository);
 
         // Ensure we are on the master branch.
-        $this->gitHelper->checkOut('master');
+        $this->git->checkOut('master');
 
         // Add required Git config before committing.
         shell_exec('git config user.email test@example.com');
@@ -50,7 +50,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testEnsureInstalled()
     {
-        $this->gitHelper->ensureInstalled();
+        $this->git->ensureInstalled();
     }
 
     /**
@@ -58,13 +58,13 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetRoot()
     {
-        $this->assertFalse($this->gitHelper->getRoot($this->tempDir));
+        $this->assertFalse($this->git->getRoot($this->tempDir));
         $repositoryDir = $this->getRepositoryDir();
-        $this->assertEquals($repositoryDir, $this->gitHelper->getRoot($repositoryDir));
+        $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir));
         mkdir($repositoryDir . '/1/2/3/4/5', 0755, true);
-        $this->assertEquals($repositoryDir, $this->gitHelper->getRoot($repositoryDir . '/1/2/3/4/5'));
+        $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir . '/1/2/3/4/5'));
         $this->setExpectedException('Exception', 'Not a git repository');
-        $this->gitHelper->getRoot($this->tempDir, true);
+        $this->git->getRoot($this->tempDir, true);
     }
 
     /**
@@ -82,8 +82,8 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testCheckOutNew()
     {
-        $this->assertTrue($this->gitHelper->checkOutNew('new'));
-        $this->gitHelper->checkOut('master');
+        $this->assertTrue($this->git->checkOutNew('new'));
+        $this->git->checkOut('master');
     }
 
     /**
@@ -91,9 +91,9 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testBranchExists()
     {
-        $this->gitHelper->checkOutNew('existent');
-        $this->assertTrue($this->gitHelper->branchExists('existent'));
-        $this->assertFalse($this->gitHelper->branchExists('nonexistent'));
+        $this->git->checkOutNew('existent');
+        $this->assertTrue($this->git->branchExists('existent'));
+        $this->assertFalse($this->git->branchExists('nonexistent'));
     }
 
     /**
@@ -101,8 +101,8 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testBranchExistsUnicode()
     {
-        $this->gitHelper->checkOutNew('b®åñçh-wî†h-üní¢ø∂é');
-        $this->assertTrue($this->gitHelper->branchExists('b®åñçh-wî†h-üní¢ø∂é'));
+        $this->git->checkOutNew('b®åñçh-wî†h-üní¢ø∂é');
+        $this->assertTrue($this->git->branchExists('b®åñçh-wî†h-üní¢ø∂é'));
     }
 
     /**
@@ -110,8 +110,8 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetCurrentBranch()
     {
-        $this->gitHelper->checkOutNew('test');
-        $this->assertEquals('test', $this->gitHelper->getCurrentBranch());
+        $this->git->checkOutNew('test');
+        $this->assertEquals('test', $this->git->getCurrentBranch());
     }
 
     /**
@@ -119,13 +119,13 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetMergedBranches()
     {
-        $this->gitHelper->checkOutNew('branch1');
-        $this->gitHelper->checkOutNew('branch2');
+        $this->git->checkOutNew('branch1');
+        $this->git->checkOutNew('branch2');
         $this->assertEquals([
             'branch1',
             'branch2',
             'master',
-        ], $this->gitHelper->getMergedBranches('master'));
+        ], $this->git->getMergedBranches('master'));
     }
 
     /**
@@ -133,7 +133,7 @@ class GitHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetConfig()
     {
-        $config = $this->gitHelper->getConfig('user.email');
+        $config = $this->git->getConfig('user.email');
         $this->assertEquals('test@example.com', $config);
     }
 

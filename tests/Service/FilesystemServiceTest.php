@@ -4,19 +4,19 @@ namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\Service\Filesystem;
 
-class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
+class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
 {
     use HasTempDirTrait;
 
     /** @var Filesystem */
-    protected $filesystemHelper;
+    protected $fs;
 
     /**
      * @{inheritdoc}
      */
     public function setUp()
     {
-        $this->filesystemHelper = new Filesystem();
+        $this->fs = new Filesystem();
         $this->tempDirSetUp();
     }
 
@@ -38,7 +38,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetHomeDirectory()
     {
-        $homeDir = $this->filesystemHelper->getHomeDirectory();
+        $homeDir = $this->fs->getHomeDirectory();
         $this->assertNotEmpty($homeDir, 'Home directory returned');
         $this->assertNotEmpty(realpath($homeDir), 'Home directory exists');
     }
@@ -52,7 +52,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         $testDir = $this->tempDir(true);
 
         // Check that the directory can be removed.
-        $this->assertTrue($this->filesystemHelper->remove($testDir));
+        $this->assertTrue($this->fs->remove($testDir));
         $this->assertFileNotExists($testDir);
     }
 
@@ -66,7 +66,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         touch($source . '/.donotcopy');
 
         // Copy files.
-        $this->filesystemHelper->copyAll($source, $destination, ['.*']);
+        $this->fs->copyAll($source, $destination, ['.*']);
 
         // Check that they have been copied.
         $this->assertFileExists($destination . '/test-file');
@@ -81,7 +81,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
     {
         $testTarget = $this->tempDir();
         $testLink = $this->tempDir() . '/link';
-        $this->filesystemHelper->symlink($testTarget, $testLink);
+        $this->fs->symlink($testTarget, $testLink);
         $this->assertTrue(is_link($testLink));
         touch($testTarget . '/test-file');
         $this->assertFileExists($testLink . '/test-file');
@@ -95,21 +95,21 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         $testDir = $this->tempDir();
         chdir($testDir);
 
-        $path = $this->filesystemHelper->makePathAbsolute('test.txt');
+        $path = $this->fs->makePathAbsolute('test.txt');
         $this->assertEquals($testDir . '/' . 'test.txt', $path);
 
         $childDir = $testDir . '/test';
         mkdir($childDir);
         chdir($childDir);
 
-        $path = $this->filesystemHelper->makePathAbsolute('../test.txt');
+        $path = $this->fs->makePathAbsolute('../test.txt');
         $this->assertEquals($testDir . '/' . 'test.txt', $path);
 
-        $path = $this->filesystemHelper->makePathAbsolute('..');
+        $path = $this->fs->makePathAbsolute('..');
         $this->assertEquals($testDir, $path);
 
         $this->setExpectedException('InvalidArgumentException');
-        $this->filesystemHelper->makePathAbsolute('nonexistent/test.txt');
+        $this->fs->makePathAbsolute('nonexistent/test.txt');
     }
 
     /**
@@ -121,7 +121,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         $testDestination = $this->tempDir();
 
         // Test plain symlinking.
-        $this->filesystemHelper->symlinkAll($testSource, $testDestination);
+        $this->fs->symlinkAll($testSource, $testDestination);
         $this->assertFileExists($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
@@ -129,16 +129,16 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         // Test with skipping an existing file.
         $testDestination = $this->tempDir();
         touch($testDestination . '/test-file');
-        $this->filesystemHelper->symlinkAll($testSource, $testDestination);
+        $this->fs->symlinkAll($testSource, $testDestination);
         $this->assertFileExists($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
 
         // Test with relative links. This has no effect on Windows.
         $testDestination = $this->tempDir();
-        $this->filesystemHelper->setRelativeLinks(true);
-        $this->filesystemHelper->symlinkAll($testSource, $testDestination);
-        $this->filesystemHelper->setRelativeLinks(false);
+        $this->fs->setRelativeLinks(true);
+        $this->fs->symlinkAll($testSource, $testDestination);
+        $this->fs->setRelativeLinks(false);
         $this->assertFileExists($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
@@ -146,7 +146,7 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
         // Test with a blacklist.
         $testDestination = $this->tempDir();
         touch($testSource . '/test-file2');
-        $this->filesystemHelper->symlinkAll($testSource, $testDestination, true, false, ['test-file']);
+        $this->fs->symlinkAll($testSource, $testDestination, true, false, ['test-file']);
         $this->assertFileNotExists($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
@@ -156,17 +156,17 @@ class FilesystemHelperTest extends \PHPUnit_Framework_TestCase
     {
         $testDir = $this->createTempSubDir();
         touch($testDir . '/test-file');
-        $this->assertTrue($this->filesystemHelper->canWrite($testDir . '/test-file'));
+        $this->assertTrue($this->fs->canWrite($testDir . '/test-file'));
         chmod($testDir . '/test-file', 0500);
-        $this->assertFalse($this->filesystemHelper->canWrite($testDir . '/test-file'));
+        $this->assertFalse($this->fs->canWrite($testDir . '/test-file'));
         mkdir($testDir . '/test-dir', 0700);
-        $this->assertTrue($this->filesystemHelper->canWrite($testDir . '/test-dir'));
-        $this->assertTrue($this->filesystemHelper->canWrite($testDir . '/test-dir/1'));
-        $this->assertTrue($this->filesystemHelper->canWrite($testDir . '/test-dir/1/2/3'));
+        $this->assertTrue($this->fs->canWrite($testDir . '/test-dir'));
+        $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1'));
+        $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1/2/3'));
         mkdir($testDir . '/test-ro-dir', 0500);
         $this->assertFalse(is_writable($testDir . '/test-ro-dir'));
-        $this->assertFalse($this->filesystemHelper->canWrite($testDir . '/test-ro-dir'));
-        $this->assertFalse($this->filesystemHelper->canWrite($testDir . '/test-ro-dir/1'));
+        $this->assertFalse($this->fs->canWrite($testDir . '/test-ro-dir'));
+        $this->assertFalse($this->fs->canWrite($testDir . '/test-ro-dir/1'));
     }
 
     /**

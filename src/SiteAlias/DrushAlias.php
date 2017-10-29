@@ -4,6 +4,7 @@ namespace Platformsh\Cli\SiteAlias;
 
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -14,10 +15,12 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     const LOCAL_ALIAS_NAME = '_local';
 
     protected $config;
+    protected $drush;
 
-    public function __construct(Config $config)
+    public function __construct(Config $config, Drush $drush)
     {
         $this->config = $config;
+        $this->drush = $drush;
     }
 
     /**
@@ -42,12 +45,12 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             throw new \RuntimeException("Drush alias file not writable: $filename");
         }
 
-        // Gather existing aliases from this file and from the previous file.
-        $filesToCheck = [$filename];
+        // Gather existing aliases from this group and from the previous group.
+        $groups = [$aliasGroup];
         if ($previousGroup !== null) {
-            $filesToCheck[] = $this->getFilename($previousGroup, $drushDir);
+            $groups[] = $previousGroup;
         }
-        $existingAliases = $this->getExistingAliases($filesToCheck);
+        $existingAliases = $this->getExistingAliases($groups);
 
         // Generate the new aliases.
         $newAliases = $this->generateNewAliases($apps, $environments);
@@ -120,20 +123,43 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Find the existing defined aliases so they can be merged with new ones.
      *
-     * @param string[] $filenames
+     * @param string[] $groupNames
      *
      * @return array
      */
-    abstract protected function getExistingAliases(array $filenames);
+    protected function getExistingAliases(array $groupNames)
+    {
+        $existingAliases = [];
+        foreach (array_unique($groupNames) as $groupName) {
+            $args = [
+                '@none',
+                'site-alias',
+                '@' . $groupName,
+                '--format=json',
+            ];
+            $result = $this->drush->execute($args, null, false);
+            if (!is_string($result)) {
+                continue;
+            }
+            $aliases = (array) json_decode($result, true);
+            foreach ($aliases as $name => $alias) {
+                if (strpos($name, $groupName) === 0) {
+                    $existingAliases[str_replace($groupName . '.', '', $name)] = $alias;
+                }
+            }
+        }
+
+        return $existingAliases;
+    }
 
     /**
      * Find the Drush directory, where site aliases should be stored.
      *
      * @return string
      */
-    private function getDrushDir()
+    protected function getDrushDir()
     {
-        $homeDir = Filesystem::getHomeDirectory();
+        $homeDir = $this->drush->getHomeDir();
         $drushDir = $homeDir . '/.drush';
         if (file_exists($drushDir . '/site-aliases')) {
             $drushDir = $drushDir . '/site-aliases';

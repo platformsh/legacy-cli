@@ -34,23 +34,6 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getExistingAliases(array $filenames)
-    {
-        // This may create a PHP parse error for invalid syntax in the alias
-        // file, but in that case the user could not run Drush anyway.
-        $aliases = [];
-        foreach ($filenames as $filename) {
-            if (file_exists($filename)) {
-                include $filename;
-            }
-        }
-
-        return $aliases;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function getHeader(Project $project)
     {
         return <<<EOT
