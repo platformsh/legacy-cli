@@ -161,16 +161,12 @@ class LocalDrushAliasesCommand extends CommandBase
         foreach ($oldFilenames as $oldFilename) {
             $newFilename = $drushDir . '/' . basename($oldFilename);
             if (file_exists($newFilename)) {
-                if (($oldHash = sha1_file($oldFilename)) && $oldHash === sha1_file($newFilename)) {
-                    continue;
-                }
-                $this->stdErr->writeln(sprintf('Cannot move file <error>%s</error> to <error>%s</error> (destination file already exists).', $oldFilename, $newFilename));
-                $this->stdErr->writeln('Resolve the conflicting file manually, and try again.');
+                $this->stdErr->writeln(sprintf('Cannot move file %s to %s (destination file already exists).', $oldFilename, $newFilename));
                 $test = false;
             }
         }
         if (!$test) {
-            throw new \RuntimeException('Failed to move site alias files.');
+            throw new \RuntimeException('Failed to move site alias files. Resolve the conflicting file(s) manually, and try again.');
         }
         foreach ($oldFilenames as $oldFilename) {
             $newFilename = $drushDir . '/' . basename($oldFilename);
