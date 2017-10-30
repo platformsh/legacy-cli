@@ -260,4 +260,15 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         }
         $fs->dumpFile($filename, $contents);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function deleteAliases($group)
+    {
+        $filename = $this->getFilename($group, $this->getDrushDir());
+        if (file_exists($filename)) {
+            unlink($filename);
+        }
+    }
 }

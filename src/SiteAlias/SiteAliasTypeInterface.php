@@ -20,4 +20,11 @@ interface SiteAliasTypeInterface
      * @return bool Whether any aliases have been created.
      */
     public function createAliases(Project $project, $aliasGroup, array $apps, array $environments, $previousGroup = null);
+
+    /**
+     * Delete old alias file(s).
+     *
+     * @param string $group
+     */
+    public function deleteAliases($group);
 }

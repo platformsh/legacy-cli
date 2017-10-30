@@ -8,6 +8,7 @@ use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\SiteAlias\DrushPhp;
 use Platformsh\Cli\SiteAlias\DrushYaml;
+use Platformsh\Cli\SiteAlias\SiteAliasTypeInterface;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 
@@ -295,6 +296,19 @@ class Drush
             }
         );
 
+        $success = true;
+        foreach ($this->getSiteAliasTypes() as $type) {
+            $success = $success && $type->createAliases($project, $group, $apps, $environments, $original);
+        }
+
+        return $success;
+    }
+
+    /**
+     * @return SiteAliasTypeInterface[]
+     */
+    protected function getSiteAliasTypes()
+    {
         $types = [];
         if ($this->supportsYamlAliasFiles()) {
             $types[] = new DrushYaml($this->config, $this);
@@ -303,11 +317,16 @@ class Drush
             $types[] = new DrushPhp($this->config, $this);
         }
 
-        $success = true;
-        foreach ($types as $type) {
-            $success = $success && $type->createAliases($project, $group, $apps, $environments, $original);
-        }
+        return $types;
+    }
 
-        return $success;
+    /**
+     * @param string $group
+     */
+    public function deleteOldAliases($group)
+    {
+        foreach ($this->getSiteAliasTypes() as $type) {
+            $type->deleteAliases($group);
+        }
     }
 }

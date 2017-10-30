@@ -95,12 +95,9 @@ class LocalDrushAliasesCommand extends CommandBase
             $environments = $this->api()->getEnvironments($project, true, false);
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
-            if ($new_group != $current_group) {
-                $oldFile = $drushDir . '/' . $current_group . '.aliases.drushrc.php';
-                if (file_exists($oldFile)) {
-                    if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
-                        unlink($oldFile);
-                    }
+            if ($new_group !== $current_group && !empty($aliases)) {
+                if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
+                    $drush->deleteOldAliases($current_group);
                 }
             }
 
