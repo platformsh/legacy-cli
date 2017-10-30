@@ -116,26 +116,6 @@ class Drush
     }
 
     /**
-     * Checks whether Drush supports YAML-format alias files.
-     *
-     * @return bool
-     */
-    public function supportsYamlAliasFiles()
-    {
-        return $this->getVersion() === false || version_compare($this->getVersion(), '9.0.0-alpha1', '>=');
-    }
-
-    /**
-     * Checks whether Drush supports PHP-format alias files.
-     *
-     * @return bool
-     */
-    public function supportsPhpAliasFiles()
-    {
-        return $this->getVersion() === false || version_compare($this->getVersion(), '9.0.0', '<');
-    }
-
-    /**
      * Execute a Drush command.
      *
      * @param string[] $args
@@ -310,12 +290,8 @@ class Drush
     protected function getSiteAliasTypes()
     {
         $types = [];
-        if ($this->supportsYamlAliasFiles()) {
-            $types[] = new DrushYaml($this->config, $this);
-        }
-        if ($this->supportsPhpAliasFiles()) {
-            $types[] = new DrushPhp($this->config, $this);
-        }
+        $types[] = new DrushYaml($this->config, $this);
+        $types[] = new DrushPhp($this->config, $this);
 
         return $types;
     }
