@@ -117,9 +117,9 @@ class LocalDrushAliasesCommand extends CommandBase
      */
     protected function ensureDrushDir()
     {
-        $drushDir = Filesystem::getHomeDirectory() . '/.drush/site-aliases';
+        $newDrushDir = Filesystem::getHomeDirectory() . '/.drush/site-aliases';
 
-        $oldDrushDir = dirname($drushDir);
+        $oldDrushDir = dirname($newDrushDir);
         if (!file_exists($oldDrushDir)) {
             return;
         }
@@ -129,22 +129,22 @@ class LocalDrushAliasesCommand extends CommandBase
             return;
         }
 
-        if (!file_exists($drushDir) && !mkdir($drushDir)) {
-            throw new \RuntimeException(sprintf('Failed to create directory: <error>%s</error>', $drushDir));
+        if (!file_exists($newDrushDir) && !mkdir($newDrushDir)) {
+            return;
         }
 
         foreach ($oldFilenames as $oldFilename) {
-            $newFilename = $drushDir . '/' . basename($oldFilename);
+            $newFilename = $newDrushDir . '/' . basename($oldFilename);
             if (file_exists($newFilename)) {
-                $this->stdErr->writeln(sprintf('Cannot move file %s to %s (destination file already exists).', $oldFilename, $newFilename));
-
+                $this->stdErr->writeln(sprintf('Cannot move file <comment>%s</comment> to %s (destination file already exists).', $oldFilename, $newFilename));
                 return;
             }
             if (!rename($oldFilename, $newFilename)) {
-                throw new \RuntimeException(sprintf('Failed to move file %s to %s', $oldFilename, $newFilename));
+                $this->stdErr->writeln(sprintf('Failed to move file <comment>%s</comment> to %s', $oldFilename, $newFilename));
+                return;
             }
         }
 
-        $this->stdErr->writeln(sprintf('Successfully moved all site alias files from %s to %s', $oldDrushDir, $drushDir));
+        $this->stdErr->writeln(sprintf('Successfully moved all site alias files from %s to %s', $oldDrushDir, $newDrushDir));
     }
 }
