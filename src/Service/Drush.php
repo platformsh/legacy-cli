@@ -250,6 +250,30 @@ class Drush
     }
 
     /**
+     * Get the alias group for a project.
+     *
+     * @param Project $project
+     * @param string  $projectRoot
+     *
+     * @return string
+     */
+    public function getAliasGroup(Project $project, $projectRoot)
+    {
+        $config = $this->localProject->getProjectConfig($projectRoot);
+
+        return !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
+    }
+
+    /**
+     * @param string $newGroup
+     * @param string $projectRoot
+     */
+    public function setAliasGroup($newGroup, $projectRoot)
+    {
+        $this->localProject->writeCurrentProjectConfig(['alias-group' => $newGroup], $projectRoot, true);
+    }
+
+    /**
      * Create Drush aliases for the provided project and environments.
      *
      * @param Project       $project      The project
@@ -261,8 +285,7 @@ class Drush
      */
     public function createAliases(Project $project, $projectRoot, $environments, $original = null)
     {
-        $config = $this->localProject->getProjectConfig($projectRoot);
-        $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
+        $group = $this->getAliasGroup($project, $projectRoot);
 
         // Gather Drupal applications.
         $apps = array_filter(

@@ -44,10 +44,12 @@ class LocalDrushAliasesCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
-        $projectConfig = $localProject->getProjectConfig($projectRoot);
-        $current_group = isset($projectConfig['alias-group']) ? $projectConfig['alias-group'] : $projectConfig['id'];
+        $project = $this->getCurrentProject();
+
+        /** @var \Platformsh\Cli\Service\Drush $drush */
+        $drush = $this->getService('drush');
+
+        $current_group = $drush->getAliasGroup($project, $projectRoot);
 
         if ($input->getOption('pipe')) {
             $output->writeln($current_group);
@@ -55,12 +57,6 @@ class LocalDrushAliasesCommand extends CommandBase
             return 0;
         }
 
-        $project = $this->getCurrentProject();
-
-        $new_group = ltrim($input->getOption('group'), '@');
-
-        /** @var \Platformsh\Cli\Service\Drush $drush */
-        $drush = $this->getService('drush');
         $drush->ensureInstalled();
 
         try {
@@ -72,11 +68,12 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         $aliases = $drush->getAliases($current_group);
+        $new_group = ltrim($input->getOption('group'), '@');
         if (empty($aliases) && !$new_group && $project && $current_group === $project->id) {
             $new_group = (new Slugify())->slugify($project->title);
         }
 
-        if (($new_group && $new_group != $current_group) || !$aliases || $input->getOption('recreate')) {
+        if (($new_group && $new_group != $current_group) || empty($aliases) || $input->getOption('recreate')) {
             $new_group = $new_group ?: $current_group;
 
             $this->stdErr->writeln("Creating Drush aliases in the group <info>@$new_group</info>");
@@ -92,7 +89,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         return 1;
                     }
                 }
-                $localProject->writeCurrentProjectConfig(['alias-group' => $new_group], $projectRoot, true);
+                $drush->setAliasGroup($new_group, $projectRoot);
             }
 
             $environments = $this->api()->getEnvironments($project, true, false);
