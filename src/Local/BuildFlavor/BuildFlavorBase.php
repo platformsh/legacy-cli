@@ -224,7 +224,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
             return false;
         }
         $shared = $this->settings['sourceDir'] . '/' . $this->config->get('local.shared_dir');
-        if (!empty($this->settings['multiApp'])) {
+        if (!$this->app->isSingle()) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->app->getName());
         }
         $this->fsHelper->mkdir($shared);

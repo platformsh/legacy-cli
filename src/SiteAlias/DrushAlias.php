@@ -198,11 +198,10 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @param Environment $environment
      * @param LocalApplication $app
-     * @param bool $multiApp
      *
      * @return array|false
      */
-    protected function generateRemoteAlias($environment, $app, $multiApp = false)
+    protected function generateRemoteAlias($environment, $app)
     {
         if (!$environment->hasLink('ssh') || !$environment->hasLink('public-url')) {
             return false;
@@ -212,12 +211,12 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             return false;
         }
         $sshUser = $sshUrl['user'];
-        if ($multiApp) {
+        if (!$app->isSingle()) {
             $sshUser .= '--' . $app->getName();
         }
 
         $uri = $environment->getLink('public-url');
-        if ($multiApp) {
+        if (!$app->isSingle()) {
             $guess = str_replace('http://', 'http://' . $app->getName() . '---', $uri);
             if (in_array($guess, $environment->getRouteUrls())) {
                 $uri = $guess;

@@ -77,7 +77,7 @@ EOT;
 
             // Generate aliases for the remote environments.
             foreach ($environments as $environment) {
-                $alias = $this->generateRemoteAlias($environment, $app, !$app->isSingle());
+                $alias = $this->generateRemoteAlias($environment, $app);
                 if (!$alias) {
                     continue;
                 }

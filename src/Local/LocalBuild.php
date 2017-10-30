@@ -215,13 +215,12 @@ class LocalBuild
         $destination = $destination ?: $sourceDir . '/' . $this->config->get('local.web_root');
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
-        $multiApp = $appRoot != $sourceDir;
         $appId = $app->getId();
 
         $buildFlavor = $app->getBuildFlavor();
 
         // Find the right build directory.
-        $buildName = $multiApp ? str_replace('/', '-', $appId) : 'default';
+        $buildName = $app->isSingle() ? 'default' : str_replace('/', '-', $appId);
 
         $tmpBuildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName . '-tmp';
 
@@ -257,7 +256,6 @@ class LocalBuild
         $buildFlavor->setOutput($this->output);
 
         $buildSettings = $this->settings + [
-            'multiApp' => $multiApp,
             'sourceDir' => $sourceDir,
         ];
         $buildFlavor->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
@@ -358,7 +356,7 @@ class LocalBuild
 
             return false;
         }
-        if ($multiApp) {
+        if (!$app->isSingle()) {
             if (is_link($destination)) {
                 $this->fsHelper->remove($destination);
             }
