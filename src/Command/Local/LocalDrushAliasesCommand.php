@@ -72,7 +72,7 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         $aliases = $drush->getAliases($current_group);
-        if (!$aliases && !$new_group && $project && $current_group === $project->id) {
+        if (empty($aliases) && !$new_group && $project && $current_group === $project->id) {
             $new_group = (new Slugify())->slugify($project->title);
         }
 
@@ -84,9 +84,9 @@ class LocalDrushAliasesCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
 
-            if ($new_group != $current_group) {
+            if ($new_group !== $current_group) {
                 $existing = $drush->getAliases($new_group);
-                if ($existing && $new_group != $current_group) {
+                if (!empty($existing)) {
                     $question = "The Drush alias group <info>@$new_group</info> already exists. Overwrite?";
                     if (!$questionHelper->confirm($question, false)) {
                         return 1;
@@ -111,13 +111,13 @@ class LocalDrushAliasesCommand extends CommandBase
             $drush->clearCache();
 
             // Read the new aliases.
-            $aliases = $drush->getAliases($new_group);
+            $aliases = $drush->getAliases($new_group, true);
         }
 
-        if ($aliases) {
+        if (!empty($aliases)) {
             $this->stdErr->writeln('Drush aliases for ' . $this->api()->getProjectLabel($project) . ':');
-            foreach (explode("\n", $aliases) as $alias) {
-                $output->writeln('    @' . $alias);
+            foreach (array_keys($aliases) as $name) {
+                $output->writeln('    @' . $name);
             }
         }
 

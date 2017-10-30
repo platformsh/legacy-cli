@@ -28,6 +28,9 @@ class Drush
     /** @var string|null */
     protected $homeDir;
 
+    /** @var array */
+    protected $aliases = [];
+
     /**
      * @param Config|null       $config
      * @param Shell|null        $shellHelper
@@ -204,20 +207,34 @@ class Drush
     }
 
     /**
-     * @param string $groupName
+     * Get existing Drush aliases for a group.
      *
-     * @return string|bool
+     * @param string $groupName
+     * @param bool   $reset
+     *
+     * @return array
      */
-    public function getAliases($groupName)
+    public function getAliases($groupName, $reset = false)
     {
-        return $this->execute(
+        if (!$reset && !empty($this->aliases[$groupName])) {
+            return $this->aliases[$groupName];
+        }
+
+        $result = $this->execute(
             [
                 '@none',
                 'site-alias',
-                '--format=list',
+                '--format=json',
                 '@' . $groupName,
             ]
         );
+        $aliases = [];
+        if (is_string($result)) {
+            $aliases = (array) json_decode($result, true);
+        }
+        $this->aliases[$groupName] = $aliases;
+
+        return $aliases;
     }
 
     /**

@@ -128,27 +128,12 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      */
     protected function getExistingAliases(array $groupNames)
     {
-        $existingAliases = [];
+        $aliases = [];
         foreach (array_unique($groupNames) as $groupName) {
-            $args = [
-                '@none',
-                'site-alias',
-                '@' . $groupName,
-                '--format=json',
-            ];
-            $result = $this->drush->execute($args, null, false);
-            if (!is_string($result)) {
-                continue;
-            }
-            $aliases = (array) json_decode($result, true);
-            foreach ($aliases as $name => $alias) {
-                if (strpos($name, $groupName) === 0) {
-                    $existingAliases[str_replace($groupName . '.', '', $name)] = $alias;
-                }
-            }
+            $aliases += $this->drush->getAliases($groupName);
         }
 
-        return $existingAliases;
+        return $aliases;
     }
 
     /**
