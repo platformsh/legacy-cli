@@ -59,13 +59,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
         $drush->ensureInstalled();
 
-        try {
-            $drushDir = $this->getDrushDir();
-        } catch (\RuntimeException $e) {
-            $this->stdErr->writeln($e->getMessage());
-
-            return 1;
-        }
+        $this->ensureDrushDir();
 
         $aliases = $drush->getAliases($current_group);
         $new_group = ltrim($input->getOption('group'), '@');
@@ -119,58 +113,38 @@ class LocalDrushAliasesCommand extends CommandBase
     }
 
     /**
-     * Get the Drush site aliases directory.
-     *
-     * @return string
+     * Migrate old alias file(s) from ~/.drush to ~/.drush/site-aliases.
      */
-    protected function getDrushDir()
+    protected function ensureDrushDir()
     {
         $drushDir = Filesystem::getHomeDirectory() . '/.drush/site-aliases';
 
-        // Migrate old alias file(s) from ~/.drush to ~/.drush/site-aliases.
         $oldDrushDir = dirname($drushDir);
         if (!file_exists($oldDrushDir)) {
-            return $drushDir;
+            return;
         }
 
         $oldFilenames = glob($oldDrushDir . '/*.alias*.drushrc.*php', GLOB_NOSORT);
         if (empty($oldFilenames)) {
-            return $drushDir;
-        }
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
-        $confirmText = 'Global Drush aliases are best stored in <info>~/.drush/site-aliases</info>'
-            . "\nThere are " . count($oldFilenames) . ' alias file(s) still stored in <comment>~/.drush</comment>'
-            . "\n\nDo you want to move all your alias files from <comment>~/.drush</comment> to <info>~/.drush/site-aliases</info>?";
-        if (!$questionHelper->confirm($confirmText)) {
-            return $oldDrushDir;
+            return;
         }
 
         if (!file_exists($drushDir) && !mkdir($drushDir)) {
-            throw new \RuntimeException(sprintf('Failed to create directory: %s', $drushDir));
+            throw new \RuntimeException(sprintf('Failed to create directory: <error>%s</error>', $drushDir));
         }
-        $test = true;
+
         foreach ($oldFilenames as $oldFilename) {
             $newFilename = $drushDir . '/' . basename($oldFilename);
             if (file_exists($newFilename)) {
                 $this->stdErr->writeln(sprintf('Cannot move file %s to %s (destination file already exists).', $oldFilename, $newFilename));
-                $test = false;
+
+                return;
             }
-        }
-        if (!$test) {
-            throw new \RuntimeException('Failed to move site alias files. Resolve the conflicting file(s) manually, and try again.');
-        }
-        foreach ($oldFilenames as $oldFilename) {
-            $newFilename = $drushDir . '/' . basename($oldFilename);
             if (!rename($oldFilename, $newFilename)) {
                 throw new \RuntimeException(sprintf('Failed to move file %s to %s', $oldFilename, $newFilename));
             }
         }
 
-        $this->stdErr->writeln(sprintf('Successfully moved site alias files to: <info>%s</info>', $drushDir));
-
-        return $drushDir;
+        $this->stdErr->writeln(sprintf('Successfully moved all site alias files from %s to %s', $oldDrushDir, $drushDir));
     }
 }
