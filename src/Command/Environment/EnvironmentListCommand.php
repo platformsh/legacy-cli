@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
@@ -81,14 +82,22 @@ class EnvironmentListCommand extends CommandBase
         foreach ($tree as $environment) {
             $row = [];
 
+            // Format the environment ID.
             $id = $environment->id;
             if ($indent) {
                 $id = str_repeat('   ', $indentAmount) . $id;
             }
+
+            // Add an indicator for the current environment.
+            $cellOptions = [];
             if ($indicateCurrent && $this->currentEnvironment && $environment->id == $this->currentEnvironment->id) {
-                $id .= "<info>*</info>";
+                $id .= '<info>*</info>';
+
+                // Prevent table cell wrapping so formatting is not broken.
+                $cellOptions['wrap'] = false;
             }
-            $row[] = $id;
+
+            $row[] = new AdaptiveTableCell($id, $cellOptions);
 
             if ($branch = array_search($environment->id, $this->mapping)) {
                 $row[] = sprintf('%s (%s)', $environment->title, $branch);
