@@ -130,7 +130,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     {
         $aliases = [];
         foreach (array_unique($groupNames) as $groupName) {
-            $aliases += $this->drush->getAliases($groupName);
+            foreach ($this->drush->getAliases($groupName) as $aliasName => $alias) {
+                $aliases[str_replace($groupName . '.', '', $aliasName)] = $alias;
+            }
         }
 
         return $aliases;
