@@ -5,7 +5,6 @@ namespace Platformsh\Cli\SiteAlias;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
-use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
