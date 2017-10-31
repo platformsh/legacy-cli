@@ -212,15 +212,15 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         if (!$sshUrl) {
             return false;
         }
-        $sshUser = $sshUrl['user'];
-        if (!$app->isSingle()) {
-            $sshUser .= '--' . $app->getName();
-        }
 
         $uri = $environment->getLink('public-url');
+        $sshUser = $sshUrl['user'];
+
+        // Handle multi-app projects.
         if (!$app->isSingle()) {
+            $sshUser .= '--' . $app->getName();
             $guess = str_replace('http://', 'http://' . $app->getName() . '---', $uri);
-            if (in_array($guess, $environment->getRouteUrls())) {
+            if (in_array($guess, $environment->getRouteUrls(), true)) {
                 $uri = $guess;
             }
         }
@@ -235,6 +235,8 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     }
 
     /**
+     * Generate a key that allows an alias to be automatically deleted later.
+     *
      * @return string
      */
     private function getAutoRemoveKey()
