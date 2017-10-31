@@ -266,15 +266,11 @@ class Drush
      */
     public function createAliases(Project $project, $projectRoot, $environments, $original = null)
     {
-        $group = $this->getAliasGroup($project, $projectRoot);
+        if (!$apps = $this->getDrupalApps($projectRoot)) {
+            return false;
+        }
 
-        // Gather Drupal applications.
-        $apps = array_filter(
-            LocalApplication::getApplications($projectRoot, $this->config),
-            function (LocalApplication $app) {
-                return Drupal::isDrupal($app->getRoot());
-            }
-        );
+        $group = $this->getAliasGroup($project, $projectRoot);
 
         $success = true;
         foreach ($this->getSiteAliasTypes() as $type) {
@@ -282,6 +278,23 @@ class Drush
         }
 
         return $success;
+    }
+
+    /**
+     * Find Drupal applications in a project.
+     *
+     * @param string $projectRoot
+     *
+     * @return LocalApplication[]
+     */
+    public function getDrupalApps($projectRoot)
+    {
+        return array_filter(
+            LocalApplication::getApplications($projectRoot, $this->config),
+            function (LocalApplication $app) {
+                return Drupal::isDrupal($app->getRoot());
+            }
+        );
     }
 
     /**

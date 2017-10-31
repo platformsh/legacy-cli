@@ -44,10 +44,16 @@ class LocalDrushAliasesCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $project = $this->getCurrentProject();
-
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
+
+        if (!$drush->getDrupalApps($projectRoot)) {
+            $this->stdErr->writeln('No Drupal applications found.');
+
+            return 1;
+        }
+
+        $project = $this->getCurrentProject();
 
         $current_group = $drush->getAliasGroup($project, $projectRoot);
 
