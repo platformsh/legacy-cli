@@ -5,9 +5,9 @@ namespace Platformsh\Cli\SiteAlias;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
-use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
 abstract class DrushAlias implements SiteAliasTypeInterface
 {
@@ -74,7 +74,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         $header = rtrim($this->getHeader($project)) . "\n\n";
         $content = $header . $this->formatAliases($aliases);
 
-        $this->writeAliasFile($filename, $content);
+        (new Filesystem())->writeFile($filename, $content);
 
         return true;
     }
@@ -246,22 +246,6 @@ abstract class DrushAlias implements SiteAliasTypeInterface
                 '-',
                 str_replace('.', '', strtolower($this->config->get('application.name')))
             ) . '-auto-remove';
-    }
-
-    /**
-     * Write a file and create a backup if the contents have changed.
-     *
-     * @param string $filename
-     * @param string $contents
-     */
-    private function writeAliasFile($filename, $contents)
-    {
-        $fs = new SymfonyFilesystem();
-        if (is_readable($filename) && $contents !== file_get_contents($filename)) {
-            $backupName = dirname($filename) . '/' . basename($filename) . '.bak';
-            $fs->rename($filename, $backupName, true);
-        }
-        $fs->dumpFile($filename, $contents);
     }
 
     /**

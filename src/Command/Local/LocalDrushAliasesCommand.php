@@ -5,10 +5,12 @@ use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Yaml;
 
 class LocalDrushAliasesCommand extends CommandBase
 {
@@ -95,6 +97,8 @@ class LocalDrushAliasesCommand extends CommandBase
             $environments = $this->api()->getEnvironments($project, true, false);
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
+            $this->ensureDrushConfig($drush, $drush->getHomeDir() . '/.drush/site-aliases');
+
             if ($new_group !== $current_group && !empty($aliases)) {
                 if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
                     $drush->deleteOldAliases($current_group);
@@ -116,6 +120,43 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         return 0;
+    }
+
+    /**
+     * Ensure that the .drush/drush.yml file has the right config.
+     * 
+     * @param \Platformsh\Cli\Service\Drush $drush
+     * @param string                        $drushDir
+     */
+    protected function ensureDrushConfig(Drush $drush, $drushDir)
+    {
+        if (!is_dir($drushDir)) {
+            return;
+        }
+        if (version_compare($drush->getVersion(), '9.0.0', '<')) {
+            return;
+        }
+
+        $drushYml = $drush->getHomeDir() . '/.drush/drush.yml';
+        $drushConfig = [];
+        if (file_exists($drushYml)) {
+            $drushConfig = (array) Yaml::parse(file_get_contents($drushYml));
+        }
+        $aliasPath = str_replace(getenv('HOME') . '/.drush', '${env.home}/.drush', $drushDir);
+        if (empty($drushConfig['drush']['paths']['alias-path'])
+            || !in_array($aliasPath, $drushConfig['drush']['paths']['alias-path'], true)) {
+            if (file_exists($drushYml)) {
+                $this->stdErr->writeln('Writing to <info>~/.drush/drush.yml</info> file to configure the global alias-path');
+            } else {
+                $this->stdErr->writeln('Creating <info>~/.drush/drush.yml</info> file to configure the global alias-path');
+            }
+
+            $drushConfig['drush']['paths']['alias-path'][] = $aliasPath;
+
+            /** @var Filesystem $fs */
+            $fs = $this->getService('fs');
+            $fs->writeFile($drushYml, Yaml::dump($drushConfig, 5));
+        }
     }
 
     /**

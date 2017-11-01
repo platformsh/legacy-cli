@@ -68,7 +68,7 @@ class Drush
      * @throws DependencyMissingException
      *   If Drush is not installed.
      */
-    protected function getVersion($reset = false)
+    public function getVersion($reset = false)
     {
         static $version;
         if (!$reset && isset($version)) {

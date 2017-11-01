@@ -405,6 +405,23 @@ class Filesystem
     }
 
     /**
+     * Write a file and create a backup if the contents have changed.
+     *
+     * @param string $filename
+     * @param string $contents
+     * @param bool   $backup
+     */
+    public function writeFile($filename, $contents, $backup = true)
+    {
+        $fs = new SymfonyFilesystem();
+        if (file_exists($filename) && $backup && $contents !== file_get_contents($filename)) {
+            $backupName = dirname($filename) . '/' . basename($filename) . '.bak';
+            $fs->rename($filename, $backupName, true);
+        }
+        $fs->dumpFile($filename, $contents);
+    }
+
+    /**
      * Create a gzipped tar archive of a directory's contents.
      *
      * @param string $dir
