@@ -166,10 +166,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      */
     protected function generateLocalAlias(LocalApplication $app)
     {
-        $appId = $app->getId();
         $webRoot = $app->getSourceDir() . '/' . $this->config->get('local.web_root');
         if (!$app->isSingle()) {
-            $webRoot .= '/' . $appId;
+            $webRoot .= '/' . $app->getId();
         }
 
         return [

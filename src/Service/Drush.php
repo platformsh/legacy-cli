@@ -20,9 +20,6 @@ class Drush
     /** @var LocalProject */
     protected $localProject;
 
-    /** @var Filesystem */
-    protected $fs;
-
     /** @var Config */
     protected $config;
 

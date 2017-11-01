@@ -41,7 +41,8 @@ class LocalDrushAliasesCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
+        $project = $this->getCurrentProject();
+        if (!$projectRoot || !$project) {
             throw new RootNotFoundException();
         }
 
@@ -53,8 +54,6 @@ class LocalDrushAliasesCommand extends CommandBase
 
             return 1;
         }
-
-        $project = $this->getCurrentProject();
 
         $current_group = $drush->getAliasGroup($project, $projectRoot);
 
