@@ -6,6 +6,7 @@ use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Yaml\Yaml;
 
 class DrushServiceTest extends \PHPUnit_Framework_TestCase
 {
@@ -67,6 +68,13 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         // Check that aliases exist for the 'master' and local environments.
         $aliases = [];
         include_once "$homeDir/.drush/test.aliases.drushrc.php";
+        $this->assertArrayHasKey('master', $aliases);
+        $this->assertArrayHasKey('_local', $aliases);
+
+        // Check that YAML aliases exist.
+        $this->assertFileExists($homeDir . '/.drush/test.aliases.yml');
+        $sites = Yaml::parse(file_get_contents($homeDir . '/.drush/test.aliases.yml'))['sites'];
+        $aliases = reset($sites);
         $this->assertArrayHasKey('master', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
     }
@@ -133,5 +141,13 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('_local--drupal1', $aliases);
         $this->assertArrayHasKey('master--drupal2', $aliases);
         $this->assertArrayHasKey('_local--drupal2', $aliases);
+
+        // Check that YAML aliases exist.
+        $this->assertFileExists($homeDir . '/.drush/test.aliases.yml');
+        $sites = Yaml::parse(file_get_contents($homeDir . '/.drush/test.aliases.yml'))['sites'];
+        $this->assertArrayHasKey('drupal1', $sites);
+        $this->assertArrayHasKey('master', $sites['drupal1']);
+        $this->assertArrayHasKey('drupal2', $sites);
+        $this->assertArrayHasKey('master', $sites['drupal2']);
     }
 }
