@@ -98,6 +98,9 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         // Drupal application defined.
         $this->assertArrayHasKey('master', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
+
+        $apps = $this->drush->getDrupalApps($projectRoot);
+        $this->assertEquals(1, count($apps));
     }
 
     public function testCreateAliasesMultiDrupal()
@@ -113,6 +116,9 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $homeDir = "$testDir/home";
         mkdir($homeDir);
         $this->drush->setHomeDir($homeDir);
+
+        $apps = $this->drush->getDrupalApps($projectRoot);
+        $this->assertEquals(2, count($apps));
 
         // Check that aliases are created.
         $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);
