@@ -9,9 +9,9 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getFilename($groupName, $drushDir)
+    protected function getFilename($groupName)
     {
-        return $drushDir . '/' . $groupName . '.aliases.drushrc.php';
+        return $this->drush->getDrushDir() . '/' . $groupName . '.aliases.drushrc.php';
     }
 
     /**

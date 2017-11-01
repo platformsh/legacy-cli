@@ -58,6 +58,31 @@ class Drush
     }
 
     /**
+     * Find the global Drush configuration directory.
+     *
+     * @return string
+     */
+    public function getDrushDir()
+    {
+        return $this->getHomeDir() . '/.drush';
+    }
+
+    /**
+     * Find the directory where global Drush site aliases should be stored.
+     *
+     * @return string
+     */
+    public function getSiteAliasDir()
+    {
+        $aliasDir = $this->getDrushDir() . '/site-aliases';
+        if (!file_exists($aliasDir) && glob($this->getDrushDir() . '/*.aliases.drushrc.php')) {
+            $aliasDir = $this->getDrushDir();
+        }
+
+        return $aliasDir;
+    }
+
+    /**
      * Get the installed Drush version.
      *
      * @param bool $reset

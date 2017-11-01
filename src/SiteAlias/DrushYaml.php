@@ -40,9 +40,9 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getFilename($groupName, $drushDir)
+    protected function getFilename($groupName)
     {
-        return $drushDir . '/' . $groupName . '.aliases.yml';
+        return $this->drush->getDrushDir() . '/' . $groupName . '.aliases.yml';
     }
 
     /**
@@ -60,9 +60,8 @@ class DrushYaml extends DrushAlias
     {
         $aliases = parent::getExistingAliases($groupNames);
         if (empty($aliases)) {
-            $drushDir = $this->getDrushDir();
             foreach ($groupNames as $groupName) {
-                $filename = $this->getFilename($groupName, $drushDir);
+                $filename = $this->getFilename($groupName);
                 if (file_exists($filename) && ($content = file_get_contents($filename))) {
                     $parsed = (array) Yaml::parse($content);
                     if (empty($parsed['sites'])) {

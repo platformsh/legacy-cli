@@ -32,14 +32,14 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         }
 
         // Prepare the Drush directory and file.
-        $drushDir = $this->getDrushDir();
-        if (!is_dir($drushDir) && !mkdir($drushDir, 0755)) {
-            throw new \RuntimeException('Drush aliases directory not found: ' . $drushDir);
+        $aliasDir = $this->drush->getSiteAliasDir();
+        if (!is_dir($aliasDir) && !mkdir($aliasDir, 0755)) {
+            throw new \RuntimeException('Drush aliases directory not found: ' . $aliasDir);
         }
-        if (!is_writable($drushDir)) {
-            throw new \RuntimeException('Drush aliases directory not writable: ' . $drushDir);
+        if (!is_writable($aliasDir)) {
+            throw new \RuntimeException('Drush aliases directory not writable: ' . $aliasDir);
         }
-        $filename = $this->getFilename($aliasGroup, $drushDir);
+        $filename = $this->getFilename($aliasGroup);
         if (file_exists($filename) && !is_writable($filename)) {
             throw new \RuntimeException("Drush alias file not writable: $filename");
         }
@@ -104,11 +104,10 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      * Get the filename for the aliases.
      *
      * @param string $groupName
-     * @param string $drushDir
      *
      * @return string
      */
-    abstract protected function getFilename($groupName, $drushDir);
+    abstract protected function getFilename($groupName);
 
     /**
      * Get the header at the top of the file.
@@ -136,22 +135,6 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         }
 
         return $aliases;
-    }
-
-    /**
-     * Find the Drush directory, where site aliases should be stored.
-     *
-     * @return string
-     */
-    protected function getDrushDir()
-    {
-        $homeDir = $this->drush->getHomeDir();
-        $drushDir = $homeDir . '/.drush';
-        if (file_exists($drushDir . '/site-aliases')) {
-            $drushDir = $drushDir . '/site-aliases';
-        }
-
-        return $drushDir;
     }
 
     /**
@@ -253,7 +236,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      */
     public function deleteAliases($group)
     {
-        $filename = $this->getFilename($group, $this->getDrushDir());
+        $filename = $this->getFilename($group);
         if (file_exists($filename)) {
             unlink($filename);
         }
