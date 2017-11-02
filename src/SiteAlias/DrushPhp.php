@@ -34,6 +34,19 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
+    protected function generateRemoteAlias($environment, $app)
+    {
+        $alias = parent::generateRemoteAlias($environment, $app);
+        $alias['remote-host'] = $alias['host'];
+        $alias['remote-user'] = $alias['user'];
+        unset($alias['host'], $alias['user']);
+
+        return $alias;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     protected function getHeader(Project $project)
     {
         return <<<EOT

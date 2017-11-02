@@ -237,8 +237,8 @@ abstract class DrushAlias implements SiteAliasTypeInterface
 
         return [
             'uri' => $uri,
-            'remote-host' => $sshUrl['host'],
-            'remote-user' => $sshUser,
+            'host' => $sshUrl['host'],
+            'user' => $sshUser,
             'root' => '/app/' . $app->getDocumentRoot(),
             $this->getAutoRemoveKey() => true,
         ];
