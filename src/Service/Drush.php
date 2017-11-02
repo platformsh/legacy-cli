@@ -326,7 +326,10 @@ class Drush
     {
         $types = [];
         $types[] = new DrushYaml($this->config, $this);
-        $types[] = new DrushPhp($this->config, $this);
+
+        if (!$this->getVersion() || version_compare($this->getVersion(), '9.0.0', '<')) {
+            $types[] = new DrushPhp($this->config, $this);
+        }
 
         return $types;
     }
