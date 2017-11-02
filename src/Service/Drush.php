@@ -97,19 +97,8 @@ class Drush
             return $version;
         }
         $this->ensureInstalled();
-        $command = $this->getDrushExecutable() . ' version';
-        exec($command, $output, $returnCode);
-        if ($returnCode > 0) {
-            return false;
-        }
 
-        // Parse the version from the Drush output. It should be a string a bit
-        // like " Drush Version   :  8.0.0-beta14 ".
-        $lines = array_filter($output);
-        if (!preg_match('/[:\s]\s*([0-9]+\.[a-z0-9\-\.]+)\s*$/', reset($lines), $matches)) {
-            return false;
-        }
-        $version = $matches[1];
+        $version = $this->shellHelper->execute([$this->getDrushExecutable(), 'version', '--format=string'], $this->getHomeDir());
 
         return $version;
     }
@@ -223,10 +212,9 @@ class Drush
             return $this->aliases[$groupName];
         }
 
-        $args = ['@none', 'site-alias', '--format=json', '@' . $groupName];
-        if (version_compare($this->getVersion(), '9', '>=')) {
-            $args = ['site:alias', '--format=json', '@' . $groupName];
-        }
+        // Drush 9 uses 'site:alias', Drush <9 uses 'site-alias'. Fortunately
+        // the alias 'sa' exists in both.
+        $args = ['@none', 'sa', '--format=json', '@' . $groupName];
         $result = $this->execute($args);
         $aliases = [];
         if (is_string($result)) {

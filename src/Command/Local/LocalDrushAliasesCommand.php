@@ -115,7 +115,7 @@ class LocalDrushAliasesCommand extends CommandBase
         if (!empty($aliases)) {
             $this->stdErr->writeln('Drush aliases for ' . $this->api()->getProjectLabel($project) . ':');
             foreach (array_keys($aliases) as $name) {
-                $output->writeln('    @' . $name);
+                $output->writeln('    @' . ltrim($name, '@'));
             }
         }
 
