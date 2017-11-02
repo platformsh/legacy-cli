@@ -145,7 +145,38 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array
      */
-    abstract protected function generateNewAliases(array $apps, array $environments);
+    protected function generateNewAliases(array $apps, array $environments)
+    {
+        $aliases = [];
+
+        foreach ($apps as $app) {
+            $appId = $app->getId();
+
+            // Generate an alias for the local environment.
+            $localAliasName = self::LOCAL_ALIAS_NAME;
+            if (count($apps) > 1) {
+                $localAliasName .= '--' . $appId;
+            }
+            $aliases[$localAliasName] = $this->generateLocalAlias($app);
+
+            // Generate aliases for the remote environments.
+            foreach ($environments as $environment) {
+                $alias = $this->generateRemoteAlias($environment, $app);
+                if (!$alias) {
+                    continue;
+                }
+
+                $aliasName = $environment->id;
+                if (count($apps) > 1) {
+                    $aliasName .= '--' . $appId;
+                }
+
+                $aliases[$aliasName] = $alias;
+            }
+        }
+
+        return $aliases;
+    }
 
     /**
      * Format a list of aliases as a string.

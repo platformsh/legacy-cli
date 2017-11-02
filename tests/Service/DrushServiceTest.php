@@ -72,9 +72,8 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('_local', $aliases);
 
         // Check that YAML aliases exist.
-        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.aliases.yml');
-        $sites = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.aliases.yml'))['sites'];
-        $aliases = reset($sites);
+        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.alias.yml');
+        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.alias.yml'));
         $this->assertArrayHasKey('master', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
     }
@@ -143,12 +142,12 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('_local--drupal2', $aliases);
 
         // Check that YAML aliases exist.
-        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.aliases.yml');
-        $sites = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.aliases.yml'))['sites'];
-        $this->assertArrayHasKey('drupal1', $sites);
-        $this->assertArrayHasKey('master', $sites['drupal1']);
-        $this->assertArrayHasKey('drupal2', $sites);
-        $this->assertArrayHasKey('master', $sites['drupal2']);
+        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.alias.yml');
+        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.alias.yml'));
+        $this->assertArrayHasKey('master--drupal1', $aliases);
+        $this->assertArrayHasKey('_local--drupal1', $aliases);
+        $this->assertArrayHasKey('master--drupal2', $aliases);
+        $this->assertArrayHasKey('_local--drupal2', $aliases);
     }
 
     public function testGetSiteAliasDir()

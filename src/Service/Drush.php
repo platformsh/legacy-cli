@@ -72,11 +72,21 @@ class Drush
     public function getSiteAliasDir()
     {
         $aliasDir = $this->getDrushDir() . '/site-aliases';
-        if (!file_exists($aliasDir) && glob($this->getDrushDir() . '/*.aliases.drushrc.php')) {
+        if (!file_exists($aliasDir) && $this->getLegacyAliasFiles()) {
             $aliasDir = $this->getDrushDir();
         }
 
         return $aliasDir;
+    }
+
+    /**
+     * Get a list of legacy alias files.
+     *
+     * @return string[]
+     */
+    public function getLegacyAliasFiles()
+    {
+        return glob($this->getDrushDir() . '/*.alias*.*', GLOB_NOSORT);
     }
 
     /**

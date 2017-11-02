@@ -166,22 +166,15 @@ class LocalDrushAliasesCommand extends CommandBase
     protected function migrateAliasFiles(Drush $drush)
     {
         $newDrushDir = $drush->getHomeDir() . '/.drush/site-aliases';
-
-        $oldDrushDir = $drush->getHomeDir() . '/.drush';
-        if (!file_exists($oldDrushDir)) {
-            return;
-        }
-
-        $oldFilenames = glob($oldDrushDir . '/*.aliases.*', GLOB_NOSORT);
+        $oldFilenames = $drush->getLegacyAliasFiles();
         if (empty($oldFilenames)) {
             return;
         }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $oldDrushDirRelative = str_replace($drush->getHomeDir() . '/', '~/', $oldDrushDir);
         $newDrushDirRelative = str_replace($drush->getHomeDir() . '/', '~/', $newDrushDir);
-        $confirmText = "Do you want to move your global Drush alias files from <comment>$oldDrushDirRelative</comment> to <comment>$newDrushDirRelative</comment>?";
+        $confirmText = "Do you want to move your global Drush alias files from <comment>~/.drush</comment> to <comment>$newDrushDirRelative</comment>?";
         if (!$questionHelper->confirm($confirmText)) {
             return;
         }

@@ -8,41 +8,11 @@ use Symfony\Component\Yaml\Yaml;
 class DrushYaml extends DrushAlias
 {
     /**
-     * Generate new aliases.
-     *
-     * @param array $apps
-     * @param array $environments
-     *
-     * @return array
-     */
-    protected function generateNewAliases(array $apps, array $environments)
-    {
-        $aliases = [];
-
-        foreach ($apps as $app) {
-            $appId = $app->getId();
-
-            // Generate an alias for the local environment.
-            $aliases[$appId][self::LOCAL_ALIAS_NAME] = $this->generateLocalAlias($app);
-
-            // Generate aliases for the remote environments.
-            foreach ($environments as $environment) {
-                $alias = $this->generateRemoteAlias($environment, $app);
-                if ($alias) {
-                    $aliases[$appId][$environment->id] = $alias;
-                }
-            }
-        }
-
-        return $aliases;
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function getFilename($groupName)
     {
-        return $this->drush->getSiteAliasDir() . '/' . $groupName . '.aliases.yml';
+        return $this->drush->getSiteAliasDir() . '/' . $groupName . '.alias.yml';
     }
 
     /**
@@ -50,7 +20,7 @@ class DrushYaml extends DrushAlias
      */
     protected function formatAliases(array $aliases)
     {
-        return preg_replace('/^/m', '  ', Yaml::dump($aliases, 5, 2));
+        return Yaml::dump($aliases, 5, 2);
     }
 
     /**
@@ -63,11 +33,7 @@ class DrushYaml extends DrushAlias
             foreach ($groupNames as $groupName) {
                 $filename = $this->getFilename($groupName);
                 if (file_exists($filename) && ($content = file_get_contents($filename))) {
-                    $parsed = (array) Yaml::parse($content);
-                    if (empty($parsed['sites'])) {
-                        continue;
-                    }
-                    $aliases = array_merge($aliases, $parsed['sites']);
+                    $aliases = array_merge($aliases, (array) Yaml::parse($content));
                 }
             }
         }
@@ -90,8 +56,6 @@ class DrushYaml extends DrushAlias
 # - Aliases for active environments (including any custom additions) will be preserved.
 # - Aliases for deleted or inactive environments will be deleted.
 # - All other information will be deleted.
-
-sites:
 EOT;
     }
 }
