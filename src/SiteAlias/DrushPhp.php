@@ -34,14 +34,17 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function generateRemoteAlias($environment, $app)
+    protected function normalize(array $aliases)
     {
-        $alias = parent::generateRemoteAlias($environment, $app);
-        $alias['remote-host'] = $alias['host'];
-        $alias['remote-user'] = $alias['user'];
-        unset($alias['host'], $alias['user']);
+        foreach ($aliases as &$alias) {
+            if (!isset($alias['remote-host'], $alias['remote-user']) && isset($alias['host'], $alias['user'])) {
+                $alias['remote-host'] = $alias['host'];
+                $alias['remote-user'] = $alias['user'];
+            }
+            unset($alias['host'], $alias['user']);
+        }
 
-        return $alias;
+        return $aliases;
     }
 
     /**

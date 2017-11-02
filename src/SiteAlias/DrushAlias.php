@@ -53,6 +53,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         // Merge new aliases with existing ones.
         $newAliases = $this->mergeExisting($newAliases, $existingAliases);
 
+        // Normalize the new aliases.
+        $newAliases = $this->normalize($newAliases);
+
         // Add any user-defined (pre-existing) aliases.
         $autoRemoveKey = $this->getAutoRemoveKey();
         $userDefinedAliases = [];
@@ -94,6 +97,18 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         }
 
         return $new;
+    }
+
+    /**
+     * Normalize the aliases.
+     *
+     * @param array $aliases
+     *
+     * @return array
+     */
+    protected function normalize(array $aliases)
+    {
+        return $aliases;
     }
 
     /**
