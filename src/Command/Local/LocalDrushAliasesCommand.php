@@ -189,10 +189,7 @@ class LocalDrushAliasesCommand extends CommandBase
         foreach ($oldFilenames as $oldFilename) {
             $newFilename = $newDrushDir . '/' . basename($oldFilename);
             if (file_exists($newFilename)) {
-                $this->stdErr->writeln(
-                    "Failed to move file <error>$oldFilename</error>, because the destination file already exists."
-                    . "\nThe file will be ignored by Drush, so you can delete it manually."
-                );
+                $this->stdErr->writeln("Failed to move file <error>$oldFilename</error>, because the destination file already exists.");
                 $success = false;
             } elseif (!rename($oldFilename, $newFilename)) {
                 $this->stdErr->writeln("Failed to move file <error>$oldFilename</error> to <error>$newFilename</error>");
