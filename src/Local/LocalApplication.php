@@ -17,9 +17,9 @@ class LocalApplication
     protected $cliConfig;
 
     /**
-     * @param string         $appRoot
+     * @param string      $appRoot
      * @param Config|null $cliConfig
-     * @param string|null    $sourceDir
+     * @param string|null $sourceDir
      */
     public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null)
     {
@@ -39,6 +39,26 @@ class LocalApplication
     public function getId()
     {
         return $this->getName() ?: $this->getPath() ?: 'default';
+    }
+
+    /**
+     * Test whether this application is the only one in the project.
+     */
+    public function isSingle()
+    {
+       return $this->sourceDir === $this->appRoot;
+    }
+
+    /**
+     * Get the source directory where the application was found.
+     *
+     * In a single-app project, this is usually the project root.
+     *
+     * @return string
+     */
+    public function getSourceDir()
+    {
+        return $this->sourceDir;
     }
 
     /**

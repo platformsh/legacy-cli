@@ -6,52 +6,77 @@ use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\SiteAlias\DrushPhp;
+use Platformsh\Cli\SiteAlias\DrushYaml;
+use Platformsh\Cli\SiteAlias\SiteAliasTypeInterface;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
-use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
 class Drush
 {
-    /** @var string */
-    protected $homeDir;
-
     /** @var Shell */
     protected $shellHelper;
 
     /** @var LocalProject */
     protected $localProject;
 
-    /** @var Filesystem */
-    protected $fs;
-
     /** @var Config */
     protected $config;
+
+    /** @var string|null */
+    protected $homeDir;
+
+    /** @var array */
+    protected $aliases = [];
 
     /**
      * @param Config|null       $config
      * @param Shell|null        $shellHelper
      * @param LocalProject|null $localProject
-     * @param Filesystem|null   $fs
      */
     public function __construct(
         Config $config = null,
         Shell $shellHelper = null,
-        LocalProject $localProject = null,
-        Filesystem $fs = null
+        LocalProject $localProject = null
     ) {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
         $this->localProject = $localProject ?: new LocalProject();
-        $fs = $fs ?: new Filesystem();
-        $this->homeDir = $fs->getHomeDirectory();
     }
 
-    /**
-     * @param string $homeDir
-     */
     public function setHomeDir($homeDir)
     {
         $this->homeDir = $homeDir;
+    }
+
+    public function getHomeDir()
+    {
+        return $this->homeDir ?: Filesystem::getHomeDirectory();
+    }
+
+    /**
+     * Find the global Drush configuration directory.
+     *
+     * @return string
+     */
+    public function getDrushDir()
+    {
+        return $this->getHomeDir() . '/.drush';
+    }
+
+    /**
+     * Find the directory where global Drush site aliases should be stored.
+     *
+     * @return string
+     */
+    public function getSiteAliasDir()
+    {
+        $aliasDir = $this->getDrushDir() . '/site-aliases';
+        if (!file_exists($aliasDir) && glob($this->getDrushDir() . '/*.aliases.drushrc.php')) {
+            $aliasDir = $this->getDrushDir();
+        }
+
+        return $aliasDir;
     }
 
     /**
@@ -65,14 +90,14 @@ class Drush
      * @throws DependencyMissingException
      *   If Drush is not installed.
      */
-    protected function getVersion($reset = false)
+    public function getVersion($reset = false)
     {
         static $version;
         if (!$reset && isset($version)) {
             return $version;
         }
         $this->ensureInstalled();
-        $command = $this->getDrushExecutable() . ' --version';
+        $command = $this->getDrushExecutable() . ' version';
         exec($command, $output, $returnCode);
         if ($returnCode > 0) {
             return false;
@@ -146,27 +171,34 @@ class Drush
             return $this->config->get('local.drush_executable');
         }
 
-        // Find a locally installed Drush instance, either directly via Composer
-        // or indirectly via the local build dependencies.
-        if ($projectRoot = $this->localProject->getProjectRoot()) {
-            $drushLocal = $projectRoot . '/vendor/bin/drush';
-            if (is_executable($drushLocal)) {
-                return $drushLocal;
-            }
-
-            $drushDep = $projectRoot . '/' . $this->config->get('local.dependencies_dir') . '/php/vendor/bin/drush';
-            if (is_executable($drushDep)) {
-                return $drushDep;
-            }
+        // Find a locally installed Drush instance: first check the Composer
+        // 'vendor' directory.
+        $projectRoot = $this->localProject->getProjectRoot();
+        $localDir = $projectRoot ?: getcwd();
+        $drushLocal = $localDir . '/vendor/bin/drush';
+        if (is_executable($drushLocal)) {
+            return $drushLocal;
         }
 
-        // Find Drush if it is installed within the CLI.
+        // Check the local dependencies directory (created via 'platform
+        // build').
+        $drushDep = $localDir . '/' . $this->config->get('local.dependencies_dir') . '/php/vendor/bin/drush';
+        if (is_executable($drushDep)) {
+            return $drushDep;
+        }
+
+        // Use the global Drush, if there is one installed.
+        if ($this->shellHelper->commandExists('drush')) {
+            return $this->shellHelper->resolveCommand('drush');
+        }
+
+        // Fall back to the Drush that may be installed within the CLI.
         $drushCli = CLI_ROOT . '/vendor/bin/drush';
         if (is_executable($drushCli)) {
             return $drushCli;
         }
 
-        return $this->shellHelper->resolveCommand('drush');
+        return 'drush';
     }
 
     /**
@@ -178,21 +210,34 @@ class Drush
     }
 
     /**
-     * @param string $groupName
+     * Get existing Drush aliases for a group.
      *
-     * @return string|bool
+     * @param string $groupName
+     * @param bool   $reset
+     *
+     * @return array
      */
-    public function getAliases($groupName)
+    public function getAliases($groupName, $reset = false)
     {
-        return $this->execute(
+        if (!$reset && !empty($this->aliases[$groupName])) {
+            return $this->aliases[$groupName];
+        }
+
+        $result = $this->execute(
             [
                 '@none',
                 'site-alias',
-                '--pipe',
-                '--format=list',
+                '--format=json',
                 '@' . $groupName,
             ]
         );
+        $aliases = [];
+        if (is_string($result)) {
+            $aliases = (array) json_decode($result, true);
+        }
+        $this->aliases[$groupName] = $aliases;
+
+        return $aliases;
     }
 
     /**
@@ -208,223 +253,94 @@ class Drush
     }
 
     /**
+     * Get the alias group for a project.
+     *
+     * @param Project $project
+     * @param string  $projectRoot
+     *
+     * @return string
+     */
+    public function getAliasGroup(Project $project, $projectRoot)
+    {
+        $config = $this->localProject->getProjectConfig($projectRoot);
+
+        return !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
+    }
+
+    /**
+     * @param string $newGroup
+     * @param string $projectRoot
+     */
+    public function setAliasGroup($newGroup, $projectRoot)
+    {
+        $this->localProject->writeCurrentProjectConfig(['alias-group' => $newGroup], $projectRoot, true);
+    }
+
+    /**
      * Create Drush aliases for the provided project and environments.
      *
      * @param Project       $project      The project
      * @param string        $projectRoot  The project root
      * @param Environment[] $environments The environments
      * @param string        $original     The original group name
-     * @param bool          $merge        Whether to merge existing alias settings
      *
-     * @throws \Exception
-     *
-     * @return bool Whether any aliases have been created.
+     * @return bool True on success, false on failure.
      */
-    public function createAliases(Project $project, $projectRoot, $environments, $original = null, $merge = true)
+    public function createAliases(Project $project, $projectRoot, $environments, $original = null)
     {
-        $config = $this->localProject->getProjectConfig($projectRoot);
-        $group = !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
-        $autoRemoveKey = $this->getAutoRemoveKey();
-
-        // Ensure the existence of the .drush directory.
-        $drushDir = $this->homeDir . '/.drush';
-        if (!is_dir($drushDir)) {
-            mkdir($drushDir);
-        }
-
-        $filename = $drushDir . '/' . $group . '.aliases.drushrc.php';
-        if (!is_writable($drushDir) || (file_exists($filename) && !is_writable($filename))) {
-            throw new \Exception("Drush alias file not writable: $filename");
-        }
-
-        // Include the previous alias file(s) so that the user's own
-        // modifications can be merged. This may create a PHP parse error for
-        // invalid syntax, but in that case the user could not run Drush anyway.
-        $aliases = [];
-        $originalFiles = [$filename];
-        if ($original) {
-            array_unshift($originalFiles, $drushDir . '/' . $original . '.aliases.drushrc.php');
-        }
-        if ($merge) {
-            foreach ($originalFiles as $originalFile) {
-                if (file_exists($originalFile)) {
-                    include $originalFile;
-                }
-            }
-        }
-
-        // Gather applications.
-        $apps = LocalApplication::getApplications($projectRoot, $this->config);
-        $drupalApps = $apps;
-        $multiApp = false;
-        if (count($apps) > 1) {
-            $multiApp = true;
-            // Remove non-Drupal applications.
-            foreach ($drupalApps as $key => $app) {
-                if (!Drupal::isDrupal($app->getRoot())) {
-                    unset($drupalApps[$key]);
-                }
-            }
-        }
-
-        // Generate aliases for the remote environments and applications.
-        $autoGenerated = '';
-        foreach ($environments as $environment) {
-            foreach ($drupalApps as $app) {
-                $newAlias = $this->generateRemoteAlias($environment, $app, $multiApp);
-                if (!$newAlias) {
-                    continue;
-                }
-
-                $aliasName = $environment->id;
-                if (count($drupalApps) > 1) {
-                    $aliasName .= '--' . $app->getId();
-                }
-
-                // If the alias already exists, recursively replace existing
-                // settings with new ones.
-                if (isset($aliases[$aliasName])) {
-                    $newAlias = array_replace_recursive($aliases[$aliasName], $newAlias);
-                    unset($aliases[$aliasName]);
-                }
-
-                $autoGenerated .= sprintf(
-                    "\n// Automatically generated alias for the environment \"%s\", application \"%s\".\n",
-                    $environment->title,
-                    $app->getId()
-                );
-                $autoGenerated .= $this->exportAlias($aliasName, $newAlias);
-            }
-        }
-
-        // Generate an alias for the local environment, for each app.
-        $localAlias = '';
-        $localWebRoot = $this->config->get('local.web_root');
-        foreach ($drupalApps as $app) {
-            $appId = $app->getId();
-            $localAliasName = '_local';
-            $webRoot = $projectRoot . '/' . $localWebRoot;
-            if (count($drupalApps) > 1) {
-                $localAliasName .= '--' . $appId;
-            }
-            if ($multiApp) {
-                $webRoot .= '/' . $appId;
-            }
-            $local = [
-                'root' => $webRoot,
-                $autoRemoveKey => true,
-            ];
-            if (isset($aliases[$localAliasName])) {
-                $local = array_replace_recursive($aliases[$localAliasName], $local);
-                unset($aliases[$localAliasName]);
-            }
-            $localAlias .= "\n"
-                . sprintf('// Automatically generated alias for the local environment, application "%s"', $appId)
-                . "\n"
-                . $this->exportAlias($localAliasName, $local);
-        }
-
-        // Add any user-defined (pre-existing) aliases.
-        $userDefined = '';
-        foreach ($aliases as $name => $alias) {
-            if (!empty($alias[$autoRemoveKey])) {
-                // This is probably for a deleted environment.
-                continue;
-            }
-            $userDefined .= $this->exportAlias($name, $alias) . "\n";
-        }
-        if ($userDefined) {
-            $userDefined = "\n// User-defined aliases.\n" . $userDefined;
-        }
-
-        $header = "<?php\n"
-            . "/**\n * @file"
-            . "\n * Drush aliases for the " . $this->config->get('service.name') . " project \"{$project->title}\"."
-            . "\n *"
-            . "\n * This file is auto-generated by the " . $this->config->get('application.name') . "."
-            . "\n *"
-            . "\n * WARNING"
-            . "\n * This file may be regenerated at any time."
-            . "\n * - User-defined aliases will be preserved."
-            . "\n * - Aliases for active environments (including any custom additions) will be preserved."
-            . "\n * - Aliases for deleted or inactive environments will be deleted."
-            . "\n * - All other information will be deleted."
-            . "\n */\n\n";
-
-        $export = $header . $userDefined . $localAlias . $autoGenerated;
-
-        $this->writeAliasFile($filename, $export);
-
-        return true;
-    }
-
-    /**
-     * Write a file and create a backup if the contents have changed.
-     *
-     * @param string $filename
-     * @param string $contents
-     */
-    protected function writeAliasFile($filename, $contents)
-    {
-        $fs = new SymfonyFilesystem();
-        if (is_readable($filename) && $contents !== file_get_contents($filename)) {
-            $backupName = dirname($filename) . '/' . str_replace('.php', '.bak.php', basename($filename));
-            $fs->rename($filename, $backupName, true);
-        }
-        $fs->dumpFile($filename, $contents);
-    }
-
-    /**
-     * @param string $name
-     * @param array  $alias
-     *
-     * @return string
-     */
-    protected function exportAlias($name, array $alias)
-    {
-        return "\$aliases['" . str_replace("'", "\\'", $name) . "'] = " . var_export($alias, true) . ";\n";
-    }
-
-    /**
-     * @param Environment $environment
-     * @param LocalApplication $app
-     * @param bool $multiApp
-     *
-     * @return array|false
-     */
-    protected function generateRemoteAlias($environment, $app, $multiApp = false)
-    {
-        if (!$environment->hasLink('ssh') || !$environment->hasLink('public-url')) {
+        if (!$apps = $this->getDrupalApps($projectRoot)) {
             return false;
         }
-        $sshUrl = parse_url($environment->getLink('ssh'));
-        if (!$sshUrl) {
-            return false;
-        }
-        $sshUser = $sshUrl['user'];
-        if ($multiApp) {
-            $sshUser .= '--' . $app->getName();
+
+        $group = $this->getAliasGroup($project, $projectRoot);
+
+        $success = true;
+        foreach ($this->getSiteAliasTypes() as $type) {
+            $success = $success && $type->createAliases($project, $group, $apps, $environments, $original);
         }
 
-        $uri = $environment->getLink('public-url');
-        if ($multiApp) {
-            $guess = str_replace('http://', 'http://' . $app->getName() . '---', $uri);
-            if (in_array($guess, $environment->getRouteUrls())) {
-                $uri = $guess;
+        return $success;
+    }
+
+    /**
+     * Find Drupal applications in a project.
+     *
+     * @param string $projectRoot
+     *
+     * @return LocalApplication[]
+     */
+    public function getDrupalApps($projectRoot)
+    {
+        return array_filter(
+            LocalApplication::getApplications($projectRoot, $this->config),
+            function (LocalApplication $app) {
+                return Drupal::isDrupal($app->getRoot());
             }
+        );
+    }
+
+    /**
+     * @return SiteAliasTypeInterface[]
+     */
+    protected function getSiteAliasTypes()
+    {
+        $types = [];
+        $types[] = new DrushYaml($this->config, $this);
+
+        if (!$this->getVersion() || version_compare($this->getVersion(), '9.0.0', '<')) {
+            $types[] = new DrushPhp($this->config, $this);
         }
 
-        return [
-            'uri' => $uri,
-            'remote-host' => $sshUrl['host'],
-            'remote-user' => $sshUser,
-            'root' => '/app/' . $app->getDocumentRoot(),
-            $this->getAutoRemoveKey() => true,
-            'command-specific' => [
-                'site-install' => [
-                    'sites-subdir' => 'default',
-                ],
-            ],
-        ];
+        return $types;
+    }
+
+    /**
+     * @param string $group
+     */
+    public function deleteOldAliases($group)
+    {
+        foreach ($this->getSiteAliasTypes() as $type) {
+            $type->deleteAliases($group);
+        }
     }
 }
