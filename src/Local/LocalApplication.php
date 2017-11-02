@@ -17,9 +17,9 @@ class LocalApplication
     protected $cliConfig;
 
     /**
-     * @param string         $appRoot
+     * @param string      $appRoot
      * @param Config|null $cliConfig
-     * @param string|null    $sourceDir
+     * @param string|null $sourceDir
      */
     public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null)
     {

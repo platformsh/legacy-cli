@@ -119,7 +119,7 @@ class LocalBuild
             if ($apps && !in_array($id, $apps)) {
                 continue;
             }
-            $success = $this->buildApp($app, $sourceDir, $destination) && $success;
+            $success = $this->buildApp($app, $destination) && $success;
         }
         $notFounds = array_diff($apps, $ids);
         if ($notFounds) {
@@ -202,16 +202,18 @@ class LocalBuild
     }
 
     /**
+     * Build a single application.
+     *
      * @param LocalApplication $app
-     * @param string           $sourceDir
      * @param string|null      $destination
      *
      * @return bool
      */
-    protected function buildApp($app, $sourceDir, $destination = null)
+    protected function buildApp($app, $destination = null)
     {
         $verbose = $this->output->isVerbose();
 
+        $sourceDir = $app->getSourceDir();
         $destination = $destination ?: $sourceDir . '/' . $this->config->get('local.web_root');
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
@@ -255,10 +257,7 @@ class LocalBuild
 
         $buildFlavor->setOutput($this->output);
 
-        $buildSettings = $this->settings + [
-            'sourceDir' => $sourceDir,
-        ];
-        $buildFlavor->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
+        $buildFlavor->prepare($tmpBuildDir, $app, $this->config, $this->settings);
 
         $archive = false;
         if (empty($this->settings['no-archive']) && empty($this->settings['no-cache'])) {
