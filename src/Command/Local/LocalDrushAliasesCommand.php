@@ -65,7 +65,9 @@ class LocalDrushAliasesCommand extends CommandBase
 
         $drush->ensureInstalled();
 
-        $this->ensureDrushDir($drush);
+        if ($input->isInteractive()) {
+            $this->migrateAliasFiles($drush);
+        }
 
         $aliases = $drush->getAliases($current_group);
         $new_group = ltrim($input->getOption('group'), '@');
@@ -164,7 +166,7 @@ class LocalDrushAliasesCommand extends CommandBase
      *
      * @param \Platformsh\Cli\Service\Drush $drush
      */
-    protected function ensureDrushDir(Drush $drush)
+    protected function migrateAliasFiles(Drush $drush)
     {
         $newDrushDir = $drush->getHomeDir() . '/.drush/site-aliases';
 
@@ -173,27 +175,43 @@ class LocalDrushAliasesCommand extends CommandBase
             return;
         }
 
-        $oldFilenames = glob($oldDrushDir . '/*.alias*.drushrc.*php', GLOB_NOSORT);
+        $oldFilenames = glob($oldDrushDir . '/*.aliases.*', GLOB_NOSORT);
         if (empty($oldFilenames)) {
             return;
         }
 
-        if (!file_exists($newDrushDir) && !mkdir($newDrushDir)) {
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $oldDrushDirRelative = str_replace($drush->getHomeDir() . '/', '~/', $oldDrushDir);
+        $newDrushDirRelative = str_replace($drush->getHomeDir() . '/', '~/', $newDrushDir);
+        $confirmText = "Do you want to move your global Drush alias files from <comment>$oldDrushDirRelative</comment> to <comment>$newDrushDirRelative</comment>?";
+        if (!$questionHelper->confirm($confirmText)) {
             return;
         }
 
+        if (!file_exists($newDrushDir) && !mkdir($newDrushDir, 0755, true)) {
+            $this->stdErr->writeln(sprintf('Failed to create directory: <error>%s</error>', $newDrushDir));
+            $this->stdErr->writeln('The alias files have not been moved.');
+            return;
+        }
+
+        $success = true;
         foreach ($oldFilenames as $oldFilename) {
             $newFilename = $newDrushDir . '/' . basename($oldFilename);
             if (file_exists($newFilename)) {
-                $this->stdErr->writeln(sprintf('Cannot move file <comment>%s</comment> to %s (destination file already exists).', $oldFilename, $newFilename));
-                return;
-            }
-            if (!rename($oldFilename, $newFilename)) {
-                $this->stdErr->writeln(sprintf('Failed to move file <comment>%s</comment> to %s', $oldFilename, $newFilename));
-                return;
+                $this->stdErr->writeln(
+                    "Failed to move file <error>$oldFilename</error>, because the destination file already exists."
+                    . "\nThe file will be ignored by Drush, so you can delete it manually."
+                );
+                $success = false;
+            } elseif (!rename($oldFilename, $newFilename)) {
+                $this->stdErr->writeln("Failed to move file <error>$oldFilename</error> to <error>$newFilename</error>");
+                $success = false;
             }
         }
 
-        $this->stdErr->writeln(sprintf('Successfully moved all site alias files from %s to %s', $oldDrushDir, $newDrushDir));
+        if ($success) {
+            $this->stdErr->writeln(sprintf('Global Drush alias files have been successfully moved to <info>%s</info>.', $newDrushDirRelative));
+        }
     }
 }
