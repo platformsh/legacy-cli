@@ -132,9 +132,6 @@ class LocalDrushAliasesCommand extends CommandBase
         if (!is_dir($drush->getSiteAliasDir())) {
             return;
         }
-        if (version_compare($drush->getVersion(), '9.0.0', '<')) {
-            return;
-        }
 
         $drushYml = $drush->getDrushDir() . '/drush.yml';
         $drushConfig = [];

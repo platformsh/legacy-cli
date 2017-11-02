@@ -223,14 +223,11 @@ class Drush
             return $this->aliases[$groupName];
         }
 
-        $result = $this->execute(
-            [
-                '@none',
-                'site-alias',
-                '--format=json',
-                '@' . $groupName,
-            ]
-        );
+        $args = ['@none', 'site-alias', '--format=json', '@' . $groupName];
+        if (version_compare($this->getVersion(), '9', '>=')) {
+            $args = ['site:alias', '--format=json', '@' . $groupName];
+        }
+        $result = $this->execute($args);
         $aliases = [];
         if (is_string($result)) {
             $aliases = (array) json_decode($result, true);
@@ -326,10 +323,7 @@ class Drush
     {
         $types = [];
         $types[] = new DrushYaml($this->config, $this);
-
-        if (!$this->getVersion() || version_compare($this->getVersion(), '9.0.0', '<')) {
-            $types[] = new DrushPhp($this->config, $this);
-        }
+        $types[] = new DrushPhp($this->config, $this);
 
         return $types;
     }
