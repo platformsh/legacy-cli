@@ -44,12 +44,8 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             throw new \RuntimeException("Drush alias file not writable: $filename");
         }
 
-        // Gather existing aliases from this group and from the previous group.
-        $groups = [$aliasGroup];
-        if ($previousGroup !== null) {
-            $groups[] = $previousGroup;
-        }
-        $existingAliases = $this->getExistingAliases($groups);
+        // Gather existing aliases.
+        $existingAliases = $this->getExistingAliases($aliasGroup, $previousGroup);
 
         // Generate the new aliases.
         $newAliases = $this->generateNewAliases($apps, $environments);
@@ -121,14 +117,15 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Find the existing defined aliases so they can be merged with new ones.
      *
-     * @param string[] $groupNames
+     * @param string      $currentGroup
+     * @param string|null $previousGroup
      *
      * @return array
      */
-    protected function getExistingAliases(array $groupNames)
+    protected function getExistingAliases($currentGroup, $previousGroup = null)
     {
         $aliases = [];
-        foreach (array_unique($groupNames) as $groupName) {
+        foreach (array_filter([$currentGroup, $previousGroup]) as $groupName) {
             foreach ($this->drush->getAliases($groupName) as $aliasName => $alias) {
                 $aliases[str_replace($groupName . '.', '', $aliasName)] = $alias;
             }

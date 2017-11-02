@@ -26,11 +26,11 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getExistingAliases(array $groupNames)
+    protected function getExistingAliases($currentGroup, $previousGroup = null)
     {
-        $aliases = parent::getExistingAliases($groupNames);
+        $aliases = parent::getExistingAliases($currentGroup, $previousGroup);
         if (empty($aliases)) {
-            foreach ($groupNames as $groupName) {
+            foreach (array_filter([$currentGroup, $previousGroup]) as $groupName) {
                 $filename = $this->getFilename($groupName);
                 if (file_exists($filename) && ($content = file_get_contents($filename))) {
                     $aliases = array_merge($aliases, (array) Yaml::parse($content));
