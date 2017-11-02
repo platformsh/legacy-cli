@@ -33,7 +33,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
 
         // Prepare the Drush directory and file.
         $aliasDir = $this->drush->getSiteAliasDir();
-        if (!is_dir($aliasDir) && !mkdir($aliasDir, 0755)) {
+        if (!is_dir($aliasDir) && !mkdir($aliasDir, 0755, true)) {
             throw new \RuntimeException('Drush aliases directory not found: ' . $aliasDir);
         }
         if (!is_writable($aliasDir)) {

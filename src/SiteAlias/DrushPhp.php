@@ -11,7 +11,7 @@ class DrushPhp extends DrushAlias
      */
     protected function getFilename($groupName)
     {
-        return $this->drush->getDrushDir() . '/' . $groupName . '.aliases.drushrc.php';
+        return $this->drush->getSiteAliasDir() . '/' . $groupName . '.aliases.drushrc.php';
     }
 
     /**

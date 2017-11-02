@@ -42,7 +42,7 @@ class DrushYaml extends DrushAlias
      */
     protected function getFilename($groupName)
     {
-        return $this->drush->getDrushDir() . '/' . $groupName . '.aliases.yml';
+        return $this->drush->getSiteAliasDir() . '/' . $groupName . '.aliases.yml';
     }
 
     /**

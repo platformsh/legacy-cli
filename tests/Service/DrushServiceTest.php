@@ -63,17 +63,17 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);
 
         $this->assertTrue($result);
-        $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
+        $this->assertFileExists("$homeDir/.drush/site-aliases/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.
         $aliases = [];
-        include_once "$homeDir/.drush/test.aliases.drushrc.php";
+        include_once "$homeDir/.drush/site-aliases/test.aliases.drushrc.php";
         $this->assertArrayHasKey('master', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
 
         // Check that YAML aliases exist.
-        $this->assertFileExists($homeDir . '/.drush/test.aliases.yml');
-        $sites = Yaml::parse(file_get_contents($homeDir . '/.drush/test.aliases.yml'))['sites'];
+        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.aliases.yml');
+        $sites = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.aliases.yml'))['sites'];
         $aliases = reset($sites);
         $this->assertArrayHasKey('master', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
@@ -96,11 +96,11 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         // Check that aliases are created.
         $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);
         $this->assertTrue($result);
-        $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
+        $this->assertFileExists("$homeDir/.drush/site-aliases/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.
         $aliases = [];
-        include_once "$homeDir/.drush/test.aliases.drushrc.php";
+        include_once "$homeDir/.drush/site-aliases/test.aliases.drushrc.php";
 
         // The aliases are the same as for single apps, because there's only one
         // Drupal application defined.
@@ -131,11 +131,11 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         // Check that aliases are created.
         $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);
         $this->assertTrue($result);
-        $this->assertFileExists("$homeDir/.drush/test.aliases.drushrc.php");
+        $this->assertFileExists("$homeDir/.drush/site-aliases/test.aliases.drushrc.php");
 
         // Check that aliases exist for the 'master' and local environments.
         $aliases = [];
-        include_once "$homeDir/.drush/test.aliases.drushrc.php";
+        include_once "$homeDir/.drush/site-aliases/test.aliases.drushrc.php";
 
         $this->assertArrayHasKey('master--drupal1', $aliases);
         $this->assertArrayHasKey('_local--drupal1', $aliases);
@@ -143,11 +143,34 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('_local--drupal2', $aliases);
 
         // Check that YAML aliases exist.
-        $this->assertFileExists($homeDir . '/.drush/test.aliases.yml');
-        $sites = Yaml::parse(file_get_contents($homeDir . '/.drush/test.aliases.yml'))['sites'];
+        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.aliases.yml');
+        $sites = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.aliases.yml'))['sites'];
         $this->assertArrayHasKey('drupal1', $sites);
         $this->assertArrayHasKey('master', $sites['drupal1']);
         $this->assertArrayHasKey('drupal2', $sites);
         $this->assertArrayHasKey('master', $sites['drupal2']);
+    }
+
+    public function testGetSiteAliasDir()
+    {
+        // Set up file structure.
+        $testDir = $this->createTempSubDir();
+        $homeDir = "$testDir/home";
+        mkdir($homeDir);
+        $this->drush->setHomeDir($homeDir);
+
+        // The default global alias directory is ~/.drush/site-aliases.
+        $this->assertEquals($homeDir . '/.drush/site-aliases', $this->drush->getSiteAliasDir());
+
+        // If ~/.drush/site-aliases doesn't exist, but aliases exist in
+        // ~/.drush, then the latter should be the alias directory.
+        mkdir($homeDir . '/.drush');
+        touch($homeDir . '/.drush/test.aliases.drushrc.php');
+        $this->assertEquals($homeDir . '/.drush', $this->drush->getSiteAliasDir());
+
+        // If ~/.drush/site-aliases does exist, then it should be considered the
+        // alias directory (whether or not any alias files exist).
+        mkdir($homeDir . '/.drush/site-aliases');
+        $this->assertEquals($homeDir . '/.drush/site-aliases', $this->drush->getSiteAliasDir());
     }
 }
