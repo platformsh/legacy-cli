@@ -73,8 +73,7 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        $webRoot = $projectRoot . '/' . $this->config()->get('local.web_root');
-        $docRoot = $app->isSingle() ? $webRoot : $webRoot . '/' . $app->getWebPath();
+        $docRoot = $app->getLocalWebRoot();
         if (!file_exists($docRoot)) {
             $this->stdErr->writeln(sprintf('Document root not found: <error>%s</error>', $docRoot));
             $this->stdErr->writeln(sprintf(

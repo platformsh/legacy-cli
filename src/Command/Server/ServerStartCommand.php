@@ -59,11 +59,10 @@ class ServerStartCommand extends ServerCommandBase
 
         $executable = $this->config()->get('application.executable');
 
-        $webRoot = $projectRoot . '/' . $this->config()->get('local.web_root');
         $items = [];
         foreach ($apps as $app) {
             $appId = $app->getId();
-            $docRoot = $app->isSingle() ? $webRoot : $webRoot . '/' . $app->getWebPath();
+            $docRoot = $app->getLocalWebRoot();
             if (!file_exists($docRoot)) {
                 $this->stdErr->writeln(sprintf(
                     'Document root not found for app <error>%s</error>: %s',

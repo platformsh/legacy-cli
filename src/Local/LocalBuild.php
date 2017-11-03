@@ -355,14 +355,8 @@ class LocalBuild
 
             return false;
         }
-        if (!$app->isSingle()) {
-            if (is_link($destination)) {
-                $this->fsHelper->remove($destination);
-            }
-            $destination .= '/' . $app->getWebPath();
-        }
 
-        $this->fsHelper->symlink($webRoot, $destination);
+        $this->fsHelper->symlink($webRoot, $app->getLocalWebRoot($destination));
 
         $message = "\nBuild complete for application <info>$appId</info>";
         $this->output->writeln($message);

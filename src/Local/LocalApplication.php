@@ -88,13 +88,20 @@ class LocalApplication
     }
 
     /**
-     * Get the destination relative path for the web root of this application.
+     * Get the absolute path to the local web root of this app.
+     *
+     * @param string $destination
      *
      * @return string
      */
-    public function getWebPath()
+    public function getLocalWebRoot($destination = null)
     {
-        return str_replace('/', '-', $this->getId());
+        $destination = $destination ?: $this->getSourceDir() . '/' . $this->cliConfig->get('local.web_root');
+        if ($this->isSingle()) {
+            return $destination;
+        }
+
+        return $destination . '/' . str_replace('/', '-', $this->getId());
     }
 
     /**
