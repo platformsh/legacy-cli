@@ -149,7 +149,7 @@ class ProjectGetCommand extends CommandBase
         }
 
         // Ensure that Drush aliases are created.
-        if (Drupal::isDrupal($projectRoot)) {
+        if ($this->getApplication()->has('local:drush-aliases') && Drupal::isDrupal($projectRoot)) {
             $this->stdErr->writeln('');
             try {
                 $this->runOtherCommand('local:drush-aliases');

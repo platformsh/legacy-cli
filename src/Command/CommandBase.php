@@ -470,6 +470,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!$projectRoot) {
             return;
         }
+        // Make sure the local:drush-aliases command is enabled.
+        if (!$this->getApplication()->has('local:drush-aliases')) {
+            return;
+        }
         // Double-check that the passed project is the current one.
         $currentProject = $this->getCurrentProject();
         if (!$currentProject || $currentProject->id != $event->getProject()->id) {
