@@ -54,7 +54,6 @@ class ServerRunCommand extends ServerCommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $multiApp = count($apps) > 1;
         $appId = $input->getOption('app');
         if (!$appId) {
             $appChoices = [];
@@ -74,8 +73,7 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        $webRoot = $projectRoot . '/' . $this->config()->get('local.web_root');
-        $docRoot = $multiApp ? $webRoot . '/' . $app->getWebPath() : $webRoot;
+        $docRoot = $app->getLocalWebRoot();
         if (!file_exists($docRoot)) {
             $this->stdErr->writeln(sprintf('Document root not found: <error>%s</error>', $docRoot));
             $this->stdErr->writeln(sprintf(

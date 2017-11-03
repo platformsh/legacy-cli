@@ -516,7 +516,9 @@ class Git
     public function __destruct()
     {
         if (isset($this->sshCommandFile)) {
-            @unlink($this->sshCommandFile);
+            if (@unlink($this->sshCommandFile)) {
+                unset($this->sshCommandFile);
+            }
         }
     }
 }

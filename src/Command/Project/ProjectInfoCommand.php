@@ -155,6 +155,7 @@ class ProjectInfoCommand extends CommandBase
     {
         $writableProperties = [
             'title' => 'string',
+            'description' => 'string',
             'default_domain' => 'string',
         ];
 

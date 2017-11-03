@@ -470,6 +470,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!$projectRoot) {
             return;
         }
+        // Make sure the local:drush-aliases command is enabled.
+        if (!$this->getApplication()->has('local:drush-aliases')) {
+            return;
+        }
         // Double-check that the passed project is the current one.
         $currentProject = $this->getCurrentProject();
         if (!$currentProject || $currentProject->id != $event->getProject()->id) {
@@ -530,13 +534,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Warn the user that the remote environment needs rebuilding.
+     * Warn the user that the remote environment needs redeploying.
      */
-    protected function rebuildWarning()
+    protected function redeployWarning()
     {
         $this->stdErr->writeln([
-            '<comment>The remote environment must be rebuilt for the change to take effect.</comment>',
-            "Use 'git push' with new commit(s) to trigger a rebuild."
+            '<comment>The remote environment must be redeployed for the change to take effect.</comment>',
+            "Use 'git push' with new commit(s) to trigger a redeploy."
         ]);
     }
 
@@ -1138,5 +1142,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function isTerminal($descriptor)
     {
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isEnabled()
+    {
+        return !$this->config()->has('disabled_commands')
+            || !in_array($this->getName(), $this->config()->get('disabled_commands'));
     }
 }

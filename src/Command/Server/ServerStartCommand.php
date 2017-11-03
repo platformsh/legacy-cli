@@ -59,12 +59,10 @@ class ServerStartCommand extends ServerCommandBase
 
         $executable = $this->config()->get('application.executable');
 
-        $multiApp = count($apps) > 1;
-        $webRoot = $projectRoot . '/' . $this->config()->get('local.web_root');
         $items = [];
         foreach ($apps as $app) {
             $appId = $app->getId();
-            $docRoot = $multiApp ? $webRoot . '/' . $app->getWebPath() : $webRoot;
+            $docRoot = $app->getLocalWebRoot();
             if (!file_exists($docRoot)) {
                 $this->stdErr->writeln(sprintf(
                     'Document root not found for app <error>%s</error>: %s',
@@ -92,7 +90,7 @@ class ServerStartCommand extends ServerCommandBase
                 $bufferedOutput = new BufferedOutput();
                 $result = $this->runOtherCommand(
                     'tunnel:info',
-                    ['--encode' => true] + ($multiApp ? ['--app' => $appId] : []),
+                    ['--encode' => true] + ($app->isSingle() ? [] : ['--app' => $appId]),
                     $bufferedOutput
                 );
                 if ($result != 0) {
