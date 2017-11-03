@@ -1139,4 +1139,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isEnabled()
+    {
+        return !$this->config()->has('disabled_commands')
+            || !in_array($this->getName(), $this->config()->get('disabled_commands'));
+    }
 }
