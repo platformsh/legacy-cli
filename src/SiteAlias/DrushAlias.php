@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\SiteAlias;
 
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
@@ -12,8 +11,6 @@ use Platformsh\Client\Model\Project;
 
 abstract class DrushAlias implements SiteAliasTypeInterface
 {
-    const LOCAL_ALIAS_NAME = '_local';
-
     protected $config;
     protected $drush;
 
@@ -166,7 +163,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             $appId = $app->getId();
 
             // Generate an alias for the local environment.
-            $localAliasName = self::LOCAL_ALIAS_NAME;
+            $localAliasName = '_local';
             if (count($apps) > 1) {
                 $localAliasName .= '--' . $appId;
             }

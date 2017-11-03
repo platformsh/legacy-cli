@@ -90,7 +90,7 @@ class LocalApplication
     /**
      * Get the absolute path to the local web root of this app.
      *
-     * @param string $destination
+     * @param string|null $destination
      *
      * @return string
      */
