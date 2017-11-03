@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\SiteAlias;
 
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
@@ -211,7 +212,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     {
         $webRoot = $app->getSourceDir() . '/' . $this->config->get('local.web_root');
         if (!$app->isSingle()) {
-            $webRoot .= '/' . $app->getId();
+            $webRoot .= '/' . $app->getWebPath();
         }
 
         return [
@@ -230,33 +231,49 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      */
     protected function generateRemoteAlias($environment, $app)
     {
-        if (!$environment->hasLink('ssh') || !$environment->hasLink('public-url')) {
-            return false;
-        }
-        $sshUrl = parse_url($environment->getLink('ssh'));
-        if (!$sshUrl) {
+        if (!$environment->hasLink('ssh')) {
             return false;
         }
 
-        $uri = $environment->getLink('public-url');
-        $sshUser = $sshUrl['user'];
-
-        // Handle multi-app projects.
-        if (!$app->isSingle()) {
-            $sshUser .= '--' . $app->getName();
-            $guess = str_replace('http://', 'http://' . $app->getName() . '---', $uri);
-            if (in_array($guess, $environment->getRouteUrls(), true)) {
-                $uri = $guess;
-            }
-        }
-
-        return [
-            'uri' => $uri,
-            'host' => $sshUrl['host'],
-            'user' => $sshUser,
+        $alias = [
+            // @todo allow the app directory to be flexible
             'root' => '/app/' . $app->getDocumentRoot(),
             $this->getAutoRemoveKey() => true,
         ];
+
+        $sshUrl = $environment->getSshUrl($app->getName());
+        list($alias['user'], $alias['host']) = explode('@', $sshUrl, 2);
+
+        if ($url = $this->getUrl($environment)) {
+            $alias['uri'] = $url;
+        }
+
+        return $alias;
+    }
+
+    /**
+     * Find a URL for an environment.
+     *
+     * @param \Platformsh\Client\Model\Environment $environment
+     *
+     * @return string|false
+     */
+    private function getUrl(Environment $environment)
+    {
+        $urls = $environment->getRouteUrls();
+        usort($urls, function ($a, $b) {
+            $result = 0;
+            foreach ([$a, $b] as $key => $url) {
+                if (parse_url($url, PHP_URL_SCHEME) === 'https') {
+                    $result += $key === 0 ? -2 : 2;
+                }
+            }
+            $result += strlen($a) <= strlen($b) ? -1 : 1;
+
+            return $result;
+        });
+
+        return reset($urls);
     }
 
     /**
