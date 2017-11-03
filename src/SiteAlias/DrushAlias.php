@@ -228,8 +228,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         }
 
         $alias = [
-            // @todo allow the app directory to be flexible
-            'root' => '/app/' . $app->getDocumentRoot(),
+            'root' => $app->getDocumentRoot(),
             $this->getAutoRemoveKey() => true,
         ];
 
