@@ -235,7 +235,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         $sshUrl = $environment->getSshUrl($app->getName());
         list($alias['user'], $alias['host']) = explode('@', $sshUrl, 2);
 
-        if ($url = $this->getUrl($environment)) {
+        if ($url = $this->getUrl($environment, $app->getName())) {
             $alias['uri'] = $url;
         }
 
@@ -246,19 +246,26 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      * Find a URL for an environment.
      *
      * @param \Platformsh\Client\Model\Environment $environment
+     * @param string                               $appName
      *
      * @return string|false
      */
-    private function getUrl(Environment $environment)
+    private function getUrl(Environment $environment, $appName)
     {
         $urls = $environment->getRouteUrls();
-        usort($urls, function ($a, $b) {
+        usort($urls, function ($a, $b) use ($appName) {
             $result = 0;
             foreach ([$a, $b] as $key => $url) {
+                // Strongly prefer HTTPS URLs.
                 if (parse_url($url, PHP_URL_SCHEME) === 'https') {
                     $result += $key === 0 ? -2 : 2;
                 }
+                // Prefer URLs that contain the application name.
+                if (strpos($url, $appName . '--')) {
+                    $result += $key === 0 ? -1 : 1;
+                }
             }
+            // Prefer shorter URLs.
             $result += strlen($a) <= strlen($b) ? -1 : 1;
 
             return $result;
