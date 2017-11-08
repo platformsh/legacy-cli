@@ -208,7 +208,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     protected function generateLocalAlias(LocalApplication $app)
     {
         return [
-            'root' => $app->getLocalWebRoot(),
+            'root' => '/app/' . $app->getLocalWebRoot(),
             $this->getAutoRemoveKey() => true,
         ];
     }
