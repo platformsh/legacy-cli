@@ -1,8 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
-use GuzzleHttp\Exception\BadResponseException;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Oauth2\Client\Exception\TfaRequiredException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
@@ -69,6 +70,8 @@ class PasswordLoginCommand extends CommandBase
                 $info['mail']
             ));
         }
+
+        return 0;
     }
 
     protected function configureAccount(InputInterface $input, OutputInterface $output)
@@ -99,51 +102,33 @@ class PasswordLoginCommand extends CommandBase
             $this->api()->getClient(false)
                 ->getConnector()
                 ->logIn($email, $password, true);
-        } catch (BadResponseException $e) {
+        } catch (TfaRequiredException $e) {
             // If a two-factor authentication challenge is received, then ask
             // the user for their TOTP code, and then retry logging in.
-            if ($e->getResponse()->getHeader('X-Drupal-TFA')) {
-                $question = new Question("Your application verification code: ");
-                $question->setValidator(function ($answer) use ($email, $password) {
-                    if (trim($answer) == '') {
-                        throw new \RuntimeException("The code cannot be empty.");
-                    }
-                    try {
-                        $this->api()->getClient(false)
-                            ->getConnector()
-                            ->logIn($email, $password, true, $answer);
-                    } catch (BadResponseException $e) {
-                        // If there is a two-factor authentication error, show
-                        // the error description that the server provides.
-                        //
-                        // A RuntimeException here causes the user to be asked
-                        // again for their TOTP code.
-                        if ($e->getResponse()->getHeader('X-Drupal-TFA')) {
-                            $json = $e->getResponse()->json();
-                            throw new \RuntimeException($json['error_description']);
-                        } else {
-                            throw $e;
-                        }
-                    }
+            $output->writeln("\nTwo-factor authentication is required.");
+            $question = new Question('Your application verification code: ');
+            $question->setValidator(function ($answer) use ($email, $password) {
+                if (trim($answer) == '') {
+                    throw new \RuntimeException('The code cannot be empty.');
+                }
+                $this->api()->getClient(false)
+                    ->getConnector()
+                    ->logIn($email, $password, true, $answer);
 
-                    return $answer;
-                });
-                $question->setMaxAttempts(5);
-                $output->writeln("\nTwo-factor authentication is required.");
-                $questionHelper->ask($input, $output, $question);
-            } elseif ($e->getResponse()->getStatusCode() === 401) {
-                $output->writeln([
-                    '',
-                    '<error>Login failed. Please check your credentials.</error>',
-                    '',
-                    "Forgot your password? Or don't have a password yet? Visit:",
-                    '  <comment>' . $this->config()->get('service.accounts_url') . '/user/password</comment>',
-                    '',
-                ]);
-                $this->configureAccount($input, $output);
-            } else {
-                throw $e;
-            }
+                return $answer;
+            });
+            $question->setMaxAttempts(5);
+            $questionHelper->ask($input, $output, $question);
+        } catch (IdentityProviderException $e) {
+            $output->writeln([
+                '',
+                '<error>Login failed. Please check your credentials.</error>',
+                '',
+                "Forgot your password? Or don't have a password yet? Visit:",
+                '  <comment>' . $this->config()->get('service.accounts_url') . '/user/password</comment>',
+                '',
+            ]);
+            $this->configureAccount($input, $output);
         }
     }
 

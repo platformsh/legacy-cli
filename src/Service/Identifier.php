@@ -42,6 +42,8 @@ class Identifier
      *
      * @param string $url
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     *
      * @return array
      *   An array containing keys 'projectId', 'environmentId', 'host', and
      *   'appId'. At least the 'projectId' will be populated.
@@ -122,6 +124,8 @@ class Identifier
      *
      * @param string $url
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     *
      * @return array
      */
     private function identifyFromHeaders($url)
@@ -147,6 +151,8 @@ class Identifier
      *
      * @param string $url
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     *
      * @return string|false
      */
     private function getClusterHeader($url)
@@ -156,13 +162,13 @@ class Identifier
         if ($cluster === false) {
             $this->debug('Making a HEAD request to identify project from URL: ' . $url);
             try {
-                $response = $this->api->getHttpClient()->head($url, [
+                $response = $this->api->getHttpClient()->request('head', $url, [
                     'auth' => false,
                     'timeout' => 5,
                     'connect_timeout' => 5,
                     'allow_redirects' => false,
                 ]);
-                $cluster = $response->getHeaderAsArray($this->config->get('service.header_prefix') . '-cluster');
+                $cluster = $response->getHeader($this->config->get('service.header_prefix') . '-cluster');
                 $this->cache->save($cacheKey, $cluster, 86400);
             } catch (RequestException $e) {
                 $this->debug($e->getMessage());

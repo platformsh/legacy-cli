@@ -5,7 +5,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 ## Requirements
 
 * Operating system: Linux, OS X, Windows Vista, Windows 7, Windows 8 Pro, or Windows 10 (Windows 8 Standard does not work due to an issue with symlink permissions)
-* PHP 5.5.9 or higher, with cURL support
+* PHP 5.6 or higher, with cURL support
 * Git
 * A Bash-like shell:
   * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.

@@ -1,9 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
-use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
+use League\OAuth2\Client\Token\AccessToken;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
@@ -234,17 +234,10 @@ class BrowserLoginCommand extends CommandBase
      */
     private function saveAccessToken(array $tokenData, SessionInterface $session)
     {
-        $token = new AccessToken($tokenData['access_token'], $tokenData['token_type'], $tokenData);
-        $session->setData([
-            'accessToken' => $token->getToken(),
-            'tokenType' => $token->getType(),
-        ]);
-        if ($token->getExpires()) {
-            $session->set('expires', $token->getExpires()->getTimestamp());
-        }
-        if ($token->getRefreshToken()) {
-            $session->set('refreshToken', $token->getRefreshToken()->getToken());
-        }
+        $token = new AccessToken($tokenData);
+        $session->set('accessToken', $token->getToken());
+        $session->set('expires', $token->getExpires());
+        $session->set('refreshToken', $token->getRefreshToken());
         $session->save();
     }
 
@@ -272,7 +265,7 @@ class BrowserLoginCommand extends CommandBase
      */
     private function getAccessToken($authCode, $redirectUri, $tokenUrl)
     {
-        return (new Client())->post(
+        $response = (new Client())->post(
             $tokenUrl,
             [
                 'json' => [
@@ -284,7 +277,9 @@ class BrowserLoginCommand extends CommandBase
                 'auth' => false,
                 'verify' => !$this->config()->get('api.skip_ssl'),
             ]
-        )->json();
+        );
+
+        return \GuzzleHttp\json_decode($response->getBody()->getContents(), true);
     }
 
     /**
