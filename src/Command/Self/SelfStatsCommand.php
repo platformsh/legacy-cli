@@ -27,13 +27,18 @@ class SelfStatsCommand extends CommandBase
         return $this->config()->has('application.github_repo');
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException if the request fails
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $repo = $this->config()->get('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
-        $releases = $this->api()
+        $response = $this->api()
             ->getHttpClient()
-            ->get('https://api.github.com/repos/' . $repoUrl . '/releases', [
+            ->request('get', 'https://api.github.com/repos/' . $repoUrl . '/releases', [
                 'headers' => [
                     'Accept' => 'application/vnd.github.v3+json',
                 ],
@@ -42,7 +47,8 @@ class SelfStatsCommand extends CommandBase
                     'page' => (int) $input->getOption('page'),
                     'per_page' => 20,
                 ],
-            ])->json();
+            ]);
+        $releases = \GuzzleHttp\json_decode($response->getBody()->getContents(), true);
 
         if (empty($releases)) {
             $this->stdErr->writeln('No releases found.');

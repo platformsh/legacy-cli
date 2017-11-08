@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Self;
 
 use GuzzleHttp\Client;
+use function GuzzleHttp\json_decode;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -166,9 +167,6 @@ class SelfReleaseCommand extends CommandBase
         }
         $this->stdErr->writeln('Updating manifest file: ' . $manifestFile);
         $manifest = json_decode($contents, true);
-        if ($manifest === null && json_last_error()) {
-            throw new \RuntimeException('Failed to decode manifest file: ' . $manifestFile);
-        }
         $latestItem = null;
         foreach ($manifest as $key => $item) {
             if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
@@ -194,14 +192,15 @@ class SelfReleaseCommand extends CommandBase
             $lastVersion = ltrim($input->getOption('last-version'), 'v');
             $lastTag = 'v' . $lastVersion;
         } else {
-            $latestRelease = $http->get($repoApiUrl . '/releases/latest', [
+            $response = $http->get($repoApiUrl . '/releases/latest', [
                 'headers' => [
                     'Authorization' => 'token ' . $gitHubToken,
                     'Accept' => 'application/vnd.github.v3+json',
                     'Content-Type' => 'application/json',
                 ],
                 'debug' => $output->isDebug(),
-            ])->json();
+            ]);
+            $latestRelease = json_decode($response->getBody()->getContents(), true);
             $lastTag = $latestRelease['tag_name'];
             $lastVersion = ltrim($lastTag, 'v');
             $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
@@ -307,7 +306,7 @@ class SelfReleaseCommand extends CommandBase
             ],
             'debug' => $output->isDebug(),
         ]);
-        $release = $response->json();
+        $release = json_decode($response->getBody()->getContents(), true);
         $releaseUrl = $repoApiUrl . '/releases/' . $release['id'];
         $uploadUrl = preg_replace('/\{.+?\}/', '', $release['upload_url']);
 

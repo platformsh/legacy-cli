@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Console;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\ConnectionFailedException;
@@ -50,34 +51,33 @@ class EventSubscriber implements EventSubscriberInterface
         if ($exception instanceof ConnectException && strpos($exception->getMessage(), 'cURL error 6') !== false) {
             $request = $exception->getRequest();
             $event->setException(new ConnectionFailedException(
-                "Failed to connect to host: " . $request->getHost()
+                "Failed to connect to host: " . $request->getUri()->getHost()
                 . " \nPlease check your Internet connection.",
                 $request
             ));
             $event->stopPropagation();
         }
 
+        // Create a friendlier message for the OAuth2 "Invalid refresh token"
+        // error.
+        $loginCommand = sprintf('%s login', $this->config->get('application.executable'));
+        if ($exception instanceof IdentityProviderException) {
+            if (strpos($exception->getMessage(), 'Invalid refresh token') !== false) {
+                $event->setException(new LoginRequiredException(
+                    "Invalid refresh token. \nPlease log in again by running: $loginCommand"
+                ));
+                $event->stopPropagation();
+            }
+        }
+
         // Handle Guzzle exceptions, i.e. HTTP 4xx or 5xx errors.
         if (($exception instanceof ClientException || $exception instanceof ServerException)
             && ($response = $exception->getResponse())) {
             $request = $exception->getRequest();
-            $requestConfig = $request->getConfig();
             $response->getBody()->seek(0);
-            $json = (array) json_decode($response->getBody()->getContents(), true);
+            $isOauth2 = stripos(implode(';', $request->getHeader('Authorization')), 'Bearer') !== false;
 
-            // Create a friendlier message for the OAuth2 "Invalid refresh token"
-            // error.
-            if ($response->getStatusCode() === 400
-                && isset($json['error_description'])
-                && $json['error_description'] === 'Invalid refresh token') {
-                $event->setException(new LoginRequiredException(
-                    'Invalid refresh token.',
-                    $request,
-                    $response,
-                    $this->config
-                ));
-                $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 401 && $requestConfig['auth'] === 'oauth2') {
+            if ($response->getStatusCode() === 401 && $isOauth2) {
                 $event->setException(new LoginRequiredException(
                     'Unauthorized.',
                     $request,
@@ -85,7 +85,7 @@ class EventSubscriber implements EventSubscriberInterface
                     $this->config
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 403 && $requestConfig['auth'] === 'oauth2') {
+            } elseif ($response->getStatusCode() === 403 && $isOauth2) {
                 $event->setException(new PermissionDeniedException(
                     "Permission denied. Check your project or environment permissions.",
                     $request,

@@ -16,6 +16,7 @@ use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\PlatformClient;
+use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -191,19 +192,18 @@ class Api
                 }
             }
 
-            $connector = new Connector($connectorOptions);
-
             // Set up a persistent session to store OAuth2 tokens. By default,
             // this will be stored in a JSON file:
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
-            $session = $connector->getSession();
-            $session->setId('cli-' . $this->sessionId);
+            $session = new Session('cli-' . $this->sessionId);
 
             $this->sessionStorage = KeychainStorage::isSupported()
                 && $this->config->isExperimentEnabled('use_keychain')
                 ? new KeychainStorage($this->config->get('application.name'))
                 : new File($this->config->getWritableUserDir() . '/.session');
             $session->setStorage($this->sessionStorage);
+
+            $connector = new Connector($connectorOptions, $session);
 
             self::$client = new PlatformClient($connector);
 
