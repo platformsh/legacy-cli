@@ -161,9 +161,15 @@ class DbDumpCommand extends CommandBase
         $sshCommand = $ssh->getSshCommand();
 
         if ($gzip) {
-            $dumpCommand .= ' | gzip --stdout';
+            // If dump compression is enabled, pipe the dump command into gzip,
+            // but not before switching on "pipefail" to ensure a non-zero exit
+            // code is returned if any part of the pipe fails.
+            $dumpCommand = 'set -o pipefail;'
+                . $dumpCommand
+                . ' | gzip --stdout';
         } else {
-            // Compress data transparently as it's sent over the SSH connection.
+            // If dump compression is not enabled, data can still be compressed
+            // transparently as it's streamed over the SSH connection.
             $sshCommand .= ' -C';
         }
 
