@@ -177,15 +177,16 @@ class Shell
     /**
      * Run a process.
      *
-     * @param Process     $process
-     * @param bool        $mustRun
-     * @param bool        $quiet
+     * @param Process $process
+     * @param bool    $mustRun
+     * @param bool    $quiet
+     *
+     * @throws \Symfony\Component\Process\Exception\RuntimeException
+     *   If the process fails or times out, and $mustRun is true.
      *
      * @return int|string
      *   The exit code of the process if it fails, true if it succeeds with no
      *   output, or a string if it succeeds with output.
-     *
-     * @throws \Exception
      */
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
     {
@@ -198,16 +199,12 @@ class Shell
             if (!$mustRun) {
                 return $process->getExitCode();
             }
-            // The default for ProcessFailedException is to print the entire
-            // STDOUT and STDERR. But if $quiet is disabled, then the user will
-            // have already seen the command's output.  So we need to re-throw
-            // the exception with a much shorter message.
-            $message = "The command failed with the exit code: " . $process->getExitCode();
-            $message .= "\n\nFull command: " . $process->getCommandLine();
-            if ($quiet) {
-                $message .= "\n\nError output:\n" . $process->getErrorOutput();
-            }
-            throw new \Exception($message);
+            // The default for Symfony's ProcessFailedException is to print the
+            // entire STDOUT and STDERR. But if $quiet is disabled, then the user
+            // will have already seen the command's output.  So we need to
+            // re-throw the exception with our own ProcessFailedException, which
+            // will generate a much shorter message.
+            throw new \Platformsh\Cli\Exception\ProcessFailedException($process, $quiet);
         }
         $output = $process->getOutput();
 

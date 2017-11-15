@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
+use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
@@ -230,17 +231,17 @@ class Drush
 
         $aliases = [];
 
-        // Run the command with a 5-second timeout. A ProcessTimedOutException
-        // or \Exception will be thrown if it fails.
+        // Run the command with a 5-second timeout. An exception will be thrown
+        // if it fails.
         try {
             $result = $this->shellHelper->execute($args, null, true, true, [], 5);
             if (is_string($result)) {
                 $aliases = (array) json_decode($result, true);
             }
-        } catch (\Exception $e) {
+        } catch (ProcessFailedException $e) {
             // The command will fail if the alias is not found. Throw an
             // exception for any other failures.
-            if (strpos($e->getMessage(), sprintf('Not found: @%s', $groupName)) === false) {
+            if (strpos($e->getProcess()->getErrorOutput(), 'Not found') === false) {
                 throw $e;
             }
         }
