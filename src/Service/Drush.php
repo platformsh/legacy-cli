@@ -214,6 +214,8 @@ class Drush
      * @param string $groupName
      * @param bool   $reset
      *
+     * @throws \Exception If the "drush sa" command fails.
+     *
      * @return array
      */
     public function getAliases($groupName, $reset = false)
@@ -224,12 +226,25 @@ class Drush
 
         // Drush 9 uses 'site:alias', Drush <9 uses 'site-alias'. Fortunately
         // the alias 'sa' exists in both.
-        $args = ['@none', 'sa', '--format=json', '@' . $groupName];
-        $result = $this->execute($args);
+        $args = [$this->getDrushExecutable(), '@none', 'sa', '--format=json', '@' . $groupName];
+
         $aliases = [];
-        if (is_string($result)) {
-            $aliases = (array) json_decode($result, true);
+
+        // Run the command with a 5-second timeout. A ProcessTimedOutException
+        // or \Exception will be thrown if it fails.
+        try {
+            $result = $this->shellHelper->execute($args, null, true, true, [], 5);
+            if (is_string($result)) {
+                $aliases = (array) json_decode($result, true);
+            }
+        } catch (\Exception $e) {
+            // The command will fail if the alias is not found. Throw an
+            // exception for any other failures.
+            if (strpos($e->getMessage(), sprintf('Not found: @%s', $groupName)) === false) {
+                throw $e;
+            }
         }
+
         $this->aliases[$groupName] = $aliases;
 
         return $aliases;
