@@ -35,6 +35,7 @@ abstract class IntegrationCommandBase extends CommandBase
     {
         $types = [
             'github',
+            'gitlab',
             'hipchat',
             'webhook',
             'health.email',
@@ -51,10 +52,27 @@ abstract class IntegrationCommandBase extends CommandBase
             'token' => new Field('Token', [
                 'conditions' => ['type' => [
                     'github',
+                    'gitlab',
                     'hipchat',
                     'health.slack',
                 ]],
                 'description' => 'An OAuth token for the integration',
+            ]),
+            'base_url' => new Field('Base URL', [
+                'conditions' => ['type' => [
+                    'gitlab',
+                ]],
+                'description' => 'The base URL of the GitLab installation',
+            ]),
+            'project' => new Field('Project', [
+                'optionName' => 'gitlab-project',
+                'conditions' => ['type' => [
+                    'gitlab',
+                ]],
+                'description' => 'The GitLab project (e.g. \'namespace/repo\')',
+                'validator' => function ($string) {
+                    return substr_count($string, '/', 1) === 1;
+                },
             ]),
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
@@ -72,6 +90,12 @@ abstract class IntegrationCommandBase extends CommandBase
                     return $string;
                 },
             ]),
+            'build_merge_requests' => new BooleanField('Build merge requests', [
+                'conditions' => ['type' => [
+                    'gitlab',
+                ]],
+                'description' => 'GitLab: build merge requests as environments',
+            ]),
             'build_pull_requests' => new BooleanField('Build pull requests', [
                 'conditions' => ['type' => [
                     'github',
@@ -84,6 +108,13 @@ abstract class IntegrationCommandBase extends CommandBase
               ]],
               'description' => 'GitHub: build pull requests based on their post-merge state',
             ]),
+            'merge_requests_clone_parent_data' => new BooleanField('Clone data for merge requests', [
+                'optionName' => 'merge-requests-clone-parent-data',
+                'conditions' => ['type' => [
+                    'gitlab',
+                ]],
+                'description' => 'GitLab: clone data for merge requests',
+            ]),
             'pull_requests_clone_parent_data' => new BooleanField('Clone data for pull requests', [
                 'optionName' => 'pull-requests-clone-parent-data',
                 'conditions' => ['type' => [
@@ -94,8 +125,9 @@ abstract class IntegrationCommandBase extends CommandBase
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'github',
+                    'gitlab',
                 ]],
-                'description' => 'GitHub: sync all branches',
+                'description' => 'Whether to sync all branches',
             ]),
             'room' => new Field('HipChat room ID', [
                 'conditions' => ['type' => [
