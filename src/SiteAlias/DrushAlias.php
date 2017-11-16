@@ -51,9 +51,6 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         // Merge new aliases with existing ones.
         $newAliases = $this->mergeExisting($newAliases, $existingAliases);
 
-        // Normalize the new aliases.
-        $newAliases = $this->normalize($newAliases);
-
         // Add any user-defined (pre-existing) aliases.
         $autoRemoveKey = $this->getAutoRemoveKey();
         $userDefinedAliases = [];
@@ -64,8 +61,10 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             }
             $userDefinedAliases[$name] = $alias;
         }
-
         $aliases = $userDefinedAliases + $newAliases;
+
+        // Normalize the aliases.
+        $aliases = $this->normalize($aliases);
 
         // Format the aliases as a string.
         $header = rtrim($this->getHeader($project)) . "\n\n";
@@ -290,5 +289,27 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         if (file_exists($filename)) {
             unlink($filename);
         }
+    }
+
+    /**
+     * Swap the key names in an array of aliases.
+     *
+     * @param array $aliases
+     * @param array $map
+     *
+     * @return array
+     */
+    protected function swapKeys(array $aliases, array $map)
+    {
+        return array_map(function ($alias) use ($map) {
+            foreach ($map as $from => $to) {
+                if (isset($alias[$from])) {
+                    $alias[$to] = $alias[$from];
+                    unset($alias[$from]);
+                }
+            }
+
+            return $alias;
+        }, $aliases);
     }
 }

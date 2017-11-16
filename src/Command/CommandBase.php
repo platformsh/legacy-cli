@@ -486,7 +486,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $this->debug('Updating Drush aliases');
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
-        $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
+        try {
+            $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
+        } catch (\RuntimeException $e) {
+            $this->stdErr->writeln('<comment>Failed to update Drush aliases:</comment> ' . $e->getMessage());
+        }
     }
 
     /**

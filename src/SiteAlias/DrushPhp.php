@@ -36,15 +36,10 @@ class DrushPhp extends DrushAlias
      */
     protected function normalize(array $aliases)
     {
-        foreach ($aliases as &$alias) {
-            if (!isset($alias['remote-host'], $alias['remote-user']) && isset($alias['host'], $alias['user'])) {
-                $alias['remote-host'] = $alias['host'];
-                $alias['remote-user'] = $alias['user'];
-            }
-            unset($alias['host'], $alias['user']);
-        }
-
-        return $aliases;
+        return $this->swapKeys($aliases, [
+            'host' => 'remote-host',
+            'user' => 'remote-user',
+        ]);
     }
 
     /**

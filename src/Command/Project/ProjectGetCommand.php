@@ -57,7 +57,7 @@ class ProjectGetCommand extends CommandBase
         // First check if the repo actually exists.
         try {
             $repoExists = $git->remoteRepoExists($gitUrl);
-        } catch (\Exception $e) {
+        } catch (\RuntimeException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln(sprintf(
                 '<error>Failed to connect to the %s Git server</error>',
