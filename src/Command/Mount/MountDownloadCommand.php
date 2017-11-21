@@ -46,6 +46,9 @@ class MountDownloadCommand extends MountCommandBase
 
             return 1;
         }
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        $mounts = $mountService->normalizeMounts($appConfig['mounts']);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -53,10 +56,10 @@ class MountDownloadCommand extends MountCommandBase
         $fs = $this->getService('fs');
 
         if ($input->getOption('mount')) {
-            $mountPath = $this->validateMountPath($input->getOption('mount'), $appConfig['mounts']);
+            $mountPath = $mountService->validateMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
             $mountPath = $questionHelper->choose(
-                $this->getMountsAsOptions($appConfig['mounts']),
+                $this->getMountsAsOptions($mounts),
                 'Enter a number to choose a mount to download from:'
             );
         } else {
@@ -70,9 +73,10 @@ class MountDownloadCommand extends MountCommandBase
         if ($input->getOption('target')) {
             $target = $input->getOption('target');
         } elseif ($projectRoot = $this->getProjectRoot()) {
-            if ($sharedPath = $this->getSharedPath($mountPath, $appConfig['mounts'])) {
-                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath)) {
-                    $defaultTarget = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
+            $sharedMounts = $mountService->getSharedFileMounts($appConfig);
+            if (isset($sharedMounts[$mountPath])) {
+                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
+                    $defaultTarget = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
                 }
             }
 
