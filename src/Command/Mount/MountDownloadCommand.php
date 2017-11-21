@@ -111,8 +111,12 @@ class MountDownloadCommand extends MountCommandBase
 
         $this->validateDirectory($target, true);
 
-        $confirmText = "\nThis will <options=bold>add, replace, and delete</> files in the local directory '<comment>" . $fs->formatPathForDisplay($target) . "</comment>'."
-            . "\n\nAre you sure you want to continue?";
+        $confirmText = sprintf(
+            "\nDownloading files from the remote mount <comment>%s</comment> to <comment>%s</comment>"
+            . "\n\nAre you sure you want to continue?",
+            $mountPath,
+            $fs->formatPathForDisplay($target)
+        );
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }

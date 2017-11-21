@@ -111,8 +111,12 @@ class MountUploadCommand extends MountCommandBase
 
         $this->validateDirectory($source);
 
-        $confirmText = "\nThis will <options=bold>add, replace, and delete</> files in the remote mount '<info>$mountPath</info>'."
-            . "\n\nAre you sure you want to continue?";
+        $confirmText = sprintf(
+            "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
+            . "\n\nAre you sure you want to continue?",
+            $fs->formatPathForDisplay($source),
+            $mountPath
+        );
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
