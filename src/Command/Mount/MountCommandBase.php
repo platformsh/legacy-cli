@@ -7,7 +7,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class MountCommandBase extends CommandBase
 {
-
     /**
      * Get the remote application config.
      *
@@ -37,65 +36,10 @@ abstract class MountCommandBase extends CommandBase
     {
         $options = [];
         foreach ($mounts as $path => $id) {
-            $normalized = $this->normalizeMountPath($path);
-            $options[$normalized] = sprintf('<question>%s</question>: %s', $normalized, trim($id, '/'));
+            $options[$path] = sprintf('<question>%s</question>: %s', $path, trim($id, '/'));
         }
 
         return $options;
-    }
-
-    /**
-     * Get the path under '.platform/local/shared' for a mount.
-     *
-     * @param string $path
-     * @param array  $mounts
-     *
-     * @return string|false
-     */
-    protected function getSharedPath($path, array $mounts)
-    {
-        $normalized = $this->normalizeMountPath($path);
-        foreach ($mounts as $path => $uri) {
-            if ($this->normalizeMountPath($path) === $normalized
-                && preg_match('#^shared:files/(.+)$#', $uri, $matches)) {
-                return trim($matches[1], '/');
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Normalize a path to a mount.
-     *
-     * @param string $path
-     *
-     * @return string
-     */
-    protected function normalizeMountPath($path)
-    {
-        return trim(trim($path), '/');
-    }
-
-    /**
-     * Validate and normalize a path to a mount.
-     *
-     * @param string $inputPath
-     * @param array  $mounts
-     *
-     * @return string
-     *   The normalized mount path.
-     */
-    protected function validateMountPath($inputPath, array $mounts)
-    {
-        $normalized = trim(trim($inputPath), '/');
-        foreach (array_keys($mounts) as $path) {
-            if (trim(trim($path), '/') === $normalized) {
-                return $normalized;
-            }
-        }
-
-        throw new \InvalidArgumentException(sprintf('Mount not found: <error>%s</error>', $inputPath));
     }
 
     /**
@@ -130,12 +74,6 @@ abstract class MountCommandBase extends CommandBase
         $shell = $this->getService('shell');
 
         $mountPathAbsolute = $this->getAppDir($sshUrl) . '/' . $mountPath;
-
-        if ($up) {
-            $this->stdErr->writeln(sprintf('Uploading files from <info>%s</info> to the remote mount <info>%s</info>', $localPath, $mountPathAbsolute));
-        } else {
-            $this->stdErr->writeln(sprintf('Downloading files from the remote mount <info>%s</info> to <info>%s</info>', $mountPathAbsolute, $localPath));
-        }
 
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
 

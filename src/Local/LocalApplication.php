@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Local;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Local\BuildFlavor\BuildFlavorInterface;
+use Platformsh\Cli\Service\Mount;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Parser;
@@ -15,6 +16,7 @@ class LocalApplication
     protected $config;
     protected $sourceDir;
     protected $cliConfig;
+    protected $mount;
 
     /**
      * @param string      $appRoot
@@ -29,6 +31,7 @@ class LocalApplication
         $this->cliConfig = $cliConfig ?: new Config();
         $this->appRoot = $appRoot;
         $this->sourceDir = $sourceDir ?: $appRoot;
+        $this->mount = new Mount();
     }
 
     /**
@@ -144,22 +147,10 @@ class LocalApplication
      * Get a list of shared file mounts configured for the app.
      *
      * @return array
-     *     An array of shared file mount paths, keyed by the path in the app.
-     *     Leading and trailing slashes are stripped.
      */
     public function getSharedFileMounts()
     {
-        $sharedFileMounts = [];
-        $appConfig = $this->getConfig();
-        if (!empty($appConfig['mounts'])) {
-            foreach ($appConfig['mounts'] as $path => $uri) {
-                if (preg_match('#^shared:files/(.+)$#', $uri, $matches)) {
-                    $sharedFileMounts[trim($path, '/')] = trim($matches[1], '/');
-                }
-            }
-        }
-
-        return $sharedFileMounts;
+        return $this->mount->getSharedFileMounts($this->getConfig());
     }
 
     /**

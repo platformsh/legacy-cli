@@ -31,6 +31,8 @@ services:
     local.project:
         class:     '\Platformsh\Cli\Local\LocalProject'
         arguments: ['@config', '@git']
+    mount:
+        class:     '\Platformsh\Cli\Service\Mount'
     output:
         class:     '\Symfony\Component\Console\Output\ConsoleOutput'
     property_formatter:
