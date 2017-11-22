@@ -154,13 +154,9 @@ class Identifier
         $cacheKey = 'project-cluster:' . $url;
         $cluster = $this->cache ? $this->cache->fetch($cacheKey) : false;
         if ($cluster === false) {
-            $client = $this->api
-                ->getClient(false)
-                ->getConnector()
-                ->getClient();
             $this->debug('Making a HEAD request to identify project from URL: ' . $url);
             try {
-                $response = $client->head($url, ['auth' => false]);
+                $response = $this->api->getHttpClient()->head($url, ['auth' => false]);
                 $cluster = $response->getHeader($this->config->get('service.header_prefix') . '-cluster');
                 $this->cache->save($cacheKey, $cluster, 86400);
             } catch (RequestException $e) {
