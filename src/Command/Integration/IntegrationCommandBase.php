@@ -163,9 +163,18 @@ abstract class IntegrationCommandBase extends CommandBase
             'environments' => new ArrayField('Environments', [
                 'conditions' => ['type' => [
                     'webhook',
+                    'hipchat',
                 ]],
                 'default' => ['*'],
-                'description' => 'Generic webhook: the environments relevant to the hook',
+                'description' => 'The environments to include',
+            ]),
+            'excluded_environments' => new ArrayField('Excluded environments', [
+                'conditions' => ['type' => [
+                    'webhook',
+                    'hipchat',
+                ]],
+                'default' => [],
+                'description' => 'The environments to exclude',
             ]),
             'from_address' => new EmailAddressField('From address', [
                 'conditions' => ['type' => [
