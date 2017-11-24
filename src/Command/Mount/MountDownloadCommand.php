@@ -22,6 +22,8 @@ class MountDownloadCommand extends MountCommandBase
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The directory to which files will be downloaded')
             ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the target directory')
+            ->addOption('exclude', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to exclude from the download (pattern)')
+            ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to include in the download (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
@@ -46,6 +48,9 @@ class MountDownloadCommand extends MountCommandBase
 
             return 1;
         }
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        $mounts = $mountService->normalizeMounts($appConfig['mounts']);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -53,10 +58,10 @@ class MountDownloadCommand extends MountCommandBase
         $fs = $this->getService('fs');
 
         if ($input->getOption('mount')) {
-            $mountPath = $this->validateMountPath($input->getOption('mount'), $appConfig['mounts']);
+            $mountPath = $mountService->validateMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
             $mountPath = $questionHelper->choose(
-                $this->getMountsAsOptions($appConfig['mounts']),
+                $this->getMountsAsOptions($mounts),
                 'Enter a number to choose a mount to download from:'
             );
         } else {
@@ -70,9 +75,10 @@ class MountDownloadCommand extends MountCommandBase
         if ($input->getOption('target')) {
             $target = $input->getOption('target');
         } elseif ($projectRoot = $this->getProjectRoot()) {
-            if ($sharedPath = $this->getSharedPath($mountPath, $appConfig['mounts'])) {
-                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath)) {
-                    $defaultTarget = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
+            $sharedMounts = $mountService->getSharedFileMounts($appConfig);
+            if (isset($sharedMounts[$mountPath])) {
+                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
+                    $defaultTarget = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
                 }
             }
 
@@ -107,13 +113,21 @@ class MountDownloadCommand extends MountCommandBase
 
         $this->validateDirectory($target, true);
 
-        $confirmText = "\nThis will <options=bold>add, replace, and delete</> files in the local directory '<comment>" . $fs->formatPathForDisplay($target) . "</comment>'."
-            . "\n\nAre you sure you want to continue?";
+        $confirmText = sprintf(
+            "\nDownloading files from the remote mount <comment>%s</comment> to <comment>%s</comment>"
+            . "\n\nAre you sure you want to continue?",
+            $mountPath,
+            $fs->formatPathForDisplay($target)
+        );
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
 
-        $this->runSync($sshUrl, $mountPath, $target, false, (bool) $input->getOption('delete'));
+        $this->runSync($sshUrl, $mountPath, $target, false, [
+            'delete' => $input->getOption('delete'),
+            'exclude' => $input->getOption('exclude'),
+            'include' => $input->getOption('include'),
+        ]);
 
         return 0;
     }

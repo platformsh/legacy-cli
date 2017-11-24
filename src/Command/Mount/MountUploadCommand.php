@@ -22,6 +22,8 @@ class MountUploadCommand extends MountCommandBase
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'A directory containing files to upload')
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the mount')
+            ->addOption('exclude', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to exclude from the upload (pattern)')
+            ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to include in the upload (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
@@ -46,6 +48,9 @@ class MountUploadCommand extends MountCommandBase
 
             return 1;
         }
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        $mounts = $mountService->normalizeMounts($appConfig['mounts']);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -53,10 +58,10 @@ class MountUploadCommand extends MountCommandBase
         $fs = $this->getService('fs');
 
         if ($input->getOption('mount')) {
-            $mountPath = $this->validateMountPath($input->getOption('mount'), $appConfig['mounts']);
+            $mountPath = $mountService->validateMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
             $mountPath = $questionHelper->choose(
-                $this->getMountsAsOptions($appConfig['mounts']),
+                $this->getMountsAsOptions($mounts),
                 'Enter a number to choose a mount to upload to:'
             );
         } else {
@@ -70,9 +75,10 @@ class MountUploadCommand extends MountCommandBase
         if ($input->getOption('source')) {
             $source = $input->getOption('source');
         } elseif ($projectRoot = $this->getProjectRoot()) {
-            if ($sharedPath = $this->getSharedPath($mountPath, $appConfig['mounts'])) {
-                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath)) {
-                    $defaultSource = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedPath;
+            $sharedMounts = $mountService->getSharedFileMounts($appConfig);
+            if (isset($sharedMounts[$mountPath])) {
+                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
+                    $defaultSource = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
                 }
             }
 
@@ -107,14 +113,21 @@ class MountUploadCommand extends MountCommandBase
 
         $this->validateDirectory($source);
 
-        $confirmText = "\nThis will <options=bold>add, replace, and delete</> files in the remote mount '<info>$mountPath</info>'."
-            . "\n\nAre you sure you want to continue?";
+        $confirmText = sprintf(
+            "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
+            . "\n\nAre you sure you want to continue?",
+            $fs->formatPathForDisplay($source),
+            $mountPath
+        );
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
 
-        $this->runSync($sshUrl, $mountPath, $source, true, (bool) $input->getOption('delete'));
-
+        $this->runSync($sshUrl, $mountPath, $source, true, [
+            'delete' => $input->getOption('delete'),
+            'exclude' => $input->getOption('exclude'),
+            'include' => $input->getOption('include'),
+        ]);
         return 0;
     }
 }

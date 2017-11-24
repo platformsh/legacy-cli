@@ -19,7 +19,11 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->addProjectOption()->addNoWaitOption();
         $this->addExample(
             'Add an integration with a GitHub repository',
-            '--type github --repository myuser/example-repo --token UFpYS1MzQktjNw --fetch-branches 0'
+            '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
+        );
+        $this->addExample(
+            'Add an integration with a GitLab repository',
+            '--type gitlab --repository mygroup/example-repo --token 22fe4d70dfbc20e4f668568a0b5422e2 --base-url https://gitlab.example.com'
         );
     }
 

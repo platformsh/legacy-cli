@@ -33,6 +33,7 @@ local:
 service:
   name: 'Platform.sh'
   env_prefix: 'PLATFORM_'
+  header_prefix: 'X-Platform'
   app_config_file: '.platform.app.yaml'
   project_config_dir: '.platform'
   docs_url: 'https://docs.platform.sh'

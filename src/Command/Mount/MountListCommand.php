@@ -39,25 +39,27 @@ class MountListCommand extends MountCommandBase
 
         $appConfig = $this->getAppConfig($sshUrl, (bool) $input->getOption('refresh'));
 
-        $mounts = $appConfig['mounts'];
-        if (empty($mounts)) {
+        if (empty($appConfig['mounts'])) {
             $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
 
-            return 0;
+            return 1;
         }
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        $mounts = $mountService->normalizeMounts($appConfig['mounts']);
 
         if ($input->getOption('paths')) {
-            foreach (array_keys($mounts) as $path) {
-                $output->writeln($this->normalizeMountPath($path));
-            }
+            $output->writeln(array_keys($mounts));
 
             return 0;
         }
 
-        $header = ['Path', 'Definition'];
+        $header = ['Mount path', 'Definition'];
         $rows = [];
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
         foreach ($mounts as $path => $definition) {
-            $rows[] = [$this->normalizeMountPath($path), $definition];
+            $rows[] = [$path, $formatter->format($definition)];
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */

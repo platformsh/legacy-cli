@@ -22,6 +22,9 @@ services:
     git:
         class:     '\Platformsh\Cli\Service\Git'
         arguments: ['@shell']
+    identifier:
+        class:     '\Platformsh\Cli\Service\Identifier'
+        arguments: ['@config', '@api', '@output', '@cache']
     local.build:
         class:     '\Platformsh\Cli\Local\LocalBuild'
         arguments: ['@config', '@output', '@shell', '@fs', '@git', '@local.dependency_installer']
@@ -31,6 +34,8 @@ services:
     local.project:
         class:     '\Platformsh\Cli\Local\LocalProject'
         arguments: ['@config', '@git']
+    mount:
+        class:     '\Platformsh\Cli\Service\Mount'
     output:
         class:     '\Symfony\Component\Console\Output\ConsoleOutput'
     property_formatter:
