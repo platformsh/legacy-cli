@@ -202,7 +202,9 @@ class ProjectGetCommand extends CommandBase
                 throw new InvalidArgumentException('No project specified');
             }
         } else {
-            $result = $this->parseProjectId($projectId);
+            /** @var \Platformsh\Cli\Service\Identifier $identifier */
+            $identifier = $this->getService('identifier');
+            $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
             $host = $host ?: $result['host'];
             $environmentId = $environmentId ?: $result['environmentId'];

@@ -20,8 +20,12 @@ class ProjectSetRemoteCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $projectId = $input->getArgument('project');
-        $result = $this->parseProjectId($projectId);
-        $project = $this->selectProject($result['projectId'] ?: $projectId);
+
+        /** @var \Platformsh\Cli\Service\Identifier $identifier */
+        $identifier = $this->getService('identifier');
+        $result = $identifier->identify($projectId);
+
+        $project = $this->selectProject($result['projectId']);
 
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');

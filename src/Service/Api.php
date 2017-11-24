@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
+use GuzzleHttp\ClientInterface;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
@@ -229,7 +230,7 @@ class Api
 
             $this->cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
         } else {
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $id => $data) {
                 $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
             }
@@ -273,7 +274,7 @@ class Api
                 $this->cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
             }
         } else {
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
@@ -325,7 +326,7 @@ class Api
         } else {
             $environments = [];
             $endpoint = $project->getUri();
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);
             }
@@ -634,5 +635,15 @@ class Api
         $result += strlen($a) <= strlen($b) ? -1 : 1;
 
         return $result;
+    }
+
+    /**
+     * Get the HTTP client.
+     *
+     * @return ClientInterface
+     */
+    public function getHttpClient()
+    {
+        return $this->getClient(false)->getConnector()->getClient();
     }
 }
