@@ -66,9 +66,9 @@ abstract class MountCommandBase extends CommandBase
      * @param string $mountPath
      * @param string $localPath
      * @param bool   $up
-     * @param bool   $delete
+     * @param array  $options
      */
-    protected function runSync($sshUrl, $mountPath, $localPath, $up, $delete = false)
+    protected function runSync($sshUrl, $mountPath, $localPath, $up, array $options = [])
     {
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
@@ -91,8 +91,15 @@ abstract class MountCommandBase extends CommandBase
             $params[] = $localPath;
         }
 
-        if ($delete) {
+        if (!empty($options['delete'])) {
             $params[] = '--delete';
+        }
+        foreach (['exclude', 'include'] as $option) {
+            if (!empty($options[$option])) {
+                foreach ($options[$option] as $value) {
+                    $params[] = '--' . $option . '=' . $value;
+                }
+            }
         }
 
         $start = microtime(true);

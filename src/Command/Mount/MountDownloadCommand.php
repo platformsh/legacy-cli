@@ -22,6 +22,8 @@ class MountDownloadCommand extends MountCommandBase
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The directory to which files will be downloaded')
             ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the target directory')
+            ->addOption('exclude', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to exclude from the download (pattern)')
+            ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to include in the download (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
@@ -121,7 +123,11 @@ class MountDownloadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($sshUrl, $mountPath, $target, false, (bool) $input->getOption('delete'));
+        $this->runSync($sshUrl, $mountPath, $target, false, [
+            'delete' => $input->getOption('delete'),
+            'exclude' => $input->getOption('exclude'),
+            'include' => $input->getOption('include'),
+        ]);
 
         return 0;
     }

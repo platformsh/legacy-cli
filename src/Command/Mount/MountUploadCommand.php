@@ -22,6 +22,8 @@ class MountUploadCommand extends MountCommandBase
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'A directory containing files to upload')
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the mount')
+            ->addOption('exclude', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to exclude from the upload (pattern)')
+            ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to include in the upload (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
@@ -121,8 +123,11 @@ class MountUploadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($sshUrl, $mountPath, $source, true, (bool) $input->getOption('delete'));
-
+        $this->runSync($sshUrl, $mountPath, $source, true, [
+            'delete' => $input->getOption('delete'),
+            'exclude' => $input->getOption('exclude'),
+            'include' => $input->getOption('include'),
+        ]);
         return 0;
     }
 }
