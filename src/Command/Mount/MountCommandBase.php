@@ -35,8 +35,12 @@ abstract class MountCommandBase extends CommandBase
     protected function getMountsAsOptions(array $mounts)
     {
         $options = [];
-        foreach ($mounts as $path => $id) {
-            $options[$path] = sprintf('<question>%s</question>: %s', $path, trim($id, '/'));
+        foreach ($mounts as $path => $definition) {
+            if ($definition['source'] === 'local' && isset($definition['source_path'])) {
+                $options[$path] = sprintf('<question>%s</question> (shared:files/%s)', $path, $definition['source_path']);
+            } else {
+                $options[$path] = sprintf('<question>%s</question>: %s', $path, $definition['source']);
+            }
         }
 
         return $options;
