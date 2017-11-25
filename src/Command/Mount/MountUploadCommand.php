@@ -95,7 +95,7 @@ class MountUploadCommand extends MountCommandBase
             }
         }
 
-        if (empty($source) && $input->isInteractive()) {
+        if (empty($source)) {
             $questionText = 'Source directory';
             if ($defaultSource !== null) {
                 $formattedDefaultSource = $fs->formatPathForDisplay($defaultSource);
