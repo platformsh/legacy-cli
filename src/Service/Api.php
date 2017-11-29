@@ -646,4 +646,36 @@ class Api
     {
         return $this->getClient(false)->getConnector()->getClient();
     }
+
+    /**
+     * Read a file in the environment, using the Git Data API.
+     *
+     * @param string      $filename
+     * @param Environment $environment
+     *
+     * @throws \RuntimeException on error.
+     *
+     * @return string|false
+     *   The raw contents of the file, or false if the file is not found.
+     */
+    public function readFile($filename, Environment $environment)
+    {
+        $cacheKey = $environment->id . ':' . $environment->head_commit . ':' . $filename;
+        $raw = $this->cache->fetch($cacheKey);
+        if ($raw === false) {
+            if (!$head = $environment->getHeadCommit()) {
+                throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
+            }
+            if (!$tree = $head->getTree()) {
+                throw new \RuntimeException('Failed to get tree for commit: ' . $head->id);
+            }
+            if (!$blob = $tree->getBlob($filename)) {
+                return false;
+            }
+            $raw = $blob->getRawContent();
+            $this->cache->save($cacheKey, $raw);
+        }
+
+        return $raw;
+    }
 }
