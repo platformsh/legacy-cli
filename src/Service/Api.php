@@ -8,6 +8,7 @@ use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
@@ -663,13 +664,7 @@ class Api
         $cacheKey = $environment->id . ':' . $environment->head_commit . ':' . $filename;
         $raw = $this->cache->fetch($cacheKey);
         if ($raw === false) {
-            if (!$head = $environment->getHeadCommit()) {
-                throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
-            }
-            if (!$tree = $head->getTree()) {
-                throw new \RuntimeException('Failed to get tree for commit: ' . $head->id);
-            }
-            if (!$blob = $tree->getBlob($filename)) {
+            if (!$blob = $this->getTree($environment)->getBlob($filename)) {
                 return false;
             }
             $raw = $blob->getRawContent();
@@ -677,5 +672,44 @@ class Api
         }
 
         return $raw;
+    }
+
+    /**
+     * Get a Git tree for an environment.
+     *
+     * @param Environment $environment
+     * @param string      $path
+     *
+     * @return Tree|false
+     */
+    public function getTree(Environment $environment, $path = '')
+    {
+        $path = trim($path, '/');
+        $cacheKey = 'tree:' . $environment->id . ':' . $environment->head_commit . ':' . $path;
+        $data = $this->cache->fetch($cacheKey);
+        if ($data === null) {
+            return false;
+        } elseif ($data === false) {
+            if (!$head = $environment->getHeadCommit()) {
+                throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
+            }
+            if (!$tree = $head->getTree()) {
+                throw new \RuntimeException('Failed to get tree for commit: ' . $head->id);
+            }
+            if ($path !== '') {
+                if (!$tree = $tree->getTree($path)) {
+                    $this->cache->save($cacheKey, null);
+
+                    return false;
+                }
+            }
+            $data = $tree->getData();
+            $data['_uri'] = $tree->getUri();
+            $this->cache->save($cacheKey, $data);
+        } else {
+            $tree = new Tree($data, $data['_uri'], $this->getHttpClient(), true);
+        }
+
+        return $tree;
     }
 }

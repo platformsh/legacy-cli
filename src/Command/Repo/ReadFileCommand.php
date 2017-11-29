@@ -16,7 +16,7 @@ class ReadFileCommand extends CommandBase
     {
         $this
             ->setName('repo:read-file')
-            ->setDescription('Read a file in the repository')
+            ->setDescription('Read a file in the project repository')
             ->addArgument('path', InputArgument::REQUIRED, 'The path to the file');
         $this->addProjectOption();
         $this->addEnvironmentOption();
