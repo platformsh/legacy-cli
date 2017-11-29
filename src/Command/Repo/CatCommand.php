@@ -7,6 +7,7 @@ use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 
 class CatCommand extends CommandBase
 {
@@ -49,7 +50,15 @@ class CatCommand extends CommandBase
             return 2;
         }
 
-        $output->write($content);
+        // Write directly to the file stream, if possible, because using the
+        // OutputInterface::write() method messes up binary data.
+        if ($output instanceof StreamOutput) {
+            $stream = $output->getStream();
+            fwrite($stream, $content);
+            fflush($stream);
+        } else {
+            $output->write($content, OutputInterface::OUTPUT_RAW);
+        }
 
         return 0;
     }
