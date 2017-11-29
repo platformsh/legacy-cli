@@ -667,6 +667,10 @@ class Api
             if (!$blob = $this->getTree($environment)->getBlob($filename)) {
                 return false;
             }
+            // Skip caching if the file is bigger than 100 KiB.
+            if ($blob->size > 102400) {
+                return $blob->getRawContent();
+            }
             $raw = $blob->getRawContent();
             $this->cache->save($cacheKey, $raw);
         }
@@ -684,30 +688,18 @@ class Api
      */
     public function getTree(Environment $environment, $path = '')
     {
-        $path = trim($path, '/');
-        $cacheKey = 'tree:' . $environment->id . ':' . $environment->head_commit . ':' . $path;
-        $data = $this->cache->fetch($cacheKey);
-        if ($data === null) {
-            return false;
-        } elseif ($data === false) {
-            if (!$head = $environment->getHeadCommit()) {
-                throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
-            }
-            if (!$tree = $head->getTree()) {
-                throw new \RuntimeException('Failed to get tree for commit: ' . $head->id);
-            }
-            if ($path !== '') {
-                if (!$tree = $tree->getTree($path)) {
-                    $this->cache->save($cacheKey, null);
+        if (!$head = $environment->getHeadCommit()) {
+            throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
+        }
+        if (!$tree = $head->getTree()) {
+            throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
+        }
 
-                    return false;
-                }
+        $path = trim($path, '/');
+        if ($path !== '') {
+            if (!$tree = $tree->getTree($path)) {
+                return false;
             }
-            $data = $tree->getData();
-            $data['_uri'] = $tree->getUri();
-            $this->cache->save($cacheKey, $data);
-        } else {
-            $tree = new Tree($data, $data['_uri'], $this->getHttpClient(), true);
         }
 
         return $tree;
