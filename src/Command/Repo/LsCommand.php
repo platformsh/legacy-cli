@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -32,11 +33,22 @@ class LsCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $tree = $this->api()->getTree($this->getSelectedEnvironment(), $input->getArgument('path'));
+        try {
+            $tree = $this->api()->getTree($this->getSelectedEnvironment(), $input->getArgument('path'));
+        } catch (GitObjectTypeException $e) {
+            $this->stdErr->writeln(sprintf(
+                '%s: <error>%s</error>',
+                $e->getMessage(),
+                $e->getPath()
+            ));
+            $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config()->get('application.executable')));
+
+            return 3;
+        }
         if ($tree == false) {
             $this->stdErr->writeln(sprintf('Directory not found: <error>%s</error>', $input->getArgument('path')));
 
-            return 1;
+            return 2;
         }
 
         $treeObjects = $tree->tree;
