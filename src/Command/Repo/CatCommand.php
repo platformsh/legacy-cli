@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ReadFileCommand extends CommandBase
+class CatCommand extends CommandBase
 {
     /**
      * {@inheritdoc}
@@ -15,11 +15,12 @@ class ReadFileCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('repo:read-file')
+            ->setName('repo:cat')
             ->setDescription('Read a file in the project repository')
             ->addArgument('path', InputArgument::REQUIRED, 'The path to the file');
         $this->addProjectOption();
         $this->addEnvironmentOption();
+        $this->setHelp('🐱');
     }
 
     /**

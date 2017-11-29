@@ -139,6 +139,9 @@ project
   project:variable:delete                   Delete a variable from a project
   project:variable:get (project-variables, pvget)   View variable(s) for a project
   project:variable:set (pvset)              Set a variable for a project
+repo
+  repo:cat                                  Read a file in the project repository
+  repo:ls                                   List files in the project repository
 route
   route:get                                 View a route
   route:list (routes)                       List all routes for an environment
