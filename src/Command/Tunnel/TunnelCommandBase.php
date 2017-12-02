@@ -7,7 +7,7 @@ use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
-use Symfony\Component\Process\ProcessBuilder;
+use Symfony\Component\Process\Process;
 
 abstract class TunnelCommandBase extends CommandBase
 {
@@ -233,7 +233,7 @@ abstract class TunnelCommandBase extends CommandBase
         }
         $args = array_merge($args, $extraArgs);
 
-        return ProcessBuilder::create($args)->getProcess();
+        return new Process($args);
     }
 
     /**

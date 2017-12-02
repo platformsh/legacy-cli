@@ -8,7 +8,6 @@ use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\ProcessBuilder;
 
 class Shell
 {
@@ -87,8 +86,7 @@ class Shell
      */
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
     {
-        $builder = new ProcessBuilder($args);
-        $process = $builder->getProcess();
+        $process = new Process($args);
 
         if ($timeout === null) {
             set_time_limit(0);
