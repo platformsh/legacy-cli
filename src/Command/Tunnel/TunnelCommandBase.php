@@ -228,8 +228,10 @@ abstract class TunnelCommandBase extends CommandBase
     {
         $args = ['ssh', '-n', '-N', '-L', implode(':', [$localPort, $remoteHost, $remotePort]), $url];
         $args = array_merge($args, $extraArgs);
+        $process = new Process($args);
+        $process->setTimeout(null);
 
-        return new Process($args);
+        return $process;
     }
 
     /**
