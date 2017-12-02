@@ -2,12 +2,10 @@
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\ProcessBuilder;
 
 abstract class ServerCommandBase extends CommandBase
 {
@@ -263,14 +261,7 @@ abstract class ServerCommandBase extends CommandBase
           $router,
         ]);
 
-        // An 'exec' is needed to stop creating two processes on some OSs.
-        if (!OsUtil::isWindows()) {
-            array_unshift($arguments, 'exec');
-        }
-
-        $builder = new ProcessBuilder($arguments);
-        $process = $builder->getProcess();
-
+        $process = new Process($arguments);
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);
