@@ -661,12 +661,15 @@ class Api
      */
     public function readFile($filename, Environment $environment)
     {
-        // Cache according to the environment's commit SHA hash.
-        $cacheKey = $environment->id . ':' . $environment->head_commit . ':' . $filename;
+        $cacheKey = implode(':', ['raw', $environment->project, $environment->head_commit, $filename]);
         $raw = $this->cache->fetch($cacheKey);
-        if ($raw === false) {
+        if ($raw === null) {
+            return false;
+        } elseif ($raw === false) {
             // Find the file.
-            if (!$blob = $this->getTree($environment)->getBlob($filename)) {
+            if (!($tree = $this->getTree($environment, dirname($filename)))
+                || !($blob = $tree->getBlob(basename($filename)))) {
+                $this->cache->save($cacheKey, null);
                 return false;
             }
             // Skip caching (return the file content directly) if the file is
@@ -689,18 +692,33 @@ class Api
      *
      * @return Tree|false
      */
-    public function getTree(Environment $environment, $path = '')
+    public function getTree(Environment $environment, $path = '.')
     {
-        if (!$head = $environment->getHeadCommit()) {
-            // This is unlikely to happen, unless the project doesn't have the
-            // Git Data API available at all (e.g. old Git version).
-            throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
-        }
-        if (!$tree = $head->getTree()) {
-            // This is even less likely to happen.
-            throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
+        $cacheKey = implode(':', ['tree', $environment->project, $environment->head_commit, $path]);
+        $data = $this->cache->fetch($cacheKey);
+        if ($data === null) {
+            return false;
+        } elseif ($data === false) {
+            if (!$head = $environment->getHeadCommit()) {
+                // This is unlikely to happen, unless the project doesn't have the
+                // Git Data API available at all (e.g. old Git version).
+                throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
+            }
+            if (!$headTree = $head->getTree()) {
+                // This is even less likely to happen.
+                throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
+            }
+            $tree = $headTree->getTree($path);
+            if ($tree !== false) {
+                $this->cache->save($cacheKey, $tree->getData() + ['_uri' => $tree->getUri()]);
+            } else {
+                // Cache "tree not found".
+                $this->cache->save($cacheKey, null);
+            }
+        } else {
+            $tree = new Tree($data, $data['_uri'], $this->getHttpClient(), true);
         }
 
-        return $tree->getTree($path);
+        return $tree;
     }
 }
