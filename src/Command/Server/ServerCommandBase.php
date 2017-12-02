@@ -7,6 +7,7 @@ use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Process\ProcessBuilder;
 
 abstract class ServerCommandBase extends CommandBase
 {
@@ -267,7 +268,8 @@ abstract class ServerCommandBase extends CommandBase
             array_unshift($arguments, 'exec');
         }
 
-        $process = new Process($arguments);
+        $builder = new ProcessBuilder($arguments);
+        $process = $builder->getProcess();
 
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
