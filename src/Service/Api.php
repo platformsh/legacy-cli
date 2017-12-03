@@ -161,7 +161,7 @@ class Api
             $connectorOptions = [];
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
-            $connectorOptions['debug'] = $this->config->get('api.debug');
+            $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
             $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
             $connectorOptions['user_agent'] = $this->getUserAgent();
             $connectorOptions['api_token'] = $this->apiToken;
