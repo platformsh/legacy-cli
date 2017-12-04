@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\SiteAlias;
 
+use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
 
@@ -12,7 +13,18 @@ class DrushYaml extends DrushAlias
      */
     protected function getFilename($groupName)
     {
-        return $this->drush->getSiteAliasDir() . '/' . $groupName . '.alias.yml';
+        // Preserve backwards compatibility for Drush 9-beta.
+        // See issue https://github.com/platformsh/platformsh-cli/issues/655
+        try {
+            $version = $this->drush->getVersion();
+        } catch (DependencyMissingException $e) {
+            $version = false;
+        }
+        if ($version !== false && version_compare($version, '8', '>') && version_compare($version, '9.0.0-rc1', '<')) {
+            return $this->drush->getSiteAliasDir() . '/' . $groupName . '.alias.yml';
+        }
+
+        return $this->drush->getSiteAliasDir() . '/' . $groupName . '.site.yml';
     }
 
     /**
