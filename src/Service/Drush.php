@@ -97,9 +97,6 @@ class Drush
      *
      * @return string|false
      *   The Drush version, or false if it cannot be determined.
-     *
-     * @throws DependencyMissingException
-     *   If Drush is not installed.
      */
     public function getVersion($reset = false)
     {
@@ -107,9 +104,13 @@ class Drush
         if (!$reset && isset($version)) {
             return $version;
         }
-        $this->ensureInstalled();
 
-        $version = $this->shellHelper->execute([$this->getDrushExecutable(), 'version', '--format=string'], $this->getHomeDir());
+        $version = $this->shellHelper->execute(
+            [$this->getDrushExecutable(), 'version', '--format=string'],
+            // Run the version check in the home directory, to avoid a Drupal
+            // installation giving a misleading result.
+            $this->getHomeDir()
+        );
 
         return $version;
     }
