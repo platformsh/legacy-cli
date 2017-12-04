@@ -241,7 +241,7 @@ class Drush
         } catch (ProcessFailedException $e) {
             // The command will fail if the alias is not found. Throw an
             // exception for any other failures.
-            if (strpos($e->getProcess()->getErrorOutput(), 'Not found') === false) {
+            if (stripos($e->getProcess()->getErrorOutput(), 'not found') === false) {
                 throw $e;
             }
         }
