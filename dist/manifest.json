@@ -1,0 +1,91 @@
+[
+    {
+        "name": "platform.phar",
+        "sha1": "6ce08c454f1debccb417200acc54931b5f98ea60",
+        "sha256": "cb09d616a5b8bf37c92c51450fbc2a1bb896c9e02aec5b291356daf1de389db6",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.23.0/platform.phar",
+        "version": "3.23.0",
+        "php": {
+            "min": "5.5.9"
+        },
+        "notes": "Major changes since version 2.x.x:\n\n* In version 2.x.x, the CLI had a project file structure including a 'repository' directory (and a 'builds' directory, 'shared', etc.). In version 3.x.x, this is no longer the case: the CLI operates directly inside your project's Git repository. The CLI will work with the old file structure, and there is a migration tool ('platform legacy-migrate') for updating to the new structure.\n\n* The web root has changed location from 'www' to '_www', to avoid conflicts with actual project files in the repo.\n\n* The CLI now requires PHP version 5.5.9 (minimum) due to updated dependencies.\n\nVersion 3.x.x also comes with many other smaller improvements and bug fixes.",
+        "updating": [
+            {
+                "notes": "Major changes since version 2.x.x:\n\n* In version 2.x.x, the CLI had a project file structure including a 'repository' directory (and a 'builds' directory, 'shared', etc.). In version 3.x.x, this is no longer the case: the CLI operates directly inside your project's Git repository. The CLI will work with the old file structure, and there is a migration tool ('platform legacy-migrate') for updating to the new structure.\n\n* The web root has changed location from 'www' to '_www', to avoid conflicts with actual project files in the repo.\n\n* The CLI now requires PHP version 5.5.9 (minimum) due to updated dependencies.\n\nVersion 3.x.x also comes with many other smaller improvements and bug fixes.",
+                "hide from": "3"
+            },
+            {
+                "notes": "The web root has moved again, from '.www' to '_www'. If you have already been using version 3, you may wish to update your local web server configuration.",
+                "show from": "3",
+                "hide from": "3.0.2"
+            },
+            {
+                "notes": "* Adds 'db:size' command for a rough estimate of DB disk usage\n* Fixes database commands where the relationship name is not 'database'\n* Fixes 'sql' command on PostgreSQL databases\n\nSee: https://github.com/platformsh/platformsh-cli/releases/v3.8.0",
+                "show from": "3.7",
+                "hide from": "3.8"
+            },
+            {
+                "notes": "* Adds `environment:push` (`push`) command\n* Adds `--identity-file` option to commands using SSH\n* Adds `--parent` option to `environment:activate` command",
+                "show from": "3.9",
+                "hide from": "3.10"
+            },
+            {
+                "notes": "This release adds new options to the db:dump command:\n  --gzip (-z) to compress the output\n  --table to specify the table(s) to include\n  --exclude-table to specify the table(s) to exclude\n  --schema-only to include only schemas, not data\n\nAnd other minor bug fixes. See:\nhttps://github.com/platformsh/platformsh-cli/releases/v3.11.0",
+                "show from": "3.10",
+                "hide from": "3.11"
+            },
+            {
+                "notes": "* Add `project:set-remote` command\n* Clarify self-update messages\n* Some minor bug fixes in the `branch`, `checkout`, and `integration:get` commands",
+                "show from": "3.11",
+                "hide from": "3.12"
+            },
+            {
+                "notes": "* Improve `get` command when the user does not have access to `master` branch\n* Allow `web` command to be used with a non-existent environment ID\n* Allow `updates.check` to be overridden by an env var, e.g. `PLATFORMSH_CLI_UPDATES_CHECK=0`\n* More specific suggested `.gitignore` file for Drupal vanilla projects",
+                "show from": "3.12",
+                "hide from": "3.12.1"
+            },
+            {
+                "notes": "\n* The `build` command now installs build-time dependencies by default (use\n  `--no-deps` for the old behavior).\n* This release also adds commands to run a local web server (the PHP built-in\n  server). But these commands are at a \"beta\" stability, and they can only be\n  enabled via a feature flag, for example:\n\n  # ---- ~/.platformsh/config.yaml ----\n  experimental:\n      # Enable \"platform create\" command.\n      enable_create: true\n      # Enable \"platform server:run\" and related commands.\n      enable_local_server: true\n",
+                "show from": "3.12.1",
+                "hide from": "3.13.0"
+            },
+            {
+                "notes": "* Added `route:get` command to view a resolved route to an application\n* Renamed `environment:routes` command to `route:list` (still under the alias `routes`)\n* Improved caching for relationships, routes, and app config\n* Fixed integration option names",
+                "show from": "3.13.0",
+                "hide from": "3.14.0"
+            },
+            {
+                "notes": "This release adds `certificate` commands, to list, add, and delete SSL certificates from a project, including new automatically-provisioned Let's Encrypt certificates.\n\nOther changes since v3.14.5:\n\n* Fix an issue using `ssh` command on Windows\n* Make detection of the system timezone fallback to the PHP default\n* Use pseudo-terminal for SSH where possible (enables colors for some CLI programs)\n* Minor improvements to `activity:list`",
+                "show from": "3.14.0",
+                "hide from": "3.15.0"
+            },
+            {
+                "notes": "* Added a `--directory` option to `db:dump`\n* Added ability to load more than 10 activities in `activity:list`\n* Added `auth:token` and `project:curl` commands (intended for support and debugging)\n* Updated `self::install` so it doesn't write Bashisms to `.profile`\n* Updated activity descriptions\n* Switched to GitBook native search (rather than Google) in `docs` command",
+                "show from": "3.15.0",
+                "hide from": "3.16.0"
+            },
+            {
+                "notes": "* Added new `mount:upload` and `mount:download` commands, which help\n  transferring files to and from writable file mounts, and a `mount:list`\n  command which shows the available mounts. Thanks to @markushausammann for the\n  PR.\n* Users may now log in with their username instead of their email address.\n* Fixed a bug introduced in v3.20.5, which unintentionally hid output from\n  external commands.",
+                "show from": "3.20.0",
+                "hide from": "3.21.0"
+            },
+            {
+                "notes": "* Added automatic generation of YAML-format Drush site aliases for Drupal projects (in addition to the current PHP-format site aliases). Use `platform drush-aliases -r` to recreate aliases.\n* Moved site aliases from `~/.drush` to `~/.drush/site-aliases`.\n* Fixed the table of environments to stop wrapping environment IDs (it was breaking color formatting).\n* Changed wording of 'rebuild' warning, to 'redeploy'.",
+                "show from": "3.21.0",
+                "hide from": "3.22.0"
+            },
+            {
+                "notes": "- A public website URL can now be used in the --project (-p) option\n- Added `--exclude` and `--include` options to `mount` commands\n- Added `--excluded-environments` option for webhook integrations*\n- Added Gitlab integration support*\n\n(* the last two will apply to an upcoming Platform.sh version, 2.7)",
+                "show from": "3.22.0",
+                "hide from": "3.23.0"
+            }
+        ]
+    },
+    {
+        "name": "platform.phar",
+        "sha1": "506f98c9b1a6a5cbfc91786c217117edfd3d2200",
+        "sha256": "e688dd296e4b4d8965bebbd9e6c581f5b4309eca97fb1d0e34e27ad089e9d3cd",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v2.13.3/platform.phar",
+        "version": "2.13.3"
+    }
+]
