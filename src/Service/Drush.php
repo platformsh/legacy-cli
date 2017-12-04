@@ -106,10 +106,7 @@ class Drush
         }
 
         $version = $this->shellHelper->execute(
-            [$this->getDrushExecutable(), 'version', '--format=string'],
-            // Run the version check in the home directory, to avoid a Drupal
-            // installation giving a misleading result.
-            $this->getHomeDir()
+            [$this->getDrushExecutable(), 'version', '--format=string']
         );
 
         return $version;
