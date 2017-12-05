@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Service;
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
+use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
@@ -702,7 +703,10 @@ class Api
             if (!$head = $environment->getHeadCommit()) {
                 // This is unlikely to happen, unless the project doesn't have the
                 // Git Data API available at all (e.g. old Git version).
-                throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
+                throw new ApiFeatureMissingException(sprintf(
+                    'The project %s does not support the Git Data API.',
+                    $environment->project
+                ));
             }
             if (!$headTree = $head->getTree()) {
                 // This is even less likely to happen.

@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
@@ -31,8 +32,7 @@ class DbSizeCommand extends CommandBase
         $this->validateInput($input);
         $appName = $this->selectApp($input);
 
-        $environment =$this->getSelectedEnvironment();
-        $sshUrl = $environment->getSshUrl($appName);
+        $sshUrl = $this->getSelectedEnvironment()->getSshUrl($appName);
 
         // Get and parse app config.
         /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
@@ -46,7 +46,6 @@ class DbSizeCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-
         $database = $relationships->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
@@ -67,16 +66,12 @@ class DbSizeCommand extends CommandBase
         }
 
         // Load services yaml.
-        $services = [];
-        $servicesYaml = $this->api()->readFile($this->config()->get('service.project_config_dir') . '/services.yaml', $environment);
-        if ($servicesYaml) {
-            $services = (array) (new Yaml())->parse($servicesYaml);
-        }
+        $services = $this->getProjectServiceConfig();
         if (!empty($services[$dbServiceName]['disk'])) {
             $allocatedDisk = $services[$dbServiceName]['disk'];
         } else {
-            $this->stdErr->writeln('The allocated disk size could not be determined for service: ' . $dbServiceName);
-            return 1;
+            $this->stdErr->writeln('The allocated disk size could not be determined for service: <comment>' . $dbServiceName . '</comment>');
+            $allocatedDisk = false;
         }
 
         $this->stdErr->write('Querying database <comment>' . $dbServiceName . '</comment> to estimate disk usage. ');
@@ -103,21 +98,24 @@ class DbSizeCommand extends CommandBase
                 break;
         }
 
-        $percentsUsed = $estimatedUsage * 100 / $allocatedDisk;
-
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $propertyNames = [
-            'max',
-            'used',
-            'percent_used',
-        ];
         $machineReadable = $table->formatIsMachineReadable();
-        $values = [
-            (int) $allocatedDisk . ($machineReadable ? '' : 'MB'),
-            (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
-            (int) $percentsUsed . '%',
-        ];
+
+        if ($allocatedDisk !== false) {
+            $propertyNames = ['max', 'used', 'percent_used'];
+            $percentsUsed = $estimatedUsage * 100 / $allocatedDisk;
+            $values = [
+                (int) $allocatedDisk . ($machineReadable ? '' : 'MB'),
+                (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
+                (int) $percentsUsed . '%',
+            ];
+        } else {
+            $propertyNames = ['used'];
+            $values = [
+                (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
+            ];
+        }
 
         $table->renderSimple($values, $propertyNames);
 
@@ -178,5 +176,31 @@ class DbSizeCommand extends CommandBase
             $connectionParams,
             $query
         );
+    }
+
+    /**
+     * Find the service configuration (from services.yaml).
+     *
+     * @return array
+     */
+    private function getProjectServiceConfig()
+    {
+        $servicesYaml = false;
+        $servicesYamlFilename = $this->config()->get('service.project_config_dir') . '/services.yaml';
+        $services = [];
+        try {
+            $servicesYaml = $this->api()->readFile($servicesYamlFilename, $this->getSelectedEnvironment());
+        } catch (ApiFeatureMissingException $e) {
+            $this->debug($e->getMessage());
+            if ($projectRoot = $this->getProjectRoot()) {
+                $this->debug('Reading file in local project: ' . $projectRoot . '/' . $servicesYamlFilename);
+                $servicesYaml = file_get_contents($projectRoot . '/' . $servicesYamlFilename);
+            }
+        }
+        if ($servicesYaml) {
+            $services = (array) (new Yaml())->parse($servicesYaml);
+        }
+
+        return $services;
     }
 }
