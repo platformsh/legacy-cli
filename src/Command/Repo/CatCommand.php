@@ -16,12 +16,15 @@ class CatCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('repo:cat')
+            ->setName('repo:cat') // 🐱
             ->setDescription('Read a file in the project repository')
             ->addArgument('path', InputArgument::REQUIRED, 'The path to the file');
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->setHelp('🐱');
+        $this->addExample(
+            'Read the services configuration file',
+            $this->config()->get('service.project_config_dir') . '/services.yaml'
+        );
     }
 
     /**
