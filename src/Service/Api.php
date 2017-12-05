@@ -674,7 +674,7 @@ class Api
             }
             $data = ['raw' => $raw, 'commit_sha' => $environment->head_commit];
             // Skip caching if the file is bigger than 100 KiB.
-            if (strlen($data) <= 102400) {
+            if ($raw === false || strlen($raw) <= 102400) {
                 $this->cache->save($cacheKey, $data);
             }
         }

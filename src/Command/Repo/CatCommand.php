@@ -57,7 +57,7 @@ class CatCommand extends CommandBase
             fwrite($stream, $content);
             fflush($stream);
         } else {
-            $output->write($content, OutputInterface::OUTPUT_RAW);
+            $output->write($content, false, OutputInterface::OUTPUT_RAW);
         }
 
         return 0;
