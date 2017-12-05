@@ -8,6 +8,7 @@ use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
@@ -645,5 +646,79 @@ class Api
     public function getHttpClient()
     {
         return $this->getClient(false)->getConnector()->getClient();
+    }
+
+    /**
+     * Read a file in the environment, using the Git Data API.
+     *
+     * @param string      $filename
+     * @param Environment $environment
+     *
+     * @throws \RuntimeException on error.
+     *
+     * @return string|false
+     *   The raw contents of the file, or false if the file is not found.
+     */
+    public function readFile($filename, Environment $environment)
+    {
+        $cacheKey = implode(':', ['raw', $environment->project, $environment->head_commit, $filename]);
+        $raw = $this->cache->fetch($cacheKey);
+        if ($raw === null) {
+            return false;
+        } elseif ($raw === false) {
+            // Find the file.
+            if (!($tree = $this->getTree($environment, dirname($filename)))
+                || !($blob = $tree->getBlob(basename($filename)))) {
+                $this->cache->save($cacheKey, null);
+                return false;
+            }
+            // Skip caching (return the file content directly) if the file is
+            // bigger than 100 KiB.
+            if ($blob->size > 102400) {
+                return $blob->getRawContent();
+            }
+            $raw = $blob->getRawContent();
+            $this->cache->save($cacheKey, $raw);
+        }
+
+        return $raw;
+    }
+
+    /**
+     * Get a Git Tree object (a repository directory) for an environment.
+     *
+     * @param Environment $environment
+     * @param string      $path
+     *
+     * @return Tree|false
+     */
+    public function getTree(Environment $environment, $path = '.')
+    {
+        $cacheKey = implode(':', ['tree', $environment->project, $environment->head_commit, $path]);
+        $data = $this->cache->fetch($cacheKey);
+        if ($data === null) {
+            return false;
+        } elseif ($data === false) {
+            if (!$head = $environment->getHeadCommit()) {
+                // This is unlikely to happen, unless the project doesn't have the
+                // Git Data API available at all (e.g. old Git version).
+                throw new \RuntimeException('Failed to get HEAD commit for environment: ' . $environment->id);
+            }
+            if (!$headTree = $head->getTree()) {
+                // This is even less likely to happen.
+                throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
+            }
+            $tree = $headTree->getTree($path);
+            if ($tree !== false) {
+                $this->cache->save($cacheKey, $tree->getData() + ['_uri' => $tree->getUri()]);
+            } else {
+                // Cache "tree not found".
+                $this->cache->save($cacheKey, null);
+            }
+        } else {
+            $tree = new Tree($data, $data['_uri'], $this->getHttpClient(), true);
+        }
+
+        return $tree;
     }
 }

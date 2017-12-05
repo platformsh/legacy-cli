@@ -2,14 +2,13 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Service\Shell;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Yaml;
 
 class DbSizeCommand extends CommandBase
 {
@@ -30,19 +29,17 @@ class DbSizeCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
-            throw new RootNotFoundException();
-        }
         $appName = $this->selectApp($input);
 
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($appName);
+        $environment =$this->getSelectedEnvironment();
+        $sshUrl = $environment->getSshUrl($appName);
 
         // Get and parse app config.
-        $app = LocalApplication::getApplication($appName, $projectRoot);
-        $appConfig = $app->getConfig();
-        if (empty($appConfig['relationships'])) {
+        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
+        $envVarService = $this->getService('remote_env_vars');
+        $result = $envVarService->getEnvVar('APPLICATION', $sshUrl);
+        $appConfig = (array) json_decode(base64_decode($result), true);
+        if (empty($appConfig) || empty($appConfig['relationships'])) {
             $this->stdErr->writeln('No application relationships found.');
             return 1;
         }
@@ -70,9 +67,11 @@ class DbSizeCommand extends CommandBase
         }
 
         // Load services yaml.
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
-        $services = (array) $localProject->readProjectConfigFile($projectRoot, 'services.yaml');
+        $services = [];
+        $servicesYaml = $this->api()->readFile($this->config()->get('service.project_config_dir') . '/services.yaml', $environment);
+        if ($servicesYaml) {
+            $services = (array) (new Yaml())->parse($servicesYaml);
+        }
         if (!empty($services[$dbServiceName]['disk'])) {
             $allocatedDisk = $services[$dbServiceName]['disk'];
         } else {
