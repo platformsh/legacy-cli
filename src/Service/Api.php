@@ -662,11 +662,9 @@ class Api
      */
     public function readFile($filename, Environment $environment)
     {
-        $cacheKey = implode(':', ['raw', $environment->project, $environment->head_commit, $filename]);
-        $raw = $this->cache->fetch($cacheKey);
-        if ($raw === null) {
-            return false;
-        } elseif ($raw === false) {
+        $cacheKey = implode(':', ['raw', $environment->project, $filename]);
+        $data = $this->cache->fetch($cacheKey);
+        if (!is_array($data) || $data['_commit_sha'] !== $environment->head_commit) {
             // Find the file.
             if (!($tree = $this->getTree($environment, dirname($filename)))
                 || !($blob = $tree->getBlob(basename($filename)))) {
@@ -679,10 +677,11 @@ class Api
                 return $blob->getRawContent();
             }
             $raw = $blob->getRawContent();
-            $this->cache->save($cacheKey, $raw);
+            $data = ['raw' => $raw, '_commit_sha' => $environment->head_commit];
+            $this->cache->save($cacheKey, $data);
         }
 
-        return $raw;
+        return $data['raw'];
     }
 
     /**
@@ -695,11 +694,9 @@ class Api
      */
     public function getTree(Environment $environment, $path = '.')
     {
-        $cacheKey = implode(':', ['tree', $environment->project, $environment->head_commit, $path]);
+        $cacheKey = implode(':', ['tree', $environment->project, $path]);
         $data = $this->cache->fetch($cacheKey);
-        if ($data === null) {
-            return false;
-        } elseif ($data === false) {
+        if (!is_array($data) || $data['_commit_sha'] !== $environment->head_commit) {
             if (!$head = $environment->getHeadCommit()) {
                 // This is unlikely to happen, unless the project doesn't have the
                 // Git Data API available at all (e.g. old Git version).
@@ -714,10 +711,10 @@ class Api
             }
             $tree = $headTree->getTree($path);
             if ($tree !== false) {
-                $this->cache->save($cacheKey, $tree->getData() + ['_uri' => $tree->getUri()]);
-            } else {
-                // Cache "tree not found".
-                $this->cache->save($cacheKey, null);
+                $this->cache->save($cacheKey, $tree->getData() + [
+                    '_uri' => $tree->getUri(),
+                    '_commit_sha' => $environment->head_commit,
+                ]);
             }
         } else {
             $tree = new Tree($data, $data['_uri'], $this->getHttpClient(), true);
