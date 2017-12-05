@@ -664,21 +664,19 @@ class Api
     {
         $cacheKey = implode(':', ['raw', $environment->project, $filename]);
         $data = $this->cache->fetch($cacheKey);
-        if (!is_array($data) || $data['_commit_sha'] !== $environment->head_commit) {
+        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
             // Find the file.
-            if (!($tree = $this->getTree($environment, dirname($filename)))
-                || !($blob = $tree->getBlob(basename($filename)))) {
-                $this->cache->save($cacheKey, null);
-                return false;
+            if (($tree = $this->getTree($environment, dirname($filename)))
+                && ($blob = $tree->getBlob(basename($filename)))) {
+                $raw = $blob->getRawContent();
+            } else {
+                $raw = false;
             }
-            // Skip caching (return the file content directly) if the file is
-            // bigger than 100 KiB.
-            if ($blob->size > 102400) {
-                return $blob->getRawContent();
+            $data = ['raw' => $raw, 'commit_sha' => $environment->head_commit];
+            // Skip caching if the file is bigger than 100 KiB.
+            if (strlen($data) <= 102400) {
+                $this->cache->save($cacheKey, $data);
             }
-            $raw = $blob->getRawContent();
-            $data = ['raw' => $raw, '_commit_sha' => $environment->head_commit];
-            $this->cache->save($cacheKey, $data);
         }
 
         return $data['raw'];
@@ -696,7 +694,7 @@ class Api
     {
         $cacheKey = implode(':', ['tree', $environment->project, $path]);
         $data = $this->cache->fetch($cacheKey);
-        if (!is_array($data) || $data['_commit_sha'] !== $environment->head_commit) {
+        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
             if (!$head = $environment->getHeadCommit()) {
                 // This is unlikely to happen, unless the project doesn't have the
                 // Git Data API available at all (e.g. old Git version).
@@ -710,14 +708,15 @@ class Api
                 throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
             }
             $tree = $headTree->getTree($path);
-            if ($tree !== false) {
-                $this->cache->save($cacheKey, $tree->getData() + [
-                    '_uri' => $tree->getUri(),
-                    '_commit_sha' => $environment->head_commit,
-                ]);
-            }
+            $this->cache->save($cacheKey, [
+                'tree' => $tree ? $tree->getData() : null,
+                'uri' => $tree ? $tree->getUri() : null,
+                'commit_sha' => $environment->head_commit,
+            ]);
+        } elseif (empty($data['tree'])) {
+            return false;
         } else {
-            $tree = new Tree($data, $data['_uri'], $this->getHttpClient(), true);
+            $tree = new Tree($data['tree'], $data['uri'], $this->getHttpClient(), true);
         }
 
         return $tree;
