@@ -158,6 +158,7 @@ class SelfBuildCommand extends CommandBase
         if (!is_writable($manifestFile)) {
             throw new \RuntimeException('Manifest file not writable: ' . $manifestFile);
         }
+        $this->stdErr->writeln('Updating manifest file: ' . $manifestFile);
         $manifest = json_decode($contents, true);
         if ($manifest === null && json_last_error()) {
             throw new \RuntimeException('Failed to decode manifest file: ' . $manifestFile);
@@ -182,15 +183,29 @@ class SelfBuildCommand extends CommandBase
         }
         if (isset($manifestItem['version'])) {
             $oldVersion = $manifestItem['version'];
+            $this->stdErr->writeln('  Found latest version to update: v' . $oldVersion);
             if (isset($manifestItem['url'])) {
                 $manifestItem['url'] = str_replace($oldVersion, $version, $manifestItem['url']);
             }
+            $changelog = $shell->execute([
+                'git',
+                'log',
+                '--pretty=format:"* %s"',
+                '--no-merges',
+                'v' . $oldVersion . '...v' . $version
+            ]);
         }
         $manifestItem['version'] = $version;
         $manifestItem['sha1'] = $sha1;
         $manifestItem['sha256'] = $sha256;
         $manifestItem['name'] = basename($phar);
         $manifestItem['php']['min'] = '5.5.9';
+        if (!empty($changelog)) {
+            $manifestItem['updating'][] = [
+                'notes' => $changelog,
+                'show from' => 'v' . $version,
+            ];
+        }
         $result = file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         if ($result !== false) {
             $this->stdErr->writeln('Updated manifest file: ' . $manifestFile);
