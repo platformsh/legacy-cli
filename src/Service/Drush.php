@@ -30,6 +30,15 @@ class Drush
     /** @var array */
     protected $aliases = [];
 
+    /** @var bool|null */
+    protected $isInstalled;
+
+    /** @var string|false|null */
+    protected $version;
+
+    /** @var string|null */
+    protected $executable;
+
     /**
      * @param Config|null       $config
      * @param Shell|null        $shellHelper
@@ -97,21 +106,17 @@ class Drush
      *
      * @return string|false
      *   The Drush version, or false if it cannot be determined.
-     *
-     * @throws DependencyMissingException
-     *   If Drush is not installed.
      */
     public function getVersion($reset = false)
     {
-        static $version;
-        if (!$reset && isset($version)) {
-            return $version;
+        if ($reset || !isset($this->version)) {
+            $this->version = $this->shellHelper->execute(
+                [$this->getDrushExecutable(), 'version', '--format=string']
+            );
         }
-        $this->ensureInstalled();
 
-        $version = $this->shellHelper->execute([$this->getDrushExecutable(), 'version', '--format=string'], $this->getHomeDir());
 
-        return $version;
+        return $this->version;
     }
 
     /**
@@ -119,12 +124,11 @@ class Drush
      */
     public function ensureInstalled()
     {
-        static $installed;
-        if (empty($installed) && $this->getDrushExecutable() === 'drush'
+        if (!isset($this->isInstalled) && $this->getDrushExecutable() === 'drush'
             && !$this->shellHelper->commandExists('drush')) {
             throw new DependencyMissingException('Drush is not installed');
         }
-        $installed = true;
+        $this->isInstalled = true;
     }
 
     /**
@@ -167,8 +171,12 @@ class Drush
      */
     protected function getDrushExecutable()
     {
+        if (isset($this->executable)) {
+            return $this->executable;
+        }
+
         if ($this->config->has('local.drush_executable')) {
-            return $this->config->get('local.drush_executable');
+            return $this->executable = $this->config->get('local.drush_executable');
         }
 
         // Find a locally installed Drush instance: first check the Composer
@@ -177,28 +185,28 @@ class Drush
         $localDir = $projectRoot ?: getcwd();
         $drushLocal = $localDir . '/vendor/bin/drush';
         if (is_executable($drushLocal)) {
-            return $drushLocal;
+            return $this->executable = $drushLocal;
         }
 
         // Check the local dependencies directory (created via 'platform
         // build').
         $drushDep = $localDir . '/' . $this->config->get('local.dependencies_dir') . '/php/vendor/bin/drush';
         if (is_executable($drushDep)) {
-            return $drushDep;
+            return $this->executable = $drushDep;
         }
 
         // Use the global Drush, if there is one installed.
         if ($this->shellHelper->commandExists('drush')) {
-            return $this->shellHelper->resolveCommand('drush');
+            return $this->executable = $this->shellHelper->resolveCommand('drush');
         }
 
         // Fall back to the Drush that may be installed within the CLI.
         $drushCli = CLI_ROOT . '/vendor/bin/drush';
         if (is_executable($drushCli)) {
-            return $drushCli;
+            return $this->executable = $drushCli;
         }
 
-        return 'drush';
+        return $this->executable = 'drush';
     }
 
     /**
@@ -221,7 +229,7 @@ class Drush
      */
     public function getAliases($groupName, $reset = false)
     {
-        if (!$reset && !empty($this->aliases[$groupName])) {
+        if (!$reset && isset($this->aliases[$groupName])) {
             return $this->aliases[$groupName];
         }
 
@@ -241,7 +249,7 @@ class Drush
         } catch (ProcessFailedException $e) {
             // The command will fail if the alias is not found. Throw an
             // exception for any other failures.
-            if (strpos($e->getProcess()->getErrorOutput(), 'Not found') === false) {
+            if (stripos($e->getProcess()->getErrorOutput(), 'not found') === false) {
                 throw $e;
             }
         }

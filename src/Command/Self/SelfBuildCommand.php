@@ -18,8 +18,10 @@ class SelfBuildCommand extends CommandBase
             ->setName('self:build')
             ->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
-            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename')
-            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
+            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
+            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies')
+            ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
+            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest');
     }
 
     public function isEnabled()
@@ -146,6 +148,74 @@ class SelfBuildCommand extends CommandBase
             sprintf('SHA-256: %s', $sha256),
             sprintf('Version: %s', $version),
         ]);
+
+        // Write to the manifest file.
+        $manifestFile = $input->getOption('manifest') ?: CLI_ROOT . '/dist/manifest.json';
+        $contents = file_get_contents($manifestFile);
+        if ($contents === false) {
+            throw new \RuntimeException('Manifest file not readable: ' . $manifestFile);
+        }
+        if (!is_writable($manifestFile)) {
+            throw new \RuntimeException('Manifest file not writable: ' . $manifestFile);
+        }
+        $this->stdErr->writeln('Updating manifest file: ' . $manifestFile);
+        $manifest = json_decode($contents, true);
+        if ($manifest === null && json_last_error()) {
+            throw new \RuntimeException('Failed to decode manifest file: ' . $manifestFile);
+        }
+        $manifestItem = null;
+        switch ($input->getOption('manifest-mode')) {
+            case 'update-latest':
+                foreach ($manifest as $key => $item) {
+                    if ($manifestItem === null || version_compare($item['version'], $manifestItem['version'], '>')) {
+                        $manifestItem = &$manifest[$key];
+                    }
+                }
+                break;
+
+            case 'add':
+                array_unshift($manifest, []);
+                $manifestItem = &$manifest[0];
+                break;
+
+            default:
+                throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
+        }
+        if (isset($manifestItem['version'])) {
+            $oldVersion = $manifestItem['version'];
+            $this->stdErr->writeln('  Found latest version to update: v' . $oldVersion);
+            if (isset($manifestItem['url'])) {
+                $manifestItem['url'] = str_replace($oldVersion, $version, $manifestItem['url']);
+            }
+            $changelog = $shell->execute([
+                'git',
+                'log',
+                '--pretty=format:"* %s"',
+                '--no-merges',
+                'v' . $oldVersion . '...v' . $version
+            ]);
+        }
+        $manifestItem['version'] = $version;
+        $manifestItem['sha1'] = $sha1;
+        $manifestItem['sha256'] = $sha256;
+        $manifestItem['name'] = basename($phar);
+        $manifestItem['php']['min'] = '5.5.9';
+        if (!empty($changelog)) {
+            $manifestItem['updating'][] = [
+                'notes' => $changelog,
+                'show from' => 'v' . $version,
+            ];
+        }
+        $result = file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        if ($result !== false) {
+            $this->stdErr->writeln('Updated manifest file: ' . $manifestFile);
+        }
+        else {
+            $this->stdErr->writeln('Failed to update manifest file: ' . $manifestFile);
+
+            return 1;
+        }
+
         return 0;
     }
 }

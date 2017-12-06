@@ -23,10 +23,10 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
-            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'After pushing, do not wait for build or deploy')
             ->addOption('set-upstream', 'u', InputOption::VALUE_NONE, 'Set the target environment as the upstream for the source branch')
             ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment after pushing')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent (only used with --activate)');
+        $this->addNoWaitOption('After pushing, do not wait for build or deploy');
         $this->addProjectOption()
             ->addEnvironmentOption();
         Ssh::configureInput($this->getDefinition());

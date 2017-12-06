@@ -95,7 +95,7 @@ class MountDownloadCommand extends MountCommandBase
             }
         }
 
-        if (empty($target) && $input->isInteractive()) {
+        if (empty($target)) {
             $questionText = 'Target directory';
             if ($defaultTarget !== null) {
                 $formattedDefaultTarget = $fs->formatPathForDisplay($defaultTarget);

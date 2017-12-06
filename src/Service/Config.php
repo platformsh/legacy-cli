@@ -36,8 +36,11 @@ class Config
     }
 
     /**
-     * @param string $name
-     * @param bool   $notNull
+     * Check if a configuration value is defined.
+     *
+     * @param string $name    The configuration name (e.g. 'application.name').
+     * @param bool   $notNull Set false to treat null configuration values as
+     *                        defined.
      *
      * @return bool
      */
@@ -49,9 +52,13 @@ class Config
     }
 
     /**
-     * @param string $name
+     * Get a configuration value.
      *
-     * @return mixed
+     * @param string $name The configuration name (e.g. 'application.name').
+     *
+     * @throws \RuntimeException if the configuration is not defined.
+     *
+     * @return null|string|bool|array
      */
     public function get($name)
     {

@@ -2,14 +2,14 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Service\Shell;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Yaml;
 
 class DbSizeCommand extends CommandBase
 {
@@ -30,26 +30,22 @@ class DbSizeCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
-            throw new RootNotFoundException();
-        }
         $appName = $this->selectApp($input);
 
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($appName);
+        $sshUrl = $this->getSelectedEnvironment()->getSshUrl($appName);
 
         // Get and parse app config.
-        $app = LocalApplication::getApplication($appName, $projectRoot);
-        $appConfig = $app->getConfig();
-        if (empty($appConfig['relationships'])) {
+        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
+        $envVarService = $this->getService('remote_env_vars');
+        $result = $envVarService->getEnvVar('APPLICATION', $sshUrl);
+        $appConfig = (array) json_decode(base64_decode($result), true);
+        if (empty($appConfig) || empty($appConfig['relationships'])) {
             $this->stdErr->writeln('No application relationships found.');
             return 1;
         }
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-
         $database = $relationships->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
@@ -70,14 +66,12 @@ class DbSizeCommand extends CommandBase
         }
 
         // Load services yaml.
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
-        $services = (array) $localProject->readProjectConfigFile($projectRoot, 'services.yaml');
+        $services = $this->getProjectServiceConfig();
         if (!empty($services[$dbServiceName]['disk'])) {
             $allocatedDisk = $services[$dbServiceName]['disk'];
         } else {
-            $this->stdErr->writeln('The allocated disk size could not be determined for service: ' . $dbServiceName);
-            return 1;
+            $this->stdErr->writeln('The allocated disk size could not be determined for service: <comment>' . $dbServiceName . '</comment>');
+            $allocatedDisk = false;
         }
 
         $this->stdErr->write('Querying database <comment>' . $dbServiceName . '</comment> to estimate disk usage. ');
@@ -104,21 +98,24 @@ class DbSizeCommand extends CommandBase
                 break;
         }
 
-        $percentsUsed = $estimatedUsage * 100 / $allocatedDisk;
-
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $propertyNames = [
-            'max',
-            'used',
-            'percent_used',
-        ];
         $machineReadable = $table->formatIsMachineReadable();
-        $values = [
-            (int) $allocatedDisk . ($machineReadable ? '' : 'MB'),
-            (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
-            (int) $percentsUsed . '%',
-        ];
+
+        if ($allocatedDisk !== false) {
+            $propertyNames = ['max', 'used', 'percent_used'];
+            $percentsUsed = $estimatedUsage * 100 / $allocatedDisk;
+            $values = [
+                (int) $allocatedDisk . ($machineReadable ? '' : 'MB'),
+                (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
+                (int) $percentsUsed . '%',
+            ];
+        } else {
+            $propertyNames = ['used'];
+            $values = [
+                (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
+            ];
+        }
 
         $table->renderSimple($values, $propertyNames);
 
@@ -179,5 +176,31 @@ class DbSizeCommand extends CommandBase
             $connectionParams,
             $query
         );
+    }
+
+    /**
+     * Find the service configuration (from services.yaml).
+     *
+     * @return array
+     */
+    private function getProjectServiceConfig()
+    {
+        $servicesYaml = false;
+        $servicesYamlFilename = $this->config()->get('service.project_config_dir') . '/services.yaml';
+        $services = [];
+        try {
+            $servicesYaml = $this->api()->readFile($servicesYamlFilename, $this->getSelectedEnvironment());
+        } catch (ApiFeatureMissingException $e) {
+            $this->debug($e->getMessage());
+            if ($projectRoot = $this->getProjectRoot()) {
+                $this->debug('Reading file in local project: ' . $projectRoot . '/' . $servicesYamlFilename);
+                $servicesYaml = file_get_contents($projectRoot . '/' . $servicesYamlFilename);
+            }
+        }
+        if ($servicesYaml) {
+            $services = (array) (new Yaml())->parse($servicesYaml);
+        }
+
+        return $services;
     }
 }
