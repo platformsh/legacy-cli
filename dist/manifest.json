@@ -78,6 +78,11 @@
                 "notes": "- A public website URL can now be used in the --project (-p) option\n- Added `--exclude` and `--include` options to `mount` commands\n- Added `--excluded-environments` option for webhook integrations*\n- Added Gitlab integration support*\n\n(* the last two will apply to an upcoming Platform.sh version, 2.7)",
                 "show from": "3.22.0",
                 "hide from": "3.23.0"
+            },
+            {
+                "notes": "* Add repo:cat and repo:ls commands\n* Allow default target/source in mount:upload and mount:download when --yes is used\n* Add -W alias to --no-wait option in push command\n* (from Symfony Console 3.4) Allow case-insensitive command shortcuts\n* (from Symfony Console 3.4) Fix combining one-letter options\n* Write curl debug output to STDERR, not STDOUT\n* Fix some Drush 9.0.0-rc1 compatibility issues",
+                "show from": "3.23.0",
+                "hide from": "3.24.0"
             }
         ]
     },
