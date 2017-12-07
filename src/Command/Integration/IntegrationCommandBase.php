@@ -175,6 +175,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'default' => [],
                 'description' => 'The environments to exclude',
+                'required' => false,
             ]),
             'from_address' => new EmailAddressField('From address', [
                 'conditions' => ['type' => [
