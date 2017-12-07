@@ -36,6 +36,13 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $values = $this->getForm()
                        ->resolveOptions($input, $this->stdErr, $questionHelper);
 
+        // Omit all empty, non-required fields when creating a new integration.
+        foreach ($this->getForm()->getFields() as $name => $field) {
+            if (isset($values[$name]) && !$field->isRequired() && $field->isEmpty($values[$name])) {
+                unset($values[$name]);
+            }
+        }
+
         $result = $this->getSelectedProject()
                        ->addIntegration($values['type'], $values);
 
