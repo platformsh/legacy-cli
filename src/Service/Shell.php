@@ -145,21 +145,27 @@ class Shell
     /**
      * Attempt to read useful environment variables from the parent process.
      *
-     * We can't rely on the PHP having a variables_order that includes 'e', so
-     * $_ENV may be empty.
-     *
      * @return array
      */
     protected function getParentEnv()
     {
+        if (PHP_VERSION_ID >= 70100) {
+            return getenv();
+        }
+        // In PHP <7.1 there isn't a way to read all of the current environment
+        // variables. If PHP is running with a variables_order that includes
+        // 'e', then $_ENV may be populated.
         if (!empty($_ENV)) {
             return $_ENV;
         }
 
+        // If $_ENV is empty, then we can only use a whitelist of all the
+        // variables that we might want to use.
         $candidates = [
             'TERM',
             'TERM_SESSION_ID',
             'TMPDIR',
+            'SSH_AGENT_PID',
             'SSH_AUTH_SOCK',
             'PATH',
             'LANG',
