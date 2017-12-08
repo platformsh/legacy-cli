@@ -27,11 +27,13 @@ class Relationships implements InputConfiguringInterface
     public static function configureInput(InputDefinition $definition)
     {
         $definition->addOption(
-            new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The database relationship to use')
+            new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The service relationship to use')
         );
     }
 
     /**
+     * Choose a database for the user.
+     *
      * @param string          $sshUrl
      * @param InputInterface  $input
      * @param OutputInterface $output
@@ -40,22 +42,39 @@ class Relationships implements InputConfiguringInterface
      */
     public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
     {
+        return $this->chooseService($sshUrl, $input, $output, ['mysql', 'pgsql']);
+    }
+
+    /**
+     * Choose a service for the user.
+     *
+     * @param string          $sshUrl
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     * @param string[]        $schemes Filter by scheme.
+     *
+     * @return array|false
+     */
+    public function chooseService($sshUrl, InputInterface $input, OutputInterface $output, $schemes = [])
+    {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $relationships = $this->getRelationships($sshUrl);
 
-        // Filter to find database (mysql and pgsql) relationships.
-        $relationships = array_filter($relationships, function (array $relationship) {
-            foreach ($relationship as $key => $service) {
-                if ($service['scheme'] === 'mysql' || $service['scheme'] === 'pgsql') {
-                    return true;
+        // Filter to find services matching the schemes.
+        if (!empty($schemes)) {
+            $relationships = array_filter($relationships, function (array $relationship) use ($schemes) {
+                foreach ($relationship as $key => $service) {
+                    if (in_array($service['scheme'], $schemes, true)) {
+                        return true;
+                    }
                 }
-            }
 
-            return false;
-        });
+                return false;
+            });
+        }
 
         if (empty($relationships)) {
-            $stdErr->writeln('No databases found');
+            $stdErr->writeln('No services found');
             return false;
         }
 
@@ -63,7 +82,7 @@ class Relationships implements InputConfiguringInterface
         if ($input->hasOption('relationship')
             && ($relationshipName = $input->getOption('relationship'))) {
             if (!isset($relationships[$relationshipName])) {
-                $stdErr->writeln('Database relationship not found: ' . $relationshipName);
+                $stdErr->writeln('Relationship not found: ' . $relationshipName);
                 return false;
             }
             $relationships = array_intersect_key($relationships, [$relationshipName => true]);
@@ -78,15 +97,15 @@ class Relationships implements InputConfiguringInterface
                 $choices[$name . $separator . $key] = $name . ($serviceCount > 1 ? '.' . $key : '');
             }
         }
-        $choice = $questionHelper->choose($choices, 'Enter a number to choose a database:');
+        $choice = $questionHelper->choose($choices, 'Enter a number to choose a relationship:');
         list($name, $key) = explode($separator, $choice, 2);
-        $database = $relationships[$name][$key];
+        $service = $relationships[$name][$key];
 
-        // Add metadata about the database.
-        $database['_relationship_name'] = $name;
-        $database['_relationship_key'] = $key;
+        // Add metadata about the service.
+        $service['_relationship_name'] = $name;
+        $service['_relationship_key'] = $key;
 
-        return $database;
+        return $service;
     }
 
     /**
