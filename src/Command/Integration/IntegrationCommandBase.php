@@ -33,21 +33,20 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     private function getFields()
     {
-        $types = [
-            'github',
-            'gitlab',
-            'hipchat',
-            'webhook',
-            'health.email',
-            'health.pagerduty',
-            'health.slack',
-        ];
-
         return [
-            'type' => new OptionsField('Type', [
+            'type' => new OptionsField('Integration type', [
                 'optionName' => 'type',
-                'description' => 'The integration type (\'' . implode('\', \'', $types) . '\')',
-                'options' => $types,
+                'description' => 'The integration type',
+                'questionLine' => '',
+                'options' => [
+                    'github',
+                    'gitlab',
+                    'hipchat',
+                    'webhook',
+                    'health.email',
+                    'health.pagerduty',
+                    'health.slack',
+                ],
             ]),
             'token' => new Field('Token', [
                 'conditions' => ['type' => [
@@ -58,7 +57,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'An OAuth token for the integration',
             ]),
-            'base_url' => new Field('Base URL', [
+            'base_url' => new UrlField('Base URL', [
                 'conditions' => ['type' => [
                     'gitlab',
                 ]],
@@ -78,7 +77,8 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'github',
                 ]],
-                'description' => 'GitHub: the repository to track (the URL, e.g. \'https://github.com/user/repo\')',
+                'description' => 'GitHub: the repository to track (e.g. \'user/repo\' or \'https://github.com/user/repo\')',
+                'questionLine' => 'The GitHub repository (e.g. \'user/repo\' or \'https://github.com/user/repo\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
@@ -95,39 +95,53 @@ abstract class IntegrationCommandBase extends CommandBase
                     'gitlab',
                 ]],
                 'description' => 'GitLab: build merge requests as environments',
+                'questionLine' => 'Build every merge request as an environment',
             ]),
             'build_pull_requests' => new BooleanField('Build pull requests', [
                 'conditions' => ['type' => [
                     'github',
                 ]],
                 'description' => 'GitHub: build pull requests as environments',
+                'questionLine' => 'Build every pull request as an environment',
             ]),
             'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
-              'conditions' => ['type' => [
-                'github',
-              ]],
+              'conditions' => [
+                'type' => [
+                  'github',
+                ],
+                'build_pull_requests' => true,
+              ],
               'description' => 'GitHub: build pull requests based on their post-merge state',
+              'questionLine' => 'Build pull requests based on their post-merge state',
             ]),
             'merge_requests_clone_parent_data' => new BooleanField('Clone data for merge requests', [
                 'optionName' => 'merge-requests-clone-parent-data',
-                'conditions' => ['type' => [
-                    'gitlab',
-                ]],
+                'conditions' => [
+                    'type' => [
+                        'gitlab',
+                    ],
+                    'build_merge_requests' => true,
+                ],
                 'description' => 'GitLab: clone data for merge requests',
+                'questionLine' => "Clone the parent environment's data for merge requests",
             ]),
             'pull_requests_clone_parent_data' => new BooleanField('Clone data for pull requests', [
                 'optionName' => 'pull-requests-clone-parent-data',
-                'conditions' => ['type' => [
-                    'github',
-                ]],
+                'conditions' => [
+                    'type' => [
+                        'github',
+                    ],
+                    'build_pull_requests' => true,
+                ],
                 'description' => 'GitHub: clone data for pull requests',
+                'questionLine' => "Clone the parent environment's data for pull requests",
             ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'github',
                     'gitlab',
                 ]],
-                'description' => 'Whether to sync all branches',
+                'description' => 'Fetch all branches (as inactive environments)',
             ]),
             'room' => new Field('HipChat room ID', [
                 'conditions' => ['type' => [
@@ -135,12 +149,14 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'validator' => 'is_numeric',
                 'optionName' => 'room',
+                'questionLine' => 'What is the HipChat room ID (numeric)?',
             ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
                     'webhook',
                 ]],
                 'description' => 'Generic webhook: a URL to receive JSON data',
+                'questionLine' => 'What is the webhook URL (to which JSON data will be posted)?',
             ]),
             'events' => new ArrayField('Events to report', [
                 'conditions' => ['type' => [
@@ -148,7 +164,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'webhook',
                 ]],
                 'default' => ['*'],
-                'description' => 'Events to report, e.g. environment.push',
+                'description' => 'A list of events to report, e.g. environment.push',
                 'optionName' => 'events',
             ]),
             'states' => new ArrayField('States to report', [
@@ -157,16 +173,17 @@ abstract class IntegrationCommandBase extends CommandBase
                     'webhook',
                 ]],
                 'default' => ['complete'],
-                'description' => 'States to report, e.g. pending, in_progress, complete',
+                'description' => 'A list of states to report, e.g. pending, in_progress, complete',
                 'optionName' => 'states',
             ]),
-            'environments' => new ArrayField('Environments', [
+            'environments' => new ArrayField('Included environments', [
+                'optionName' => 'environments',
                 'conditions' => ['type' => [
                     'webhook',
                     'hipchat',
                 ]],
                 'default' => ['*'],
-                'description' => 'The environments to include',
+                'description' => 'The environment IDs to include',
             ]),
             'excluded_environments' => new ArrayField('Excluded environments', [
                 'conditions' => ['type' => [
@@ -174,7 +191,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'hipchat',
                 ]],
                 'default' => [],
-                'description' => 'The environments to exclude',
+                'description' => 'The environment IDs to exclude',
                 'required' => false,
             ]),
             'from_address' => new EmailAddressField('From address', [
