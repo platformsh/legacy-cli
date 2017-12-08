@@ -160,6 +160,7 @@ class Shell
             'TERM',
             'TERM_SESSION_ID',
             'TMPDIR',
+            'SSH_AGENT_PID',
             'SSH_AUTH_SOCK',
             'PATH',
             'LANG',
