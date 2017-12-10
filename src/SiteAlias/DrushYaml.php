@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\SiteAlias;
 
-use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
 
