@@ -55,6 +55,7 @@ class LogoutCommand extends CommandBase
         $config = $this->config();
         $sessionsDir = $config->getWritableUserDir() . '/.session';
         if ($input->getOption('all')) {
+            $this->api()->deleteFromKeychain();
             if (is_dir($sessionsDir)) {
                 /** @var \Platformsh\Cli\Service\Filesystem $fs */
                 $fs = $this->getService('fs');
