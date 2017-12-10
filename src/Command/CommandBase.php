@@ -609,7 +609,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!empty($projectId)) {
             $project = $this->api()->getProject($projectId, $host);
             if (!$project) {
-                throw new ConsoleInvalidArgumentException('Specified project not found: ' . $projectId);
+                throw new ConsoleInvalidArgumentException($this->getProjectNotFoundMessage($projectId));
             }
         } else {
             $project = $this->getCurrentProject();
@@ -625,6 +625,34 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $this->debug('Selected project: ' . $project->id);
 
         return $this->project;
+    }
+
+    /**
+     * Format an error message about a not-found project.
+     *
+     * @param string $projectId
+     *
+     * @return string
+     */
+    private function getProjectNotFoundMessage($projectId)
+    {
+        $message = 'Specified project not found: ' . $projectId;
+        if ($projects = $this->api()->getProjects()) {
+            $message .= "\n\nYour projects are:";
+            $limit = 8;
+            foreach (array_slice($projects, 0, $limit) as $project) {
+                $message .= "\n    " . $project->id;
+                if ($project->title) {
+                    $message .= ' - ' . $project->title;
+                }
+            }
+            if (count($projects) > $limit) {
+                $message .= "\n    ...";
+                $message .= "\n\n    List projects with: " . $this->config()->get('application.executable') . ' project:list';
+            }
+        }
+
+        return $message;
     }
 
     /**
