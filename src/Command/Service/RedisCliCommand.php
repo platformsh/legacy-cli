@@ -70,6 +70,10 @@ class RedisCliCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
 
+        $this->stdErr->writeln(
+            sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $sshUrl)
+        );
+
         return $shell->executeSimple($sshCommand);
     }
 }
