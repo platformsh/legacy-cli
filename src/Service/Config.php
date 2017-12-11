@@ -25,7 +25,7 @@ class Config
      */
     public function __construct(array $env = null, $defaultsFile = null, $reset = false)
     {
-        $this->env = $env !== null ? $env : $_ENV;
+        $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
         if (empty(self::$config) || $reset) {
             $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
@@ -33,6 +33,16 @@ class Config
             $this->applyUserConfigOverrides();
             $this->applyEnvironmentOverrides();
         }
+    }
+
+    /**
+     * Find all current environment variables.
+     *
+     * @return array
+     */
+    private function getDefaultEnv()
+    {
+        return PHP_VERSION_ID >= 70100 ? getenv() : $_ENV;
     }
 
     /**
