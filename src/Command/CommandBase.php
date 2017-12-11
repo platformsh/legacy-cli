@@ -366,17 +366,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
-            // There is a chance that the project isn't available.
             if (!$project) {
-                if (isset($config['host'])) {
-                    $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
-                    $message = "Project not found: " . $projectUrl
-                        . "\nThe project probably no longer exists.";
-                } else {
-                    $message = "Project not found: " . $config['id']
-                        . "\nEither you do not have access to the project or it no longer exists.";
-                }
-                throw new ProjectNotFoundException($message);
+                throw new ProjectNotFoundException(
+                    "Project not found: " . $config['id']
+                    . "\nEither you do not have access to the project or it no longer exists."
+                );
             }
             $this->debug('Project ' . $config['id'] . ' is mapped to the current directory');
         }
