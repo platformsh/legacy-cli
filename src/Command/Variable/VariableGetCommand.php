@@ -49,6 +49,15 @@ class VariableGetCommand extends CommandBase
                 $output->writeln(sprintf('<info>%s</info>: %s', $variable->name, $variable->value));
             }
 
+            if (!$variable->is_enabled) {
+                $this->stdErr->writeln(sprintf(
+                    "The variable <comment>%s</comment> is disabled.\nEnable it with: <comment>%s variable:enable %s</comment>",
+                    $variable->name,
+                    $this->config()->get('application.executable'),
+                    escapeshellarg($variable->name)
+                ));
+            }
+
             return 0;
         }
 
@@ -67,12 +76,13 @@ class VariableGetCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
-        $header = ['ID', 'Value', 'Inherited', 'JSON'];
+        $header = ['ID', 'Value', 'Enabled', 'Inherited', 'JSON'];
         $rows = [];
         foreach ($results as $variable) {
             $rows[] = [
                 new AdaptiveTableCell($variable->id, ['wrap' => false]),
                 $variable->value,
+                $variable->is_enabled ? 'Yes' : 'No',
                 $variable->inherited ? 'Yes' : 'No',
                 $variable->is_json ? 'Yes' : 'No',
             ];
