@@ -187,6 +187,7 @@ class ProjectCreateCommand extends CommandBase
           'title' => new Field('Project title', [
             'optionName' => 'title',
             'description' => 'The initial project title',
+            'questionLine' => '',
             'default' => 'Untitled Project',
           ]),
           'region' => new OptionsField('Region', [
