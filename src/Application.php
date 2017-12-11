@@ -174,6 +174,8 @@ class Application extends ParentApplication
         $commands[] = new Command\User\UserListCommand();
         $commands[] = new Command\User\UserRoleCommand();
         $commands[] = new Command\Variable\VariableDeleteCommand();
+        $commands[] = new Command\Variable\VariableDisableCommand();
+        $commands[] = new Command\Variable\VariableEnableCommand();
         $commands[] = new Command\Variable\VariableGetCommand();
         $commands[] = new Command\Variable\VariableSetCommand();
         $commands[] = new Command\WelcomeCommand();
