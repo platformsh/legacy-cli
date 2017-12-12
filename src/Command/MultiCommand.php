@@ -184,11 +184,8 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         if (!empty($projectList)) {
             $missing = [];
             $selected = [];
-            $projects = $this->getAllProjects($input);
-            foreach (array_unique(preg_split('/[,\s]+/', $projectList)) as $projectId) {
-                if (isset($projects[$projectId])) {
-                    $selected[$projectId] = $projects[$projectId];
-                } elseif ($project = $this->api()->getProject($projectId)) {
+            foreach ($this->splitProjectList($projectList) as $projectId) {
+                if ($project = $this->api()->getProject($projectId)) {
                     $selected[$projectId] = $project;
                 } else {
                     $missing[] = $projectId;
@@ -230,6 +227,18 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $this->stdErr->writeln('');
 
         return $selected;
+    }
+
+    /**
+     * Split a list of project IDs.
+     *
+     * @param string $list
+     *
+     * @return string[]
+     */
+    private function splitProjectList($list)
+    {
+        return array_unique(preg_split('/[,\s]+/', $list) ?: []);
     }
 
     /**
