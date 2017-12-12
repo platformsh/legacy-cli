@@ -6,6 +6,7 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
+use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Environment;
@@ -52,6 +53,9 @@ class Api
 
     /** @var array */
     protected static $notFound = [];
+
+    /** @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null */
+    protected $sessionStorage;
 
     /**
      * Constructor.
@@ -189,7 +193,11 @@ class Api
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
             $session->setId('cli-' . $this->sessionId);
-            $session->setStorage(new File($this->config->getWritableUserDir() . '/.session'));
+
+            $this->sessionStorage = KeychainStorage::isSupported()
+                ? new KeychainStorage($this->config->get('application.name'))
+                : new File($this->config->getWritableUserDir() . '/.session');
+            $session->setStorage($this->sessionStorage);
 
             self::$client = new PlatformClient($connector);
 
@@ -720,5 +728,15 @@ class Api
         }
 
         return $tree;
+    }
+
+    /**
+     * Delete all keychain keys.
+     */
+    public function deleteFromKeychain()
+    {
+        if ($this->sessionStorage instanceof KeychainStorage) {
+            $this->sessionStorage->deleteAll();
+        }
     }
 }
