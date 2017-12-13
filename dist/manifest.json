@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "85b3522db150cc2b88b36d4363c0d1423908c8c2",
-        "sha256": "704598babfad3ba9530aa7e72e211c4eb6a4dcd1135508a957863f6d225d0ad4",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.24.1/platform.phar",
-        "version": "3.24.1",
+        "sha1": "de4c5f0a836828a87f905579ddee8ace4ff4cd90",
+        "sha256": "390a2d7a027e508a875a833020cfc5f9170e1474b641e6a475df1dafffda9f3c",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.25.0/platform.phar",
+        "version": "3.25.0",
         "php": {
             "min": "5.5.9"
         },
@@ -83,6 +83,11 @@
                 "notes": "* Add repo:cat and repo:ls commands\n* Allow default target/source in mount:upload and mount:download when --yes is used\n* Add -W alias to --no-wait option in push command\n* (from Symfony Console 3.4) Allow case-insensitive command shortcuts\n* (from Symfony Console 3.4) Fix combining one-letter options\n* Write curl debug output to STDERR, not STDOUT\n* Fix some Drush 9.0.0-rc1 compatibility issues",
                 "show from": "3.23.0",
                 "hide from": "3.24.0"
+            },
+            {
+                "notes": "* Extends interactive question text in `integration:add` command, to clarify the meaning of options, their defaults, and their syntax\n* Adds support for the \"Enabled\" (`is_enabled`) flag on environment variables.\n* Adds `--no-expired` and `--only-expired` options to `certificate:list`\n* Improves the \"project not found\" message, to suggest other project IDs\n* Implements omitting non-required empty fields when adding an integration (allows earlier support for new integration options without breaking older projects)\n* Adds the SSH_AGENT_PID to auto inherited environment variables (fixes using an SSH agent to manage keys when used with the CLI's Git commands)\n* Adds an experimental `redis` command to connect to a Redis container (hidden from the command list for now)\n* Adds experimental OS X Keychain support (enabled via `experimental.use_keychain`)",
+                "show from": "3.24.0",
+                "hide from": "3.25.0"
             }
         ]
     },
