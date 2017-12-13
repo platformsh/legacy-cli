@@ -158,6 +158,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Server\ServerStartCommand();
         $commands[] = new Command\Server\ServerListCommand();
         $commands[] = new Command\Server\ServerStopCommand();
+        $commands[] = new Command\Service\RedisCliCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
         $commands[] = new Command\Snapshot\SnapshotListCommand();
         $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
@@ -174,6 +175,8 @@ class Application extends ParentApplication
         $commands[] = new Command\User\UserListCommand();
         $commands[] = new Command\User\UserRoleCommand();
         $commands[] = new Command\Variable\VariableDeleteCommand();
+        $commands[] = new Command\Variable\VariableDisableCommand();
+        $commands[] = new Command\Variable\VariableEnableCommand();
         $commands[] = new Command\Variable\VariableGetCommand();
         $commands[] = new Command\Variable\VariableSetCommand();
         $commands[] = new Command\WelcomeCommand();

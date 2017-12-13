@@ -78,6 +78,14 @@ class IntegrationListCommand extends IntegrationCommandBase
                 }
                 break;
 
+            case 'gitlab':
+                $summary = sprintf('Project: %s', $details['project']);
+                $summary .= "\n" . sprintf('Base URL: %s', $details['base_url']);
+                if ($integration->hasLink('#hook')) {
+                    $summary .= "\n" . sprintf('Hook URL: %s', $integration->getLink('#hook'));
+                }
+                break;
+
             case 'hipchat':
                 $summary = sprintf('Room ID: %s', $details['room']);
                 break;

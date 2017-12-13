@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "f8034a99908884c281c3bdf8ee82d023",
+    "content-hash": "c5179c347a499d3085bc709d941b45e9",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -122,16 +122,16 @@
         },
         {
             "name": "cweagans/composer-patches",
-            "version": "1.6.3",
+            "version": "1.6.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cweagans/composer-patches.git",
-                "reference": "730f0f620845974764a91482ac936cc6f39da184"
+                "reference": "462e65061606dc6149349535d4322241515d1b16"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cweagans/composer-patches/zipball/730f0f620845974764a91482ac936cc6f39da184",
-                "reference": "730f0f620845974764a91482ac936cc6f39da184",
+                "url": "https://api.github.com/repos/cweagans/composer-patches/zipball/462e65061606dc6149349535d4322241515d1b16",
+                "reference": "462e65061606dc6149349535d4322241515d1b16",
                 "shasum": ""
             },
             "require": {
@@ -162,7 +162,7 @@
                 }
             ],
             "description": "Provides a way to patch Composer packages.",
-            "time": "2017-11-22T20:18:27+00:00"
+            "time": "2017-12-07T16:16:31+00:00"
         },
         {
             "name": "doctrine/cache",
@@ -594,16 +594,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.13.4",
+            "version": "v0.13.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "44a70e314bbb5f808627337e303a015a0ee2527d"
+                "reference": "62f990120e9c8dd386aca1abcd0fe2e92e1a1b43"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/44a70e314bbb5f808627337e303a015a0ee2527d",
-                "reference": "44a70e314bbb5f808627337e303a015a0ee2527d",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/62f990120e9c8dd386aca1abcd0fe2e92e1a1b43",
+                "reference": "62f990120e9c8dd386aca1abcd0fe2e92e1a1b43",
                 "shasum": ""
             },
             "require": {
@@ -639,20 +639,20 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2017-12-01T10:14:12+00:00"
+            "time": "2017-12-12T16:46:08+00:00"
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.13",
+            "version": "v0.0.15",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "6dc8507d5ed9e1a79fff4265d4f72a932e628015"
+                "reference": "f8d6ec0d810e24e3a028bfffae905325289b8559"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/6dc8507d5ed9e1a79fff4265d4f72a932e628015",
-                "reference": "6dc8507d5ed9e1a79fff4265d4f72a932e628015",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/f8d6ec0d810e24e3a028bfffae905325289b8559",
+                "reference": "f8d6ec0d810e24e3a028bfffae905325289b8559",
                 "shasum": ""
             },
             "require": {
@@ -678,7 +678,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2017-09-22T10:30:55+00:00"
+            "time": "2017-12-11T15:23:12+00:00"
         },
         {
             "name": "psr/container",

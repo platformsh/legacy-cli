@@ -9,6 +9,11 @@ use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 
+/**
+ * Base class for generating Drush site aliases.
+ *
+ * @see Drush::createAliases()
+ */
 abstract class DrushAlias implements SiteAliasTypeInterface
 {
     protected $config;
@@ -242,11 +247,14 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     }
 
     /**
-     * Find a URL for an environment.
+     * Find a single URL for an environment.
+     *
+     * Only one URL may be used for the Drush site alias. This picks the
+     * shortest one available, strongly preferring HTTPS.
      *
      * @param \Platformsh\Client\Model\Environment $environment
      *
-     * @return string|false
+     * @return string|false A URL, or false if no URLs are found.
      */
     private function getUrl(Environment $environment)
     {
@@ -269,7 +277,11 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Generate a key that allows an alias to be automatically deleted later.
      *
+     * @see DrushAlias::createAliases()
+     *
      * @return string
+     *     A string based on the application name, for example
+     *     'platformsh-cli-auto-remove'.
      */
     private function getAutoRemoveKey()
     {
