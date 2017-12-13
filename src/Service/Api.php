@@ -200,7 +200,6 @@ class Api
                 ? new KeychainStorage($this->config->get('application.name'))
                 : new File($this->config->getWritableUserDir() . '/.session');
             $session->setStorage($this->sessionStorage);
-            var_dump($this->sessionStorage);
 
             self::$client = new PlatformClient($connector);
 
