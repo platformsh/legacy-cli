@@ -24,7 +24,7 @@ class KeychainStorage implements SessionStorageInterface
     public function __construct($appName, $appId = '')
     {
         $this->appName = $appName;
-        $this->appId = $appId ?: preg_replace('/\W+/', '-', $this->appName);
+        $this->appId = $appId ?: strtolower(preg_replace('/\W+/', '-', $this->appName));
     }
 
     /**
@@ -64,6 +64,7 @@ class KeychainStorage implements SessionStorageInterface
      */
     private function loadFromFile(SessionInterface $session)
     {
+        var_dump('loading from file');
         $id = preg_replace('/[^\w\-]+/', '-', $session->getId());
         $dir = (new Config())->getWritableUserDir() . '/.session';
         $filename = "$dir/sess-$id/sess-$id.json";
