@@ -156,7 +156,12 @@ class Identifier
         if ($cluster === false) {
             $this->debug('Making a HEAD request to identify project from URL: ' . $url);
             try {
-                $response = $this->api->getHttpClient()->head($url, ['auth' => false]);
+                $response = $this->api->getHttpClient()->head($url, [
+                    'auth' => false,
+                    'timeout' => 5,
+                    'connect_timeout' => 5,
+                    'allow_redirects' => false,
+                ]);
                 $cluster = $response->getHeader($this->config->get('service.header_prefix') . '-cluster');
                 $this->cache->save($cacheKey, $cluster, 86400);
             } catch (RequestException $e) {
