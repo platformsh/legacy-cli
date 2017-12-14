@@ -86,7 +86,7 @@ class Shell
      */
     public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
     {
-        $process = new Process($args, $dir, null, null, $timeout);
+        $process = new Process($args, null, null, null, $timeout);
 
         // Avoid adding 'exec' to every command. It is not needed in this
         // context as we do not need to send signals to the process. Also it
@@ -109,7 +109,8 @@ class Shell
             $process->setEnv($env + $this->getParentEnv());
         }
 
-        if ($dir) {
+        if ($dir && is_dir($dir)) {
+            $process->setWorkingDirectory($dir);
             $this->showWorkingDirMessage($dir);
         }
 
