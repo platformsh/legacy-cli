@@ -62,6 +62,7 @@ class EventSubscriber implements EventSubscriberInterface
         if (($exception instanceof ClientException || $exception instanceof ServerException)
             && ($response = $exception->getResponse())) {
             $request = $exception->getRequest();
+            $requestConfig = $request->getConfig();
             $response->getBody()->seek(0);
             $json = (array) json_decode($response->getBody()->getContents(), true);
 
@@ -69,6 +70,7 @@ class EventSubscriber implements EventSubscriberInterface
             // error.
             $loginCommand = sprintf('%s login', $this->config->get('application.executable'));
             if ($response->getStatusCode() === 400
+                && $requestConfig['auth'] === 'oauth2'
                 && isset($json['error_description'])
                 && $json['error_description'] === 'Invalid refresh token') {
                 $event->setException(new LoginRequiredException(
@@ -77,14 +79,14 @@ class EventSubscriber implements EventSubscriberInterface
                     $response
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 401) {
+            } elseif ($response->getStatusCode() === 401 && $requestConfig['auth'] === 'oauth2') {
                 $event->setException(new LoginRequiredException(
                     "Unauthorized. \nPlease log in again by running: $loginCommand",
                     $request,
                     $response
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 403) {
+            } elseif ($response->getStatusCode() === 403 && $requestConfig['auth'] === 'oauth2') {
                 $event->setException(new PermissionDeniedException(
                     "Permission denied. Check your project or environment permissions.",
                     $request,
