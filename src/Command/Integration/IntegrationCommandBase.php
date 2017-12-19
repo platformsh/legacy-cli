@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
@@ -280,7 +280,6 @@ abstract class IntegrationCommandBase extends CommandBase
 
         $client = $this->api()->getHttpClient();
 
-        $this->stdErr->writeln('');
         $this->stdErr->writeln(sprintf(
             'Checking webhook configuration on the repository: <info>%s</info>',
             $repoName
@@ -292,16 +291,14 @@ abstract class IntegrationCommandBase extends CommandBase
                 $this->stdErr->writeln('  Valid configuration found');
             } else {
                 $this->stdErr->writeln('  Creating new webhook');
-                $client->post($hooksApiUrl, [
-                        'json' => $payload,
-                    ] + $requestOptions);
+                $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
             }
-        } catch (BadResponseException $e) {
+        } catch (TransferException $e) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('  <comment>Failed to read or write webhooks:</comment>');
             $this->stdErr->writeln('  ' . $e->getMessage());
             $this->stdErr->writeln(sprintf(
-                "\n  Please ensure the webhook exists manually.\n  Hook URL: %s",
+                "\n  Please ensure a webhook exists manually.\n  Hook URL: %s",
                 $integration->getLink('#hook')
             ));
         }
