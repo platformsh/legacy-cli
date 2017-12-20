@@ -610,7 +610,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             if (!$project) {
                 throw new RootNotFoundException(
                     "Could not determine the current project."
-                    . "\nSpecify it manually using --project or go to a project directory."
+                    . "\n\nSpecify it using --project, or go to a project directory."
                 );
             }
         }
