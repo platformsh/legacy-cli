@@ -70,12 +70,15 @@ class EnvironmentDrushCommand extends CommandBase
             ->getCurrentDeployment($selectedEnvironment)
             ->getWebApp($appName);
         /** @var \Platformsh\Cli\Service\RemoteApps $remoteAppsService */
-        $docRoot = $remoteAppsService->getDocumentRoot($remoteApp);
+        $remoteAppsService = $this->getService('remote_apps');
+        $relativeDocRoot = $remoteAppsService->getDocumentRoot($remoteApp);
 
-        // Use the PLATFORM_APP_DIR environment variable, if set, to determine
-        // the path to the app.
-        $appRoot = sprintf('${%sAPP_DIR:-/app}', $this->config()->get('service.env_prefix'));
-        $drupalRoot = $appRoot . '/' . $docRoot;
+        // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
+        // determine the path to Drupal. Fall back to a combination of the known
+        // document root and the PLATFORM_APP_DIR variable.
+        $envPrefix = (string) $this->config()->get('service.env_prefix');
+        $appRoot = sprintf('${%sAPP_DIR:-/app}', $envPrefix);
+        $drupalRoot = sprintf('${%sDOCUMENT_ROOT:-%s}', $envPrefix, $appRoot . '/' . $relativeDocRoot);
 
         $columns = (new Terminal())->getWidth();
 
