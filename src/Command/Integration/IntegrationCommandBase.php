@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
@@ -235,6 +236,96 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The PagerDuty routing key',
             ]),
         ];
+    }
+
+    /**
+     * @param \Platformsh\Client\Model\Integration $integration
+     */
+    protected function ensureHooks(Integration $integration)
+    {
+        if ($integration->type === 'github') {
+            $hooksApiUrl = sprintf('https://api.github.com/repos/%s/hooks', $integration->getProperty('repository'));
+            $requestOptions = [
+                'auth' => false,
+                'headers' => [
+                    'Accept' => 'application/vnd.github.v3+json',
+                    'Authorization' => 'token ' . $integration->getProperty('token'),
+                ],
+            ];
+            $payload = [
+                'name' => 'web',
+                'config' => [
+                    'url' => $integration->getLink('#hook'),
+                    'content_type' => 'json',
+                ],
+                'events' => ['*'],
+                'active' => true,
+            ];
+            $repoName = $integration->getProperty('repository');
+        } elseif ($integration->type === 'gitlab') {
+            $baseUrl = rtrim($integration->getProperty('base_url'), '/');
+            $hooksApiUrl = sprintf('%s/api/v4/projects/%s/hooks', $baseUrl, rawurlencode($integration->getProperty('project')));
+            $requestOptions = [
+                'auth' => false,
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Private-Token' => $integration->getProperty('token'),
+                ],
+            ];
+            $payload = ['url' => $integration->getLink('#hook')];
+            $repoName = $baseUrl . '/' . $integration->getProperty('project');
+        } else {
+            return;
+        }
+
+        $client = $this->api()->getHttpClient();
+
+        $this->stdErr->writeln(sprintf(
+            'Checking webhook configuration on the repository: <info>%s</info>',
+            $repoName
+        ));
+
+        try {
+            $hooks = $client->get($hooksApiUrl, $requestOptions)->json();
+            if ($this->findWebHook($integration, $hooks)) {
+                $this->stdErr->writeln('  Valid configuration found');
+            } else {
+                $this->stdErr->writeln('  Creating new webhook');
+                $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
+            }
+        } catch (TransferException $e) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('  <comment>Failed to read or write webhooks:</comment>');
+            $this->stdErr->writeln('  ' . $e->getMessage());
+            $this->stdErr->writeln(sprintf(
+                "\n  Please ensure a webhook exists manually.\n  Hook URL: %s",
+                $integration->getLink('#hook')
+            ));
+        }
+    }
+
+    /**
+     * Find if a valid webhook exists in a service's hooks list.
+     *
+     * @param \Platformsh\Client\Model\Integration $integration
+     * @param array                                $jsonResult
+     *
+     * @return bool
+     */
+    private function findWebHook(Integration $integration, array $jsonResult)
+    {
+        $type = $integration->type;
+        $hookUrl = $integration->getLink('#hook');
+        foreach ($jsonResult as $hook) {
+            if ($type === 'github' && $hook['config']['url'] === $hookUrl) {
+                return true;
+            }
+            if ($type === 'gitlab' && $hook['url'] === $hookUrl) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
