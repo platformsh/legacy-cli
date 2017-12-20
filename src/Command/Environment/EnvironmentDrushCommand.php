@@ -66,9 +66,10 @@ class EnvironmentDrushCommand extends CommandBase
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
         // Get the document root for the application, to find the Drupal root.
+        $remoteApp = $this->api()
+            ->getCurrentDeployment($selectedEnvironment)
+            ->getWebApp($appName);
         /** @var \Platformsh\Cli\Service\RemoteApps $remoteAppsService */
-        $remoteAppsService = $this->getService('remote_apps');
-        $remoteApp = $remoteAppsService->getApp($selectedEnvironment, $appName);
         $docRoot = $remoteAppsService->getDocumentRoot($remoteApp);
 
         // Use the PLATFORM_APP_DIR environment variable, if set, to determine

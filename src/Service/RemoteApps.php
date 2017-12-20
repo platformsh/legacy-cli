@@ -3,26 +3,12 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Client\Model\Deployment\WebApp;
-use Platformsh\Client\Model\Environment;
 
 /**
  * A service for interacting with remote applications.
  */
 class RemoteApps
 {
-    /**
-     * Get the config for a remote application.
-     *
-     * @param \Platformsh\Client\Model\Environment $environment
-     * @param string                               $appName
-     *
-     * @return WebApp
-     */
-    public function getApp(Environment $environment, $appName)
-    {
-        return $environment->getCurrentDeployment()->getWebApp($appName);
-    }
-
     /**
      * Get the (normalized) document root of a web app.
      *

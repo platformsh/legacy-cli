@@ -17,7 +17,7 @@ class AppConfigGetCommand extends CommandBase
             ->setName('app:config-get')
             ->setDescription('View the configuration of an app')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, '[Deprecated option, no longer used]');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -30,13 +30,11 @@ class AppConfigGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $this->warnAboutDeprecatedOptions(['identity-file']);
 
-        $this->warnAboutDeprecatedOptions(['refresh', 'identity-file']);
-
-        /** @var \Platformsh\Cli\Service\RemoteApps $appsService */
-        $appsService = $this->getService('remote_apps');
-
-        $appConfig = $appsService->getApp($this->getSelectedEnvironment(), $this->selectApp($input))
+        $appConfig = $this->api()
+            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'))
+            ->getWebApp($this->selectApp($input))
             ->getProperties();
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
