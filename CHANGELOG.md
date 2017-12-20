@@ -4,9 +4,19 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
-## [Unreleased](https://github.com/platformsh/platformsh-cli/tree/HEAD)
+## [v3.25.1](https://github.com/platformsh/platformsh-cli/tree/v3.25.1) (2017-12-14)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.25.0...v3.25.1)
 
-[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.24.1...HEAD)
+**Closed issues:**
+
+- RuntimeException: The provided cwd does not exist [\#664](https://github.com/platformsh/platformsh-cli/issues/664)
+
+## [v3.25.0](https://github.com/platformsh/platformsh-cli/tree/v3.25.0) (2017-12-13)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.24.1...v3.25.0)
+
+**Closed issues:**
+
+- Support for drush 9.0.0-rc1 \(changed alias file naming convention again\) [\#655](https://github.com/platformsh/platformsh-cli/issues/655)
 
 **Merged pull requests:**
 
