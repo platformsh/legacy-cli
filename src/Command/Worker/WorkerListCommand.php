@@ -41,14 +41,17 @@ class WorkerListCommand extends CommandBase
             return 0;
         }
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
         $rows = [];
         foreach ($workers as $worker) {
-            $rows[] = [$worker->name, $worker->type, json_encode($worker->worker)];
+            $commands = isset($worker->worker['commands']) ? $worker->worker['commands'] : [];
+            $rows[] = [$worker->name, $worker->type, $formatter->format($commands)];
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $table->render($rows, ['Name', 'Type', 'Worker config']);
+        $table->render($rows, ['Name', 'Type', 'Commands']);
 
         return 0;
     }
