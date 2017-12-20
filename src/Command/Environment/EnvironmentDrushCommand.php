@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -69,9 +70,7 @@ class EnvironmentDrushCommand extends CommandBase
         $remoteApp = $this->api()
             ->getCurrentDeployment($selectedEnvironment)
             ->getWebApp($appName);
-        /** @var \Platformsh\Cli\Service\RemoteApps $remoteAppsService */
-        $remoteAppsService = $this->getService('remote_apps');
-        $relativeDocRoot = $remoteAppsService->getDocumentRoot($remoteApp);
+        $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();
 
         // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
         // determine the path to Drupal. Fall back to a combination of the known
