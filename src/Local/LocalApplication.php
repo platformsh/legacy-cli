@@ -249,33 +249,6 @@ class LocalApplication
     }
 
     /**
-     * Get a single application by name.
-     *
-     * @param string|null $name
-     *     The application name.
-     * @param string $directory
-     *     The absolute path to a directory.
-     * @param Config|null $config
-     *     CLI configuration.
-     *
-     * @return LocalApplication
-     */
-    public static function getApplication($name, $directory, Config $config = null)
-    {
-        $apps = self::getApplications($directory, $config);
-        if ($name === null && count($apps) === 1) {
-            return reset($apps);
-        }
-        foreach ($apps as $app) {
-            if ($app->getName() === $name) {
-                return $app;
-            }
-        }
-
-        throw new \InvalidArgumentException('App not found: ' . $name);
-    }
-
-    /**
      * Get the configured document root for the application, as a relative path.
      *
      * @param string $default
