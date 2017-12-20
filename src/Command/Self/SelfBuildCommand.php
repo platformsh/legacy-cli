@@ -192,7 +192,7 @@ class SelfBuildCommand extends CommandBase
                 'log',
                 '--pretty=format:"* %s"',
                 '--no-merges',
-                'v' . $oldVersion . '...v' . $version
+                'v' . $oldVersion . '...master'
             ]);
         }
         $manifestItem['version'] = $version;
