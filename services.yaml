@@ -80,6 +80,9 @@ services:
         class:     '\Platformsh\Cli\Service\QuestionHelper'
         arguments: ['@input', '@output']
 
+    remote_apps:
+        class:     '\Platformsh\Cli\Service\RemoteApps'
+
     remote_env_vars:
         class:     '\Platformsh\Cli\Service\RemoteEnvVars'
         arguments: ['@ssh', '@cache', '@shell', '@config']

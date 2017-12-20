@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
@@ -66,26 +65,16 @@ class EnvironmentDrushCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
-        // Get the LocalApplication object for the specified application, if
-        // available.
-        $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && $this->selectedProjectIsCurrent()) {
-            $app = LocalApplication::getApplication($appName, $projectRoot, $this->config());
-        }
+        // Get the document root for the application, to find the Drupal root.
+        /** @var \Platformsh\Cli\Service\RemoteApps $remoteAppsService */
+        $remoteAppsService = $this->getService('remote_apps');
+        $remoteApp = $remoteAppsService->getApp($selectedEnvironment, $appName);
+        $docRoot = $remoteAppsService->getDocumentRoot($remoteApp);
 
-        // Use the local application configuration (if available) to determine
-        // the correct Drupal root.
-        if (isset($app)) {
-            $drupalRoot = '/app/' . $app->getDocumentRoot();
-        } else {
-            // Fall back to the PLATFORM_DOCUMENT_ROOT environment variable,
-            // which is usually correct, except where the document_root was
-            // specified as '/'.
-            $documentRootEnvVar = $this->config()->get('service.env_prefix') . 'DOCUMENT_ROOT';
-            $drupalRoot = '${' . $documentRootEnvVar . ':-/app/public}';
-
-            $this->debug('<comment>Warning:</comment> using $' . $documentRootEnvVar . ' for the Drupal root. This fails in cases where the document_root is /.');
-        }
+        // Use the PLATFORM_APP_DIR environment variable, if set, to determine
+        // the path to the app.
+        $appRoot = sprintf('${%sAPP_DIR:-/app}', $this->config()->get('service.env_prefix'));
+        $drupalRoot = $appRoot . '/' . $docRoot;
 
         $columns = (new Terminal())->getWidth();
 
