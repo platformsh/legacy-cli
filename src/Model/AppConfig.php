@@ -91,7 +91,7 @@ class AppConfig
         }
 
         // The `web` section has changed to `web`.`locations`.
-        if (isset($config['web']['document_root']) && !isset($config['web']['locations'])) {
+        if (isset($config['web']['document_root']) && empty($config['web']['locations'])) {
             $oldConfig = $config['web'] + $this->getOldWebDefaults();
 
             $location = &$config['web']['locations']['/'];
