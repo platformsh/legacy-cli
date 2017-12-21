@@ -610,7 +610,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             if (!$project) {
                 throw new RootNotFoundException(
                     "Could not determine the current project."
-                    . "\nSpecify it manually using --project or go to a project directory."
+                    . "\n\nSpecify it using --project, or go to a project directory."
                 );
             }
         }
@@ -1001,8 +1001,41 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function debug($message)
     {
+        $this->labeledMessage('DEBUG', $message, OutputInterface::VERBOSITY_DEBUG);
+    }
+
+    /**
+     * Print a warning about an deprecated option.
+     *
+     * @param string[] $options
+     */
+    protected function warnAboutDeprecatedOptions(array $options)
+    {
+        if (!isset($this->input)) {
+            return;
+        }
+        foreach ($options as $option) {
+            if ($this->input->hasOption($option) && $this->input->getOption($option)) {
+                $this->labeledMessage(
+                    'DEPRECATED',
+                    'The option --' . $option . ' is deprecated and no longer used. It will be removed in a future version.',
+                    OutputInterface::VERBOSITY_VERBOSE
+                );
+            }
+        }
+    }
+
+    /**
+     * Print a message with a label.
+     *
+     * @param string $label
+     * @param string $message
+     * @param int    $options
+     */
+    private function labeledMessage($label, $message, $options = 0)
+    {
         if (isset($this->stdErr)) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
+            $this->stdErr->writeln('<options=reverse>' . strtoupper($label) . '</> ' . $message, $options);
         }
     }
 

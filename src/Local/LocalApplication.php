@@ -1,13 +1,14 @@
 <?php
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Local\BuildFlavor\BuildFlavorInterface;
 use Platformsh\Cli\Service\Mount;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Parser;
+use Symfony\Component\Yaml\Yaml;
 
 class LocalApplication
 {
@@ -114,7 +115,7 @@ class LocalApplication
      */
     public function setConfig(array $config)
     {
-        $this->config = $config;
+        $this->config = new AppConfig($config);
     }
 
     /**
@@ -124,20 +125,29 @@ class LocalApplication
      */
     public function getConfig()
     {
+        return $this->getConfigObject()->getNormalized();
+    }
+
+    /**
+     * Get the application's configuration as an object.
+     *
+     * @return AppConfig
+     */
+    private function getConfigObject()
+    {
         if (!isset($this->config)) {
-            $this->config = [];
+            $config = [];
             $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
             if (file_exists($file)) {
                 try {
-                    $parser = new Parser();
-                    $config = (array) $parser->parse(file_get_contents($file));
-                    $this->config = $this->normalizeConfig($config);
+                    $config = (array) (new Yaml())->parse(file_get_contents($file));
                 } catch (ParseException $e) {
                     throw new InvalidConfigException(
                         "Parse error in file '$file': \n" . $e->getMessage()
                     );
                 }
             }
+            $this->config = new AppConfig($config);
         }
 
         return $this->config;
@@ -151,48 +161,6 @@ class LocalApplication
     public function getSharedFileMounts()
     {
         return $this->mount->getSharedFileMounts($this->getConfig());
-    }
-
-    /**
-     * Normalize an application's configuration.
-     *
-     * @param array $config
-     *
-     * @return array
-     */
-    protected function normalizeConfig(array $config)
-    {
-        // Backwards compatibility with old config format: `toolstack` is
-        // changed to application `type` and `build`.`flavor`.
-        if (isset($config['toolstack'])) {
-            if (!strpos($config['toolstack'], ':')) {
-                throw new InvalidConfigException("Invalid value for 'toolstack'");
-            }
-            list($config['type'], $config['build']['flavor']) = explode(':', $config['toolstack'], 2);
-        }
-
-        // The `web` section has changed to `web`.`locations`.
-        if (isset($config['web']['document_root']) && !isset($config['web']['locations'])) {
-            $oldConfig = $config['web'] + $this->getOldWebDefaults();
-
-            $location = &$config['web']['locations']['/'];
-
-            $location['root'] = $oldConfig['document_root'];
-            $location['expires'] = $oldConfig['expires'];
-            $location['passthru'] = $oldConfig['passthru'];
-            $location['allow'] = true;
-
-            foreach ($oldConfig['whitelist'] as $pattern) {
-                $location['allow'] = false;
-                $location['rules'][$pattern]['allow'] = true;
-            }
-
-            foreach ($oldConfig['blacklist'] as $pattern) {
-                $location['rules'][$pattern]['allow'] = false;
-            }
-        }
-
-        return $config;
     }
 
     /**
@@ -281,49 +249,17 @@ class LocalApplication
     }
 
     /**
-     * Get a single application by name.
-     *
-     * @param string|null $name
-     *     The application name.
-     * @param string $directory
-     *     The absolute path to a directory.
-     * @param Config|null $config
-     *     CLI configuration.
-     *
-     * @return LocalApplication
-     */
-    public static function getApplication($name, $directory, Config $config = null)
-    {
-        $apps = self::getApplications($directory, $config);
-        if ($name === null && count($apps) === 1) {
-            return reset($apps);
-        }
-        foreach ($apps as $app) {
-            if ($app->getName() === $name) {
-                return $app;
-            }
-        }
-
-        throw new \InvalidArgumentException('App not found: ' . $name);
-    }
-
-    /**
      * Get the configured document root for the application, as a relative path.
+     *
+     * @param string $default
+     *
+     * @todo stop using 'public' as the default
      *
      * @return string
      */
-    public function getDocumentRoot()
+    public function getDocumentRoot($default = 'public')
     {
-        $config = $this->getConfig();
-
-        // The default document root is '/public'. This is used if the root is
-        // not set, if it is empty, or if it is set to '/'.
-        $documentRoot = '/public';
-        if (!empty($config['web']['locations']['/']['root']) && $config['web']['locations']['/']['root'] !== '/') {
-            $documentRoot = $config['web']['locations']['/']['root'];
-        }
-
-        return ltrim($documentRoot, '/');
+        return $this->getConfigObject()->getDocumentRoot() ?: $default;
     }
 
     /**
@@ -340,76 +276,5 @@ class LocalApplication
         }
 
         return $this->getDocumentRoot() === 'public' && !is_dir($this->getRoot() . '/public');
-    }
-
-    /**
-     * @return array
-     */
-    protected function getOldWebDefaults()
-    {
-        return [
-            'document_root' => '/public',
-            'expires' => 0,
-            'passthru' => '/index.php',
-            'blacklist' => [],
-            'whitelist' => [
-                // CSS and Javascript.
-                '\.css$',
-                '\.js$',
-
-                // image/* types.
-                '\.gif$',
-                '\.jpe?g$',
-                '\.png$',
-                '\.tiff?$',
-                '\.wbmp$',
-                '\.ico$',
-                '\.jng$',
-                '\.bmp$',
-                '\.svgz?$',
-
-                // audio/* types.
-                '\.midi?$',
-                '\.mpe?ga$',
-                '\.mp2$',
-                '\.mp3$',
-                '\.m4a$',
-                '\.ra$',
-                '\.weba$',
-
-                // video/* types.
-                '\.3gpp?$',
-                '\.mp4$',
-                '\.mpe?g$',
-                '\.mpe$',
-                '\.ogv$',
-                '\.mov$',
-                '\.webm$',
-                '\.flv$',
-                '\.mng$',
-                '\.asx$',
-                '\.asf$',
-                '\.wmv$',
-                '\.avi$',
-
-                // application/ogg.
-                '\.ogx$',
-
-                // application/x-shockwave-flash.
-                '\.swf$',
-
-                // application/java-archive.
-                '\.jar$',
-
-                // fonts types.
-                '\.ttf$',
-                '\.eot$',
-                '\.woff$',
-                '\.otf$',
-
-                // robots.txt.
-                '/robots\.txt$',
-            ],
-        ];
     }
 }

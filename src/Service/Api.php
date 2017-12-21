@@ -9,6 +9,7 @@ use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
+use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
@@ -740,5 +741,29 @@ class Api
         if ($this->sessionStorage instanceof KeychainStorage) {
             $this->sessionStorage->deleteAll();
         }
+    }
+
+    /**
+     * Get the current deployment for an environment.
+     *
+     * @param Environment $environment
+     * @param bool        $refresh
+     *
+     * @return EnvironmentDeployment
+     */
+    public function getCurrentDeployment(Environment $environment, $refresh = false)
+    {
+        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id]);
+        $data = $this->cache->fetch($cacheKey);
+        if ($data === false || $refresh) {
+            $deployment = $environment->getCurrentDeployment();
+            $data = $deployment->getData();
+            $data['_uri'] = $deployment->getUri();
+            $this->cache->save($cacheKey, $data, $this->config->get('api.environments_ttl'));
+        } else {
+            $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
+        }
+
+        return $deployment;
     }
 }

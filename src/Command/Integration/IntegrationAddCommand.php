@@ -49,6 +49,8 @@ class IntegrationAddCommand extends IntegrationCommandBase
         /** @var Integration $integration */
         $integration = $result->getEntity();
 
+        $this->ensureHooks($integration);
+
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 
         $success = true;

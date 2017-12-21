@@ -10,8 +10,8 @@ use Platformsh\Cli\Exception\DependencyMissingException;
 class Git
 {
 
-    /** @var string */
-    protected $repositoryDir = '.';
+    /** @var string|null */
+    protected $repositoryDir = null;
 
     /** @var Shell */
     protected $shellHelper;
@@ -126,9 +126,9 @@ class Git
      *
      * @param string[]     $args
      *   Command arguments (everything after 'git').
-     * @param string|false $dir
+     * @param string|false|null $dir
      *   The path to a Git repository. Set to false if the command should not
-     *   run inside a repository.
+     *   run inside a repository. Set to null to use the default repository.
      * @param bool         $mustRun
      *   Enable exceptions if the Git command fails.
      * @param bool         $quiet

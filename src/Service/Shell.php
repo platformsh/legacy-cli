@@ -155,8 +155,8 @@ class Shell
         }
         // In PHP <7.1 there isn't a way to read all of the current environment
         // variables. If PHP is running with a variables_order that includes
-        // 'e', then $_ENV may be populated.
-        if (!empty($_ENV)) {
+        // 'e', then $_ENV should be populated.
+        if (!empty($_ENV) && stripos(ini_get('variables_order'), 'e') !== false) {
             return $_ENV;
         }
 
@@ -180,7 +180,9 @@ class Shell
             $variables[$name] = getenv($name);
         }
 
-        return array_filter($variables);
+        return array_filter($variables, function ($value) {
+            return $value !== false;
+        });
     }
 
     /**

@@ -50,7 +50,8 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
         if (!$values) {
-            $this->stdErr->writeln("No changed values were provided to update");
+            $this->stdErr->writeln('No changed values were provided to update.');
+            $this->ensureHooks($integration);
 
             return 1;
         }
@@ -66,6 +67,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         $result = $integration->update($values);
         $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
+        $this->ensureHooks($integration);
 
         $this->displayIntegration($integration);
 
