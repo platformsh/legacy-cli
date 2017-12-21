@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "f9db4be41db6d96d8163603c4d8083168e1e472f",
-        "sha256": "aa8c294dcb85e16b5382407d162e22008f8a574acb186f29d7277d24232526c7",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.25.1/platform.phar",
-        "version": "3.25.1",
+        "sha1": "b5ec20dec29842693d000adefd64e46abb2bdc56",
+        "sha256": "8343ce8235535f2c388a5ed0f0a321debc9a1838fd53c006c75445b2e099cbe9",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.26.0/platform.phar",
+        "version": "3.26.0",
         "php": {
             "min": "5.5.9"
         },
@@ -88,6 +88,11 @@
                 "notes": "* Extends interactive question text in `integration:add` command, to clarify the meaning of options, their defaults, and their syntax\n* Adds support for the \"Enabled\" (`is_enabled`) flag on environment variables.\n* Adds `--no-expired` and `--only-expired` options to `certificate:list`\n* Improves the \"project not found\" message, to suggest other project IDs\n* Implements omitting non-required empty fields when adding an integration (allows earlier support for new integration options without breaking older projects)\n* Adds the SSH_AGENT_PID to auto inherited environment variables (fixes using an SSH agent to manage keys when used with the CLI's Git commands)\n* Adds an experimental `redis` command to connect to a Redis container (hidden from the command list for now)\n* Adds experimental OS X Keychain support (enabled via `experimental.use_keychain`)",
                 "show from": "3.24.0",
                 "hide from": "3.25.0"
+            },
+            {
+                "notes": "New features:\n* Support remote projects/environments in app:list command.\n* Add worker:list (workers) command.\n* Use \"deployments\" HTTP API (instead of SSH) in app:config command.\n* Auto-ensure webhooks on GitHub and GitLab integrations, where possible.\n\nOther changes:\n* Skip updates check if the Phar file is not writable.\n* Remove different coloration for local commands in `list` (there are so few listed).\n* Recommend --no-wait if snapshot:create is run in a non-TTY.\n* Suggest project:set-remote in RootNotFoundException.\n* Fix environment:drush (drush) command to use configured document root, or PLATFORM_DOCUMENT_ROOT where available.\n* Be stricter about when to use $_ENV, when getting parent variables for PHP <7.1.",
+                "show from": "v3.26.0",
+                "hide from": "v3.27.0"
             }
         ]
     },
