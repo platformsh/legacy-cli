@@ -27,19 +27,25 @@ EOT
     {
         $configDir = $this->config()->getUserConfigDir();
 
-        $shellConfig = file_get_contents(CLI_ROOT . '/shell-config.rc');
-        if ($shellConfig === false) {
-            $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/shell-config.rc'));
-            return 1;
+        $rcFiles = [
+            'shell-config.rc',
+            'shell-config-bash.rc',
+        ];
+        $rcDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
+        foreach ($rcFiles as $rcFile) {
+            if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
+                $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
+
+                return 1;
+            }
+            if (file_put_contents($configDir . '/' . $rcFile, $rcContents) === false) {
+                $this->stdErr->writeln(sprintf('Failed to write file: %s', $configDir . '/' . $rcFile));
+
+                return 1;
+            }
         }
 
-        $shellConfigDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
-        if (file_put_contents($shellConfigDestination, $shellConfig) === false) {
-            $this->stdErr->writeln(sprintf('Failed to write file: %s', $shellConfigDestination));
-            return 1;
-        }
-
-        $this->stdErr->writeln(sprintf('Successfully copied CLI configuration to: %s', $shellConfigDestination));
+        $this->stdErr->writeln(sprintf('Successfully copied CLI configuration to: %s', $rcDestination));
 
         if (!$shellConfigFile = $this->findShellConfigFile()) {
             $this->stdErr->writeln('Failed to find a shell configuration file.');
@@ -64,7 +70,7 @@ EOT
         }
 
         $suggestedShellConfig = 'export PATH=' . escapeshellarg($configDir . '/bin') . ':"$PATH"' . PHP_EOL
-            . '[ "$BASH" ] || [ "$ZSH" ] && . ' . escapeshellarg($shellConfigDestination) . ' 2>/dev/null || true';
+            . '. ' . escapeshellarg($rcDestination);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');

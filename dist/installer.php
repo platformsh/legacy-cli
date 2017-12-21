@@ -214,14 +214,25 @@ if ($home) {
     // Extract the shell-config.rc file out of the Phar, so that it can be included
     // in the user's shell configuration. N.B. reading from a Phar only works
     // while it still has the '.phar' extension.
-    output('  Extracting the shell configuration file...');
+    output('  Extracting shell configuration file(s)...');
+    $rcFiles = [
+        'shell-config.rc',
+        'shell-config-bash.rc',
+    ];
     $shellConfigDestination = $configDir . '/shell-config.rc';
-    $rcSource = 'phar://' . CLI_PHAR . '/shell-config.rc';
-    if (($rcContents = file_get_contents($rcSource)) === false) {
-        output(sprintf('  Failed to read file: %s', $rcSource), 'warning');
-    }
-    elseif (file_put_contents($shellConfigDestination, $rcContents) === false) {
-        output(sprintf('  Failed to write file: %s', $shellConfigDestination), 'warning');
+    $rcSourceDir = 'phar://' . CLI_PHAR;
+    foreach ($rcFiles as $rcFile) {
+        if (!file_exists($rcSourceDir . '/' . $rcFile)) {
+            output(sprintf('  File not found: %s', $rcSourceDir . '/' . $rcFile), 'warning');
+            continue;
+        }
+        if (($rcContents = file_get_contents($rcSourceDir . '/' . $rcFile)) === false) {
+            output(sprintf('  Failed to read file: %s', $rcSourceDir . '/' . $rcFile), 'warning');
+            continue;
+        }
+        if (file_put_contents($configDir . '/' . $rcFile, $rcContents) === false) {
+            output(sprintf('  Failed to write file: %s', $configDir . '/' . $rcFile), 'warning');
+        }
     }
 
     output('  Installing the Phar into your home directory...');
@@ -235,7 +246,7 @@ if ($home) {
     }
 
     $suggestedShellConfig = 'export PATH=' . escapeshellarg($configDir . '/bin') . ':"$PATH"' . PHP_EOL
-        . '[ "$BASH" ] || [ "$ZSH" ] && . ' . escapeshellarg($shellConfigDestination) . ' 2>/dev/null || true';
+        . '. ' . escapeshellarg($shellConfigDestination);
 
     $configured = $shellConfigFile
         ? writeShellConfig($shellConfigFile, $suggestedShellConfig, escapeshellarg($configDir . '/bin'))
