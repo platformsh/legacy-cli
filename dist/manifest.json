@@ -91,8 +91,8 @@
             },
             {
                 "notes": "New features:\n* Support remote projects/environments in app:list command.\n* Add worker:list (workers) command.\n* Use \"deployments\" HTTP API (instead of SSH) in app:config command.\n* Auto-ensure webhooks on GitHub and GitLab integrations, where possible.\n\nOther changes:\n* Skip updates check if the Phar file is not writable.\n* Remove different coloration for local commands in `list` (there are so few listed).\n* Recommend --no-wait if snapshot:create is run in a non-TTY.\n* Suggest project:set-remote in RootNotFoundException.\n* Fix environment:drush (drush) command to use configured document root, or PLATFORM_DOCUMENT_ROOT where available.\n* Be stricter about when to use $_ENV, when getting parent variables for PHP <7.1.",
-                "show from": "v3.26.0",
-                "hide from": "v3.27.0"
+                "show from": "3.25.0",
+                "hide from": "3.26.0"
             }
         ]
     },

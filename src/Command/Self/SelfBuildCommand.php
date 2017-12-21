@@ -200,10 +200,11 @@ class SelfBuildCommand extends CommandBase
         $manifestItem['sha256'] = $sha256;
         $manifestItem['name'] = basename($phar);
         $manifestItem['php']['min'] = '5.5.9';
-        if (!empty($changelog)) {
+        if (!empty($changelog) && !empty($oldVersion)) {
             $manifestItem['updating'][] = [
                 'notes' => $changelog,
-                'show from' => 'v' . $version,
+                'show from' => $oldVersion,
+                'hide from' => $version,
             ];
         }
         $result = file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
