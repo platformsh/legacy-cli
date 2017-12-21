@@ -110,9 +110,6 @@ class MountDownloadCommand extends MountCommandBase
 
         $this->validateDirectory($target, true);
 
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($appName);
-
         $confirmText = sprintf(
             "\nDownloading files from the remote mount <comment>%s</comment> to <comment>%s</comment>"
             . "\n\nAre you sure you want to continue?",
