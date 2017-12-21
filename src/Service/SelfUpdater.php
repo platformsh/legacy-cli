@@ -100,6 +100,7 @@ class SelfUpdater
                 $this->stdErr->writeln("  composer global remove " . $this->config->get('application.package_name'));
                 $this->stdErr->writeln("  curl -sS " . $this->config->get('application.installer_url') . " | php\n");
             }
+
             return false;
         }
 
@@ -109,7 +110,13 @@ class SelfUpdater
             $currentVersion
         ));
 
-        $updater = new Updater(null, false);
+        if (!is_writable($localPhar)) {
+            $this->stdErr->writeln('Cannot update as the Phar file is not writable: ' . $localPhar);
+
+            return false;
+        }
+
+        $updater = new Updater($localPhar, false);
         $strategy = new ManifestStrategy($currentVersion, $manifestUrl, $this->allowMajor, $this->allowUnstable);
         $strategy->setManifestTimeout($this->timeout);
         $updater->setStrategyObject($strategy);
