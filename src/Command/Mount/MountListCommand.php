@@ -34,10 +34,7 @@ class MountListCommand extends MountCommandBase
     {
         $this->validateInput($input);
 
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($this->selectApp($input));
-
-        $appConfig = $this->getAppConfig($sshUrl, (bool) $input->getOption('refresh'));
+        $appConfig = $this->getAppConfig($this->selectApp($input), (bool) $input->getOption('refresh'));
 
         if (empty($appConfig['mounts'])) {
             $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));

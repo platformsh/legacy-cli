@@ -38,10 +38,7 @@ class MountDownloadCommand extends MountCommandBase
         $this->validateInput($input);
 
         $appName = $this->selectApp($input);
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($appName);
-
-        $appConfig = $this->getAppConfig($sshUrl, (bool) $input->getOption('refresh'));
+        $appConfig = $this->getAppConfig($appName, (bool) $input->getOption('refresh'));
 
         if (empty($appConfig['mounts'])) {
             $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
@@ -113,6 +110,9 @@ class MountDownloadCommand extends MountCommandBase
 
         $this->validateDirectory($target, true);
 
+        $sshUrl = $this->getSelectedEnvironment()
+            ->getSshUrl($appName);
+
         $confirmText = sprintf(
             "\nDownloading files from the remote mount <comment>%s</comment> to <comment>%s</comment>"
             . "\n\nAre you sure you want to continue?",
@@ -123,7 +123,7 @@ class MountDownloadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($sshUrl, $mountPath, $target, false, [
+        $this->runSync($appName, $mountPath, $target, false, [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),
