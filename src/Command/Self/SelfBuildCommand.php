@@ -190,7 +190,7 @@ class SelfBuildCommand extends CommandBase
             $changelog = $shell->execute([
                 'git',
                 'log',
-                '--pretty=format:"* %s"',
+                '--pretty=format:* %s',
                 '--no-merges',
                 'v' . $oldVersion . '...master'
             ]);
