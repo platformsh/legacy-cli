@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Auth;
 use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use GuzzleHttp\Client;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Exception\RuntimeException;
@@ -52,12 +53,7 @@ class OAuth2Command extends CommandBase
         // Then create the document root for the local server. This needs to be
         // outside the CLI itself (since the CLI may be run as a Phar).
         $listenerDir = $this->config()->getWritableUserDir() . '/oauth-listener';
-        if (!is_dir($listenerDir) && !mkdir($listenerDir, 0700, true)) {
-            throw new \RuntimeException('Failed to create temporary directory: ' . $listenerDir);
-        }
-        if (!file_put_contents($listenerDir . '/index.php', file_get_contents(CLI_ROOT . '/resources/oauth-listener/index.php'))) {
-            throw new \RuntimeException('Failed to write temporary file: ' . $listenerDir . '/index.php');
-        }
+        $this->createDocumentRoot($listenerDir);
 
         // Create the file where an authorization code will be saved (by the
         // local server script).
@@ -66,6 +62,13 @@ class OAuth2Command extends CommandBase
             throw new \RuntimeException('Failed to create temporary file: ' . $codeFile);
         }
         chmod($codeFile, 0600);
+
+        // Find the authorization URL from the api.accounts_api_url.
+        $apiUrl = $this->config()->get('api.accounts_api_url');
+        $authHost = parse_url($apiUrl, PHP_URL_HOST);
+        if (!$authHost) {
+            throw new \RuntimeException('Failed to get API host.');
+        }
 
         // Start the local server.
         $process = new Process([
@@ -77,16 +80,17 @@ class OAuth2Command extends CommandBase
             $listenerDir
         ]);
         $process->setEnv([
+            'CLI_OAUTH_APP_NAME' => $this->config()->get('application.name'),
             'CLI_OAUTH_STATE' => $this->getRandomState(),
-            'CLI_OAUTH_ACCOUNTS_URL' => $this->config()->get('service.accounts_url'),
+            'CLI_OAUTH_AUTH_URL' => 'https://' . $authHost . '/oauth2/authorize',
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
             'CLI_OAUTH_FILE' => $codeFile,
         ]);
         $process->setTimeout(null);
         $process->start();
 
-        // Give the local server some time to start (before checking its status
-        // or opening the browser).
+        // Give the local server some time to start before checking its status
+        // or opening the browser (0.5 seconds).
         usleep(500000);
 
         // Check the local server status.
@@ -123,9 +127,8 @@ class OAuth2Command extends CommandBase
         }
 
         // Clean up.
-        unlink($codeFile);
-        unlink($listenerDir . '/index.php');
-        rmdir($listenerDir);
+        $process->stop();
+        (new Filesystem())->remove([$listenerDir]);
 
         $this->stdErr->writeln('');
 
@@ -135,23 +138,21 @@ class OAuth2Command extends CommandBase
             return 1;
         }
 
-        // Clear the cache (as we are about to log in).
+        // Using the authorization code, request an access token.
+        $this->stdErr->writeln('Login information received. Verifying...');
+        $token = $this->getAccessToken($code, $localUrl, $authHost);
+
+        // Finalize login: clear the cache and save the new credentials.
         /** @var \Doctrine\Common\Cache\CacheProvider $cache */
         $cache = $this->getService('cache');
         $cache->flushAll();
+        $this->saveAccessToken($token);
+        $this->stdErr->writeln('You are logged in.');
 
-        // Using the authorization code, request an access token, and save it
-        // to the session.
-        $this->stdErr->writeln('Login information received. Verifying...');
-        $this->saveAccessToken(
-            $this->getAccessToken($code, $localUrl)
-        );
-
-        // Report success, with user account info.
+        // Show user account info.
         $info = $this->api()->getClient(false)->getAccountInfo();
-        $this->stdErr->writeln('');
         $this->stdErr->writeln(sprintf(
-            'You are logged in as <info>%s</info> (%s).',
+            "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
             $info['username'],
             $info['mail']
         ));
@@ -180,15 +181,29 @@ class OAuth2Command extends CommandBase
     }
 
     /**
+     * @param string $dir
+     */
+    private function createDocumentRoot($dir)
+    {
+        if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
+            throw new \RuntimeException('Failed to create temporary directory: ' . $dir);
+        }
+        if (!file_put_contents($dir . '/index.php', file_get_contents(CLI_ROOT . '/resources/oauth-listener/index.php'))) {
+            throw new \RuntimeException('Failed to write temporary file: ' . $dir . '/index.php');
+        }
+    }
+
+    /**
      * @param string $authCode
      * @param string $redirectUri
+     * @param string $authHost
      *
      * @return array
      */
-    private function getAccessToken($authCode, $redirectUri)
+    private function getAccessToken($authCode, $redirectUri, $authHost)
     {
         return (new Client())->post(
-            $this->config()->get('service.accounts_url') . '/oauth2/token',
+            'https://' . $authHost . '/oauth2/token',
             [
                 'json' => [
                     'grant_type' => 'authorization_code',
@@ -197,6 +212,7 @@ class OAuth2Command extends CommandBase
                     'redirect_uri' => $redirectUri,
                 ],
                 'auth' => false,
+                'verify' => !$this->config()->get('api.skip_ssl'),
             ]
         )->json();
     }
