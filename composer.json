@@ -18,7 +18,8 @@
         "symfony/event-dispatcher": "^3.0",
         "padraic/phar-updater": "^1.0",
         "symfony/dependency-injection": "^3.1",
-        "symfony/config": "^3.1"
+        "symfony/config": "^3.1",
+        "paragonie/random_compat": "^2.0"
     },
     "suggest": {
         "drush/drush": "For Drupal projects"
