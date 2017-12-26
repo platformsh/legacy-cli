@@ -8,20 +8,29 @@ use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Exception\RuntimeException;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
-class OAuth2Command extends CommandBase
+class BrowserLoginCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $service = $this->config()->get('service.name');
-        $this->setName('auth:oauth2')
-            ->setDescription('Log in to ' . $service . ' via OAuth2')
+
+        $this->setName('auth:browser-login');
+
+        // The command with the "login" alias will be invoked automatically when
+        // needed (in interactive mode).
+        if ($this->config()->isExperimentEnabled('browser_login')) {
+            $this->setAliases(['login']);
+        } else {
+            $this->hiddenInList = true;
+        }
+
+        $this->setDescription('Log in to ' . $service . ' via a browser')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
         Url::configureInput($this->getDefinition());
     }
@@ -40,6 +49,15 @@ class OAuth2Command extends CommandBase
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
             $this->stdErr->writeln('You are already logged in.');
             return 0;
+        }
+
+        // If being run from another command, prompt.
+        if ($input instanceof ArrayInput) {
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            if (!$questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
+                return 1;
+            }
         }
 
         // Set up the local PHP web server, which will serve an OAuth2 redirect
