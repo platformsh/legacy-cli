@@ -14,7 +14,7 @@ abstract class ServerCommandBase extends CommandBase
 
     public function isEnabled()
     {
-        return $this->config()->isFeatureEnabled('enable_local_server')
+        return $this->config()->isExperimentEnabled('enable_local_server')
             && parent::isEnabled();
     }
 

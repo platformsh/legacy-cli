@@ -196,7 +196,7 @@ class Api
             $session->setId('cli-' . $this->sessionId);
 
             $this->sessionStorage = KeychainStorage::isSupported()
-                && $this->config->isFeatureEnabled('use_keychain')
+                && $this->config->isExperimentEnabled('use_keychain')
                 ? new KeychainStorage($this->config->get('application.name'))
                 : new File($this->config->getWritableUserDir() . '/.session');
             $session->setStorage($this->sessionStorage);

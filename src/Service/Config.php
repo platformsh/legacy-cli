@@ -226,14 +226,14 @@ class Config
     }
 
     /**
-     * Test if a feature is enabled.
+     * Test if an experiment (a feature flag) is enabled.
      *
      * @param string $name
      *
      * @return bool
      */
-    public function isFeatureEnabled($name)
+    public function isExperimentEnabled($name)
     {
-        return !empty(self::$config['experimental']['all_features']) || !empty(self::$config['experimental'][$name]);
+        return !empty(self::$config['experimental']['all_experiments']) || !empty(self::$config['experimental'][$name]);
     }
 }
