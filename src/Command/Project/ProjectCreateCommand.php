@@ -24,8 +24,7 @@ class ProjectCreateCommand extends CommandBase
         $config = $this->config();
 
         return parent::isEnabled()
-            && $config->has('experimental.enable_create')
-            && $config->get('experimental.enable_create');
+            && $config->isFeatureEnabled('enable_create');
     }
 
     /**

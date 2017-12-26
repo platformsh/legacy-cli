@@ -224,4 +224,16 @@ class Config
             }
         }
     }
+
+    /**
+     * Test if a feature is enabled.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isFeatureEnabled($name)
+    {
+        return !empty(self::$config['experimental']['all_features']) || !empty(self::$config['experimental'][$name]);
+    }
 }
