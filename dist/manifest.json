@@ -8,7 +8,6 @@
         "php": {
             "min": "5.5.9"
         },
-        "notes": "Major changes since version 2.x.x:\n\n* In version 2.x.x, the CLI had a project file structure including a 'repository' directory (and a 'builds' directory, 'shared', etc.). In version 3.x.x, this is no longer the case: the CLI operates directly inside your project's Git repository. The CLI will work with the old file structure, and there is a migration tool ('platform legacy-migrate') for updating to the new structure.\n\n* The web root has changed location from 'www' to '_www', to avoid conflicts with actual project files in the repo.\n\n* The CLI now requires PHP version 5.5.9 (minimum) due to updated dependencies.\n\nVersion 3.x.x also comes with many other smaller improvements and bug fixes.",
         "updating": [
             {
                 "notes": "Major changes since version 2.x.x:\n\n* In version 2.x.x, the CLI had a project file structure including a 'repository' directory (and a 'builds' directory, 'shared', etc.). In version 3.x.x, this is no longer the case: the CLI operates directly inside your project's Git repository. The CLI will work with the old file structure, and there is a migration tool ('platform legacy-migrate') for updating to the new structure.\n\n* The web root has changed location from 'www' to '_www', to avoid conflicts with actual project files in the repo.\n\n* The CLI now requires PHP version 5.5.9 (minimum) due to updated dependencies.\n\nVersion 3.x.x also comes with many other smaller improvements and bug fixes.",
