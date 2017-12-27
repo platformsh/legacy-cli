@@ -80,12 +80,5 @@
                 "hide from": "3.23.0"
             }
         ]
-    },
-    {
-        "name": "platform.phar",
-        "sha1": "506f98c9b1a6a5cbfc91786c217117edfd3d2200",
-        "sha256": "e688dd296e4b4d8965bebbd9e6c581f5b4309eca97fb1d0e34e27ad089e9d3cd",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v2.13.3/platform.phar",
-        "version": "2.13.3"
     }
 ]
