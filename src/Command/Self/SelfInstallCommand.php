@@ -99,8 +99,8 @@ EOT
 
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
             . PHP_EOL . PHP_EOL
-            . '# Automatically added by the ' . $this->config()->get('application.name')
-            . PHP_EOL . $suggestedShellConfig . PHP_EOL;
+            . '# BEGIN SNIPPET: Automatically added by the ' . $this->config()->get('application.name')
+            . PHP_EOL . $suggestedShellConfig . ' # END SNIPPET' . PHP_EOL;
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');
 
