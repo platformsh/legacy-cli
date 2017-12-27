@@ -45,16 +45,11 @@ EOT
             }
         }
 
-        $this->stdErr->writeln(sprintf('Successfully copied CLI configuration to: %s', $rcDestination));
-
-        if (!$shellConfigFile = $this->findShellConfigFile()) {
-            $this->stdErr->writeln('Failed to find a shell configuration file.');
-            return 1;
-        }
+        $shellConfigFile = $this->findShellConfigFile();
 
         $currentShellConfig = '';
 
-        if (file_exists($shellConfigFile)) {
+        if ($shellConfigFile !== false && file_exists($shellConfigFile)) {
             $this->stdErr->writeln(sprintf('Reading shell configuration file: %s', $shellConfigFile));
 
             $currentShellConfig = file_get_contents($shellConfigFile);
@@ -66,6 +61,12 @@ EOT
 
         if (strpos($currentShellConfig, $configDir . "/bin") !== false) {
             $this->stdErr->writeln(sprintf('Already configured: <info>%s</info>', $shellConfigFile));
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                "To use the %s, run:\n    <info>%s</info>",
+                $this->config()->get('application.name'),
+                $this->config()->get('application.executable')
+            ));
             return 0;
         }
 
@@ -74,16 +75,24 @@ EOT
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if (!$questionHelper->confirm('Do you want to update the file automatically?')) {
+        if ($shellConfigFile === false || !$questionHelper->confirm('Do you want to update the file automatically?')) {
             $suggestedShellConfig = PHP_EOL
                 . '# ' . $this->config()->get('application.name') . ' configuration'
                 . PHP_EOL
                 . $suggestedShellConfig;
 
-            $this->stdErr->writeln(sprintf(
-                'To set up the CLI, add the following lines to: <comment>%s</comment>',
-                $shellConfigFile
-            ));
+            if ($shellConfigFile !== false) {
+                $this->stdErr->writeln(sprintf(
+                    'To set up the CLI, add the following lines to: <comment>%s</comment>',
+                    $shellConfigFile
+                ));
+            } else {
+                $this->stdErr->writeln(sprintf(
+                    'To set up the CLI, add the following lines to your shell configuration file:',
+                    $shellConfigFile
+                ));
+            }
+
             $this->stdErr->writeln(preg_replace('/^/m', '  ', $suggestedShellConfig));
             return 1;
         }
@@ -109,8 +118,12 @@ EOT
         }
 
         $this->stdErr->writeln("Updated successfully. Start a new terminal to use the new configuration.");
-        $this->stdErr->writeln('Or to use it now, type:');
-        $this->stdErr->writeln('  <info>source ' . $shortPath . '</info>');
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln([
+            'To use the ' . $this->config()->get('application.name') . ', run:',
+            '    <info>source ' . $shortPath . '</info> # (or start a new terminal)',
+            '    <info>' . $this->config()->get('application.executable'),
+        ]);
 
         return 0;
     }
