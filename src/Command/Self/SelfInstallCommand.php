@@ -27,28 +27,29 @@ EOT
     {
         $configDir = $this->config()->getUserConfigDir();
 
-        $shellConfig = file_get_contents(CLI_ROOT . '/shell-config.rc');
-        if ($shellConfig === false) {
-            $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/shell-config.rc'));
-            return 1;
+        $rcFiles = [
+            'shell-config.rc',
+            'shell-config-bash.rc',
+        ];
+        $rcDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
+        foreach ($rcFiles as $rcFile) {
+            if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
+                $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
+
+                return 1;
+            }
+            if (file_put_contents($configDir . '/' . $rcFile, $rcContents) === false) {
+                $this->stdErr->writeln(sprintf('Failed to write file: %s', $configDir . '/' . $rcFile));
+
+                return 1;
+            }
         }
 
-        $shellConfigDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
-        if (file_put_contents($shellConfigDestination, $shellConfig) === false) {
-            $this->stdErr->writeln(sprintf('Failed to write file: %s', $shellConfigDestination));
-            return 1;
-        }
-
-        $this->stdErr->writeln(sprintf('Successfully copied CLI configuration to: %s', $shellConfigDestination));
-
-        if (!$shellConfigFile = $this->findShellConfigFile()) {
-            $this->stdErr->writeln('Failed to find a shell configuration file.');
-            return 1;
-        }
+        $shellConfigFile = $this->findShellConfigFile();
 
         $currentShellConfig = '';
 
-        if (file_exists($shellConfigFile)) {
+        if ($shellConfigFile !== false && file_exists($shellConfigFile)) {
             $this->stdErr->writeln(sprintf('Reading shell configuration file: %s', $shellConfigFile));
 
             $currentShellConfig = file_get_contents($shellConfigFile);
@@ -60,32 +61,46 @@ EOT
 
         if (strpos($currentShellConfig, $configDir . "/bin") !== false) {
             $this->stdErr->writeln(sprintf('Already configured: <info>%s</info>', $shellConfigFile));
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                "To use the %s, run:\n    <info>%s</info>",
+                $this->config()->get('application.name'),
+                $this->config()->get('application.executable')
+            ));
             return 0;
         }
 
         $suggestedShellConfig = 'export PATH=' . escapeshellarg($configDir . '/bin') . ':"$PATH"' . PHP_EOL
-            . '[ "$BASH" ] || [ "$ZSH" ] && . ' . escapeshellarg($shellConfigDestination) . ' 2>/dev/null || true';
+            . '. ' . escapeshellarg($rcDestination);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if (!$questionHelper->confirm('Do you want to update the file automatically?')) {
+        if ($shellConfigFile === false || !$questionHelper->confirm('Do you want to update the file automatically?')) {
             $suggestedShellConfig = PHP_EOL
                 . '# ' . $this->config()->get('application.name') . ' configuration'
                 . PHP_EOL
                 . $suggestedShellConfig;
 
-            $this->stdErr->writeln(sprintf(
-                'To set up the CLI, add the following lines to: <comment>%s</comment>',
-                $shellConfigFile
-            ));
+            if ($shellConfigFile !== false) {
+                $this->stdErr->writeln(sprintf(
+                    'To set up the CLI, add the following lines to: <comment>%s</comment>',
+                    $shellConfigFile
+                ));
+            } else {
+                $this->stdErr->writeln(sprintf(
+                    'To set up the CLI, add the following lines to your shell configuration file:',
+                    $shellConfigFile
+                ));
+            }
+
             $this->stdErr->writeln(preg_replace('/^/m', '  ', $suggestedShellConfig));
             return 1;
         }
 
         $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
             . PHP_EOL . PHP_EOL
-            . '# Automatically added by the ' . $this->config()->get('application.name')
-            . PHP_EOL . $suggestedShellConfig . PHP_EOL;
+            . '# BEGIN SNIPPET: Automatically added by the ' . $this->config()->get('application.name')
+            . PHP_EOL . $suggestedShellConfig . ' # END SNIPPET' . PHP_EOL;
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');
 
@@ -102,9 +117,13 @@ EOT
             $shortPath = escapeshellarg($shortPath);
         }
 
-        $this->stdErr->writeln("Updated successfully. Start a new terminal to use the new configuration.");
-        $this->stdErr->writeln('Or to use it now, type:');
-        $this->stdErr->writeln('  <info>source ' . $shortPath . '</info>');
+        $this->stdErr->writeln('Updated successfully.');
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln([
+            'To use the ' . $this->config()->get('application.name') . ', run:',
+            '    <info>source ' . $shortPath . '</info> # (or start a new terminal)',
+            '    <info>' . $this->config()->get('application.executable'),
+        ]);
 
         return 0;
     }

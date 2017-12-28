@@ -49,14 +49,22 @@ class Url implements InputConfiguringInterface
      * Open a URL in the browser, or print it.
      *
      * @param string $url
+     * @param bool   $print
+     *
+     * @return bool
+     *     True if a browser was used, false otherwise.
      */
-    public function openUrl($url)
+    public function openUrl($url, $print = true)
     {
+        $success = false;
         if ($browser = $this->getBrowser()) {
-            $this->shell->executeSimple($browser . ' ' . escapeshellarg($url));
+            $success = $this->shell->executeSimple($browser . ' ' . escapeshellarg($url)) === 0;
+        }
+        if ($print) {
+            $this->output->writeln($url);
         }
 
-        $this->output->writeln($url);
+        return $success;
     }
 
     /**
@@ -105,8 +113,11 @@ class Url implements InputConfiguringInterface
      */
     protected function getDefaultBrowser()
     {
-        $potential = array('xdg-open', 'open', 'start');
-        foreach ($potential as $browser) {
+        if (OsUtil::isOsX()) {
+            return 'open';
+        }
+
+        foreach (['xdg-open', 'gnome-open', 'start'] as $browser) {
             if ($this->shell->commandExists($browser)) {
                 return $browser;
             }

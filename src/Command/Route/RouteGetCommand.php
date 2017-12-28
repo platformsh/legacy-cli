@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
-use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,26 +22,21 @@ class RouteGetCommand extends CommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         PropertyFormatter::configureInput($this->getDefinition());
-        Ssh::configureInput($this->getDefinition());
         $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+            ->addEnvironmentOption();
+        $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
+        $this->addOption('identity-file', 'i', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
         $this->addExample('View the URL to the https://{default}/ route', "'https://{default}/' -P url");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $this->warnAboutDeprecatedOptions(['app', 'identity-file']);
 
         $environment = $this->getSelectedEnvironment();
 
-        $sshUrl = $environment->getSshUrl($this->selectApp($input));
-
-        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
-        $envVarService = $this->getService('remote_env_vars');
-        $value = $envVarService->getEnvVar('ROUTES', $sshUrl, $input->getOption('refresh'));
-
-        $routes = json_decode(base64_decode($value), true) ?: [];
+        $routes = $this->api()->getCurrentDeployment($environment, $input->getOption('refresh'))->routes;
 
         $selectedRoute = false;
         $originalUrl = $input->getArgument('route');
@@ -56,15 +50,15 @@ class RouteGetCommand extends CommandBase
             $questionHelper = $this->getService('question_helper');
             $items = [];
             foreach ($routes as $route) {
-                $items[$route['original_url']] = $route['original_url'];
+                $items[$route->original_url] = $route->original_url;
             }
             uksort($items, [$this->api(), 'urlSort']);
             $originalUrl = $questionHelper->choose($items, 'Enter a number to choose a route:');
         }
 
         foreach ($routes as $url => $route) {
-            if ($route['original_url'] === $originalUrl) {
-                $selectedRoute = $route;
+            if ($route->original_url === $originalUrl) {
+                $selectedRoute = $route->getProperties();
                 $selectedRoute['url'] = $url;
                 break;
             }

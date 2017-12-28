@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
+use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
@@ -32,17 +33,17 @@ class DbSizeCommand extends CommandBase
         $this->validateInput($input);
         $appName = $this->selectApp($input);
 
-        $sshUrl = $this->getSelectedEnvironment()->getSshUrl($appName);
-
-        // Get and parse app config.
-        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
-        $envVarService = $this->getService('remote_env_vars');
-        $result = $envVarService->getEnvVar('APPLICATION', $sshUrl);
-        $appConfig = (array) json_decode(base64_decode($result), true);
-        if (empty($appConfig) || empty($appConfig['relationships'])) {
+        // Get the app config.
+        $webApp = $this->api()
+            ->getCurrentDeployment($this->getSelectedEnvironment(), true)
+            ->getWebApp($appName);
+        $appConfig = AppConfig::fromWebApp($webApp)->getNormalized();
+        if (empty($appConfig['relationships'])) {
             $this->stdErr->writeln('No application relationships found.');
             return 1;
         }
+
+        $sshUrl = $this->getSelectedEnvironment()->getSshUrl($appName);
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');

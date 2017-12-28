@@ -83,6 +83,7 @@ services:
     remote_env_vars:
         class:     '\Platformsh\Cli\Service\RemoteEnvVars'
         arguments: ['@ssh', '@cache', '@shell', '@config']
+        public:    false
 
     relationships:
         class:     '\Platformsh\Cli\Service\Relationships'

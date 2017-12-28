@@ -157,4 +157,12 @@ class Relationships implements InputConfiguringInterface
             $database['path']
         );
     }
+
+    /**
+     * @param string $sshUrl
+     */
+    public function clearCaches($sshUrl)
+    {
+        $this->envVarService->clearCaches($sshUrl);
+    }
 }

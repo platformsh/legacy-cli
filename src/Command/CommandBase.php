@@ -324,14 +324,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function login()
     {
-        if (!$this->output || (isset($this->input) && !$this->input->isInteractive())) {
-            throw new LoginRequiredException();
+        if ($this->output && $this->input && $this->input->isInteractive()) {
+            $exitCode = $this->runOtherCommand('login');
+            $this->stdErr->writeln('');
+            if ($exitCode === 0) {
+                return;
+            }
         }
-        $exitCode = $this->runOtherCommand('login');
-        $this->stdErr->writeln('');
-        if ($exitCode) {
-            throw new \Exception('Login failed');
-        }
+        throw new LoginRequiredException();
     }
 
     /**

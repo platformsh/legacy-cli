@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\AppConfig;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class MountCommandBase extends CommandBase
@@ -10,19 +11,18 @@ abstract class MountCommandBase extends CommandBase
     /**
      * Get the remote application config.
      *
-     * @param string $sshUrl
+     * @param string $appName
      * @param bool   $refresh
      *
      * @return array
      */
-    protected function getAppConfig($sshUrl, $refresh = true)
+    protected function getAppConfig($appName, $refresh = true)
     {
-        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
-        $envVarService = $this->getService('remote_env_vars');
+        $webApp = $this->api()
+            ->getCurrentDeployment($this->getSelectedEnvironment(), $refresh)
+            ->getWebApp($appName);
 
-        $result = $envVarService->getEnvVar('APPLICATION', $sshUrl, $refresh);
-
-        return (array) json_decode(base64_decode($result), true);
+        return AppConfig::fromWebApp($webApp)->getNormalized();
     }
 
     /**
@@ -66,18 +66,19 @@ abstract class MountCommandBase extends CommandBase
     /**
      * Push the local contents to the chosen mount.
      *
-     * @param string $sshUrl
+     * @param string $appName
      * @param string $mountPath
      * @param string $localPath
      * @param bool   $up
      * @param array  $options
      */
-    protected function runSync($sshUrl, $mountPath, $localPath, $up, array $options = [])
+    protected function runSync($appName, $mountPath, $localPath, $up, array $options = [])
     {
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
 
-        $mountPathAbsolute = $this->getAppDir($sshUrl) . '/' . $mountPath;
+        $sshUrl = $this->getSelectedEnvironment()
+            ->getSshUrl($appName);
 
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
 
@@ -89,9 +90,9 @@ abstract class MountCommandBase extends CommandBase
 
         if ($up) {
             $params[] = rtrim($localPath, '/') . '/';
-            $params[] = sprintf('%s:%s', $sshUrl, $mountPathAbsolute);
+            $params[] = sprintf('%s:%s', $sshUrl, $mountPath);
         } else {
-            $params[] = sprintf('%s:%s/', $sshUrl, $mountPathAbsolute);
+            $params[] = sprintf('%s:%s/', $sshUrl, $mountPath);
             $params[] = $localPath;
         }
 
@@ -116,18 +117,5 @@ abstract class MountCommandBase extends CommandBase
         } else {
             $this->stdErr->writeln('The download completed successfully.');
         }
-    }
-
-    /**
-     * @param string $sshUrl
-     *
-     * @return string
-     */
-    private function getAppDir($sshUrl)
-    {
-        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
-        $envVarService = $this->getService('remote_env_vars');
-
-        return $envVarService->getEnvVar('APP_DIR', $sshUrl, false, 86400) ?: '/app';
     }
 }
