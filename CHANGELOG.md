@@ -4,7 +4,8 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
-## Upcoming
+## [v3.26.1](https://github.com/platformsh/platformsh-cli/tree/v3.26.1) (2017-12-28)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.26.0...v3.26.1)
 
 - Added experimental `auth:browser-login` command, enabled by default with:
   ```yaml
