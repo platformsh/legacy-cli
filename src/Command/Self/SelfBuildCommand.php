@@ -163,14 +163,16 @@ class SelfBuildCommand extends CommandBase
         if ($manifest === null && json_last_error()) {
             throw new \RuntimeException('Failed to decode manifest file: ' . $manifestFile);
         }
-        $manifestItem = null;
+        $latestItem = null;
+        foreach ($manifest as $key => $item) {
+            if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
+                $latestItem = &$manifest[$key];
+            }
+        }
+
         switch ($input->getOption('manifest-mode')) {
             case 'update-latest':
-                foreach ($manifest as $key => $item) {
-                    if ($manifestItem === null || version_compare($item['version'], $manifestItem['version'], '>')) {
-                        $manifestItem = &$manifest[$key];
-                    }
-                }
+                $manifestItem = &$latestItem;
                 break;
 
             case 'add':
@@ -181,11 +183,12 @@ class SelfBuildCommand extends CommandBase
             default:
                 throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
         }
-        if (isset($manifestItem['version'])) {
-            $oldVersion = $manifestItem['version'];
-            $this->stdErr->writeln('  Found latest version to update: v' . $oldVersion);
-            if (isset($manifestItem['url'])) {
-                $manifestItem['url'] = str_replace($oldVersion, $version, $manifestItem['url']);
+
+        if (isset($latestItem)) {
+            $oldVersion = $latestItem['version'];
+            $this->stdErr->writeln('  Found latest version: v' . $oldVersion);
+            if (isset($latestItem['url'])) {
+                $manifestItem['url'] = str_replace($oldVersion, $version, $latestItem['url']);
             }
             $changelog = $shell->execute([
                 'git',
