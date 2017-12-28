@@ -9,7 +9,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 * Git
 * A Bash-like shell:
   * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
-  * On Windows: [Bash on Ubuntu](https://msdn.microsoft.com/en-gb/commandline/wsl/about) on Windows (recommended), or a Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
+  * On Windows: [Windows Subsystem for Linux](https://msdn.microsoft.com/en-gb/commandline/wsl/about) (recommended), or another Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
   * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
