@@ -15,10 +15,14 @@ class LoginCommand extends CommandBase
     {
         $service = $this->config()->get('service.name');
         $accountsUrl = $this->config()->get('service.accounts_url');
-        $this
-            ->setName('auth:login')
-            ->setAliases(['login'])
-            ->setDescription('Log in to ' . $service);
+
+        $this->setName('auth:login');
+
+        if (!$this->config()->isExperimentEnabled('browser_login')) {
+            $this->setAliases(['login']);
+        }
+
+        $this->setDescription('Log in to ' . $service . ' using a username and password');
         $help = 'Use this command to log in to your ' . $service . ' account.'
             . "\n\nYou can create an account at:\n    <info>" . $accountsUrl . '</info>'
             . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>"

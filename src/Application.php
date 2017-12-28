@@ -96,6 +96,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthTokenCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
+        $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Certificate\CertificateAddCommand();
         $commands[] = new Command\Certificate\CertificateDeleteCommand();
         $commands[] = new Command\Certificate\CertificateGetCommand();
