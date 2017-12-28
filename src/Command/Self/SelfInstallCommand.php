@@ -117,7 +117,7 @@ EOT
             $shortPath = escapeshellarg($shortPath);
         }
 
-        $this->stdErr->writeln("Updated successfully. Start a new terminal to use the new configuration.");
+        $this->stdErr->writeln('Updated successfully.');
         $this->stdErr->writeln('');
         $this->stdErr->writeln([
             'To use the ' . $this->config()->get('application.name') . ', run:',
