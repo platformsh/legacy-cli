@@ -4,6 +4,21 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
+## Upcoming
+
+- Added experimental `auth:browser-login` command, enabled by default with:
+  ```yaml
+  # $HOME/.platformsh/config.yaml
+
+  experimental:
+      browser_login: true
+      # or:
+      # all_experiments: true
+  ```
+- Changed `route:get` command to use the deployments API (instead of SSH).
+- Refactored shell config into separate files.
+- Simplified installer to run the `self:install` command directly.
+
 ## [v3.26.0](https://github.com/platformsh/platformsh-cli/tree/v3.26.0) (2017-12-21)
 [Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.25.1...v3.26.0)
 
