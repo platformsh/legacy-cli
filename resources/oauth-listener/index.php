@@ -116,9 +116,13 @@ class Response
 
     public function __construct()
     {
+        // Set default title and headers.
         $appName = getenv('CLI_OAUTH_APP_NAME') ?: 'CLI';
         $this->title = htmlspecialchars($appName) . ': Authentication (temporary URL)';
-        $this->headers = ['Cache-Control' => 'no-cache'];
+        $this->headers = [
+            'Cache-Control' => 'no-cache',
+            'Content-Type' => 'text/html; charset=utf-8',
+        ];
     }
 }
 
@@ -135,7 +139,6 @@ foreach ($response->headers as $name => $value) {
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta charset="utf-8">
     <title><?php echo $response->title; ?></title>
     <style>
@@ -151,27 +154,23 @@ foreach ($response->headers as $name => $value) {
 
         body {
             margin: 3em;
+            text-align: center;
         }
 
         img {
             display: block;
-            width: 100px;
-            height: 100px;
-            margin: 0 auto;
-        }
-
-        div {
-            margin: 10px;
-            text-align: center;
+            margin: 10px auto;
         }
     </style>
 </head>
 <body>
-<div>
     <img
         src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkAQMAAABKLAcXAAAABlBMVEUAAADg4ODy8Xj7AAAAAXRSTlMAQObYZgAAAB5JREFUOMtj+I8EPozyRnlU4w1NMJhCcDT+hm2MAQAJBMb6YxK/8wAAAABJRU5ErkJggg=="
-        alt="">
+        alt=""
+        width="100"
+        height="100">
+
     <?php echo $response->content; ?>
-</div>
+
 </body>
 </html>
