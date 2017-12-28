@@ -197,10 +197,12 @@ try {
     throw $e;
 }
 
-output('  Making the Phar executable...');
-chmod($pharPath, 0755);
-
 output(PHP_EOL . 'Install', 'heading');
+
+output('  Making the Phar executable...');
+if (!chmod($pharPath, 0755)) {
+    output('  Failed to make the Phar executable: ' . $pharPath, 'warning');
+}
 
 if ($homeDir = getHomeDirectory()) {
     output('  Moving the Phar to your home directory...');
@@ -216,7 +218,7 @@ if ($homeDir = getHomeDirectory()) {
 }
 
 output(PHP_EOL . '  Running self:install command...');
-exec($pharPath . ' self:install --yes 2>&1', $output, $return_var);
+exec('php ' . $pharPath . ' self:install --yes 2>&1', $output, $return_var);
 output(preg_replace('/^/m', '  ', implode(PHP_EOL, $output)));
 if ($return_var === 0) {
     output(PHP_EOL . '  The installation completed successfully.');
