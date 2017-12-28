@@ -64,9 +64,8 @@ Global options:
   --quiet          -q Do not output any message
   --verbose        -v|vv|vvv Increase the verbosity of messages
   --version        -V Display this application version
-  --yes            -y Answer "yes" to all prompts
+  --yes            -y Answer "yes" to all prompts; disable interaction
   --no             -n Answer "no" to all prompts
-  --shell          -s Launch the shell
 
 Available commands:
   clear-cache (clearcache, cc)              Clear the CLI cache
@@ -80,10 +79,10 @@ activity
   activity:log                              Display the log for an activity
 app
   app:config-get                            View the configuration of an app
-  app:list (apps)                           Get a list of all apps in the local repository
+  app:list (apps)                           List apps in the project
 auth
   auth:info                                 Display your account information
-  auth:login (login)                        Log in to Platform.sh
+  auth:login (login)                        Log in to Platform.sh using a username and password
   auth:logout (logout)                      Log out of Platform.sh
 certificate
   certificate:add                           Add an SSL certificate to the project
@@ -112,7 +111,7 @@ environment
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
-  environment:relationships (relationships)   Show an environment's relationships
+  environment:relationships (relationships) Show an environment's relationships
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment
@@ -137,13 +136,13 @@ project
   project:list (projects)                   Get a list of all active projects
   project:set-remote                        Set the remote project for the current Git repository
   project:variable:delete                   Delete a variable from a project
-  project:variable:get (project-variables, pvget)   View variable(s) for a project
+  project:variable:get (project-variables, pvget) View variable(s) for a project
   project:variable:set (pvset)              Set a variable for a project
 repo
   repo:cat                                  Read a file in the project repository
   repo:ls                                   List files in the project repository
 route
-  route:get                                 View a route
+  route:get                                 View a resolved route
   route:list (routes)                       List all routes for an environment
 self
   self:install                              Install or update CLI configuration files
