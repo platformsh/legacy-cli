@@ -9,7 +9,6 @@ define('CLI_CONFIG_DIR', '.platformsh');
 define('CLI_EXECUTABLE', 'platform');
 define('CLI_NAME', 'Platform.sh CLI');
 define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
-define('CLI_SERVICE_ENV_PREFIX', 'PLATFORM_');
 
 set_error_handler(
     function ($code, $message) {
@@ -202,6 +201,21 @@ output('  Making the Phar executable...');
 chmod($pharPath, 0755);
 
 output(PHP_EOL . 'Install', 'heading');
+
+if ($homeDir = getHomeDirectory()) {
+    output('  Moving the Phar to your home directory...');
+    $binDir = $homeDir . '/' . CLI_CONFIG_DIR . '/bin';
+    if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
+        output('  Failed to create directory: ' . $binDir, 'error');
+    } elseif (!rename($pharPath, $binDir . '/' . CLI_EXECUTABLE)) {
+        output('  Failed to move the Phar to: ' . $binDir . '/' . CLI_EXECUTABLE, 'error');
+    } else {
+        $pharPath = $binDir . '/' . CLI_EXECUTABLE;
+        output('  Successfully moved the Phar to: ' . $pharPath);
+    }
+}
+
+output(PHP_EOL . '  Running self:install command...');
 exec($pharPath . ' self:install --yes 2>&1', $output, $return_var);
 output(preg_replace('/^/m', '  ', implode(PHP_EOL, $output)));
 if ($return_var === 0) {
@@ -287,4 +301,23 @@ function is_ansi()
     return (DIRECTORY_SEPARATOR == '\\')
         ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
         : (function_exists('posix_isatty') && posix_isatty(1));
+}
+
+/**
+ * Finds the user's home directory.
+ *
+ * @return string|false
+ *   The user's home directory as an absolute path, or false on failure.
+ */
+function getHomeDirectory()
+{
+    if ($home = getenv('HOME')) {
+        return $home;
+    } elseif ($userProfile = getenv('USERPROFILE')) {
+        return $userProfile;
+    } elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+        return $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+    }
+
+    return false;
 }
