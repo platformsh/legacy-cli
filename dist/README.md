@@ -1,10 +1,11 @@
-### 'dist' directory
+# 'dist' directory
 
-This directory contains installer script(s) for the CLI.
+This directory contains installer file(s) for the CLI.
 
-The installer is not packaged nor used directly by the CLI. Instead, it
-is copied to the main website under this URL:
+These files are not packaged nor used directly by the CLI. Instead, they are
+copied to the main SensioCloud website under these URLs:
 
 ```
-https://sensio.cloud/cli/installer
+https://accounts.sensio.cloud/cli/installer
+https://accounts.sensio.cloud/cli/manifest.json
 ```

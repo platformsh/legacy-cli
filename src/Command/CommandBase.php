@@ -324,14 +324,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function login()
     {
-        if (!$this->output || (isset($this->input) && !$this->input->isInteractive())) {
-            throw new LoginRequiredException();
+        if ($this->output && $this->input && $this->input->isInteractive()) {
+            $exitCode = $this->runOtherCommand('login');
+            $this->stdErr->writeln('');
+            if ($exitCode === 0) {
+                return;
+            }
         }
-        $exitCode = $this->runOtherCommand('login');
-        $this->stdErr->writeln('');
-        if ($exitCode) {
-            throw new \Exception('Login failed');
-        }
+        throw new LoginRequiredException();
     }
 
     /**
@@ -366,17 +366,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
-            // There is a chance that the project isn't available.
             if (!$project) {
-                if (isset($config['host'])) {
-                    $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
-                    $message = "Project not found: " . $projectUrl
-                        . "\nThe project probably no longer exists.";
-                } else {
-                    $message = "Project not found: " . $config['id']
-                        . "\nEither you do not have access to the project or it no longer exists.";
-                }
-                throw new ProjectNotFoundException($message);
+                throw new ProjectNotFoundException(
+                    "Project not found: " . $config['id']
+                    . "\nEither you do not have access to the project or it no longer exists."
+                );
             }
             $this->debug('Project ' . $config['id'] . ' is mapped to the current directory');
         }
@@ -470,6 +464,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!$projectRoot) {
             return;
         }
+        // Make sure the local:drush-aliases command is enabled.
+        if (!$this->getApplication()->has('local:drush-aliases')) {
+            return;
+        }
         // Double-check that the passed project is the current one.
         $currentProject = $this->getCurrentProject();
         if (!$currentProject || $currentProject->id != $event->getProject()->id) {
@@ -482,7 +480,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $this->debug('Updating Drush aliases');
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
-        $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
+        try {
+            $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
+        } catch (\RuntimeException $e) {
+            $this->stdErr->writeln('<comment>Failed to update Drush aliases:</comment> ' . $e->getMessage());
+        }
     }
 
     /**
@@ -530,13 +532,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Warn the user that the remote environment needs rebuilding.
+     * Warn the user that the remote environment needs redeploying.
      */
-    protected function rebuildWarning()
+    protected function redeployWarning()
     {
         $this->stdErr->writeln([
-            '<comment>The remote environment must be rebuilt for the change to take effect.</comment>',
-            "Use 'git push' with new commit(s) to trigger a rebuild."
+            '<comment>The remote environment must be redeployed for the change to take effect.</comment>',
+            "Use 'git push' with new commit(s) to trigger a redeploy."
         ]);
     }
 
@@ -547,7 +549,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function addProjectOption()
     {
-        $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID');
+        $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL');
         $this->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname");
 
         return $this;
@@ -601,21 +603,50 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!empty($projectId)) {
             $project = $this->api()->getProject($projectId, $host);
             if (!$project) {
-                throw new ConsoleInvalidArgumentException('Specified project not found: ' . $projectId);
+                throw new ConsoleInvalidArgumentException($this->getProjectNotFoundMessage($projectId));
             }
         } else {
             $project = $this->getCurrentProject();
             if (!$project) {
                 throw new RootNotFoundException(
                     "Could not determine the current project."
-                    . "\nSpecify it manually using --project or go to a project directory."
+                    . "\n\nSpecify it using --project, or go to a project directory."
                 );
             }
         }
 
         $this->project = $project;
+        $this->debug('Selected project: ' . $project->id);
 
         return $this->project;
+    }
+
+    /**
+     * Format an error message about a not-found project.
+     *
+     * @param string $projectId
+     *
+     * @return string
+     */
+    private function getProjectNotFoundMessage($projectId)
+    {
+        $message = 'Specified project not found: ' . $projectId;
+        if ($projects = $this->api()->getProjects()) {
+            $message .= "\n\nYour projects are:";
+            $limit = 8;
+            foreach (array_slice($projects, 0, $limit) as $project) {
+                $message .= "\n    " . $project->id;
+                if ($project->title) {
+                    $message .= ' - ' . $project->title;
+                }
+            }
+            if (count($projects) > $limit) {
+                $message .= "\n    ...";
+                $message .= "\n\n    List projects with: " . $this->config()->get('application.executable') . ' project:list';
+            }
+        }
+
+        return $message;
     }
 
     /**
@@ -648,6 +679,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
 
             $this->environment = $environment;
+            $this->debug('Selected environment: ' . $environment->id);
             return;
         }
 
@@ -706,71 +738,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Parse the project ID and possibly other details from a provided URL.
-     *
-     * @param string $url
-     *     A web UI, API, or public URL of the project.
-     *
-     * @throws \InvalidArgumentException
-     *     If the project ID can't be found in the URL.
-     *
-     * @return array
-     *     An array of containing at least a 'projectId'. Keys 'host',
-     *     'environmentId', and 'appId' will be either null or strings.
-     */
-    protected function parseProjectId($url)
-    {
-        $result = [
-            'projectId' => null,
-            'host' => null,
-            'environmentId' => null,
-            'appId' => null,
-        ];
-
-        // If it's a plain alphanumeric string, then it's an ID already.
-        if (!preg_match('/\W/', $url)) {
-            $result['projectId'] = $url;
-
-            return $result;
-        }
-
-        $this->debug('Parsing URL to determine project ID');
-
-        $host = parse_url($url, PHP_URL_HOST);
-        $path = parse_url($url, PHP_URL_PATH);
-        $site_domains_pattern = '(' . implode('|', array_map('preg_quote', $this->config()->get('detection.site_domains'))) . ')';
-        $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
-        if (!strpos($path, '/projects/')
-            && preg_match($site_pattern, $host)) {
-            list($env_project_app,) = explode('.', $host, 2);
-            if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
-                $env_project_app = substr($env_project_app, $tripleDashPos + 3);
-            }
-            if (($doubleDashPos = strrpos($env_project_app, '--')) !== false) {
-                $env_project = substr($env_project_app, 0, $doubleDashPos);
-                $result['appId'] = substr($env_project_app, $doubleDashPos + 2);
-            } else {
-                $env_project = $env_project_app;
-            }
-            if (($dashPos = strrpos($env_project, '-')) !== false) {
-                $result['projectId'] = substr($env_project, $dashPos + 1);
-                $result['environmentId'] = substr($env_project, 0, $dashPos);
-            }
-        } else {
-            $result['host'] = $host;
-            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
-            if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
-                $result['environmentId'] = rawurldecode(basename($matches[1]));
-            }
-        }
-        if (empty($result['projectId']) || preg_match('/\W/', $result['projectId'])) {
-            throw new ConsoleInvalidArgumentException(sprintf('Invalid project URL: %s', $url));
-        }
-
-        return $result;
-    }
-
-    /**
      * Offer the user an interactive choice of projects.
      *
      * @param Project[] $projects
@@ -802,9 +769,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
         $environmentId = null;
 
-        // Parse the project ID.
+        // Identify the project.
         if ($projectId !== null) {
-            $result = $this->parseProjectId($projectId);
+            /** @var \Platformsh\Cli\Service\Identifier $identifier */
+            $identifier = $this->getService('identifier');
+            $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
             $projectHost = $projectHost ?: $result['host'];
             $environmentId = $result['environmentId'];
@@ -827,7 +796,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             if (isset($result) && isset($result['appId'])) {
                 $input->setOption('app', $result['appId']);
                 $this->debug(sprintf(
-                    'App name detected from project URL as: %s',
+                    'App name identified as: %s',
                     $input->getOption('app')
                 ));
             }
@@ -869,8 +838,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
             $this->selectEnvironment($environmentId, !$envNotRequired);
         }
-
-        $this->debug('Validated input');
     }
 
     /**
@@ -1034,8 +1001,41 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function debug($message)
     {
+        $this->labeledMessage('DEBUG', $message, OutputInterface::VERBOSITY_DEBUG);
+    }
+
+    /**
+     * Print a warning about an deprecated option.
+     *
+     * @param string[] $options
+     */
+    protected function warnAboutDeprecatedOptions(array $options)
+    {
+        if (!isset($this->input)) {
+            return;
+        }
+        foreach ($options as $option) {
+            if ($this->input->hasOption($option) && $this->input->getOption($option)) {
+                $this->labeledMessage(
+                    'DEPRECATED',
+                    'The option --' . $option . ' is deprecated and no longer used. It will be removed in a future version.',
+                    OutputInterface::VERBOSITY_VERBOSE
+                );
+            }
+        }
+    }
+
+    /**
+     * Print a message with a label.
+     *
+     * @param string $label
+     * @param string $message
+     * @param int    $options
+     */
+    private function labeledMessage($label, $message, $options = 0)
+    {
         if (isset($this->stdErr)) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
+            $this->stdErr->writeln('<options=reverse>' . strtoupper($label) . '</> ' . $message, $options);
         }
     }
 
@@ -1138,5 +1138,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function isTerminal($descriptor)
     {
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isEnabled()
+    {
+        return !$this->config()->has('disabled_commands')
+            || !in_array($this->getName(), $this->config()->get('disabled_commands'));
     }
 }

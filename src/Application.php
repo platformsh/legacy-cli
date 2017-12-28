@@ -96,6 +96,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthTokenCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\LoginCommand();
+        $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Certificate\CertificateAddCommand();
         $commands[] = new Command\Certificate\CertificateDeleteCommand();
         $commands[] = new Command\Certificate\CertificateGetCommand();
@@ -134,6 +135,9 @@ class Application extends ParentApplication
         $commands[] = new Command\Local\LocalCleanCommand();
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
         $commands[] = new Command\Local\LocalDirCommand();
+        $commands[] = new Command\Mount\MountListCommand();
+        $commands[] = new Command\Mount\MountDownloadCommand();
+        $commands[] = new Command\Mount\MountUploadCommand();
         $commands[] = new Command\Project\ProjectCurlCommand();
         $commands[] = new Command\Project\ProjectCreateCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
@@ -144,6 +148,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Project\Variable\ProjectVariableDeleteCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableGetCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableSetCommand();
+        $commands[] = new Command\Repo\CatCommand();
+        $commands[] = new Command\Repo\LsCommand();
         $commands[] = new Command\Route\RouteListCommand();
         $commands[] = new Command\Route\RouteGetCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
@@ -153,6 +159,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Server\ServerStartCommand();
         $commands[] = new Command\Server\ServerListCommand();
         $commands[] = new Command\Server\ServerStopCommand();
+        $commands[] = new Command\Service\RedisCliCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
         $commands[] = new Command\Snapshot\SnapshotListCommand();
         $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
@@ -169,10 +176,13 @@ class Application extends ParentApplication
         $commands[] = new Command\User\UserListCommand();
         $commands[] = new Command\User\UserRoleCommand();
         $commands[] = new Command\Variable\VariableDeleteCommand();
+        $commands[] = new Command\Variable\VariableDisableCommand();
+        $commands[] = new Command\Variable\VariableEnableCommand();
         $commands[] = new Command\Variable\VariableGetCommand();
         $commands[] = new Command\Variable\VariableSetCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
+        $commands[] = new Command\Worker\WorkerListCommand();
 
         return $commands;
     }

@@ -48,9 +48,6 @@ interface BuildFlavorInterface
      *     - abslinks (bool, default false) Use absolute paths in symlinks.
      *     - no-cache (bool, default false) Disable the package cache (if
      *       relevant and if the package manager supports this).
-     *     - sourceDir (string) The source directory that contains the app(s).
-     *     - multiApp (bool, default false) Whether there is more than 1 app in
-     *       the source directory.
      */
     public function prepare($buildDir, LocalApplication $app, Config $config, array $settings = []);
 

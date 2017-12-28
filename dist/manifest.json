@@ -1,0 +1,12 @@
+[
+  {
+    "name": "sensiocloud.phar",
+    "sha1": "c759a43314f70ce066ac06286112ad9f7a000ec0",
+    "sha256": "9fb1cdff437f61e53ee0ceea1c8e03da1633a6b4963df9c507fe2a6297ae1944",
+    "url": "https://accounts.sensio.cloud/sites/default/files/sensiocloud-v0.0.14.phar",
+    "version": "0.0.14",
+    "php": {
+        "min": "5.5.9"
+    }
+  }
+]

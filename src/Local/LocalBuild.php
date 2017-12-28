@@ -119,7 +119,7 @@ class LocalBuild
             if ($apps && !in_array($id, $apps)) {
                 continue;
             }
-            $success = $this->buildApp($app, $sourceDir, $destination) && $success;
+            $success = $this->buildApp($app, $destination) && $success;
         }
         $notFounds = array_diff($apps, $ids);
         if ($notFounds) {
@@ -202,26 +202,27 @@ class LocalBuild
     }
 
     /**
+     * Build a single application.
+     *
      * @param LocalApplication $app
-     * @param string           $sourceDir
      * @param string|null      $destination
      *
      * @return bool
      */
-    protected function buildApp($app, $sourceDir, $destination = null)
+    protected function buildApp($app, $destination = null)
     {
         $verbose = $this->output->isVerbose();
 
+        $sourceDir = $app->getSourceDir();
         $destination = $destination ?: $sourceDir . '/' . $this->config->get('local.web_root');
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
-        $multiApp = $appRoot != $sourceDir;
         $appId = $app->getId();
 
         $buildFlavor = $app->getBuildFlavor();
 
         // Find the right build directory.
-        $buildName = $multiApp ? str_replace('/', '-', $appId) : 'default';
+        $buildName = $app->isSingle() ? 'default' : str_replace('/', '-', $appId);
 
         $tmpBuildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName . '-tmp';
 
@@ -256,11 +257,7 @@ class LocalBuild
 
         $buildFlavor->setOutput($this->output);
 
-        $buildSettings = $this->settings + [
-            'multiApp' => $multiApp,
-            'sourceDir' => $sourceDir,
-        ];
-        $buildFlavor->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
+        $buildFlavor->prepare($tmpBuildDir, $app, $this->config, $this->settings);
 
         $archive = false;
         if (empty($this->settings['no-archive']) && empty($this->settings['no-cache'])) {
@@ -358,14 +355,8 @@ class LocalBuild
 
             return false;
         }
-        if ($multiApp) {
-            if (is_link($destination)) {
-                $this->fsHelper->remove($destination);
-            }
-            $destination .= '/' . $app->getWebPath();
-        }
 
-        $this->fsHelper->symlink($webRoot, $destination);
+        $this->fsHelper->symlink($webRoot, $app->getLocalWebRoot($destination));
 
         $message = "\nBuild complete for application <info>$appId</info>";
         $this->output->writeln($message);

@@ -21,6 +21,7 @@ class VariableSetCommand extends CommandBase
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
+            ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled')
             ->setDescription('Set a variable for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -37,6 +38,7 @@ class VariableSetCommand extends CommandBase
         $variableName = $input->getArgument('name');
         $variableValue = $input->getArgument('value');
         $json = $input->getOption('json');
+        $enabled = !$input->getOption('disabled');
 
         if ($json && !$this->validateJson($variableValue)) {
             throw new InvalidArgumentException("Invalid JSON: <error>$variableValue</error>");
@@ -46,7 +48,10 @@ class VariableSetCommand extends CommandBase
         // quit early.
         $existing = $this->getSelectedEnvironment()
                          ->getVariable($variableName);
-        if ($existing && $existing->value === $variableValue && $existing->is_json == $json) {
+        if ($existing
+            && $existing->value === $variableValue
+            && $existing->is_enabled === $enabled
+            && $existing->is_json == $json) {
             $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
 
             return 0;
@@ -54,13 +59,13 @@ class VariableSetCommand extends CommandBase
 
         // Set the variable to a new value.
         $result = $this->getSelectedEnvironment()
-                       ->setVariable($variableName, $variableValue, $json);
+                       ->setVariable($variableName, $variableValue, $json, $enabled);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
         $success = true;
         if (!$result->countActivities()) {
-            $this->rebuildWarning();
+            $this->redeployWarning();
         } elseif (!$input->getOption('no-wait')) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');

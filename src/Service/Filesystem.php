@@ -252,6 +252,23 @@ class Filesystem
     }
 
     /**
+     * Format a path for display (use the relative path if it's simpler).
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    public function formatPathForDisplay($path)
+    {
+        $relative = $this->makePathRelative($path, getcwd());
+        if (strpos($relative, '../..') === false && strlen($relative) < strlen($path)) {
+            return $relative;
+        }
+
+        return rtrim(trim($path), '/');
+    }
+
+    /**
      * Check if a filename is in the blacklist.
      *
      * @param string   $filename
@@ -385,6 +402,23 @@ class Filesystem
         }
 
         return false;
+    }
+
+    /**
+     * Write a file and create a backup if the contents have changed.
+     *
+     * @param string $filename
+     * @param string $contents
+     * @param bool   $backup
+     */
+    public function writeFile($filename, $contents, $backup = true)
+    {
+        $fs = new SymfonyFilesystem();
+        if (file_exists($filename) && $backup && $contents !== file_get_contents($filename)) {
+            $backupName = dirname($filename) . '/' . basename($filename) . '.bak';
+            $fs->rename($filename, $backupName, true);
+        }
+        $fs->dumpFile($filename, $contents);
     }
 
     /**

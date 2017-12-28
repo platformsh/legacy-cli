@@ -25,7 +25,7 @@ class Config
      */
     public function __construct(array $env = null, $defaultsFile = null, $reset = false)
     {
-        $this->env = $env !== null ? $env : $_ENV;
+        $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
         if (empty(self::$config) || $reset) {
             $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
@@ -36,8 +36,21 @@ class Config
     }
 
     /**
-     * @param string $name
-     * @param bool   $notNull
+     * Find all current environment variables.
+     *
+     * @return array
+     */
+    private function getDefaultEnv()
+    {
+        return PHP_VERSION_ID >= 70100 ? getenv() : $_ENV;
+    }
+
+    /**
+     * Check if a configuration value is defined.
+     *
+     * @param string $name    The configuration name (e.g. 'application.name').
+     * @param bool   $notNull Set false to treat null configuration values as
+     *                        defined.
      *
      * @return bool
      */
@@ -49,9 +62,13 @@ class Config
     }
 
     /**
-     * @param string $name
+     * Get a configuration value.
      *
-     * @return mixed
+     * @param string $name The configuration name (e.g. 'application.name').
+     *
+     * @throws \RuntimeException if the configuration is not defined.
+     *
+     * @return null|string|bool|array
      */
     public function get($name)
     {
@@ -206,5 +223,17 @@ class Config
                 }
             }
         }
+    }
+
+    /**
+     * Test if an experiment (a feature flag) is enabled.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isExperimentEnabled($name)
+    {
+        return !empty(self::$config['experimental']['all_experiments']) || !empty(self::$config['experimental'][$name]);
     }
 }

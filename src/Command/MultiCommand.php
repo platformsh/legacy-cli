@@ -180,39 +180,65 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     protected function getSelectedProjects(InputInterface $input)
     {
         $projectList = $input->getOption('projects');
-        $projects = $this->getAllProjects($input);
+
+        if (!empty($projectList)) {
+            $missing = [];
+            $selected = [];
+            foreach ($this->splitProjectList($projectList) as $projectId) {
+                if ($project = $this->api()->getProject($projectId)) {
+                    $selected[$projectId] = $project;
+                } else {
+                    $missing[] = $projectId;
+                }
+            }
+            if (!empty($missing)) {
+                $this->stdErr->writeln(sprintf('Project ID(s) not found: <error>%s</error>', implode(', ', $missing)));
+                return false;
+            }
+
+            return $selected;
+        }
+
+        if (!$input->isInteractive()) {
+            $this->stdErr->writeln('In non-interactive mode, the --projects option must be specified.');
+            return false;
+        }
 
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
-
-        if (!empty($projectList)) {
-            $projectIds = array_unique(preg_split('/[,\s]+/', $projectList));
-            if ($invalid = array_diff($projectIds, array_keys($projects))) {
-                $this->stdErr->writeln(sprintf('Project ID(s) not found: <error>%s</error>', implode(', ', $invalid)));
-                return false;
-            }
-        } elseif (!$input->isInteractive()) {
-            $this->stdErr->writeln('In non-interactive mode, the --projects option must be specified.');
-            return false;
-        } elseif (!$shell->commandExists('dialog')) {
+        if (!$shell->commandExists('dialog')) {
             $this->stdErr->writeln('The "dialog" utility is required for interactive use.');
             $this->stdErr->writeln('You can specify projects via the --projects option.');
             return false;
-        } else {
-            $projectOptions = [];
-            foreach ($projects as $project) {
-                $projectOptions[$project->id] = $project->title ?: $project->id;
-            }
-
-            $projectIds = $this->showDialogChecklist($projectOptions, 'Choose one or more projects');
-            if (empty($projectIds)) {
-                return false;
-            }
-            $this->stdErr->writeln('Selected project(s): ' . implode(',', $projectIds));
-            $this->stdErr->writeln('');
         }
 
-        return array_intersect_key($projects, array_flip($projectIds));
+        $projects = $this->getAllProjects($input);
+        $projectOptions = [];
+        foreach ($projects as $project) {
+            $projectOptions[$project->id] = $project->title ?: $project->id;
+        }
+
+        $projectIds = $this->showDialogChecklist($projectOptions, 'Choose one or more projects');
+        if (empty($projectIds)) {
+            return false;
+        }
+        $selected = array_intersect_key($projects, array_flip($projectIds));
+        $this->stdErr->writeln('Selected project(s): ' . implode(',', array_keys($selected)));
+        $this->stdErr->writeln('');
+
+        return $selected;
+    }
+
+    /**
+     * Split a list of project IDs.
+     *
+     * @param string $list
+     *
+     * @return string[]
+     */
+    private function splitProjectList($list)
+    {
+        return array_unique(preg_split('/[,\s]+/', $list) ?: []);
     }
 
     /**

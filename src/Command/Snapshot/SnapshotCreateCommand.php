@@ -20,6 +20,7 @@ class SnapshotCreateCommand extends CommandBase
              ->addNoWaitOption('Do not wait for the snapshot to complete');
         $this->setHiddenAliases(['backup', 'environment:backup']);
         $this->addExample('Make a snapshot of the current environment');
+        $this->addExample('Request a snapshot (and exit quickly)', '--no-wait');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -45,6 +46,14 @@ class SnapshotCreateCommand extends CommandBase
 
         if (!$input->getOption('no-wait')) {
             $this->stdErr->writeln('Waiting for the snapshot to complete...');
+
+            // Strongly recommend using --no-wait in a cron job.
+            if (!$this->isTerminal(STDIN)) {
+                $this->stdErr->writeln(
+                    '<comment>Warning:</comment> use the --no-wait (-W) option if you are running this in a cron job.'
+                );
+            }
+
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitAndLog(

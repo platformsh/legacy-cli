@@ -57,7 +57,7 @@ class ProjectGetCommand extends CommandBase
         // First check if the repo actually exists.
         try {
             $repoExists = $git->remoteRepoExists($gitUrl);
-        } catch (\Exception $e) {
+        } catch (\RuntimeException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln(sprintf(
                 '<error>Failed to connect to the %s Git server</error>',
@@ -149,7 +149,7 @@ class ProjectGetCommand extends CommandBase
         }
 
         // Ensure that Drush aliases are created.
-        if (Drupal::isDrupal($projectRoot)) {
+        if ($this->getApplication()->has('local:drush-aliases') && Drupal::isDrupal($projectRoot)) {
             $this->stdErr->writeln('');
             try {
                 $this->runOtherCommand('local:drush-aliases');
@@ -202,7 +202,9 @@ class ProjectGetCommand extends CommandBase
                 throw new InvalidArgumentException('No project specified');
             }
         } else {
-            $result = $this->parseProjectId($projectId);
+            /** @var \Platformsh\Cli\Service\Identifier $identifier */
+            $identifier = $this->getService('identifier');
+            $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
             $host = $host ?: $result['host'];
             $environmentId = $environmentId ?: $result['environmentId'];

@@ -103,7 +103,7 @@ class CustomTextDescriptor extends TextDescriptor
 
             if ($describedNamespace) {
                 $this->writeText(
-                    sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace),
+                    sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $application->findNamespace($describedNamespace)),
                     $options
                 );
             } else {
@@ -148,17 +148,12 @@ class CustomTextDescriptor extends TextDescriptor
                         $aliases = $command->getVisibleAliases();
                     }
 
-                    // Colour local commands differently from remote ones.
-                    $commandDescription = $command->getDescription();
-                    if ($command instanceof CommandBase && !$command->isLocal()) {
-                        $commandDescription = "<fg=cyan>$commandDescription</fg=cyan>";
-                    }
                     $this->writeText("\n");
                     $this->writeText(
                         sprintf(
                             "  %-${width}s %s",
                             "<info>$name</info>" . $this->formatAliases($aliases),
-                            $commandDescription
+                            $command->getDescription()
                         ),
                         $options
                     );

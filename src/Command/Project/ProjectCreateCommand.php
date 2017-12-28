@@ -24,8 +24,7 @@ class ProjectCreateCommand extends CommandBase
         $config = $this->config();
 
         return parent::isEnabled()
-            && $config->has('experimental.enable_create')
-            && $config->get('experimental.enable_create');
+            && $config->isExperimentEnabled('enable_create');
     }
 
     /**
@@ -187,6 +186,7 @@ class ProjectCreateCommand extends CommandBase
           'title' => new Field('Project title', [
             'optionName' => 'title',
             'description' => 'The initial project title',
+            'questionLine' => '',
             'default' => 'Untitled Project',
           ]),
           'region' => new OptionsField('Region', [

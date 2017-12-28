@@ -230,6 +230,10 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                     $apps[] = $name;
                 }
             }
+        } elseif ($project = $this->getProject()) {
+            if ($environment = $this->api->getEnvironment('master', $project, false)) {
+                $apps = array_keys($environment->getSshUrls());
+            }
         }
 
         return $apps;

@@ -11,6 +11,11 @@ application:
   env_prefix: 'SENSIOCLOUD_CLI_'
   tmp_sub_dir: 'sensiocloud-cli-tmp'
 
+# Disabled commands.
+disabled_commands:
+  - environment:drush
+  - local:drush-aliases
+
 # Configuration for working with projects locally.
 local:
   local_dir: '.sensiocloud/local'
@@ -30,6 +35,7 @@ local:
 service:
   name: 'SensioCloud'
   env_prefix: 'SENSIOCLOUD_'
+  header_prefix: 'x-sensiocloud'
   app_config_file: '.sensiocloud.app.yaml'
   project_config_dir: '.sensiocloud'
   docs_url: 'https://sensio.cloud'

@@ -1,0 +1,6 @@
+# SensioCloud shell configuration for Bash and ZSH.
+
+# Enable auto-completion.
+if HOOK=$(sensiocloud _completion -g -p sensiocloud 2>/dev/null); then
+    . <(echo "$HOOK") 2>/dev/null
+fi

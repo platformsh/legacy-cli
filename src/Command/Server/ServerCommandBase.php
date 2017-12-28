@@ -2,12 +2,10 @@
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\ProcessBuilder;
 
 abstract class ServerCommandBase extends CommandBase
 {
@@ -16,8 +14,7 @@ abstract class ServerCommandBase extends CommandBase
 
     public function isEnabled()
     {
-        return $this->config()->has('experimental.enable_local_server')
-            && $this->config()->get('experimental.enable_local_server')
+        return $this->config()->isExperimentEnabled('enable_local_server')
             && parent::isEnabled();
     }
 
@@ -263,14 +260,7 @@ abstract class ServerCommandBase extends CommandBase
           $router,
         ]);
 
-        // An 'exec' is needed to stop creating two processes on some OSs.
-        if (!OsUtil::isWindows()) {
-            array_unshift($arguments, 'exec');
-        }
-
-        $builder = new ProcessBuilder($arguments);
-        $process = $builder->getProcess();
-
+        $process = new Process($arguments);
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);

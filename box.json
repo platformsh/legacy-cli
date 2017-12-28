@@ -9,6 +9,7 @@
     "constants.php",
     "services.yaml",
     "shell-config.rc",
+    "shell-config-bash.rc",
     "vendor/autoload.php",
     "vendor/symfony/console/Resources/bin/hiddeninput.exe"
   ],

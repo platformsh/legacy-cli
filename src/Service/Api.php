@@ -3,10 +3,15 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
+use GuzzleHttp\ClientInterface;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
+use Platformsh\Cli\Exception\ApiFeatureMissingException;
+use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
+use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
@@ -49,6 +54,9 @@ class Api
 
     /** @var array */
     protected static $notFound = [];
+
+    /** @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null */
+    protected $sessionStorage;
 
     /**
      * Constructor.
@@ -160,7 +168,7 @@ class Api
             $connectorOptions = [];
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
-            $connectorOptions['debug'] = $this->config->get('api.debug');
+            $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
             $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
             $connectorOptions['user_agent'] = $this->getUserAgent();
             $connectorOptions['api_token'] = $this->apiToken;
@@ -186,7 +194,12 @@ class Api
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
             $session->setId('cli-' . $this->sessionId);
-            $session->setStorage(new File($this->config->getWritableUserDir() . '/.session'));
+
+            $this->sessionStorage = KeychainStorage::isSupported()
+                && $this->config->isExperimentEnabled('use_keychain')
+                ? new KeychainStorage($this->config->get('application.name'))
+                : new File($this->config->getWritableUserDir() . '/.session');
+            $session->setStorage($this->sessionStorage);
 
             self::$client = new PlatformClient($connector);
 
@@ -229,7 +242,7 @@ class Api
 
             $this->cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
         } else {
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $id => $data) {
                 $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
             }
@@ -273,7 +286,7 @@ class Api
                 $this->cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
             }
         } else {
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
@@ -325,7 +338,7 @@ class Api
         } else {
             $environments = [];
             $endpoint = $project->getUri();
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);
             }
@@ -634,5 +647,122 @@ class Api
         $result += strlen($a) <= strlen($b) ? -1 : 1;
 
         return $result;
+    }
+
+    /**
+     * Get the HTTP client.
+     *
+     * @return ClientInterface
+     */
+    public function getHttpClient()
+    {
+        return $this->getClient(false)->getConnector()->getClient();
+    }
+
+    /**
+     * Read a file in the environment, using the Git Data API.
+     *
+     * @param string      $filename
+     * @param Environment $environment
+     *
+     * @throws \RuntimeException on error.
+     *
+     * @return string|false
+     *   The raw contents of the file, or false if the file is not found.
+     */
+    public function readFile($filename, Environment $environment)
+    {
+        $cacheKey = implode(':', ['raw', $environment->project, $filename]);
+        $data = $this->cache->fetch($cacheKey);
+        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
+            // Find the file.
+            if (($tree = $this->getTree($environment, dirname($filename)))
+                && ($blob = $tree->getBlob(basename($filename)))) {
+                $raw = $blob->getRawContent();
+            } else {
+                $raw = false;
+            }
+            $data = ['raw' => $raw, 'commit_sha' => $environment->head_commit];
+            // Skip caching if the file is bigger than 100 KiB.
+            if ($raw === false || strlen($raw) <= 102400) {
+                $this->cache->save($cacheKey, $data);
+            }
+        }
+
+        return $data['raw'];
+    }
+
+    /**
+     * Get a Git Tree object (a repository directory) for an environment.
+     *
+     * @param Environment $environment
+     * @param string      $path
+     *
+     * @return Tree|false
+     */
+    public function getTree(Environment $environment, $path = '.')
+    {
+        $cacheKey = implode(':', ['tree', $environment->project, $path]);
+        $data = $this->cache->fetch($cacheKey);
+        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
+            if (!$head = $environment->getHeadCommit()) {
+                // This is unlikely to happen, unless the project doesn't have the
+                // Git Data API available at all (e.g. old Git version).
+                throw new ApiFeatureMissingException(sprintf(
+                    'The project %s does not support the Git Data API.',
+                    $environment->project
+                ));
+            }
+            if (!$headTree = $head->getTree()) {
+                // This is even less likely to happen.
+                throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
+            }
+            $tree = $headTree->getTree($path);
+            $this->cache->save($cacheKey, [
+                'tree' => $tree ? $tree->getData() : null,
+                'uri' => $tree ? $tree->getUri() : null,
+                'commit_sha' => $environment->head_commit,
+            ]);
+        } elseif (empty($data['tree'])) {
+            return false;
+        } else {
+            $tree = new Tree($data['tree'], $data['uri'], $this->getHttpClient(), true);
+        }
+
+        return $tree;
+    }
+
+    /**
+     * Delete all keychain keys.
+     */
+    public function deleteFromKeychain()
+    {
+        if ($this->sessionStorage instanceof KeychainStorage) {
+            $this->sessionStorage->deleteAll();
+        }
+    }
+
+    /**
+     * Get the current deployment for an environment.
+     *
+     * @param Environment $environment
+     * @param bool        $refresh
+     *
+     * @return EnvironmentDeployment
+     */
+    public function getCurrentDeployment(Environment $environment, $refresh = false)
+    {
+        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id]);
+        $data = $this->cache->fetch($cacheKey);
+        if ($data === false || $refresh) {
+            $deployment = $environment->getCurrentDeployment();
+            $data = $deployment->getData();
+            $data['_uri'] = $deployment->getUri();
+            $this->cache->save($cacheKey, $data, $this->config->get('api.environments_ttl'));
+        } else {
+            $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
+        }
+
+        return $deployment;
     }
 }
