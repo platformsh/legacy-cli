@@ -19,6 +19,8 @@ class BrowserLoginCommand extends CommandBase
     protected function configure()
     {
         $service = $this->config()->get('service.name');
+        $applicationName = $this->config()->get('application.name');
+        $executable = $this->config()->get('application.executable');
 
         $this->setName('auth:browser-login');
 
@@ -33,6 +35,11 @@ class BrowserLoginCommand extends CommandBase
         $this->setDescription('Log in to ' . $service . ' via a browser')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
         Url::configureInput($this->getDefinition());
+
+        $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
+            . "\n\nAlternatively, to log in with a username and password in the terminal, use:\n    <info>"
+            . $executable . ' auth:login</info>';
+        $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
