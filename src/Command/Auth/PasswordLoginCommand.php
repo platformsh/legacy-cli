@@ -3,12 +3,11 @@ namespace Platformsh\Cli\Command\Auth;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
-use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class LoginCommand extends CommandBase
+class PasswordLoginCommand extends CommandBase
 {
 
     protected function configure()
@@ -17,12 +16,12 @@ class LoginCommand extends CommandBase
         $accountsUrl = $this->config()->get('service.accounts_url');
         $executable = $this->config()->get('application.executable');
 
-        $this->setName('auth:login');
-
-        if (!$this->config()->isExperimentEnabled('browser_login')) {
+        $this->setName('auth:password-login');
+        if ($this->config()->get('application.login_method') === 'password') {
             $this->setAliases(['login']);
         }
 
+        $this->setHiddenAliases(['auth:login']);
         $this->setDescription('Log in to ' . $service . ' using a username and password');
 
         $help = 'Use this command to log in to your ' . $service . ' account in the terminal.'
@@ -31,18 +30,24 @@ class LoginCommand extends CommandBase
             . $accountsUrl . '/user/password</info>'
             . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
             . $executable . ' auth:browser-login</info>';
+        if ($aHelp = $this->getApiTokenHelp()) {
+            $help .= "\n\n" . $aHelp;
+        }
         $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Disable the API token for this command.
         if ($this->api()->hasApiToken()) {
-            throw new \Exception('Cannot log in: an API token is set');
+            $this->stdErr->writeln('Cannot log in: an API token is set');
+            return 1;
         }
-        // Login can only happen during interactive use.
         if (!$input->isInteractive()) {
-            throw new RuntimeException('Non-interactive login not supported');
+            $this->stdErr->writeln('Non-interactive login is not supported.');
+            if ($aHelp = $this->getApiTokenHelp('comment')) {
+                $this->stdErr->writeln("\n" . $aHelp);
+            }
+            return 1;
         }
 
         $this->stdErr->writeln(

@@ -7,8 +7,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
-use Symfony\Component\Console\Exception\RuntimeException;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -23,13 +21,8 @@ class BrowserLoginCommand extends CommandBase
         $executable = $this->config()->get('application.executable');
 
         $this->setName('auth:browser-login');
-
-        // The command with the "login" alias will be invoked automatically when
-        // needed (in interactive mode).
-        if ($this->config()->isExperimentEnabled('browser_login')) {
+        if ($this->config()->get('application.login_method') === 'browser') {
             $this->setAliases(['login']);
-        } else {
-            $this->hiddenInList = true;
         }
 
         $this->setDescription('Log in to ' . $service . ' via a browser')
@@ -38,33 +31,30 @@ class BrowserLoginCommand extends CommandBase
 
         $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
             . "\n\nAlternatively, to log in with a username and password in the terminal, use:\n    <info>"
-            . $executable . ' auth:login</info>';
+            . $executable . ' auth:password-login</info>';
+        if ($aHelp = $this->getApiTokenHelp()) {
+            $help .= "\n\n" . $aHelp;
+        }
         $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Disable the API token for this command.
         if ($this->api()->hasApiToken()) {
-            throw new \Exception('Cannot log in: an API token is set');
+            $this->stdErr->writeln('Cannot log in: an API token is set');
+            return 1;
         }
-        // Login can only happen during interactive use.
         if (!$input->isInteractive()) {
-            throw new RuntimeException('Non-interactive login not supported');
+            $this->stdErr->writeln('Non-interactive login is not supported.');
+            if ($aHelp = $this->getApiTokenHelp('comment')) {
+                $this->stdErr->writeln("\n" . $aHelp);
+            }
+            return 1;
         }
         $connector = $this->api()->getClient(false)->getConnector();
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
             $this->stdErr->writeln('You are already logged in.');
             return 0;
-        }
-
-        // If being run from another command, prompt.
-        if ($input instanceof ArrayInput) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            if (!$questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
-                return 1;
-            }
         }
 
         // Set up the local PHP web server, which will serve an OAuth2 redirect
@@ -132,8 +122,13 @@ class BrowserLoginCommand extends CommandBase
         if ($urlService->openUrl($localUrl, false)) {
             $this->stdErr->writeln('Please use the browser to log in.');
         } else {
-            $this->stdErr->writeln('Open the following URL and log in:');
+            $this->stdErr->writeln('Open the following URL in a browser and log in:');
             $this->stdErr->writeln($localUrl);
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'For help, quit this process (e.g. with Ctrl+C), and run: <info>%s help login</info>',
+                $this->config()->get('application.executable')
+            ));
         }
 
         // Wait for the file to be filled with an OAuth2 authorization code.
