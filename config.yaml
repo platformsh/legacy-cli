@@ -11,6 +11,9 @@ application:
   env_prefix: 'PLATFORMSH_CLI_'
   tmp_sub_dir: 'platformsh-cli-tmp'
 
+  # The default login method: either 'browser' or 'password'.
+  login_method: browser
+
   # Disabled commands.
   disabled_commands: []
 
@@ -41,6 +44,7 @@ service:
   accounts_url: 'https://accounts.platform.sh'
   pricing_url: 'https://platform.sh/pricing'
   default_from_address: 'noreply@platform.sh'
+  api_token_help_url: 'https://docs.platform.sh/gettingstarted/cli/api-tokens.html'
   available_regions:
     - eu.platform.sh
     - us.platform.sh

@@ -46,6 +46,16 @@ class Url implements InputConfiguringInterface
     }
 
     /**
+     * Test whether URL(s) can be opened in the default browser.
+     *
+     * @return bool
+     */
+    public function canOpenUrls()
+    {
+        return $this->hasDisplay() && $this->getDefaultBrowser();
+    }
+
+    /**
      * Open a URL in the browser, or print it.
      *
      * @param string $url
@@ -56,10 +66,30 @@ class Url implements InputConfiguringInterface
      */
     public function openUrl($url, $print = true)
     {
+        $browserOption = $this->input->hasOption('browser') ? $this->input->getOption('browser') : null;
+        $open = true;
         $success = false;
-        if ($browser = $this->getBrowser()) {
+
+        // If the user wants to pipe the output to another command, stop here.
+        if ($this->input->hasOption('pipe') && $this->input->getOption('pipe')) {
+            $open = false;
+        }
+        // Check if the user has requested not to use a browser.
+        elseif ($browserOption === '0') {
+            $open = false;
+        }
+        // Check for a display (if not on Windows or OS X).
+        elseif (!$this->hasDisplay()) {
+            $open = false;
+            $this->stdErr->writeln('Not opening URL (no display found)', OutputInterface::VERBOSITY_VERBOSE);
+        }
+
+        // Open the URL.
+        if ($open && ($browser = $this->getBrowser($browserOption))) {
             $success = $this->shell->executeSimple($browser . ' ' . escapeshellarg($url)) === 0;
         }
+
+        // Print the URL.
         if ($print) {
             $this->output->writeln($url);
         }
@@ -68,39 +98,33 @@ class Url implements InputConfiguringInterface
     }
 
     /**
+     * Check for a display (if not on Windows or OS X).
+     *
+     * @return bool
+     */
+    public function hasDisplay()
+    {
+        return getenv('DISPLAY') || OsUtil::isWindows() || OsUtil::isOsX();
+    }
+
+    /**
      * Finds the browser to use.
+     *
+     * @param string|null $browserOption
      *
      * @return string|false A browser command, or false if no browser can or
      *                      should be used.
      */
-    protected function getBrowser()
+    private function getBrowser($browserOption = null)
     {
-        $browser = $this->input->hasOption('browser') ? $this->input->getOption('browser') : null;
-
-        // If the user wants to pipe the output to another command, stop here.
-        if ($this->input->hasOption('pipe') && $this->input->getOption('pipe')) {
-            return false;
-        }
-
-        // Check if the user has requested not to use a browser.
-        if ($browser === '0') {
-            return false;
-        }
-
-        // Check for a display (if not on Windows or OS X).
-        if (!getenv('DISPLAY') && !OsUtil::isWindows() && !OsUtil::isOsX()) {
-            $this->stdErr->writeln('Not opening URL (no display found)', OutputInterface::VERBOSITY_VERBOSE);
-            return false;
-        }
-
-        if (!empty($browser)) {
-            list($command, ) = explode(' ', $browser, 2);
+        if (!empty($browserOption)) {
+            list($command, ) = explode(' ', $browserOption, 2);
             if (!$this->shell->commandExists($command)) {
                 $this->stdErr->writeln(sprintf('Command not found: <error>%s</error>', $command));
                 return false;
             }
 
-            return $browser;
+            return $browserOption;
         }
 
         return $this->getDefaultBrowser();
@@ -111,13 +135,14 @@ class Url implements InputConfiguringInterface
      *
      * @return string|false
      */
-    protected function getDefaultBrowser()
+    private function getDefaultBrowser()
     {
+        $browsers = ['xdg-open', 'gnome-open', 'start'];
         if (OsUtil::isOsX()) {
-            return 'open';
+            $browsers = ['open'];
         }
 
-        foreach (['xdg-open', 'gnome-open', 'start'] as $browser) {
+        foreach ($browsers as $browser) {
             if ($this->shell->commandExists($browser)) {
                 return $browser;
             }
