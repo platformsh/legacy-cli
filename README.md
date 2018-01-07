@@ -218,6 +218,7 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It is usually preferable to use `config.yaml` as above.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
+* `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 
 ## Contributing

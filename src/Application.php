@@ -221,6 +221,15 @@ class Application extends ParentApplication
             $input->setInteractive(false);
         }
 
+        // Allow the CLICOLOR_FORCE environment variable to override whether
+        // colors are used in the output.
+        /* @see StreamOutput::hasColorSupport() */
+        if (getenv('CLICOLOR_FORCE') === '0') {
+            $output->setDecorated(false);
+        } elseif (getenv('CLICOLOR_FORCE') === '1') {
+            $output->setDecorated(true);
+        }
+
         parent::configureIO($input, $output);
     }
 
