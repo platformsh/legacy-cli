@@ -120,10 +120,11 @@ class BrowserLoginCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Url $urlService */
         $urlService = $this->getService('url');
         if ($urlService->openUrl($localUrl, false)) {
+            $this->stdErr->writeln(sprintf('Opened URL: <info>%s</info>', $localUrl));
             $this->stdErr->writeln('Please use the browser to log in.');
         } else {
-            $this->stdErr->writeln('Open the following URL in a browser and log in:');
-            $this->stdErr->writeln($localUrl);
+            $this->stdErr->writeln('Please open the following URL in a browser and log in:');
+            $this->stdErr->writeln('<info>' . $localUrl . '</info>');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'For help, quit this process (e.g. with Ctrl+C), and run: <info>%s help login</info>',
