@@ -25,9 +25,8 @@ This is the recommended installation method. Simply use this command:
 
 ### Installing manually
 
-1. Download the latest stable package from the
-  [Releases page](https://github.com/platformsh/platformsh-cli/releases)
-  (look for the latest `platform.phar` file).
+1. Download the `platform.phar` file from the
+  [latest release](https://github.com/platformsh/platformsh-cli/releases/latest).
 
 2. Rename the file to `platform`, ensure it is executable, and move it into a
   directory in your PATH (use `echo $PATH` to see your options).
