@@ -24,11 +24,6 @@ class ProjectDeleteCommand extends CommandBase
         $this->validateInput($input);
         $project = $this->getSelectedProject();
 
-        if ($this->api()->getMyAccount()['uuid'] !== $project->owner) {
-            $this->stdErr->writeln("Only the project's owner can delete it.");
-            return 1;
-        }
-
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
