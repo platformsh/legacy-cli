@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -57,7 +58,19 @@ class ProjectDeleteCommand extends CommandBase
             throw new \RuntimeException('Subscription not found: ' . $subscriptionId);
         }
 
-        $subscription->delete();
+        try {
+            $subscription->delete();
+        } catch (ClientException $e) {
+            $response = $e->getResponse();
+            if ($response !== null && $response->getStatusCode() === 403) {
+                if ($project->owner !== $this->api()->getMyAccount()['uuid']) {
+                    $this->stdErr->writeln("Only the project's owner can delete it.");
+                    return 1;
+                }
+            }
+            throw $e;
+        }
+
         $this->api()->clearProjectsCache();
 
         $this->stdErr->writeln('');
