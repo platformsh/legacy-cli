@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "6ce08c454f1debccb417200acc54931b5f98ea60",
-        "sha256": "cb09d616a5b8bf37c92c51450fbc2a1bb896c9e02aec5b291356daf1de389db6",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.23.0/platform.phar",
-        "version": "3.23.0",
+        "sha1": "152b7c59d9b7594d94a7d772e51a335502ccd5c0",
+        "sha256": "8df70df88de443e3375c42276263c12aeb1f8e6426c21c77f3ddf63e1e867334",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.27.0/platform.phar",
+        "version": "3.27.0",
         "php": {
             "min": "5.5.9"
         },
@@ -77,6 +77,26 @@
                 "notes": "- A public website URL can now be used in the --project (-p) option\n- Added `--exclude` and `--include` options to `mount` commands\n- Added `--excluded-environments` option for webhook integrations*\n- Added Gitlab integration support*\n\n(* the last two will apply to an upcoming Platform.sh version, 2.7)",
                 "show from": "3.22.0",
                 "hide from": "3.23.0"
+            },
+            {
+                "notes": "* Add repo:cat and repo:ls commands\n* Allow default target/source in mount:upload and mount:download when --yes is used\n* Add -W alias to --no-wait option in push command\n* (from Symfony Console 3.4) Allow case-insensitive command shortcuts\n* (from Symfony Console 3.4) Fix combining one-letter options\n* Write curl debug output to STDERR, not STDOUT\n* Fix some Drush 9.0.0-rc1 compatibility issues",
+                "show from": "3.23.0",
+                "hide from": "3.24.0"
+            },
+            {
+                "notes": "* Extends interactive question text in `integration:add` command, to clarify the meaning of options, their defaults, and their syntax\n* Adds support for the \"Enabled\" (`is_enabled`) flag on environment variables.\n* Adds `--no-expired` and `--only-expired` options to `certificate:list`\n* Improves the \"project not found\" message, to suggest other project IDs\n* Implements omitting non-required empty fields when adding an integration (allows earlier support for new integration options without breaking older projects)\n* Adds the SSH_AGENT_PID to auto inherited environment variables (fixes using an SSH agent to manage keys when used with the CLI's Git commands)\n* Adds an experimental `redis` command to connect to a Redis container (hidden from the command list for now)\n* Adds experimental OS X Keychain support (enabled via `experimental.use_keychain`)",
+                "show from": "3.24.0",
+                "hide from": "3.25.0"
+            },
+            {
+                "notes": "New features:\n* Support remote projects/environments in app:list command.\n* Add worker:list (workers) command.\n* Use \"deployments\" HTTP API (instead of SSH) in app:config command.\n* Auto-ensure webhooks on GitHub and GitLab integrations, where possible.\n\nOther changes:\n* Skip updates check if the Phar file is not writable.\n* Remove different coloration for local commands in `list` (there are so few listed).\n* Recommend --no-wait if snapshot:create is run in a non-TTY.\n* Suggest project:set-remote in RootNotFoundException.\n* Fix environment:drush (drush) command to use configured document root, or PLATFORM_DOCUMENT_ROOT where available.\n* Be stricter about when to use $_ENV, when getting parent variables for PHP <7.1.",
+                "show from": "3.25.0",
+                "hide from": "3.26.0"
+            },
+            {
+                "notes": "* Use browser login by default (the old login method is available as `auth:password-login`).\n* Set `--build-pull-requests-post-merge` to false by default (GitHub integrations).\n* Respect `--no-wait` in `environment:init`, and clear the environment cache afterwards.\n* In the `project:delete` command, leave access control to the API.\n* Support disabling or enabling colorized output via the CLICOLOR_FORCE environment variable.",
+                "show from": "3.26.1",
+                "hide from": "3.27.0"
             }
         ]
     }
