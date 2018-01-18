@@ -195,6 +195,11 @@ api:
   # Run 'platform logout --all' if you change this value.
   token_file: null
 
+application:
+  # The method used for interactive login: 'browser' or 'password' (defaults to
+  # 'browser').
+  login_method: browser
+
 local:
   # Set this to true to avoid some Windows symlink issues.
   copy_on_windows: false

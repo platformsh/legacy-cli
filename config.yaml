@@ -11,7 +11,7 @@ application:
   env_prefix: 'PLATFORMSH_CLI_'
   tmp_sub_dir: 'platformsh-cli-tmp'
 
-  # The default login method: either 'browser' or 'password'.
+  # The default interactive login method: either 'browser' or 'password'.
   # This can be overridden in the user config file.
   login_method: browser
 
