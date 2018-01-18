@@ -209,6 +209,9 @@ class SelfBuildCommand extends CommandBase
                 'show from' => $oldVersion,
                 'hide from' => $version,
             ];
+            $this->stdErr->writeln('<info>Changes:</info>');
+            $this->stdErr->writeln($changelog);
+            $this->stdErr->writeln('');
         }
         $result = file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         if ($result !== false) {
