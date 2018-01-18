@@ -9,7 +9,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 * Git
 * A Bash-like shell:
   * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
-  * On Windows: [Bash on Ubuntu](https://msdn.microsoft.com/en-gb/commandline/wsl/about) on Windows (recommended), or a Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
+  * On Windows: [Windows Subsystem for Linux](https://msdn.microsoft.com/en-gb/commandline/wsl/about) (recommended), or another Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
   * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
@@ -25,9 +25,8 @@ This is the recommended installation method. Simply use this command:
 
 ### Installing manually
 
-1. Download the latest stable package from the
-  [Releases page](https://github.com/platformsh/platformsh-cli/releases)
-  (look for the latest `platform.phar` file).
+1. Download the `platform.phar` file from the
+  [latest release](https://github.com/platformsh/platformsh-cli/releases/latest).
 
 2. Rename the file to `platform`, ensure it is executable, and move it into a
   directory in your PATH (use `echo $PATH` to see your options).
@@ -64,9 +63,8 @@ Global options:
   --quiet          -q Do not output any message
   --verbose        -v|vv|vvv Increase the verbosity of messages
   --version        -V Display this application version
-  --yes            -y Answer "yes" to all prompts
+  --yes            -y Answer "yes" to all prompts; disable interaction
   --no             -n Answer "no" to all prompts
-  --shell          -s Launch the shell
 
 Available commands:
   clear-cache (clearcache, cc)              Clear the CLI cache
@@ -80,10 +78,10 @@ activity
   activity:log                              Display the log for an activity
 app
   app:config-get                            View the configuration of an app
-  app:list (apps)                           Get a list of all apps in the local repository
+  app:list (apps)                           List apps in the project
 auth
   auth:info                                 Display your account information
-  auth:login (login)                        Log in to Platform.sh
+  auth:login (login)                        Log in to Platform.sh using a username and password
   auth:logout (logout)                      Log out of Platform.sh
 certificate
   certificate:add                           Add an SSL certificate to the project
@@ -112,7 +110,7 @@ environment
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
-  environment:relationships (relationships)   Show an environment's relationships
+  environment:relationships (relationships) Show an environment's relationships
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment
@@ -137,13 +135,13 @@ project
   project:list (projects)                   Get a list of all active projects
   project:set-remote                        Set the remote project for the current Git repository
   project:variable:delete                   Delete a variable from a project
-  project:variable:get (project-variables, pvget)   View variable(s) for a project
+  project:variable:get (project-variables, pvget) View variable(s) for a project
   project:variable:set (pvset)              Set a variable for a project
 repo
   repo:cat                                  Read a file in the project repository
   repo:ls                                   List files in the project repository
 route
-  route:get                                 View a route
+  route:get                                 View a resolved route
   route:list (routes)                       List all routes for an environment
 self
   self:install                              Install or update CLI configuration files
@@ -219,6 +217,7 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It is usually preferable to use `config.yaml` as above.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
+* `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 
 ## Contributing

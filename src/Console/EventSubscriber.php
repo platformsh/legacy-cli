@@ -18,7 +18,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 class EventSubscriber implements EventSubscriberInterface
 {
     protected $config;
-    protected $api;
 
     /**
      * @param \Platformsh\Cli\Service\Config $config
@@ -68,22 +67,23 @@ class EventSubscriber implements EventSubscriberInterface
 
             // Create a friendlier message for the OAuth2 "Invalid refresh token"
             // error.
-            $loginCommand = sprintf('%s login', $this->config->get('application.executable'));
             if ($response->getStatusCode() === 400
                 && $requestConfig['auth'] === 'oauth2'
                 && isset($json['error_description'])
                 && $json['error_description'] === 'Invalid refresh token') {
                 $event->setException(new LoginRequiredException(
-                    "Invalid refresh token. \nPlease log in again by running: $loginCommand",
+                    'Invalid refresh token.',
                     $request,
-                    $response
+                    $response,
+                    $this->config
                 ));
                 $event->stopPropagation();
             } elseif ($response->getStatusCode() === 401 && $requestConfig['auth'] === 'oauth2') {
                 $event->setException(new LoginRequiredException(
-                    "Unauthorized. \nPlease log in again by running: $loginCommand",
+                    'Unauthorized.',
                     $request,
-                    $response
+                    $response,
+                    $this->config
                 ));
                 $event->stopPropagation();
             } elseif ($response->getStatusCode() === 403 && $requestConfig['auth'] === 'oauth2') {
