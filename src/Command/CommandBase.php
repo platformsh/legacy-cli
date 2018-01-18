@@ -332,7 +332,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 $questionHelper = $this->getService('question_helper');
                 $urlService = $this->getService('url');
                 if ($urlService->canOpenUrls()
-                    && !$questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
+                    && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
                     $this->stdErr->writeln('');
                     $exitCode = $this->runOtherCommand('auth:browser-login');
                     $this->stdErr->writeln('');
