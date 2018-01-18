@@ -78,12 +78,15 @@ class BrowserLoginCommand extends CommandBase
         }
         chmod($codeFile, 0600);
 
-        // Find the authorization URL from the api.accounts_api_url.
+        // Find the authorization and token URLs.
         $apiUrl = $this->config()->get('api.accounts_api_url');
         $authHost = parse_url($apiUrl, PHP_URL_HOST);
+        $authScheme = parse_url($apiUrl, PHP_URL_SCHEME) ?: 'https';
         if (!$authHost) {
             throw new \RuntimeException('Failed to get API host.');
         }
+        $authUrl = $authScheme . '://' . $authHost . '/oauth2/authorize';
+        $tokenUrl = $authScheme . '://' . $authHost . '/oauth2/token';
 
         // Start the local server.
         $process = new Process([
@@ -97,7 +100,7 @@ class BrowserLoginCommand extends CommandBase
         $process->setEnv([
             'CLI_OAUTH_APP_NAME' => $this->config()->get('application.name'),
             'CLI_OAUTH_STATE' => $this->getRandomState(),
-            'CLI_OAUTH_AUTH_URL' => 'https://' . $authHost . '/oauth2/authorize',
+            'CLI_OAUTH_AUTH_URL' => $authUrl,
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
             'CLI_OAUTH_FILE' => $codeFile,
         ]);
@@ -161,7 +164,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Using the authorization code, request an access token.
         $this->stdErr->writeln('Login information received. Verifying...');
-        $token = $this->getAccessToken($code, $localUrl, $authHost);
+        $token = $this->getAccessToken($code, $localUrl, $tokenUrl);
 
         // Finalize login: clear the cache and save the new credentials.
         /** @var \Doctrine\Common\Cache\CacheProvider $cache */
@@ -215,16 +218,18 @@ class BrowserLoginCommand extends CommandBase
     }
 
     /**
+     * Exchange the authorization code for an access token.
+     *
      * @param string $authCode
      * @param string $redirectUri
-     * @param string $authHost
+     * @param string $tokenUrl
      *
      * @return array
      */
-    private function getAccessToken($authCode, $redirectUri, $authHost)
+    private function getAccessToken($authCode, $redirectUri, $tokenUrl)
     {
         return (new Client())->post(
-            'https://' . $authHost . '/oauth2/token',
+            $tokenUrl,
             [
                 'json' => [
                     'grant_type' => 'authorization_code',
