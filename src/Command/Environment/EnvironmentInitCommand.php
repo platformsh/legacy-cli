@@ -56,9 +56,13 @@ class EnvironmentInitCommand extends CommandBase
             throw $e;
         }
 
-        /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-        $activityMonitor = $this->getService('activity_monitor');
-        $activityMonitor->waitAndLog($activity);
+        $this->api()->clearEnvironmentsCache($environment->project);
+
+        if (!$input->getOption('no-wait')) {
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor->waitAndLog($activity);
+        }
 
         return 0;
     }
