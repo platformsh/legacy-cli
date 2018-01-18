@@ -112,6 +112,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ],
                 'build_pull_requests' => true,
               ],
+              'default' => false,
               'description' => 'GitHub: build pull requests based on their post-merge state',
               'questionLine' => 'Build pull requests based on their post-merge state',
             ]),
