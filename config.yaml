@@ -12,6 +12,7 @@ application:
   tmp_sub_dir: 'platformsh-cli-tmp'
 
   # The default login method: either 'browser' or 'password'.
+  # This can be overridden in the user config file.
   login_method: browser
 
   # Disabled commands.
