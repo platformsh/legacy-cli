@@ -4,6 +4,15 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
+## [v3.27.0](https://github.com/platformsh/platformsh-cli/tree/v3.27.0) (2018-01-18)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.26.1...v3.27.0)
+
+* Use browser login by default (the old login method is available as `auth:password-login`).
+* Set `--build-pull-requests-post-merge` to false by default (GitHub integrations).
+* Respect `--no-wait` in `environment:init`, and clear the environment cache afterwards.
+* In the `project:delete` command, leave access control to the API.
+* Support disabling or enabling colorized output via the CLICOLOR_FORCE environment variable.
+
 ## [v3.26.1](https://github.com/platformsh/platformsh-cli/tree/v3.26.1) (2017-12-28)
 [Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.26.0...v3.26.1)
 
