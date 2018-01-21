@@ -197,6 +197,7 @@ class SelfBuildCommand extends CommandBase
                 '--no-merges',
                 'v' . $oldVersion . '...master'
             ]);
+            $changelog = is_string($changelog) ? $changelog : '';
         }
         $manifestItem['version'] = $version;
         $manifestItem['sha1'] = $sha1;
