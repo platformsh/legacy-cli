@@ -4,6 +4,11 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
+## [v3.27.1](https://github.com/platformsh/platformsh-cli/tree/v3.27.1) (2018-01-22)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.0...v3.27.1)
+
+* [project:create] increase check timeout and make it configurable
+
 ## [v3.27.0](https://github.com/platformsh/platformsh-cli/tree/v3.27.0) (2018-01-18)
 [Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.26.1...v3.27.0)
 
