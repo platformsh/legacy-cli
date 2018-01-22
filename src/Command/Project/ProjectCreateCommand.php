@@ -9,6 +9,7 @@ use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectCreateCommand extends CommandBase
@@ -39,6 +40,10 @@ class ProjectCreateCommand extends CommandBase
 
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
+
+        $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
+            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks', 900);
+
     }
 
     /**
@@ -94,16 +99,19 @@ class ProjectCreateCommand extends CommandBase
         $bot = new Bot($this->stdErr);
         $timedOut = false;
         $start = $lastCheck = time();
+        $checkInterval = 3;
+        $checkTimeout = $this->getTimeOption($input, 'check-timeout', 1, 3600);
+        $totalTimeout = $this->getTimeOption($input, 'timeout', 0, 3600);
         while ($subscription->isPending() && !$timedOut) {
             $bot->render();
-            // Attempt to check the subscription every 3 seconds. This also
-            // waits 3 seconds before the first check, which allows the server
-            // a little more leeway to act on the initial request.
-            if (time() - $lastCheck >= 3) {
+            // Attempt to check the subscription every $checkInterval seconds.
+            // This also waits $checkInterval seconds before the first check,
+            // which allows the server a little more leeway to act on the
+            // initial request.
+            if (time() - $lastCheck >= $checkInterval) {
                 try {
-                    // Each request can only last up to 3 seconds (otherwise the
-                    // animation would be blocked).
-                    $subscription->refresh(['timeout' => 3, 'exceptions' => false]);
+                    // The API call will timeout after $checkTimeout seconds.
+                    $subscription->refresh(['timeout' => $checkTimeout, 'exceptions' => false]);
                     $lastCheck = time();
                 } catch (ConnectException $e) {
                     if (strpos($e->getMessage(), 'timed out') !== false) {
@@ -113,8 +121,8 @@ class ProjectCreateCommand extends CommandBase
                     }
                 }
             }
-            // Time out after 15 minutes.
-            $timedOut = time() - $start > 900;
+            // Check the total timeout.
+            $timedOut = $totalTimeout ? time() - $start > $totalTimeout : false;
         }
         $this->stdErr->writeln('');
 
@@ -218,5 +226,27 @@ class ProjectCreateCommand extends CommandBase
             },
           ]),
         ];
+    }
+
+    /**
+     * Get a numeric option value while ensuring it's a reasonable number.
+     *
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param string                                          $optionName
+     * @param int                                             $min
+     * @param int                                             $max
+     *
+     * @return float|int
+     */
+    private function getTimeOption(InputInterface $input, $optionName, $min = 0, $max = 3600)
+    {
+        $value = $input->getOption($optionName);
+        if ($value <= $min) {
+            $value = $min;
+        } elseif ($value > $max) {
+            $value = $max;
+        }
+
+        return $value;
     }
 }
