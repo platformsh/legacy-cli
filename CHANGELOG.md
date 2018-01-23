@@ -4,6 +4,15 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
+## [v3.27.2](https://github.com/platformsh/platformsh-cli/tree/v3.27.2) (2018-01-23)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.1...v3.27.2)
+
+* Fix: 'Invalid refresh token' message interception shouldn't check the request for oauth2
+* [project:create] add detailed help
+* [project:create] be stricter about check interval
+* [project:create] show project ID if possible even after failure
+* [subscription:info] allow passing a subscription ID directly via --id
+
 ## [v3.27.1](https://github.com/platformsh/platformsh-cli/tree/v3.27.1) (2018-01-22)
 [Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.0...v3.27.1)
 
