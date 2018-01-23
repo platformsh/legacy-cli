@@ -109,10 +109,10 @@ class ProjectCreateCommand extends CommandBase
             // which allows the server a little more leeway to act on the
             // initial request.
             if (time() - $lastCheck >= $checkInterval) {
+                $lastCheck = time();
                 try {
                     // The API call will timeout after $checkTimeout seconds.
                     $subscription->refresh(['timeout' => $checkTimeout, 'exceptions' => false]);
-                    $lastCheck = time();
                 } catch (ConnectException $e) {
                     if (strpos($e->getMessage(), 'timed out') !== false) {
                         $this->debug($e->getMessage());
