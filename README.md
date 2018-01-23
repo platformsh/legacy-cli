@@ -80,9 +80,10 @@ app
   app:config-get                            View the configuration of an app
   app:list (apps)                           List apps in the project
 auth
+  auth:browser-login (login)                Log in to Platform.sh via a browser
   auth:info                                 Display your account information
-  auth:login (login)                        Log in to Platform.sh using a username and password
   auth:logout (logout)                      Log out of Platform.sh
+  auth:password-login                       Log in to Platform.sh using a username and password
 certificate
   certificate:add                           Add an SSL certificate to the project
   certificate:delete                        Delete a certificate from the project
