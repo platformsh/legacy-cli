@@ -129,10 +129,16 @@ class ProjectCreateCommand extends CommandBase
         if (!$subscription->isActive()) {
             if ($timedOut) {
                 $this->stdErr->writeln('<error>The project failed to activate on time</error>');
-                $this->stdErr->writeln('View your active projects at: ' . $this->config()->get('service.accounts_url'));
             } else {
                 $this->stdErr->writeln('<error>The project failed to activate</error>');
             }
+
+            if (isset($subscription->project_id)) {
+                $output->writeln($subscription->project_id);
+            }
+
+            $this->stdErr->writeln(sprintf('View your active projects with: <info>%s project:list</info>', $this->config()->get('application.executable')));
+
             return 1;
         }
 
