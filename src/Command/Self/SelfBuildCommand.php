@@ -195,6 +195,10 @@ class SelfBuildCommand extends CommandBase
                 'log',
                 '--pretty=format:* %s',
                 '--no-merges',
+                '--invert-grep',
+                '--grep=(Release v|\[skip changelog\])',
+                '--perl-regexp',
+                '--regexp-ignore-case',
                 'v' . $oldVersion . '...master'
             ]);
             $changelog = is_string($changelog) ? $changelog : '';
