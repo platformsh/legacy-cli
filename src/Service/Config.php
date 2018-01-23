@@ -204,6 +204,7 @@ class Config
             'local.drush_executable' => 'local.drush_executable',
             'experimental' => 'experimental',
             'updates' => 'updates',
+            'application.login_method' => 'application.login_method',
         ];
 
         $userConfig = $this->getUserConfig();

@@ -195,8 +195,13 @@ class SelfBuildCommand extends CommandBase
                 'log',
                 '--pretty=format:* %s',
                 '--no-merges',
+                '--invert-grep',
+                '--grep=(Release v|\[skip changelog\])',
+                '--perl-regexp',
+                '--regexp-ignore-case',
                 'v' . $oldVersion . '...master'
             ]);
+            $changelog = is_string($changelog) ? $changelog : '';
         }
         $manifestItem['version'] = $version;
         $manifestItem['sha1'] = $sha1;
@@ -209,6 +214,9 @@ class SelfBuildCommand extends CommandBase
                 'show from' => $oldVersion,
                 'hide from' => $version,
             ];
+            $this->stdErr->writeln('<info>Changes:</info>');
+            $this->stdErr->writeln($changelog);
+            $this->stdErr->writeln('');
         }
         $result = file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         if ($result !== false) {

@@ -95,7 +95,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthInfoCommand();
         $commands[] = new Command\Auth\AuthTokenCommand();
         $commands[] = new Command\Auth\LogoutCommand();
-        $commands[] = new Command\Auth\LoginCommand();
+        $commands[] = new Command\Auth\PasswordLoginCommand();
         $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Certificate\CertificateAddCommand();
         $commands[] = new Command\Certificate\CertificateDeleteCommand();
@@ -219,6 +219,15 @@ class Application extends ParentApplication
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);
+        }
+
+        // Allow the CLICOLOR_FORCE environment variable to override whether
+        // colors are used in the output.
+        /* @see StreamOutput::hasColorSupport() */
+        if (getenv('CLICOLOR_FORCE') === '0') {
+            $output->setDecorated(false);
+        } elseif (getenv('CLICOLOR_FORCE') === '1') {
+            $output->setDecorated(true);
         }
 
         parent::configureIO($input, $output);

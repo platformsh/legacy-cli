@@ -324,14 +324,29 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function login()
     {
+        $success = false;
         if ($this->output && $this->input && $this->input->isInteractive()) {
-            $exitCode = $this->runOtherCommand('login');
-            $this->stdErr->writeln('');
-            if ($exitCode === 0) {
-                return;
+            $method = $this->config()->get('application.login_method');
+            if ($method === 'browser') {
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
+                $urlService = $this->getService('url');
+                if ($urlService->canOpenUrls()
+                    && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
+                    $this->stdErr->writeln('');
+                    $exitCode = $this->runOtherCommand('auth:browser-login');
+                    $this->stdErr->writeln('');
+                    $success = $exitCode === 0;
+                }
+            } elseif ($method === 'password') {
+                $exitCode = $this->runOtherCommand('auth:password-login');
+                $this->stdErr->writeln('');
+                $success = $exitCode === 0;
             }
         }
-        throw new LoginRequiredException();
+        if (!$success) {
+            throw new LoginRequiredException();
+        }
     }
 
     /**
@@ -1145,7 +1160,24 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function isEnabled()
     {
-        return !$this->config()->has('disabled_commands')
-            || !in_array($this->getName(), $this->config()->get('disabled_commands'));
+        return !$this->config()->has('application.disabled_commands')
+            || !in_array($this->getName(), $this->config()->get('application.disabled_commands'));
+    }
+
+    /**
+     * Get help on how to use API tokens.
+     *
+     * @param string $tag
+     *
+     * @return string|null
+     */
+    protected function getApiTokenHelp($tag = 'info')
+    {
+        if ($this->config()->has('service.api_token_help_url')) {
+            return "To authenticate non-interactively using an API token, see:\n    <$tag>"
+                . $this->config()->get('service.api_token_help_url') . "</$tag>";
+        }
+
+        return null;
     }
 }

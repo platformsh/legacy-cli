@@ -11,10 +11,14 @@ application:
   env_prefix: 'SENSIOCLOUD_CLI_'
   tmp_sub_dir: 'sensiocloud-cli-tmp'
 
-# Disabled commands.
-disabled_commands:
-  - environment:drush
-  - local:drush-aliases
+  # The default interactive login method: either 'browser' or 'password'.
+  # This can be overridden in the user config file.
+  login_method: browser
+
+  # Disabled commands.
+  disabled_commands:
+    - environment:drush
+    - local:drush-aliases
 
 # Configuration for working with projects locally.
 local:
@@ -43,6 +47,7 @@ service:
   accounts_url: 'https://accounts.sensio.cloud'
   pricing_url: ~
   default_from_address: ~
+  api_token_help_url: ~
   available_regions:
     - eu.sensio.cloud
   available_plans:
