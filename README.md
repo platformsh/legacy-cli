@@ -196,7 +196,7 @@ There are currently three ways to authenticate:
 
 3. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
   these allow non-interactive authentication. See
-  [Customization][#Customization] below for how to use an API token. Remember to
+  [Customization](#customization) below for how to use an API token. Remember to
   use a separate machine account if you want to limit the token's access.
 
 ## Customization
