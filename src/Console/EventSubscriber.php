@@ -68,7 +68,6 @@ class EventSubscriber implements EventSubscriberInterface
             // Create a friendlier message for the OAuth2 "Invalid refresh token"
             // error.
             if ($response->getStatusCode() === 400
-                && $requestConfig['auth'] === 'oauth2'
                 && isset($json['error_description'])
                 && $json['error_description'] === 'Invalid refresh token') {
                 $event->setException(new LoginRequiredException(
