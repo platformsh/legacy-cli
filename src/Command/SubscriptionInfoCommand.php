@@ -8,6 +8,7 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SubscriptionInfoCommand extends CommandBase
@@ -26,6 +27,7 @@ class SubscriptionInfoCommand extends CommandBase
             ->setName('subscription:info')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
+            ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
             ->setDescription('Read subscription properties');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
@@ -37,13 +39,17 @@ class SubscriptionInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $id = $input->getOption('id');
+        if (empty($id)) {
+            $this->validateInput($input);
+            $project = $this->getSelectedProject();
+            $id = $project->getSubscriptionId();
+        }
 
-        $project = $this->getSelectedProject();
         $subscription = $this->api()->getClient()
-                             ->getSubscription($project->getSubscriptionId());
+                             ->getSubscription($id);
         if (!$subscription) {
-            $this->stdErr->writeln("Subscription not found");
+            $this->stdErr->writeln(sprintf('Subscription not found: <error>%s</error>', $id));
 
             return 1;
         }
