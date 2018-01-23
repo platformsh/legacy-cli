@@ -42,8 +42,23 @@ class ProjectCreateCommand extends CommandBase
         $this->form->configureInputDefinition($this->getDefinition());
 
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
-            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks', 900);
+            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
 
+        $this->setHelp(<<<EOF
+Use this command to create a new project.
+
+An interactive form will be presented with the available options. But if the
+command is run non-interactively (with --yes), the form will not be displayed,
+and the --region option will be required.
+
+A project subscription will be requested, and then checked periodically (every 3
+seconds) until the project has been activated, or until the process times out
+(after 15 minutes by default).
+
+If known, the project ID will be output to STDOUT. All other output will be sent
+to STDERR.
+EOF
+        );
     }
 
     /**
@@ -109,10 +124,10 @@ class ProjectCreateCommand extends CommandBase
             // which allows the server a little more leeway to act on the
             // initial request.
             if (time() - $lastCheck >= $checkInterval) {
+                $lastCheck = time();
                 try {
                     // The API call will timeout after $checkTimeout seconds.
                     $subscription->refresh(['timeout' => $checkTimeout, 'exceptions' => false]);
-                    $lastCheck = time();
                 } catch (ConnectException $e) {
                     if (strpos($e->getMessage(), 'timed out') !== false) {
                         $this->debug($e->getMessage());
@@ -129,10 +144,16 @@ class ProjectCreateCommand extends CommandBase
         if (!$subscription->isActive()) {
             if ($timedOut) {
                 $this->stdErr->writeln('<error>The project failed to activate on time</error>');
-                $this->stdErr->writeln('View your active projects at: ' . $this->config()->get('service.accounts_url'));
             } else {
                 $this->stdErr->writeln('<error>The project failed to activate</error>');
             }
+
+            if (!empty($subscription->project_id)) {
+                $output->writeln($subscription->project_id);
+            }
+
+            $this->stdErr->writeln(sprintf('View your active projects with: <info>%s project:list</info>', $this->config()->get('application.executable')));
+
             return 1;
         }
 
