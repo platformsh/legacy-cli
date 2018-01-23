@@ -183,6 +183,22 @@ The CLI caches details of your projects and their environments, and some other
 information. These caches could become out-of-date. You can clear caches with
 the command `platform clear-cache` (or `platform cc` for short).
 
+## Authentication
+
+There are currently three ways to authenticate:
+
+1. `platform login` (AKA `platform auth:browser-login`): this opens a temporary
+  local server and a browser, allowing you to log in to Platform.sh via the
+  normal login form, including via services like Bitbucket, GitHub and Google.
+
+2. `platform auth:password-login`: this allows you to log in with a username and
+  password, and a two-factor token if applicable.
+
+3. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
+  these allow non-interactive authentication. See
+  [Customization][#Customization] below for how to use an API token. Remember to
+  use a separate machine account if you want to limit the token's access.
+
 ## Customization
 
 You can configure the CLI via the user configuration file `~/.platformsh/config.yaml`.
@@ -220,7 +236,7 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
-* `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It is usually preferable to use `config.yaml` as above.
+* `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It may be better to use `config.yaml` as above, depending on your system. The environment variable is preferable on CI systems like Jenkins and GitLab.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
 * `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
