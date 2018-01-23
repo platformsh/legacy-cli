@@ -133,7 +133,7 @@ class ProjectCreateCommand extends CommandBase
                 $this->stdErr->writeln('<error>The project failed to activate</error>');
             }
 
-            if (isset($subscription->project_id)) {
+            if (!empty($subscription->project_id)) {
                 $output->writeln($subscription->project_id);
             }
 
