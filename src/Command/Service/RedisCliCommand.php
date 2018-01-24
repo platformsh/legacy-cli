@@ -60,10 +60,10 @@ class RedisCliCommand extends CommandBase
         $ssh = $this->getService('ssh');
 
         $sshOptions = [];
-        if ($this->isTerminal(STDIN)) {
-            $sshOptions['RequestTty'] = 'yes';
-        }
         $sshCommand = $ssh->getSshCommand($sshOptions);
+        if ($this->isTerminal(STDIN)) {
+            $sshCommand .= ' -t';
+        }
         $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($redisCommand);
 
