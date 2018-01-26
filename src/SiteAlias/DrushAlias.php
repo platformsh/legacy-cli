@@ -154,7 +154,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Generate new aliases.
      *
-     * @param array $apps
+     * @param LocalApplication[] $apps
      * @param array $environments
      *
      * @return array
@@ -225,7 +225,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array|false
      */
-    protected function generateRemoteAlias($environment, $app)
+    protected function generateRemoteAlias(Environment $environment, LocalApplication $app)
     {
         if (!$environment->hasLink('ssh')) {
             return false;
