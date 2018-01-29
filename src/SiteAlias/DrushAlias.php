@@ -64,6 +64,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
                 // This is probably for a deleted environment.
                 continue;
             }
+            
+            $name = ltrim($name, '@');
+
             $userDefinedAliases[$name] = $alias;
         }
         $aliases = $userDefinedAliases + $newAliases;
