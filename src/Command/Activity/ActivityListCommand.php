@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Activity;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -27,6 +28,7 @@ class ActivityListCommand extends CommandBase
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check activities on all environments')
             ->setDescription('Get a list of activities for an environment or project');
         Table::configureInput($this->getDefinition());
+        PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List recent activities for the current environment')
@@ -87,12 +89,14 @@ class ActivityListCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
 
         $rows = [];
         foreach ($activities as $activity) {
             $row = [
                 new AdaptiveTableCell($activity->id, ['wrap' => false]),
-                date('Y-m-d H:i:s', strtotime($activity['created_at'])),
+                $formatter->format($activity['created_at'], 'created_at'),
                 $activity->getDescription(),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
@@ -131,13 +135,16 @@ class ActivityListCommand extends CommandBase
         $table->render($rows, $headers);
 
         if (!$table->formatIsMachineReadable()) {
+            $executable = $this->config()->get('application.executable');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(
-                sprintf(
-                    'To view the log for an activity, run: <info>%s activity:log [id]</info>',
-                    $this->config()->get('application.executable')
-                )
-            );
+            $this->stdErr->writeln(sprintf(
+                'To view the log for an activity, run: <info>%s activity:log [id]</info>',
+                $executable
+            ));
+            $this->stdErr->writeln(sprintf(
+                'To view more information about an activity, run: <info>%s activity:get [id]</info>',
+                $executable
+            ));
         }
 
         return 0;

@@ -138,13 +138,15 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      * @param string|null $previousGroup
      *
      * @return array
+     *   The aliases, with their group prefixes removed.
      */
     protected function getExistingAliases($currentGroup, $previousGroup = null)
     {
         $aliases = [];
         foreach (array_filter([$currentGroup, $previousGroup]) as $groupName) {
-            foreach ($this->drush->getAliases($groupName) as $aliasName => $alias) {
-                $aliases[str_replace($groupName . '.', '', $aliasName)] = $alias;
+            $prefix = '@' . $groupName . '.';
+            foreach ($this->drush->getAliases($groupName) as $prefixedName => $alias) {
+                $aliases[str_replace($prefix, '', $prefixedName)] = $alias;
             }
         }
 
@@ -154,7 +156,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Generate new aliases.
      *
-     * @param array $apps
+     * @param LocalApplication[] $apps
      * @param array $environments
      *
      * @return array
@@ -225,7 +227,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array|false
      */
-    protected function generateRemoteAlias($environment, $app)
+    protected function generateRemoteAlias(Environment $environment, LocalApplication $app)
     {
         if (!$environment->hasLink('ssh')) {
             return false;
