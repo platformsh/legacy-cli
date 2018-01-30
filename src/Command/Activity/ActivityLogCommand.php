@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
@@ -73,6 +74,7 @@ class ActivityLogCommand extends CommandBase
             sprintf('<info>Activity ID: </info>%s', $activity->id),
             sprintf('<info>Description: </info>%s', $activity->getDescription()),
             sprintf('<info>Created: </info>%s', $formatter->format($activity->created_at, 'created_at')),
+            sprintf('<info>State: </info>%s', ActivityMonitor::formatState($activity->state)),
             '<info>Log: </info>',
         ]);
 
