@@ -30,6 +30,8 @@ class ActivityGetCommand extends CommandBase
             ->addEnvironmentOption();
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
+        $this->addExample('Find the time a project was created', '--all --type project.create -P completed_at');
+        $this->addExample('Find the duration (in seconds) of the last activity', '-P duration');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -68,8 +70,19 @@ class ActivityGetCommand extends CommandBase
         $formatter = $this->getService('property_formatter');
 
         $properties = $activity->getProperties();
+
+        // Add the activity "description" as a property.
         if (!isset($properties['description'])) {
             $properties['description'] = $activity->getDescription();
+        }
+
+        // Calculate the duration of the activity.
+        if (!isset($properties['duration'])) {
+            $start = strtotime($activity->started_at);
+            $created = strtotime($activity->created_at);
+            $end = strtotime($activity->isComplete() ? $activity->completed_at : $activity->updated_at);
+            $start = $start === $end ? $created : $start;
+            $properties['duration'] = $end - $start > 0 ? $end - $start : null;
         }
 
         if ($property = $input->getOption('property')) {
@@ -93,6 +106,20 @@ class ActivityGetCommand extends CommandBase
         }
 
         $table->renderSimple($rows, $header);
+
+        if (!$table->formatIsMachineReadable()) {
+            $executable = $this->config()->get('application.executable');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To view the log for this activity, run: <info>%s activity:log %s</info>',
+                $executable,
+                $activity->id
+            ));
+            $this->stdErr->writeln(sprintf(
+                'To list activities, run: <info>%s activities</info>',
+                $executable
+            ));
+        }
 
         return 0;
     }

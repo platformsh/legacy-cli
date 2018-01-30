@@ -135,13 +135,16 @@ class ActivityListCommand extends CommandBase
         $table->render($rows, $headers);
 
         if (!$table->formatIsMachineReadable()) {
+            $executable = $this->config()->get('application.executable');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(
-                sprintf(
-                    'To view the log for an activity, run: <info>%s activity:log [id]</info>',
-                    $this->config()->get('application.executable')
-                )
-            );
+            $this->stdErr->writeln(sprintf(
+                'To view the log for an activity, run: <info>%s activity:log [id]</info>',
+                $executable
+            ));
+            $this->stdErr->writeln(sprintf(
+                'To view more information about an activity, run: <info>%s activity:get [id]</info>',
+                $executable
+            ));
         }
 
         return 0;

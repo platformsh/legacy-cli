@@ -73,7 +73,6 @@ class ActivityLogCommand extends CommandBase
             sprintf('<info>Activity ID: </info>%s', $activity->id),
             sprintf('<info>Description: </info>%s', $activity->getDescription()),
             sprintf('<info>Created: </info>%s', $formatter->format($activity->created_at, 'created_at')),
-            sprintf('<info>Started: </info>%s', $formatter->format($activity->started_at, 'started_at')),
             '<info>Log: </info>',
         ]);
 
@@ -93,12 +92,6 @@ class ActivityLogCommand extends CommandBase
             $this->api()->clearEnvironmentsCache($activity->project);
         } else {
             $output->write($activity->log);
-        }
-
-        if ($activity->isComplete() && isset($activity->completed_at)) {
-            $this->stdErr->writeln([
-                sprintf('<info>Completed: </info>%s', $formatter->format($activity->completed_at, 'completed_at')),
-            ]);
         }
 
         return 0;
