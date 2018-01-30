@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "7163104887c943ed8035f9d42fc87f8baf25edef",
-        "sha256": "8508e9e766078d1081208184e8393eb9f2616bb79520bb3d0035202417d24508",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.27.2/platform.phar",
-        "version": "3.27.2",
+        "sha1": "ff0ab88526060848441eecd64e62f76b20fab9df",
+        "sha256": "f68bab82b258f0a877feecc41b3f35a95dac2de7c4a450bdf9bbec4b60660ec2",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.28.0/platform.phar",
+        "version": "3.28.0",
         "php": {
             "min": "5.5.9"
         },
@@ -97,6 +97,11 @@
                 "notes": "* Use browser login by default (the old login method is available as `auth:password-login`).\n* Set `--build-pull-requests-post-merge` to false by default (GitHub integrations).\n* Respect `--no-wait` in `environment:init`, and clear the environment cache afterwards.\n* In the `project:delete` command, leave access control to the API.\n* Support disabling or enabling colorized output via the CLICOLOR_FORCE environment variable.",
                 "show from": "3.26.0",
                 "hide from": "3.27.0"
+            },
+            {
+                "notes": "* Improved `activity:log` output to show more activity information.\n* Added `activity:get` command, hidden for now.\n* Added `--date-fmt` option to `activity:list` and `snapshot:list`.\n* Added detection for the date.timezone ini setting, and the TZ environment variable.\n* Fixed inverted requirement of -e/-a options in activity:log (`-a` should make `-e` not required).\n* Fixed user-defined aliases being prefixed with \"@\" (thanks to @GROwen, #677).\n* Avoid fatal error if invalid YAML config is encountered during updateDrushAliases().\n* Fixed SSH commands for very old OpenSSH versions <5.9 (using -t instead of RequestTTY).\n* Updated dependencies (mainly Symfony 3.4.2 -> 3.4.4).",
+                "show from": "3.27.0",
+                "hide from": "3.28.0"
             }
         ]
     }

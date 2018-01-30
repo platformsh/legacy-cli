@@ -4,6 +4,19 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
+## [v3.28.0](https://github.com/platformsh/platformsh-cli/tree/v3.27.2) (2018-01-30)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.2...v3.28.0)
+
+* Improve `activity:log` output to show more activity information.
+* Add `activity:get` command, hidden for now.
+* Add `--date-fmt` option to `activity:list` and `snapshot:list`.
+* Respect the date.timezone ini setting, and the TZ environment variable.
+* Fix inverted requirement of -e/-a options in activity:log (`-a` should make `-e` not required).
+* Fix user-defined aliases being prefixed with "@" (thanks to @GROwen, #677)
+* Avoid fatal error if invalid YAML config is encountered during updateDrushAliases()
+* Use -t instead of RequestTTY in SSH commands, for OpenSSH <5.9
+* Update dependencies (mainly Symfony 3.4.2 -> 3.4.4)
+
 ## [v3.27.2](https://github.com/platformsh/platformsh-cli/tree/v3.27.2) (2018-01-23)
 [Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.1...v3.27.2)
 
