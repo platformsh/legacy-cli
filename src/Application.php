@@ -34,8 +34,6 @@ class Application extends ParentApplication
         $this->cliConfig = new Config();
         parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
 
-        $this->setDefaultTimezone();
-
         $this->addCommands($this->getCommands());
 
         $this->setDefaultCommand('welcome');
@@ -258,40 +256,6 @@ class Application extends ParentApplication
         // The parent class has a similar (private) property named
         // $runningCommand.
         $this->currentCommand = $command;
-    }
-
-    /**
-     * Set the default PHP timezone according to the system timezone.
-     *
-     * PHP >=5.4 removed the autodetection of the system timezone, so it is
-     * re-implemented here.
-     */
-    protected function setDefaultTimezone()
-    {
-        $timezone = date_default_timezone_get();
-
-        if (is_link('/etc/localtime')) {
-            // Mac OS X (and older Linuxes)
-            // /etc/localtime is a symlink to the timezone in /usr/share/zoneinfo.
-            $filename = readlink('/etc/localtime');
-            if (strpos($filename, '/usr/share/zoneinfo/') === 0) {
-                $timezone = substr($filename, 20);
-            }
-        } elseif (file_exists('/etc/timezone')) {
-            // Ubuntu / Debian.
-            $data = file_get_contents('/etc/timezone');
-            if ($data) {
-                $timezone = trim($data);
-            }
-        } elseif (file_exists('/etc/sysconfig/clock')) {
-            // RHEL/CentOS
-            $data = parse_ini_file('/etc/sysconfig/clock');
-            if (!empty($data['ZONE'])) {
-                $timezone = trim($data['ZONE']);
-            }
-        }
-
-        date_default_timezone_set($timezone);
     }
 
     /**
