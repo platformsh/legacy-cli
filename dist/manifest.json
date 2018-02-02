@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "152b7c59d9b7594d94a7d772e51a335502ccd5c0",
-        "sha256": "8df70df88de443e3375c42276263c12aeb1f8e6426c21c77f3ddf63e1e867334",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.27.0/platform.phar",
-        "version": "3.27.0",
+        "sha1": "4ea45e3d18eaaba7422460ef03912f68638a7ccb",
+        "sha256": "fcf5e8d67c198621106a242937c7d6e35eb2df5044847c447b78f3aaa31bce8a",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.28.0/platform.phar",
+        "version": "3.28.0",
         "php": {
             "min": "5.5.9"
         },
@@ -95,8 +95,13 @@
             },
             {
                 "notes": "* Use browser login by default (the old login method is available as `auth:password-login`).\n* Set `--build-pull-requests-post-merge` to false by default (GitHub integrations).\n* Respect `--no-wait` in `environment:init`, and clear the environment cache afterwards.\n* In the `project:delete` command, leave access control to the API.\n* Support disabling or enabling colorized output via the CLICOLOR_FORCE environment variable.",
-                "show from": "3.26.1",
+                "show from": "3.26.0",
                 "hide from": "3.27.0"
+            },
+            {
+                "notes": "* Improved `activity:log` output to show more activity information.\n* Added `activity:get` command, hidden for now.\n* Added `--date-fmt` option to `activity:list` and `snapshot:list`.\n* Added detection for the date.timezone ini setting, and the TZ environment variable.\n* Fixed inverted requirement of -e/-a options in activity:log (`-a` should make `-e` not required).\n* Fixed user-defined aliases being prefixed with \"@\" (thanks to @GROwen, #677).\n* Avoid fatal error if invalid YAML config is encountered during updateDrushAliases().\n* Fixed SSH commands for very old OpenSSH versions <5.9 (using -t instead of RequestTTY).\n* Updated dependencies (mainly Symfony 3.4.2 -> 3.4.4).",
+                "show from": "3.27.0",
+                "hide from": "3.28.0"
             }
         ]
     }
