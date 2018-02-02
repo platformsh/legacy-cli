@@ -25,7 +25,8 @@ class RedisCliCommand extends CommandBase
             ->addEnvironmentOption()
             ->addAppOption();
         $this->addExample('Open the redis-cli shell');
-        $this->addExample('Ping the redis server', 'ping');
+        $this->addExample('Ping the Redis server', 'ping');
+        $this->addExample('Show Redis status information', 'info');
         $this->addExample('Scan keys', "-- --scan");
         $this->addExample('Scan keys matching a pattern', '-- "--scan --pattern \'*-11*\'"');
     }
