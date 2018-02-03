@@ -31,7 +31,7 @@
   "main": "bin/platform",
   "output": "platform.phar",
   "stub": "stub.php",
-  "compression": "BZ2",
+  "compression": "GZ",
   "compactors": [
     "Herrera\\Box\\Compactor\\Json",
     "Herrera\\Box\\Compactor\\Php"
