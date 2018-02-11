@@ -168,8 +168,8 @@ tunnel
 user
   user:add (user:update)                    Add a user to the project, or set their role(s)
   user:delete                               Delete a user from the project
+  user:get                                  View a user's role(s)
   user:list (users)                         List project users
-  user:role                                 View or change a user's role
 variable
   variable:delete                           Delete a variable from an environment
   variable:get (variables, vget)            View variable(s) for an environment
