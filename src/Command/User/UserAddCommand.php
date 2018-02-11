@@ -197,7 +197,6 @@ class UserAddCommand extends CommandBase
             return $role !== 'none';
         });
         $notEnoughEnvironments = $specifiedProjectRole === ProjectAccess::ROLE_VIEWER && empty($specifiedEnvironmentRoles);
-        $deleteFromProject = $notEnoughEnvironments && $existingProjectAccess;
 
         // Build a list of the changes that are going to be made.
         $changes = [];
@@ -208,7 +207,6 @@ class UserAddCommand extends CommandBase
         } elseif (!$notEnoughEnvironments) {
             $changes[] = sprintf('Project role: <info>%s</info>', $specifiedProjectRole);
         }
-
         if ($specifiedProjectRole !== ProjectAccess::ROLE_ADMIN) {
             foreach ($this->api()->getEnvironments($project) as $id => $environment) {
                 $new = isset($specifiedEnvironmentRoles[$id]) ? $specifiedEnvironmentRoles[$id] : 'none';
@@ -221,28 +219,51 @@ class UserAddCommand extends CommandBase
                     $changes[] = sprintf('Role on <info>%s</info>: <info>%s</info>', $id, $new);
                 }
             }
-        } elseif (!empty($specifiedEnvironmentRoles)) {
-            $this->stdErr->writeln('<comment>A project admin is an admin on all environments.</comment>');
-
-            return 1;
         }
 
-        if ($provideProjectForm || $provideEnvironmentForm) {
+        // Require project non-admins to be added to at least one environment.
+        if ($notEnoughEnvironments) {
             $this->stdErr->writeln('');
-        }
+            $this->stdErr->writeln('<comment>A non-admin user must be added to at least one environment.</comment>');
 
-        // Print a summary of the changes.
-        if ($notEnoughEnvironments && !$deleteFromProject) {
-            $this->stdErr->writeln('The user must be added to at least one environment.');
+            if ($existingProjectAccess) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf(
+                    'To delete the user, run: <info>%s user:delete %s</info>',
+                    $this->config()->get('application.executable'),
+                    $this->api()->getAccount($existingProjectAccess)['email']
+                ));
+            }
 
             return 1;
-        } elseif (empty($changes)) {
+        }
+
+        // Prevent changing environment access for project admins.
+        if ($specifiedProjectRole === ProjectAccess::ROLE_ADMIN && !empty($specifiedEnvironmentRoles)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('<comment>A project admin has administrative access to all environments.</comment>');
+            $this->stdErr->writeln("To set the user's environment role(s), set their project role to '" . ProjectAccess::ROLE_VIEWER . "'.");
+
+            return 1;
+        }
+
+        // Exit early if there are no changes to make.
+        if (empty($changes)) {
             if ($provideProjectForm || $provideEnvironmentForm) {
+                $this->stdErr->writeln('');
                 $this->stdErr->writeln('There are no changes to make.');
             }
 
             return 0;
-        } elseif ($existingProjectAccess) {
+        }
+
+        // Add a new line if there has already been output.
+        if ($existingProjectAccess || $provideProjectForm || $provideEnvironmentForm) {
+            $this->stdErr->writeln('');
+        }
+
+        // Print a summary of the changes that are about to be made.
+        if ($existingProjectAccess) {
             $this->stdErr->writeln('Summary of changes:');
         } else {
             $this->stdErr->writeln(sprintf('Adding the user <info>%s</info> to %s:', $email, $this->api()->getProjectLabel($project)));
@@ -253,29 +274,22 @@ class UserAddCommand extends CommandBase
         $this->stdErr->writeln('');
 
         // Ask for confirmation.
-        if ($deleteFromProject) {
-            $this->stdErr->writeln('<comment>Removing the user from all environments will delete them from the project.</comment>');
-            $this->stdErr->writeln('');
-            if (!$questionHelper->confirm('Are you sure you want to delete this user?')) {
+        if ($existingProjectAccess) {
+            if (!$questionHelper->confirm('Are you sure you want to make these change(s)?')) {
 
                 return 1;
             }
-        } elseif (!$existingProjectAccess) {
+        } else {
             $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
             $this->stdErr->writeln('');
             if (!$questionHelper->confirm('Are you sure you want to add this user?')) {
 
                 return 1;
             }
-        } else {
-            if (!$questionHelper->confirm('Are you sure you want to make these change(s)?')) {
-
-                return 1;
-            }
         }
 
         // Make the required modifications on the project level: add the user,
-        // delete the user, change their role, or do nothing.
+        // change their role, or do nothing.
         if (!$existingProjectAccess) {
             $this->stdErr->writeln("Adding the user to the project");
             $result = $project->addUser($email, $specifiedProjectRole);
@@ -283,11 +297,6 @@ class UserAddCommand extends CommandBase
             /** @var ProjectAccess $projectAccess */
             $projectAccess = $result->getEntity();
             $uuid = $projectAccess->id;
-        } elseif ($notEnoughEnvironments) {
-            $this->stdErr->writeln('Deleting the user from the project.');
-            $uuid = $existingProjectAccess->id;
-            $result = $existingProjectAccess->delete();
-            $activities = $result->getActivities();
         } elseif ($existingProjectAccess->role !== $specifiedProjectRole) {
             $this->stdErr->writeln("Setting the user's project role to: $specifiedProjectRole");
             $result = $existingProjectAccess->update(['role' => $specifiedProjectRole]);
@@ -299,8 +308,7 @@ class UserAddCommand extends CommandBase
         }
 
         // Make the desired changes at the environment level.
-        $success = true;
-        if ($specifiedProjectRole !== ProjectAccess::ROLE_ADMIN && !$deleteFromProject) {
+        if ($specifiedProjectRole !== ProjectAccess::ROLE_ADMIN) {
             foreach ($this->api()->getEnvironments($project) as $environmentId => $environment) {
                 $role = isset($specifiedEnvironmentRoles[$environmentId]) ? $specifiedEnvironmentRoles[$environmentId] : 'none';
                 $access = $environment->getUser($uuid);
@@ -332,11 +340,11 @@ class UserAddCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             if (!$activityMonitor->waitMultiple($activities, $project)) {
-                $success = false;
+                return 1;
             }
         }
 
-        return $success ? 0 : 1;
+        return 0;
     }
 
     /**
