@@ -52,6 +52,9 @@ class Api
     /** @var bool */
     protected static $environmentsCacheRefreshed = false;
 
+    /** @var \Platformsh\Client\Model\Account[] */
+    protected static $accountsCache = [];
+
     /** @var array */
     protected static $notFound = [];
 
@@ -426,10 +429,15 @@ class Api
      */
     public function getAccount(ProjectAccess $user, $reset = false)
     {
+        if (isset(self::$accountsCache[$user->id]) && !$reset) {
+            return self::$accountsCache[$user->id];
+        }
+
         $cacheKey = 'account:' . $user->id;
         if ($reset || !($details = $this->cache->fetch($cacheKey))) {
             $details = $user->getAccount()->getProperties();
             $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
+            self::$accountsCache[$user->id] = $details;
         }
 
         return $details;
