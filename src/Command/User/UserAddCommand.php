@@ -5,9 +5,11 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\EnvironmentAccess;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
@@ -106,13 +108,23 @@ class UserAddCommand extends CommandBase
 
             // Check the user's existing role(s) on the project's environments.
             if ($existingProjectAccess->role !== ProjectAccess::ROLE_ADMIN) {
-                foreach ($this->api()->getEnvironments($project) as $environment) {
-                    $environmentAccess = $environment->getUser($existingProjectAccess->id);
-                    if (!$environmentAccess) {
-                        continue;
+                // @todo find out why $environment->getUser() has permission issues - it would be a lot faster than this
+
+                $progress = new ProgressBar($output->isDecorated() ? $this->stdErr : new NullOutput());
+                $progress->setMessage('Loading environments...');
+                $progress->setFormat('%message% %current%/%max%');
+                $environments = $this->api()->getEnvironments($project);
+                $progress->start(count($environments));
+                foreach ($environments as $environment) {
+                    foreach ($environment->getUsers() as $access) {
+                        if ($access->user === $existingProjectAccess->id) {
+                            $existingEnvironmentRoles[$environment->id] = $access->role;
+                        }
                     }
-                    $existingEnvironmentRoles[$environment->id] = $environmentAccess->role;
+                    $progress->advance();
                 }
+                $progress->finish();
+                $progress->clear();
             }
         }
 
