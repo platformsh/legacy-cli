@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "4ea45e3d18eaaba7422460ef03912f68638a7ccb",
-        "sha256": "fcf5e8d67c198621106a242937c7d6e35eb2df5044847c447b78f3aaa31bce8a",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.28.0/platform.phar",
-        "version": "3.28.0",
+        "sha1": "2f269ba903905599f2b2f6f94cde8174c551a25a",
+        "sha256": "7ca20c402d2514abb374fc4ec0deac04d2d1a0979e66336b3a4305806c414a38",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.29.0/platform.phar",
+        "version": "3.29.0",
         "php": {
             "min": "5.5.9"
         },
@@ -102,6 +102,11 @@
                 "notes": "* Improved `activity:log` output to show more activity information.\n* Added `activity:get` command, hidden for now.\n* Added `--date-fmt` option to `activity:list` and `snapshot:list`.\n* Added detection for the date.timezone ini setting, and the TZ environment variable.\n* Fixed inverted requirement of -e/-a options in activity:log (`-a` should make `-e` not required).\n* Fixed user-defined aliases being prefixed with \"@\" (thanks to @GROwen, #677).\n* Avoid fatal error if invalid YAML config is encountered during updateDrushAliases().\n* Fixed SSH commands for very old OpenSSH versions <5.9 (using -t instead of RequestTTY).\n* Updated dependencies (mainly Symfony 3.4.2 -> 3.4.4).",
                 "show from": "3.27.0",
                 "hide from": "3.28.0"
+            },
+            {
+                "notes": "* [user:add] Improve `user:add` command to allow setting roles on all environments (aliased to `user:update`)\n* [user:get] Add `user:get` command (aliased to and deprecating `user:role`)\n* [db:dump] Remove --no-autocommit and simplify mysqldump args (#683)\n* Expand redeploy warning to recommend `vset`\n* [activity:get] Check for empty started_at when calculating duration\n* [redis] Recommend \"redis info\" command",
+                "show from": "3.28.0",
+                "hide from": "3.29.0"
             }
         ]
     }

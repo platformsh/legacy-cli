@@ -4,7 +4,17 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
-## [v3.28.0](https://github.com/platformsh/platformsh-cli/tree/v3.27.2) (2018-01-30)
+## [v3.29.0](https://github.com/platformsh/platformsh-cli/tree/v3.29.0) (2018-02-12)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.28.0...v3.29.0)
+
+* [user:add] Improve `user:add` command to allow setting roles on all environments (aliased to `user:update`)
+* [user:get] Add `user:get` command (aliased to and deprecating `user:role`)
+* [db:dump] Remove --no-autocommit and simplify mysqldump args (#683)
+* Expand redeploy warning to recommend `vset`
+* [activity:get] Check for empty started_at when calculating duration
+* [redis] Recommend "redis info" command
+
+## [v3.28.0](https://github.com/platformsh/platformsh-cli/tree/v3.28.0) (2018-01-30)
 [Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.2...v3.28.0)
 
 * Improve `activity:log` output to show more activity information.
