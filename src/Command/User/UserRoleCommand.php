@@ -59,6 +59,7 @@ class UserRoleCommand extends CommandBase
                 $choices[$account['email']] = sprintf('%s (%s)', $account['display_name'], $account['email']);
             }
             $email = $questionHelper->choose($choices, 'Enter a number to choose a user:');
+            $this->stdErr->writeln('');
         }
         $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email);
         if (!$projectAccess) {
@@ -69,11 +70,12 @@ class UserRoleCommand extends CommandBase
 
         if ($level === null && $role && $this->hasSelectedEnvironment() && $input->isInteractive()) {
             $environment = $this->getSelectedEnvironment();
-            $question = new ChoiceQuestion('What role level do you want to set?', [
+            $question = new ChoiceQuestion('What role level do you want to set to "' . $role . '"?', [
                 'project' => 'The project',
                 'environment' => sprintf('The environment (%s)', $environment->id),
             ]);
             $level = $questionHelper->ask($input, $output, $question);
+            $this->stdErr->writeln('');
         } elseif ($level === null && $role) {
             $level = 'project';
         }
