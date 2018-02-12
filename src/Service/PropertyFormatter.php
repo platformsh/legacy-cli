@@ -42,7 +42,8 @@ class PropertyFormatter implements InputConfiguringInterface
             case 'started_at':
             case 'completed_at':
             case 'ssl.expires_on':
-                return $this->formatDate($value);
+                $value = $this->formatDate($value);
+                break;
 
             case 'ssl':
                 if ($property === 'ssl' && is_array($value) && isset($value['expires_on'])) {
@@ -76,7 +77,7 @@ class PropertyFormatter implements InputConfiguringInterface
     /**
      * @param string $value
      *
-     * @return string
+     * @return string|null
      */
     protected function formatDate($value)
     {
@@ -94,7 +95,7 @@ class PropertyFormatter implements InputConfiguringInterface
 
         $timestamp = is_numeric($value) ? $value : strtotime($value);
 
-        return date($format, $timestamp);
+        return $timestamp === false ? null : date($format, $timestamp);
     }
 
     /**

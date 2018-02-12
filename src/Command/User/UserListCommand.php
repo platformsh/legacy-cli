@@ -45,6 +45,14 @@ class UserListCommand extends CommandBase
         ksort($rows);
 
         $table->render(array_values($rows), ['Email address', 'Name', 'Project role', 'ID']);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $executable = $this->config()->get('application.executable');
+            $this->stdErr->writeln("To view a user's role(s), run: <info>$executable user:get [email]</info>");
+            $this->stdErr->writeln("To change a user's role(s), run: <info>$executable user:add [email]</info>");
+        }
+
         return 0;
     }
 }

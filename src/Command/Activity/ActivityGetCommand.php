@@ -78,10 +78,10 @@ class ActivityGetCommand extends CommandBase
 
         // Calculate the duration of the activity.
         if (!isset($properties['duration'])) {
-            $start = strtotime($activity->started_at);
-            $created = strtotime($activity->created_at);
             $end = strtotime($activity->isComplete() ? $activity->completed_at : $activity->updated_at);
-            $start = $start === $end ? $created : $start;
+            $created = strtotime($activity->created_at);
+            $start = !empty($activity->started_at) ? strtotime($activity->started_at) : 0;
+            $start = $start !== 0 && $start !== $end ? $start : $created;
             $properties['duration'] = $end - $start > 0 ? $end - $start : null;
         }
 
