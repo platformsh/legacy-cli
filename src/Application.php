@@ -157,6 +157,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Self\SelfBuildCommand();
         $commands[] = new Command\Self\SelfInstallCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
+        $commands[] = new Command\Self\SelfStatsCommand();
         $commands[] = new Command\Server\ServerRunCommand();
         $commands[] = new Command\Server\ServerStartCommand();
         $commands[] = new Command\Server\ServerListCommand();

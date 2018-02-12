@@ -10,6 +10,7 @@ application:
   user_state_file: '.platformsh/state.json'
   env_prefix: 'PLATFORMSH_CLI_'
   tmp_sub_dir: 'platformsh-cli-tmp'
+  github_repo: 'platformsh/platformsh-cli'
 
   # The default interactive login method: either 'browser' or 'password'.
   # This can be overridden in the user config file.
