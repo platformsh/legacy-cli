@@ -142,7 +142,7 @@ class DbDumpCommand extends CommandBase
                 break;
 
             default:
-                $dumpCommand = 'mysqldump --no-autocommit --single-transaction --opt --quote-names '
+                $dumpCommand = 'mysqldump --single-transaction '
                     . $relationships->getSqlCommandArgs('mysqldump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
