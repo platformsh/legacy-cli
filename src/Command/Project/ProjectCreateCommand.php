@@ -189,19 +189,27 @@ EOF
     /**
      * Return a list of regions.
      *
-     * The default list is in the config `service.available_regions`. This can
-     * be overridden by the user config `experimental.available_regions`.
+     * The default list is in the config `service.available_regions`. This is
+     * replaced at runtime by an API call.
      *
-     * @return string[]
+     * @param bool $runtime
+     *
+     * @return array
      */
-    protected function getAvailableRegions()
+    protected function getAvailableRegions($runtime = false)
     {
-        $config = $this->config();
-        if ($config->has('experimental.available_regions')) {
-            return $config->get('experimental.available_regions');
+        if ($runtime) {
+            $regions = [];
+            foreach ($this->api()->getClient()->getRegions() as $region) {
+                if ($region->available) {
+                    $regions[$region->id] = $region->label;
+                }
+            }
+        } else {
+            $regions = (array) $this->config()->get('service.available_regions');
         }
 
-        return $config->get('service.available_regions');
+        return $regions;
     }
 
     /**
@@ -222,7 +230,9 @@ EOF
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
             'options' => $this->getAvailableRegions(),
-            'allowOther' => true,
+            'optionsCallback' => function () {
+                return $this->getAvailableRegions(true);
+            },
           ]),
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
