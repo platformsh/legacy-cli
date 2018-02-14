@@ -43,9 +43,14 @@ class ActivityGetCommand extends CommandBase
             $activity = $this->getSelectedProject()
                 ->getActivity($id);
             if (!$activity) {
-                $this->stdErr->writeln("Activity not found: <error>$id</error>");
+                $activities = $this->getSelectedEnvironment()
+                    ->getActivities(0, $input->getOption('type'));
+                $activity = $this->api()->matchPartialId($id, $activities, 'Activity');
+                if (!$activity) {
+                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
-                return 1;
+                    return 1;
+                }
             }
         } else {
             if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
