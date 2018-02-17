@@ -128,12 +128,16 @@ class BrowserLoginCommand extends CommandBase
         } else {
             $this->stdErr->writeln('Please open the following URL in a browser and log in:');
             $this->stdErr->writeln('<info>' . $localUrl . '</info>');
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf(
-                'For help, quit this process (e.g. with Ctrl+C), and run: <info>%s help login</info>',
-                $this->config()->get('application.executable')
-            ));
         }
+
+        // Show some help.
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('<options=bold>Help:</>');
+        $this->stdErr->writeln('  Use Ctrl+C to quit this process.');
+        $executable = $this->config()->get('application.executable');
+        $this->stdErr->writeln(sprintf('  To log in within the terminal instead, quit and run: <info>%s auth:password-login</info>', $executable));
+        $this->stdErr->writeln(sprintf('  For more info, quit and run: <info>%s help login</info>', $executable));
+        $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.
         $code = null;
@@ -141,11 +145,13 @@ class BrowserLoginCommand extends CommandBase
             usleep(300000);
             if (!file_exists($codeFile)) {
                 $this->stdErr->writeln('File not found: <error>' . $codeFile . '</error>');
+                $this->stdErr->writeln('');
                 break;
             }
             $code = file_get_contents($codeFile);
             if ($code === false) {
                 $this->stdErr->writeln('Failed to read file: <error>' . $codeFile . '</error>');
+                $this->stdErr->writeln('');
                 break;
             }
         }
@@ -153,8 +159,6 @@ class BrowserLoginCommand extends CommandBase
         // Clean up.
         $process->stop();
         (new Filesystem())->remove([$listenerDir]);
-
-        $this->stdErr->writeln('');
 
         if (empty($code)) {
             $this->stdErr->writeln('Failed to get an authorization code. Please try again.');
