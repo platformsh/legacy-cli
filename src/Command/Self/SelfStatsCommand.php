@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfStatsCommand extends CommandBase
@@ -15,7 +16,8 @@ class SelfStatsCommand extends CommandBase
     {
         $this
             ->setName('self:stats')
-            ->setDescription('View stats on GitHub package downloads');
+            ->setDescription('View stats on GitHub package downloads')
+            ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1);
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -36,7 +38,17 @@ class SelfStatsCommand extends CommandBase
                     'Accept' => 'application/vnd.github.v3+json',
                 ],
                 'auth' => false,
+                'query' => [
+                    'page' => (int) $input->getOption('page'),
+                    'per_page' => 20,
+                ],
             ])->json();
+
+        if (empty($releases)) {
+            $this->stdErr->writeln('No releases found.');
+
+            return 1;
+        }
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
@@ -45,17 +57,18 @@ class SelfStatsCommand extends CommandBase
         $headers = ['Release', 'Date', 'Asset', 'Downloads'];
         $rows = [];
         foreach ($releases as $release) {
+            $row = [];
+            $row[] = $release['name'];
+            $time = !empty($release['published_at']) ? $release['published_at'] : $release['created_at'];
+            $row[] = $formatter->format($time, 'created_at');
             if (!empty($release['assets'])) {
                 foreach ($release['assets'] as $asset) {
-                    $row = [];
-                    $row[] = $release['name'];
-                    $time = !empty($release['published_at']) ? $release['published_at'] : $release['created_at'];
-                    $row[] = $formatter->format($time, 'created_at');
                     $row[] = $asset['name'];
                     $row[] = $formatter->format($asset['download_count']);
-                    $rows[] = $row;
+                    break;
                 }
             }
+            $rows[] = $row;
         }
 
         $table->render($rows, $headers);
