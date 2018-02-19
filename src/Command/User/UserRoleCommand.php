@@ -59,7 +59,9 @@ class UserRoleCommand extends CommandBase
                 $choices[$account['email']] = sprintf('%s (%s)', $account['display_name'], $account['email']);
             }
             $email = $questionHelper->choose($choices, 'Enter a number to choose a user:');
-            $this->stdErr->writeln('');
+            if (count($choices) > 1) {
+                $this->stdErr->writeln('');
+            }
         }
         $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email);
         if (!$projectAccess) {

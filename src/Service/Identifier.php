@@ -147,7 +147,7 @@ class Identifier
      *
      * @param string $url
      *
-     * @return string
+     * @return string|false
      */
     private function getClusterHeader($url)
     {
@@ -162,14 +162,16 @@ class Identifier
                     'connect_timeout' => 5,
                     'allow_redirects' => false,
                 ]);
-                $cluster = $response->getHeader($this->config->get('service.header_prefix') . '-cluster');
+                $cluster = $response->getHeaderAsArray($this->config->get('service.header_prefix') . '-cluster');
                 $this->cache->save($cacheKey, $cluster, 86400);
             } catch (RequestException $e) {
                 $this->debug($e->getMessage());
+
+                return false;
             }
         }
 
-        return $cluster;
+        return is_array($cluster) ? reset($cluster) : false;
     }
 
     /**
