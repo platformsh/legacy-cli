@@ -2,7 +2,7 @@
     {
         "name": "platform.phar",
         "sha1": "9bac0042061ac37dba58fdf727ba9e63026bc134",
-        "sha256": "b45c9bdeacd6aac78da9e16c3c564db64100374681ed193bad70a2cf3f9ff09f",
+        "sha256": "21cebaa8c35b6212771a2b2eb4ded62d5befa0d2af8aac9fce5d2e72ccebe03e",
         "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.29.2/platform.phar",
         "version": "3.29.2",
         "php": {
