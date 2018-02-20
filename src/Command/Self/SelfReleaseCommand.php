@@ -13,11 +13,16 @@ class SelfReleaseCommand extends CommandBase
 
     protected function configure()
     {
+        $defaultRepo = $this->config()->has('application.github_repo')
+            ? $this->config()->get('application.github_repo') : null;
+
         $this
             ->setName('self:release')
             ->setDescription('Build and release a new version')
             ->addOption('phar', null, InputOption::VALUE_REQUIRED, 'The path to a newly built Phar file')
-            ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $this->config()->has('application.github_repo') ? $this->config()->get('application.github_repo') : null);
+            ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $defaultRepo)
+            ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
+            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest');
     }
 
     public function isEnabled()
@@ -47,7 +52,7 @@ class SelfReleaseCommand extends CommandBase
             return 1;
         }
 
-        if ($git->execute(['diff', 'master...development'], CLI_ROOT, true) && $questionHelper->confirm('Merge changes from development?')) {
+        if (strlen($git->execute(['diff', 'master...development'], CLI_ROOT)) && $questionHelper->confirm('Merge changes from development?')) {
             $git->execute(['merge', 'development'], CLI_ROOT, true);
         }
 
@@ -136,14 +141,39 @@ class SelfReleaseCommand extends CommandBase
             }
         }
 
-        $gitStatus = $git->execute(['status', '--porcelain'], CLI_ROOT, true);
-        if (is_string($gitStatus) && !empty($gitStatus)) {
-            $this->stdErr->writeln('Committing changes to Git');
-
-            $result = $shell->executeSimple('git commit --patch config.yaml dist/manifest.json --message ' . escapeshellarg('Release v' . $newVersion) . ' --edit', CLI_ROOT);
-            if ($result !== 0) {
-                return $result;
+        // Write to the manifest file.
+        $manifestFile = $input->getOption('manifest') ?: CLI_ROOT . '/dist/manifest.json';
+        $contents = file_get_contents($manifestFile);
+        if ($contents === false) {
+            throw new \RuntimeException('Manifest file not readable: ' . $manifestFile);
+        }
+        if (!is_writable($manifestFile)) {
+            throw new \RuntimeException('Manifest file not writable: ' . $manifestFile);
+        }
+        $this->stdErr->writeln('Updating manifest file: ' . $manifestFile);
+        $manifest = json_decode($contents, true);
+        if ($manifest === null && json_last_error()) {
+            throw new \RuntimeException('Failed to decode manifest file: ' . $manifestFile);
+        }
+        $latestItem = null;
+        foreach ($manifest as $key => $item) {
+            if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
+                $latestItem = &$manifest[$key];
             }
+        }
+
+        switch ($input->getOption('manifest-mode')) {
+            case 'update-latest':
+                $manifestItem = &$latestItem;
+                break;
+
+            case 'add':
+                array_unshift($manifest, []);
+                $manifestItem = &$manifest[0];
+                break;
+
+            default:
+                throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
         }
 
         $latest = $http->get($repoApiUrl . '/releases/latest', [
@@ -154,8 +184,12 @@ class SelfReleaseCommand extends CommandBase
             ],
             'debug' => $output->isDebug(),
         ])->json();
-        $lastVersion = $latest['tag_name'];
+        $lastTag = $latest['tag_name'];
+        $lastVersion = ltrim($lastTag, 'v');
 
+        $pharPublicFilename = $this->config()->get('application.executable') . '.phar';
+
+        $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
         $changelog = $git->execute([
             'log',
             '--pretty=format:* %s',
@@ -164,12 +198,44 @@ class SelfReleaseCommand extends CommandBase
             '--grep=(Release v|\[skip changelog\])',
             '--perl-regexp',
             '--regexp-ignore-case',
-            $lastVersion . '...' . $tagName
-        ], CLI_ROOT, true);
-        if (empty($changelog)) {
-            $this->stdErr->writeln('Failed to find changelog for ' . $lastVersion . '...' . $tagName);
+            'v' . $lastVersion . '...HEAD'
+        ], CLI_ROOT);
+        $changelog = is_string($changelog) ? $changelog : '';
+
+        $manifestItem['version'] = $newVersion;
+        $manifestItem['sha1'] = sha1_file($pharFilename);
+        $manifestItem['sha256'] = hash('sha256', $pharFilename);
+        $manifestItem['name'] = basename($pharPublicFilename);
+        $manifestItem['url'] = 'https://github.com/' . $repoUrl . '/releases/download/' . $tagName . '/' . $pharPublicFilename;
+        $manifestItem['php']['min'] = '5.5.9';
+        if (!empty($changelog)) {
+            $manifestItem['updating'][] = [
+                'notes' => $changelog,
+                'show from' => $lastVersion,
+                'hide from' => $newVersion,
+            ];
+            $this->stdErr->writeln('<info>Changes:</info>');
+            $this->stdErr->writeln($changelog);
+            $this->stdErr->writeln('');
+        }
+        $result = file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        if ($result !== false) {
+            $this->stdErr->writeln('Updated manifest file: ' . $manifestFile);
+        }
+        else {
+            $this->stdErr->writeln('Failed to update manifest file: ' . $manifestFile);
 
             return 1;
+        }
+
+        $gitStatus = $git->execute(['status', '--porcelain'], CLI_ROOT, true);
+        if (is_string($gitStatus) && !empty($gitStatus)) {
+            $this->stdErr->writeln('Committing changes to Git');
+
+            $result = $shell->executeSimple('git commit --patch config.yaml dist/manifest.json --message ' . escapeshellarg('Release v' . $newVersion) . ' --edit', CLI_ROOT);
+            if ($result !== 0) {
+                return $result;
+            }
         }
 
         $this->stdErr->writeln('Creating tag <info>' . $tagName . '</info>');
@@ -181,11 +247,15 @@ class SelfReleaseCommand extends CommandBase
         $shell->execute(['git', 'push', $repoGitUrl, 'HEAD:master'], CLI_ROOT, true);
         $shell->execute(['git', 'push', '--force', $repoGitUrl, $tagName], CLI_ROOT, true);
 
-        $lastReleasePublicUrl = 'https://github.com/' . $repoUrl . '/releases/' . $lastVersion;
-        $pharPublicFilename = $this->config()->get('application.executable') . '.phar';
-        $releaseDescription = sprintf('Changes since [%s](%s):', $lastVersion, $lastReleasePublicUrl)
-            . "\n\n" . $changelog
-            . "\n\n" . sprintf('SHA-256 checksum for `%s`:', $pharPublicFilename)
+        $lastReleasePublicUrl = 'https://github.com/' . $repoUrl . '/releases/' . $lastTag;
+        $releaseDescription = sprintf('Changes since [%s](%s):', $lastTag, $lastReleasePublicUrl);
+        if (!empty($changelog)) {
+            $releaseDescription .= "\n\n" . $changelog;
+        } else {
+            $releaseDescription .= "\n\n" . 'https://github.com/' . $repoUrl . '/compare/' . $lastTag . '...' . $tagName;
+        }
+
+        $releaseDescription .= "\n\n" . sprintf('SHA-256 checksum for `%s`:', $pharPublicFilename)
             . "\n" . sprintf('`%s`', hash_file('sha256', $pharFilename));
 
         $this->stdErr->writeln('');
