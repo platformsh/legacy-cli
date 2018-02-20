@@ -19,9 +19,7 @@ class SelfBuildCommand extends CommandBase
             ->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
             ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
-            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies')
-            ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
-            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest');
+            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
     }
 
     public function isEnabled()
@@ -148,85 +146,6 @@ class SelfBuildCommand extends CommandBase
             sprintf('SHA-256: %s', $sha256),
             sprintf('Version: %s', $version),
         ]);
-
-        // Write to the manifest file.
-        $manifestFile = $input->getOption('manifest') ?: CLI_ROOT . '/dist/manifest.json';
-        $contents = file_get_contents($manifestFile);
-        if ($contents === false) {
-            throw new \RuntimeException('Manifest file not readable: ' . $manifestFile);
-        }
-        if (!is_writable($manifestFile)) {
-            throw new \RuntimeException('Manifest file not writable: ' . $manifestFile);
-        }
-        $this->stdErr->writeln('Updating manifest file: ' . $manifestFile);
-        $manifest = json_decode($contents, true);
-        if ($manifest === null && json_last_error()) {
-            throw new \RuntimeException('Failed to decode manifest file: ' . $manifestFile);
-        }
-        $latestItem = null;
-        foreach ($manifest as $key => $item) {
-            if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
-                $latestItem = &$manifest[$key];
-            }
-        }
-
-        switch ($input->getOption('manifest-mode')) {
-            case 'update-latest':
-                $manifestItem = &$latestItem;
-                break;
-
-            case 'add':
-                array_unshift($manifest, []);
-                $manifestItem = &$manifest[0];
-                break;
-
-            default:
-                throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
-        }
-
-        if (isset($latestItem)) {
-            $oldVersion = $latestItem['version'];
-            $this->stdErr->writeln('  Found latest version: v' . $oldVersion);
-            if (isset($latestItem['url'])) {
-                $manifestItem['url'] = str_replace($oldVersion, $version, $latestItem['url']);
-            }
-            $changelog = $shell->execute([
-                'git',
-                'log',
-                '--pretty=format:* %s',
-                '--no-merges',
-                '--invert-grep',
-                '--grep=(Release v|\[skip changelog\])',
-                '--perl-regexp',
-                '--regexp-ignore-case',
-                'v' . $oldVersion . '...master'
-            ]);
-            $changelog = is_string($changelog) ? $changelog : '';
-        }
-        $manifestItem['version'] = $version;
-        $manifestItem['sha1'] = $sha1;
-        $manifestItem['sha256'] = $sha256;
-        $manifestItem['name'] = basename($phar);
-        $manifestItem['php']['min'] = '5.5.9';
-        if (!empty($changelog) && !empty($oldVersion)) {
-            $manifestItem['updating'][] = [
-                'notes' => $changelog,
-                'show from' => $oldVersion,
-                'hide from' => $version,
-            ];
-            $this->stdErr->writeln('<info>Changes:</info>');
-            $this->stdErr->writeln($changelog);
-            $this->stdErr->writeln('');
-        }
-        $result = file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        if ($result !== false) {
-            $this->stdErr->writeln('Updated manifest file: ' . $manifestFile);
-        }
-        else {
-            $this->stdErr->writeln('Failed to update manifest file: ' . $manifestFile);
-
-            return 1;
-        }
 
         return 0;
     }
