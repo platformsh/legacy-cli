@@ -54,6 +54,8 @@ class BrowserLoginCommand extends CommandBase
         $connector = $this->api()->getClient(false)->getConnector();
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
             $this->stdErr->writeln('You are already logged in.');
+            // USE THE FORCE
+            $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
             return 0;
         }
 
