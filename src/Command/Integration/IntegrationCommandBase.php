@@ -296,6 +296,7 @@ abstract class IntegrationCommandBase extends CommandBase
             if (!$hook) {
                 $this->stdErr->writeln('  Creating new webhook');
                 $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
+                $this->stdErr->writeln('  Webhook created successfully');
             }
             elseif ($this->hookNeedsUpdate($hook, $payload)) {
                 // The GitLab API requires PUT for editing project hooks. The
@@ -307,6 +308,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 $client->send(
                     $client->createRequest($method, $hookApiUrl, ['json' => $payload] + $requestOptions)
                 );
+                $this->stdErr->writeln('  Webhook updated successfully');
             }
             elseif ($integration->type === 'gitlab' && $this->hookNeedsUpdate($hook, $payload)) {
                 $this->stdErr->writeln('  Updating GitLab webhook');
