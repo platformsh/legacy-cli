@@ -298,7 +298,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
                 $this->stdErr->writeln('  Webhook created successfully');
             }
-            elseif ($this->hookNeedsUpdate($hook, $payload)) {
+            elseif ($this->arraysDiffer($hook, $payload)) {
                 // The GitLab API requires PUT for editing project hooks. The
                 // GitHub API requires PATCH.
                 $method = $integration->type === 'gitlab' ? 'put' : 'patch';
@@ -309,10 +309,6 @@ abstract class IntegrationCommandBase extends CommandBase
                     $client->createRequest($method, $hookApiUrl, ['json' => $payload] + $requestOptions)
                 );
                 $this->stdErr->writeln('  Webhook updated successfully');
-            }
-            elseif ($integration->type === 'gitlab' && $this->hookNeedsUpdate($hook, $payload)) {
-                $this->stdErr->writeln('  Updating GitLab webhook');
-                $client->put($hooksApiUrl . '/' . $hook['id'], ['json' => $payload] + $requestOptions);
             }
             else {
                 $this->stdErr->writeln('  Valid configuration found');
@@ -329,51 +325,36 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
-     * Check if a webhook needs updating.
-     *
-     * @param array $currentData
-     * @param array $newData
-     *
-     * @return bool
-     */
-    private function hookNeedsUpdate(array $currentData, array $newData)
-    {
-        return !$this->compareArrays($currentData, $newData);
-    }
-
-    /**
-     * Checks if a target array has all the values in a source array.
-     *
-     * Ignores values in a target array that do not exist in the source.
+     * Checks if $array2 has any values missing or different from $array1.
      *
      * Runs recursively for multidimensional arrays.
      *
-     * @param array $target
-     * @param array $source
+     * @param array $array1
+     * @param array $array2
      *
      * @return bool
      */
-    private function compareArrays(array $target, array $source)
+    private function arraysDiffer(array $array1, array $array2)
     {
-        foreach ($source as $property => $newValue) {
-            if (!array_key_exists($property, $target)) {
-                return false;
+        foreach ($array2 as $property => $value) {
+            if (!array_key_exists($property, $array1)) {
+                return true;
             }
-            if (is_array($newValue)) {
-                if (!is_array($target[$property])) {
-                    return false;
+            if (is_array($value)) {
+                if (!is_array($array1[$property])) {
+                    return true;
                 }
-                if ($target[$property] == $newValue || $this->compareArrays($target[$property], $newValue)) {
-                    continue;
+                if ($array1[$property] != $value && $this->arraysDiffer($array1[$property], $value)) {
+                    return true;
                 }
-                return false;
+                continue;
             }
-            if ($target[$property] != $newValue) {
-                return false;
+            if ($array1[$property] != $value) {
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     /**
