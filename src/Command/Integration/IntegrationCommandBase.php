@@ -336,15 +336,42 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     private function hookNeedsUpdate(array $currentData, array $newData)
     {
-        foreach ($newData as $property => $newValue) {
-            // Compare loosely, to ignore the type of booleans or the order of
-            // array values, etc.
-            if (!array_key_exists($property, $currentData) || $currentData[$property] != $newValue) {
-                return true;
+        return !$this->compareArrays($currentData, $newData);
+    }
+
+    /**
+     * Checks if a target array has all the values in a source array.
+     *
+     * Ignores values in a target array that do not exist in the source.
+     *
+     * Runs recursively for multidimensional arrays.
+     *
+     * @param array $target
+     * @param array $source
+     *
+     * @return bool
+     */
+    private function compareArrays(array $target, array $source)
+    {
+        foreach ($source as $property => $newValue) {
+            if (!array_key_exists($property, $target)) {
+                return false;
+            }
+            if (is_array($newValue)) {
+                if (!is_array($target[$property])) {
+                    return false;
+                }
+                if ($target[$property] == $newValue || $this->compareArrays($target[$property], $newValue)) {
+                    continue;
+                }
+                return false;
+            }
+            if ($target[$property] != $newValue) {
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     /**
