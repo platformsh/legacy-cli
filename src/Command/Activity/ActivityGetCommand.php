@@ -68,10 +68,7 @@ class ActivityGetCommand extends CommandBase
 
         $properties = $activity->getProperties();
 
-        // Add the activity "description" as a property.
-        if (!isset($properties['description'])) {
-            $properties['description'] = $activity->getDescription();
-        }
+        $properties['description'] = $activity->getDescription(false);
 
         // Calculate the duration of the activity.
         if (!isset($properties['duration'])) {
