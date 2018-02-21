@@ -273,7 +273,11 @@ abstract class IntegrationCommandBase extends CommandBase
                     'Private-Token' => $integration->getProperty('token'),
                 ],
             ];
-            $payload = ['url' => $integration->getLink('#hook')];
+            $payload = [
+                'url' => $integration->getLink('#hook'),
+                'push_events' => true,
+                'merge_requests_events' => true,
+            ];
             $repoName = $baseUrl . '/' . $integration->getProperty('project');
         } else {
             return;
@@ -288,11 +292,28 @@ abstract class IntegrationCommandBase extends CommandBase
 
         try {
             $hooks = $client->get($hooksApiUrl, $requestOptions)->json();
-            if ($this->findWebHook($integration, $hooks)) {
-                $this->stdErr->writeln('  Valid configuration found');
-            } else {
+            $hook = $this->findWebHook($integration, $hooks);
+            if (!$hook) {
                 $this->stdErr->writeln('  Creating new webhook');
                 $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
+            }
+            elseif ($this->hookNeedsUpdate($hook, $payload)) {
+                // The GitLab API requires PUT for editing project hooks. The
+                // GitHub API requires PATCH.
+                $method = $integration->type === 'gitlab' ? 'put' : 'patch';
+                $hookApiUrl = $hooksApiUrl . '/' . rawurlencode($hook['id']);
+
+                $this->stdErr->writeln('  Updating webhook');
+                $client->send(
+                    $client->createRequest($method, $hookApiUrl, ['json' => $payload] + $requestOptions)
+                );
+            }
+            elseif ($integration->type === 'gitlab' && $this->hookNeedsUpdate($hook, $payload)) {
+                $this->stdErr->writeln('  Updating GitLab webhook');
+                $client->put($hooksApiUrl . '/' . $hook['id'], ['json' => $payload] + $requestOptions);
+            }
+            else {
+                $this->stdErr->writeln('  Valid configuration found');
             }
         } catch (TransferException $e) {
             $this->stdErr->writeln('');
@@ -306,12 +327,33 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
+     * Check if a webhook needs updating.
+     *
+     * @param array $currentData
+     * @param array $newData
+     *
+     * @return bool
+     */
+    private function hookNeedsUpdate(array $currentData, array $newData)
+    {
+        foreach ($newData as $property => $newValue) {
+            // Compare loosely, to ignore the type of booleans or the order of
+            // array values, etc.
+            if (!array_key_exists($property, $currentData) || $currentData[$property] != $newValue) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Find if a valid webhook exists in a service's hooks list.
      *
      * @param \Platformsh\Client\Model\Integration $integration
      * @param array                                $jsonResult
      *
-     * @return bool
+     * @return array|false
      */
     private function findWebHook(Integration $integration, array $jsonResult)
     {
@@ -319,10 +361,10 @@ abstract class IntegrationCommandBase extends CommandBase
         $hookUrl = $integration->getLink('#hook');
         foreach ($jsonResult as $hook) {
             if ($type === 'github' && $hook['config']['url'] === $hookUrl) {
-                return true;
+                return $hook;
             }
             if ($type === 'gitlab' && $hook['url'] === $hookUrl) {
-                return true;
+                return $hook;
             }
         }
 
