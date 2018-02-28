@@ -56,6 +56,9 @@ class QuestionHelper extends BaseQuestionHelper
         } elseif ($no && !$yes) {
             $this->output->writeln($questionText . 'n');
             return false;
+        } elseif (!$this->input->isInteractive()) {
+            $this->output->writeln($questionText . ($default ? 'y' : 'n'));
+            return $default;
         }
         $question = new ConfirmationQuestion($questionText, $default);
 
