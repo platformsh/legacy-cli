@@ -23,7 +23,7 @@ class EnvironmentInitCommand extends CommandBase
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
         $this->addProjectOption()
             ->addEnvironmentOption()
-            ->addNoWaitOption();
+            ->addWaitOptions();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -58,7 +58,7 @@ class EnvironmentInitCommand extends CommandBase
 
         $this->api()->clearEnvironmentsCache($environment->project);
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitAndLog($activity);

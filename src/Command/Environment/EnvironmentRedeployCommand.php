@@ -16,7 +16,7 @@ class EnvironmentRedeployCommand extends CommandBase
             ->setDescription('Redeploy an environment');
         $this->addProjectOption()
             ->addEnvironmentOption();
-        $this->addNoWaitOption();
+        $this->addWaitOptions();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -33,7 +33,7 @@ class EnvironmentRedeployCommand extends CommandBase
 
         $activity = $environment->redeploy();
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitAndLog($activity);

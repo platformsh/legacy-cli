@@ -18,7 +18,7 @@ class EnvironmentMergeCommand extends CommandBase
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
         $this->setHelp(
             'This command will initiate a Git merge of the specified environment into its parent environment.'
@@ -63,7 +63,7 @@ class EnvironmentMergeCommand extends CommandBase
         $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
 
         $activity = $selectedEnvironment->merge();
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitAndLog(

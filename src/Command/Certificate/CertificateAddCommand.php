@@ -19,7 +19,7 @@ class CertificateAddCommand extends CommandBase
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the certificate private key file')
             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file');
         $this->addProjectOption();
-        $this->addNoWaitOption();
+        $this->addWaitOptions();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -39,7 +39,7 @@ class CertificateAddCommand extends CommandBase
 
         $result = $project->addCertificate($options['certificate'], $options['key'], $options['chain']);
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);

@@ -18,7 +18,7 @@ class ProjectVariableDeleteCommand extends CommandBase
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->setDescription('Delete a variable from a project');
         $this->addProjectOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Delete the variable "example"', 'example');
     }
 
@@ -64,7 +64,7 @@ class ProjectVariableDeleteCommand extends CommandBase
         $success = true;
         if (!$result->countActivities()) {
             $this->redeployWarning();
-        } elseif (!$input->getOption('no-wait')) {
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

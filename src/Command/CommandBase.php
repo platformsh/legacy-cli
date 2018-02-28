@@ -597,16 +597,61 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Add the --no-wait option.
-     *
-     * @param string $description
-     *
-     * @return CommandBase
+     * Add both the --no-wait and --wait options.
      */
-    protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
+    protected function addWaitOptions()
     {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        return $this->addOption('no-wait', 'W', InputOption::VALUE_NONE, $description);
+        $this->addOption('no-wait', 'W', InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+        if ($this->detectRunningInHook()) {
+            $this->addOption('wait', null, InputOption::VALUE_NONE, 'Wait for the operation to complete');
+        } else {
+            $this->addOption('wait', null, InputOption::VALUE_NONE, 'Wait for the operation to complete (default)');
+        }
+    }
+
+    /**
+     * Returns whether we should wait for an operation to complete.
+     *
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     *
+     * @return bool
+     */
+    protected function shouldWait(InputInterface $input)
+    {
+        if ($input->hasOption('no-wait') && $input->getOption('no-wait')) {
+            return false;
+        }
+        if ($input->hasOption('wait') && $input->getOption('wait')) {
+            return true;
+        }
+        if ($this->detectRunningInHook()) {
+            $serviceName = $this->config()->get('service.name');
+            $message = "\n<comment>Warning:</comment> $serviceName hook environment detected: assuming <comment>--no-wait</comment> by default."
+                . "\nTo avoid ambiguity, please specify either --no-wait or --wait."
+                . "\n";
+            $this->stdErr->writeln($message);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Detects a Platform.sh non-terminal Dash environment; i.e. a hook.
+     *
+     * @return bool
+     */
+    protected function detectRunningInHook()
+    {
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if (getenv($envPrefix . 'PROJECT')
+            && basename(getenv('SHELL')) === 'dash'
+            && !$this->isTerminal(STDIN)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
