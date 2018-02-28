@@ -557,14 +557,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $this->stdErr->writeln([
             '',
             '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
-            "Use 'git push' with new commit(s) to trigger a redeploy.",
+            'To redeploy an environment, run: <info>' . $this->config()->get('application.executable') . ' redeploy</info>',
         ]);
-        if (strpos($this->getName(), 'variable:') !== 0) {
-            $this->stdErr->writeln([
-                'Alternatively, add or change an environment variable, e.g.',
-                '  <comment>' . $this->config()->get('application.executable') . ' vset _redeploy "$(date)"</comment>'
-            ]);
-        }
     }
 
     /**
