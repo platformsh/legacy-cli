@@ -6,6 +6,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
 class SelfReleaseCommand extends CommandBase
 {
@@ -190,17 +191,16 @@ class SelfReleaseCommand extends CommandBase
         $pharPublicFilename = $this->config()->get('application.executable') . '.phar';
 
         $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
-        $changelog = $git->execute([
-            'log',
-            '--pretty=format:* %s',
-            '--no-merges',
-            '--invert-grep',
-            '--grep=(Release v|\[skip changelog\])',
-            '--perl-regexp',
-            '--regexp-ignore-case',
-            'v' . $lastVersion . '...HEAD'
-        ], CLI_ROOT);
-        $changelog = is_string($changelog) ? $changelog : '';
+
+        $changelog = $this->getReleaseChangelog($lastVersion);
+        $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if (!$questionHelper->confirm($questionText)) {
+            $this->stdErr->writeln('Update the file <comment>' . CLI_ROOT . '/release-changelog.md</comment> and re-run this command.');
+
+            return 1;
+        }
 
         $manifestItem['version'] = $newVersion;
         $manifestItem['sha1'] = sha1_file($pharFilename);
@@ -318,5 +318,52 @@ class SelfReleaseCommand extends CommandBase
         $this->stdErr->writeln('https://github.com/' . $repoUrl . '/releases/latest');
 
         return 0;
+    }
+
+    /**
+     * @param string $lastVersion The last version number.
+     *
+     * @return string
+     */
+    private function getReleaseChangelog($lastVersion)
+    {
+        $lastVersionTag = 'v' . ltrim($lastVersion, 'v');
+        $filename = CLI_ROOT . '/release-changelog.md';
+        if (file_exists($filename)) {
+            $contents = file_get_contents($filename);
+            if ($contents === false) {
+                throw new \RuntimeException('Failed to read file: ' . $filename);
+            }
+            $changelog = trim($contents);
+        }
+        if (empty($changelog)) {
+            $changelog = $this->getGitChangelog($lastVersionTag);
+            (new Filesystem())->dumpFile($filename, $changelog);
+        }
+
+        return $changelog;
+    }
+
+    /**
+     * @param string $since
+     *
+     * @return string
+     */
+    private function getGitChangelog($since)
+    {
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $changelog = $git->execute([
+            'log',
+            '--pretty=format:* %s',
+            '--no-merges',
+            '--invert-grep',
+            '--grep=(Release v|\[skip changelog\])',
+            '--perl-regexp',
+            '--regexp-ignore-case',
+            $since . '...HEAD'
+        ], CLI_ROOT);
+
+        return is_string($changelog) ? $changelog : '';
     }
 }
