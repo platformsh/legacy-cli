@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "9bac0042061ac37dba58fdf727ba9e63026bc134",
-        "sha256": "21cebaa8c35b6212771a2b2eb4ded62d5befa0d2af8aac9fce5d2e72ccebe03e",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.29.2/platform.phar",
-        "version": "3.29.2",
+        "sha1": "07479a9542234c5231787fe9694ba0e9f27dc342",
+        "sha256": "559d1d9c8ca7d7364e5d77858d43e401aae2a31b1e2c4ebaee96ed3a66c6f998",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.30.0/platform.phar",
+        "version": "3.30.0",
         "php": {
             "min": "5.5.9"
         },
@@ -107,6 +107,11 @@
                 "notes": "* [user:add] Improve `user:add` command to allow setting roles on all environments (aliased to `user:update`)\n* [user:get] Add `user:get` command (aliased to and deprecating `user:role`)\n* [db:dump] Remove --no-autocommit and simplify mysqldump args (#683)\n* Expand redeploy warning to recommend `vset`\n* [activity:get] Check for empty started_at when calculating duration\n* [redis] Recommend \"redis info\" command",
                 "show from": "3.28.0",
                 "hide from": "3.29.0"
+            },
+            {
+                "notes": "* Add `redeploy` command (available on projects with newer API versions).\n* [activity:list] Format activity descriptions where possible.\n* Print question text even when in automatic non-interactive mode.\n* Add --wait option to all commands, and emit a warning if nothing is specified\n  when running inside a Platform.sh build/cron/deploy hook.\n* [integration:add] [integration:update] Ensure GitLab/GitHub hooks have the\n  right events selected, and update them if not.\n* [self:install] Ensure directory exists when creating shell-config.rc\n* [activity:get] do not require an environment with --all and a partial ID\n* [login] Mention --force option, if running when already logged in.",
+                "show from": "3.29.0",
+                "hide from": "3.30.0"
             }
         ]
     }
