@@ -34,7 +34,7 @@ class EnvironmentBranchCommand extends CommandBase
             );
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption("Do not wait for the environment to be branched");
+             ->addWaitOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
@@ -153,7 +153,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $remoteSuccess = true;
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $remoteSuccess = $activityMonitor->waitAndLog(

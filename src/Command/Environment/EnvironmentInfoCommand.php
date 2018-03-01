@@ -31,7 +31,7 @@ class EnvironmentInfoCommand extends CommandBase
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Read all environment properties')
              ->addExample("Show the environment's status", 'status')
              ->addExample('Show the date the environment was created', 'created_at')
@@ -60,7 +60,7 @@ class EnvironmentInfoCommand extends CommandBase
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $environment, $input->getOption('no-wait'));
+            return $this->setProperty($property, $value, $environment, !$this->shouldWait($input));
         }
 
         switch ($property) {

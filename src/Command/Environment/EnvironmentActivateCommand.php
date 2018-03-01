@@ -20,7 +20,7 @@ class EnvironmentActivateCommand extends CommandBase
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
     }
 
@@ -112,7 +112,7 @@ class EnvironmentActivateCommand extends CommandBase
         $success = $processed >= $count;
 
         if ($processed) {
-            if (!$input->getOption('no-wait')) {
+            if ($this->shouldWait($input)) {
                 /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
                 $activityMonitor = $this->getService('activity_monitor');
                 $result = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());

@@ -19,7 +19,7 @@ class VariableDeleteCommand extends CommandBase
             ->setDescription('Delete a variable from an environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Delete the variable "example"', 'example');
     }
 
@@ -69,7 +69,7 @@ class VariableDeleteCommand extends CommandBase
         $success = true;
         if (!$result->countActivities()) {
             $this->redeployWarning();
-        } elseif (!$input->getOption('no-wait')) {
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

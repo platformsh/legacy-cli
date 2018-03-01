@@ -17,7 +17,7 @@ class IntegrationDeleteCommand extends CommandBase
             ->setName('integration:delete')
             ->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
             ->setDescription('Delete an integration from a project');
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -48,7 +48,7 @@ class IntegrationDeleteCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('Deleted integration <info>%s</info>', $integration->id));
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

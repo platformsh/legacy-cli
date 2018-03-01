@@ -4,6 +4,43 @@ This file was auto-generated using the [github_changelog_generator](https://gith
 
 More readable, curated release notes can be found at: https://github.com/platformsh/platformsh-cli/releases
 
+## [v3.29.0](https://github.com/platformsh/platformsh-cli/tree/v3.29.0) (2018-02-12)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.28.0...v3.29.0)
+
+* [user:add] Improve `user:add` command to allow setting roles on all environments (aliased to `user:update`)
+* [user:get] Add `user:get` command (aliased to and deprecating `user:role`)
+* [db:dump] Remove --no-autocommit and simplify mysqldump args (#683)
+* Expand redeploy warning to recommend `vset`
+* [activity:get] Check for empty started_at when calculating duration
+* [redis] Recommend "redis info" command
+
+## [v3.28.0](https://github.com/platformsh/platformsh-cli/tree/v3.28.0) (2018-01-30)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.2...v3.28.0)
+
+* Improve `activity:log` output to show more activity information.
+* Add `activity:get` command, hidden for now.
+* Add `--date-fmt` option to `activity:list` and `snapshot:list`.
+* Respect the date.timezone ini setting, and the TZ environment variable.
+* Fix inverted requirement of -e/-a options in activity:log (`-a` should make `-e` not required).
+* Fix user-defined aliases being prefixed with "@" (thanks to @GROwen, #677)
+* Avoid fatal error if invalid YAML config is encountered during updateDrushAliases()
+* Use -t instead of RequestTTY in SSH commands, for OpenSSH <5.9
+* Update dependencies (mainly Symfony 3.4.2 -> 3.4.4)
+
+## [v3.27.2](https://github.com/platformsh/platformsh-cli/tree/v3.27.2) (2018-01-23)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.1...v3.27.2)
+
+* Fix: 'Invalid refresh token' message interception shouldn't check the request for oauth2
+* [project:create] add detailed help
+* [project:create] be stricter about check interval
+* [project:create] show project ID if possible even after failure
+* [subscription:info] allow passing a subscription ID directly via --id
+
+## [v3.27.1](https://github.com/platformsh/platformsh-cli/tree/v3.27.1) (2018-01-22)
+[Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.27.0...v3.27.1)
+
+* [project:create] increase check timeout and make it configurable
+
 ## [v3.27.0](https://github.com/platformsh/platformsh-cli/tree/v3.27.0) (2018-01-18)
 [Full Changelog](https://github.com/platformsh/platformsh-cli/compare/v3.26.1...v3.27.0)
 

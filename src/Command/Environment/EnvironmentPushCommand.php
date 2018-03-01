@@ -26,7 +26,7 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('set-upstream', 'u', InputOption::VALUE_NONE, 'Set the target environment as the upstream for the source branch')
             ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment after pushing')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent (only used with --activate)');
-        $this->addNoWaitOption('After pushing, do not wait for build or deploy');
+        $this->addWaitOptions();
         $this->addProjectOption()
             ->addEnvironmentOption();
         Ssh::configureInput($this->getDefinition());
@@ -145,7 +145,7 @@ class EnvironmentPushCommand extends CommandBase
         $ssh = $this->getService('ssh');
         $extraSshOptions = [];
         $env = [];
-        if ($input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             $extraSshOptions['SendEnv'] = 'PLATFORMSH_PUSH_NO_WAIT';
             $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }

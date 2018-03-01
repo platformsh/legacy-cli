@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Snapshot;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,6 +22,7 @@ class SnapshotListCommand extends CommandBase
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
         Table::configureInput($this->getDefinition());
+        PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('List the most recent snapshots')
@@ -41,6 +43,8 @@ class SnapshotListCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");
@@ -57,7 +61,7 @@ class SnapshotListCommand extends CommandBase
         foreach ($activities as $activity) {
             $snapshot_name = !empty($activity->payload['backup_name']) ? $activity->payload['backup_name'] : 'N/A';
             $rows[] = [
-                date('Y-m-d H:i:s', strtotime($activity->created_at)),
+                $formatter->format($activity->created_at, 'created_at'),
                 new AdaptiveTableCell($snapshot_name, ['wrap' => false]),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),

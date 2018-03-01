@@ -25,7 +25,7 @@ class VariableSetCommand extends CommandBase
             ->setDescription('Set a variable for an environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Set the variable "example" to the string "123"', 'example 123');
         $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
         $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
@@ -66,7 +66,7 @@ class VariableSetCommand extends CommandBase
         $success = true;
         if (!$result->countActivities()) {
             $this->redeployWarning();
-        } elseif (!$input->getOption('no-wait')) {
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

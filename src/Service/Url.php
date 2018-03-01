@@ -73,6 +73,7 @@ class Url implements InputConfiguringInterface
         // If the user wants to pipe the output to another command, stop here.
         if ($this->input->hasOption('pipe') && $this->input->getOption('pipe')) {
             $open = false;
+            $print = true;
         }
         // Check if the user has requested not to use a browser.
         elseif ($browserOption === '0') {
