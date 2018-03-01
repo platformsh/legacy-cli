@@ -25,7 +25,7 @@ class UserAddCommand extends CommandBase
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('role', 'r', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "The user's role: 'admin' or 'viewer', or environment-specific role e.g. 'master:contributor' or 'stage:viewer'");
         $this->addProjectOption();
-        $this->addNoWaitOption();
+        $this->addWaitOptions();
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
         $this->addExample('Make Bob an admin on the "develop" and "stage" environments', 'bob@example.com -r develop:a,stage:a');
     }
@@ -280,7 +280,7 @@ class UserAddCommand extends CommandBase
         }
 
         // Wait for activities to complete.
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             if (!$activityMonitor->waitMultiple($activities, $project)) {

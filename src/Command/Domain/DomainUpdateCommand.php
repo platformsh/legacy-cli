@@ -16,7 +16,7 @@ class DomainUpdateCommand extends DomainCommandBase
             ->setName('domain:update')
             ->setDescription('Update a domain');
         $this->addDomainOptions();
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample(
             'Update the certificate for the domain example.com',
             'example.com --cert secure-example-com.crt --key secure-example-com.key'
@@ -60,7 +60,7 @@ class DomainUpdateCommand extends DomainCommandBase
 
         $result = $domain->update(['ssl' => $this->sslOptions]);
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);

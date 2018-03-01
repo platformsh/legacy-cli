@@ -17,7 +17,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             ->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
             ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample(
             'Switch on the "fetch branches" option for a specific integration',
             'ZXhhbXBsZSB --fetch-branches 1'
@@ -71,7 +71,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         $this->displayIntegration($integration);
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

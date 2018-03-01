@@ -21,7 +21,7 @@ class VariableDisableCommand extends CommandBase
             ->setDescription('Disable an enabled environment-level variable');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -54,7 +54,7 @@ class VariableDisableCommand extends CommandBase
         $success = true;
         if (!$result->countActivities()) {
             $this->redeployWarning();
-        } elseif (!$input->getOption('no-wait')) {
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

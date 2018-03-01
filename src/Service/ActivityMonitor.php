@@ -70,7 +70,7 @@ class ActivityMonitor
         $stdErr->writeln(sprintf(
             'Waiting for the activity <info>%s</info> (%s):',
             $activity->id,
-            $activity->getDescription()
+            self::getFormattedDescription($activity)
         ));
 
         // The progress bar will show elapsed time and the activity's state.
@@ -206,7 +206,7 @@ class ActivityMonitor
         // Display success or failure messages for each activity.
         $success = true;
         foreach ($activities as $activity) {
-            $description = $activity->getDescription();
+            $description = self::getFormattedDescription($activity);
             switch ($activity['result']) {
                 case Activity::RESULT_SUCCESS:
                     $stdErr->writeln(sprintf('Activity <info>%s</info> succeeded: %s', $activity->id, $description));
@@ -270,5 +270,25 @@ class ActivityMonitor
         $progressOutput = $output->isDecorated() ? $output : new NullOutput();
 
         return new ProgressBar($progressOutput);
+    }
+
+    /**
+     * Get the formatted description of an activity.
+     *
+     * @param \Platformsh\Client\Model\Activity $activity
+     *
+     * @return string
+     */
+    public static function getFormattedDescription(Activity $activity)
+    {
+        $value = $activity->hasProperty('description')
+            ? $activity->getProperty('description')
+            : $activity->getDescription(true);
+
+        // Replace description HTML fields with underlined plain text.
+        $value = preg_replace('/<[^\/>]+>/', '<options=underscore>', $value);
+        $value = preg_replace('/<\/[^>]+>/', '</>', $value);
+
+        return $value;
     }
 }

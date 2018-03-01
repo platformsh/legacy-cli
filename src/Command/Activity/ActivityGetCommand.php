@@ -43,9 +43,7 @@ class ActivityGetCommand extends CommandBase
             $activity = $this->getSelectedProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activities = $this->getSelectedEnvironment()
-                    ->getActivities(0, $input->getOption('type'));
-                $activity = $this->api()->matchPartialId($id, $activities, 'Activity');
+                $activity = $this->api()->matchPartialId($id, $this->getActivities($input), 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -53,13 +51,7 @@ class ActivityGetCommand extends CommandBase
                 }
             }
         } else {
-            if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-                $activities = $this->getSelectedEnvironment()
-                    ->getActivities(1, $input->getOption('type'));
-            } else {
-                $activities = $this->getSelectedProject()
-                    ->getActivities(1, $input->getOption('type'));
-            }
+            $activities = $this->getActivities($input, 1);
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
@@ -76,10 +68,7 @@ class ActivityGetCommand extends CommandBase
 
         $properties = $activity->getProperties();
 
-        // Add the activity "description" as a property.
-        if (!isset($properties['description'])) {
-            $properties['description'] = $activity->getDescription();
-        }
+        $properties['description'] = $activity->getDescription(false);
 
         // Calculate the duration of the activity.
         if (!isset($properties['duration'])) {
@@ -127,5 +116,24 @@ class ActivityGetCommand extends CommandBase
         }
 
         return 0;
+    }
+
+    /**
+     * Get activities on the project or environment.
+     *
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param int                                             $limit
+     *
+     * @return \Platformsh\Client\Model\Activity[]
+     */
+    private function getActivities(InputInterface $input, $limit = 0)
+    {
+        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
+            return $this->getSelectedEnvironment()
+                ->getActivities($limit, $input->getOption('type'));
+        }
+
+        return $this->getSelectedProject()
+            ->getActivities($limit, $input->getOption('type'));
     }
 }

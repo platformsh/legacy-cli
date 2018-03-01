@@ -18,7 +18,7 @@ class SnapshotRestoreCommand extends CommandBase
             ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->setHiddenAliases(['environment:restore']);
         $this->addExample('Restore the most recent snapshot');
         $this->addExample('Restore a specific snapshot', '92c9a4b2aa75422efb3d');
@@ -85,7 +85,7 @@ class SnapshotRestoreCommand extends CommandBase
         $this->stdErr->writeln("Restoring snapshot <info>$name</info>");
 
         $activity = $selectedActivity->restore();
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             $this->stdErr->writeln('Waiting for the restore to complete...');
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');

@@ -37,7 +37,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
             );
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Require a username and password', '--auth myname:mypassword');
         $this->addExample('Restrict access to only one IP address', '--access deny:any --access allow:69.208.1.192');
         $this->addExample('Remove the password requirement, keeping IP restrictions', '--auth 0');
@@ -197,7 +197,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 $success = true;
                 if (!$result->countActivities()) {
                     $this->redeployWarning();
-                } elseif (!$input->getOption('no-wait')) {
+                } elseif ($this->shouldWait($input)) {
                     /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
                     $activityMonitor = $this->getService('activity_monitor');
                     $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

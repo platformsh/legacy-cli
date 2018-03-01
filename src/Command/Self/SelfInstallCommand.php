@@ -32,17 +32,14 @@ EOT
             'shell-config-bash.rc',
         ];
         $rcDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
+        $fs = new \Symfony\Component\Filesystem\Filesystem();
         foreach ($rcFiles as $rcFile) {
             if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
                 $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
 
                 return 1;
             }
-            if (file_put_contents($configDir . '/' . $rcFile, $rcContents) === false) {
-                $this->stdErr->writeln(sprintf('Failed to write file: %s', $configDir . '/' . $rcFile));
-
-                return 1;
-            }
+            $fs->dumpFile($configDir . '/' . $rcFile, $rcContents);
         }
 
         $shellConfigFile = $this->findShellConfigFile();
