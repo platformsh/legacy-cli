@@ -16,7 +16,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
             ->setName('integration:add')
             ->setDescription('Add an integration to the project');
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample(
             'Add an integration with a GitHub repository',
             '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
@@ -54,7 +54,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 
         $success = true;
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

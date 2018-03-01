@@ -17,7 +17,7 @@ class DomainAddCommand extends DomainCommandBase
             ->setName('domain:add')
             ->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
             'Add the domain secure.example.com with SSL enabled',
@@ -54,7 +54,7 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);

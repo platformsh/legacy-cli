@@ -15,7 +15,7 @@ class UserDeleteCommand extends CommandBase
             ->setName('user:delete')
             ->setDescription('Delete a user from the project')
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample('Delete Alice from the project', 'alice@example.com');
     }
 
@@ -53,7 +53,7 @@ class UserDeleteCommand extends CommandBase
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);

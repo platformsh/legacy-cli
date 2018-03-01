@@ -29,7 +29,7 @@ class ProjectInfoCommand extends CommandBase
             ->setDescription('Read or set properties for a project');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
@@ -55,7 +55,7 @@ class ProjectInfoCommand extends CommandBase
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $project, $input->getOption('no-wait'));
+            return $this->setProperty($property, $value, $project, !$this->shouldWait($input));
         }
 
         switch ($property) {

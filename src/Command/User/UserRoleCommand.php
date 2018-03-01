@@ -22,7 +22,7 @@ class UserRoleCommand extends CommandBase
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout (after making any changes)');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
 
         // Backwards compatibility.
         $this->setHiddenAliases(['user:role']);
