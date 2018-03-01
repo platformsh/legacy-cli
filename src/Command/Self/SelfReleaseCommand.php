@@ -330,11 +330,15 @@ class SelfReleaseCommand extends CommandBase
         $lastVersionTag = 'v' . ltrim($lastVersion, 'v');
         $filename = CLI_ROOT . '/release-changelog.md';
         if (file_exists($filename)) {
-            $contents = file_get_contents($filename);
-            if ($contents === false) {
-                throw new \RuntimeException('Failed to read file: ' . $filename);
+            $mTime = filemtime($filename);
+            $lastVersionDate = $this->getTagDate($lastVersionTag);
+            if (!$lastVersionDate || !$mTime || $mTime > $lastVersionDate) {
+                $contents = file_get_contents($filename);
+                if ($contents === false) {
+                    throw new \RuntimeException('Failed to read file: ' . $filename);
+                }
+                $changelog = trim($contents);
             }
-            $changelog = trim($contents);
         }
         if (empty($changelog)) {
             $changelog = $this->getGitChangelog($lastVersionTag);
@@ -342,6 +346,22 @@ class SelfReleaseCommand extends CommandBase
         }
 
         return $changelog;
+    }
+
+    /**
+     * Returns the commit date associated with a tag.
+     *
+     * @param string $tagName
+     *
+     * @return int|false
+     */
+    private function getTagDate($tagName)
+    {
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $date = $git->execute(['log', '-1', '--format=%aI', 'refs/tags/' . $tagName]);
+
+        return is_string($date) ? strtotime(trim($date)) : false;
     }
 
     /**
