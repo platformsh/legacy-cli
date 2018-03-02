@@ -7,6 +7,7 @@ use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
@@ -780,10 +781,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return $appName;
         }
 
-        $environment = $this->getSelectedEnvironment();
-        $apps = array_keys($environment->getSshUrls());
+        $apps = array_map(function (WebApp $app) {
+            return $app->name;
+        }, $this->getSelectedEnvironment()->getCurrentDeployment()->webapps);
         if (!count($apps)) {
-          return null;
+            return null;
         }
 
         $this->debug('Found app(s): ' . implode(',', $apps));
