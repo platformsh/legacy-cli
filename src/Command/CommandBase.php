@@ -678,10 +678,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $this->project = $this->getCurrentProject();
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
-            $this->debug('No project specified: offering a choice...');
-            $projectId = $this->offerProjectChoice($this->api()->getProjects());
+            $projects = $this->api()->getProjects();
+            if (count($projects) > 0 && count($projects) < 25) {
+                $this->debug('No project specified: offering a choice...');
+                $projectId = $this->offerProjectChoice($projects);
 
-            return $this->selectProject($projectId);
+                return $this->selectProject($projectId);
+            }
         }
         if (!$this->project) {
             throw new RootNotFoundException(
