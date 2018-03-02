@@ -23,7 +23,9 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('phar', null, InputOption::VALUE_REQUIRED, 'The path to a newly built Phar file')
             ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $defaultRepo)
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
-            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest');
+            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
+            ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', 'master')
+            ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'Specify the last version number');
     }
 
     public function isEnabled()
@@ -47,13 +49,15 @@ class SelfReleaseCommand extends CommandBase
         $git = $this->getService('git');
         $git->setDefaultRepositoryDir(CLI_ROOT);
 
-        if ($git->getCurrentBranch(CLI_ROOT, true) !== 'master') {
-            $this->stdErr->writeln('You must be on the master branch to make a release.');
+        $releaseBranch = $input->getOption('release-branch');
+        if ($git->getCurrentBranch(CLI_ROOT, true) !== $releaseBranch) {
+            $this->stdErr->writeln('You must be on the ' . $releaseBranch . ' branch to make a release.');
 
             return 1;
         }
 
-        if (strlen($git->execute(['diff', 'master...development'], CLI_ROOT)) && $questionHelper->confirm('Merge changes from development?')) {
+        $developmentDiffStat = $git->execute(['diff', '--numstat', $releaseBranch . '...development'], CLI_ROOT);
+        if (is_string($developmentDiffStat) && strlen(trim($developmentDiffStat)) && $questionHelper->confirm('Merge changes from development?')) {
             $git->execute(['merge', 'development'], CLI_ROOT, true);
         }
 
@@ -177,27 +181,31 @@ class SelfReleaseCommand extends CommandBase
                 throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
         }
 
-        $latest = $http->get($repoApiUrl . '/releases/latest', [
-            'headers' => [
-                'Authorization' => 'token ' . $gitHubToken,
-                'Accept' => 'application/vnd.github.v3+json',
-                'Content-Type' => 'application/json',
-            ],
-            'debug' => $output->isDebug(),
-        ])->json();
-        $lastTag = $latest['tag_name'];
-        $lastVersion = ltrim($lastTag, 'v');
+        if ($input->getOption('last-version')) {
+            $lastVersion = ltrim($input->getOption('last-version'), 'v');
+            $lastTag = 'v' . $lastVersion;
+        } else {
+            $latestRelease = $http->get($repoApiUrl . '/releases/latest', [
+                'headers' => [
+                    'Authorization' => 'token ' . $gitHubToken,
+                    'Accept' => 'application/vnd.github.v3+json',
+                    'Content-Type' => 'application/json',
+                ],
+                'debug' => $output->isDebug(),
+            ])->json();
+            $lastTag = $latestRelease['tag_name'];
+            $lastVersion = ltrim($lastTag, 'v');
+            $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
+        }
 
         $pharPublicFilename = $this->config()->get('application.executable') . '.phar';
-
-        $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
 
         $changelog = $this->getReleaseChangelog($lastVersion);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         if (!$questionHelper->confirm($questionText)) {
-            $this->stdErr->writeln('Update the file <comment>' . CLI_ROOT . '/release-changelog.md</comment> and re-run this command.');
+            $this->stdErr->writeln('Update or delete the file <comment>' . CLI_ROOT . '/release-changelog.md</comment> and re-run this command.');
 
             return 1;
         }
@@ -241,10 +249,10 @@ class SelfReleaseCommand extends CommandBase
         $this->stdErr->writeln('Creating tag <info>' . $tagName . '</info>');
         $git->execute(['tag', '--force', $tagName], CLI_ROOT, true);
 
-        if (!$questionHelper->confirm('Push changes and tag to <comment>master</comment> branch on ' . $repoGitUrl . '?')) {
+        if (!$questionHelper->confirm('Push changes and tag to <comment>' . $releaseBranch . '</comment> branch on ' . $repoGitUrl . '?')) {
             return 1;
         }
-        $shell->execute(['git', 'push', $repoGitUrl, 'HEAD:master'], CLI_ROOT, true);
+        $shell->execute(['git', 'push', $repoGitUrl, 'HEAD:' . $releaseBranch], CLI_ROOT, true);
         $shell->execute(['git', 'push', '--force', $repoGitUrl, $tagName], CLI_ROOT, true);
 
         $lastReleasePublicUrl = 'https://github.com/' . $repoUrl . '/releases/' . $lastTag;
