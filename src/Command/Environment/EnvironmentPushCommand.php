@@ -145,7 +145,7 @@ class EnvironmentPushCommand extends CommandBase
         $ssh = $this->getService('ssh');
         $extraSshOptions = [];
         $env = [];
-        if ($this->shouldWait($input)) {
+        if (!$this->shouldWait($input)) {
             $extraSshOptions['SendEnv'] = 'PLATFORMSH_PUSH_NO_WAIT';
             $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }
