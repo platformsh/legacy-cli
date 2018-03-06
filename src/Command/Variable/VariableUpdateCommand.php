@@ -62,6 +62,8 @@ class VariableUpdateCommand extends VariableCommandBase
         $result = $variable->update($values);
         $this->stdErr->writeln("Variable <info>{$variable->name}</info> updated");
 
+        $this->displayVariable($variable);
+
         $success = true;
         if (!$result->countActivities()) {
             $this->redeployWarning();

@@ -73,28 +73,15 @@ class VariableGetCommand extends VariableCommandBase
         $properties = $variable->getProperties();
         $properties['level'] = $this->getVariableLevel($variable);
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         if ($property = $input->getOption('property')) {
+            /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+            $formatter = $this->getService('property_formatter');
             $formatter->displayData($output, $properties, $property);
 
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
-        $headings = [];
-        $values = [];
-        foreach ($properties as $key => $value) {
-            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            if ($key === 'value') {
-                $value = wordwrap($value, 80, "\n", true);
-            }
-            $values[] = $formatter->format($value, $key);
-        }
-        $table->renderSimple($values, $headings);
+        $this->displayVariable($variable);
 
         return 0;
     }

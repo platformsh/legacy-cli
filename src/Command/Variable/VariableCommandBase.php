@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
@@ -30,6 +31,28 @@ abstract class VariableCommandBase extends CommandBase
         }
 
         return $this->getSelectedProject()->getVariable($name);
+    }
+
+    protected function displayVariable(ApiResource $variable)
+    {
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
+
+        $properties = $variable->getProperties();
+        $properties['level'] = $this->getVariableLevel($variable);
+
+        $headings = [];
+        $values = [];
+        foreach ($properties as $key => $value) {
+            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
+            if ($key === 'value') {
+                $value = wordwrap($value, 80, "\n", true);
+            }
+            $values[] = $formatter->format($value, $key);
+        }
+        $table->renderSimple($values, $headings);
     }
 
     /**

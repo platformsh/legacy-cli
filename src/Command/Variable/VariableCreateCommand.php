@@ -98,6 +98,8 @@ class VariableCreateCommand extends VariableCommandBase
                 throw new \RuntimeException('Invalid level: ' . $level);
         }
 
+        $this->displayVariable($result->getEntity());
+
         $success = true;
         if (!$result->countActivities()) {
             $this->redeployWarning();
