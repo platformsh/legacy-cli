@@ -17,7 +17,7 @@ class VariableGetCommand extends VariableCommandBase
     {
         $this
             ->setName('variable:get')
-            ->setAliases(['variables', 'vget'])
+            ->setAliases(['variables'])
             ->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only')
             ->setDescription('View a variable');
@@ -25,7 +25,6 @@ class VariableGetCommand extends VariableCommandBase
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('View the variable "example"', 'example');
-        $this->setHiddenAliases(['variable:list']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -185,6 +185,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Variable\VariableDisableCommand();
         $commands[] = new Command\Variable\VariableEnableCommand();
         $commands[] = new Command\Variable\VariableGetCommand();
+        $commands[] = new Command\Variable\VariableListCommand();
         $commands[] = new Command\Variable\VariableSetCommand();
         $commands[] = new Command\Variable\VariableUpdateCommand();
         $commands[] = new Command\WelcomeCommand();
