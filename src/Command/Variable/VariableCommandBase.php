@@ -129,6 +129,14 @@ abstract class VariableCommandBase extends CommandBase
                 'allowOther' => true,
                 'default' => 'none',
             ]),
+            'is_enabled' => new BooleanField('Enabled', [
+                'optionName' => 'enabled',
+                'conditions' => [
+                    'level' => 'environment',
+                ],
+                'description' => 'Whether the variable should be enabled',
+                'questionLine' => 'Should the variable be enabled?',
+            ]),
             'is_inheritable' => new BooleanField('Inheritable', [
                 'conditions' => [
                     'level' => 'environment',
