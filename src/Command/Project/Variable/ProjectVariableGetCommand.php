@@ -10,8 +10,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * @deprecated Use variable:get and variable:list instead
+ */
 class ProjectVariableGetCommand extends CommandBase
 {
+    protected $hiddenInList = true;
+
     /**
      * {@inheritdoc}
      */
