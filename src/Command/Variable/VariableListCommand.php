@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
@@ -25,12 +26,23 @@ class VariableListCommand extends VariableCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, true);
+        $this->validateInput($input, !$input->getOption('environment'));
 
         $variables = $this->getSelectedProject()->getVariables();
 
         if ($this->hasSelectedEnvironment()) {
             $variables = array_merge($variables, $this->getSelectedEnvironment()->getVariables());
+        } elseif (!$variables) {
+            $this->stdErr->writeln('No variables found.');
+            $this->stdErr->writeln('Use the --environment option to show environment-level variables.');
+
+            return 1;
+        }
+
+        if (!$variables) {
+            $this->stdErr->writeln('No variables found.');
+
+            return 1;
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */
@@ -39,17 +51,10 @@ class VariableListCommand extends VariableCommandBase
         $rows = [];
 
         foreach ($variables as $variable) {
-            if ($variable instanceof EnvironmentLevelVariable) {
-                $level = 'environment (' . $variable->environment . ')';
-            } elseif ($variable instanceof ProjectLevelVariable) {
-                $level = 'project';
-            } else {
-                $level = 'unknown';
-            }
             $row = [];
             $row[] = $variable->name;
-            $row[] = $level;
-            $row[] = $variable->value;
+            $row[] = new AdaptiveTableCell($this->getVariableLevel($variable), ['wrap' => false]);
+            $row[] = wordwrap($variable->value, 40, "\n", true);
             $rows[] = $row;
         }
 

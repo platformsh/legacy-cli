@@ -3,6 +3,9 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Model\ProjectLevelVariable;
+use Platformsh\Client\Model\Resource as ApiResource;
+use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -27,6 +30,21 @@ abstract class VariableCommandBase extends CommandBase
         }
 
         return $this->getSelectedProject()->getVariable($name);
+    }
+
+    /**
+     * @param ApiResource $variable
+     *
+     * @return string
+     */
+    protected function getVariableLevel(ApiResource $variable)
+    {
+        if ($variable instanceof EnvironmentLevelVariable) {
+            return 'environment';
+        } elseif ($variable instanceof ProjectLevelVariable) {
+            return 'project';
+        }
+        throw new \RuntimeException('Variable level not found');
     }
 
     /**
