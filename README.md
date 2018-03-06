@@ -138,7 +138,6 @@ project
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
   project:set-remote                        Set the remote project for the current Git repository
-  project:variable:delete                   Delete a variable from a project
 repo
   repo:cat                                  Read a file in the project repository
   repo:ls                                   List files in the project repository

@@ -10,29 +10,85 @@ use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 
 abstract class VariableCommandBase extends CommandBase
 {
+    const LEVEL_PROJECT = 'project';
+    const LEVEL_ENVIRONMENT = 'environment';
+
     /**
-     * Get an existing variable by name.
+     * Add the --level option.
+     */
+    protected function addLevelOption()
+    {
+        $this->addOption('level', null, InputOption::VALUE_REQUIRED, "The variable level ('" . self::LEVEL_PROJECT . "' or '" . self::LEVEL_ENVIRONMENT . "')");
+    }
+
+    /**
+     * Get the requested variable level.
      *
-     * @param string $name
+     * @param InputInterface $input
+     *
+     * @return string|null
+     */
+    protected function getRequestedLevel(InputInterface $input)
+    {
+        $str = $input->getOption('level');
+        if (empty($str)) {
+            return null;
+        }
+        foreach ([self::LEVEL_PROJECT, self::LEVEL_ENVIRONMENT] as $validLevel) {
+            if (stripos($validLevel, $str) === 0) {
+                return $validLevel;
+            }
+        }
+        throw new InvalidArgumentException('Invalid level: ' . $str);
+    }
+
+    /**
+     * Finds an existing variable by name.
+     *
+     * Prints error messages to $this->stdErr.
+     *
+     * @param string      $name
+     * @param string|null $level
      *
      * @return \Platformsh\Client\Model\ProjectLevelVariable|\Platformsh\Client\Model\Variable|false
      */
-    protected function getExistingVariable($name)
+    protected function getExistingVariable($name, $level = null)
     {
-        // @todo allow specifying the level
-        if ($this->hasSelectedEnvironment()) {
+        if ($level === self::LEVEL_ENVIRONMENT || ($this->hasSelectedEnvironment() && $level === null)) {
             $variable = $this->getSelectedEnvironment()->getVariable($name);
+            if ($variable !== false) {
+                if ($level === null && $this->getSelectedProject()->getVariable($name)) {
+                    $this->stdErr->writeln('Variable found at both project and environment levels: <error>' . $name . '</error>');
+                    $this->stdErr->writeln("To select a variable, use the --level option ('" . self::LEVEL_PROJECT . "' or '" . self::LEVEL_ENVIRONMENT . "').");
+
+                    return false;
+                }
+
+                return $variable;
+            }
+        }
+        if ($level !== self::LEVEL_ENVIRONMENT) {
+            $variable = $this->getSelectedProject()->getVariable($name);
             if ($variable !== false) {
                 return $variable;
             }
         }
+        $this->stdErr->writeln('Variable not found: <error>' . $name . '</error>');
 
-        return $this->getSelectedProject()->getVariable($name);
+        return false;
     }
 
+    /**
+     * Display a variable to stdout.
+     *
+     * @param \Platformsh\Client\Model\Resource $variable
+     */
     protected function displayVariable(ApiResource $variable)
     {
         /** @var \Platformsh\Cli\Service\Table $table */
@@ -63,9 +119,9 @@ abstract class VariableCommandBase extends CommandBase
     protected function getVariableLevel(ApiResource $variable)
     {
         if ($variable instanceof EnvironmentLevelVariable) {
-            return 'environment';
+            return self::LEVEL_ENVIRONMENT;
         } elseif ($variable instanceof ProjectLevelVariable) {
-            return 'project';
+            return self::LEVEL_PROJECT;
         }
         throw new \RuntimeException('Variable level not found');
     }
@@ -79,13 +135,13 @@ abstract class VariableCommandBase extends CommandBase
             'level' => new OptionsField('Level', [
                 'description' => 'The level at which to set the variable',
                 'options' => [
-                    'project' => 'Project-wide',
-                    'environment' => 'Environment-specific',
+                    self::LEVEL_PROJECT => 'Project-wide',
+                    self::LEVEL_ENVIRONMENT => 'Environment-specific',
                 ],
             ]),
             'environment' => new OptionsField('Environment', [
                 'conditions' => [
-                    'level' => 'environment',
+                    'level' => self::LEVEL_ENVIRONMENT,
                 ],
                 'optionName' => false,
                 'questionLine' => 'On what environment should the variable be set?',
@@ -109,7 +165,7 @@ abstract class VariableCommandBase extends CommandBase
             ]),
             'is_sensitive' => new BooleanField('Sensitive', [
                 'conditions' => [
-                    'level' => 'environment',
+                    'level' => self::LEVEL_ENVIRONMENT,
                 ],
                 'description' => 'Whether the variable is sensitive',
                 'questionLine' => 'Is the value sensitive?',
@@ -132,14 +188,14 @@ abstract class VariableCommandBase extends CommandBase
             'is_enabled' => new BooleanField('Enabled', [
                 'optionName' => 'enabled',
                 'conditions' => [
-                    'level' => 'environment',
+                    'level' => self::LEVEL_ENVIRONMENT,
                 ],
                 'description' => 'Whether the variable should be enabled',
                 'questionLine' => 'Should the variable be enabled?',
             ]),
             'is_inheritable' => new BooleanField('Inheritable', [
                 'conditions' => [
-                    'level' => 'environment',
+                    'level' => self::LEVEL_ENVIRONMENT,
                 ],
                 'description' => 'Whether the variable is inheritable by child environments',
                 'questionLine' => 'Is the variable inheritable (by child environments)?',
@@ -147,7 +203,7 @@ abstract class VariableCommandBase extends CommandBase
             'visible_build' => new BooleanField('Visible at build time', [
                 'optionName' => 'visible-build',
                 'conditions' => [
-                    'level' => 'project',
+                    'level' => self::LEVEL_PROJECT,
                 ],
                 'description' => 'Whether the variable should be visible at build time',
                 'questionLine' => 'Should the variable be available at build time?',
@@ -155,7 +211,7 @@ abstract class VariableCommandBase extends CommandBase
             'visible_runtime' => new BooleanField('Visible at runtime', [
                 'optionName' => 'visible-runtime',
                 'conditions' => [
-                    'level' => 'project',
+                    'level' => self::LEVEL_PROJECT,
                 ],
                 'description' => 'Whether the variable should be visible at runtime',
                 'questionLine' => 'Should the variable be available at runtime?',

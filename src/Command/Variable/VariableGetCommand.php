@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
-use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
@@ -23,6 +22,7 @@ class VariableGetCommand extends VariableCommandBase
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property')
             ->setDescription('View a variable');
+        $this->addLevelOption();
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()
@@ -35,23 +35,19 @@ class VariableGetCommand extends VariableCommandBase
     {
         $this->validateInput($input, true);
         $this->warnAboutDeprecatedOptions(['pipe']);
+        $level = $this->getRequestedLevel($input);
 
         $name = $input->getArgument('name');
         if (!$name) {
-            $executable = $this->config()->get('application.executable');
-            $this->stdErr->writeln('To list variables, use: <comment>' . $executable . ' variable:list</comment>');
-
             return $this->runOtherCommand('variable:list', array_filter([
-                '--project' => $input->getOption('project'),
-                '--environment' => $input->getOption('environment'),
+                '--project' => $this->getSelectedProject()->id,
+                '--environment' => $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null,
                 '--format' => $input->getOption('format'),
             ]));
         }
 
-        $variable = $this->getExistingVariable($name);
+        $variable = $this->getExistingVariable($name, $level);
         if (!$variable) {
-            $this->stdErr->writeln("Variable not found: <error>$name</error>");
-
             return 1;
         }
 

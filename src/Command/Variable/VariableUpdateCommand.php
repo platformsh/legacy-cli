@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,6 +22,7 @@ class VariableUpdateCommand extends VariableCommandBase
             ->setName('variable:update')
             ->setDescription('Update a variable')
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name');
+        $this->addLevelOption();
         $fields = $this->getFields();
         unset($fields['name'], $fields['prefix'], $fields['environment'], $fields['level']);
         $this->form = Form::fromArray($fields);
@@ -35,10 +37,8 @@ class VariableUpdateCommand extends VariableCommandBase
         $this->validateInput($input, true);
 
         $name = $input->getArgument('name');
-        $variable = $this->getExistingVariable($name);
+        $variable = $this->getExistingVariable($name, $this->getRequestedLevel($input));
         if (!$variable) {
-            $this->stdErr->writeln(sprintf('Variable not found: <error>%s</error>', $name));
-
             return 1;
         }
 
@@ -50,6 +50,14 @@ class VariableUpdateCommand extends VariableCommandBase
                 if ($newValue !== null && $newValue !== $value) {
                     $values[$property] = $newValue;
                 }
+            }
+        }
+
+        // Handle sensitive variables' value (it isn't exposed in the API).
+        if ($variable instanceof EnvironmentLevelVariable && !$variable->hasProperty('value') && $variable->is_sensitive) {
+            $newValue = $fields['value']->getValueFromInput($input);
+            if ($newValue !== null) {
+                $values['value'] = $newValue;
             }
         }
 
