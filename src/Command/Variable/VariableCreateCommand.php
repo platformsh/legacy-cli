@@ -4,11 +4,15 @@ namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
+use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableCreateCommand extends VariableCommandBase
 {
+    /** @var Form */
+    private $form;
+
     /**
      * {@inheritdoc}
      */
@@ -17,7 +21,8 @@ class VariableCreateCommand extends VariableCommandBase
         $this
             ->setName('variable:create')
             ->setDescription('Create a variable');
-        $this->getForm()->configureInputDefinition($this->getDefinition());
+        $this->form = Form::fromArray($this->getFields());
+        $this->form->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()
             ->addEnvironmentOption()
             ->addWaitOptions();
@@ -30,8 +35,7 @@ class VariableCreateCommand extends VariableCommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $form = $this->getForm();
-        $values = $form->resolveOptions($input, $output, $questionHelper);
+        $values = $this->form->resolveOptions($input, $output, $questionHelper);
 
         if (isset($values['prefix']) && isset($values['value'])) {
             if ($values['prefix'] !== 'none') {

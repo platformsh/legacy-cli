@@ -186,6 +186,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Variable\VariableEnableCommand();
         $commands[] = new Command\Variable\VariableGetCommand();
         $commands[] = new Command\Variable\VariableSetCommand();
+        $commands[] = new Command\Variable\VariableUpdateCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
         $commands[] = new Command\Worker\WorkerListCommand();

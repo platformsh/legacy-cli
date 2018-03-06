@@ -6,24 +6,33 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
-use Platformsh\ConsoleForm\Form;
 
 abstract class VariableCommandBase extends CommandBase
 {
-    private $form;
-
     /**
-     * @return Form
+     * Get an existing variable by name.
+     *
+     * @param string $name
+     *
+     * @return \Platformsh\Client\Model\ProjectLevelVariable|\Platformsh\Client\Model\Variable|false
      */
-    protected function getForm()
+    protected function getExistingVariable($name)
     {
-        return $this->form ?: Form::fromArray($this->getFields());
+        // @todo allow specifying the level
+        if ($this->hasSelectedEnvironment()) {
+            $variable = $this->getSelectedEnvironment()->getVariable($name);
+            if ($variable !== false) {
+                return $variable;
+            }
+        }
+
+        return $this->getSelectedProject()->getVariable($name);
     }
 
     /**
      * @return Field[]
      */
-    private function getFields()
+    protected function getFields()
     {
         return [
             'level' => new OptionsField('Level', [
