@@ -36,27 +36,13 @@ class ProjectVariableGetCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        if ($name = $input->getArgument('name')) {
-            $variable = $this->getSelectedProject()
-                             ->getVariable($name);
-            if (!$variable) {
-                $this->stdErr->writeln("Variable not found: <error>$name</error>");
-
-                return 1;
-            }
-
-            if ($input->getOption('pipe')) {
-                $output->writeln($variable->value);
-            } else {
-                $output->writeln(sprintf('<info>%s</info>: %s', $variable->name, $variable->value));
-            }
-
-            return 0;
-        }
-
-        return $this->runOtherCommand('variable:list', [
+        return $this->runOtherCommand('variable:get', [
+            'name' => $input->getArgument('name'),
             '--level' => 'project',
             '--project' => $this->getSelectedProject()->id,
-        ]);
+            ] + array_filter([
+                '--format' => $input->getOption('format'),
+                '--pipe' => $input->getOption('pipe'),
+            ]));
     }
 }

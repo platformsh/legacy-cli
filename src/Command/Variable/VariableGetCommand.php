@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
-use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Symfony\Component\Console\Input\InputArgument;
@@ -24,7 +23,6 @@ class VariableGetCommand extends VariableCommandBase
             ->setDescription('View a variable');
         $this->addLevelOption();
         Table::configureInput($this->getDefinition());
-        PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addOption('pipe', null, InputOption::VALUE_NONE, '[Deprecated option] Output the variable value only');
@@ -40,6 +38,7 @@ class VariableGetCommand extends VariableCommandBase
         $name = $input->getArgument('name');
         if (!$name) {
             return $this->runOtherCommand('variable:list', array_filter([
+                '--level' => $level,
                 '--project' => $this->getSelectedProject()->id,
                 '--environment' => $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null,
                 '--format' => $input->getOption('format'),

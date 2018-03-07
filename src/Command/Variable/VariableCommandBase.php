@@ -131,91 +131,118 @@ abstract class VariableCommandBase extends CommandBase
      */
     protected function getFields()
     {
-        return [
-            'level' => new OptionsField('Level', [
-                'description' => 'The level at which to set the variable',
-                'options' => [
-                    self::LEVEL_PROJECT => 'Project-wide',
-                    self::LEVEL_ENVIRONMENT => 'Environment-specific',
-                ],
-            ]),
-            'environment' => new OptionsField('Environment', [
-                'conditions' => [
-                    'level' => self::LEVEL_ENVIRONMENT,
-                ],
-                'optionName' => false,
-                'questionLine' => 'On what environment should the variable be set?',
-                'optionsCallback' => function () {
-                    return array_keys($this->api()->getEnvironments($this->getSelectedProject()));
+        $fields = [];
+
+        $fields['level'] = new OptionsField('Level', [
+            'description' => 'The level at which to set the variable',
+            'options' => [
+                self::LEVEL_PROJECT => 'Project-wide',
+                self::LEVEL_ENVIRONMENT => 'Environment-specific',
+            ],
+        ]);
+        $fields['environment'] = new OptionsField('Environment', [
+            'conditions' => [
+                'level' => self::LEVEL_ENVIRONMENT,
+            ],
+            'optionName' => false,
+            'questionLine' => 'On what environment should the variable be set?',
+            'optionsCallback' => function () {
+                return array_keys($this->api()->getEnvironments($this->getSelectedProject()));
+            },
+            'asChoice' => false,
+            'includeAsOption' => false,
+            'default' => $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null,
+        ]);
+        $fields['name'] = new Field('Name', [
+            'description' => 'The variable name',
+            'validators' => [
+                function ($value) {
+                    return strlen($value) > 256
+                        ? 'The variable name exceeds the maximum length, 256 characters.'
+                        : true;
                 },
-                'asChoice' => false,
-                'includeAsOption' => false,
-                'default' => $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null,
-            ]),
-            'name' => new Field('Name', [
-                'description' => 'The variable name',
-            ]),
-            'value' => new Field('Value', [
-                'description' => "The variable's value (a string, or JSON)",
-            ]),
-            'is_json' => new BooleanField('JSON', [
-                'description' => 'Whether the variable is JSON-formatted',
-                'questionLine' => 'Is the value JSON-formatted',
-                'default' => false,
-            ]),
-            'is_sensitive' => new BooleanField('Sensitive', [
-                'conditions' => [
-                    'level' => self::LEVEL_ENVIRONMENT,
-                ],
-                'description' => 'Whether the variable is sensitive',
-                'questionLine' => 'Is the value sensitive?',
-                'default' => false,
-            ]),
-            'prefix' => new OptionsField('Prefix', [
-                'description' => "The variable name's prefix",
-                'conditions' => [
-                    'name' => function ($name) {
-                        return strpos($name, ':') === false;
-                    }
-                ],
-                'options' => [
-                    'none' => 'No prefix (wrapped in ' . $this->config()->get('service.env_prefix') . 'VARIABLES)',
-                    'env' => 'env: Exposed directly in the environment',
-                ],
-                'allowOther' => true,
-                'default' => 'none',
-            ]),
-            'is_enabled' => new BooleanField('Enabled', [
-                'optionName' => 'enabled',
-                'conditions' => [
-                    'level' => self::LEVEL_ENVIRONMENT,
-                ],
-                'description' => 'Whether the variable should be enabled',
-                'questionLine' => 'Should the variable be enabled?',
-            ]),
-            'is_inheritable' => new BooleanField('Inheritable', [
-                'conditions' => [
-                    'level' => self::LEVEL_ENVIRONMENT,
-                ],
-                'description' => 'Whether the variable is inheritable by child environments',
-                'questionLine' => 'Is the variable inheritable (by child environments)?',
-            ]),
-            'visible_build' => new BooleanField('Visible at build time', [
-                'optionName' => 'visible-build',
-                'conditions' => [
-                    'level' => self::LEVEL_PROJECT,
-                ],
-                'description' => 'Whether the variable should be visible at build time',
-                'questionLine' => 'Should the variable be available at build time?',
-            ]),
-            'visible_runtime' => new BooleanField('Visible at runtime', [
-                'optionName' => 'visible-runtime',
-                'conditions' => [
-                    'level' => self::LEVEL_PROJECT,
-                ],
-                'description' => 'Whether the variable should be visible at runtime',
-                'questionLine' => 'Should the variable be available at runtime?',
-            ]),
+                function ($value) {
+                    return strpos($value, ' ') !== false
+                        ? 'The variable name must not contain a space.'
+                        : true;
+                },
+            ],
+        ]);
+        $fields['value'] = new Field('Value', [
+            'description' => "The variable's value",
+        ]);
+        $fields['is_json'] = new BooleanField('JSON', [
+            'description' => 'Whether the variable is JSON-formatted',
+            'questionLine' => 'Is the value JSON-formatted',
+            'default' => false,
+        ]);
+        $fields['is_sensitive'] = new BooleanField('Sensitive', [
+            'conditions' => [
+                'level' => self::LEVEL_ENVIRONMENT,
+            ],
+            'description' => 'Whether the variable is sensitive',
+            'questionLine' => 'Is the value sensitive?',
+            'default' => false,
+        ]);
+        $fields['prefix'] = new OptionsField('Prefix', [
+            'description' => "The variable name's prefix",
+            'conditions' => [
+                'name' => function ($name) {
+                    return strpos($name, ':') === false;
+                }
+            ],
+            'options' => $this->getPrefixOptions('NAME'),
+            'optionsCallback' => function (array $previousValues) {
+                return $this->getPrefixOptions(isset($previousValues['name']) ? $previousValues['name'] : 'NAME');
+            },
+            'allowOther' => true,
+            'default' => 'none',
+        ]);
+        $fields['is_enabled'] = new BooleanField('Enabled', [
+            'optionName' => 'enabled',
+            'conditions' => [
+                'level' => self::LEVEL_ENVIRONMENT,
+            ],
+            'description' => 'Whether the variable should be enabled',
+            'questionLine' => 'Should the variable be enabled?',
+        ]);
+        $fields['is_inheritable'] = new BooleanField('Inheritable', [
+            'conditions' => [
+                'level' => self::LEVEL_ENVIRONMENT,
+            ],
+            'description' => 'Whether the variable is inheritable by child environments',
+            'questionLine' => 'Is the variable inheritable (by child environments)?',
+        ]);
+        $fields['visible_build'] = new BooleanField('Visible at build time', [
+            'optionName' => 'visible-build',
+            'conditions' => [
+                'level' => self::LEVEL_PROJECT,
+            ],
+            'description' => 'Whether the variable should be visible at build time',
+            'questionLine' => 'Should the variable be available at build time?',
+        ]);
+        $fields['visible_runtime'] = new BooleanField('Visible at runtime', [
+            'optionName' => 'visible-runtime',
+            'conditions' => [
+                'level' => self::LEVEL_PROJECT,
+            ],
+            'description' => 'Whether the variable should be visible at runtime',
+            'questionLine' => 'Should the variable be available at runtime?',
+        ]);
+
+        return $fields;
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return array
+     */
+    private function getPrefixOptions($name)
+    {
+        return [
+            'none' => 'No prefix: The variable will be exposed as part of the <comment>$' . $this->config()->get('service.env_prefix') . 'VARIABLES</comment> object.',
+            'env' => 'env: The variable will be exposed directly in the server environment, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
         ];
     }
 }

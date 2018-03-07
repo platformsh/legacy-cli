@@ -32,10 +32,13 @@ class VariableEnableCommand extends CommandBase
         $this->validateInput($input);
 
         return $this->runOtherCommand('variable:update', [
-            'name' => $input->getArgument('name'),
-            '--enabled' => 'true',
-            '--project' => $this->getSelectedProject()->id,
-            '--environment' => $this->getSelectedEnvironment()->id,
-        ]);
+                'name' => $input->getArgument('name'),
+                '--enabled' => 'true',
+                '--project' => $this->getSelectedProject()->id,
+                '--environment' => $this->getSelectedEnvironment()->id,
+            ] + array_filter([
+                '--wait' => $input->getOption('wait'),
+                '--no-wait' => $input->getOption('no-wait'),
+            ]));
     }
 }

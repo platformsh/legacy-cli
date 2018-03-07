@@ -57,7 +57,7 @@ class VariableDeleteCommand extends VariableCommandBase
             case 'environment':
                 $environmentId = $this->getSelectedEnvironment()->id;
                 $confirm = $questionHelper->confirm(
-                    "Delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
+                    "Are you sure you want to delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
                     false
                 );
                 if (!$confirm) {
@@ -67,7 +67,7 @@ class VariableDeleteCommand extends VariableCommandBase
 
             case 'project':
                 $confirm = $questionHelper->confirm(
-                    "Delete the variable <info>$variableName</info> from the project " . $this->api()->getProjectLabel($this->getSelectedProject()) . "?",
+                    "Are you sure you want to delete the variable <info>$variableName</info> from the project " . $this->api()->getProjectLabel($this->getSelectedProject()) . "?",
                     false
                 );
                 if (!$confirm) {
