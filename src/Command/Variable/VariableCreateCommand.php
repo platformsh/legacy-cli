@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Variable;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -20,7 +21,8 @@ class VariableCreateCommand extends VariableCommandBase
     {
         $this
             ->setName('variable:create')
-            ->setDescription('Create a variable');
+            ->setDescription('Create a variable')
+            ->addArgument('name', InputArgument::OPTIONAL, 'The variable name');
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()
@@ -31,6 +33,15 @@ class VariableCreateCommand extends VariableCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input, true);
+
+        if ($input->getArgument('name')) {
+            if ($input->getOption('name')) {
+                $this->stdErr->writeln('You cannot use both the <error>name</error> argument and <error>--name</error> option.');
+
+                return 1;
+            }
+            $input->setOption('name', $input->getArgument('name'));
+        }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
