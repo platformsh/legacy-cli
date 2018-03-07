@@ -27,7 +27,7 @@ class VariableDeleteCommand extends VariableCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $level = $this->getRequestedLevel($input);
-        $this->validateInput($input, $level == 'project');
+        $this->validateInput($input, $level === self::LEVEL_PROJECT);
 
         $variableName = $input->getArgument('name');
 

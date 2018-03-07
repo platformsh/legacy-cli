@@ -31,9 +31,9 @@ class VariableGetCommand extends VariableCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, true);
         $this->warnAboutDeprecatedOptions(['pipe']);
         $level = $this->getRequestedLevel($input);
+        $this->validateInput($input, $level === self::LEVEL_PROJECT);
 
         $name = $input->getArgument('name');
         if (!$name) {

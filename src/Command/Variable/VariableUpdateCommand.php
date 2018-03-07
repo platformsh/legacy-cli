@@ -34,10 +34,11 @@ class VariableUpdateCommand extends VariableCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, true);
+        $level = $this->getRequestedLevel($input);
+        $this->validateInput($input, $level === self::LEVEL_PROJECT);
 
         $name = $input->getArgument('name');
-        $variable = $this->getExistingVariable($name, $this->getRequestedLevel($input));
+        $variable = $this->getExistingVariable($name, $level);
         if (!$variable) {
             return 1;
         }
