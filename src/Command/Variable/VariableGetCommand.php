@@ -78,6 +78,24 @@ class VariableGetCommand extends VariableCommandBase
 
         $this->displayVariable($variable);
 
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+
+        if (!$table->formatIsMachineReadable()) {
+            $executable = $this->config()->get('application.executable');
+            $escapedName = $this->escapeShellArg($name);
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To list other variables, run: <info>%s variables</info>',
+                $executable
+            ));
+            $this->stdErr->writeln(sprintf(
+                'To update the variable, use: <info>%s variable:update %s</info>',
+                $executable,
+                $escapedName
+            ));
+        }
+
         return 0;
     }
 }

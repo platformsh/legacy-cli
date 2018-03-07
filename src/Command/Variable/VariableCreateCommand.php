@@ -43,6 +43,26 @@ class VariableCreateCommand extends VariableCommandBase
             $input->setOption('name', $input->getArgument('name'));
         }
 
+        if (($name = $input->getOption('name')) && $this->getExistingVariable($name, $input->getOption('level'))) {
+            $this->stdErr->writeln('The variable already exists: <error>' . $name . '</error>');
+
+            $executable = $this->config()->get('application.executable');
+            $escapedName = $this->escapeShellArg($name);
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To view the variable, use: <comment>%s variable:get %s</comment>',
+                $executable,
+                $escapedName
+            ));
+            $this->stdErr->writeln(sprintf(
+                'To update the variable, use: <comment>%s variable:update %s</comment>',
+                $executable,
+                $escapedName
+            ));
+
+            return 1;
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
@@ -65,31 +85,29 @@ class VariableCreateCommand extends VariableCommandBase
         $level = $values['level'];
         unset($values['level']);
 
-        $id = $values['name'];
-
         switch ($level) {
             case 'environment':
                 $environment = $this->getSelectedEnvironment();
-                if ($environment->getVariable($id)) {
+                if ($environment->getVariable($values['name'])) {
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the environment <error>%s</error>',
-                        $id,
+                        $values['name'],
                         $environment->id
                     ));
 
                     return 1;
                 }
                 $this->stdErr->writeln(sprintf(
-                    'Creating variable <info>%s</info> on the environment <info>%s</info>', $id, $environment->id));
+                    'Creating variable <info>%s</info> on the environment <info>%s</info>', $values['name'], $environment->id));
                 $result = Variable::create($values, $environment->getLink('#manage-variables'), $this->api()->getHttpClient());
                 break;
 
             case 'project':
                 $project = $this->getSelectedProject();
-                if ($project->getVariable($id)) {
+                if ($project->getVariable($values['name'])) {
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the project %s',
-                        $id,
+                        $values['name'],
                         $this->api()->getProjectLabel($project, 'error')
                     ));
 
@@ -97,7 +115,7 @@ class VariableCreateCommand extends VariableCommandBase
                 }
                 $this->stdErr->writeln(sprintf(
                     'Creating variable <info>%s</info> on the project %s',
-                    $id,
+                    $values['name'],
                     $this->api()->getProjectLabel($project, 'info')
                 ));
 

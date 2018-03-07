@@ -88,6 +88,27 @@ class VariableListCommand extends VariableCommandBase
 
         $table->render($rows, ['Name', 'Level', 'Value']);
 
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $executable = $this->config()->get('application.executable');
+            $this->stdErr->writeln(sprintf(
+                'To view variable details, run: <info>%s variable:get [name]</info>',
+                $executable
+            ));
+            $this->stdErr->writeln(sprintf(
+                'To create a new variable, run: <info>%s variable:create</info>',
+                $executable
+            ));
+            $this->stdErr->writeln(sprintf(
+                'To update a variable, run: <info>%s variable:update [name]</info>',
+                $executable
+            ));
+            $this->stdErr->writeln(sprintf(
+                'To delete a variable, run: <info>%s variable:delete [name]</info>',
+                $executable
+            ));
+        }
+
         return 0;
     }
 }

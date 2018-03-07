@@ -11,13 +11,25 @@ use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\NullOutput;
 
 abstract class VariableCommandBase extends CommandBase
 {
     const LEVEL_PROJECT = 'project';
     const LEVEL_ENVIRONMENT = 'environment';
+
+    /**
+     * @param string $str
+     *
+     * @return string
+     */
+    protected function escapeShellArg($str)
+    {
+        return (new ArgvInput(['example']))->escapeToken($str);
+    }
 
     /**
      * Add the --level option.
@@ -51,21 +63,23 @@ abstract class VariableCommandBase extends CommandBase
     /**
      * Finds an existing variable by name.
      *
-     * Prints error messages to $this->stdErr.
-     *
      * @param string      $name
      * @param string|null $level
+     * @param bool        $messages Whether to print error messages to
+     *                              $this->stdErr if the variable is not found.
      *
      * @return \Platformsh\Client\Model\ProjectLevelVariable|\Platformsh\Client\Model\Variable|false
      */
-    protected function getExistingVariable($name, $level = null)
+    protected function getExistingVariable($name, $level = null, $messages = true)
     {
+        $output = $messages ? $this->stdErr : new NullOutput();
+
         if ($level === self::LEVEL_ENVIRONMENT || ($this->hasSelectedEnvironment() && $level === null)) {
             $variable = $this->getSelectedEnvironment()->getVariable($name);
             if ($variable !== false) {
                 if ($level === null && $this->getSelectedProject()->getVariable($name)) {
-                    $this->stdErr->writeln('Variable found at both project and environment levels: <error>' . $name . '</error>');
-                    $this->stdErr->writeln("To select a variable, use the --level option ('" . self::LEVEL_PROJECT . "' or '" . self::LEVEL_ENVIRONMENT . "').");
+                    $output->writeln('Variable found at both project and environment levels: <error>' . $name . '</error>');
+                    $output->writeln("To select a variable, use the --level option ('" . self::LEVEL_PROJECT . "' or '" . self::LEVEL_ENVIRONMENT . "').");
 
                     return false;
                 }
@@ -79,7 +93,7 @@ abstract class VariableCommandBase extends CommandBase
                 return $variable;
             }
         }
-        $this->stdErr->writeln('Variable not found: <error>' . $name . '</error>');
+        $output->writeln('Variable not found: <error>' . $name . '</error>');
 
         return false;
     }
