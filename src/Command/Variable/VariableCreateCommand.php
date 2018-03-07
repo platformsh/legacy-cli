@@ -48,9 +48,9 @@ class VariableCreateCommand extends VariableCommandBase
 
         $values = $this->form->resolveOptions($input, $output, $questionHelper);
 
-        if (isset($values['prefix']) && isset($values['value'])) {
+        if (isset($values['prefix']) && isset($values['name'])) {
             if ($values['prefix'] !== 'none') {
-                $values['value'] = rtrim($values['prefix'], ':') . ':' .  $values['value'];
+                $values['name'] = rtrim($values['prefix'], ':') . ':' .  $values['name'];
             }
             unset($values['prefix']);
         }
