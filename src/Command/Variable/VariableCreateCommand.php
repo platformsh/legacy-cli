@@ -101,7 +101,6 @@ class VariableCreateCommand extends VariableCommandBase
                     $this->api()->getProjectLabel($project, 'info')
                 ));
 
-                $this->stdErr->writeln('Creating project-level variable: <info>' . $values['name'] . '</info>');
                 $result = ProjectLevelVariable::create($values, $project->getUri() . '/variables', $this->api()->getHttpClient());
                 break;
 
