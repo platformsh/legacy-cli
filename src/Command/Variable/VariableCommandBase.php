@@ -255,8 +255,8 @@ abstract class VariableCommandBase extends CommandBase
     private function getPrefixOptions($name)
     {
         return [
-            'none' => 'No prefix: The variable will be exposed as part of the <comment>$' . $this->config()->get('service.env_prefix') . 'VARIABLES</comment> object.',
-            'env' => 'env: The variable will be exposed directly in the server environment, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
+            'none' => 'No prefix: The variable will be part of <comment>$' . $this->config()->get('service.env_prefix') . 'VARIABLES</comment>.',
+            'env' => 'env: The variable will be exposed directly, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
         ];
     }
 }
