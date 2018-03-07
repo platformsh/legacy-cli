@@ -36,7 +36,7 @@ abstract class VariableCommandBase extends CommandBase
      */
     protected function addLevelOption()
     {
-        $this->addOption('level', null, InputOption::VALUE_REQUIRED, "The variable level ('" . self::LEVEL_PROJECT . "' or '" . self::LEVEL_ENVIRONMENT . "')");
+        $this->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The variable level ('project', 'environment', 'p' or 'e')");
     }
 
     /**
