@@ -27,7 +27,7 @@ class PortUtilTest extends \PHPUnit_Framework_TestCase
     public function testGetPortDoesNotReturnUnsafePort()
     {
         $util = new PortUtil();
-        $this->assertNotEquals($util->getPort(22), 22);
+        $this->assertNotEquals($util->getPort(2049), 2049);
     }
 
     public function testGetPortReturnsValidPort()
@@ -36,7 +36,7 @@ class PortUtilTest extends \PHPUnit_Framework_TestCase
         $port = $util->getPort(rand(10000, 50000));
         $this->assertTrue($util->validatePort($port));
 
-        $this->setExpectedException('Exception', 'Failed to find a port');
+        $this->setExpectedException('Exception', 'Failed to find');
         $util->getPort(70000);
     }
 
@@ -44,6 +44,8 @@ class PortUtilTest extends \PHPUnit_Framework_TestCase
     {
         $util = new PortUtil();
         $this->assertFalse($util->validatePort(22));
+        $this->assertFalse($util->validatePort(0));
+        $this->assertFalse($util->validatePort(1000));
         $this->assertFalse($util->validatePort(70000));
         $this->assertFalse($util->validatePort(-1));
         $this->assertFalse($util->validatePort('banana'));
