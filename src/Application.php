@@ -180,11 +180,14 @@ class Application extends ParentApplication
         $commands[] = new Command\User\UserDeleteCommand();
         $commands[] = new Command\User\UserListCommand();
         $commands[] = new Command\User\UserRoleCommand();
+        $commands[] = new Command\Variable\VariableCreateCommand();
         $commands[] = new Command\Variable\VariableDeleteCommand();
         $commands[] = new Command\Variable\VariableDisableCommand();
         $commands[] = new Command\Variable\VariableEnableCommand();
         $commands[] = new Command\Variable\VariableGetCommand();
+        $commands[] = new Command\Variable\VariableListCommand();
         $commands[] = new Command\Variable\VariableSetCommand();
+        $commands[] = new Command\Variable\VariableUpdateCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
         $commands[] = new Command\Worker\WorkerListCommand();

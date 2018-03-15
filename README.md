@@ -138,9 +138,6 @@ project
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
   project:set-remote                        Set the remote project for the current Git repository
-  project:variable:delete                   Delete a variable from a project
-  project:variable:get (project-variables, pvget) View variable(s) for a project
-  project:variable:set (pvset)              Set a variable for a project
 repo
   repo:cat                                  Read a file in the project repository
   repo:ls                                   List files in the project repository
@@ -174,9 +171,11 @@ user
   user:get                                  View a user's role(s)
   user:list (users)                         List project users
 variable
+  variable:create                           Create a variable
   variable:delete                           Delete a variable from an environment
-  variable:get (variables, vget)            View variable(s) for an environment
-  variable:set (vset)                       Set a variable for an environment
+  variable:get (vget)                       View a variable
+  variable:list (variables)                 List variables
+  variable:update                           Update a variable
 worker
   worker:list (workers)                     Get a list of all deployed workers
 ```
