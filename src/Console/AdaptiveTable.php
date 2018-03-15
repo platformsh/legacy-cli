@@ -140,15 +140,20 @@ class AdaptiveTable extends Table
      */
     protected function wrapCell($contents, $width)
     {
+        $plain_contents = Helper::removeDecoration($this->outputCopy->getFormatter(), $contents);
+        if (Helper::strlen($plain_contents) <= $width) {
+            return $contents;
+        }
+
         // Account for left-indented cells.
-        if (strpos($contents, ' ') === 0) {
-            $trimmed = ltrim($contents, ' ');
-            $indent = strlen($contents) - strlen($trimmed);
+        if (strpos($plain_contents, ' ') === 0) {
+            $trimmed = ltrim($plain_contents, ' ');
+            $indent = Helper::strlen($plain_contents) - Helper::strlen($trimmed);
 
             return str_repeat(' ', $indent) . wordwrap($trimmed, $width - $indent, PHP_EOL, true);
         }
 
-        return wordwrap($contents, $width, PHP_EOL, true);
+        return wordwrap($plain_contents, $width, PHP_EOL, true);
     }
 
     /**
