@@ -405,7 +405,8 @@ class Api
      * @param bool $reset
      *
      * @return array
-     *   An array containing at least 'uuid', 'mail', and 'display_name'.
+     *   An array containing at least 'username', 'uuid', 'mail', and
+     *   'display_name'.
      */
     public function getMyAccount($reset = false)
     {
