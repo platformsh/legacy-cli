@@ -12,8 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityGetCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     /**
      * {@inheritdoc}
      */

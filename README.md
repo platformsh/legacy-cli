@@ -74,6 +74,7 @@ Available commands:
   multi                                     Execute a command on multiple projects
   web                                       Open the Web UI
 activity
+  activity:get                              View detailed information on a single activity
   activity:list (activities)                Get a list of activities for an environment or project
   activity:log                              Display the log for an activity
 app
@@ -111,6 +112,7 @@ environment
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
+  environment:redeploy (redeploy)           Redeploy an environment
   environment:relationships (relationships) Show an environment's relationships
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
@@ -130,6 +132,7 @@ mount
   mount:list (mounts)                       Get a list of mounts
   mount:upload                              Upload files to a mount, using rsync
 project
+  project:create (create)                   Create a new project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
@@ -174,6 +177,8 @@ variable
   variable:delete                           Delete a variable from an environment
   variable:get (variables, vget)            View variable(s) for an environment
   variable:set (vset)                       Set a variable for an environment
+worker
+  worker:list (workers)                     Get a list of all deployed workers
 ```
 
 ## Known issues
