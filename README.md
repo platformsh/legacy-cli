@@ -132,6 +132,7 @@ mount
   mount:list (mounts)                       Get a list of mounts
   mount:upload                              Upload files to a mount, using rsync
 project
+  project:clear-build-cache                 Clear a project's build cache
   project:create (create)                   Create a new project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally

@@ -141,6 +141,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Mount\MountListCommand();
         $commands[] = new Command\Mount\MountDownloadCommand();
         $commands[] = new Command\Mount\MountUploadCommand();
+        $commands[] = new Command\Project\ProjectClearBuildCacheCommand();
         $commands[] = new Command\Project\ProjectCurlCommand();
         $commands[] = new Command\Project\ProjectCreateCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
