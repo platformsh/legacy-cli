@@ -54,7 +54,7 @@ class LocalBuildCommand extends CommandBase
                 'run-deploy-hooks',
                 null,
                 InputOption::VALUE_NONE,
-                'Run post-deploy hooks'
+                'Run deploy and/or post_deploy hooks'
             )
             ->addOption(
                 'no-clean',
