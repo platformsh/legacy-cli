@@ -140,20 +140,66 @@ class AdaptiveTable extends Table
      */
     protected function wrapCell($contents, $width)
     {
-        $plain_contents = Helper::removeDecoration($this->outputCopy->getFormatter(), $contents);
-        if (Helper::strlen($plain_contents) <= $width) {
-            return $contents;
-        }
-
         // Account for left-indented cells.
-        if (strpos($plain_contents, ' ') === 0) {
-            $trimmed = ltrim($plain_contents, ' ');
-            $indent = Helper::strlen($plain_contents) - Helper::strlen($trimmed);
+        if (strpos($contents, ' ') === 0) {
+            $trimmed = ltrim($contents, ' ');
+            $indent = Helper::strlen($contents) - Helper::strlen($trimmed);
 
-            return str_repeat(' ', $indent) . wordwrap($trimmed, $width - $indent, PHP_EOL, true);
+            return str_repeat(' ', $indent) . $this->wrapWithDecoration($contents, $width - $indent);
         }
 
-        return wordwrap($plain_contents, $width, PHP_EOL, true);
+        return $this->wrapWithDecoration($contents, $width);
+    }
+
+    /**
+     * Word-wraps the contents of a cell, accounting for decoration.
+     *
+     * @param string $formattedText
+     * @param int    $maxWidth
+     *
+     * @return string
+     */
+    public function wrapWithDecoration($formattedText, $maxWidth)
+    {
+        $formatter = $this->outputCopy->getFormatter();
+        $plainText = Helper::removeDecoration($formatter, $formattedText);
+        $plainTextWrapped = wordwrap($plainText, $maxWidth, "\n", true);
+        if ($plainText === $formattedText || $plainTextWrapped === $plainText) {
+            return $plainTextWrapped;
+        }
+
+        // Find all open and closing tags in the formatted text.
+        $tagRegex = '[a-z][a-z0-9,_=;-]*+';
+        preg_match_all("#</?($tagRegex)?>#ix", $formattedText, $matches, PREG_OFFSET_CAPTURE);
+
+        // Find all the plain-text chunks and their lengths in the text.
+        $chunks = [];
+        $lastTagClose = 0;
+        foreach ($matches[0] as $match) {
+            $chunks[$lastTagClose] = $match[1] - $lastTagClose;
+            $lastTagClose = $match[1] + strlen($match[0]);
+        }
+        $chunks[$lastTagClose] = Helper::strlen($formattedText) - $lastTagClose;
+
+        // Go through all the positions of new lines in the word-wrapped plain
+        // text, and insert corresponding new lines in the formatted text.
+        for ($offset = 0; ($position = strpos($plainTextWrapped, "\n", $offset)) !== false; $offset = $position + 1) {
+            $currentChunkWidth = 0;
+            foreach ($chunks as $chunkOffset => $chunkWidth) {
+                if ($currentChunkWidth + $chunkWidth > $position) {
+                    $formattedText = substr_replace($formattedText, "\n", $position - $currentChunkWidth + $chunkOffset, 0);
+                    // PHP's wordwrap() trims each line of the text: we need to
+                    // do the same.
+                    $formattedText = preg_replace('#[ \t]*\n[ \t]*#', "\n", $formattedText);
+                    continue 2;
+                }
+                $currentChunkWidth += $chunkWidth;
+            }
+        }
+
+        $formattedText = preg_replace("#(<$tagRegex>)([^\n<]*)\n#", "\$1\$2</>\n\$1", $formattedText);
+
+        return $formattedText;
     }
 
     /**
