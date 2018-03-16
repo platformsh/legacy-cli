@@ -97,7 +97,7 @@ class ActivityListCommand extends CommandBase
             $row = [
                 new AdaptiveTableCell($activity->id, ['wrap' => false]),
                 $formatter->format($activity['created_at'], 'created_at'),
-                ActivityMonitor::getFormattedDescription($activity),
+                ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
                 ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),

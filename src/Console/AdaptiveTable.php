@@ -183,21 +183,25 @@ class AdaptiveTable extends Table
 
         // Go through all the positions of new lines in the word-wrapped plain
         // text, and insert corresponding new lines in the formatted text.
+        $difference = 0;
         for ($offset = 0; ($position = strpos($plainTextWrapped, "\n", $offset)) !== false; $offset = $position + 1) {
             $currentChunkWidth = 0;
             foreach ($chunks as $chunkOffset => $chunkWidth) {
                 if ($currentChunkWidth + $chunkWidth > $position) {
-                    $formattedText = substr_replace($formattedText, "\n", $position - $currentChunkWidth + $chunkOffset, 0);
-                    // PHP's wordwrap() trims each line of the text: we need to
-                    // do the same.
-                    $formattedText = preg_replace('#[ \t]*\n[ \t]*#', "\n", $formattedText);
+                    $insertPosition = $position - $currentChunkWidth + $chunkOffset + $difference;
+                    $withNewLine = rtrim(substr($formattedText, 0, $insertPosition))
+                        . "\n"
+                        . ltrim(substr($formattedText, $insertPosition));
+                    $difference += strlen($withNewLine) - strlen($formattedText);
+                    $formattedText = $withNewLine;
                     continue 2;
                 }
                 $currentChunkWidth += $chunkWidth;
             }
         }
 
-        $formattedText = preg_replace("#(<$tagRegex>)([^\n<]*)\n#", "\$1\$2</>\n\$1", $formattedText);
+        $formattedText = preg_replace("#(<$tagRegex>)([^\n<]*)\n([^\n<]*)#", "\$1\$2</>\n\$1\$3</>", $formattedText);
+        $formattedText = str_replace('</></>', '</>', $formattedText);
 
         return $formattedText;
     }

@@ -36,20 +36,17 @@ class AdaptiveTableTest extends \PHPUnit_Framework_TestCase
 
     public function testWrapWithDecoration()
     {
-        $output = new BufferedOutput();
-        $example = <<<EOF
-Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor incididunt ut labore et dolore magna	 aliqua. Ut enim ad minim veniam, quis nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. 	Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.
-EOF;
+        $example = 'Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor incididunt ut labore et dolore magna	 aliqua. Ut enim ad minim veniam, quis ☺ nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. 	   Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.';
         $exampleWrapped = <<<EOF
 Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor
-incididunt ut labore et dolore magna	 aliqua. Ut enim ad minim veniam, quis
+incididunt ut labore et dolore magna	 aliqua. Ut enim ad minim veniam, quis ☺
 nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat.</>
 <options=reverse>Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non <info>proident</info>, sunt in
+fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in
 culpa qui officia deserunt mollit anim id est laborum.
 EOF;
 
-        $table = new AdaptiveTable($output);
+        $table = new AdaptiveTable(new BufferedOutput());
         $result = $table->wrapWithDecoration($example, 80);
         $this->assertEquals($exampleWrapped, $result);
     }
