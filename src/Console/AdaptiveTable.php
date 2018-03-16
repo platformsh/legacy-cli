@@ -145,7 +145,7 @@ class AdaptiveTable extends Table
             $trimmed = ltrim($contents, ' ');
             $indent = Helper::strlen($contents) - Helper::strlen($trimmed);
 
-            return str_repeat(' ', $indent) . $this->wrapWithDecoration($contents, $width - $indent);
+            return str_repeat(' ', $indent) . $this->wrapWithDecoration($trimmed, $width - $indent);
         }
 
         return $this->wrapWithDecoration($contents, $width);
