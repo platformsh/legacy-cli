@@ -155,55 +155,86 @@ class AdaptiveTable extends Table
      * Word-wraps the contents of a cell, accounting for decoration.
      *
      * @param string $formattedText
-     * @param int    $maxWidth
+     * @param int    $maxLength
      *
      * @return string
      */
-    public function wrapWithDecoration($formattedText, $maxWidth)
+    public function wrapWithDecoration($formattedText, $maxLength)
     {
-        $formatter = $this->outputCopy->getFormatter();
-        $plainText = Helper::removeDecoration($formatter, $formattedText);
-        $plainTextWrapped = wordwrap($plainText, $maxWidth, "\n", true);
-        if ($plainText === $formattedText || $plainTextWrapped === $plainText) {
-            return $plainTextWrapped;
+        $plainText = Helper::removeDecoration($this->outputCopy->getFormatter(), $formattedText);
+        if ($plainText === $formattedText) {
+            return wordwrap($plainText, $maxLength, "\n", true);
         }
 
-        // Find all open and closing tags in the formatted text.
-        $tagRegex = '[a-z][a-z0-9,_=;-]*+';
-        preg_match_all("#</?($tagRegex)?>#ix", $formattedText, $matches, PREG_OFFSET_CAPTURE);
-
-        // Find all the plain-text chunks and their lengths in the text.
-        $chunks = [];
+        // Find all open and closing tags in the formatted text, with their
+        // offsets, and build a plain text string out of the rest.
+        $tagRegex = '[a-zA-Z][a-zA-Z0-9,_=;-]*+';
+        preg_match_all('#</?(?:' . $tagRegex . ')?>#', $formattedText, $matches, PREG_OFFSET_CAPTURE);
+        $plainText = '';
+        $tagChunks = [];
         $lastTagClose = 0;
         foreach ($matches[0] as $match) {
-            $chunks[$lastTagClose] = $match[1] - $lastTagClose;
-            $lastTagClose = $match[1] + strlen($match[0]);
+            list($tagChunk, $tagOffset) = $match;
+            $plainText .= substr($formattedText, $lastTagClose, $tagOffset - $lastTagClose);
+            $tagChunks[$tagOffset] = $tagChunk;
+            $lastTagClose = $tagOffset + strlen($tagChunk);
         }
-        $chunks[$lastTagClose] = Helper::strlen($formattedText) - $lastTagClose;
+        $plainText .= substr($formattedText, $lastTagClose);
 
-        // Go through all the positions of new lines in the word-wrapped plain
-        // text, and insert corresponding new lines in the formatted text.
-        $difference = 0;
-        for ($offset = 0; ($position = strpos($plainTextWrapped, "\n", $offset)) !== false; $offset = $position + 1) {
-            $currentChunkWidth = 0;
-            foreach ($chunks as $chunkOffset => $chunkWidth) {
-                if ($currentChunkWidth + $chunkWidth > $position) {
-                    $insertPosition = $position - $currentChunkWidth + $chunkOffset + $difference;
-                    $withNewLine = rtrim(substr($formattedText, 0, $insertPosition))
-                        . "\n"
-                        . ltrim(substr($formattedText, $insertPosition));
-                    $difference += strlen($withNewLine) - strlen($formattedText);
-                    $formattedText = $withNewLine;
-                    continue 2;
+        // Wrap the plain text, keeping track of the removed characters in each
+        // line (caused by trimming).
+        $remaining = $plainText;
+        $lines = [];
+        $removedCharacters = [];
+        while (!empty($remaining)) {
+            if (strlen($remaining) > $maxLength) {
+                $spacePos = strrpos(substr($remaining, 0, $maxLength + 1), ' ');
+                if ($spacePos !== false) {
+                    $breakPosition = $spacePos + 1;
+                } else {
+                    $breakPosition = $maxLength;
                 }
-                $currentChunkWidth += $chunkWidth;
+                $line = substr($remaining, 0, $breakPosition);
+                $remaining = substr($remaining, $breakPosition);
+            } else {
+                $line = $remaining;
+                $remaining = '';
             }
+            $lineTrimmed = trim($line);
+            $removedCharacters[] = strlen($line) - strlen($lineTrimmed);
+            $lines[] = $lineTrimmed;
         }
 
-        $formattedText = preg_replace("#(<$tagRegex>)([^\n<]*)\n([^\n<]*)#", "\$1\$2</>\n\$1\$3</>", $formattedText);
-        $formattedText = str_replace('</></>', '</>', $formattedText);
+        // Interpolate the tags back into the wrapped text.
+        $remainingTagChunks = $tagChunks;
+        $lineOffset = 0;
+        foreach ($lines as $lineNumber => &$line) {
+            $lineLength = strlen($line) + $removedCharacters[$lineNumber];
+            foreach ($remainingTagChunks as $tagOffset => $tagChunk) {
+                // Prefer putting opening tags at the beginning of a line, not
+                // the end.
+                if ($tagChunk[1] !== '/' && $tagOffset === $lineOffset + $lineLength) {
+                    continue;
+                }
+                if ($tagOffset >= $lineOffset && $tagOffset <= $lineOffset + $lineLength) {
+                    $insertPosition = $tagOffset - $lineOffset;
+                    $line = substr($line, 0, $insertPosition) . $tagChunk . substr($line, $insertPosition);
+                    $lineLength += strlen($tagChunk);
+                    unset($remainingTagChunks[$tagOffset]);
+                }
+            }
+            $lineOffset += $lineLength;
+        }
 
-        return $formattedText;
+        $wrapped = implode("\n", $lines) . implode($remainingTagChunks);
+
+        // Ensure that tags are closed at the end of each line and re-opened at
+        // the beginning of the next one.
+        $wrapped = preg_replace_callback("#(<" . $tagRegex . ">)([^<\n]+)\n(.+)#", function (array $matches) {
+            return $matches[1] . $matches[2] . "</>\n" . $matches[1] . $matches[3];
+        }, $wrapped);
+
+        return $wrapped;
     }
 
     /**

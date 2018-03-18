@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\Console\AdaptiveTable;
+use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 class AdaptiveTableTest extends \PHPUnit_Framework_TestCase
@@ -34,20 +35,49 @@ class AdaptiveTableTest extends \PHPUnit_Framework_TestCase
         $this->assertLessThanOrEqual($maxTableWidth, max($lineWidths));
     }
 
-    public function testWrapWithDecoration()
+    /**
+     * Tests that a string can be wrapped with decoration at various lengths.
+     *
+     * @param string $input
+     * @param int[]  $maxLengths
+     */
+    private function assertWrappedWithDecoration($input, array $maxLengths = [5, 8, 13, 21, 34, 55, 89])
     {
-        $example = 'Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor incididunt ut labore et dolore magna	 aliqua. Ut enim ad minim veniam, quis ☺ nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. 	   Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.';
-        $exampleWrapped = <<<EOF
-Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor
-incididunt ut labore et dolore magna	 aliqua. Ut enim ad minim veniam, quis ☺
-nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat.</>
-<options=reverse>Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-EOF;
+        $o = new BufferedOutput();
+        $f = $o->getFormatter();
+        $table = new AdaptiveTable($o);
+        $plainText = Helper::removeDecoration($f, $input);
+        foreach ($maxLengths as $maxLength) {
+            $plainWrapped = wordwrap($plainText, $maxLength, "\n", true);
+            $plainWrappedLines = explode("\n", $plainWrapped);
+            $tableWrapped = $table->wrapWithDecoration($input, $maxLength);
+            $tableWrappedLines = explode("\n", $tableWrapped);
+            // Test each line individually, to ensure the markup makes sense per
+            // line.
+            foreach ($tableWrappedLines as $key => $line) {
+                $this->assertEquals($plainWrappedLines[$key], Helper::removeDecoration($f, $line));
+            }
+        }
+    }
 
-        $table = new AdaptiveTable(new BufferedOutput());
-        $result = $table->wrapWithDecoration($example, 80);
-        $this->assertEquals($exampleWrapped, $result);
+    public function testWrapWithDecorationPlain()
+    {
+        $this->assertWrappedWithDecoration(
+            'This is a test of raw text which should be wrapped as normal.'
+        );
+    }
+
+    public function testWrapWithDecorationSimple()
+    {
+        $this->assertWrappedWithDecoration(
+            'The quick brown <error>fox</error> <options=underscore>jumps</> over the lazy <info>dog</info>.'
+        );
+    }
+
+    public function testWrapWithDecorationComplex()
+    {
+        $this->assertWrappedWithDecoration(
+            'Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+        );
     }
 }
