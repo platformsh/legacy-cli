@@ -181,13 +181,17 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     {
         $projectList = $input->getOption('projects');
 
+        /** @var \Platformsh\Cli\Service\Identifier $identifier */
+        $identifier = $this->getService('identifier');
+
         if (!empty($projectList)) {
             $missing = [];
             $selected = [];
             foreach ($this->splitProjectList($projectList) as $projectId) {
-                if ($project = $this->api()->getProject($projectId)) {
-                    $selected[$projectId] = $project;
-                } else {
+                try {
+                    $result = $identifier->identify($projectId);
+                    $selected[$result['projectId']] = $this->api()->getProject($result['projectId'], $result['host']);
+                } catch (InvalidArgumentException $e) {
                     $missing[] = $projectId;
                 }
             }
