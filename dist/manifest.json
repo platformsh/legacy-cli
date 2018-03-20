@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "3839f50914fd7ec4a8bb84b701db9ed606f1e1f2",
-        "sha256": "e6565355887b32f6b98640d8599ab72d9f4f109772e6ec83ffdd005353460c6b",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.30.1/platform.phar",
-        "version": "3.30.1",
+        "sha1": "1daee0a6b40cc488dbb990b2410d4e75d73c7b72",
+        "sha256": "27fac1887197d02c5420895505a15a30475d0783f1d9103243e19bb0179dc666",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.31.0/platform.phar",
+        "version": "3.31.0",
         "php": {
             "min": "5.5.9"
         },
@@ -112,6 +112,11 @@
                 "notes": "* Add `redeploy` command (available on projects with newer API versions).\n* [activity:list] Format activity descriptions where possible.\n* Print question text even when in automatic non-interactive mode.\n* Add --wait option to all commands, and emit a warning if nothing is specified\n  when running inside a Platform.sh build/cron/deploy hook.\n* [integration:add] [integration:update] Ensure GitLab/GitHub hooks have the\n  right events selected, and update them if not.\n* [self:install] Ensure directory exists when creating shell-config.rc\n* [activity:get] do not require an environment with --all and a partial ID\n* [login] Mention --force option, if running when already logged in.",
                 "show from": "3.29.0",
                 "hide from": "3.30.0"
+            },
+            {
+                "notes": "New features:\n\n* Always interact (where possible) to ask for the project or environment, if one\n  isn't specified or detected.\n* Support new variable features:\n  - Add `variable:create` and `variable:update` commands.\n  - Allow creating 'sensitive' and 'non-inheritable' variables\n    (`--sensitive=true` and `--inheritable=false`).\n  - Add `variable:list` (`variables`) command.\n  - These `variable:` commands now work with project- or environment-level\n    variables. Specify the level with `--level` (`-l`). If you do not specify a\n    level, you will be asked for one interactively where relevant.\n  - The old commands still exist but are hidden from the command list.\n* Add `project:clear-build-cache` command\n* Enable `project:create` (`create`) command by default.\n* Add `--all` option to `list` command, to show hidden commands.\n* In `build` command, if --run-deploy-hooks option is used, run both \"deploy\"\n  and \"post_deploy\" hooks.\n\nBug fixes:\n\n* Fix: boolean false fields omitted when creating integrations.\n* Fix wrapping of table cell contents that include decoration.\n\nOther changes:\n\n* Accept URLs (not just IDs) as project identifiers in `multi` command.\n* Un-hide some commands\n  - Un-hide `activity:get` command.\n  - Un-hide `worker:list` (`workers`)\n* Always use the deployment API for the app list (improves compatibility for\n  multi-application Enterprise projects, in SSH-related commands).",
+                "show from": "3.30.0",
+                "hide from": "3.31.0"
             }
         ]
     }
