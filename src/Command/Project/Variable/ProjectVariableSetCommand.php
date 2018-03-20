@@ -7,8 +7,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * @deprecated Use variable:create and variable:update instead (with --level project)
+ */
 class ProjectVariableSetCommand extends CommandBase
 {
+    protected $hiddenInList = true;
+
     /**
      * {@inheritdoc}
      */

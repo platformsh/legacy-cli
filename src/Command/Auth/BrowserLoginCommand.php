@@ -53,7 +53,11 @@ class BrowserLoginCommand extends CommandBase
         }
         $connector = $this->api()->getClient(false)->getConnector();
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
-            $this->stdErr->writeln('You are already logged in.');
+            $account = $this->api()->getMyAccount();
+            $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
+                $account['username'],
+                $account['mail']
+            ));
             // USE THE FORCE
             $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
             return 0;
@@ -63,7 +67,20 @@ class BrowserLoginCommand extends CommandBase
         // and wait for the response.
         // Firstly, find an address. The port needs to be within a known range,
         // for validation by the remote server.
-        $port = PortUtil::getPort(5000, null, 5005);
+        try {
+            $start = 5000;
+            $end = 5010;
+            $port = PortUtil::getPort($start, null, $end);
+        } catch (\Exception $e) {
+            if (stripos($e->getMessage(), 'failed to find') !== false) {
+                $this->stdErr->writeln(sprintf('Failed to find an available port between <error>%d</error> and <error>%d</error>.', $start, $end));
+                $this->stdErr->writeln('Check if you have unnecessary services running on these ports.');
+                $this->stdErr->writeln(sprintf('For more options, run: <info>%s help login</info>', $this->config()->get('application.executable')));
+
+                return 1;
+            }
+            throw $e;
+        }
         $localAddress = '127.0.0.1:' . $port;
         $localUrl = 'http://' . $localAddress;
 

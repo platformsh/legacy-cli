@@ -143,12 +143,98 @@ class AdaptiveTable extends Table
         // Account for left-indented cells.
         if (strpos($contents, ' ') === 0) {
             $trimmed = ltrim($contents, ' ');
-            $indent = strlen($contents) - strlen($trimmed);
+            $indent = Helper::strlen($contents) - Helper::strlen($trimmed);
 
-            return str_repeat(' ', $indent) . wordwrap($trimmed, $width - $indent, PHP_EOL, true);
+            return str_repeat(' ', $indent) . $this->wrapWithDecoration($trimmed, $width - $indent);
         }
 
-        return wordwrap($contents, $width, PHP_EOL, true);
+        return $this->wrapWithDecoration($contents, $width);
+    }
+
+    /**
+     * Word-wraps the contents of a cell, accounting for decoration.
+     *
+     * @param string $formattedText
+     * @param int    $maxLength
+     *
+     * @return string
+     */
+    public function wrapWithDecoration($formattedText, $maxLength)
+    {
+        $plainText = Helper::removeDecoration($this->outputCopy->getFormatter(), $formattedText);
+        if ($plainText === $formattedText) {
+            return wordwrap($plainText, $maxLength, "\n", true);
+        }
+
+        // Find all open and closing tags in the formatted text, with their
+        // offsets, and build a plain text string out of the rest.
+        $tagRegex = '[a-zA-Z][a-zA-Z0-9,_=;-]*+';
+        preg_match_all('#</?(?:' . $tagRegex . ')?>#', $formattedText, $matches, PREG_OFFSET_CAPTURE);
+        $plainText = '';
+        $tagChunks = [];
+        $lastTagClose = 0;
+        foreach ($matches[0] as $match) {
+            list($tagChunk, $tagOffset) = $match;
+            $plainText .= substr($formattedText, $lastTagClose, $tagOffset - $lastTagClose);
+            $tagChunks[$tagOffset] = $tagChunk;
+            $lastTagClose = $tagOffset + strlen($tagChunk);
+        }
+        $plainText .= substr($formattedText, $lastTagClose);
+
+        // Wrap the plain text, keeping track of the removed characters in each
+        // line (caused by trimming).
+        $remaining = $plainText;
+        $lines = [];
+        $removedCharacters = [];
+        while (!empty($remaining)) {
+            if (strlen($remaining) > $maxLength) {
+                $spacePos = strrpos(substr($remaining, 0, $maxLength + 1), ' ');
+                if ($spacePos !== false) {
+                    $breakPosition = $spacePos + 1;
+                } else {
+                    $breakPosition = $maxLength;
+                }
+                $line = substr($remaining, 0, $breakPosition);
+                $remaining = substr($remaining, $breakPosition);
+            } else {
+                $line = $remaining;
+                $remaining = '';
+            }
+            $lineTrimmed = trim($line);
+            $removedCharacters[] = strlen($line) - strlen($lineTrimmed);
+            $lines[] = $lineTrimmed;
+        }
+
+        // Interpolate the tags back into the wrapped text.
+        $remainingTagChunks = $tagChunks;
+        $lineOffset = 0;
+        foreach ($lines as $lineNumber => &$line) {
+            $lineLength = strlen($line) + $removedCharacters[$lineNumber];
+            foreach ($remainingTagChunks as $tagOffset => $tagChunk) {
+                // Prefer putting opening tags at the beginning of a line, not
+                // the end.
+                if ($tagChunk[1] !== '/' && $tagOffset === $lineOffset + $lineLength) {
+                    continue;
+                }
+                if ($tagOffset >= $lineOffset && $tagOffset <= $lineOffset + $lineLength) {
+                    $insertPosition = $tagOffset - $lineOffset;
+                    $line = substr($line, 0, $insertPosition) . $tagChunk . substr($line, $insertPosition);
+                    $lineLength += strlen($tagChunk);
+                    unset($remainingTagChunks[$tagOffset]);
+                }
+            }
+            $lineOffset += $lineLength;
+        }
+
+        $wrapped = implode("\n", $lines) . implode($remainingTagChunks);
+
+        // Ensure that tags are closed at the end of each line and re-opened at
+        // the beginning of the next one.
+        $wrapped = preg_replace_callback("#(<" . $tagRegex . ">)([^<\n]+)\n(.+)#", function (array $matches) {
+            return $matches[1] . $matches[2] . "</>\n" . $matches[1] . $matches[3];
+        }, $wrapped);
+
+        return $wrapped;
     }
 
     /**

@@ -74,6 +74,7 @@ Available commands:
   multi                                     Execute a command on multiple projects
   web                                       Open the Web UI
 activity
+  activity:get                              View detailed information on a single activity
   activity:list (activities)                Get a list of activities for an environment or project
   activity:log                              Display the log for an activity
 app
@@ -111,6 +112,7 @@ environment
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
+  environment:redeploy (redeploy)           Redeploy an environment
   environment:relationships (relationships) Show an environment's relationships
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
@@ -130,14 +132,13 @@ mount
   mount:list (mounts)                       Get a list of mounts
   mount:upload                              Upload files to a mount, using rsync
 project
+  project:clear-build-cache                 Clear a project's build cache
+  project:create (create)                   Create a new project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
   project:set-remote                        Set the remote project for the current Git repository
-  project:variable:delete                   Delete a variable from a project
-  project:variable:get (project-variables, pvget) View variable(s) for a project
-  project:variable:set (pvset)              Set a variable for a project
 repo
   repo:cat                                  Read a file in the project repository
   repo:ls                                   List files in the project repository
@@ -171,9 +172,13 @@ user
   user:get                                  View a user's role(s)
   user:list (users)                         List project users
 variable
+  variable:create                           Create a variable
   variable:delete                           Delete a variable from an environment
-  variable:get (variables, vget)            View variable(s) for an environment
-  variable:set (vset)                       Set a variable for an environment
+  variable:get (vget)                       View a variable
+  variable:list (variables)                 List variables
+  variable:update                           Update a variable
+worker
+  worker:list (workers)                     Get a list of all deployed workers
 ```
 
 ## Known issues

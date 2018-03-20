@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "e93c867fcc63a0d358d9f323b34f99a8",
+    "content-hash": "47c675ab7a7dad1ca4739a55d2860c2b",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -711,16 +711,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.16.3",
+            "version": "v0.17.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "7083c38a1694b925eaf69300b4d553c1719f7e62"
+                "reference": "37d986f5909fbdd80c57b1765670607c9b36373f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/7083c38a1694b925eaf69300b4d553c1719f7e62",
-                "reference": "7083c38a1694b925eaf69300b4d553c1719f7e62",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/37d986f5909fbdd80c57b1765670607c9b36373f",
+                "reference": "37d986f5909fbdd80c57b1765670607c9b36373f",
                 "shasum": ""
             },
             "require": {
@@ -756,20 +756,20 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2018-03-02T15:39:11+00:00"
+            "time": "2018-03-15T16:06:08+00:00"
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.16",
+            "version": "v0.0.20",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "57931bde54bcc13ae0c784a71b41bcf32f1adeba"
+                "reference": "8fb1a45fb3acb05826a411dddd45c7b86def80f3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/57931bde54bcc13ae0c784a71b41bcf32f1adeba",
-                "reference": "57931bde54bcc13ae0c784a71b41bcf32f1adeba",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/8fb1a45fb3acb05826a411dddd45c7b86def80f3",
+                "reference": "8fb1a45fb3acb05826a411dddd45c7b86def80f3",
                 "shasum": ""
             },
             "require": {
@@ -795,7 +795,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2018-02-12T11:15:24+00:00"
+            "time": "2018-03-20T19:18:47+00:00"
         },
         {
             "name": "psr/container",

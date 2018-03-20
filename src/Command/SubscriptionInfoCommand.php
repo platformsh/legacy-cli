@@ -28,7 +28,7 @@ class SubscriptionInfoCommand extends CommandBase
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
-            ->setDescription('Read subscription properties');
+            ->setDescription('Read or modify subscription properties');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();

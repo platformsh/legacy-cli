@@ -92,7 +92,8 @@ class LocalBuild
      *       option to Drush Make, if applicable.
      *     - lock (bool, default false) Create or update a lock
      *       file via Drush Make, if applicable.
-     *     - run-deploy-hooks (bool, default false) Run deploy hooks.
+     *     - run-deploy-hooks (bool, default false) Run deploy and/or
+     *       post_deploy hooks.
      * @param string $sourceDir   The absolute path to the source directory.
      * @param string $destination Where the web root(s) will be linked (absolute
      *                            path).
@@ -345,7 +346,7 @@ class LocalBuild
         $buildFlavor->setBuildDir($buildDir);
         $buildFlavor->install();
 
-        $this->runPostDeployHooks($appConfig, $buildDir);
+        $this->runDeployHooks($appConfig, $buildDir);
 
         $webRoot = $buildFlavor->getWebRoot();
 
@@ -390,7 +391,7 @@ class LocalBuild
     }
 
     /**
-     * Run post-deploy hooks.
+     * Run deploy and post_deploy hooks.
      *
      * @param array  $appConfig
      * @param string $appDir
@@ -399,18 +400,26 @@ class LocalBuild
      *   False if the deploy hooks fail, true if they succeed, null if not
      *   applicable.
      */
-    protected function runPostDeployHooks(array $appConfig, $appDir)
+    protected function runDeployHooks(array $appConfig, $appDir)
     {
         if (empty($this->settings['run-deploy-hooks'])) {
             return null;
         }
-        if (empty($appConfig['hooks']['deploy'])) {
-            $this->output->writeln('No deploy hooks found');
+        if (empty($appConfig['hooks']['deploy']) && empty($appConfig['hooks']['post_deploy'])) {
+            $this->output->writeln('No deploy or post_deploy hooks found');
             return null;
         }
-        $this->output->writeln('Running post-deploy hooks');
+        $result = null;
+        if (!empty($appConfig['hooks']['deploy'])) {
+            $this->output->writeln('Running deploy hooks');
+            $result = $this->runHook($appConfig['hooks']['deploy'], $appDir);
+        }
+        if (!empty($appConfig['hooks']['post_deploy']) && $result !== false) {
+            $this->output->writeln('Running post_deploy hooks');
+            $result = $this->runHook($appConfig['hooks']['post_deploy'], $appDir);
+        }
 
-        return $this->runHook($appConfig['hooks']['deploy'], $appDir);
+        return $result;
     }
 
     /**

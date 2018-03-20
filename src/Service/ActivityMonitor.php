@@ -276,17 +276,21 @@ class ActivityMonitor
      * Get the formatted description of an activity.
      *
      * @param \Platformsh\Client\Model\Activity $activity
+     * @param bool                              $withDecoration
      *
      * @return string
      */
-    public static function getFormattedDescription(Activity $activity)
+    public static function getFormattedDescription(Activity $activity, $withDecoration = true)
     {
         $value = $activity->hasProperty('description')
             ? $activity->getProperty('description')
             : $activity->getDescription(true);
+        if (!$withDecoration) {
+            return strip_tags($value);
+        }
 
         // Replace description HTML fields with underlined plain text.
-        $value = preg_replace('/<[^\/>]+>/', '<options=underscore>', $value);
+        $value = preg_replace('/<[^\/][^>]*>/', '<options=underscore>', $value);
         $value = preg_replace('/<\/[^>]+>/', '</>', $value);
 
         return $value;

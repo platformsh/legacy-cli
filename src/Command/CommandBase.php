@@ -666,22 +666,32 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function selectProject($projectId = null, $host = null)
     {
         if (!empty($projectId)) {
-            $project = $this->api()->getProject($projectId, $host);
-            if (!$project) {
+            $this->project = $this->api()->getProject($projectId, $host);
+            if (!$this->project) {
                 throw new ConsoleInvalidArgumentException($this->getProjectNotFoundMessage($projectId));
             }
-        } else {
-            $project = $this->getCurrentProject();
-            if (!$project) {
-                throw new RootNotFoundException(
-                    "Could not determine the current project."
-                    . "\n\nSpecify it using --project, or go to a project directory."
-                );
-            }
+
+            $this->debug('Selected project: ' . $this->project->id);
+
+            return $this->project;
         }
 
-        $this->project = $project;
-        $this->debug('Selected project: ' . $project->id);
+        $this->project = $this->getCurrentProject();
+        if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
+            $projects = $this->api()->getProjects();
+            if (count($projects) > 0 && count($projects) < 25) {
+                $this->debug('No project specified: offering a choice...');
+                $projectId = $this->offerProjectChoice($projects);
+
+                return $this->selectProject($projectId);
+            }
+        }
+        if (!$this->project) {
+            throw new RootNotFoundException(
+                "Could not determine the current project."
+                . "\n\nSpecify it using --project, or go to a project directory."
+            );
+        }
 
         return $this->project;
     }
@@ -753,6 +763,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return;
         }
 
+        if ($required && isset($this->input) && $this->input->isInteractive()) {
+            $this->debug('No environment specified: offering a choice...');
+            $this->environment = $this->offerEnvironmentChoice($this->api()->getEnvironments($this->project));
+            return;
+        }
+
         if ($required) {
             if ($this->getProjectRoot()) {
                 $message = 'Could not determine the current environment.'
@@ -812,8 +828,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * @return string
      *   The chosen project ID.
      */
-    protected function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    protected final function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
     {
+        if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
+            throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
+        }
+
         $projectList = [];
         foreach ($projects as $project) {
             $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
@@ -822,7 +842,41 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        return $questionHelper->choose($projectList, $text);
+        $id = $questionHelper->choose($projectList, $text, null, false);
+
+        $this->stdErr->writeln('');
+
+        return $id;
+    }
+
+    /**
+     * Offers a choice of environments.
+     *
+     * @param Environment[] $environments
+     *
+     * @return Environment
+     */
+    protected final function offerEnvironmentChoice(array $environments)
+    {
+        if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
+            throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
+        }
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $default = $this->api()->getDefaultEnvironmentId($environments);
+
+        $id = $questionHelper->askInput('Environment ID', $default, array_keys($environments), function ($value) use ($environments) {
+            if (!isset($environments[$value])) {
+                throw new \RuntimeException('Environment not found: ' . $value);
+            }
+
+            return $value;
+        });
+
+        $this->stdErr->writeln('');
+
+        return $environments[$id];
     }
 
     /**

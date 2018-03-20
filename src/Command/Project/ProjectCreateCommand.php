@@ -20,17 +20,6 @@ class ProjectCreateCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    public function isEnabled()
-    {
-        $config = $this->config();
-
-        return parent::isEnabled()
-            && $config->isExperimentEnabled('enable_create');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function configure()
     {
         $this
