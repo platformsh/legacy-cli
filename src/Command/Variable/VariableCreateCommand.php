@@ -34,6 +34,12 @@ class VariableCreateCommand extends VariableCommandBase
     {
         $this->validateInput($input, true);
 
+        // Set the default for the environment form field.
+        if ($this->hasSelectedEnvironment() && ($field = $this->form->getField('environment'))) {
+            $field->set('default', $this->getSelectedEnvironment()->id);
+        }
+
+        // Merge the 'name' argument with the --name option.
         if ($input->getArgument('name')) {
             if ($input->getOption('name')) {
                 $this->stdErr->writeln('You cannot use both the <error>name</error> argument and <error>--name</error> option.');
@@ -43,7 +49,8 @@ class VariableCreateCommand extends VariableCommandBase
             $input->setOption('name', $input->getArgument('name'));
         }
 
-        if (($name = $input->getOption('name')) && $this->getExistingVariable($name, $input->getOption('level'))) {
+        // Check whether the variable already exists, if a name is provided.
+        if (($name = $input->getOption('name')) && $this->getExistingVariable($name, $input->getOption('level'), false)) {
             $this->stdErr->writeln('The variable already exists: <error>' . $name . '</error>');
 
             $executable = $this->config()->get('application.executable');
@@ -80,6 +87,25 @@ class VariableCreateCommand extends VariableCommandBase
                 $this->selectEnvironment($values['environment']);
             }
             unset($values['environment']);
+        }
+
+        // Validate the is_json setting against the value.
+        if (isset($values['value']) && !empty($values['is_json'])) {
+            if (json_decode($values['value']) === null && json_last_error()) {
+                $this->stdErr->writeln('The value is not valid JSON: <error>' . $values['value'] . '</error>');
+
+                return 1;
+            }
+        }
+
+        // Validate the variable name for "env:"-prefixed variables.
+        $envPrefixLength = 4;
+        if (substr($values['name'], 0, $envPrefixLength) === 'env:'
+            && !preg_match('/^[a-z][a-z0-9_]*$/i', substr($values['name'], $envPrefixLength))) {
+            $this->stdErr->writeln('The environment variable name is invalid: <error>' . substr($values['name'], $envPrefixLength) . '</error>');
+            $this->stdErr->writeln('Environment variable names can only contain letters (A-Z), digits (0-9), and underscores. The first character must be a letter.');
+
+            return 1;
         }
 
         $level = $values['level'];
