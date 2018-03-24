@@ -149,10 +149,20 @@ abstract class VariableCommandBase extends CommandBase
 
         $fields['level'] = new OptionsField('Level', [
             'description' => 'The level at which to set the variable',
+            'shortcut' => 'l',
             'options' => [
                 self::LEVEL_PROJECT => 'Project-wide',
                 self::LEVEL_ENVIRONMENT => 'Environment-specific',
             ],
+            'normalizer' => function ($value) {
+                foreach ([self::LEVEL_PROJECT, self::LEVEL_ENVIRONMENT] as $validLevel) {
+                    if (stripos($validLevel, $value) === 0) {
+                        return $validLevel;
+                    }
+                }
+
+                return $value;
+            },
         ]);
         $fields['environment'] = new OptionsField('Environment', [
             'conditions' => [
@@ -165,7 +175,6 @@ abstract class VariableCommandBase extends CommandBase
             },
             'asChoice' => false,
             'includeAsOption' => false,
-            'default' => $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null,
         ]);
         $fields['name'] = new Field('Name', [
             'description' => 'The variable name',

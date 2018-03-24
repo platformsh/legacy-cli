@@ -62,6 +62,17 @@ class VariableUpdateCommand extends VariableCommandBase
             }
         }
 
+        // Validate the is_json setting against the value.
+        if ((isset($variable->value) || isset($values['value']))
+            && (!empty($values['is_json']) || $variable->is_json)) {
+            $value = isset($values['value']) ? $values['value'] : $variable->value;
+            if (json_decode($value) === null && json_last_error()) {
+                $this->stdErr->writeln('The value is not valid JSON: <error>' . $value . '</error>');
+
+                return 1;
+            }
+        }
+
         if (!$values) {
             $this->stdErr->writeln('No changes were provided.');
 
