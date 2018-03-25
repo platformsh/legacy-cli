@@ -287,10 +287,16 @@ class ActivityMonitor
         }
         $value = $activity->getDescription(true);
 
-        // Replace description HTML fields with underlined plain text.
+        // Replace description HTML elements with Symfony Console decoration
+        // tags.
         $value = preg_replace('@<[^/>]+>@', '<options=underscore>', $value);
         $value = preg_replace('@</[^>]+>@', '</>', $value);
-        $value = strtr($value, ['&lt;' => '\\<', '&gt;' => '\\>']);
+
+        // Replace literal tags like "&lt;info&;gt;" with escaped tags like
+        // "\<info>".
+        $value = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', $value);
+
+        // Decode other HTML entities.
         $value = html_entity_decode($value, ENT_QUOTES, 'utf-8');
 
         return $value;

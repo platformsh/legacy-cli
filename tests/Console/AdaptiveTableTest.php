@@ -49,14 +49,8 @@ class AdaptiveTableTest extends \PHPUnit_Framework_TestCase
         $plainText = Helper::removeDecoration($f, $input);
         foreach ($maxLengths as $maxLength) {
             $plainWrapped = wordwrap($plainText, $maxLength, "\n", true);
-            $plainWrappedLines = explode("\n", $plainWrapped);
             $tableWrapped = $table->wrapWithDecoration($input, $maxLength);
-            $tableWrappedLines = explode("\n", $tableWrapped);
-            // Test each line individually, to ensure the markup makes sense per
-            // line.
-            foreach ($tableWrappedLines as $key => $line) {
-                $this->assertEquals($plainWrappedLines[$key], Helper::removeDecoration($f, $line));
-            }
+            $this->assertEquals($plainWrapped, Helper::removeDecoration($f, $tableWrapped));
         }
     }
 
@@ -78,6 +72,13 @@ class AdaptiveTableTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertWrappedWithDecoration(
             'Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor <options=reverse>incididunt ut labore et dolore magna aliqua.</> Ut enim ad minim veniam, quis nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+        );
+    }
+
+    public function testWrapWithDecorationIncludingEscapedTags()
+    {
+        $this->assertWrappedWithDecoration(
+            'The quick brown fox <options=underscore>jumps</> over the lazy \\<script type="text/javascript">dog\\</script>.'
         );
     }
 }
