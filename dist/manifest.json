@@ -1,10 +1,10 @@
 [
     {
         "name": "sensiocloud.phar",
-        "sha1": "814141201948570f76ac63f1829c9dd0be40d56b",
-        "sha256": "2ac6c9ea0032fe9ac6bc13f5764b259d0ae07ccef29b778fe8afb159ce59a082",
-        "url": "https://accounts.sensio.cloud/sites/default/files/sensiocloud-v0.0.17.phar",
-        "version": "0.0.17",
+        "sha1": "81ce5fda65575913e39e1b2ea8190366612e641d",
+        "sha256": "c92ea3e79a7d0e79d77d576fd97c3fc89da99a13e0404cabdbd6f5b883cbab87",
+        "url": "https://accounts.sensio.cloud/sites/default/files/sensiocloud-v0.0.18.phar",
+        "version": "0.0.18",
         "php": {
             "min": "5.5.9"
         }
