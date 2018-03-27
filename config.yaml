@@ -17,8 +17,13 @@ application:
   # This can be overridden in the user config file.
   login_method: browser
 
-  # Disabled commands.
+  # Disabled commands (a list of full command names).
   disabled_commands: []
+
+  # Experimental commands (a list of full command names). Enable these in the
+  # user config file: the array 'enable_commands' inside the 'experimental'
+  # section.
+  experimental_commands: []
 
 # Configuration for working with projects locally.
 local:
