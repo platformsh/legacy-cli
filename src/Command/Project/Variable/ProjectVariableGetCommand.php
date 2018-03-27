@@ -2,16 +2,19 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
-use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * @deprecated Use variable:get and variable:list instead
+ */
 class ProjectVariableGetCommand extends CommandBase
 {
+    protected $hiddenInList = true;
+
     /**
      * {@inheritdoc}
      */
@@ -33,53 +36,13 @@ class ProjectVariableGetCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        if ($name = $input->getArgument('name')) {
-            $variable = $this->getSelectedProject()
-                             ->getVariable($name);
-            if (!$variable) {
-                $this->stdErr->writeln("Variable not found: <error>$name</error>");
-
-                return 1;
-            }
-
-            if ($input->getOption('pipe')) {
-                $output->writeln($variable->value);
-            } else {
-                $output->writeln(sprintf('<info>%s</info>: %s', $variable->name, $variable->value));
-            }
-
-            return 0;
-        }
-
-        $results = $this->getSelectedProject()
-                        ->getVariables();
-        if (!$results) {
-            $this->stdErr->writeln('No variables found');
-
-            return 1;
-        }
-
-        if ($input->getOption('pipe')) {
-            throw new InvalidArgumentException('Specify a variable name to use --pipe');
-        }
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
-        $header = ['ID', 'Value', 'JSON', 'Build time', 'Runtime'];
-        $rows = [];
-        foreach ($results as $variable) {
-            $rows[] = [
-                new AdaptiveTableCell($variable->id, ['wrap' => false]),
-                $variable->value,
-                $variable->is_json ? 'Yes' : 'No',
-                $variable->visible_build ? 'Yes' : 'No',
-                $variable->visible_runtime ? 'Yes' : 'No',
-            ];
-        }
-
-        $table->render($rows, $header);
-
-        return 0;
+        return $this->runOtherCommand('variable:get', [
+            'name' => $input->getArgument('name'),
+            '--level' => 'project',
+            '--project' => $this->getSelectedProject()->id,
+            ] + array_filter([
+                '--format' => $input->getOption('format'),
+                '--pipe' => $input->getOption('pipe'),
+            ]));
     }
 }

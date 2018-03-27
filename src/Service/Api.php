@@ -405,7 +405,8 @@ class Api
      * @param bool $reset
      *
      * @return array
-     *   An array containing at least 'uuid', 'mail', and 'display_name'.
+     *   An array containing at least 'username', 'uuid', 'mail', and
+     *   'display_name'.
      */
     public function getMyAccount($reset = false)
     {
@@ -772,5 +773,39 @@ class Api
         }
 
         return $deployment;
+    }
+
+    /**
+     * Get the default environment in a list.
+     *
+     * @param array $environments An array of environments, keyed by ID.
+     *
+     * @return string|null
+     */
+    public function getDefaultEnvironmentId(array $environments)
+    {
+        // If there is only one environment, use that.
+        if (count($environments) <= 1) {
+            $environment = reset($environments);
+
+            return $environment ? $environment->id : null;
+        }
+
+        // Check if there is only one "main" environment.
+        $main = array_filter($environments, function (Environment $environment) {
+            return $environment->is_main;
+        });
+        if (count($main) === 1) {
+            $environment = reset($main);
+
+            return $environment ? $environment->id : null;
+        }
+
+        // Check if there is a "master" environment.
+        if (isset($environments['master'])) {
+            return 'master';
+        }
+
+        return null;
     }
 }

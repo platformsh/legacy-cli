@@ -56,7 +56,16 @@ EOT
             }
         }
 
-        if (strpos($currentShellConfig, $configDir . "/bin") !== false) {
+        $suggestedShellConfig = sprintf(
+            'export PATH=%s:"$PATH"',
+            escapeshellarg($configDir . '/bin')
+        );
+        $suggestedShellConfig .= PHP_EOL . sprintf(
+            '[ -f %1$s ] && . %1$s',
+            escapeshellarg($rcDestination)
+        );
+
+        if (strpos($currentShellConfig, $suggestedShellConfig) !== false) {
             $this->stdErr->writeln(sprintf('Already configured: <info>%s</info>', $shellConfigFile));
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
@@ -66,9 +75,6 @@ EOT
             ));
             return 0;
         }
-
-        $suggestedShellConfig = 'export PATH=' . escapeshellarg($configDir . '/bin') . ':"$PATH"' . PHP_EOL
-            . '. ' . escapeshellarg($rcDestination);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -94,10 +100,24 @@ EOT
             return 1;
         }
 
-        $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
-            . PHP_EOL . PHP_EOL
-            . '# BEGIN SNIPPET: Automatically added by the ' . $this->config()->get('application.name')
-            . PHP_EOL . $suggestedShellConfig . ' # END SNIPPET' . PHP_EOL;
+        $begin = '# BEGIN SNIPPET: Automatically added by the ' . $this->config()->get('application.name');
+        $end = '# END SNIPPET';
+
+        $beginPos = strpos($currentShellConfig, $begin);
+        $endPos = strpos($currentShellConfig, $end, $beginPos ?: 0);
+        if ($beginPos !== false && $endPos !== false && $endPos > $beginPos) {
+            $newShellConfig = substr_replace(
+                $currentShellConfig,
+                $begin . PHP_EOL . $suggestedShellConfig . ' ' . $end,
+                $beginPos,
+                $endPos + strlen($end) - $beginPos
+            );
+        } else {
+            $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
+                . PHP_EOL . PHP_EOL
+                . $begin . PHP_EOL . $suggestedShellConfig . ' ' . $end
+                . PHP_EOL;
+        }
 
         copy($shellConfigFile, $shellConfigFile . '.cli.bak');
 

@@ -276,18 +276,28 @@ class ActivityMonitor
      * Get the formatted description of an activity.
      *
      * @param \Platformsh\Client\Model\Activity $activity
+     * @param bool                              $withDecoration
      *
      * @return string
      */
-    public static function getFormattedDescription(Activity $activity)
+    public static function getFormattedDescription(Activity $activity, $withDecoration = true)
     {
-        $value = $activity->hasProperty('description')
-            ? $activity->getProperty('description')
-            : $activity->getDescription(true);
+        if (!$withDecoration) {
+            return $activity->getDescription(false);
+        }
+        $value = $activity->getDescription(true);
 
-        // Replace description HTML fields with underlined plain text.
-        $value = preg_replace('/<[^\/>]+>/', '<options=underscore>', $value);
-        $value = preg_replace('/<\/[^>]+>/', '</>', $value);
+        // Replace description HTML elements with Symfony Console decoration
+        // tags.
+        $value = preg_replace('@<[^/>]+>@', '<options=underscore>', $value);
+        $value = preg_replace('@</[^>]+>@', '</>', $value);
+
+        // Replace literal tags like "&lt;info&;gt;" with escaped tags like
+        // "\<info>".
+        $value = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', $value);
+
+        // Decode other HTML entities.
+        $value = html_entity_decode($value, ENT_QUOTES, 'utf-8');
 
         return $value;
     }

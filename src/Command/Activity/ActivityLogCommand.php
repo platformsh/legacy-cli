@@ -39,7 +39,7 @@ class ActivityLogCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $input->getOption('all'));
+        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
         $id = $input->getArgument('id');
         if ($id) {

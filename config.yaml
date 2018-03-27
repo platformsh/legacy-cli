@@ -10,15 +10,23 @@ application:
   user_state_file: '.sensiocloud/state.json'
   env_prefix: 'SENSIOCLOUD_CLI_'
   tmp_sub_dir: 'sensiocloud-cli-tmp'
+  github_repo: ~
+  release_branch: 'master'
 
   # The default interactive login method: either 'browser' or 'password'.
   # This can be overridden in the user config file.
   login_method: browser
 
-  # Disabled commands.
+  # Disabled commands (a list of full command names).
   disabled_commands:
     - environment:drush
     - local:drush-aliases
+
+  # Experimental commands (a list of full command names). Enable these in the
+  # user config file: the array 'enable_commands' inside the 'experimental'
+  # section.
+  experimental_commands:
+    - project:create
 
 # Configuration for working with projects locally.
 local:
