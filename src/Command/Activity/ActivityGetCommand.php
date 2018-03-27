@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Activity;
@@ -34,7 +35,7 @@ class ActivityGetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $input->getOption('all'));
+        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
         $id = $input->getArgument('id');
         if ($id) {
@@ -66,7 +67,14 @@ class ActivityGetCommand extends CommandBase
 
         $properties = $activity->getProperties();
 
-        $properties['description'] = $activity->getDescription(false);
+        if (!$input->getOption('property') && !$table->formatIsMachineReadable()) {
+            $properties['description'] = ActivityMonitor::getFormattedDescription($activity, true);
+        } else {
+            $properties['description'] = ActivityMonitor::getFormattedDescription($activity, false);
+            if ($input->getOption('property')) {
+                $properties['description_html'] = $activity->description;
+            }
+        }
 
         // Calculate the duration of the activity.
         if (!isset($properties['duration'])) {

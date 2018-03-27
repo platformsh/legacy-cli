@@ -11,13 +11,19 @@ application:
   env_prefix: 'PLATFORMSH_CLI_'
   tmp_sub_dir: 'platformsh-cli-tmp'
   github_repo: 'platformsh/platformsh-cli'
+  release_branch: 'master'
 
   # The default interactive login method: either 'browser' or 'password'.
   # This can be overridden in the user config file.
   login_method: browser
 
-  # Disabled commands.
+  # Disabled commands (a list of full command names).
   disabled_commands: []
+
+  # Experimental commands (a list of full command names). Enable these in the
+  # user config file: the array 'enable_commands' inside the 'experimental'
+  # section.
+  experimental_commands: []
 
 # Configuration for working with projects locally.
 local:

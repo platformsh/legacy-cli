@@ -175,6 +175,9 @@ class AdaptiveTable extends Table
         $lastTagClose = 0;
         foreach ($matches[0] as $match) {
             list($tagChunk, $tagOffset) = $match;
+            if (substr($formattedText, $tagOffset - 1, 1) === '\\') {
+                continue;
+            }
             $plainText .= substr($formattedText, $lastTagClose, $tagOffset - $lastTagClose);
             $tagChunks[$tagOffset] = $tagChunk;
             $lastTagClose = $tagOffset + strlen($tagChunk);
@@ -193,6 +196,8 @@ class AdaptiveTable extends Table
                     $breakPosition = $spacePos + 1;
                 } else {
                     $breakPosition = $maxLength;
+                    // Adjust for \< which will be converted to < later.
+                    $breakPosition += substr_count($remaining, '\\<', 0, $breakPosition);
                 }
                 $line = substr($remaining, 0, $breakPosition);
                 $remaining = substr($remaining, $breakPosition);
@@ -230,7 +235,7 @@ class AdaptiveTable extends Table
 
         // Ensure that tags are closed at the end of each line and re-opened at
         // the beginning of the next one.
-        $wrapped = preg_replace_callback("#(<" . $tagRegex . ">)([^<]+)#", function (array $matches) {
+        $wrapped = preg_replace_callback('@(<' . $tagRegex . '>)(((?!(?<!\\\)</).)+)@s', function (array $matches) {
             return $matches[1] . str_replace("\n", "</>\n" . $matches[1], $matches[2]);
         }, $wrapped);
 

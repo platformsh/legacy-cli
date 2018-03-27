@@ -1265,8 +1265,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function isEnabled()
     {
-        return !$this->config()->has('application.disabled_commands')
-            || !in_array($this->getName(), $this->config()->get('application.disabled_commands'));
+        return $this->config()->isCommandEnabled($this->getName());
     }
 
     /**

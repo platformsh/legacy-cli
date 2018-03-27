@@ -237,4 +237,29 @@ class Config
     {
         return !empty(self::$config['experimental']['all_experiments']) || !empty(self::$config['experimental'][$name]);
     }
+
+    /**
+     * Test if a command should be enabled.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isCommandEnabled($name)
+    {
+        if (!empty(self::$config['application']['disabled_commands'])
+            && in_array($name, self::$config['application']['disabled_commands'])) {
+            return false;
+        }
+        if (!empty(self::$config['application']['experimental_commands'])
+            && in_array($name, self::$config['application']['experimental_commands'])) {
+            return !empty(self::$config['experimental']['all_experiments'])
+                || (
+                    !empty(self::$config['experimental']['enable_commands'])
+                    && in_array($name, self::$config['experimental']['enable_commands'])
+                );
+        }
+
+        return true;
+    }
 }

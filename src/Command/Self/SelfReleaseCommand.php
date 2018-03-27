@@ -16,6 +16,8 @@ class SelfReleaseCommand extends CommandBase
     {
         $defaultRepo = $this->config()->has('application.github_repo')
             ? $this->config()->get('application.github_repo') : null;
+        $defaultReleaseBranch = $this->config()->has('application.release_branch')
+            ? $this->config()->get('application.release_branch') : 'master';
 
         $this
             ->setName('self:release')
@@ -24,8 +26,9 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $defaultRepo)
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
             ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
-            ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', 'master')
-            ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'Specify the last version number');
+            ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', $defaultReleaseBranch)
+            ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'Specify the last version number')
+            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes');
     }
 
     public function isEnabled()
@@ -61,13 +64,15 @@ class SelfReleaseCommand extends CommandBase
             $git->execute(['merge', 'development'], CLI_ROOT, true);
         }
 
-        $gitStatus = $git->execute(['status', '--porcelain'], CLI_ROOT, true);
-        if (is_string($gitStatus) && !empty($gitStatus)) {
-            foreach (explode("\n", $gitStatus) as $statusLine) {
-                if (strpos($statusLine, ' config.yaml') === false) {
-                    $this->stdErr->writeln('There are uncommitted changes in Git. Cannot proceed.');
+        if (!$input->getOption('no-check-changes')) {
+            $gitStatus = $git->execute(['status', '--porcelain'], CLI_ROOT, true);
+            if (is_string($gitStatus) && !empty($gitStatus)) {
+                foreach (explode("\n", $gitStatus) as $statusLine) {
+                    if (strpos($statusLine, ' config.yaml') === false) {
+                        $this->stdErr->writeln('There are uncommitted changes in Git. Cannot proceed.');
 
-                    return 1;
+                        return 1;
+                    }
                 }
             }
         }
@@ -200,7 +205,7 @@ class SelfReleaseCommand extends CommandBase
 
         $pharPublicFilename = $this->config()->get('application.executable') . '.phar';
 
-        $changelog = $this->getReleaseChangelog($lastVersion);
+        $changelog = $this->getReleaseChangelog($lastVersion, $repoApiUrl);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -330,10 +335,11 @@ class SelfReleaseCommand extends CommandBase
 
     /**
      * @param string $lastVersion The last version number.
+     * @param string $repoApiUrl
      *
      * @return string
      */
-    private function getReleaseChangelog($lastVersion)
+    private function getReleaseChangelog($lastVersion, $repoApiUrl)
     {
         $lastVersionTag = 'v' . ltrim($lastVersion, 'v');
         $filename = CLI_ROOT . '/release-changelog.md';
@@ -349,7 +355,7 @@ class SelfReleaseCommand extends CommandBase
             }
         }
         if (empty($changelog)) {
-            $changelog = $this->getGitChangelog($lastVersionTag);
+            $changelog = $this->getGitChangelog($lastVersionTag, $repoApiUrl);
             (new Filesystem())->dumpFile($filename, $changelog);
         }
 
@@ -374,24 +380,42 @@ class SelfReleaseCommand extends CommandBase
 
     /**
      * @param string $since
+     * @param string $repoApiUrl
      *
      * @return string
      */
-    private function getGitChangelog($since)
+    private function getGitChangelog($since, $repoApiUrl)
     {
+        $http = new Client();
+        $ref = $http->get($repoApiUrl . '/git/refs/tags/' . rawurlencode($since), [
+            'headers' => [
+                'Authorization' => 'token ' . getenv('GITHUB_TOKEN'),
+                'Content-Type' => 'application/json',
+            ],
+            'debug' => $this->stdErr->isDebug(),
+        ])->json();
+        $sha = $ref['object']['sha'];
+
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
         $changelog = $git->execute([
             'log',
-            '--pretty=format:* %s',
+            '--pretty=tformat:* %s%n%b',
             '--no-merges',
             '--invert-grep',
             '--grep=(Release v|\[skip changelog\])',
             '--perl-regexp',
             '--regexp-ignore-case',
-            $since . '...HEAD'
+            $sha . '...HEAD'
         ], CLI_ROOT);
+        if (!is_string($changelog)) {
+            return '';
+        }
 
-        return is_string($changelog) ? $changelog : '';
+        $changelog = preg_replace('/^[^\*\n]/m', '    $0', $changelog);
+        $changelog = preg_replace('/\n+\*/', "\n*", $changelog);
+        $changelog = trim($changelog);
+
+        return $changelog;
     }
 }
