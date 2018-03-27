@@ -30,9 +30,6 @@ class Drush
     /** @var array */
     protected $aliases = [];
 
-    /** @var bool|null */
-    protected $isInstalled;
-
     /** @var string|false|null */
     protected $version;
 
@@ -124,11 +121,9 @@ class Drush
      */
     public function ensureInstalled()
     {
-        if (!isset($this->isInstalled) && $this->getDrushExecutable() === 'drush'
-            && !$this->shellHelper->commandExists('drush')) {
+        if ($this->getVersion() === false) {
             throw new DependencyMissingException('Drush is not installed');
         }
-        $this->isInstalled = true;
     }
 
     /**
