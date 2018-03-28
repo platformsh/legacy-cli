@@ -387,14 +387,13 @@ class SelfReleaseCommand extends CommandBase
     private function getGitChangelog($since, $repoApiUrl)
     {
         $http = new Client();
-        $ref = $http->get($repoApiUrl . '/git/refs/tags/' . rawurlencode($since), [
+        $sha = $http->get($repoApiUrl . '/commits/' . rawurlencode($since), [
             'headers' => [
                 'Authorization' => 'token ' . getenv('GITHUB_TOKEN'),
-                'Content-Type' => 'application/json',
+                'Accept' => 'application/vnd.github.v3.sha',
             ],
             'debug' => $this->stdErr->isDebug(),
-        ])->json();
-        $sha = $ref['object']['sha'];
+        ])->getBody();
 
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');

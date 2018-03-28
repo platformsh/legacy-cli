@@ -63,7 +63,10 @@ class LocalDrushAliasesCommand extends CommandBase
             return 0;
         }
 
-        $drush->ensureInstalled();
+        if ($drush->getVersion() === false) {
+            $this->stdErr->writeln('Drush is not installed, or the Drush version could not be determined.');
+            return 1;
+        }
 
         if ($input->isInteractive()) {
             $this->migrateAliasFiles($drush);

@@ -169,7 +169,7 @@ class Api
     {
         if (!isset(self::$client)) {
             $connectorOptions = [];
-            $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
+            $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
             $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
             $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
@@ -804,6 +804,37 @@ class Api
         // Check if there is a "master" environment.
         if (isset($environments['master'])) {
             return 'master';
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the preferred site URL for an environment and app.
+     *
+     * @param \Platformsh\Client\Model\Environment                           $environment
+     * @param string                                                         $appName
+     * @param \Platformsh\Client\Model\Deployment\EnvironmentDeployment|null $deployment
+     *
+     * @return string|null
+     */
+    public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
+    {
+        $deployment = $deployment ?: $this->getCurrentDeployment($environment);
+        $routes = $deployment->routes;
+        $appUrls = [];
+        foreach ($routes as $url => $route) {
+            if ($route->type === 'upstream' && $route->__get('upstream') === $appName) {
+                $appUrls[] = $url;
+            }
+        }
+        usort($appUrls, [$this, 'urlSort']);
+        $siteUrl = reset($appUrls);
+        if ($siteUrl) {
+            return $siteUrl;
+        }
+        if ($environment->hasLink('public-url')) {
+            return $environment->getLink('public-url');
         }
 
         return null;
