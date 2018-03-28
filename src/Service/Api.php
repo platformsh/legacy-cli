@@ -808,4 +808,35 @@ class Api
 
         return null;
     }
+
+    /**
+     * Get the preferred site URL for an environment and app.
+     *
+     * @param \Platformsh\Client\Model\Environment                           $environment
+     * @param string                                                         $appName
+     * @param \Platformsh\Client\Model\Deployment\EnvironmentDeployment|null $deployment
+     *
+     * @return string|null
+     */
+    public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
+    {
+        $deployment = $deployment ?: $this->getCurrentDeployment($environment);
+        $routes = $deployment->routes;
+        $appUrls = [];
+        foreach ($routes as $url => $route) {
+            if ($route->type === 'upstream' && $route->__get('upstream') === $appName) {
+                $appUrls[] = $url;
+            }
+        }
+        usort($appUrls, [$this, 'urlSort']);
+        $siteUrl = reset($appUrls);
+        if ($siteUrl) {
+            return $siteUrl;
+        }
+        if ($environment->hasLink('public-url')) {
+            return $environment->getLink('public-url');
+        }
+
+        return null;
+    }
 }
