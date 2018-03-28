@@ -49,8 +49,16 @@ class ProjectInfoCommand extends CommandBase
 
         $property = $input->getArgument('property');
 
+        // Setting the pseudo-properties 'git' and 'url', and un-setting the
+        // property 'entropy', are done twice in this command so that
+        // lazy-loading still works.
         if (!$property) {
-            return $this->listProperties($project->getProperties());
+            $properties = $project->getProperties();
+            $properties['git'] = $project->getGitUrl();
+            $properties['url'] = $project->getUri();
+            unset($properties['entropy']);
+
+            return $this->listProperties($properties);
         }
 
         $value = $input->getArgument('value');
@@ -66,6 +74,9 @@ class ProjectInfoCommand extends CommandBase
             case 'url':
                 $value = $project->getUri();
                 break;
+
+            case 'entropy':
+                throw new \InvalidArgumentException('Property not found: ' . $property);
 
             default:
                 $value = $this->api()->getNestedProperty($project, $property);
