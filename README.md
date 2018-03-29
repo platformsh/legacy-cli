@@ -222,6 +222,9 @@ application:
   # 'browser').
   login_method: browser
 
+  # The default date format string. For a list of formats, see: http://php.net/manual/en/function.date.php
+  date_format: c
+
 local:
   # Set this to true to avoid some Windows symlink issues.
   copy_on_windows: false
