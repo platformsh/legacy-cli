@@ -373,16 +373,19 @@ class Api
 
         $environments = $this->getEnvironments($project, $refresh);
 
-        // Retry if the environment was not found in the cache.
-        if (!isset($environments[$id])
-            && $refresh === null
-            && !self::$environmentsCacheRefreshed) {
-            $environments = $this->getEnvironments($project, true);
-        }
-
         // Look for the environment by ID.
         if (isset($environments[$id])) {
             return $environments[$id];
+        }
+
+        // Retry directly if the environment was not found in the cache.
+        if ($refresh === null) {
+            if ($environment = $project->getEnvironment($id)) {
+                // If the environment was found directly, the cache must be out
+                // of date.
+                $this->clearEnvironmentsCache($project->id);
+                return $environment;
+            }
         }
 
         // Look for the environment by machine name.

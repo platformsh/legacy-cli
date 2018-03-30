@@ -14,10 +14,8 @@ class SelfReleaseCommand extends CommandBase
 
     protected function configure()
     {
-        $defaultRepo = $this->config()->has('application.github_repo')
-            ? $this->config()->get('application.github_repo') : null;
-        $defaultReleaseBranch = $this->config()->has('application.release_branch')
-            ? $this->config()->get('application.release_branch') : 'master';
+        $defaultRepo = $this->config()->getWithDefault('application.github_repo', null);
+        $defaultReleaseBranch = $this->config()->getWithDefault('application.release_branch', 'master');
 
         $this
             ->setName('self:release')

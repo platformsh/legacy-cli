@@ -47,7 +47,7 @@ class WelcomeCommand extends CommandBase
             }
 
             // Show the environments.
-            $this->runOtherCommand('environments');
+            $this->runOtherCommand('environments', ['--refresh' => 0]);
             $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>\n");
         } else {
             // The project is not known. Show all projects.

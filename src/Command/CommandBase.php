@@ -327,7 +327,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         $success = false;
         if ($this->output && $this->input && $this->input->isInteractive()) {
-            $method = $this->config()->get('application.login_method');
+            $method = $this->config()->getWithDefault('application.login_method', 'browser');
             if ($method === 'browser') {
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
                 $questionHelper = $this->getService('question_helper');
