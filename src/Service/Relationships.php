@@ -131,31 +131,53 @@ class Relationships implements InputConfiguringInterface
      * @return string
      *   The command line arguments (excluding the $command).
      */
-    public function getSqlCommandArgs($command, array $database)
+    public function getDbCommandArgs($command, array $database)
     {
         switch ($command) {
             case 'psql':
             case 'pg_dump':
-                $arguments = "'postgresql://%s:%s@%s:%d/%s'";
-                break;
+                return escapeshellarg(sprintf(
+                    'postgresql://%s:%s@%s:%d/%s',
+                    $database['username'],
+                    $database['password'],
+                    $database['host'],
+                    $database['port'],
+                    $database['path']
+                ));
 
             case 'mysql':
             case 'mysqldump':
-                $arguments = "'--user=%s' '--password=%s' '--host=%s' --port=%d '%s'";
-                break;
+                return sprintf(
+                    '--user=%s --password=%s --host=%s --port=%d %s',
+                    escapeshellarg($database['username']),
+                    escapeshellarg($database['password']),
+                    escapeshellarg($database['host']),
+                    $database['port'],
+                    escapeshellarg($database['path'])
+                );
 
-            default:
-                throw new \InvalidArgumentException('Unrecognised command: ' . $command);
+            case 'mongo':
+            case 'mongodump':
+            case 'mongoexport':
+            case 'mongorestore':
+                $args = sprintf(
+                    '--username %s --password %s --host %s --port %d --authenticationDatabase %s',
+                    escapeshellarg($database['username']),
+                    escapeshellarg($database['password']),
+                    escapeshellarg($database['host']),
+                    $database['port'],
+                    escapeshellarg($database['path'])
+                );
+                if ($command === 'mongo') {
+                    $args .= ' ' . escapeshellarg($database['path']);
+                } else {
+                    $args .= ' --db ' . escapeshellarg($database['path']);
+                }
+
+                return $args;
         }
 
-        return sprintf(
-            $arguments,
-            $database['username'],
-            $database['password'],
-            $database['host'],
-            $database['port'],
-            $database['path']
-        );
+        throw new \InvalidArgumentException('Unrecognised command: ' . $command);
     }
 
     /**

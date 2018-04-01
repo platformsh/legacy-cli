@@ -71,7 +71,7 @@ class QuestionHelper extends BaseQuestionHelper
      * @param array  $items     An associative array of choices.
      * @param string $text      Some text to precede the choices.
      * @param mixed  $default   A default (as a key in $items).
-     * @param bool   $skipOnOne Whether to skip the choice if there isonly one
+     * @param bool   $skipOnOne Whether to skip the choice if there is only one
      *                          item.
      *
      * @throws \RuntimeException on failure
