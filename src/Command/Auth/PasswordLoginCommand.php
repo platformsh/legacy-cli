@@ -60,7 +60,7 @@ class PasswordLoginCommand extends CommandBase
         $cache = $this->getService('cache');
         $cache->flushAll();
 
-        $info = $this->api()->getClient(false)->getAccountInfo();
+        $info = $this->api()->getClient(false, true)->getAccountInfo();
         if (isset($info['username'], $info['mail'])) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
