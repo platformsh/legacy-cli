@@ -8,6 +8,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
+use Platformsh\Client\Session\SessionInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -59,7 +60,7 @@ class BrowserLoginCommand extends CommandBase
             // again (unless --force is used). If the request fails, proceed
             // with login.
             try {
-                $account = $this->api()->getMyAccount();
+                $account = $this->api()->getMyAccount(true);
 
                 $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
                     $account['username'],
@@ -209,11 +210,14 @@ class BrowserLoginCommand extends CommandBase
         /** @var \Doctrine\Common\Cache\CacheProvider $cache */
         $cache = $this->getService('cache');
         $cache->flushAll();
-        $this->saveAccessToken($token);
+
+        // Reset the API client so that it will use the new tokens.
+        $client = $this->api()->getClient(false, true);
+        $this->saveAccessToken($token, $client->getConnector()->getSession());
         $this->stdErr->writeln('You are logged in.');
 
         // Show user account info.
-        $info = $this->api()->getClient(false)->getAccountInfo();
+        $info = $client->getAccountInfo();
         $this->stdErr->writeln(sprintf(
             "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
             $info['username'],
@@ -224,12 +228,12 @@ class BrowserLoginCommand extends CommandBase
     }
 
     /**
-     * @param array $tokenData
+     * @param array            $tokenData
+     * @param SessionInterface $session
      */
-    private function saveAccessToken(array $tokenData)
+    private function saveAccessToken(array $tokenData, SessionInterface $session)
     {
         $token = new AccessToken($tokenData['access_token'], $tokenData['token_type'], $tokenData);
-        $session = $this->api()->getClient(false)->getConnector()->getSession();
         $session->setData([
             'accessToken' => $token->getToken(),
             'tokenType' => $token->getType(),
