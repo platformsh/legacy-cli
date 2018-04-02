@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Auth;
 
 use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
@@ -53,14 +54,29 @@ class BrowserLoginCommand extends CommandBase
         }
         $connector = $this->api()->getClient(false)->getConnector();
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
-            $account = $this->api()->getMyAccount();
-            $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
-                $account['username'],
-                $account['mail']
-            ));
-            // USE THE FORCE
-            $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
-            return 0;
+            // Get account information, simultaneously checking whether the API
+            // login is still valid. If the request works, then do not log in
+            // again (unless --force is used). If the request fails, proceed
+            // with login.
+            try {
+                $account = $this->api()->getMyAccount();
+
+                $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
+                    $account['username'],
+                    $account['mail']
+                ));
+
+                // USE THE FORCE
+                $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
+
+                return 0;
+            } catch (BadResponseException $e) {
+                if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
+                    $this->debug('Already logged in, but a test request failed. Continuing with login.');
+                } else {
+                    throw $e;
+                }
+            }
         }
 
         // Set up the local PHP web server, which will serve an OAuth2 redirect
