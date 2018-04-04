@@ -7,6 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Process\PhpExecutableFinder;
 
 class SelfReleaseCommand extends CommandBase
 {
@@ -26,7 +27,8 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
             ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', $defaultReleaseBranch)
             ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'Specify the last version number')
-            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes');
+            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes')
+            ->addOption('allow-lower', null, InputOption::VALUE_NONE, 'Allow releasing with a lower version number than the last');
     }
 
     public function isEnabled()
@@ -141,7 +143,11 @@ class SelfReleaseCommand extends CommandBase
                 return $result;
             }
         } else {
-            $versionInPhar = $shell->execute(['php', $pharFilename, '--version'], null, true);
+            $versionInPhar = $shell->execute([
+                (new PhpExecutableFinder())->find() ?: PHP_BINARY,
+                $pharFilename,
+                '--version'
+            ], null, true);
             if (strpos($versionInPhar, $newVersion) === false) {
                 $this->stdErr->writeln('The file ' . $pharFilename . ' reports a different version: "' . $versionInPhar . '"');
 
@@ -199,6 +205,13 @@ class SelfReleaseCommand extends CommandBase
             $lastTag = $latestRelease['tag_name'];
             $lastVersion = ltrim($lastTag, 'v');
             $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
+        }
+
+        if (version_compare($newVersion, $lastVersion, '<') && !$input->getOption('allow-lower')) {
+            $this->stdErr->writeln(sprintf('The new version number <error>%s</error> is lower than the last version number <error>%s</error>.', $newVersion, $lastVersion));
+            $this->stdErr->writeln('Use --allow-lower to skip this check.');
+
+            return 1;
         }
 
         $pharPublicFilename = $this->config()->get('application.executable') . '.phar';

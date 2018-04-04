@@ -162,12 +162,13 @@ class Api
      *
      * @param bool $autoLogin Whether to log in, if the client is not already
      *                        authenticated (default: true).
+     * @param bool $reset     Whether to re-initialize the client.
      *
      * @return PlatformClient
      */
-    public function getClient($autoLogin = true)
+    public function getClient($autoLogin = true, $reset = false)
     {
-        if (!isset(self::$client)) {
+        if (!isset(self::$client) || $reset) {
             $connectorOptions = [];
             $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
