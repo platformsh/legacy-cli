@@ -1,7 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use GuzzleHttp\Exception\TransferException;
+use GuzzleHttp\Exception\GuzzleException;
+use function GuzzleHttp\json_decode;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
@@ -289,11 +290,11 @@ abstract class IntegrationCommandBase extends CommandBase
         ));
 
         try {
-            $hooks = $client->get($hooksApiUrl, $requestOptions)->json();
+            $hooks = json_decode($client->request('get', $hooksApiUrl, $requestOptions)->getBody()->getContents(), true);
             $hook = $this->findWebHook($integration, $hooks);
             if (!$hook) {
                 $this->stdErr->writeln('  Creating new webhook');
-                $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
+                $client->request('post', $hooksApiUrl, ['json' => $payload] + $requestOptions);
                 $this->stdErr->writeln('  Webhook created successfully');
             }
             elseif ($this->arraysDiffer($hook, $payload)) {
@@ -303,15 +304,13 @@ abstract class IntegrationCommandBase extends CommandBase
                 $hookApiUrl = $hooksApiUrl . '/' . rawurlencode($hook['id']);
 
                 $this->stdErr->writeln('  Updating webhook');
-                $client->send(
-                    $client->createRequest($method, $hookApiUrl, ['json' => $payload] + $requestOptions)
-                );
+                $client->request($method, $hookApiUrl, ['json' => $payload] + $requestOptions);
                 $this->stdErr->writeln('  Webhook updated successfully');
             }
             else {
                 $this->stdErr->writeln('  Valid configuration found');
             }
-        } catch (TransferException $e) {
+        } catch (GuzzleException $e) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('  <comment>Failed to read or write webhooks:</comment>');
             $this->stdErr->writeln('  ' . $e->getMessage());

@@ -3,12 +3,10 @@
     "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
-        "php": ">=5.5.9",
+        "php": ">=5.6",
         "doctrine/cache": "~1.5",
-        "guzzlehttp/guzzle": "^5.3",
-        "guzzlehttp/ringphp": "^1.1",
         "platformsh/console-form": ">=0.0.20 <2.0",
-        "platformsh/client": ">=0.17.1 <2.0",
+        "platformsh/client": "^2.0@beta",
         "symfony/console": "^3.0 !=3.2.5 !=3.2.6",
         "symfony/yaml": "^3.0 || ^2.6",
         "symfony/finder": "^3.0",
@@ -50,14 +48,9 @@
     "bin": [
         "bin/platform"
     ],
-    "extra": {
-        "patches": {
-            "commerceguys/guzzle-oauth2-plugin": {}
-        }
-    },
     "config": {
         "platform": {
-            "php": "5.5.9"
+            "php": "5.6"
         }
     }
 }
