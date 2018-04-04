@@ -21,7 +21,9 @@ class TimezoneUtil
      */
     public static function getTimezone()
     {
-        $currentTz = date_default_timezone_get();
+        // Suppress the PHP warning, "It is not safe to rely on the system's
+        // timezone settings".
+        $currentTz = @date_default_timezone_get();
         if ($currentTz !== 'UTC') {
             return $currentTz;
         }
