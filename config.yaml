@@ -1,7 +1,7 @@
 # Metadata about the CLI application itself.
 application:
   name: 'Platform.sh CLI'
-  version: '3.x-dev'
+  version: '4.x-dev'
   executable: 'platform'
   package_name: 'platformsh/cli'
   installer_url: 'https://platform.sh/cli/installer'
