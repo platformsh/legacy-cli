@@ -25,13 +25,11 @@ class VariableGetCommand extends VariableCommandBase
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
-        $this->addOption('pipe', null, InputOption::VALUE_NONE, '[Deprecated option] Output the variable value only');
         $this->addExample('View the variable "example"', 'example');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->warnAboutDeprecatedOptions(['pipe']);
         $level = $this->getRequestedLevel($input);
         $this->validateInput($input, $level === self::LEVEL_PROJECT);
 
@@ -57,12 +55,6 @@ class VariableGetCommand extends VariableCommandBase
                 $this->config()->get('application.executable'),
                 escapeshellarg($variable->name)
             ));
-        }
-
-        if ($input->getOption('pipe')) {
-            $output->writeln($variable->value);
-
-            return 0;
         }
 
         $properties = $variable->getProperties();

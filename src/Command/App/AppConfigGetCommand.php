@@ -21,7 +21,6 @@ class AppConfigGetCommand extends CommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
-        $this->addOption('identity-file', 'i', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
     }
 
     /**
@@ -30,7 +29,6 @@ class AppConfigGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $this->warnAboutDeprecatedOptions(['identity-file']);
 
         $appConfig = $this->api()
             ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'))

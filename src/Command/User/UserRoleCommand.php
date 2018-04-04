@@ -2,13 +2,11 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Client\Model\EnvironmentAccess;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class UserRoleCommand extends CommandBase
 {
@@ -19,14 +17,13 @@ class UserRoleCommand extends CommandBase
             ->setDescription("View a user's role(s)")
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout (after making any changes)');
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
 
         // Backwards compatibility.
         $this->setHiddenAliases(['user:role']);
-        $this->addOption('role', 'r', InputOption::VALUE_REQUIRED, "[Deprecated: use user:update to change a user's role(s)]");
 
         $this->addExample("View Alice's role on the project", 'alice@example.com');
         $this->addExample("View Alice's role on the environment", 'alice@example.com --level environment');
@@ -35,7 +32,6 @@ class UserRoleCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $level = $input->getOption('level');
-        $role = $input->getOption('role');
         $validLevels = ['project', 'environment', null];
         if (!in_array($level, $validLevels)) {
             $this->stdErr->writeln("Invalid level: <error>$level</error>");
@@ -44,8 +40,6 @@ class UserRoleCommand extends CommandBase
 
         $this->validateInput($input, $level !== 'environment');
         $project = $this->getSelectedProject();
-
-        $this->warnAboutDeprecatedOptions(['role']);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -70,65 +64,39 @@ class UserRoleCommand extends CommandBase
             return 1;
         }
 
-        if ($level === null && $role && $this->hasSelectedEnvironment() && $input->isInteractive()) {
-            $environment = $this->getSelectedEnvironment();
-            $question = new ChoiceQuestion('What role level do you want to set to "' . $role . '"?', [
-                'project' => 'The project',
-                'environment' => sprintf('The environment (%s)', $environment->id),
-            ]);
-            $level = $questionHelper->ask($input, $output, $question);
-            $this->stdErr->writeln('');
-        } elseif ($level === null && $role) {
-            $level = 'project';
-        }
-
-        // Validate the --role option, according to the level.
-        $validRoles = $level !== 'environment'
-            ? ProjectAccess::$roles
-            : array_merge(EnvironmentAccess::$roles, ['none']);
-        if ($role && !in_array($role, $validRoles)) {
-            $this->stdErr->writeln('Invalid ' . $level .' role: ' . $role);
-
-            return 1;
-        }
-
-        $args = [
-            'email' => $email,
-            '--role' => [],
-            '--project' => $project->id,
-        ];
-        if ($role) {
-            if ($level === 'project') {
-                $args['--role'][] = $role;
-            } elseif ($level === 'environment') {
-                $args['--role'][] = $this->getSelectedEnvironment()->id . ':' . $role;
-            }
-        } else {
-            $args['--yes'] = true;
-        }
-        $result = $this->runOtherCommand($role ? 'user:update' : 'user:add', $args, $output);
-        if ($result !== 0) {
-            return $result;
-        }
-
         if ($input->getOption('pipe')) {
-            $uuid = $projectAccess->id;
             if ($level !== 'environment') {
-                $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email, true);
-                $currentRole = $projectAccess ? $projectAccess->role : 'none';
+                $currentRole = $projectAccess->role;
             } else {
-                $currentRole = 'none';
+                $currentRole = $projectAccess->role === ProjectAccess::ROLE_ADMIN ? 'admin' : false;
                 $accesses = $this->getSelectedEnvironment()->getUsers();
                 foreach ($accesses as $access) {
-                    if ($access->user === $uuid) {
+                    if ($access->user === $projectAccess->id) {
                         $currentRole = $access->role;
                         break;
                     }
                 }
+                if (!$currentRole) {
+                    $this->stdErr->writeln(sprintf(
+                        'The user <error>%s</error> could not be found on the environment <error>%s</error>.',
+                        $email,
+                        $this->getSelectedEnvironment()->id
+                    ));
+
+                    return 1;
+                }
             }
             $output->writeln($currentRole);
+
+            return 0;
         }
 
-        return 0;
+        $args = [
+            'email' => $email,
+            '--project' => $project->id,
+            '--yes' => true,
+        ];
+
+        return $this->runOtherCommand('user:add', $args, $output);
     }
 }
