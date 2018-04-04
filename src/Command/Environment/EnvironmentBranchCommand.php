@@ -82,7 +82,7 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        if (!$parentEnvironment->operationAvailable('branch')) {
+        if (!$this->api()->checkEnvironmentOperation('branch', $parentEnvironment)) {
             $this->stdErr->writeln(
                 "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
             );

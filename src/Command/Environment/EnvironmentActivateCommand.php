@@ -68,12 +68,13 @@ class EnvironmentActivateCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
         foreach ($environments as $environment) {
             $environmentId = $environment->id;
-            if ($environment->isActive()) {
-                $output->writeln("The environment <info>$environmentId</info> is already active.");
-                $count--;
-                continue;
-            }
-            if (!$environment->operationAvailable('activate')) {
+            if (!$this->api()->checkEnvironmentOperation('activate', $environment)) {
+                if ($environment->isActive()) {
+                    $output->writeln("The environment <info>$environmentId</info> is already active.");
+                    $count--;
+                    continue;
+                }
+
                 $output->writeln(
                     "Operation not available: The environment <error>$environmentId</error> can't be activated."
                 );
