@@ -2,10 +2,11 @@
 
 namespace Platformsh\Cli\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Local\LocalProject;
 
-class LocalProjectTest extends \PHPUnit_Framework_TestCase
+class LocalProjectTest extends TestCase
 {
 
     use HasTempDirTrait;

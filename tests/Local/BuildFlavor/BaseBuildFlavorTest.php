@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\BuildFlavor;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config as CliConfig;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
@@ -9,7 +10,7 @@ use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Tests\HasTempDirTrait;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
-abstract class BaseBuildFlavorTest extends \PHPUnit_Framework_TestCase
+abstract class BaseBuildFlavorTest extends TestCase
 {
     use HasTempDirTrait;
 

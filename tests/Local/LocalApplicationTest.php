@@ -2,12 +2,13 @@
 
 namespace Platformsh\Cli\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\BuildFlavor\NoBuildFlavor;
 use Platformsh\Cli\Local\BuildFlavor\Symfony;
 use Platformsh\Cli\Local\LocalApplication;
 
-class LocalApplicationTest extends \PHPUnit_Framework_TestCase
+class LocalApplicationTest extends TestCase
 {
 
     public function testBuildFlavorDetectionDrupal()

@@ -25,6 +25,7 @@ output(CLI_NAME . " installer", 'heading');
 output(PHP_EOL . "Environment check", 'heading');
 
 // Check the PHP version.
+// @todo load this requirement for the version under consideration
 $min_php = '5.5.9';
 check(
     sprintf('The PHP version is supported: %s.', PHP_VERSION),
@@ -63,45 +64,21 @@ check(
     false
 );
 
-// Check that the openssl extension exists.
-check(
-    'The "openssl" PHP extension is installed.',
-    'Warning: the "openssl" PHP extension will be needed.',
-    function () {
-        return extension_loaded('openssl');
-    },
-    false
-);
-
-// Check that the curl extension exists.
-check(
-    'The "curl" PHP extension is installed.',
-    'Warning: the "curl" PHP extension will be needed.',
-    function () {
-        return extension_loaded('curl');
-    },
-    false
-);
-
-// Check that the ctype extension exists.
-check(
-    'The "ctype" PHP extension is installed.',
-    'Warning: the "ctype" PHP extension will be needed.',
-    function () {
-        return extension_loaded('ctype');
-    },
-    false
-);
-
-// Check that the mbstring and/or iconv extensions exist.
-check(
-    'The "mbstring" and/or "iconv" PHP extensions are installed.',
-    'Warning: the "mbstring" and/or "iconv" PHP extensions will be needed.',
-    function () {
-        return extension_loaded('mbstring') || extension_loaded('iconv');
-    },
-    false
-);
+$required_extensions = [
+    'mbstring',
+    'openssl',
+    'pcre',
+];
+foreach ($required_extensions as $extension) {
+    check(
+        'The "' . $extension . '" PHP extension is installed.',
+        'Warning: the "' . $extension . '" PHP extension will be needed.',
+        function () use ($extension) {
+            return extension_loaded($extension);
+        },
+        false
+    );
+}
 
 // Check Suhosin restrictions.
 if (extension_loaded('suhosin')) {

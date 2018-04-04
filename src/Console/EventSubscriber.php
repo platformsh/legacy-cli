@@ -13,7 +13,7 @@ use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\PermissionDeniedException;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Symfony\Component\Console\ConsoleEvents;
-use Symfony\Component\Console\Event\ConsoleExceptionEvent;
+use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class EventSubscriber implements EventSubscriberInterface
@@ -33,24 +33,24 @@ class EventSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return [ConsoleEvents::EXCEPTION => 'onException'];
+        return [ConsoleEvents::ERROR => 'onError'];
     }
 
     /**
      * React to any console exceptions.
      *
-     * @param ConsoleExceptionEvent    $event
+     * @param \Symfony\Component\Console\Event\ConsoleErrorEvent $event
      */
-    public function onException(ConsoleExceptionEvent $event)
+    public function onError(ConsoleErrorEvent $event)
     {
-        $exception = $event->getException();
+        $error = $event->getError();
 
         // Replace Guzzle connect exceptions with a friendlier message. This
         // also prevents the user from seeing two exceptions (one direct from
         // Guzzle, one from RingPHP).
-        if ($exception instanceof ConnectException && strpos($exception->getMessage(), 'cURL error 6') !== false) {
-            $request = $exception->getRequest();
-            $event->setException(new ConnectionFailedException(
+        if ($error instanceof ConnectException && strpos($error->getMessage(), 'cURL error 6') !== false) {
+            $request = $error->getRequest();
+            $event->setError(new ConnectionFailedException(
                 "Failed to connect to host: " . $request->getUri()->getHost()
                 . " \nPlease check your Internet connection.",
                 $request
@@ -61,9 +61,9 @@ class EventSubscriber implements EventSubscriberInterface
         // Create a friendlier message for the OAuth2 "Invalid refresh token"
         // error.
         $loginCommand = sprintf('%s login', $this->config->get('application.executable'));
-        if ($exception instanceof IdentityProviderException) {
-            if (strpos($exception->getMessage(), 'Invalid refresh token') !== false) {
-                $event->setException(new LoginRequiredException(
+        if ($error instanceof IdentityProviderException) {
+            if (strpos($error->getMessage(), 'Invalid refresh token') !== false) {
+                $event->setError(new LoginRequiredException(
                     "Invalid refresh token. \nPlease log in again by running: $loginCommand"
                 ));
                 $event->stopPropagation();
@@ -71,14 +71,14 @@ class EventSubscriber implements EventSubscriberInterface
         }
 
         // Handle Guzzle exceptions, i.e. HTTP 4xx or 5xx errors.
-        if (($exception instanceof ClientException || $exception instanceof ServerException)
-            && ($response = $exception->getResponse())) {
-            $request = $exception->getRequest();
+        if (($error instanceof ClientException || $error instanceof ServerException)
+            && ($response = $error->getResponse())) {
+            $request = $error->getRequest();
             $response->getBody()->seek(0);
             $isOauth2 = stripos(implode(';', $request->getHeader('Authorization')), 'Bearer') !== false;
 
             if ($response->getStatusCode() === 401 && $isOauth2) {
-                $event->setException(new LoginRequiredException(
+                $event->setError(new LoginRequiredException(
                     'Unauthorized.',
                     $request,
                     $response,
@@ -86,22 +86,22 @@ class EventSubscriber implements EventSubscriberInterface
                 ));
                 $event->stopPropagation();
             } elseif ($response->getStatusCode() === 403 && $isOauth2) {
-                $event->setException(new PermissionDeniedException(
+                $event->setError(new PermissionDeniedException(
                     "Permission denied. Check your project or environment permissions.",
                     $request,
                     $response
                 ));
                 $event->stopPropagation();
             } else {
-                $event->setException(new HttpException(null, $request, $response));
+                $event->setError(new HttpException(null, $request, $response));
                 $event->stopPropagation();
             }
         }
 
         // When an environment is found to be in the wrong state, perhaps our
         // cache is old - we should invalidate it.
-        if ($exception instanceof EnvironmentStateException) {
-            (new Api())->clearEnvironmentsCache($exception->getEnvironment()->project);
+        if ($error instanceof EnvironmentStateException) {
+            (new Api())->clearEnvironmentsCache($error->getEnvironment()->project);
         }
     }
 }

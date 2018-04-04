@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\TimezoneUtil;
 
-class TimezoneUtilTest extends \PHPUnit_Framework_TestCase
+class TimezoneUtilTest extends TestCase
 {
     private $originalSetting;
     private $originalIni;

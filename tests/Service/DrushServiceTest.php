@@ -2,13 +2,14 @@
 
 namespace Platformsh\Cli\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
 
-class DrushServiceTest extends \PHPUnit_Framework_TestCase
+class DrushServiceTest extends TestCase
 {
     use HasTempDirTrait;
 

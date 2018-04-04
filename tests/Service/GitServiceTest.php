@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Git;
 
-class GitServiceTest extends \PHPUnit_Framework_TestCase
+class GitServiceTest extends TestCase
 {
 
     use HasTempDirTrait;
@@ -46,14 +47,6 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test GitHelper::ensureInstalled().
-     */
-    public function testEnsureInstalled()
-    {
-        $this->git->ensureInstalled();
-    }
-
-    /**
      * Test GitHelper::isRepository().
      */
     public function testGetRoot()
@@ -63,7 +56,7 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir));
         mkdir($repositoryDir . '/1/2/3/4/5', 0755, true);
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir . '/1/2/3/4/5'));
-        $this->setExpectedException('Exception', 'Not a git repository');
+        $this->expectExceptionMessage('Not a git repository');
         $this->git->getRoot($this->tempDir, true);
     }
 

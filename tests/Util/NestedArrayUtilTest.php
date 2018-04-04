@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\NestedArrayUtil;
 
-class NestedArrayUtilTest extends \PHPUnit_Framework_TestCase
+class NestedArrayUtilTest extends TestCase
 {
     protected $testArray = [];
 
