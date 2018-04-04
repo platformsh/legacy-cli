@@ -12,6 +12,7 @@ use Platformsh\Client\Session\SessionInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 
 class BrowserLoginCommand extends CommandBase
@@ -126,7 +127,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Start the local server.
         $process = new Process([
-            'php',
+            (new PhpExecutableFinder())->find() ?: PHP_BINARY,
             '-dvariables_order=egps',
             '-S',
             $localAddress,

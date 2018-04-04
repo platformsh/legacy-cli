@@ -7,6 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Process\PhpExecutableFinder;
 
 class SelfReleaseCommand extends CommandBase
 {
@@ -141,7 +142,11 @@ class SelfReleaseCommand extends CommandBase
                 return $result;
             }
         } else {
-            $versionInPhar = $shell->execute(['php', $pharFilename, '--version'], null, true);
+            $versionInPhar = $shell->execute([
+                (new PhpExecutableFinder())->find() ?: PHP_BINARY,
+                $pharFilename,
+                '--version'
+            ], null, true);
             if (strpos($versionInPhar, $newVersion) === false) {
                 $this->stdErr->writeln('The file ' . $pharFilename . ' reports a different version: "' . $versionInPhar . '"');
 

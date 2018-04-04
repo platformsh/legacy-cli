@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
+use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 
 abstract class ServerCommandBase extends CommandBase
@@ -246,7 +247,7 @@ abstract class ServerCommandBase extends CommandBase
 
         $this->showSecurityWarning();
 
-        $arguments[] = 'php';
+        $arguments[] = (new PhpExecutableFinder())->find() ?: PHP_BINARY;
 
         foreach ($this->getServerPhpConfig() as $item => $value) {
             $arguments[] = sprintf('-d %s="%s"', $item, $value);
