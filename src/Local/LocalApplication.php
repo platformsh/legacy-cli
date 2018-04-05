@@ -6,9 +6,8 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Local\BuildFlavor\BuildFlavorInterface;
 use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Util\YamlParser;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Yaml;
 
 class LocalApplication
 {
@@ -131,6 +130,9 @@ class LocalApplication
     /**
      * Get the application's configuration as an object.
      *
+     * @throws \Exception if the configuration file cannot be read
+     * @throws InvalidConfigException if config is invalid
+     *
      * @return AppConfig
      */
     private function getConfigObject()
@@ -139,13 +141,7 @@ class LocalApplication
             $config = [];
             $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
             if (file_exists($file)) {
-                try {
-                    $config = (array) (new Yaml())->parse(file_get_contents($file));
-                } catch (ParseException $e) {
-                    throw new InvalidConfigException(
-                        "Parse error in file '$file': \n" . $e->getMessage()
-                    );
-                }
+                $config = (array) (new YamlParser())->parseFile($file);
             }
             $this->config = new AppConfig($config);
         }

@@ -8,9 +8,9 @@ use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\YamlParser;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Yaml;
 
 class DbSizeCommand extends CommandBase
 {
@@ -199,7 +199,7 @@ class DbSizeCommand extends CommandBase
             }
         }
         if ($servicesYaml) {
-            $services = (array) (new Yaml())->parse($servicesYaml);
+            $services = (new YamlParser())->parseContent($servicesYaml, $servicesYamlFilename);
         }
 
         return $services;
