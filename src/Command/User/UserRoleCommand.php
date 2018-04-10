@@ -117,8 +117,14 @@ class UserRoleCommand extends CommandBase
                 $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email);
                 $currentRole = $projectAccess ? $projectAccess->role : 'none';
             } else {
-                $environmentAccess = $this->getSelectedEnvironment()->getUser($uuid);
-                $currentRole = $environmentAccess ? $environmentAccess->role : 'none';
+                $currentRole = 'none';
+                $accesses = $this->getSelectedEnvironment()->getUsers();
+                foreach ($accesses as $access) {
+                    if ($access->user === $uuid) {
+                        $currentRole = $access->role;
+                        break;
+                    }
+                }
             }
             $output->writeln($currentRole);
         }

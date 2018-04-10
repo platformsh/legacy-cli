@@ -36,7 +36,7 @@ class VariableDeleteCommand extends VariableCommandBase
             return 1;
         }
 
-        if (!$variable->operationAvailable('delete')) {
+        if (!$this->api()->checkEnvironmentOperation('delete', $variable)) {
             if ($variable instanceof Variable && $variable->inherited) {
                 $this->stdErr->writeln(
                     "The variable <error>$variableName</error> is inherited,"

@@ -843,4 +843,27 @@ class Api
 
         return null;
     }
+
+    /**
+     * Checks if an operation is available on an environment.
+     *
+     * This auto-refreshes the environment data if the operation is not
+     * available.
+     *
+     * @param string                               $op
+     * @param \Platformsh\Client\Model\Environment $environment
+     *
+     * @return bool
+     */
+    public function checkEnvironmentOperation($op, Environment $environment)
+    {
+        if ($environment->operationAvailable($op)) {
+            return true;
+        }
+
+        $refresh = self::$environmentsCacheRefreshed ? null : true;
+        $environment = $this->getEnvironment($environment->id, $this->getProject($environment->project), $refresh);
+
+        return $environment->operationAvailable($op);
+    }
 }
