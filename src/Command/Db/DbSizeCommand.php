@@ -142,7 +142,7 @@ class DbSizeCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-        $dbUrl = $relationships->getSqlCommandArgs('psql', $database);
+        $dbUrl = $relationships->getDbCommandArgs('psql', $database);
 
         return sprintf(
             "psql --echo-hidden -t --no-align %s -c '%s'",
@@ -170,7 +170,7 @@ class DbSizeCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-        $connectionParams = $relationships->getSqlCommandArgs('mysql', $database);
+        $connectionParams = $relationships->getDbCommandArgs('mysql', $database);
 
         return sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",

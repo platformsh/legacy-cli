@@ -129,7 +129,7 @@ class DbDumpCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = 'pg_dump --clean --blobs ' . $relationships->getSqlCommandArgs('pg_dump', $database);
+                $dumpCommand = 'pg_dump --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --schema-only';
                 }
@@ -143,7 +143,7 @@ class DbDumpCommand extends CommandBase
 
             default:
                 $dumpCommand = 'mysqldump --single-transaction '
-                    . $relationships->getSqlCommandArgs('mysqldump', $database);
+                    . $relationships->getDbCommandArgs('mysqldump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
                 }

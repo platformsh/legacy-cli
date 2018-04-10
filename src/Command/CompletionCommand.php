@@ -160,6 +160,11 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
                 'server:start',
                 'log',
                 Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+                'service:mongo:restore',
+                'archive',
+                Completion::TYPE_ARGUMENT
             )
         ]);
 

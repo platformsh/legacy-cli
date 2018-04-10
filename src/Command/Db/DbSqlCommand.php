@@ -50,7 +50,7 @@ class DbSqlCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $sqlCommand = 'psql ' . $relationships->getSqlCommandArgs('psql', $database);
+                $sqlCommand = 'psql ' . $relationships->getDbCommandArgs('psql', $database);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' -t';
@@ -60,7 +60,7 @@ class DbSqlCommand extends CommandBase
                 break;
 
             default:
-                $sqlCommand = 'mysql --no-auto-rehash ' . $relationships->getSqlCommandArgs('mysql', $database);
+                $sqlCommand = 'mysql --no-auto-rehash ' . $relationships->getDbCommandArgs('mysql', $database);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' --batch --raw';
