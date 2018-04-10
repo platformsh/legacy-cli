@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "b9367600e590716b63d913e122b7f6fe7178c258",
-        "sha256": "0860d24baa18ba7ee624221ddea0b715bea3d64dbdc8f6d0f64eb9249fa6ff9b",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.31.6/platform.phar",
-        "version": "3.31.6",
+        "sha1": "e85b5a65fa26f29272ea920952056cf3d9037a88",
+        "sha256": "68a6e2faf58092f2eb02ad4cb1a8401bffe7fff567957ae44c88df4354f27fac",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.32.0/platform.phar",
+        "version": "3.32.0",
         "php": {
             "min": "5.5.9"
         },
@@ -117,6 +117,11 @@
                 "notes": "New features:\n\n* Always interact (where possible) to ask for the project or environment, if one\n  isn't specified or detected.\n* Support new variable features:\n  - Add `variable:create` and `variable:update` commands.\n  - Allow creating 'sensitive' and 'non-inheritable' variables\n    (`--sensitive=true` and `--inheritable=false`).\n  - Add `variable:list` (`variables`) command.\n  - These `variable:` commands now work with project- or environment-level\n    variables. Specify the level with `--level` (`-l`). If you do not specify a\n    level, you will be asked for one interactively where relevant.\n  - The old commands still exist but are hidden from the command list.\n* Add `project:clear-build-cache` command\n* Enable `project:create` (`create`) command by default.\n* Add `--all` option to `list` command, to show hidden commands.\n* In `build` command, if --run-deploy-hooks option is used, run both \"deploy\"\n  and \"post_deploy\" hooks.\n\nBug fixes:\n\n* Fix: boolean false fields omitted when creating integrations.\n* Fix wrapping of table cell contents that include decoration.\n\nOther changes:\n\n* Accept URLs (not just IDs) as project identifiers in `multi` command.\n* Un-hide some commands\n  - Un-hide `activity:get` command.\n  - Un-hide `worker:list` (`workers`)\n* Always use the deployment API for the app list (improves compatibility for\n  multi-application Enterprise projects, in SSH-related commands).",
                 "show from": "3.30.0",
                 "hide from": "3.31.0"
+            },
+            {
+                "notes": "New features:\n\n* Add MongoDB commands: mongo, mongoexport, mongodump, and mongorestore.\n* In the user:add command, add a wildcard (%) for the environment ID, so you can\n  add users to multiple environments concisely via the --role option.\n  See: platform help user:add\n* Parse !include tags when loading a YAML file.\n\nOther changes:\n\n* In command help, word-wrap option descriptions to the terminal width.\n* Try to refresh an environment before giving an \"Operation not available\" error.\n* Fix `--pipe` option in the `user:role` command.\n* Suppress PHP's timezone warning while detecting the system timezone.",
+                "show from": "3.31.0",
+                "hide from": "3.32.0"
             }
         ]
     }
