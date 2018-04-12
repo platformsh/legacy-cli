@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Service\MongoDB;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -73,7 +74,7 @@ class MongoDumpCommand extends CommandBase
         $command = 'mongodump ' . $relationshipsService->getDbCommandArgs('mongodump', $service);
 
         if ($input->getOption('collection')) {
-            $command .= ' --collection ' . escapeshellarg($input->getOption('collection'));
+            $command .= ' --collection ' . OsUtil::escapePosixShellArg($input->getOption('collection'));
         }
 
         $command .= ' --archive';

@@ -55,7 +55,7 @@ class DbSqlCommand extends CommandBase
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' -t';
                     }
-                    $sqlCommand .= ' -c ' . escapeshellarg($query);
+                    $sqlCommand .= ' -c ' . OsUtil::escapePosixShellArg($query);
                 }
                 break;
 
@@ -65,7 +65,7 @@ class DbSqlCommand extends CommandBase
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' --batch --raw';
                     }
-                    $sqlCommand .= ' --execute ' . escapeshellarg($query);
+                    $sqlCommand .= ' --execute ' . OsUtil::escapePosixShellArg($query);
                 }
                 break;
         }

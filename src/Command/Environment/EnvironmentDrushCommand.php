@@ -82,7 +82,7 @@ class EnvironmentDrushCommand extends CommandBase
 
         $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";
         if ($siteUrl = $this->api()->getSiteUrl($selectedEnvironment, $appName, $deployment)) {
-            $sshDrushCommand .= " --uri=" . escapeshellarg($siteUrl);
+            $sshDrushCommand .= " --uri=" . OsUtil::escapePosixShellArg($siteUrl);
         }
         $sshDrushCommand .= ' ' . $drushCommand;
 

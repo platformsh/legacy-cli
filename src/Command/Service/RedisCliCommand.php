@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Service;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -50,7 +51,7 @@ class RedisCliCommand extends CommandBase
 
         $redisCommand = sprintf(
             'redis-cli -h %s -p %d',
-            $service['host'],
+            OsUtil::escapePosixShellArg($service['host']),
             $service['port']
         );
         if ($args = $input->getArgument('args')) {

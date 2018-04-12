@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Service\MongoDB;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -70,16 +71,16 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         }
 
         $command = 'mongoexport ' . $relationshipsService->getDbCommandArgs('mongoexport', $service);
-        $command .= ' --collection ' . escapeshellarg($collection);
+        $command .= ' --collection ' . OsUtil::escapePosixShellArg($collection);
 
         if ($input->getOption('type')) {
-            $command .= ' --type ' . escapeshellarg($input->getOption('type'));
+            $command .= ' --type ' . OsUtil::escapePosixShellArg($input->getOption('type'));
         }
         if ($input->getOption('jsonArray')) {
             $command .= ' --jsonArray';
         }
         if ($input->getOption('fields')) {
-            $command .= ' --fields ' . escapeshellarg(implode(',', $input->getOption('fields')));
+            $command .= ' --fields ' . OsUtil::escapePosixShellArg(implode(',', $input->getOption('fields')));
         }
 
         $sshOptions = [];
@@ -125,7 +126,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 
         $command = 'mongo '
             . $relationshipsService->getDbCommandArgs('mongo', $service)
-            . ' --quiet --eval ' . escapeshellarg($js);
+            . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js);
 
         $sshArgs = array_merge(['ssh'], $ssh->getSshArgs());
         $sshArgs[] = $sshUrl;
