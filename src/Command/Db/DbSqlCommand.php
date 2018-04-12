@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Db;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -55,7 +56,7 @@ class DbSqlCommand extends CommandBase
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' -t';
                     }
-                    $sqlCommand .= ' -c ' . escapeshellarg($query);
+                    $sqlCommand .= ' -c ' . OsUtil::escapePosixShellArg($query);
                 }
                 break;
 
@@ -65,7 +66,7 @@ class DbSqlCommand extends CommandBase
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' --batch --raw';
                     }
-                    $sqlCommand .= ' --execute ' . escapeshellarg($query);
+                    $sqlCommand .= ' --execute ' . OsUtil::escapePosixShellArg($query);
                 }
                 break;
         }

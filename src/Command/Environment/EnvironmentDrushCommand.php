@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -82,7 +83,7 @@ class EnvironmentDrushCommand extends CommandBase
 
         $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";
         if ($siteUrl = $this->api()->getSiteUrl($selectedEnvironment, $appName, $deployment)) {
-            $sshDrushCommand .= " --uri=" . escapeshellarg($siteUrl);
+            $sshDrushCommand .= " --uri=" . OsUtil::escapePosixShellArg($siteUrl);
         }
         $sshDrushCommand .= ' ' . $drushCommand;
 

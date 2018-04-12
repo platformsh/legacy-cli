@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Db;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -134,10 +135,10 @@ class DbDumpCommand extends CommandBase
                     $dumpCommand .= ' --schema-only';
                 }
                 foreach ($includedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg('--table=' . $table);
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--table=' . $table);
                 }
                 foreach ($excludedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg('--exclude-table=' . $table);
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--exclude-table=' . $table);
                 }
                 break;
 
@@ -148,10 +149,13 @@ class DbDumpCommand extends CommandBase
                     $dumpCommand .= ' --no-data';
                 }
                 foreach ($excludedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
                 }
                 if ($includedTables) {
-                    $dumpCommand .= ' --tables ' . implode(' ', array_map('escapeshellarg', $includedTables));
+                    $dumpCommand .= ' --tables '
+                        . implode(' ', array_map(function ($table) {
+                            return OsUtil::escapePosixShellArg($table);
+                        }, $includedTables));
                 }
                 break;
         }

@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Service\MongoDB;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -47,7 +48,7 @@ class MongoShellCommand extends CommandBase
         $command = 'mongo ' . $relationshipsService->getDbCommandArgs('mongo', $service);
 
         if ($input->getOption('eval')) {
-            $command .= ' --eval ' . escapeshellarg($input->getOption('eval'));
+            $command .= ' --eval ' . OsUtil::escapePosixShellArg($input->getOption('eval'));
         };
 
         $sshOptions = [];

@@ -226,11 +226,17 @@ class SelfReleaseCommand extends CommandBase
             return 1;
         }
 
+        // Construct the download URL (the public location of the Phar file).
+        $download_url = str_replace('{tag}', $tagName, $this->config()->getWithDefault(
+            'download_url',
+            'https://github.com/' . $repoUrl . '/releases/download/{tag}/' . $pharPublicFilename
+        ));
+
         $manifestItem['version'] = $newVersion;
         $manifestItem['sha1'] = sha1_file($pharFilename);
         $manifestItem['sha256'] = hash_file('sha256', $pharFilename);
         $manifestItem['name'] = basename($pharPublicFilename);
-        $manifestItem['url'] = 'https://github.com/' . $repoUrl . '/releases/download/' . $tagName . '/' . $pharPublicFilename;
+        $manifestItem['url'] = $download_url;
         $manifestItem['php']['min'] = '5.5.9';
         if (!empty($changelog)) {
             $manifestItem['updating'][] = [

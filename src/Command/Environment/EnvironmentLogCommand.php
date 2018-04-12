@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\OsUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -86,7 +87,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 
-        $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), escapeshellarg($logFilename));
+        $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), OsUtil::escapePosixShellArg($logFilename));
         if ($input->getOption('tail')) {
             $command .= ' -f';
         }

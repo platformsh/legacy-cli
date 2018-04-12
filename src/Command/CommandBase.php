@@ -7,6 +7,7 @@ use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -801,11 +802,21 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return $appName;
         }
 
-        $apps = array_map(function (WebApp $app) {
-            return $app->name;
-        }, $this->getSelectedEnvironment()->getCurrentDeployment()->webapps);
-        if (!count($apps)) {
-            return null;
+        try {
+            $apps = array_map(function (WebApp $app) {
+                return $app->name;
+            }, $this->getSelectedEnvironment()->getCurrentDeployment()->webapps);
+            if (!count($apps)) {
+                return null;
+            }
+        } catch (EnvironmentStateException $e) {
+            if (!$e->getEnvironment()->isActive()) {
+                throw new EnvironmentStateException(
+                    sprintf('Could not find applications: the environment "%s" is not currently active.', $e->getEnvironment()->id),
+                    $e->getEnvironment()
+                );
+            }
+            throw $e;
         }
 
         $this->debug('Found app(s): ' . implode(',', $apps));
