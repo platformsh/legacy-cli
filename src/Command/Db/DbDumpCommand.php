@@ -153,8 +153,7 @@ class DbDumpCommand extends CommandBase
                 }
                 if ($includedTables) {
                     $dumpCommand .= ' --tables '
-                        . implode(' ', array_map(
-                        function ($table) use ($relationships) {
+                        . implode(' ', array_map(function ($table) {
                             return OsUtil::escapePosixShellArg($table);
                         }, $includedTables));
                 }
