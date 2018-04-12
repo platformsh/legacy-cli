@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -136,7 +137,7 @@ class Relationships implements InputConfiguringInterface
         switch ($command) {
             case 'psql':
             case 'pg_dump':
-                return escapeshellarg(sprintf(
+                return OsUtil::escapePosixShellArg(sprintf(
                     'postgresql://%s:%s@%s:%d/%s',
                     $database['username'],
                     $database['password'],
@@ -149,11 +150,11 @@ class Relationships implements InputConfiguringInterface
             case 'mysqldump':
                 return sprintf(
                     '--user=%s --password=%s --host=%s --port=%d %s',
-                    escapeshellarg($database['username']),
-                    escapeshellarg($database['password']),
-                    escapeshellarg($database['host']),
+                    OsUtil::escapePosixShellArg($database['username']),
+                    OsUtil::escapePosixShellArg($database['password']),
+                    OsUtil::escapePosixShellArg($database['host']),
                     $database['port'],
-                    escapeshellarg($database['path'])
+                    OsUtil::escapePosixShellArg($database['path'])
                 );
 
             case 'mongo':
@@ -162,16 +163,16 @@ class Relationships implements InputConfiguringInterface
             case 'mongorestore':
                 $args = sprintf(
                     '--username %s --password %s --host %s --port %d --authenticationDatabase %s',
-                    escapeshellarg($database['username']),
-                    escapeshellarg($database['password']),
-                    escapeshellarg($database['host']),
+                    OsUtil::escapePosixShellArg($database['username']),
+                    OsUtil::escapePosixShellArg($database['password']),
+                    OsUtil::escapePosixShellArg($database['host']),
                     $database['port'],
-                    escapeshellarg($database['path'])
+                    OsUtil::escapePosixShellArg($database['path'])
                 );
                 if ($command === 'mongo') {
-                    $args .= ' ' . escapeshellarg($database['path']);
+                    $args .= ' ' . OsUtil::escapePosixShellArg($database['path']);
                 } else {
-                    $args .= ' --db ' . escapeshellarg($database['path']);
+                    $args .= ' --db ' . OsUtil::escapePosixShellArg($database['path']);
                 }
 
                 return $args;

@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Service\MongoDB;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -50,7 +51,7 @@ class MongoRestoreCommand extends CommandBase
         $command = 'mongorestore ' . $relationshipsService->getDbCommandArgs('mongorestore', $service);
 
         if ($input->getOption('collection')) {
-            $command .= ' --collection ' . escapeshellarg($input->getOption('collection'));
+            $command .= ' --collection ' . OsUtil::escapePosixShellArg($input->getOption('collection'));
         }
 
         $command .= ' --archive';
