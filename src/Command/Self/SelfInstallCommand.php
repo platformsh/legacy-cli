@@ -166,8 +166,7 @@ EOT
             '.bash_profile',
             '.bashrc',
         ];
-        $shell = str_replace('/bin/', '', getenv('SHELL'));
-        if ($shell === 'zsh') {
+        if (basename(getenv('SHELL')) === 'zsh' || getenv('ZSH')) {
             array_unshift($candidates, '.zshrc');
             array_unshift($candidates, '.zprofile');
         }
