@@ -124,18 +124,18 @@ class Git
     /**
      * Execute a Git command.
      *
-     * @param string[]     $args
+     * @param string[]          $args
      *   Command arguments (everything after 'git').
      * @param string|false|null $dir
      *   The path to a Git repository. Set to false if the command should not
      *   run inside a repository. Set to null to use the default repository.
-     * @param bool         $mustRun
+     * @param bool              $mustRun
      *   Enable exceptions if the Git command fails.
-     * @param bool         $quiet
+     * @param bool              $quiet
      *   Suppress command output.
-     * @param array        $env
+     * @param array             $env
      *
-     * @throws \Exception
+     * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If the command fails and $mustRun is enabled.
      *
      * @return string|bool
@@ -176,15 +176,16 @@ class Git
      * Check whether a remote repository exists.
      *
      * @param string $url
+     * @param string $ref
      *
-     * @throws \Exception
+     * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If the Git command fails.
      *
      * @return bool
      */
-    public function remoteRepoExists($url)
+    public function remoteRefExists($url, $ref = 'HEAD')
     {
-        $result = $this->execute(['ls-remote', $url, 'HEAD'], false, true);
+        $result = $this->execute(['ls-remote', $url, $ref], false, true);
 
         return !is_bool($result) && strlen($result) > 0;
     }
