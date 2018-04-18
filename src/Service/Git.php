@@ -177,15 +177,23 @@ class Git
      *
      * @param string $url
      * @param string $ref
+     * @param bool   $heads Whether to limit to heads only.
      *
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If the Git command fails.
      *
      * @return bool
      */
-    public function remoteRefExists($url, $ref = 'HEAD')
+    public function remoteRefExists($url, $ref = null, $heads = true)
     {
-        $result = $this->execute(['ls-remote', $url, $ref], false, true);
+        $args = ['ls-remote', $url];
+        if ($heads) {
+            $args[] = '--heads';
+        }
+        if ($ref !== null) {
+            $args[] = $ref;
+        }
+        $result = $this->execute($args, false, true);
 
         return !is_bool($result) && strlen($result) > 0;
     }

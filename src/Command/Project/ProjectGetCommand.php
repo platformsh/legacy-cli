@@ -57,7 +57,7 @@ class ProjectGetCommand extends CommandBase
         // First check if the repo actually exists.
         try {
             $repoExists = $git->remoteRefExists($gitUrl, 'refs/heads/' . $environment->id)
-                || $git->remoteRefExists($gitUrl, 'HEAD');
+                || $git->remoteRefExists($gitUrl);
         } catch (\RuntimeException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln(sprintf(
