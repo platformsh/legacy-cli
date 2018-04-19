@@ -17,6 +17,11 @@ application:
   # This can be overridden in the user config file.
   login_method: browser
 
+  # The default date format string. This can be overridden in the user config
+  # file, or  by the --date-fmt option. For a list of formats, see:
+  # http://php.net/manual/en/function.date.php
+  date_format: c
+
   # Disabled commands (a list of full command names).
   disabled_commands:
     - environment:drush

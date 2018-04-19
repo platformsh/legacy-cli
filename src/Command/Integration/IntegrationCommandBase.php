@@ -71,7 +71,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'The GitLab project (e.g. \'namespace/repo\')',
                 'validator' => function ($string) {
-                    return substr_count($string, '/', 1) === 1;
+                    return strpos($string, '/', 1) !== false;
                 },
             ]),
             'repository' => new Field('Repository', [
@@ -201,9 +201,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.email',
                 ]],
                 'description' => 'The From address for alert emails',
-                'default' => $this->config()->has('service.default_from_address')
-                    ? $this->config()->get('service.default_from_address')
-                    : null,
+                'default' => $this->config()->getWithDefault('service.default_from_address', null),
             ]),
             'recipients' => new ArrayField('Recipients', [
                 'conditions' => ['type' => [

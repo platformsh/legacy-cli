@@ -5,9 +5,11 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Activity;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityLogCommand extends CommandBase
@@ -85,20 +87,39 @@ class ActivityLogCommand extends CommandBase
 
         $refresh = $input->getOption('refresh');
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete()) {
+            $progressOutput = $this->stdErr->isDecorated() ? $this->stdErr : new NullOutput();
+            $bar = new ProgressBar($progressOutput);
+            $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
+                return ActivityMonitor::formatState($activity->state);
+            });
+            $bar->setFormat('[%bar%] %elapsed:6s% (%state%)');
+            $bar->start();
+
             $activity->wait(
-                null,
-                function ($log) use ($output) {
+                function () use ($bar) {
+                    $bar->advance();
+                },
+                function ($log) use ($output, $bar, $progressOutput) {
+                    // Clear the progress bar and ensure the current line is flushed.
+                    $bar->clear();
+                    $progressOutput->write($progressOutput->isDecorated() ? "\n\033[1A" : "\n");
+
+                    // Display the new log output.
                     $output->write($log);
+
+                    // Display the progress bar again.
+                    $bar->advance();
                 },
                 $refresh
             );
+            $bar->clear();
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
             // clear the cache.
             $this->api()->clearEnvironmentsCache($activity->project);
         } else {
-            $output->write($activity->log);
+            $output->writeln($activity->log);
         }
 
         return 0;

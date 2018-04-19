@@ -162,14 +162,15 @@ class Api
      *
      * @param bool $autoLogin Whether to log in, if the client is not already
      *                        authenticated (default: true).
+     * @param bool $reset     Whether to re-initialize the client.
      *
      * @return PlatformClient
      */
-    public function getClient($autoLogin = true)
+    public function getClient($autoLogin = true, $reset = false)
     {
-        if (!isset(self::$client)) {
+        if (!isset(self::$client) || $reset) {
             $connectorOptions = [];
-            $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
+            $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
             $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
             $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
@@ -373,16 +374,19 @@ class Api
 
         $environments = $this->getEnvironments($project, $refresh);
 
-        // Retry if the environment was not found in the cache.
-        if (!isset($environments[$id])
-            && $refresh === null
-            && !self::$environmentsCacheRefreshed) {
-            $environments = $this->getEnvironments($project, true);
-        }
-
         // Look for the environment by ID.
         if (isset($environments[$id])) {
             return $environments[$id];
+        }
+
+        // Retry directly if the environment was not found in the cache.
+        if ($refresh === null) {
+            if ($environment = $project->getEnvironment($id)) {
+                // If the environment was found directly, the cache must be out
+                // of date.
+                $this->clearEnvironmentsCache($project->id);
+                return $environment;
+            }
         }
 
         // Look for the environment by machine name.
@@ -807,5 +811,59 @@ class Api
         }
 
         return null;
+    }
+
+    /**
+     * Get the preferred site URL for an environment and app.
+     *
+     * @param \Platformsh\Client\Model\Environment                           $environment
+     * @param string                                                         $appName
+     * @param \Platformsh\Client\Model\Deployment\EnvironmentDeployment|null $deployment
+     *
+     * @return string|null
+     */
+    public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
+    {
+        $deployment = $deployment ?: $this->getCurrentDeployment($environment);
+        $routes = $deployment->routes;
+        $appUrls = [];
+        foreach ($routes as $url => $route) {
+            if ($route->type === 'upstream' && $route->__get('upstream') === $appName) {
+                $appUrls[] = $url;
+            }
+        }
+        usort($appUrls, [$this, 'urlSort']);
+        $siteUrl = reset($appUrls);
+        if ($siteUrl) {
+            return $siteUrl;
+        }
+        if ($environment->hasLink('public-url')) {
+            return $environment->getLink('public-url');
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if an operation is available on an environment.
+     *
+     * This auto-refreshes the environment data if the operation is not
+     * available.
+     *
+     * @param string                               $op
+     * @param \Platformsh\Client\Model\Environment $environment
+     *
+     * @return bool
+     */
+    public function checkEnvironmentOperation($op, Environment $environment)
+    {
+        if ($environment->operationAvailable($op)) {
+            return true;
+        }
+
+        $refresh = self::$environmentsCacheRefreshed ? null : true;
+        $environment = $this->getEnvironment($environment->id, $this->getProject($environment->project), $refresh);
+
+        return $environment->operationAvailable($op);
     }
 }

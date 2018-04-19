@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Db;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -129,29 +130,32 @@ class DbDumpCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = 'pg_dump --clean --blobs ' . $relationships->getSqlCommandArgs('pg_dump', $database);
+                $dumpCommand = 'pg_dump --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --schema-only';
                 }
                 foreach ($includedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg('--table=' . $table);
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--table=' . $table);
                 }
                 foreach ($excludedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg('--exclude-table=' . $table);
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--exclude-table=' . $table);
                 }
                 break;
 
             default:
                 $dumpCommand = 'mysqldump --single-transaction '
-                    . $relationships->getSqlCommandArgs('mysqldump', $database);
+                    . $relationships->getDbCommandArgs('mysqldump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
                 }
                 foreach ($excludedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
                 }
                 if ($includedTables) {
-                    $dumpCommand .= ' --tables ' . implode(' ', array_map('escapeshellarg', $includedTables));
+                    $dumpCommand .= ' --tables '
+                        . implode(' ', array_map(function ($table) {
+                            return OsUtil::escapePosixShellArg($table);
+                        }, $includedTables));
                 }
                 break;
         }

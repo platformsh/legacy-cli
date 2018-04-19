@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Db;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -50,22 +51,22 @@ class DbSqlCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $sqlCommand = 'psql ' . $relationships->getSqlCommandArgs('psql', $database);
+                $sqlCommand = 'psql ' . $relationships->getDbCommandArgs('psql', $database);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' -t';
                     }
-                    $sqlCommand .= ' -c ' . escapeshellarg($query);
+                    $sqlCommand .= ' -c ' . OsUtil::escapePosixShellArg($query);
                 }
                 break;
 
             default:
-                $sqlCommand = 'mysql --no-auto-rehash ' . $relationships->getSqlCommandArgs('mysql', $database);
+                $sqlCommand = 'mysql --no-auto-rehash ' . $relationships->getDbCommandArgs('mysql', $database);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' --batch --raw';
                     }
-                    $sqlCommand .= ' --execute ' . escapeshellarg($query);
+                    $sqlCommand .= ' --execute ' . OsUtil::escapePosixShellArg($query);
                 }
                 break;
         }

@@ -3,13 +3,16 @@ namespace Platformsh\Cli\Command\Auth;
 
 use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
+use Platformsh\Client\Session\SessionInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 
 class BrowserLoginCommand extends CommandBase
@@ -53,14 +56,29 @@ class BrowserLoginCommand extends CommandBase
         }
         $connector = $this->api()->getClient(false)->getConnector();
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
-            $account = $this->api()->getMyAccount();
-            $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
-                $account['username'],
-                $account['mail']
-            ));
-            // USE THE FORCE
-            $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
-            return 0;
+            // Get account information, simultaneously checking whether the API
+            // login is still valid. If the request works, then do not log in
+            // again (unless --force is used). If the request fails, proceed
+            // with login.
+            try {
+                $account = $this->api()->getMyAccount(true);
+
+                $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
+                    $account['username'],
+                    $account['mail']
+                ));
+
+                // USE THE FORCE
+                $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
+
+                return 0;
+            } catch (BadResponseException $e) {
+                if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
+                    $this->debug('Already logged in, but a test request failed. Continuing with login.');
+                } else {
+                    throw $e;
+                }
+            }
         }
 
         // Set up the local PHP web server, which will serve an OAuth2 redirect
@@ -109,7 +127,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Start the local server.
         $process = new Process([
-            'php',
+            (new PhpExecutableFinder())->find() ?: PHP_BINARY,
             '-dvariables_order=egps',
             '-S',
             $localAddress,
@@ -193,11 +211,14 @@ class BrowserLoginCommand extends CommandBase
         /** @var \Doctrine\Common\Cache\CacheProvider $cache */
         $cache = $this->getService('cache');
         $cache->flushAll();
-        $this->saveAccessToken($token);
+
+        // Reset the API client so that it will use the new tokens.
+        $client = $this->api()->getClient(false, true);
+        $this->saveAccessToken($token, $client->getConnector()->getSession());
         $this->stdErr->writeln('You are logged in.');
 
         // Show user account info.
-        $info = $this->api()->getClient(false)->getAccountInfo();
+        $info = $client->getAccountInfo();
         $this->stdErr->writeln(sprintf(
             "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
             $info['username'],
@@ -208,12 +229,12 @@ class BrowserLoginCommand extends CommandBase
     }
 
     /**
-     * @param array $tokenData
+     * @param array            $tokenData
+     * @param SessionInterface $session
      */
-    private function saveAccessToken(array $tokenData)
+    private function saveAccessToken(array $tokenData, SessionInterface $session)
     {
         $token = new AccessToken($tokenData['access_token'], $tokenData['token_type'], $tokenData);
-        $session = $this->api()->getClient(false)->getConnector()->getSession();
         $session->setData([
             'accessToken' => $token->getToken(),
             'tokenType' => $token->getType(),

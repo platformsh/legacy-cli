@@ -7,6 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Process\PhpExecutableFinder;
 
 class SelfReleaseCommand extends CommandBase
 {
@@ -14,10 +15,8 @@ class SelfReleaseCommand extends CommandBase
 
     protected function configure()
     {
-        $defaultRepo = $this->config()->has('application.github_repo')
-            ? $this->config()->get('application.github_repo') : null;
-        $defaultReleaseBranch = $this->config()->has('application.release_branch')
-            ? $this->config()->get('application.release_branch') : 'master';
+        $defaultRepo = $this->config()->getWithDefault('application.github_repo', null);
+        $defaultReleaseBranch = $this->config()->getWithDefault('application.release_branch', 'master');
 
         $this
             ->setName('self:release')
@@ -28,7 +27,8 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
             ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', $defaultReleaseBranch)
             ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'Specify the last version number')
-            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes');
+            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes')
+            ->addOption('allow-lower', null, InputOption::VALUE_NONE, 'Allow releasing with a lower version number than the last');
     }
 
     public function isEnabled()
@@ -133,9 +133,10 @@ class SelfReleaseCommand extends CommandBase
             return 1;
         }
         if (!$pharFilename) {
-            $pharFilename = CLI_ROOT . '/' . $this->config()->get('application.executable') . '.phar';
+            $pharFilename = sys_get_temp_dir() . '/' . $this->config()->get('application.executable') . '.phar';
             $result = $this->runOtherCommand('self:build', [
                 '--output' => $pharFilename,
+                '--yes' => true,
             ]);
             if ($result !== 0) {
                 $this->stdErr->writeln('The build failed');
@@ -143,7 +144,11 @@ class SelfReleaseCommand extends CommandBase
                 return $result;
             }
         } else {
-            $versionInPhar = $shell->execute(['php', $pharFilename, '--version'], null, true);
+            $versionInPhar = $shell->execute([
+                (new PhpExecutableFinder())->find() ?: PHP_BINARY,
+                $pharFilename,
+                '--version'
+            ], null, true);
             if (strpos($versionInPhar, $newVersion) === false) {
                 $this->stdErr->writeln('The file ' . $pharFilename . ' reports a different version: "' . $versionInPhar . '"');
 
@@ -203,6 +208,13 @@ class SelfReleaseCommand extends CommandBase
             $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
         }
 
+        if (version_compare($newVersion, $lastVersion, '<') && !$input->getOption('allow-lower')) {
+            $this->stdErr->writeln(sprintf('The new version number <error>%s</error> is lower than the last version number <error>%s</error>.', $newVersion, $lastVersion));
+            $this->stdErr->writeln('Use --allow-lower to skip this check.');
+
+            return 1;
+        }
+
         $pharPublicFilename = $this->config()->get('application.executable') . '.phar';
 
         $changelog = $this->getReleaseChangelog($lastVersion, $repoApiUrl);
@@ -215,11 +227,17 @@ class SelfReleaseCommand extends CommandBase
             return 1;
         }
 
+        // Construct the download URL (the public location of the Phar file).
+        $download_url = str_replace('{tag}', $tagName, $this->config()->getWithDefault(
+            'application.download_url',
+            'https://github.com/' . $repoUrl . '/releases/download/{tag}/' . $pharPublicFilename
+        ));
+
         $manifestItem['version'] = $newVersion;
         $manifestItem['sha1'] = sha1_file($pharFilename);
         $manifestItem['sha256'] = hash_file('sha256', $pharFilename);
         $manifestItem['name'] = basename($pharPublicFilename);
-        $manifestItem['url'] = 'https://github.com/' . $repoUrl . '/releases/download/' . $tagName . '/' . $pharPublicFilename;
+        $manifestItem['url'] = $download_url;
         $manifestItem['php']['min'] = '5.5.9';
         if (!empty($changelog)) {
             $manifestItem['updating'][] = [

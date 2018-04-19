@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -67,9 +68,8 @@ class EnvironmentDrushCommand extends CommandBase
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
         // Get the document root for the application, to find the Drupal root.
-        $remoteApp = $this->api()
-            ->getCurrentDeployment($selectedEnvironment)
-            ->getWebApp($appName);
+        $deployment = $this->api()->getCurrentDeployment($selectedEnvironment);
+        $remoteApp = $deployment->getWebApp($appName);
         $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();
 
         // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
@@ -82,8 +82,8 @@ class EnvironmentDrushCommand extends CommandBase
         $columns = (new Terminal())->getWidth();
 
         $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";
-        if ($environmentUrl = $selectedEnvironment->getLink('public-url')) {
-            $sshDrushCommand .= " --uri=" . escapeshellarg($environmentUrl);
+        if ($siteUrl = $this->api()->getSiteUrl($selectedEnvironment, $appName, $deployment)) {
+            $sshDrushCommand .= " --uri=" . OsUtil::escapePosixShellArg($siteUrl);
         }
         $sshDrushCommand .= ' ' . $drushCommand;
 

@@ -165,6 +165,10 @@ class Application extends ParentApplication
         $commands[] = new Command\Server\ServerStartCommand();
         $commands[] = new Command\Server\ServerListCommand();
         $commands[] = new Command\Server\ServerStopCommand();
+        $commands[] = new Command\Service\MongoDB\MongoDumpCommand();
+        $commands[] = new Command\Service\MongoDB\MongoExportCommand();
+        $commands[] = new Command\Service\MongoDB\MongoRestoreCommand();
+        $commands[] = new Command\Service\MongoDB\MongoShellCommand();
         $commands[] = new Command\Service\RedisCliCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
         $commands[] = new Command\Snapshot\SnapshotListCommand();

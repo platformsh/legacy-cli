@@ -62,7 +62,7 @@ class SnapshotRestoreCommand extends CommandBase
             $selectedActivity = reset($snapshotActivities);
         }
 
-        if (!$selectedActivity->operationAvailable('restore')) {
+        if (!$this->api()->checkEnvironmentOperation('restore', $environment)) {
             if (!$selectedActivity->isComplete()) {
                 $this->stdErr->writeln("The snapshot is not complete, so it cannot be restored");
             } else {

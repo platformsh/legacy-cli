@@ -77,7 +77,7 @@ class Shell
      * @param array       $env
      * @param int|null    $timeout
      *
-     * @throws \Exception
+     * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If $mustRun is enabled and the command fails.
      *
      * @return bool|string

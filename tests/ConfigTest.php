@@ -15,6 +15,7 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($config->has('application.name'));
         $this->assertFalse($config->has('nonexistent'));
         $this->assertEquals($config->get('application.name'), 'Mock CLI');
+        $this->assertEquals(123, $config->getWithDefault('nonexistent', 123));
     }
 
     /**

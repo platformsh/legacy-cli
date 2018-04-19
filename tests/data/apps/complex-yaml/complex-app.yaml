@@ -1,0 +1,21 @@
+name: 'complex-yaml'
+
+web:
+  locations:
+    '/': !include 'location.yml'
+    '/subpath': !include 'location.yml'
+
+hooks:
+  build: !include
+    type: string
+    path: 'build-hook.sh'
+
+anchor: &anchor1
+  foo: bar
+
+reuse: *anchor1
+
+anchor-include: &anchor2
+  !include 'location.yml'
+
+reuse-include: *anchor2

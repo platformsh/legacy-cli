@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -131,31 +132,53 @@ class Relationships implements InputConfiguringInterface
      * @return string
      *   The command line arguments (excluding the $command).
      */
-    public function getSqlCommandArgs($command, array $database)
+    public function getDbCommandArgs($command, array $database)
     {
         switch ($command) {
             case 'psql':
             case 'pg_dump':
-                $arguments = "'postgresql://%s:%s@%s:%d/%s'";
-                break;
+                return OsUtil::escapePosixShellArg(sprintf(
+                    'postgresql://%s:%s@%s:%d/%s',
+                    $database['username'],
+                    $database['password'],
+                    $database['host'],
+                    $database['port'],
+                    $database['path']
+                ));
 
             case 'mysql':
             case 'mysqldump':
-                $arguments = "'--user=%s' '--password=%s' '--host=%s' --port=%d '%s'";
-                break;
+                return sprintf(
+                    '--user=%s --password=%s --host=%s --port=%d %s',
+                    OsUtil::escapePosixShellArg($database['username']),
+                    OsUtil::escapePosixShellArg($database['password']),
+                    OsUtil::escapePosixShellArg($database['host']),
+                    $database['port'],
+                    OsUtil::escapePosixShellArg($database['path'])
+                );
 
-            default:
-                throw new \InvalidArgumentException('Unrecognised command: ' . $command);
+            case 'mongo':
+            case 'mongodump':
+            case 'mongoexport':
+            case 'mongorestore':
+                $args = sprintf(
+                    '--username %s --password %s --host %s --port %d --authenticationDatabase %s',
+                    OsUtil::escapePosixShellArg($database['username']),
+                    OsUtil::escapePosixShellArg($database['password']),
+                    OsUtil::escapePosixShellArg($database['host']),
+                    $database['port'],
+                    OsUtil::escapePosixShellArg($database['path'])
+                );
+                if ($command === 'mongo') {
+                    $args .= ' ' . OsUtil::escapePosixShellArg($database['path']);
+                } else {
+                    $args .= ' --db ' . OsUtil::escapePosixShellArg($database['path']);
+                }
+
+                return $args;
         }
 
-        return sprintf(
-            $arguments,
-            $database['username'],
-            $database['password'],
-            $database['host'],
-            $database['port'],
-            $database['path']
-        );
+        throw new \InvalidArgumentException('Unrecognised command: ' . $command);
     }
 
     /**

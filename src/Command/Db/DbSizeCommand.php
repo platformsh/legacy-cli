@@ -8,9 +8,9 @@ use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\YamlParser;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Yaml;
 
 class DbSizeCommand extends CommandBase
 {
@@ -142,7 +142,7 @@ class DbSizeCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-        $dbUrl = $relationships->getSqlCommandArgs('psql', $database);
+        $dbUrl = $relationships->getDbCommandArgs('psql', $database);
 
         return sprintf(
             "psql --echo-hidden -t --no-align %s -c '%s'",
@@ -170,7 +170,7 @@ class DbSizeCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-        $connectionParams = $relationships->getSqlCommandArgs('mysql', $database);
+        $connectionParams = $relationships->getDbCommandArgs('mysql', $database);
 
         return sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
@@ -199,7 +199,7 @@ class DbSizeCommand extends CommandBase
             }
         }
         if ($servicesYaml) {
-            $services = (array) (new Yaml())->parse($servicesYaml);
+            $services = (new YamlParser())->parseContent($servicesYaml, $servicesYamlFilename);
         }
 
         return $services;

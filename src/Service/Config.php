@@ -81,6 +81,24 @@ class Config
     }
 
     /**
+     * Get a configuration value, specifying a default if it does not exist.
+     *
+     * @param string $name
+     * @param mixed  $default
+     *
+     * @return mixed
+     */
+    public function getWithDefault($name, $default)
+    {
+        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        if (!$exists) {
+            return $default;
+        }
+
+        return $value;
+    }
+
+    /**
      * @return string
      */
     public function getUserConfigDir()
@@ -205,6 +223,7 @@ class Config
             'experimental' => 'experimental',
             'updates' => 'updates',
             'application.login_method' => 'application.login_method',
+            'application.date_format' => 'application.date_format',
         ];
 
         $userConfig = $this->getUserConfig();

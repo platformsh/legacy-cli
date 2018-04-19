@@ -41,7 +41,7 @@ EOT
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        if (!$selectedEnvironment->operationAvailable('synchronize')) {
+        if (!$this->api()->checkEnvironmentOperation('synchronize', $selectedEnvironment)) {
             $this->stdErr->writeln(
                 "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
