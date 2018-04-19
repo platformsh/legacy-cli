@@ -71,7 +71,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'The GitLab project (e.g. \'namespace/repo\')',
                 'validator' => function ($string) {
-                    return substr_count($string, '/', 1) === 1;
+                    return strpos($string, '/', 1) !== false;
                 },
             ]),
             'repository' => new Field('Repository', [

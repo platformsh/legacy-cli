@@ -133,9 +133,10 @@ class SelfReleaseCommand extends CommandBase
             return 1;
         }
         if (!$pharFilename) {
-            $pharFilename = CLI_ROOT . '/' . $this->config()->get('application.executable') . '.phar';
+            $pharFilename = sys_get_temp_dir() . '/' . $this->config()->get('application.executable') . '.phar';
             $result = $this->runOtherCommand('self:build', [
                 '--output' => $pharFilename,
+                '--yes' => true,
             ]);
             if ($result !== 0) {
                 $this->stdErr->writeln('The build failed');
