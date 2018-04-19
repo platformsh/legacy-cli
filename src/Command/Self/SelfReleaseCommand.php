@@ -229,7 +229,7 @@ class SelfReleaseCommand extends CommandBase
 
         // Construct the download URL (the public location of the Phar file).
         $download_url = str_replace('{tag}', $tagName, $this->config()->getWithDefault(
-            'download_url',
+            'application.download_url',
             'https://github.com/' . $repoUrl . '/releases/download/{tag}/' . $pharPublicFilename
         ));
 
