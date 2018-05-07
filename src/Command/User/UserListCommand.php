@@ -29,7 +29,7 @@ class UserListCommand extends CommandBase
         $i = 0;
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        foreach ($project->getUsers() as $projectAccess) {
+        foreach ($this->api()->getProjectAccesses($project) as $projectAccess) {
             $account = $this->api()->getAccount($projectAccess);
             $role = $projectAccess->role;
             $weight = $i++;

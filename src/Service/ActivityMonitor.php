@@ -289,7 +289,7 @@ class ActivityMonitor
 
         // Replace description HTML elements with Symfony Console decoration
         // tags.
-        $value = preg_replace('@<[^/>]+>@', '<options=underscore>', $value);
+        $value = preg_replace('@<[^/][^>]+>@', '<options=underscore>', $value);
         $value = preg_replace('@</[^>]+>@', '</>', $value);
 
         // Replace literal tags like "&lt;info&;gt;" with escaped tags like

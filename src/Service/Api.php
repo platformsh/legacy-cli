@@ -55,6 +55,9 @@ class Api
     /** @var \Platformsh\Client\Model\Account[] */
     protected static $accountsCache = [];
 
+    /** @var \Platformsh\Client\Model\ProjectAccess[] */
+    protected static $projectAccessesCache = [];
+
     /** @var array */
     protected static $notFound = [];
 
@@ -549,16 +552,34 @@ class Api
     }
 
     /**
+     * Load project users ("project access" records).
+     *
+     * @param \Platformsh\Client\Model\Project $project
+     * @param bool                             $reset
+     *
+     * @return ProjectAccess[]
+     */
+    public function getProjectAccesses(Project $project, $reset = false)
+    {
+        if ($reset || !isset(self::$projectAccessesCache[$project->id])) {
+            self::$projectAccessesCache[$project->id] = $project->getUsers();
+        }
+
+        return self::$projectAccessesCache[$project->id];
+    }
+
+    /**
      * Load a project user ("project access" record) by email address.
      *
      * @param Project $project
      * @param string  $email
+     * @param bool    $reset
      *
      * @return ProjectAccess|false
      */
-    public function loadProjectAccessByEmail(Project $project, $email)
+    public function loadProjectAccessByEmail(Project $project, $email, $reset = false)
     {
-        foreach ($project->getUsers() as $user) {
+        foreach ($this->getProjectAccesses($project, $reset) as $user) {
             $account = $this->getAccount($user);
             if ($account['email'] === $email) {
                 return $user;

@@ -101,7 +101,8 @@ detection:
 # Automatic updates.
 # This can be overridden in the user config file.
 updates:
-  check_interval: 86400
+  # The interval between automatic update checks (in seconds). 604800 = 7 days.
+  check_interval: 604800
 
   # Overridden by {application.env_prefix}UPDATES_CHECK env var.
   check: true

@@ -236,8 +236,8 @@ updates:
   # Whether to check for automatic updates.
   check: true
 
-  # The interval between checking for updates (seconds).
-  check_interval: 86400
+  # The interval between checking for updates (in seconds). 604800 = 7 days.
+  check_interval: 604800
 ```
 
 Other customization is available via environment variables:

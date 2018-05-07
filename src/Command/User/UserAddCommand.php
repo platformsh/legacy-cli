@@ -58,7 +58,7 @@ class UserAddCommand extends CommandBase
             $update = stripos($input->getFirstArgument(), ':u');
             if ($update && $input->isInteractive()) {
                 $choices = [];
-                foreach ($project->getUsers() as $access) {
+                foreach ($this->api()->getProjectAccesses($project) as $access) {
                     $account = $this->api()->getAccount($access);
                     $choices[$account['email']] = $this->getUserLabel($access);
                 }
