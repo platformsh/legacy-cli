@@ -54,7 +54,7 @@ class UserRoleCommand extends CommandBase
         $email = $input->getArgument('email');
         if ($email === null && $input->isInteractive()) {
             $choices = [];
-            foreach ($project->getUsers() as $access) {
+            foreach ($this->api()->getProjectAccesses($project) as $access) {
                 $account = $this->api()->getAccount($access);
                 $choices[$account['email']] = sprintf('%s (%s)', $account['display_name'], $account['email']);
             }
@@ -114,7 +114,7 @@ class UserRoleCommand extends CommandBase
         if ($input->getOption('pipe')) {
             $uuid = $projectAccess->id;
             if ($level !== 'environment') {
-                $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email);
+                $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email, true);
                 $currentRole = $projectAccess ? $projectAccess->role : 'none';
             } else {
                 $currentRole = 'none';

@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -41,7 +42,11 @@ class ProjectSetRemoteCommand extends CommandBase
 
         $this->debug('Git repository found: ' . $root);
 
-        $currentProject = $this->getCurrentProject();
+        try {
+            $currentProject = $this->getCurrentProject();
+        } catch (ProjectNotFoundException $e) {
+            $currentProject = false;
+        }
         if ($currentProject && $currentProject->id === $project->id) {
             $this->stdErr->writeln(sprintf(
                 'The remote project for this repository is already set as: <info>%s</info>',

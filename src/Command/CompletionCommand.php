@@ -299,7 +299,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
         }
 
         $emails = [];
-        foreach ($project->getUsers() as $projectAccess) {
+        foreach ($this->api->getProjectAccesses($project) as $projectAccess) {
             $account = $this->api->getAccount($projectAccess);
             $emails[] = $account['email'];
         }
