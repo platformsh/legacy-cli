@@ -224,6 +224,7 @@ class Config
             'updates' => 'updates',
             'application.login_method' => 'application.login_method',
             'application.date_format' => 'application.date_format',
+            'application.timezone' => 'application.timezone',
         ];
 
         $userConfig = $this->getUserConfig();
