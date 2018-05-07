@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "36cf03f0834e3e24e4133401bbe8a8725cb76e69",
-        "sha256": "6c6cd56ccd77aaea2a8a2104e90348f2495485e1b7b23c822911a49b52ec10b5",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.32.3/platform.phar",
-        "version": "3.32.3",
+        "sha1": "2457b38ec2456bd4eadbefb571c8ddd4f3843be6",
+        "sha256": "62ca0646bd7fc6b31bb459991378399b93c0436d493e73f75cf04396f32b7bfa",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.32.4/platform.phar",
+        "version": "3.32.4",
         "php": {
             "min": "5.5.9"
         },
@@ -122,6 +122,11 @@
                 "notes": "New features:\n\n* Add MongoDB commands: mongo, mongoexport, mongodump, and mongorestore.\n* In the user:add command, add a wildcard (%) for the environment ID, so you can\n  add users to multiple environments concisely via the --role option.\n  See: platform help user:add\n* Parse !include tags when loading a YAML file.\n\nOther changes:\n\n* In command help, word-wrap option descriptions to the terminal width.\n* Try to refresh an environment before giving an \"Operation not available\" error.\n* Fix `--pipe` option in the `user:role` command.\n* Suppress PHP's timezone warning while detecting the system timezone.",
                 "show from": "3.31.0",
                 "hide from": "3.32.0"
+            },
+            {
+                "notes": "* Increase the default interval between updates checks, from 1 day to 7 days.\n* Fix formatting for activity descriptions that contain a `/` character.\n* In the `project:set-remote` command, do not error out if the \"current\" project\n  does not exist.\n* Minor performance improvement to `user` commands when looking up existing\n  users.",
+                "show from": "3.32.3",
+                "hide from": "3.32.4"
             }
         ]
     }
