@@ -1,7 +1,7 @@
 # Metadata about the CLI application itself.
 application:
   name: 'SensioCloud CLI'
-  version: '0.0.20'
+  version: '0.0.21'
   executable: 'sensiocloud'
   package_name: ~
   installer_url: 'https://accounts.sensio.cloud/cli/installer'
