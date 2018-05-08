@@ -7,11 +7,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class TunnelCloseCommand extends TunnelCommandBase
 {
+    protected static $defaultName = 'tunnel:close';
+
     protected function configure()
     {
-        $this
-          ->setName('tunnel:close')
-          ->setDescription('Close SSH tunnels')
+        $this->setDescription('Close SSH tunnels')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Close all tunnels');
         $this->addProjectOption();
         $this->addEnvironmentOption();

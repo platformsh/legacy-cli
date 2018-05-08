@@ -9,14 +9,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainListCommand extends DomainCommandBase
 {
+    protected static $defaultName = 'domain:list';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:list')
-            ->setAliases(['domains'])
+        $this->setAliases(['domains'])
             ->setDescription('Get a list of all domains');
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();

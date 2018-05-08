@@ -8,11 +8,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfUpdateCommand extends CommandBase
 {
+    protected static $defaultName = 'self:update';
+
     protected function configure()
     {
-        $this
-            ->setName('self:update')
-            ->setAliases(['self-update'])
+        $this->setAliases(['self-update'])
             ->setDescription('Update the CLI to the latest version')
             ->addOption('no-major', null, InputOption::VALUE_NONE, 'Only update between minor or patch versions')
             ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to a new unstable version, if available')

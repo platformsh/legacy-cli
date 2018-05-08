@@ -10,11 +10,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SnapshotRestoreCommand extends CommandBase
 {
 
+    protected static $defaultName = 'snapshot:restore';
+
     protected function configure()
     {
-        $this
-            ->setName('snapshot:restore')
-            ->setDescription('Restore an environment snapshot')
+        $this->setDescription('Restore an environment snapshot')
             ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one');
         $this->addProjectOption()
              ->addEnvironmentOption()

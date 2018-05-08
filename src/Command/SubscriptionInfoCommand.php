@@ -18,14 +18,14 @@ class SubscriptionInfoCommand extends CommandBase
     /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
+    protected static $defaultName = 'subscription:info';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('subscription:info')
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
             ->setDescription('Read or modify subscription properties');

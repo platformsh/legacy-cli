@@ -8,14 +8,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class TunnelOpenCommand extends TunnelCommandBase
 {
+    protected static $defaultName = 'tunnel:open';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('tunnel:open')
-            ->setDescription("Open SSH tunnels to an app's relationships");
+        $this->setDescription("Open SSH tunnels to an app's relationships");
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();

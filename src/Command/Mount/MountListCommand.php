@@ -10,14 +10,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MountListCommand extends MountCommandBase
 {
 
+    protected static $defaultName = 'mount:list';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('mount:list')
-            ->setAliases(['mounts'])
+        $this->setAliases(['mounts'])
             ->setDescription('Get a list of mounts')
             ->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');

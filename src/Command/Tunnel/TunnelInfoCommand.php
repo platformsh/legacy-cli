@@ -8,11 +8,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class TunnelInfoCommand extends TunnelCommandBase
 {
+    protected static $defaultName = 'tunnel:info';
+
     protected function configure()
     {
-        $this
-          ->setName('tunnel:info')
-          ->setDescription("View relationship info for SSH tunnels")
+        $this->setDescription("View relationship info for SSH tunnels")
           ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
           ->addOption('encode', 'c', InputOption::VALUE_NONE, 'Output as base64-encoded JSON');
         $this->addProjectOption();

@@ -7,14 +7,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainUpdateCommand extends DomainCommandBase
 {
 
+    protected static $defaultName = 'domain:update';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:update')
-            ->setDescription('Update a domain');
+        $this->setDescription('Update a domain');
         $this->addDomainOptions();
         $this->addProjectOption()->addWaitOptions();
         $this->addExample(

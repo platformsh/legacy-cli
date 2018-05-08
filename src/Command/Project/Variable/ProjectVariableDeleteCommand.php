@@ -13,14 +13,14 @@ class ProjectVariableDeleteCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'project:variable:delete';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('project:variable:delete')
-            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
+        $this->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->setDescription('Delete a variable from a project');
         $this->addProjectOption()
              ->addWaitOptions();

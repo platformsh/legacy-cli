@@ -9,14 +9,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class CertificateDeleteCommand extends CommandBase
 {
+    protected static $defaultName = 'certificate:delete';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('certificate:delete')
-            ->setDescription('Delete a certificate from the project')
+        $this->setDescription('Delete a certificate from the project')
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
         $this->addProjectOption();
         $this->addWaitOptions();

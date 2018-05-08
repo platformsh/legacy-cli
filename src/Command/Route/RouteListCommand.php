@@ -10,14 +10,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RouteListCommand extends CommandBase
 {
+    protected static $defaultName = 'route:list';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('route:list')
-            ->setAliases(['routes'])
+        $this->setAliases(['routes'])
             ->setDescription('List all routes for an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID');
         $this->setHiddenAliases(['environment:routes']);

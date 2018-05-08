@@ -11,14 +11,14 @@ use Symfony\Component\Console\Question\Question;
 class MountUploadCommand extends MountCommandBase
 {
 
+    protected static $defaultName = 'mount:upload';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('mount:upload')
-            ->setDescription('Upload files to a mount, using rsync')
+        $this->setDescription('Upload files to a mount, using rsync')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'A directory containing files to upload')
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the mount')

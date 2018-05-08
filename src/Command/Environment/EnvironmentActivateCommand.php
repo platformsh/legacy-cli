@@ -11,11 +11,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentActivateCommand extends CommandBase
 {
 
+    protected static $defaultName = 'environment:activate';
+
     protected function configure()
     {
-        $this
-            ->setName('environment:activate')
-            ->setDescription('Activate an environment')
+        $this->setDescription('Activate an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
         $this->addProjectOption()

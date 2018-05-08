@@ -9,14 +9,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationGetCommand extends IntegrationCommandBase
 {
+    protected static $defaultName = 'integration:get';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('integration:get')
-            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
+        $this->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view')
             ->setDescription('View details of an integration');
         Table::configureInput($this->getDefinition());

@@ -13,14 +13,14 @@ class VariableEnableCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'variable:enable';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('variable:enable')
-            ->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
+        $this->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
             ->setDescription('Enable a disabled environment-level variable');
         $this->addProjectOption()
              ->addEnvironmentOption()

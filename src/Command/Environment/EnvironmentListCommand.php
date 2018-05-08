@@ -18,14 +18,14 @@ class EnvironmentListCommand extends CommandBase
     protected $currentEnvironment;
     protected $mapping = [];
 
+    protected static $defaultName = 'environment:list';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('environment:list')
-            ->setAliases(['environments'])
+        $this->setAliases(['environments'])
             ->setDescription('Get a list of environments')
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')

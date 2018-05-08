@@ -12,11 +12,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentDeleteCommand extends CommandBase
 {
 
+    protected static $defaultName = 'environment:delete';
+
     protected function configure()
     {
-        $this
-            ->setName('environment:delete')
-            ->setDescription('Delete an environment')
+        $this->setDescription('Delete an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
             ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete the remote Git branch(es)')

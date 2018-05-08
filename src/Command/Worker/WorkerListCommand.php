@@ -9,13 +9,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class WorkerListCommand extends CommandBase
 {
+    protected static $defaultName = 'worker:list';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this->setName('worker:list')
-            ->setAliases(['workers'])
+        $this->setAliases(['workers'])
             ->setDescription('Get a list of all deployed workers')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption()

@@ -8,14 +8,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainAddCommand extends DomainCommandBase
 {
 
+    protected static $defaultName = 'domain:add';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:add')
-            ->setDescription('Add a new domain to the project');
+        $this->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
         $this->addProjectOption()->addWaitOptions();
         $this->addExample('Add the domain example.com', 'example.com');

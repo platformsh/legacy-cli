@@ -8,14 +8,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableListCommand extends VariableCommandBase
 {
+    protected static $defaultName = 'variable:list';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('variable:list')
-            ->setAliases(['variables'])
+        $this->setAliases(['variables'])
             ->setDescription('List variables');
         $this->addLevelOption();
         Table::configureInput($this->getDefinition());

@@ -14,11 +14,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ServerStartCommand extends ServerCommandBase
 {
+    protected static $defaultName = 'server:start';
+
     protected function configure()
     {
-        $this
-          ->setName('server:start')
-          ->setDescription('Run PHP web server(s) for the local project')
+        $this->setDescription('Run PHP web server(s) for the local project')
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting servers')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port of the first server')

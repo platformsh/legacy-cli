@@ -7,14 +7,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationAddCommand extends IntegrationCommandBase
 {
+    protected static $defaultName = 'integration:add';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('integration:add')
-            ->setDescription('Add an integration to the project');
+        $this->setDescription('Add an integration to the project');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addWaitOptions();
         $this->addExample(

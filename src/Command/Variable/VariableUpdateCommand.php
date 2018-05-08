@@ -13,14 +13,14 @@ class VariableUpdateCommand extends VariableCommandBase
     /** @var Form */
     private $form;
 
+    protected static $defaultName = 'variable:update';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('variable:update')
-            ->setDescription('Update a variable')
+        $this->setDescription('Update a variable')
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name');
         $this->addLevelOption();
         $fields = $this->getFields();

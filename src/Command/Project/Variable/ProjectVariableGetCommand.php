@@ -15,14 +15,14 @@ class ProjectVariableGetCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'project:variable:get';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('project:variable:get')
-            ->setAliases(['project-variables', 'pvget'])
+        $this->setAliases(['project-variables', 'pvget'])
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
             ->setDescription('View variable(s) for a project');

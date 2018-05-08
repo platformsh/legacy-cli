@@ -11,11 +11,11 @@ class LocalDirCommand extends CommandBase
 {
     protected $local = true;
 
+    protected static $defaultName = 'local:dir';
+
     protected function configure()
     {
-        $this
-            ->setName('local:dir')
-            ->setAliases(['dir'])
+        $this->setAliases(['dir'])
             ->setDescription('Find the local project root')
             ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('local', 'web' or 'shared')");
     }

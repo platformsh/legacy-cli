@@ -4,8 +4,10 @@ namespace Platformsh\Cli;
 use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Util\TimezoneUtil;
+use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
+use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Exception\InvalidOptionException as ConsoleInvalidOptionException;
 use Symfony\Component\Console\Exception\RuntimeException as ConsoleRuntimeException;
@@ -15,6 +17,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Terminal;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
@@ -26,6 +31,9 @@ class Application extends ParentApplication
 
     /** @var Config */
     protected $cliConfig;
+
+    /** @var \Symfony\Component\DependencyInjection\Container */
+    private static $container;
 
     /**
      * {@inheritdoc}
@@ -41,13 +49,29 @@ class Application extends ParentApplication
                 ?: TimezoneUtil::getTimezone()
         );
 
-        $this->addCommands($this->getCommands());
+        $this->setCommandLoader(self::container()->get('console.command_loader'));
 
         $this->setDefaultCommand('welcome');
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addSubscriber(new EventSubscriber($this->cliConfig));
         $this->setDispatcher($dispatcher);
+    }
+
+    /**
+     * @return ContainerInterface
+     */
+    public static function container(): ContainerInterface
+    {
+        if (!isset(self::$container)) {
+            self::$container = new ContainerBuilder();
+            (new YamlFileLoader(self::$container, new FileLocator()))
+                ->load(__DIR__ . '/../config/services.yaml');
+            self::$container->addCompilerPass(new AddConsoleCommandPass());
+            self::$container->compile();
+        }
+
+        return self::$container;
     }
 
     /**
@@ -75,134 +99,6 @@ class Application extends ParentApplication
         // Override the default commands to add a custom HelpCommand and
         // ListCommand.
         return [new Command\HelpCommand(), new Command\ListCommand()];
-    }
-
-    /**
-     * @return \Symfony\Component\Console\Command\Command[]
-     */
-    protected function getCommands()
-    {
-        static $commands = [];
-        if (count($commands)) {
-            return $commands;
-        }
-
-        $commands[] = new Command\BotCommand();
-        $commands[] = new Command\ClearCacheCommand();
-        $commands[] = new Command\CompletionCommand();
-        $commands[] = new Command\DocsCommand();
-        $commands[] = new Command\LegacyMigrateCommand();
-        $commands[] = new Command\MultiCommand();
-        $commands[] = new Command\Activity\ActivityGetCommand();
-        $commands[] = new Command\Activity\ActivityListCommand();
-        $commands[] = new Command\Activity\ActivityLogCommand();
-        $commands[] = new Command\App\AppConfigGetCommand();
-        $commands[] = new Command\App\AppListCommand();
-        $commands[] = new Command\Auth\AuthInfoCommand();
-        $commands[] = new Command\Auth\AuthTokenCommand();
-        $commands[] = new Command\Auth\LogoutCommand();
-        $commands[] = new Command\Auth\PasswordLoginCommand();
-        $commands[] = new Command\Auth\BrowserLoginCommand();
-        $commands[] = new Command\Certificate\CertificateAddCommand();
-        $commands[] = new Command\Certificate\CertificateDeleteCommand();
-        $commands[] = new Command\Certificate\CertificateGetCommand();
-        $commands[] = new Command\Certificate\CertificateListCommand();
-        $commands[] = new Command\Db\DbSqlCommand();
-        $commands[] = new Command\Db\DbDumpCommand();
-        $commands[] = new Command\Db\DbSizeCommand();
-        $commands[] = new Command\Domain\DomainAddCommand();
-        $commands[] = new Command\Domain\DomainDeleteCommand();
-        $commands[] = new Command\Domain\DomainGetCommand();
-        $commands[] = new Command\Domain\DomainListCommand();
-        $commands[] = new Command\Domain\DomainUpdateCommand();
-        $commands[] = new Command\Environment\EnvironmentActivateCommand();
-        $commands[] = new Command\Environment\EnvironmentBranchCommand();
-        $commands[] = new Command\Environment\EnvironmentCheckoutCommand();
-        $commands[] = new Command\Environment\EnvironmentDeleteCommand();
-        $commands[] = new Command\Environment\EnvironmentDrushCommand();
-        $commands[] = new Command\Environment\EnvironmentHttpAccessCommand();
-        $commands[] = new Command\Environment\EnvironmentListCommand();
-        $commands[] = new Command\Environment\EnvironmentLogCommand();
-        $commands[] = new Command\Environment\EnvironmentInfoCommand();
-        $commands[] = new Command\Environment\EnvironmentInitCommand();
-        $commands[] = new Command\Environment\EnvironmentMergeCommand();
-        $commands[] = new Command\Environment\EnvironmentPushCommand();
-        $commands[] = new Command\Environment\EnvironmentRedeployCommand();
-        $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
-        $commands[] = new Command\Environment\EnvironmentSshCommand();
-        $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
-        $commands[] = new Command\Environment\EnvironmentUrlCommand();
-        $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();
-        $commands[] = new Command\Integration\IntegrationAddCommand();
-        $commands[] = new Command\Integration\IntegrationDeleteCommand();
-        $commands[] = new Command\Integration\IntegrationGetCommand();
-        $commands[] = new Command\Integration\IntegrationListCommand();
-        $commands[] = new Command\Integration\IntegrationUpdateCommand();
-        $commands[] = new Command\Local\LocalBuildCommand();
-        $commands[] = new Command\Local\LocalCleanCommand();
-        $commands[] = new Command\Local\LocalDrushAliasesCommand();
-        $commands[] = new Command\Local\LocalDirCommand();
-        $commands[] = new Command\Mount\MountListCommand();
-        $commands[] = new Command\Mount\MountDownloadCommand();
-        $commands[] = new Command\Mount\MountSizeCommand();
-        $commands[] = new Command\Mount\MountUploadCommand();
-        $commands[] = new Command\Project\ProjectClearBuildCacheCommand();
-        $commands[] = new Command\Project\ProjectCurlCommand();
-        $commands[] = new Command\Project\ProjectCreateCommand();
-        $commands[] = new Command\Project\ProjectDeleteCommand();
-        $commands[] = new Command\Project\ProjectGetCommand();
-        $commands[] = new Command\Project\ProjectListCommand();
-        $commands[] = new Command\Project\ProjectInfoCommand();
-        $commands[] = new Command\Project\ProjectSetRemoteCommand();
-        $commands[] = new Command\Project\Variable\ProjectVariableDeleteCommand();
-        $commands[] = new Command\Project\Variable\ProjectVariableGetCommand();
-        $commands[] = new Command\Project\Variable\ProjectVariableSetCommand();
-        $commands[] = new Command\Repo\CatCommand();
-        $commands[] = new Command\Repo\LsCommand();
-        $commands[] = new Command\Route\RouteListCommand();
-        $commands[] = new Command\Route\RouteGetCommand();
-        $commands[] = new Command\Self\SelfBuildCommand();
-        $commands[] = new Command\Self\SelfInstallCommand();
-        $commands[] = new Command\Self\SelfUpdateCommand();
-        $commands[] = new Command\Self\SelfReleaseCommand();
-        $commands[] = new Command\Self\SelfStatsCommand();
-        $commands[] = new Command\Server\ServerRunCommand();
-        $commands[] = new Command\Server\ServerStartCommand();
-        $commands[] = new Command\Server\ServerListCommand();
-        $commands[] = new Command\Server\ServerStopCommand();
-        $commands[] = new Command\Service\MongoDB\MongoDumpCommand();
-        $commands[] = new Command\Service\MongoDB\MongoExportCommand();
-        $commands[] = new Command\Service\MongoDB\MongoRestoreCommand();
-        $commands[] = new Command\Service\MongoDB\MongoShellCommand();
-        $commands[] = new Command\Service\RedisCliCommand();
-        $commands[] = new Command\Snapshot\SnapshotCreateCommand();
-        $commands[] = new Command\Snapshot\SnapshotListCommand();
-        $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
-        $commands[] = new Command\SshKey\SshKeyAddCommand();
-        $commands[] = new Command\SshKey\SshKeyDeleteCommand();
-        $commands[] = new Command\SshKey\SshKeyListCommand();
-        $commands[] = new Command\SubscriptionInfoCommand();
-        $commands[] = new Command\Tunnel\TunnelCloseCommand();
-        $commands[] = new Command\Tunnel\TunnelInfoCommand();
-        $commands[] = new Command\Tunnel\TunnelListCommand();
-        $commands[] = new Command\Tunnel\TunnelOpenCommand();
-        $commands[] = new Command\User\UserAddCommand();
-        $commands[] = new Command\User\UserDeleteCommand();
-        $commands[] = new Command\User\UserListCommand();
-        $commands[] = new Command\User\UserRoleCommand();
-        $commands[] = new Command\Variable\VariableCreateCommand();
-        $commands[] = new Command\Variable\VariableDeleteCommand();
-        $commands[] = new Command\Variable\VariableDisableCommand();
-        $commands[] = new Command\Variable\VariableEnableCommand();
-        $commands[] = new Command\Variable\VariableGetCommand();
-        $commands[] = new Command\Variable\VariableListCommand();
-        $commands[] = new Command\Variable\VariableSetCommand();
-        $commands[] = new Command\Variable\VariableUpdateCommand();
-        $commands[] = new Command\WelcomeCommand();
-        $commands[] = new Command\WebCommand();
-        $commands[] = new Command\Worker\WorkerListCommand();
-
-        return $commands;
     }
 
     /**

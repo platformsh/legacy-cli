@@ -12,11 +12,11 @@ class SelfStatsCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'self:stats';
+
     protected function configure()
     {
-        $this
-            ->setName('self:stats')
-            ->setDescription('View stats on GitHub package downloads')
+        $this->setDescription('View stats on GitHub package downloads')
             ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1);
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());

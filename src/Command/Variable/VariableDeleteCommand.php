@@ -8,14 +8,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableDeleteCommand extends VariableCommandBase
 {
+    protected static $defaultName = 'variable:delete';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('variable:delete')
-            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
+        $this->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->setDescription('Delete a variable');
         $this->addLevelOption();
         $this->addProjectOption()

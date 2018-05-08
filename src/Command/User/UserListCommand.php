@@ -9,11 +9,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class UserListCommand extends CommandBase
 {
 
+    protected static $defaultName = 'user:list';
+
     protected function configure()
     {
-        $this
-            ->setName('user:list')
-            ->setAliases(['users'])
+        $this->setAliases(['users'])
             ->setDescription('List project users');
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();

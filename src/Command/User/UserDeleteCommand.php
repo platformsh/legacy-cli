@@ -9,11 +9,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class UserDeleteCommand extends CommandBase
 {
 
+    protected static $defaultName = 'user:delete';
+
     protected function configure()
     {
-        $this
-            ->setName('user:delete')
-            ->setDescription('Delete a user from the project')
+        $this->setDescription('Delete a user from the project')
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
         $this->addProjectOption()->addWaitOptions();
         $this->addExample('Delete Alice from the project', 'alice@example.com');

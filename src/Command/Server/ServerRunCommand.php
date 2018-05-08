@@ -13,11 +13,11 @@ use Symfony\Component\Process\Exception\RuntimeException;
 
 class ServerRunCommand extends ServerCommandBase
 {
+    protected static $defaultName = 'server:run';
+
     protected function configure()
     {
-        $this
-          ->setName('server:run')
-          ->setDescription('Run a local PHP web server')
+        $this->setDescription('Run a local PHP web server')
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting server')
           ->addOption('app', null, InputOption::VALUE_REQUIRED, 'The app name')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')

@@ -10,11 +10,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class UserRoleCommand extends CommandBase
 {
+    protected static $defaultName = 'user:get';
+
     protected function configure()
     {
-        $this
-            ->setName('user:get')
-            ->setDescription("View a user's role(s)")
+        $this->setDescription("View a user's role(s)")
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout');

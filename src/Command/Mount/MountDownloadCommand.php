@@ -11,14 +11,14 @@ use Symfony\Component\Console\Question\Question;
 class MountDownloadCommand extends MountCommandBase
 {
 
+    protected static $defaultName = 'mount:download';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('mount:download')
-            ->setDescription('Download files from a mount, using rsync')
+        $this->setDescription('Download files from a mount, using rsync')
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The directory to which files will be downloaded')
             ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the target directory')

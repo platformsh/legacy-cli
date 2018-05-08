@@ -14,14 +14,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityLogCommand extends CommandBase
 {
+    protected static $defaultName = 'activity:log';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('activity:log')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
+        $this->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
             ->addOption(
                 'refresh',
                 null,

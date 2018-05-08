@@ -14,14 +14,14 @@ class VariableCreateCommand extends VariableCommandBase
     /** @var Form */
     private $form;
 
+    protected static $defaultName = 'variable:create';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('variable:create')
-            ->setDescription('Create a variable')
+        $this->setDescription('Create a variable')
             ->addArgument('name', InputArgument::OPTIONAL, 'The variable name');
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());

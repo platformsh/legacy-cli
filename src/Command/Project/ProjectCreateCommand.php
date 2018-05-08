@@ -17,14 +17,14 @@ class ProjectCreateCommand extends CommandBase
     /** @var Form */
     protected $form;
 
+    protected static $defaultName = 'project:create';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-          ->setName('project:create')
-          ->setAliases(['create'])
+        $this->setAliases(['create'])
           ->setDescription('Create a new project');
 
         $this->form = Form::fromArray($this->getFields());

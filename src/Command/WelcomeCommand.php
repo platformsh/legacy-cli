@@ -7,14 +7,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class WelcomeCommand extends CommandBase
 {
+    protected static $defaultName = 'welcome';
+
     protected $hiddenInList = true;
     protected $local = true;
 
     protected function configure()
     {
-        $this
-            ->setName('welcome')
-            ->setDescription('Welcome to ' . $this->config()->get('service.name'));
+        $this->setDescription('Welcome to ' . $this->config()->get('service.name'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -47,11 +47,11 @@ class WelcomeCommand extends CommandBase
             }
 
             // Show the environments.
-            $this->runOtherCommand('environments', ['--refresh' => 0]);
+            $this->runOtherCommand('environment:list', ['--refresh' => 0]);
             $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>\n");
         } else {
             // The project is not known. Show all projects.
-            $this->runOtherCommand('projects', ['--refresh' => 0]);
+            $this->runOtherCommand('project:list', ['--refresh' => 0]);
             $this->stdErr->writeln('');
         }
 

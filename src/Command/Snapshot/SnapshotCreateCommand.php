@@ -9,11 +9,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SnapshotCreateCommand extends CommandBase
 {
 
+    protected static $defaultName = 'snapshot:create';
+
     protected function configure()
     {
-        $this
-            ->setName('snapshot:create')
-            ->setDescription('Make a snapshot of an environment')
+        $this->setDescription('Make a snapshot of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
              ->addEnvironmentOption()

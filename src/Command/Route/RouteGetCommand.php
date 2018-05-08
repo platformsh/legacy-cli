@@ -10,14 +10,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RouteGetCommand extends CommandBase
 {
+    protected static $defaultName = 'route:get';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('route:get')
-            ->setDescription('View a resolved route')
+        $this->setDescription('View a resolved route')
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');

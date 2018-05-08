@@ -13,11 +13,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SnapshotListCommand extends CommandBase
 {
 
+    protected static $defaultName = 'snapshot:list';
+
     protected function configure()
     {
-        $this
-            ->setName('snapshot:list')
-            ->setAliases(['snapshots'])
+        $this->setAliases(['snapshots'])
             ->setDescription('List available snapshots of an environment')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');

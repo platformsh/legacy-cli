@@ -11,11 +11,11 @@ class ProjectCurlCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'project:curl';
+
     protected function configure()
     {
-        $this
-            ->setName('project:curl')
-            ->setDescription("Run a cURL request on a project's API")
+        $this->setDescription("Run a cURL request on a project's API")
             ->addArgument('path', InputArgument::OPTIONAL, 'The API path')
             ->addOption('request', 'X', InputOption::VALUE_REQUIRED, 'The request method to use')
             ->addOption('data', 'd', InputOption::VALUE_REQUIRED, 'Data to send')

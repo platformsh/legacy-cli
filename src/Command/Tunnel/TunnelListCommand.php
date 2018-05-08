@@ -8,11 +8,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class TunnelListCommand extends TunnelCommandBase
 {
+    protected static $defaultName = 'tunnel:list';
+
     protected function configure()
     {
-        $this
-          ->setName('tunnel:list')
-          ->setAliases(['tunnels'])
+        $this->setAliases(['tunnels'])
           ->setDescription('List SSH tunnels')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'View all tunnels');
         $this->addProjectOption();

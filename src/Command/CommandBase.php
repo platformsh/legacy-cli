@@ -2,11 +2,15 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Application;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
@@ -46,8 +50,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected $local = false;
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
-
-    private static $container;
 
     /** @var \Platformsh\Cli\Service\Api|null */
     private $api;
@@ -108,9 +110,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         // Set up dependencies that are only needed once per command run.
         $this->output = $output;
-        $this->container()->set('output', $output);
         $this->input = $input;
-        $this->container()->set('input', $input);
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
         if ($this->config()->get('api.debug')) {
@@ -140,7 +140,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function api()
     {
         if (!isset($this->api)) {
-            $this->api = $this->getService('api');
+            $this->api = $this->getService(Api::class);
             $this->api
                 ->dispatcher
                 ->addListener('login_required', [$this, 'login']);
@@ -164,7 +164,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     {
         static $asked = false;
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->getService(LocalProject::class);
         if ($localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
             $asked = true;
 
@@ -384,7 +384,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         $project = false;
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->getService(LocalProject::class);
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
@@ -422,7 +422,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $git = $this->getService('git');
         $git->setDefaultRepositoryDir($this->getProjectRoot());
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->getService(LocalProject::class);
         $config = $localProject->getProjectConfig($projectRoot);
 
         // Check if there is a manual mapping set for the current branch.
@@ -535,7 +535,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!isset(self::$projectRoot)) {
             $this->debug('Finding the project root');
             /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-            $localProject = $this->getService('local.project');
+            $localProject = $this->getService(LocalProject::class);
             self::$projectRoot = $localProject->getProjectRoot();
             $this->debug(
                 self::$projectRoot
@@ -1074,15 +1074,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         // Give the other command an entirely new service container, because the
         // "input" and "output" parameters, and all their dependents, need to
         // change.
-        $container = self::$container;
-        self::$container = null;
+        // @todo upgrade this now the container belongs to the application
 
         $application->setCurrentCommand($command);
         $result = $command->run($cmdInput, $output ?: $this->output);
         $application->setCurrentCommand($this);
 
         // Restore the old service container.
-        self::$container = $container;
+        // @todo
 
         return $result;
     }
@@ -1195,25 +1194,13 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *
      * @param string $name The service name. See services.yml for a list.
      *
+     * @deprecated Should use DI instead
+     *
      * @return object The associated service object.
      */
     protected function getService($name)
     {
-        return $this->container()->get($name);
-    }
-
-    /**
-     * @return ContainerBuilder
-     */
-    private function container()
-    {
-        if (!isset(self::$container)) {
-            self::$container = new ContainerBuilder();
-            $loader = new YamlFileLoader(self::$container, new FileLocator());
-            $loader->load(CLI_ROOT . '/services.yaml');
-        }
-
-        return self::$container;
+        return Application::container()->get($name);
     }
 
     /**
@@ -1223,13 +1210,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function config()
     {
-        static $config;
-        if (!isset($config)) {
-            /** @var \Platformsh\Cli\Service\Config $config */
-            $config = $this->getService('config');
-        }
-
-        return $config;
+        return $this->getService(Config::class);
     }
 
     /**

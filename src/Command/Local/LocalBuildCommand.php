@@ -13,11 +13,11 @@ class LocalBuildCommand extends CommandBase
 {
     protected $local = true;
 
+    protected static $defaultName = 'local:build';
+
     protected function configure()
     {
-        $this
-            ->setName('local:build')
-            ->setAliases(['build'])
+        $this->setAliases(['build'])
             ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
             ->setDescription('Build the current project locally')
             ->addOption(

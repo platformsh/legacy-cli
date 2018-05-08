@@ -16,14 +16,14 @@ class ProjectInfoCommand extends CommandBase
     /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
+    protected static $defaultName = 'project:info';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('project:info')
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->setDescription('Read or set properties for a project');

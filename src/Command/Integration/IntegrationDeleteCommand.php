@@ -8,14 +8,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationDeleteCommand extends CommandBase
 {
+    protected static $defaultName = 'integration:delete';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('integration:delete')
-            ->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
+        $this->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
             ->setDescription('Delete an integration from a project');
         $this->addProjectOption()->addWaitOptions();
     }

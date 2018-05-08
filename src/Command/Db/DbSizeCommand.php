@@ -15,10 +15,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbSizeCommand extends CommandBase
 {
 
+    protected static $defaultName = 'db:size';
+
     protected function configure()
     {
-        $this->setName('db:size')
-            ->setDescription('Estimate the disk usage of a database')
+        $this->setDescription('Estimate the disk usage of a database')
             ->setHelp(
                 "This is an estimate of the database disk usage. It does not represent its real size on disk."
             );

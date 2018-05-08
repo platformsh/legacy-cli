@@ -5,9 +5,7 @@
     "src"
   ],
   "files": [
-    "config.yaml",
     "constants.php",
-    "services.yaml",
     "shell-config.rc",
     "shell-config-bash.rc",
     "vendor/autoload.php",
@@ -16,6 +14,10 @@
   "finder": [
     {
       "in": "bin",
+      "name": "*"
+    },
+    {
+      "in": "config",
       "name": "*"
     },
     {

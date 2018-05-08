@@ -8,11 +8,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ServerStopCommand extends ServerCommandBase
 {
+    protected static $defaultName = 'server:stop';
+
     protected function configure()
     {
-        $this
-          ->setName('server:stop')
-          ->setDescription('Stop local project web server(s)')
+        $this->setDescription('Stop local project web server(s)')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'Stop all servers');
     }
 

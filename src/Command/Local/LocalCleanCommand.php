@@ -12,11 +12,11 @@ class LocalCleanCommand extends CommandBase
     protected $local = true;
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'local:clean';
+
     protected function configure()
     {
-        $this
-            ->setName('local:clean')
-            ->setAliases(['clean'])
+        $this->setAliases(['clean'])
             ->setDescription('Remove old project builds')
             ->addOption(
                 'keep',

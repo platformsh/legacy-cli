@@ -11,14 +11,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LsCommand extends CommandBase
 {
+    protected static $defaultName = 'repo:ls';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('repo:ls')
-            ->setDescription('List files in the project repository')
+        $this->setDescription('List files in the project repository')
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to a subdirectory')
             ->addOption('directories', 'd', InputOption::VALUE_NONE, 'Show directories only')
             ->addOption('files', 'f', InputOption::VALUE_NONE, 'Show files only')

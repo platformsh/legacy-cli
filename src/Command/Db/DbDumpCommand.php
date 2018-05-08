@@ -14,10 +14,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbDumpCommand extends CommandBase
 {
 
+    protected static $defaultName = 'db:dump';
+
     protected function configure()
     {
-        $this->setName('db:dump')
-            ->setDescription('Create a local dump of the remote database');
+        $this->setDescription('Create a local dump of the remote database');
         $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'A custom directory for the dump')
             ->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip')

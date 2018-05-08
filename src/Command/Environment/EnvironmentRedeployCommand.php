@@ -8,11 +8,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentRedeployCommand extends CommandBase
 {
 
+    protected static $defaultName = 'environment:redeploy';
+
     protected function configure()
     {
-        $this
-            ->setName('environment:redeploy')
-            ->setAliases(['redeploy'])
+        $this->setAliases(['redeploy'])
             ->setDescription('Redeploy an environment');
         $this->addProjectOption()
             ->addEnvironmentOption();

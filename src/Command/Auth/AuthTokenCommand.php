@@ -9,10 +9,11 @@ class AuthTokenCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'auth:token';
+
     protected function configure()
     {
-        $this->setName('auth:token')
-            ->setDescription(sprintf(
+        $this->setDescription(sprintf(
                 'Obtain an OAuth 2 access token for requests to %s APIs',
                 $this->config()->get('service.name')
             ));

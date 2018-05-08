@@ -11,11 +11,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwareInterface
 {
 
+    protected static $defaultName = 'environment:synchronize';
+
     protected function configure()
     {
-        $this
-            ->setName('environment:synchronize')
-            ->setAliases(['sync'])
+        $this->setAliases(['sync'])
             ->setDescription("Synchronize an environment's code and/or data from its parent")
             ->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both');
         $this->addProjectOption()

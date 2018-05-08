@@ -12,14 +12,14 @@ class EnvironmentInitCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'environment:init';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('environment:init')
-            ->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
+        $this->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
         $this->addProjectOption()
             ->addEnvironmentOption()

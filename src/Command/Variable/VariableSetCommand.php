@@ -15,14 +15,14 @@ class VariableSetCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    protected static $defaultName = 'variable:set';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('variable:set')
-            ->setAliases(['vset'])
+        $this->setAliases(['vset'])
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')

@@ -10,11 +10,11 @@ class LogoutCommand extends CommandBase
 {
     protected $local = true;
 
+    protected static $defaultName = 'auth:logout';
+
     protected function configure()
     {
-        $this
-            ->setName('auth:logout')
-            ->setAliases(['logout'])
+        $this->setAliases(['logout'])
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
             ->setDescription('Log out of ' . $this->config()->get('service.name'));
     }

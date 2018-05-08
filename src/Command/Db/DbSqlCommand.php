@@ -14,10 +14,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbSqlCommand extends CommandBase
 {
 
+    protected static $defaultName = 'db:sql';
+
     protected function configure()
     {
-        $this->setName('db:sql')
-            ->setAliases(['sql'])
+        $this->setAliases(['sql'])
             ->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output');

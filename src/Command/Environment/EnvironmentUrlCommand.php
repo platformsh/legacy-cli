@@ -9,11 +9,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentUrlCommand extends CommandBase
 {
 
+    protected static $defaultName = 'environment:url';
+
     protected function configure()
     {
-        $this
-            ->setName('environment:url')
-            ->setAliases(['url'])
+        $this->setAliases(['url'])
             ->setDescription('Get the public URLs of an environment');
         Url::configureInput($this->getDefinition());
         $this->addProjectOption()

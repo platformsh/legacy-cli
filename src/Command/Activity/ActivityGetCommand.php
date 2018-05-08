@@ -13,14 +13,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityGetCommand extends CommandBase
 {
+    protected static $defaultName = 'activity:get';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('activity:get')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
+        $this->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')

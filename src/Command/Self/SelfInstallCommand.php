@@ -10,10 +10,11 @@ class SelfInstallCommand extends CommandBase
 {
     protected $local = true;
 
+    protected static $defaultName = 'self:install';
+
     protected function configure()
     {
-        $this->setName('self:install')
-             ->setDescription('Install or update CLI configuration files');
+        $this->setDescription('Install or update CLI configuration files');
         $this->setHiddenAliases(['local:install']);
         $cliName = $this->config()->get('application.name');
         $this->setHelp(<<<EOT

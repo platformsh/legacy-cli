@@ -11,11 +11,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class AuthInfoCommand extends CommandBase
 {
+    protected static $defaultName = 'auth:info';
+
     protected function configure()
     {
-        $this
-            ->setName('auth:info')
-            ->setDescription('Display your account information')
+        $this->setDescription('Display your account information')
             ->addArgument('property', InputArgument::OPTIONAL, 'The account property to view')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The account property to view (alternate syntax)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');

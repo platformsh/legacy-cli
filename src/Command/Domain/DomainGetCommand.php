@@ -11,14 +11,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainGetCommand extends DomainCommandBase
 {
 
+    protected static $defaultName = 'domain:get';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:get')
-            ->setDescription('Show detailed information for a domain')
+        $this->setDescription('Show detailed information for a domain')
             ->addArgument('name', InputArgument::OPTIONAL, 'The domain name')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
         Table::configureInput($this->getDefinition());

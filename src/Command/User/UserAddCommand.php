@@ -16,11 +16,11 @@ use Symfony\Component\Console\Question\Question;
 class UserAddCommand extends CommandBase
 {
 
+    protected static $defaultName = 'user:add';
+
     protected function configure()
     {
-        $this
-            ->setName('user:add')
-            ->setAliases(['user:update'])
+        $this->setAliases(['user:update'])
             ->setDescription('Add a user to the project, or set their role(s)')
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('role', 'r', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "The user's project role ('admin' or 'viewer') or environment-specific role (e.g. 'master:contributor' or 'stage:viewer').\nThe character % can be used as a wildcard in the environment ID e.g. '%:viewer'.\nThe role can be abbreviated, e.g. 'master:c'.");

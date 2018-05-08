@@ -16,11 +16,11 @@ class ProjectGetCommand extends CommandBase
 {
     protected $projectRoot;
 
+    protected static $defaultName = 'project:get';
+
     protected function configure()
     {
-        $this
-            ->setName('project:get')
-            ->setAliases(['get'])
+        $this->setAliases(['get'])
             ->setDescription('Clone a project locally')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title');

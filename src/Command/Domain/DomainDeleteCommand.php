@@ -8,14 +8,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainDeleteCommand extends CommandBase
 {
+    protected static $defaultName = 'domain:delete';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:delete')
-            ->setDescription('Delete a domain from the project')
+        $this->setDescription('Delete a domain from the project')
             ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->addProjectOption()->addWaitOptions();
         $this->addExample('Delete the domain example.com', 'example.com');

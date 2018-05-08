@@ -14,14 +14,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityListCommand extends CommandBase
 {
+    protected static $defaultName = 'activity:list';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('activity:list')
-            ->setAliases(['activities'])
+        $this->setAliases(['activities'])
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')

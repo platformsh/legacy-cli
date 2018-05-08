@@ -9,11 +9,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentMergeCommand extends CommandBase
 {
 
+    protected static $defaultName = 'environment:merge';
+
     protected function configure()
     {
-        $this
-            ->setName('environment:merge')
-            ->setAliases(['merge'])
+        $this->setAliases(['merge'])
             ->setDescription('Merge an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
         $this->addProjectOption()
