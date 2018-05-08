@@ -13,20 +13,22 @@ class YamlParserTest extends TestCase
         $file = 'tests/data/apps/complex-yaml/.platform.app.yaml';
         $parsed = (new YamlParser())->parseFile($file);
         $expected = [
-            'name' => 'complex-yaml',
-            'web' => [
-                'locations' => [
-                    '/' => ['allow' => true, 'scripts' => true],
-                    '/subpath' => ['allow' => true, 'scripts' => true],
+            'definition' => [
+                'name' => 'complex-yaml',
+                'web' => [
+                    'locations' => [
+                        '/' => ['allow' => true, 'scripts' => true],
+                        '/subpath' => ['allow' => true, 'scripts' => true],
+                    ],
                 ],
+                'hooks' => [
+                    'build' => file_get_contents('tests/data/apps/complex-yaml/build-hook.sh'),
+                ],
+                'anchor' => ['foo' => 'bar'],
+                'reuse' => ['foo' => 'bar'],
+                'anchor-include' => ['allow' => true, 'scripts' => true],
+                'reuse-include' => ['allow' => true, 'scripts' => true],
             ],
-            'hooks' => [
-                'build' => file_get_contents('tests/data/apps/complex-yaml/build-hook.sh'),
-            ],
-            'anchor' => ['foo' => 'bar'],
-            'reuse' => ['foo' => 'bar'],
-            'anchor-include' => ['allow' => true, 'scripts' => true],
-            'reuse-include' => ['allow' => true, 'scripts' => true],
         ];
         $this->assertEquals($expected, $parsed);
     }
