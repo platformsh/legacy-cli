@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,6 +13,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AuthInfoCommand extends CommandBase
 {
     protected static $defaultName = 'auth:info';
+
+    private $formatter;
+
+    public function __construct(PropertyFormatter $formatter)
+    {
+        $this->formatter = $formatter;
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -25,8 +34,6 @@ class AuthInfoCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $info = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
         $propertyWhitelist = ['id', 'uuid', 'display_name', 'username', 'mail', 'has_key'];
         $info = array_intersect_key($info, array_flip($propertyWhitelist));
 
@@ -48,7 +55,7 @@ class AuthInfoCommand extends CommandBase
             if (!isset($info[$property])) {
                 throw new InvalidArgumentException('Property not found: ' . $property);
             }
-            $output->writeln($formatter->format($info[$property], $property));
+            $output->writeln($this->formatter->format($info[$property], $property));
 
             return 0;
         }
@@ -58,7 +65,7 @@ class AuthInfoCommand extends CommandBase
         $header = [];
         foreach ($propertyWhitelist as $property) {
             if (isset($info[$property])) {
-                $values[] = $formatter->format($info[$property], $property);
+                $values[] = $this->formatter->format($info[$property], $property);
                 $header[] = $property;
             }
         }
