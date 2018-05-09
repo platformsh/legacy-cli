@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Terminal;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -64,11 +65,26 @@ class Application extends ParentApplication
     public static function container(): ContainerInterface
     {
         if (!isset(self::$container)) {
-            self::$container = new ContainerBuilder();
-            (new YamlFileLoader(self::$container, new FileLocator()))
-                ->load(__DIR__ . '/../config/services.yaml');
-            self::$container->addCompilerPass(new AddConsoleCommandPass());
-            self::$container->compile();
+            $file = __DIR__ . '/../config/cache/container.php';
+            if (file_exists($file) && !getenv('PLATFORMSH_CLI_DEBUG')) {
+                // Load the cached container.
+                /** @noinspection PhpIncludeInspection */
+                require_once $file;
+                /** @noinspection PhpUndefinedClassInspection */
+                self::$container = new \ProjectServiceContainer();
+            } else {
+                // Compile a new container.
+                self::$container = new ContainerBuilder();
+                (new YamlFileLoader(self::$container, new FileLocator()))
+                    ->load(__DIR__ . '/../config/services.yaml');
+                self::$container->addCompilerPass(new AddConsoleCommandPass());
+                self::$container->compile();
+                $dumper = new PhpDumper(self::$container);
+                if (!is_dir(dirname($file))) {
+                    mkdir(dirname($file), 0755, true);
+                }
+                file_put_contents($file, $dumper->dump());
+            }
         }
 
         return self::$container;
