@@ -147,6 +147,12 @@ class Application extends ParentApplication
      */
     protected function configureIO(InputInterface $input, OutputInterface $output)
     {
+        // Get the input and output from the service container.
+        /** @var InputInterface $input */
+        $input = self::container()->get('input');
+        /** @var OutputInterface $output */
+        $output = self::container()->get('output');
+
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);

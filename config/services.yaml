@@ -34,9 +34,9 @@ services:
     # Configure the input and output services.
     output:
         class: '\Symfony\Component\Console\Output\ConsoleOutput'
-        public: false
+        public: true
     Symfony\Component\Console\Output\OutputInterface: '@output'
     input:
         class: '\Symfony\Component\Console\Input\ArgvInput'
-        public: false
+        public: true
     Symfony\Component\Console\Input\InputInterface: '@input'
