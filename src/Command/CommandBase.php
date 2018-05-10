@@ -11,6 +11,7 @@ use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
@@ -500,8 +501,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!Drupal::isDrupal($projectRoot)) {
             return;
         }
-        /** @var \Platformsh\Cli\Service\Drush $drush */
-        $drush = $this->getService('drush');
+        /** @var Drush $drush */
+        $drush = $this->getService(Drush::class);
         if ($drush->getVersion() === false) {
             $this->debug('Not updating Drush aliases: the Drush version cannot be determined.');
             return;
