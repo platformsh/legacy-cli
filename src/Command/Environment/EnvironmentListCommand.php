@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,14 +12,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentListCommand extends CommandBase
 {
+    protected static $defaultName = 'environment:list';
 
-    protected $children = [];
+    private $localProject;
+
+    private $children = [];
 
     /** @var Environment */
-    protected $currentEnvironment;
-    protected $mapping = [];
+    private $currentEnvironment;
+    private $mapping = [];
 
-    protected static $defaultName = 'environment:list';
+    public function __construct(LocalProject $localProject)
+    {
+        $this->localProject = $localProject;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -156,9 +164,7 @@ class EnvironmentListCommand extends CommandBase
         $this->currentEnvironment = $this->getCurrentEnvironment($project);
 
         if (($currentProject = $this->getCurrentProject()) && $currentProject == $project) {
-            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-            $localProject = $this->getService('local.project');
-            $projectConfig = $localProject->getProjectConfig($this->getProjectRoot());
+            $projectConfig = $this->localProject->getProjectConfig($this->getProjectRoot());
             if (isset($projectConfig['mapping'])) {
                 $this->mapping = $projectConfig['mapping'];
             }

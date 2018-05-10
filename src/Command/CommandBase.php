@@ -11,6 +11,7 @@ use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
@@ -418,8 +419,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return false;
         }
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        /** @var Git $git */
+        $git = $this->getService(Git::class);
         $git->setDefaultRepositoryDir($this->getProjectRoot());
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService(LocalProject::class);
