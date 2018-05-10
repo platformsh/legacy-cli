@@ -8,6 +8,7 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
+use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Exception\InvalidOptionException as ConsoleInvalidOptionException;
 use Symfony\Component\Console\Exception\RuntimeException as ConsoleRuntimeException;
@@ -274,6 +275,28 @@ class Application extends ParentApplication
                 $this->currentCommand->getName()
             ), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function find($name)
+    {
+        try {
+            return parent::find($name);
+        } catch (CommandNotFoundException $e) {
+            // If a command is not found, load all commands so that aliases can
+            // be checked.
+            // @todo make aliases part of the services.yaml file to keep the performance benefit of lazy-loading?
+            /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
+            $loader = self::$container->get('console.command_loader');
+            foreach ($loader->getNames() as $loaderName) {
+                if (!$this->has($loaderName)) {
+                    $this->add($loader->get($loaderName));
+                }
+            }
+            return parent::find($name);
         }
     }
 }
