@@ -7,11 +7,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectClearBuildCacheCommand extends CommandBase
 {
+    protected static $defaultName = 'project:clear-build-cache';
+
     protected function configure()
     {
-        $this
-            ->setName('project:clear-build-cache')
-            ->setDescription("Clear a project's build cache");
+        $this->setDescription("Clear a project's build cache");
         $this->addProjectOption();
     }
 

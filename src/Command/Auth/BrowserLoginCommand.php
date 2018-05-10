@@ -17,13 +17,14 @@ use Symfony\Component\Process\Process;
 
 class BrowserLoginCommand extends CommandBase
 {
+    protected static $defaultName = 'auth:browser-login';
+
     protected function configure()
     {
         $service = $this->config()->get('service.name');
         $applicationName = $this->config()->get('application.name');
         $executable = $this->config()->get('application.executable');
 
-        $this->setName('auth:browser-login');
         if ($this->config()->get('application.login_method') === 'browser') {
             $this->setAliases(['login']);
         }

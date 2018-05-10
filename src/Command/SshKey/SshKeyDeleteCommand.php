@@ -8,12 +8,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SshKeyDeleteCommand extends CommandBase
 {
+    protected static $defaultName = 'ssh-key:delete';
 
     protected function configure()
     {
-        $this
-            ->setName('ssh-key:delete')
-            ->setDescription('Delete an SSH key')
+        $this->setDescription('Delete an SSH key')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,

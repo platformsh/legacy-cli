@@ -9,11 +9,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectSetRemoteCommand extends CommandBase
 {
+    protected static $defaultName = 'project:set-remote';
+
     protected function configure()
     {
-        $this
-            ->setName('project:set-remote')
-            ->setDescription('Set the remote project for the current Git repository')
+        $this->setDescription('Set the remote project for the current Git repository')
             ->addArgument('project', InputArgument::REQUIRED, 'The project ID');
         $this->addExample('Set the remote project for this repository to "abcdef123456"', 'abcdef123456');
     }

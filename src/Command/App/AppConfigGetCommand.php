@@ -8,14 +8,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class AppConfigGetCommand extends CommandBase
 {
+    protected static $defaultName = 'app:config-get';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('app:config-get')
-            ->setDescription('View the configuration of an app')
+        $this->setDescription('View the configuration of an app')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();

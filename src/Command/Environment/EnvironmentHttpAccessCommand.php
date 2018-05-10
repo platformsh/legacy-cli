@@ -9,13 +9,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentHttpAccessCommand extends CommandBase
 {
+    protected static $defaultName = 'environment:http-access';
 
     protected function configure()
     {
         parent::configure();
-        $this
-            ->setName('environment:http-access')
-            ->setAliases(['httpaccess'])
+        $this->setAliases(['httpaccess'])
             ->setDescription('Update HTTP access settings for an environment')
             ->addOption(
                 'access',

@@ -10,6 +10,7 @@ use Symfony\Component\Console\Question\Question;
 
 class PasswordLoginCommand extends CommandBase
 {
+    protected static $defaultName = 'auth:password-login';
 
     protected function configure()
     {

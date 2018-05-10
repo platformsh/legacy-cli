@@ -8,12 +8,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SshKeyListCommand extends CommandBase
 {
+    protected static $defaultName = 'ssh-key:list';
 
     protected function configure()
     {
-        $this
-            ->setName('ssh-key:list')
-            ->setAliases(['ssh-keys'])
+        $this->setAliases(['ssh-keys'])
             ->setDescription('Get a list of SSH keys in your account');
         Table::configureInput($this->getDefinition());
     }

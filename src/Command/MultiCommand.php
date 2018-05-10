@@ -13,12 +13,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MultiCommand extends CommandBase implements CompletionAwareInterface
 {
+    protected static $defaultName = 'multi';
+
     protected $canBeRunMultipleTimes = false;
 
     protected function configure()
     {
-        $this->setName('multi')
-            ->setDescription('Execute a command on multiple projects')
+        $this->setDescription('Execute a command on multiple projects')
             ->addArgument('cmd', InputArgument::REQUIRED, 'The command to execute')
             ->addOption('projects', 'p', InputOption::VALUE_REQUIRED, 'A list of project IDs, separated by commas and/or whitespace')
             ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')

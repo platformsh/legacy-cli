@@ -11,12 +11,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentCheckoutCommand extends CommandBase
 {
-
     protected static $defaultName = 'environment:checkout';
 
     protected function configure()
     {
-        $this->setDescription('Check out an environment')
+        $this->setAliases(['checkout'])
+            ->setDescription('Check out an environment')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,

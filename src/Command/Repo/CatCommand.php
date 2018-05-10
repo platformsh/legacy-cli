@@ -10,14 +10,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class CatCommand extends CommandBase
 {
+    protected static $defaultName = 'repo:cat'; // 🐱
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('repo:cat') // 🐱
-            ->setDescription('Read a file in the project repository')
+        $this->setDescription('Read a file in the project repository')
             ->addArgument('path', InputArgument::REQUIRED, 'The path to the file');
         $this->addProjectOption();
         $this->addEnvironmentOption();

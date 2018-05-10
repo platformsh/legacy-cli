@@ -12,10 +12,11 @@ class BotCommand extends CommandBase
     protected $hiddenInList = true;
     protected $local = true;
 
+    protected static $defaultName = 'bot';
+
     protected function configure()
     {
-        $this->setName('bot')
-            ->setDescription('The ' . $this->config()->get('service.name') . ' Bot')
+        $this->setDescription('The ' . $this->config()->get('service.name') . ' Bot')
             ->addOption('party', null, InputOption::VALUE_NONE)
             ->addOption('parrot', null, InputOption::VALUE_NONE);
     }

@@ -8,12 +8,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class WebCommand extends CommandBase
 {
+    protected static $defaultName = 'web';
 
     protected function configure()
     {
-        $this
-            ->setName('web')
-            ->setDescription('Open the Web UI');
+        $this->setDescription('Open the Web UI');
         Url::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
