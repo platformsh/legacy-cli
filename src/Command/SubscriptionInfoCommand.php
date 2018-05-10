@@ -13,12 +13,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SubscriptionInfoCommand extends CommandBase
 {
+    protected static $defaultName = 'subscription:info';
+
     protected $hiddenInList = true;
 
-    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
-    protected $formatter;
+    private $formatter;
 
-    protected static $defaultName = 'subscription:info';
+    public function __construct(PropertyFormatter $formatter)
+    {
+        $this->formatter = $formatter;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -29,7 +34,7 @@ class SubscriptionInfoCommand extends CommandBase
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
             ->setDescription('Read or modify subscription properties');
-        PropertyFormatter::configureInput($this->getDefinition());
+        $this->formatter->configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addExample('View all subscription properties')
@@ -53,8 +58,6 @@ class SubscriptionInfoCommand extends CommandBase
 
             return 1;
         }
-        $this->formatter = $this->getService('property_formatter');
-
         $property = $input->getArgument('property');
 
         if (!$property) {
