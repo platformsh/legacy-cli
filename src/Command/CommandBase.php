@@ -13,6 +13,11 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Identifier;
+use Platformsh\Cli\Service\SelfUpdater;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\State;
+use Platformsh\Cli\Service\Url;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
@@ -262,8 +267,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $embargoTime = $timestamp - $config->get('updates.check_interval');
 
         // Stop if updates were last checked after the embargo time.
-        /** @var \Platformsh\Cli\Service\State $state */
-        $state = $this->getService('state');
+        /** @var State $state */
+        $state = $this->getService(State::class);
         if ($state->get('updates.last_checked') > $embargoTime) {
             return;
         }
@@ -275,14 +280,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
 
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        /** @var Shell $shell */
+        $shell = $this->getService(Shell::class);
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $currentVersion = $this->config()->get('application.version');
 
-        /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
-        $cliUpdater = $this->getService('self_updater');
+        /** @var SelfUpdater $cliUpdater */
+        $cliUpdater = $this->getService(SelfUpdater::class);
         $cliUpdater->setAllowMajor(true);
         $cliUpdater->setTimeout(5);
 
@@ -339,7 +344,8 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             if ($method === 'browser') {
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
                 $questionHelper = $this->getService('question_helper');
-                $urlService = $this->getService('url');
+                /** @var Url $urlService */
+                $urlService = $this->getService(Url::class);
                 if ($urlService->canOpenUrls()
                     && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
                     $this->stdErr->writeln('');
@@ -914,7 +920,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         // Identify the project.
         if ($projectId !== null) {
             /** @var \Platformsh\Cli\Service\Identifier $identifier */
-            $identifier = $this->getService('identifier');
+            $identifier = $this->getService(Identifier::class);
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
             $projectHost = $projectHost ?: $result['host'];
