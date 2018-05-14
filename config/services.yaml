@@ -17,6 +17,7 @@ services:
     Platformsh\Cli\Service\:
         resource: '../src/Service/*'
 
+    Platformsh\Cli\Local\LocalBuild: {}
     Platformsh\Cli\Local\LocalProject: {}
 
     # Aliases @todo remove these

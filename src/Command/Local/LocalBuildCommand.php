@@ -3,6 +3,9 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,6 +17,22 @@ class LocalBuildCommand extends CommandBase
     protected $local = true;
 
     protected static $defaultName = 'local:build';
+
+    private $questionHelper;
+    private $filesystem;
+    private $localBuild;
+
+    public function __construct(
+        QuestionHelper $questionHelper,
+        Filesystem $filesystem,
+        LocalBuild $localBuild
+    )
+    {
+        $this->questionHelper = $questionHelper;
+        $this->filesystem = $filesystem;
+        $this->localBuild = $localBuild;
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -120,15 +139,12 @@ class LocalBuildCommand extends CommandBase
     {
         $projectRoot = $this->getProjectRoot();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
         $sourceDirOption = $input->getOption('source');
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
             $default = file_exists($this->config()->get('service.app_config_file')) || is_dir('.git') ? '.' : null;
-            $sourceDirOption = $questionHelper->askInput('Source directory', $default);
+            $sourceDirOption = $this->questionHelper->askInput('Source directory', $default);
         }
 
         if ($sourceDirOption) {
@@ -156,13 +172,11 @@ class LocalBuildCommand extends CommandBase
             $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd()
                 ? $this->config()->get('local.web_root')
                 : null;
-            $destination = $questionHelper->askInput('Build destination', $default);
+            $destination = $this->questionHelper->askInput('Build destination', $default);
         }
 
         if ($destination) {
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
-            $destination = $fs->makePathAbsolute($destination);
+            $destination = $this->filesystem->makePathAbsolute($destination);
         } elseif (!$projectRoot) {
             throw new RootNotFoundException(
                 'Project root not found. Specify --destination or go to a project directory.'
@@ -184,7 +198,7 @@ class LocalBuildCommand extends CommandBase
                 return 1;
             }
             $default = is_link($destination);
-            if (!$questionHelper->confirm(
+            if (!$this->questionHelper->confirm(
                 "The destination exists: <comment>$destination</comment>. Overwrite?",
                 $default
             )) {
@@ -200,9 +214,7 @@ class LocalBuildCommand extends CommandBase
 
         $apps = $input->getArgument('app');
 
-        /** @var \Platformsh\Cli\Local\LocalBuild $builder */
-        $builder = $this->getService('local.build');
-        $success = $builder->build($settings, $sourceDir, $destination, $apps);
+        $success = $this->localBuild->build($settings, $sourceDir, $destination, $apps);
 
         return $success ? 0 : 1;
     }
