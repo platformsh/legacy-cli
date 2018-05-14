@@ -31,7 +31,6 @@ EOT
             'shell-config.rc',
             'shell-config-bash.rc',
         ];
-        $rcDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
         $fs = new \Symfony\Component\Filesystem\Filesystem();
         foreach ($rcFiles as $rcFile) {
             if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
@@ -56,13 +55,15 @@ EOT
             }
         }
 
+        $configDirRelative = $this->config()->getUserConfigDir(false);
+        $rcDestination = $configDirRelative . '/' . 'shell-config.rc';
         $suggestedShellConfig = sprintf(
             'export PATH=%s:"$PATH"',
-            escapeshellarg($configDir . '/bin')
+            '"$HOME/"' . escapeshellarg($configDirRelative . '/bin')
         );
         $suggestedShellConfig .= PHP_EOL . sprintf(
-            '[ -f %1$s ] && . %1$s',
-            escapeshellarg($rcDestination)
+            'if [ -f %1$s ]; then . %1$s; fi',
+            '"$HOME/"' . escapeshellarg($rcDestination)
         );
 
         if (strpos($currentShellConfig, $suggestedShellConfig) !== false) {
