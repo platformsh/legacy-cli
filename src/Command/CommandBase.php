@@ -244,6 +244,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return;
         }
 
+        // Check if the file is writable.
+        if (!is_writable($pharFilename)) {
+            return;
+        }
+
         // Check if updates are configured.
         $config = $this->config();
         if (!$config->get('updates.check')) {
