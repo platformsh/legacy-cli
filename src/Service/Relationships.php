@@ -65,7 +65,7 @@ class Relationships implements InputConfiguringInterface
         if (!empty($schemes)) {
             $relationships = array_filter($relationships, function (array $relationship) use ($schemes) {
                 foreach ($relationship as $key => $service) {
-                    if (in_array($service['scheme'], $schemes, true)) {
+                    if (isset($service['scheme']) && in_array($service['scheme'], $schemes, true)) {
                         return true;
                     }
                 }
@@ -75,7 +75,7 @@ class Relationships implements InputConfiguringInterface
         }
 
         if (empty($relationships)) {
-            $stdErr->writeln('No services found');
+            $stdErr->writeln(sprintf('No relationships found matching scheme(s): <error>%s</error>.', implode(', ', $schemes)));
             return false;
         }
 

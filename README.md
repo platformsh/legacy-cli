@@ -222,7 +222,13 @@ application:
   # 'browser').
   login_method: browser
 
-  # The default date format string. For a list of formats, see: http://php.net/manual/en/function.date.php
+  # The default timezone for times displayed or interpreted by the CLI.
+  # An empty (falsy) value here means the PHP or system timezone will be used.
+  # For a list of timezones, see: http://php.net/manual/en/timezones.php
+  timezone: ~
+
+  # The default date format string, for dates and times displayed by the CLI.
+  # For a list of formats, see: http://php.net/manual/en/function.date.php
   date_format: c
 
 local:
