@@ -153,6 +153,8 @@ class Application extends ParentApplication
         /** @var OutputInterface $output */
         $output = self::container()->get('output');
 
+        parent::configureIO($input, $output);
+
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);
@@ -167,7 +169,22 @@ class Application extends ParentApplication
             $output->setDecorated(true);
         }
 
-        parent::configureIO($input, $output);
+        // The api.debug config option triggers debug-level output.
+        if ($this->cliConfig->get('api.debug')) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+        }
+
+        // Tune error reporting based on the output verbosity.
+        ini_set('log_errors', 0);
+        ini_set('display_errors', 0);
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            error_reporting(E_ALL);
+            ini_set('display_errors', 1);
+        } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
+            error_reporting(false);
+        } else {
+            error_reporting(E_PARSE | E_ERROR);
+        }
     }
 
     /**

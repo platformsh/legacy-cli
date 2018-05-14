@@ -22,7 +22,6 @@ use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
-use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -31,8 +30,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
 {
@@ -119,22 +116,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $this->output = $output;
         $this->input = $input;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-
-        if ($this->config()->get('api.debug')) {
-            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
-        }
-
-        // Tune error reporting based on the output verbosity.
-        ini_set('log_errors', 0);
-        ini_set('display_errors', 0);
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            error_reporting(E_ALL);
-            ini_set('display_errors', 1);
-        } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
-            error_reporting(false);
-        } else {
-            error_reporting(E_PARSE | E_ERROR);
-        }
 
         $this->promptLegacyMigrate();
     }
