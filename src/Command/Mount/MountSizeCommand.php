@@ -181,7 +181,6 @@ class MountSizeCommand extends MountCommandBase
             'total' => '#([0-9]+)\s+[0-9]+\s+[0-9]+\s+[0-9]+%\s+#',
             'used' => '#([0-9]+)\s+[0-9]+\s+[0-9]+%\s+#',
             'available' => '#([0-9]+)\s+[0-9]+%\s+#',
-            'capacity' => '#[0-9]+\s+([0-9]+%)\s+#',
             'path' => '#%\s+(/.+)$#',
         ];
         if (!isset($columnPatterns[$columnName])) {
