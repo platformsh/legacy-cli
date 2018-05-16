@@ -67,9 +67,9 @@ class MountSizeCommand extends MountCommandBase
         $commands[] = 'echo';
         $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts';
         $commands[] = 'echo';
+        $commands[] = 'cd "$' . $appDirVar . '"';
         foreach ($mountPaths as $mountPath) {
-            $commands[] = 'du --block-size=1 -s "$' . $appDirVar . '"' . escapeshellarg('/' . $mountPath);
-            $commands[] = 'echo';
+            $commands[] = 'du --block-size=1 -s ' . escapeshellarg($mountPath);
         }
         $command = 'set -e; ' . implode('; ', $commands);
 
@@ -87,7 +87,6 @@ class MountSizeCommand extends MountCommandBase
 
         // Separate the commands' output.
         list($appDir, $dfOutput, $duOutput) = explode("\n\n", $result, 3);
-        $appDir = $appDir ? trim($appDir) : '/app';
 
         // Parse the output of 'df', building a list of results.
         $results = [];
@@ -121,7 +120,7 @@ class MountSizeCommand extends MountCommandBase
 
         // Parse the 'du' output.
         $mountSizes = [];
-        $duOutputSplit = explode("\n\n", $duOutput, count($mountPaths));
+        $duOutputSplit = explode("\n", $duOutput, count($mountPaths));
         foreach ($mountPaths as $i => $mountPath) {
             if (!isset($duOutputSplit[$i])) {
                 throw new \RuntimeException("Failed to find row $i of 'du' command output: \n" . $duOutput);
