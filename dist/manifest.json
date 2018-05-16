@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "cb1253f9a1c0be7c78462d32611c5f6d11dda50e",
-        "sha256": "220684dde9f5236d2c9b16982c8bc4d5a8211d9d1cd30e1e6474312136575e85",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.32.5/platform.phar",
-        "version": "3.32.5",
+        "sha1": "5475eaa9a92eba96ff89982c4c3d7e0d67c486a0",
+        "sha256": "1b1cd2ce4bb721c000f6549f37d9bc981be0d616b8e91d0390d74993251c0f3f",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.33.0/platform.phar",
+        "version": "3.33.0",
         "php": {
             "min": "5.5.9"
         },
@@ -127,6 +127,11 @@
                 "notes": "* Increase the default interval between updates checks, from 1 day to 7 days.\n* Fix formatting for activity descriptions that contain a `/` character.\n* In the `project:set-remote` command, do not error out if the \"current\" project\n  does not exist.\n* Minor performance improvement to `user` commands when looking up existing\n  users.",
                 "show from": "3.32.3",
                 "hide from": "3.32.4"
+            },
+            {
+                "notes": "* Add `mount:size` command to find the disk usage of writable mounts.\n* Add `--sensitive` option for project-level variables (affects commands:\n  `variable:create`, `variable:update`, and `variable:list`).\n* Clear environment/project caches after a 403 error.\n* Increase prominence of warning in `db:size` command.\n* Skip the automatic updates check if the Phar file is not writable.",
+                "show from": "3.32.0",
+                "hide from": "3.33.0"
             }
         ]
     }
