@@ -44,32 +44,49 @@ class MountSizeCommand extends MountCommandBase
             return 1;
         }
 
+        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the application <info>%s</info>...', $appName));
+
+        // Get a list of the mount paths (and normalize them as relative paths,
+        // relative to the application directory).
         $mountPaths = [];
         foreach (array_keys($appConfig['mounts']) as $mountPath) {
             $mountPaths[] = trim(trim($mountPath), '/');
         }
 
-        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the application <info>%s</info>...', $appName));
-
-        // Build arguments common to SSH commands.
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $sshUrl = $this->getSelectedEnvironment()->getSshUrl($appName);
-        $sshArgs = ['ssh', $sshUrl];
-        $sshArgs = array_merge($sshArgs, $ssh->getSshArgs());
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        // Run two commands over the same SSH connection:
+        // Build a list of multiple commands that will be run over the same SSH
+        // connection:
         //   1. Get the application directory (by reading the PLATFORM_APP_DIR
         //      environment variable).
         //   2. Run the 'df' command to find filesystem statistics for the
         //      mounts.
-        $envPrefix = $this->config()->get('service.env_prefix');
-        $command = 'set -e; echo "$' . $envPrefix . 'APP_DIR"; echo; df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts';
+        //   3. Run a 'du' command on each of the mounted paths, to find their
+        //      individual sizes.
+        $appDirVar = $this->config()->get('service.env_prefix') . 'APP_DIR';
+        $commands = [];
+        $commands[] = 'echo "$' . $appDirVar . '"';
+        $commands[] = 'echo';
+        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts';
+        $commands[] = 'echo';
+        foreach ($mountPaths as $mountPath) {
+            $commands[] = 'du --block-size=1 -s "$' . $appDirVar . '"' . escapeshellarg('/' . $mountPath);
+            $commands[] = 'echo';
+        }
+        $command = 'set -e; ' . implode('; ', $commands);
+
+        // Connect to the application via SSH and run the commands.
+        $sshArgs = [
+            'ssh',
+            $this->getSelectedEnvironment()->getSshUrl($appName),
+        ];
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $sshArgs = array_merge($sshArgs, $ssh->getSshArgs());
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
         $result = $shell->execute(array_merge($sshArgs, [$command]), null, true);
-        list($appDir, $dfOutput) = explode("\n\n", $result, 2);
+
+        // Separate the commands' output.
+        list($appDir, $dfOutput, $duOutput) = explode("\n\n", $result, 3);
         $appDir = $appDir ? trim($appDir) : '/app';
 
         // Parse the output of 'df', building a list of results.
@@ -82,7 +99,7 @@ class MountSizeCommand extends MountCommandBase
             if (strpos($path, $appDir . '/') !== 0) {
                 continue;
             }
-            $mountPath = substr($path, 5);
+            $mountPath = ltrim(substr($path, strlen($appDir)), '/');
             if (!in_array($mountPath, $mountPaths)) {
                 continue;
             }
@@ -102,18 +119,9 @@ class MountSizeCommand extends MountCommandBase
             ];
         }
 
-        $this->debug('Checking individual mount sizes...');
-
-        // Run a 'du' command on each of the mounted paths, to check their
-        // individual sizes.
-        $commands = [];
-        foreach ($mountPaths as $mountPath) {
-            $commands[] = 'du --block-size=1 -s ' . escapeshellarg($appDir . '/' . $mountPath) . '; echo';
-        }
-        $command = 'set -e; ' . implode(';', $commands);
-        $duOutput = $shell->execute(array_merge($sshArgs, [$command]), null, true);
-        $duOutputSplit = explode("\n\n", $duOutput, count($mountPaths));
+        // Parse the 'du' output.
         $mountSizes = [];
+        $duOutputSplit = explode("\n\n", $duOutput, count($mountPaths));
         foreach ($mountPaths as $i => $mountPath) {
             if (!isset($duOutputSplit[$i])) {
                 throw new \RuntimeException("Failed to find row $i of 'du' command output: \n" . $duOutput);
