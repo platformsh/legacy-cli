@@ -130,6 +130,7 @@ local
 mount
   mount:download                            Download files from a mount, using rsync
   mount:list (mounts)                       Get a list of mounts
+  mount:size                                Check the disk usage of mounts
   mount:upload                              Upload files to a mount, using rsync
 project
   project:clear-build-cache                 Clear a project's build cache
