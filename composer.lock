@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "b61a1ec4b63bba11d5113b908c8a787e",
+    "content-hash": "4c08cc92b6ff7dbdfd1e89237c32f79b",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -555,7 +555,7 @@
             ],
             "authors": [
                 {
-                    "name": "Padraic Brady",
+                    "name": "Pádraic Brady",
                     "email": "padraic.brady@gmail.com",
                     "homepage": "http://blog.astrumfutura.com"
                 }
@@ -619,16 +619,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "2.0.0-beta.4",
+            "version": "2.0.0-beta.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "23b014034af5f91b8b26a590bb2f7718c7cc631e"
+                "reference": "708526075a7a99dbaf9b116ca4a0617c62e31b6b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/23b014034af5f91b8b26a590bb2f7718c7cc631e",
-                "reference": "23b014034af5f91b8b26a590bb2f7718c7cc631e",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/708526075a7a99dbaf9b116ca4a0617c62e31b6b",
+                "reference": "708526075a7a99dbaf9b116ca4a0617c62e31b6b",
                 "shasum": ""
             },
             "require": {
@@ -656,7 +656,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2018-04-13T18:36:24+00:00"
+            "time": "2018-05-16T13:05:01+00:00"
         },
         {
             "name": "platformsh/console-form",

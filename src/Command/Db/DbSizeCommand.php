@@ -20,7 +20,7 @@ class DbSizeCommand extends CommandBase
         $this->setName('db:size')
             ->setDescription('Estimate the disk usage of a database')
             ->setHelp(
-                "This command provides an estimate of the database's disk usage. It is not guaranteed to be reliable."
+                "This is an estimate of the database disk usage. It does not represent its real size on disk."
             );
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
@@ -75,13 +75,12 @@ class DbSizeCommand extends CommandBase
             $allocatedDisk = false;
         }
 
-        $this->stdErr->write('Querying database <comment>' . $dbServiceName . '</comment> to estimate disk usage. ');
-        $this->stdErr->writeln('This might take a while.');
-
         /** @var Shell $shell */
         $shell = $this->getService('shell');
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
+
+        $this->stdErr->writeln('Checking database <comment>' . $dbServiceName . '</comment>...');
 
         $command = ['ssh'];
         $command = array_merge($command, $ssh->getSshArgs());
@@ -119,6 +118,10 @@ class DbSizeCommand extends CommandBase
         }
 
         $table->renderSimple($values, $propertyNames);
+
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
+        $this->stdErr->writeln("This is an estimate of the database's disk usage. It does not represent its real size on disk.");
 
         return 0;
     }

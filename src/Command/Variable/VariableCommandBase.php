@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Command\Variable;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Client\Model\ProjectLevelVariable;
-use Platformsh\Client\Model\Resource as ApiResource;
+use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
@@ -101,9 +101,9 @@ abstract class VariableCommandBase extends CommandBase
     /**
      * Display a variable to stdout.
      *
-     * @param \Platformsh\Client\Model\Resource $variable
+     * @param \Platformsh\Client\Model\ApiResourceBase $variable
      */
-    protected function displayVariable(ApiResource $variable)
+    protected function displayVariable(ApiResourceBase $variable)
     {
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
@@ -126,11 +126,11 @@ abstract class VariableCommandBase extends CommandBase
     }
 
     /**
-     * @param ApiResource $variable
+     * @param ApiResourceBase $variable
      *
      * @return string
      */
-    protected function getVariableLevel(ApiResource $variable)
+    protected function getVariableLevel(ApiResourceBase $variable)
     {
         if ($variable instanceof EnvironmentLevelVariable) {
             return self::LEVEL_ENVIRONMENT;
@@ -200,9 +200,6 @@ abstract class VariableCommandBase extends CommandBase
             'default' => false,
         ]);
         $fields['is_sensitive'] = new BooleanField('Sensitive', [
-            'conditions' => [
-                'level' => self::LEVEL_ENVIRONMENT,
-            ],
             'description' => 'Whether the variable is sensitive',
             'questionLine' => 'Is the value sensitive?',
             'default' => false,

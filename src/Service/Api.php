@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Event\ErrorEvent;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Session\KeychainStorage;
@@ -14,7 +15,7 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
-use Platformsh\Client\Model\Resource as ApiResource;
+use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\Storage\File;
@@ -209,6 +210,12 @@ class Api
             $connector = new Connector($connectorOptions, $session);
 
             self::$client = new PlatformClient($connector);
+
+            $connector->getClient()->getEmitter()->on('error', function (ErrorEvent $event) {
+                if ($event->getResponse() && $event->getResponse()->getStatusCode() === 403) {
+                    $this->on403($event);
+                }
+            });
 
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
@@ -481,14 +488,14 @@ class Api
     /**
      * Sort resources.
      *
-     * @param ApiResource[] &$resources
+     * @param ApiResourceBase[] &$resources
      * @param string        $propertyPath
      *
-     * @return ApiResource[]
+     * @return ApiResourceBase[]
      */
     public static function sortResources(array &$resources, $propertyPath)
     {
-        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath) {
+        uasort($resources, function (ApiResourceBase $a, ApiResourceBase $b) use ($propertyPath) {
             $valueA = static::getNestedProperty($a, $propertyPath, false);
             $valueB = static::getNestedProperty($b, $propertyPath, false);
 
@@ -511,15 +518,15 @@ class Api
     /**
      * Get a nested property of a resource, via a dot-separated string path.
      *
-     * @param ApiResource $resource
-     * @param string      $propertyPath
-     * @param bool        $lazyLoad
+     * @param ApiResourceBase $resource
+     * @param string          $propertyPath
+     * @param bool            $lazyLoad
      *
      * @throws \InvalidArgumentException if the property is not found.
      *
      * @return mixed
      */
-    public static function getNestedProperty(ApiResource $resource, $propertyPath, $lazyLoad = true)
+    public static function getNestedProperty(ApiResourceBase $resource, $propertyPath, $lazyLoad = true)
     {
         if (!strpos($propertyPath, '.')) {
             return $resource->getProperty($propertyPath, true, $lazyLoad);
@@ -611,21 +618,21 @@ class Api
     /**
      * Get a resource, matching on the beginning of the ID.
      *
-     * @param string        $id
-     * @param ApiResource[] $resources
-     * @param string        $name
+     * @param string            $id
+     * @param ApiResourceBase[] $resources
+     * @param string            $name
      *
-     * @return ApiResource
+     * @return ApiResourceBase
      *   The resource, if one (and only one) is matched.
      */
     public function matchPartialId($id, array $resources, $name = 'Resource')
     {
-        $matched = array_filter($resources, function (ApiResource $resource) use ($id) {
+        $matched = array_filter($resources, function (ApiResourceBase $resource) use ($id) {
             return strpos($resource->getProperty('id'), $id) === 0;
         });
 
         if (count($matched) > 1) {
-            $matchedIds = array_map(function (ApiResource $resource) {
+            $matchedIds = array_map(function (ApiResourceBase $resource) {
                 return $resource->getProperty('id');
             }, $matched);
             throw new \InvalidArgumentException(sprintf(
@@ -886,5 +893,26 @@ class Api
         $environment = $this->getEnvironment($environment->id, $this->getProject($environment->project), $refresh);
 
         return $environment->operationAvailable($op);
+    }
+
+    /**
+     * React on an API 403 request.
+     *
+     * @param \GuzzleHttp\Event\ErrorEvent $event
+     */
+    private function on403(ErrorEvent $event)
+    {
+        $url = $event->getRequest()->getUrl();
+        $path = parse_url($url, PHP_URL_PATH);
+        if ($path && strpos($path, '/api/projects/') === 0) {
+            // Clear the environments cache for environment request errors.
+            if (preg_match('#^/api/projects/([^/]+?)/environments/#', $path, $matches)) {
+                $this->clearEnvironmentsCache($matches[1]);
+            }
+            // Clear the projects cache for other project request errors.
+            if (preg_match('#^/api/projects/([^/]+?)[/$]/#', $path, $matches)) {
+                $this->clearProjectsCache();
+            }
+        }
     }
 }

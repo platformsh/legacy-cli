@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -77,8 +76,8 @@ class VariableListCommand extends VariableCommandBase
             $row[] = new AdaptiveTableCell($this->getVariableLevel($variable), ['wrap' => false]);
 
             // Handle sensitive variables' value (it isn't exposed in the API).
-            if ($variable instanceof EnvironmentLevelVariable && !$variable->hasProperty('value') && $variable->is_sensitive) {
-                $row[] = '[sensitive]';
+            if (!$variable->hasProperty('value', false) && $variable->is_sensitive) {
+                $row[] = '<fg=yellow>[Hidden: sensitive value]</>';
             } else {
                 $row[] = wordwrap($variable->value, 40, "\n", true);
             }
