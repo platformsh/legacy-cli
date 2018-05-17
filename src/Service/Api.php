@@ -211,14 +211,18 @@ class Api
 
             self::$client = new PlatformClient($connector);
 
-            $connector->getClient()->getEmitter()->on('error', function (ErrorEvent $event) {
-                if ($event->getResponse() && $event->getResponse()->getStatusCode() === 403) {
-                    $this->on403($event);
-                }
-            });
-
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
+            }
+
+            try {
+                $connector->getClient()->getEmitter()->on('error', function (ErrorEvent $event) {
+                    if ($event->getResponse() && $event->getResponse()->getStatusCode() === 403) {
+                        $this->on403($event);
+                    }
+                });
+            } catch (\RuntimeException $e) {
+                // Ignore errors if the user is not logged in at this stage.
             }
         }
 
