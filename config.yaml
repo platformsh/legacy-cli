@@ -5,7 +5,7 @@ application:
   executable: 'platform'
   package_name: 'platformsh/cli'
   installer_url: 'https://platform.sh/cli/installer'
-  manifest_url: 'https://platform.sh/cli/manifest.json'
+  manifest_url: 'https://github.com/platformsh/platformsh-cli/raw/master/dist/manifest.json'
   user_config_dir: '.platformsh'
   user_state_file: '.platformsh/state.json'
   env_prefix: 'PLATFORMSH_CLI_'
