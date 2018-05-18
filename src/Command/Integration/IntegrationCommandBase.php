@@ -223,10 +223,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'health.slack',
                 ]],
-                'description' => 'The Slack channel (beginning with the #)',
-                'validator' => function ($string) {
-                    return strpos($string, '#') === 0;
-                },
+                'description' => 'The Slack channel',
             ]),
             'routing_key' => new Field('Routing key', [
                 'conditions' => ['type' => [
