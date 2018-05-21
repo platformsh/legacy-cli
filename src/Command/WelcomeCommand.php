@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -9,23 +12,38 @@ class WelcomeCommand extends CommandBase
 {
     protected static $defaultName = 'welcome';
 
+    private $api;
+    private $config;
+    private $selector;
+
+    public function __construct(
+        Api $api,
+        Config $config,
+        Selector $selector
+    ) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->selector = $selector;
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $this->setDescription('Welcome to ' . $this->config()->get('service.name'));
+        $this->setDescription('Welcome to ' . $this->config->get('service.name'));
         $this->setHidden(true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->stdErr->writeln("Welcome to " . $this->config()->get('service.name') . "!\n");
+        $this->stdErr->writeln("Welcome to " . $this->config->get('service.name') . "!\n");
 
         // Ensure the user is logged in in this parent command, because the
         // delegated commands below will not have interactive input.
-        $this->api()->getClient();
+        $this->api->getClient();
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
-        if ($project = $this->getCurrentProject()) {
+        if ($project = $this->selector->getCurrentProject()) {
             $projectUri = $project->getLink('#ui');
             $this->stdErr->writeln("Project title: <info>{$project->title}</info>");
             $this->stdErr->writeln("Project ID: <info>{$project->id}</info>");
@@ -35,9 +53,9 @@ class WelcomeCommand extends CommandBase
             if ($project->isSuspended()) {
                 $messages = [];
                 $messages[] = '<comment>This project is suspended.</comment>';
-                if ($project->owner === $this->api()->getMyAccount()['uuid']) {
+                if ($project->owner === $this->api->getMyAccount()['uuid']) {
                     $messages[] = '<comment>Update your payment details to re-activate it: '
-                        . $this->config()->get('service.accounts_url')
+                        . $this->config->get('service.accounts_url')
                         . '</comment>';
                 }
                 $messages[] = '';
