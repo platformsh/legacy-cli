@@ -14,8 +14,6 @@ use Platformsh\Cli\Service\SelfUpdater;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\State;
 use Platformsh\Cli\Service\Url;
-use Platformsh\Client\Model\Environment;
-use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
