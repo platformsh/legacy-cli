@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Local;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -19,16 +20,19 @@ class LocalBuildCommand extends CommandBase
     private $questionHelper;
     private $filesystem;
     private $localBuild;
+    private $localProject;
 
     public function __construct(
         QuestionHelper $questionHelper,
         Filesystem $filesystem,
-        LocalBuild $localBuild
+        LocalBuild $localBuild,
+        LocalProject $localProject
     )
     {
         $this->questionHelper = $questionHelper;
         $this->filesystem = $filesystem;
         $this->localBuild = $localBuild;
+        $this->localProject = $localProject;
         parent::__construct();
     }
 
@@ -135,7 +139,7 @@ class LocalBuildCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->localProject->getProjectRoot();
 
         $sourceDirOption = $input->getOption('source');
 

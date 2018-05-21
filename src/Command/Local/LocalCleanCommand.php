@@ -3,6 +3,8 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -10,6 +12,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalCleanCommand extends CommandBase
 {
     protected static $defaultName = 'local:clean';
+
+    private $localBuild;
+    private $localProject;
+
+    public function __construct(
+        LocalBuild $localBuild,
+        LocalProject $localProject
+    ) {
+        $this->localBuild = $localBuild;
+        $this->localProject = $localProject;
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -39,14 +53,12 @@ class LocalCleanCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->localProject->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
 
-        /** @var \Platformsh\Cli\Local\LocalBuild $builder */
-        $builder = $this->getService('local.build');
-        $result = $builder->cleanBuilds(
+        $result = $this->localBuild->cleanBuilds(
             $projectRoot,
             $input->getOption('max-age'),
             $input->getOption('keep'),
@@ -65,7 +77,7 @@ class LocalCleanCommand extends CommandBase
             }
         }
 
-        $archivesResult = $builder->cleanArchives($projectRoot);
+        $archivesResult = $this->localBuild->cleanArchives($projectRoot);
         if ($archivesResult[0]) {
             $this->stdErr->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
         }
