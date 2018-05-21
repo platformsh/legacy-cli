@@ -14,8 +14,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalBuildCommand extends CommandBase
 {
-    protected $local = true;
-
     protected static $defaultName = 'local:build';
 
     private $questionHelper;

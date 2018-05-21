@@ -9,12 +9,10 @@ class WelcomeCommand extends CommandBase
 {
     protected static $defaultName = 'welcome';
 
-    protected $hiddenInList = true;
-    protected $local = true;
-
     protected function configure()
     {
         $this->setDescription('Welcome to ' . $this->config()->get('service.name'));
+        $this->setHidden(true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

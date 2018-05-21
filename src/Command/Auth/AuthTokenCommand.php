@@ -9,8 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class AuthTokenCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'auth:token';
 
     private $config;
@@ -29,6 +27,7 @@ class AuthTokenCommand extends CommandBase
                 'Obtain an OAuth 2 access token for requests to %s APIs',
                 $this->config->get('service.name')
             ));
+        $this->setHidden(true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

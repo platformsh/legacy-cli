@@ -9,8 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectCurlCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'project:curl';
 
     protected function configure()
@@ -22,6 +20,7 @@ class ProjectCurlCommand extends CommandBase
             ->addOption('include', 'i', InputOption::VALUE_NONE, 'Include headers in the output')
             ->addOption('head', 'I', InputOption::VALUE_NONE, 'Fetch headers only')
             ->addOption('header', 'H', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Extra header(s)');
+        $this->setHidden(true);
         $this->addProjectOption();
         $this->addExample('Change the project title', '-X PATCH -d \'{"title": "New title"}\'');
     }

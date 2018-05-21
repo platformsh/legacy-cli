@@ -12,13 +12,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoShellCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:mongo:shell');
         $this->setAliases(['mongo']);
         $this->setDescription('Use the MongoDB shell');
+        $this->setHidden(true);
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());

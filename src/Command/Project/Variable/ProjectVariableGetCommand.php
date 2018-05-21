@@ -13,8 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ProjectVariableGetCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'project:variable:get';
 
     /**
@@ -26,6 +24,7 @@ class ProjectVariableGetCommand extends CommandBase
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
             ->setDescription('View variable(s) for a project');
+        $this->setHidden(true);
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addExample('View the variable "example"', 'example');

@@ -24,7 +24,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
+abstract class CommandBase extends Command implements MultiAwareInterface
 {
     use HasExamplesTrait;
 
@@ -35,8 +35,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected $stdErr;
 
     protected $envArgName = 'environment';
-    protected $hiddenInList = false;
-    protected $local = false;
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
 
@@ -62,14 +60,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * @var array
      */
     private $synopsis = [];
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isHiddenInList()
-    {
-        return $this->hiddenInList;
-    }
 
     /**
      * @inheritdoc
@@ -307,16 +297,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!$success) {
             throw new LoginRequiredException();
         }
-    }
-
-    /**
-     * Is this a local command? (if it does not make API requests)
-     *
-     * @return bool
-     */
-    public function isLocal()
-    {
-        return $this->local;
     }
 
     /**

@@ -7,8 +7,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ClearCacheCommand extends CommandBase
 {
-    protected $local = true;
-
     protected static $defaultName = 'clear-cache';
 
     protected function configure()

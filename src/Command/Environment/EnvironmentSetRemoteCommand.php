@@ -10,8 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentSetRemoteCommand extends CommandBase
 {
     // @todo remove this command in v3
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this
@@ -27,6 +25,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
                 InputArgument::OPTIONAL,
                 'The Git branch to map (defaults to the current branch)'
             );
+        $this->setHidden(true);
         $this->addExample('Set the remote environment for this branch to "pr-655"', 'pr-655');
     }
 

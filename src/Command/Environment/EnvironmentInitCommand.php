@@ -10,8 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentInitCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'environment:init';
 
     /**
@@ -21,6 +19,7 @@ class EnvironmentInitCommand extends CommandBase
     {
         $this->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
+        $this->setHidden(true);
         $this->addProjectOption()
             ->addEnvironmentOption()
             ->addWaitOptions();

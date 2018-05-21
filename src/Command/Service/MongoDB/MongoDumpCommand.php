@@ -14,13 +14,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoDumpCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:mongo:dump');
         $this->setAliases(['mongodump']);
         $this->setDescription('Create a binary archive dump of data from MongoDB');
+        $this->setHidden(true);
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to dump');
         $this->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip');
         $this->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');

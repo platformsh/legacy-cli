@@ -9,8 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalDirCommand extends CommandBase
 {
-    protected $local = true;
-
     protected static $defaultName = 'local:dir';
 
     protected function configure()

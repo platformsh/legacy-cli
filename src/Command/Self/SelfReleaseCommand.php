@@ -12,8 +12,6 @@ use Symfony\Component\Process\PhpExecutableFinder;
 
 class SelfReleaseCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $defaultRepo = $this->config()->getWithDefault('application.github_repo', null);
@@ -30,6 +28,8 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'Specify the last version number')
             ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes')
             ->addOption('allow-lower', null, InputOption::VALUE_NONE, 'Allow releasing with a lower version number than the last');
+
+        $this->setHidden(true);
     }
 
     public function isEnabled()

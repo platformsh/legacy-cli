@@ -13,8 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class VariableSetCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'variable:set';
 
     /**
@@ -28,6 +26,7 @@ class VariableSetCommand extends CommandBase
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled')
             ->setDescription('Set a variable for an environment');
+        $this->setHidden(true);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();

@@ -12,8 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LogoutCommand extends CommandBase
 {
-    protected $local = true;
-
     protected static $defaultName = 'auth:logout';
 
     private $api;

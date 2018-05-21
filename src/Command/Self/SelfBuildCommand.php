@@ -9,9 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfBuildCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $local = true;
-
     protected static $defaultName = 'self:build';
 
     protected function configure()
@@ -19,7 +16,8 @@ class SelfBuildCommand extends CommandBase
         $this->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
             ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
-            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
+            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, ' Skip rebuilding Composer dependencies');
+        $this->setHidden(true);
     }
 
     public function isEnabled()

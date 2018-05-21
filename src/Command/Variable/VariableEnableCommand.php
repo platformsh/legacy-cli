@@ -11,8 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class VariableEnableCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'variable:enable';
 
     /**
@@ -22,6 +20,7 @@ class VariableEnableCommand extends CommandBase
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
             ->setDescription('Enable a disabled environment-level variable');
+        $this->setHidden(true);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();

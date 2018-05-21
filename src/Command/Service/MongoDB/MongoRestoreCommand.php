@@ -13,13 +13,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoRestoreCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:mongo:restore');
         $this->setAliases(['mongorestore']);
         $this->setDescription('Restore a binary archive dump of data into MongoDB');
+        $this->setHidden(true);
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());

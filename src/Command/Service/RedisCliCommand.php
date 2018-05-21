@@ -12,13 +12,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RedisCliCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:redis-cli');
         $this->setAliases(['redis']);
         $this->setDescription('Access the Redis CLI');
+        $this->setHidden(true);
         $this->addArgument('args', InputArgument::OPTIONAL, 'Arguments to add to the Redis command');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());

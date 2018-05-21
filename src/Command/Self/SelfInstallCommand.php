@@ -8,8 +8,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfInstallCommand extends CommandBase
 {
-    protected $local = true;
-
     protected static $defaultName = 'self:install';
 
     protected function configure()

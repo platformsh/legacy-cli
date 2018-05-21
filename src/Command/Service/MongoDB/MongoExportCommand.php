@@ -15,13 +15,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:mongo:export');
         $this->setAliases(['mongoexport']);
         $this->setDescription('Export data from MongoDB');
+        $this->setHidden(true);
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to export');
         $this->addOption('jsonArray', null, InputOption::VALUE_NONE, 'Export data as a single JSON array');
         $this->addOption('type', null, InputOption::VALUE_REQUIRED, 'The export type, e.g. "csv"');

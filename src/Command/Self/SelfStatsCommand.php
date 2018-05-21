@@ -10,14 +10,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfStatsCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'self:stats';
 
     protected function configure()
     {
         $this->setDescription('View stats on GitHub package downloads')
             ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1);
+        $this->setHidden(true);
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
     }

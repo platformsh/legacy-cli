@@ -11,8 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ProjectVariableDeleteCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'project:variable:delete';
 
     /**
@@ -22,6 +20,7 @@ class ProjectVariableDeleteCommand extends CommandBase
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->setDescription('Delete a variable from a project');
+        $this->setHidden(true);
         $this->addProjectOption()
              ->addWaitOptions();
         $this->addExample('Delete the variable "example"', 'example');

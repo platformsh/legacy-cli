@@ -29,7 +29,7 @@ class EnvironmentDrushCommand extends CommandBase
         $this->addExample('Enable the Overlay module on the remote environment', "'en overlay'");
     }
 
-    public function isHiddenInList()
+    public function isHidden()
     {
         // Hide this command in the list if the project is not Drupal.
         $projectRoot = $this->getProjectRoot();
@@ -37,7 +37,7 @@ class EnvironmentDrushCommand extends CommandBase
             return true;
         }
 
-        return parent::isHiddenInList();
+        return parent::isHidden();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

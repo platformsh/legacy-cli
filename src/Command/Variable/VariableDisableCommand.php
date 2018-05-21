@@ -11,8 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class VariableDisableCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'variable:disable';
 
     /**
@@ -22,6 +20,7 @@ class VariableDisableCommand extends CommandBase
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
             ->setDescription('Disable an enabled environment-level variable');
+        $this->setHidden(true);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();

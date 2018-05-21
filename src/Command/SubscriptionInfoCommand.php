@@ -15,8 +15,6 @@ class SubscriptionInfoCommand extends CommandBase
 {
     protected static $defaultName = 'subscription:info';
 
-    protected $hiddenInList = true;
-
     private $formatter;
 
     public function __construct(PropertyFormatter $formatter)
@@ -34,6 +32,7 @@ class SubscriptionInfoCommand extends CommandBase
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
             ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
             ->setDescription('Read or modify subscription properties');
+        $this->setHidden(true);
         $this->formatter->configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();

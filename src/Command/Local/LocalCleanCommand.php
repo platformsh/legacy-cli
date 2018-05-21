@@ -9,9 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalCleanCommand extends CommandBase
 {
-    protected $local = true;
-    protected $hiddenInList = true;
-
     protected static $defaultName = 'local:clean';
 
     protected function configure()
@@ -37,6 +34,7 @@ class LocalCleanCommand extends CommandBase
                 InputOption::VALUE_NONE,
                 'Delete active build(s) too'
             );
+        $this->setHidden(true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

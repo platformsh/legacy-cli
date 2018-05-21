@@ -11,7 +11,6 @@ use Symfony\Component\Process\Process;
 abstract class ServerCommandBase extends CommandBase
 {
     protected $serverInfo;
-    protected $local = true;
 
     public function isEnabled()
     {
