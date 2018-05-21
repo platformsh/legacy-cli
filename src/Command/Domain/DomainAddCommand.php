@@ -29,7 +29,7 @@ class DomainAddCommand extends DomainCommandBase
         $this->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
         $this->selector->addProjectOption($this->getDefinition());
-        $this->addWaitOptions();
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
             'Add the domain secure.example.com with SSL enabled',
@@ -64,7 +64,7 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $this->activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

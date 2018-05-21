@@ -33,7 +33,7 @@ class DomainDeleteCommand extends CommandBase
         $this->setDescription('Delete a domain from the project')
             ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->selector->addProjectOption($this->getDefinition());
-        $this->addWaitOptions();
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete the domain example.com', 'example.com');
     }
 
@@ -61,7 +61,7 @@ class DomainDeleteCommand extends CommandBase
 
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $this->activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

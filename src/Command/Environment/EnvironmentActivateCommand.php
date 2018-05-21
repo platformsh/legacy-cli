@@ -42,7 +42,7 @@ class EnvironmentActivateCommand extends CommandBase
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
         $this->selector->addAllOptions($this->getDefinition());
-        $this->addWaitOptions();
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -133,7 +133,7 @@ class EnvironmentActivateCommand extends CommandBase
         $success = $processed >= $count;
 
         if ($processed) {
-            if ($this->shouldWait($input)) {
+            if ($this->activityMonitor->shouldWait($input)) {
                 $result = $this->activityMonitor->waitMultiple($activities, $project);
                 $success = $success && $result;
             }

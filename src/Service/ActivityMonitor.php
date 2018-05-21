@@ -5,6 +5,9 @@ namespace Platformsh\Cli\Service;
 use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -23,13 +26,16 @@ class ActivityMonitor
         Activity::STATE_IN_PROGRESS => 'in progress',
     ];
 
-    protected $output;
+    private $config;
+    private $output;
 
     /**
+     * @param \Platformsh\Cli\Service\Config                    $config
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
-    public function __construct(OutputInterface $output)
+    public function __construct(Config $config, OutputInterface $output)
     {
+        $this->config = $config;
         $this->output = $output;
     }
 
@@ -300,5 +306,67 @@ class ActivityMonitor
         $value = html_entity_decode($value, ENT_QUOTES, 'utf-8');
 
         return $value;
+    }
+
+    /**
+     * Add both the --no-wait and --wait options.
+     *
+     * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
+     */
+    public function addWaitOptions(InputDefinition $inputDefinition)
+    {
+        $description = 'Wait for the operation to complete';
+        if (!$this->detectRunningInHook()) {
+            $description = 'Wait for the operation to complete (default)';
+        }
+
+        $inputDefinition->addOption(new InputOption('no-wait', 'W', InputOption::VALUE_NONE, 'Do not wait for the operation to complete'));
+        $inputDefinition->addOption(new InputOption('wait', null, InputOption::VALUE_NONE, $description));
+    }
+
+    /**
+     * Returns whether we should wait for an operation to complete.
+     *
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     *
+     * @return bool
+     */
+    public function shouldWait(InputInterface $input)
+    {
+        if ($input->hasOption('no-wait') && $input->getOption('no-wait')) {
+            return false;
+        }
+        if ($input->hasOption('wait') && $input->getOption('wait')) {
+            return true;
+        }
+        if ($this->detectRunningInHook()) {
+            $serviceName = $this->config->get('service.name');
+            $message = "\n<comment>Warning:</comment> $serviceName hook environment detected: assuming <comment>--no-wait</comment> by default."
+                . "\nTo avoid ambiguity, please specify either --no-wait or --wait."
+                . "\n";
+            $this->getStdErr()->writeln($message);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Detects a Platform.sh non-terminal Dash environment; i.e. a hook.
+     *
+     * @return bool
+     */
+    private function detectRunningInHook()
+    {
+        $envPrefix = $this->config->get('service.env_prefix');
+        if (getenv($envPrefix . 'PROJECT')
+            && basename(getenv('SHELL')) === 'dash'
+            && function_exists('posix_isatty')
+            && !posix_isatty(STDIN)) {
+            return true;
+        }
+
+        return false;
     }
 }

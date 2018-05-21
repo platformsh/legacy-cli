@@ -28,7 +28,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $this->setDescription('Update a domain');
         $this->addDomainOptions();
         $this->selector->addProjectOption($this->getDefinition());
-        $this->addWaitOptions();
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Update the certificate for the domain example.com',
             'example.com --cert secure-example-com.crt --key secure-example-com.key'
@@ -70,7 +70,7 @@ class DomainUpdateCommand extends DomainCommandBase
 
         $result = $domain->update(['ssl' => $this->sslOptions]);
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $this->activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
