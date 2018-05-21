@@ -31,7 +31,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /** @var OutputInterface|null */
     protected $stdErr;
 
-    protected $envArgName = 'environment';
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
 

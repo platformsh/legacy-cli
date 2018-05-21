@@ -41,9 +41,10 @@ class EnvironmentActivateCommand extends CommandBase
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
-        $this->selector->addEnvironmentOption($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition());
-        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $definition = $this->getDefinition();
+        $this->selector->addEnvironmentOption($definition);
+        $this->selector->addProjectOption($definition);
+        $this->activityMonitor->addWaitOptions($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

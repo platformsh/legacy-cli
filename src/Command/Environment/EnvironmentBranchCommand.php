@@ -2,6 +2,12 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,6 +18,33 @@ class EnvironmentBranchCommand extends CommandBase
 {
 
     protected static $defaultName = 'environment:branch';
+
+    protected $activityMonitor;
+    protected $api;
+    protected $config;
+    protected $git;
+    protected $questionHelper;
+    protected $selector;
+    protected $ssh;
+
+    public function __construct(
+        ActivityMonitor $activityMonitor,
+        Api $api,
+        Config $config,
+        Git $git,
+        QuestionHelper $questionHelper,
+        Selector $selector,
+        Ssh $ssh
+    ) {
+        $this->activityMonitor = $activityMonitor;
+        $this->api = $api;
+        $this->config = $config;
+        $this->git = $git;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        $this->ssh = $ssh;
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -32,19 +65,20 @@ class EnvironmentBranchCommand extends CommandBase
                 InputOption::VALUE_NONE,
                 "Do not clone the parent branch's data"
             );
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
-        Ssh::configureInput($this->getDefinition());
+        $definition = $this->getDefinition();
+        $this->selector->addEnvironmentOption($definition);
+        $this->selector->addProjectOption($definition);
+        $this->activityMonitor->addWaitOptions($definition);
+        $this->ssh->configureInput($definition);
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->envArgName = 'parent';
-        $this->validateInput($input);
-        $selectedProject = $this->getSelectedProject();
-        $parentEnvironment = $this->getSelectedEnvironment();
+        $this->selector->setEnvArgName('parent');
+        $selection = $this->selector->getSelection($input);
+        $selectedProject = $selection->getProject();
+        $parentEnvironment = $selection->getEnvironment();
 
         $branchName = $input->getArgument('id');
         if (empty($branchName)) {
@@ -66,10 +100,8 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $checkout = $questionHelper->confirm(
+        if ($environment = $this->api->getEnvironment($branchName, $selectedProject)) {
+            $checkout = $this->questionHelper->confirm(
                 "The environment <comment>$branchName</comment> already exists. Check out?"
             );
             if ($checkout) {
@@ -82,12 +114,12 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        if (!$this->api()->checkEnvironmentOperation('branch', $parentEnvironment)) {
+        if (!$this->api->checkEnvironmentOperation('branch', $parentEnvironment)) {
             $this->stdErr->writeln(
                 "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
             );
             if ($parentEnvironment->is_dirty) {
-                $this->api()->clearEnvironmentsCache($selectedProject->id);
+                $this->api->clearEnvironmentsCache($selectedProject->id);
             }
 
             return 1;
@@ -95,11 +127,11 @@ class EnvironmentBranchCommand extends CommandBase
 
         $force = $input->getOption('force');
 
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot && $force) {
             $this->stdErr->writeln(
-                "<comment>This command was run from outside your local project root, so the new " . $this->config()->get('service.name') . " branch cannot be checked out in your local Git repository."
-                . " Make sure to run '" . $this->config()->get('application.executable') . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
+                "<comment>This command was run from outside your local project root, so the new " . $this->config->get('service.name') . " branch cannot be checked out in your local Git repository."
+                . " Make sure to run '" . $this->config->get('application.executable') . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
             );
         } elseif (!$projectRoot) {
             $this->stdErr->writeln(
@@ -119,20 +151,16 @@ class EnvironmentBranchCommand extends CommandBase
         $activity = $parentEnvironment->branch($title, $branchName, !$input->getOption('no-clone-parent'));
 
         // Clear the environments cache, as branching has started.
-        $this->api()->clearEnvironmentsCache($selectedProject->id);
+        $this->api->clearEnvironmentsCache($selectedProject->id);
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $git->setSshCommand($ssh->getSshCommand());
+        $this->git->setSshCommand($this->ssh->getSshCommand());
 
         if ($projectRoot) {
             // If the Git branch already exists locally, just check it out.
-            $existsLocally = $git->branchExists($branchName, $projectRoot);
+            $existsLocally = $this->git->branchExists($branchName, $projectRoot);
             if ($existsLocally) {
                 $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
-                if (!$git->checkOut($branchName, $projectRoot)) {
+                if (!$this->git->checkOut($branchName, $projectRoot)) {
                     $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
@@ -140,10 +168,10 @@ class EnvironmentBranchCommand extends CommandBase
                 }
             } else {
                 // Create a new branch, using the parent if it exists locally.
-                $parent = $git->branchExists($parentEnvironment->id, $projectRoot) ? $parentEnvironment->id : null;
+                $parent = $this->git->branchExists($parentEnvironment->id, $projectRoot) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
 
-                if (!$git->checkOutNew($branchName, $parent, null, $projectRoot)) {
+                if (!$this->git->checkOutNew($branchName, $parent, null, $projectRoot)) {
                     $this->stdErr->writeln('<error>Failed to create branch locally: ' . $branchName . '</error>');
                     if (!$force) {
                         return 1;
@@ -153,10 +181,8 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $remoteSuccess = true;
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $remoteSuccess = $activityMonitor->waitAndLog(
+        if ($this->activityMonitor->shouldWait($input)) {
+            $remoteSuccess = $this->activityMonitor->waitAndLog(
                 $activity,
                 "The environment <info>$branchName</info> has been created.",
                 '<error>Branching failed</error>'
@@ -165,13 +191,13 @@ class EnvironmentBranchCommand extends CommandBase
             // Set the local branch to track the remote branch. This requires
             // first fetching the new branch from the remote.
             if ($remoteSuccess && $projectRoot) {
-                $upstreamRemote = $this->config()->get('detection.git_remote_name');
-                $git->fetch($upstreamRemote, $branchName, $projectRoot);
-                $git->setUpstream($upstreamRemote . '/' . $branchName, $branchName, $projectRoot);
+                $upstreamRemote = $this->config->get('detection.git_remote_name');
+                $this->git->fetch($upstreamRemote, $branchName, $projectRoot);
+                $this->git->setUpstream($upstreamRemote . '/' . $branchName, $branchName, $projectRoot);
             }
         }
 
-        $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
+        $this->api->clearEnvironmentsCache($selectedProject->id);
 
         return $remoteSuccess ? 0 : 1;
     }
