@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,6 +14,16 @@ class AppListCommand extends CommandBase
 
     protected static $defaultName = 'app:list';
 
+    private $selector;
+    private $table;
+
+    public function __construct(Selector $selector, Table $table)
+    {
+        $this->selector = $selector;
+        $this->table = $table;
+        parent::__construct();
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -21,9 +32,11 @@ class AppListCommand extends CommandBase
         $this->setAliases(['apps'])
             ->setDescription('List apps in the project')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
-        Table::configureInput($this->getDefinition());
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->table->configureInput($definition);
     }
 
     /**
@@ -31,11 +44,11 @@ class AppListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         // Find a list of deployed web apps.
         $apps = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'))
+            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'))
             ->webapps;
 
         // Determine whether to show the "Local path" of the app. This will be
@@ -44,7 +57,7 @@ class AppListCommand extends CommandBase
         // @todo The "Local path" column is mainly here for legacy reasons, and can be removed in a future version.
         $showLocalPath = false;
         $localApps = [];
-        if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent()) {
+        if (($projectRoot = $this->selector->getProjectRoot()) && $this->selector->getCurrentProject()->id === $selection->getProject()->id) {
             $localApps = LocalApplication::getApplications($projectRoot, $this->config());
             $showLocalPath = true;
         }
@@ -74,8 +87,6 @@ class AppListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        $table->render($rows, $headers);
+        $this->table->render($rows, $headers);
     }
 }

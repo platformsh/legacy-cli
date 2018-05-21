@@ -15,10 +15,12 @@ class AuthInfoCommand extends CommandBase
     protected static $defaultName = 'auth:info';
 
     private $formatter;
+    private $table;
 
-    public function __construct(PropertyFormatter $formatter)
+    public function __construct(PropertyFormatter $formatter, Table $table)
     {
         $this->formatter = $formatter;
+        $this->table = $table;
         parent::__construct();
     }
 
@@ -28,7 +30,8 @@ class AuthInfoCommand extends CommandBase
             ->addArgument('property', InputArgument::OPTIONAL, 'The account property to view')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The account property to view (alternate syntax)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        Table::configureInput($this->getDefinition());
+
+        $this->table->configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -69,9 +72,7 @@ class AuthInfoCommand extends CommandBase
                 $header[] = $property;
             }
         }
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        $table->renderSimple($values, $header);
+        $this->table->renderSimple($values, $header);
 
         return 0;
     }

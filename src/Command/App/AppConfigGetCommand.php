@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -9,6 +11,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AppConfigGetCommand extends CommandBase
 {
     protected static $defaultName = 'app:config-get';
+
+    private $selector;
+    private $formatter;
+
+    public function __construct(Selector $selector, PropertyFormatter $formatter)
+    {
+        $this->selector = $selector;
+        $this->formatter = $formatter;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -18,9 +30,11 @@ class AppConfigGetCommand extends CommandBase
         $this->setDescription('View the configuration of an app')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->selector->addAppOption($definition);
     }
 
     /**
@@ -28,15 +42,13 @@ class AppConfigGetCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $appConfig = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'))
-            ->getWebApp($this->selectApp($input))
+            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'))
+            ->getWebApp($selection->getAppName())
             ->getProperties();
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-        $formatter->displayData($output, $appConfig, $input->getOption('property'));
+        $this->formatter->displayData($output, $appConfig, $input->getOption('property'));
     }
 }

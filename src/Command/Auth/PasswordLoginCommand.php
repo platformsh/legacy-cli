@@ -1,8 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Doctrine\Common\Cache\CacheProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Oauth2\Client\Exception\TfaRequiredException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -12,13 +17,35 @@ class PasswordLoginCommand extends CommandBase
 {
     protected static $defaultName = 'auth:password-login';
 
+    private $api;
+    private $cache;
+    private $config;
+    private $filesystem;
+    private $questionHelper;
+
+    public function __construct(
+        Api $api,
+        CacheProvider $cache,
+        Config $config,
+        Filesystem $filesystem,
+        QuestionHelper $questionHelper
+    )
+    {
+        $this->api = $api;
+        $this->cache = $cache;
+        $this->config = $config;
+        $this->filesystem = $filesystem;
+        $this->questionHelper = $questionHelper;
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $service = $this->config()->get('service.name');
-        $accountsUrl = $this->config()->get('service.accounts_url');
-        $executable = $this->config()->get('application.executable');
+        $service = $this->config->get('service.name');
+        $accountsUrl = $this->config->get('service.accounts_url');
+        $executable = $this->config->get('application.executable');
 
-        if ($this->config()->get('application.login_method') === 'password') {
+        if ($this->config->get('application.login_method') === 'password') {
             $this->setAliases(['login']);
         }
 
@@ -39,7 +66,7 @@ class PasswordLoginCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($this->api()->hasApiToken()) {
+        if ($this->api->hasApiToken()) {
             $this->stdErr->writeln('Cannot log in: an API token is set');
             return 1;
         }
@@ -52,16 +79,14 @@ class PasswordLoginCommand extends CommandBase
         }
 
         $this->stdErr->writeln(
-            'Please log in using your <info>' . $this->config()->get('service.name') . '</info> account.'
+            'Please log in using your <info>' . $this->config->get('service.name') . '</info> account.'
         );
         $this->stdErr->writeln('');
         $this->configureAccount($input, $this->stdErr);
 
-        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-        $cache = $this->getService('cache');
-        $cache->flushAll();
+        $this->cache->flushAll();
 
-        $info = $this->api()->getClient(false, true)->getAccountInfo();
+        $info = $this->api->getClient(false, true)->getAccountInfo();
         if (isset($info['username'], $info['mail'])) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
@@ -74,15 +99,16 @@ class PasswordLoginCommand extends CommandBase
         return 0;
     }
 
+    /**
+     * @param \Symfony\Component\Console\Input\InputInterface   $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
     protected function configureAccount(InputInterface $input, OutputInterface $output)
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
         $question = new Question('Your email address or username: ');
         $question->setValidator([$this, 'validateUsernameOrEmail']);
         $question->setMaxAttempts(5);
-        $email = $questionHelper->ask($input, $output, $question);
+        $email = $this->questionHelper->ask($input, $output, $question);
 
         $question = new Question('Your password: ');
         $question->setValidator(
@@ -96,10 +122,10 @@ class PasswordLoginCommand extends CommandBase
         );
         $question->setHidden(true);
         $question->setMaxAttempts(5);
-        $password = $questionHelper->ask($input, $output, $question);
+        $password = $this->questionHelper->ask($input, $output, $question);
 
         try {
-            $this->api()->getClient(false)
+            $this->api->getClient(false)
                 ->getConnector()
                 ->logIn($email, $password, true);
         } catch (TfaRequiredException $e) {
@@ -111,21 +137,21 @@ class PasswordLoginCommand extends CommandBase
                 if (trim($answer) == '') {
                     throw new \RuntimeException('The code cannot be empty.');
                 }
-                $this->api()->getClient(false)
+                $this->api->getClient(false)
                     ->getConnector()
                     ->logIn($email, $password, true, $answer);
 
                 return $answer;
             });
             $question->setMaxAttempts(5);
-            $questionHelper->ask($input, $output, $question);
+            $this->questionHelper->ask($input, $output, $question);
         } catch (IdentityProviderException $e) {
             $output->writeln([
                 '',
                 '<error>Login failed. Please check your credentials.</error>',
                 '',
                 "Forgot your password? Or don't have a password yet? Visit:",
-                '  <comment>' . $this->config()->get('service.accounts_url') . '/user/password</comment>',
+                '  <comment>' . $this->config->get('service.accounts_url') . '/user/password</comment>',
                 '',
             ]);
             $this->configureAccount($input, $output);

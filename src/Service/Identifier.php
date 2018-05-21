@@ -7,6 +7,7 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\Cache;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -41,8 +42,6 @@ class Identifier
      * Identify a project from an ID or URL.
      *
      * @param string $url
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
      *
      * @return array
      *   An array containing keys 'projectId', 'environmentId', 'host', and
@@ -151,8 +150,6 @@ class Identifier
      *
      * @param string $url
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     *
      * @return string|false
      */
     private function getClusterHeader($url)
@@ -170,7 +167,7 @@ class Identifier
                 ]);
                 $cluster = $response->getHeader($this->config->get('service.header_prefix') . '-cluster');
                 $this->cache->save($cacheKey, $cluster, 86400);
-            } catch (RequestException $e) {
+            } catch (GuzzleException $e) {
                 $this->debug($e->getMessage());
 
                 return false;

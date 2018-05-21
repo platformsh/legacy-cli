@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Activity;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,6 +16,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ActivityLogCommand extends CommandBase
 {
     protected static $defaultName = 'activity:log';
+
+    private $selector;
+    private $propertyFormatter;
+
+    public function __construct(
+        Selector $selector,
+        PropertyFormatter $propertyFormatter
+    )
+    {
+        $this->selector = $selector;
+        $this->propertyFormatter = $propertyFormatter;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -32,23 +46,26 @@ class ActivityLogCommand extends CommandBase
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
             ->setDescription('Display the log for an activity');
-        PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->propertyFormatter->configureInput($definition);
+
         $this->addExample('Display the log for the last push on the current environment', '--type environment.push')
             ->addExample('Display the log for the last activity on the current project', '--all');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
+        $selection = $this->selector->getSelection($input, $input->getOption('all') || $input->getArgument('id'));
 
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = $this->getSelectedProject()
+            $activity = $selection->getProject()
                              ->getActivity($id);
             if (!$activity) {
-                $activities = $this->getSelectedEnvironment()
+                $activities = $selection->getEnvironment()
                     ->getActivities(0, $input->getOption('type'));
                 $activity = $this->api()->matchPartialId($id, $activities, 'Activity');
                 if (!$activity) {
@@ -58,11 +75,11 @@ class ActivityLogCommand extends CommandBase
                 }
             }
         } else {
-            if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-                $activities = $this->getSelectedEnvironment()
+            if ($selection->hasEnvironment() && !$input->getOption('all')) {
+                $activities = $selection->getEnvironment()
                     ->getActivities(1, $input->getOption('type'));
             } else {
-                $activities = $this->getSelectedProject()
+                $activities = $selection->getProject()
                     ->getActivities(1, $input->getOption('type'));
             }
             /** @var Activity $activity */
@@ -74,13 +91,10 @@ class ActivityLogCommand extends CommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $this->stdErr->writeln([
             sprintf('<info>Activity ID: </info>%s', $activity->id),
             sprintf('<info>Description: </info>%s', ActivityMonitor::getFormattedDescription($activity)),
-            sprintf('<info>Created: </info>%s', $formatter->format($activity->created_at, 'created_at')),
+            sprintf('<info>Created: </info>%s', $this->propertyFormatter->format($activity->created_at, 'created_at')),
             sprintf('<info>State: </info>%s', ActivityMonitor::formatState($activity->state)),
             '<info>Log: </info>',
         ]);
