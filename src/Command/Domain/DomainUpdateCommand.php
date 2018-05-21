@@ -1,13 +1,24 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainUpdateCommand extends DomainCommandBase
 {
-
     protected static $defaultName = 'domain:update';
+
+    private $activityMonitor;
+    private $selector;
+
+    public function __construct(Selector $selector, ActivityMonitor $activityMonitor)
+    {
+        $this->selector = $selector;
+        $this->activityMonitor = $activityMonitor;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -16,7 +27,8 @@ class DomainUpdateCommand extends DomainCommandBase
     {
         $this->setDescription('Update a domain');
         $this->addDomainOptions();
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addWaitOptions();
         $this->addExample(
             'Update the certificate for the domain example.com',
             'example.com --cert secure-example-com.crt --key secure-example-com.key'
@@ -28,13 +40,11 @@ class DomainUpdateCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $project = $this->selector->getSelection($input)->getProject();
 
         if (!$this->validateDomainInput($input)) {
             return 1;
         }
-
-        $project = $this->getSelectedProject();
 
         $domain = $project->getDomain($this->domainName);
         if (!$domain) {
@@ -61,9 +71,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $result = $domain->update(['ssl' => $this->sslOptions]);
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $activityMonitor->waitMultiple($result->getActivities(), $project);
+            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

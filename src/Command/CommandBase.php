@@ -356,6 +356,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     /**
      * Add both the --no-wait and --wait options.
+     *
+     * @todo move this to ActivityMonitor
      */
     protected function addWaitOptions()
     {
@@ -371,6 +373,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * Returns whether we should wait for an operation to complete.
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
+     *
+     * @todo move this to ActivityMonitor
      *
      * @return bool
      */

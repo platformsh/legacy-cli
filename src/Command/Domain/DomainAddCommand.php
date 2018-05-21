@@ -2,13 +2,24 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainAddCommand extends DomainCommandBase
 {
-
     protected static $defaultName = 'domain:add';
+
+    private $activityMonitor;
+    private $selector;
+
+    public function __construct(Selector $selector, ActivityMonitor $activityMonitor)
+    {
+        $this->selector = $selector;
+        $this->activityMonitor = $activityMonitor;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -17,7 +28,8 @@ class DomainAddCommand extends DomainCommandBase
     {
         $this->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addWaitOptions();
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
             'Add the domain secure.example.com with SSL enabled',
@@ -30,13 +42,11 @@ class DomainAddCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $project = $this->selector->getSelection($input)->getProject();
 
         if (!$this->validateDomainInput($input)) {
             return 1;
         }
-
-        $project = $this->getSelectedProject();
 
         try {
             $this->stdErr->writeln("Adding the domain <info>{$this->domainName}</info>");
@@ -55,9 +65,7 @@ class DomainAddCommand extends DomainCommandBase
         }
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $activityMonitor->waitMultiple($result->getActivities(), $project);
+            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;
