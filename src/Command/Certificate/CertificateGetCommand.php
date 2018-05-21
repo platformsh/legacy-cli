@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -10,22 +11,32 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class CertificateGetCommand extends CommandBase
 {
-
     protected static $defaultName = 'certificate:get';
+
+    private $selector;
+    private $formatter;
+
+    public function __construct(Selector $selector, PropertyFormatter $formatter)
+    {
+        $this->selector = $selector;
+        $this->formatter = $formatter;
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this->setDescription('View a certificate')
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The certificate property to view');
-        PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption();
+
+        $definition = $this->getDefinition();
+        $this->formatter->configureInput($definition);
+        $this->selector->addProjectOption($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $project = $this->selector->getSelection($input)->getProject();
 
         $id = $input->getArgument('id');
         $cert = $project->getCertificate($id);
@@ -38,10 +49,7 @@ class CertificateGetCommand extends CommandBase
             }
         }
 
-        /** @var PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
-
-        $propertyFormatter->displayData($output, $cert->getProperties(), $input->getOption('property'));
+        $this->formatter->displayData($output, $cert->getProperties(), $input->getOption('property'));
 
         return 0;
     }
