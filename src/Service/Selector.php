@@ -544,4 +544,16 @@ class Selector
     {
         $inputDefinition->addOption(new InputOption('app', 'A', InputOption::VALUE_REQUIRED, 'The remote application name'));
     }
+
+    /**
+     * Add all selection options (project, environment and app).
+     *
+     * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
+     */
+    public function addAllOptions(InputDefinition $inputDefinition)
+    {
+        $this->addProjectOption($inputDefinition);
+        $this->addEnvironmentOption($inputDefinition);
+        $this->addAppOption($inputDefinition);
+    }
 }

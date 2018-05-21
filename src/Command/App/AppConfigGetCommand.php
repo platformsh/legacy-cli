@@ -30,11 +30,7 @@ class AppConfigGetCommand extends CommandBase
         $this->setDescription('View the configuration of an app')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-
-        $definition = $this->getDefinition();
-        $this->selector->addProjectOption($definition);
-        $this->selector->addEnvironmentOption($definition);
-        $this->selector->addAppOption($definition);
+        $this->selector->addAllOptions($this->getDefinition());
     }
 
     /**

@@ -60,9 +60,7 @@ class DbDumpCommand extends CommandBase
             ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data');
 
         $definition = $this->getDefinition();
-        $this->selector->addProjectOption($definition);
-        $this->selector->addEnvironmentOption($definition);
-        $this->selector->addAppOption($definition);
+        $this->selector->addAllOptions($definition);
         $this->relationships->configureInput($definition);
         $this->ssh->configureInput($definition);
 

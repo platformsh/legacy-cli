@@ -48,9 +48,7 @@ class DbSizeCommand extends CommandBase
             );
 
         $definition = $this->getDefinition();
-        $this->selector->addProjectOption($definition);
-        $this->selector->addEnvironmentOption($definition);
-        $this->selector->addAppOption($definition);
+        $this->selector->addAllOptions($definition);
         $this->relationships->configureInput($definition);
         $this->ssh->configureInput($definition);
         $this->table->configureInput($definition);

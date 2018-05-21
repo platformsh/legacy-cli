@@ -43,9 +43,7 @@ class DbSqlCommand extends CommandBase
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output');
 
         $definition = $this->getDefinition();
-        $this->selector->addProjectOption($definition);
-        $this->selector->addEnvironmentOption($definition);
-        $this->selector->addAppOption($definition);
+        $this->selector->addAllOptions($definition);
         $this->relationships->configureInput($definition);
         $this->ssh->configureInput($definition);
 
