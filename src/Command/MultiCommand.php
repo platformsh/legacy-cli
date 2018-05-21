@@ -15,8 +15,6 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
 {
     protected static $defaultName = 'multi';
 
-    protected $canBeRunMultipleTimes = false;
-
     protected function configure()
     {
         $this->setDescription('Execute a command on multiple projects')
@@ -29,6 +27,14 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             'List variables on the "master" environment for multiple projects',
             "--projects l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx 'variable:get --environment master'"
         );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function canBeRunMultipleTimes()
+    {
+        return false;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

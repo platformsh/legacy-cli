@@ -31,7 +31,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /** @var OutputInterface|null */
     protected $stdErr;
 
-    protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
 
     /** @var \Platformsh\Cli\Service\Api|null */
@@ -534,7 +533,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     public function canBeRunMultipleTimes()
     {
-        return $this->canBeRunMultipleTimes;
+        return true;
     }
 
     /**
