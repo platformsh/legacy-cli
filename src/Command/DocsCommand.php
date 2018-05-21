@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,26 +12,36 @@ class DocsCommand extends CommandBase
 {
     protected static $defaultName = 'docs';
 
+    private $config;
+    private $urlService;
+
+    public function __construct(
+        Config $config,
+        Url $urlService
+    ) {
+        $this->config = $config;
+        $this->urlService = $urlService;
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this->setDescription('Open the online documentation')
             ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
         $this->addExample('Search for information about the CLI', 'CLI');
-        Url::configureInput($this->getDefinition());
+        $this->urlService->configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if ($searchArguments = $input->getArgument('search')) {
             $query = $this->getSearchQuery($searchArguments);
-            $url = str_replace('{{ terms }}', rawurlencode($query), $this->config()->get('service.docs_search_url'));
+            $url = str_replace('{{ terms }}', rawurlencode($query), $this->config->get('service.docs_search_url'));
         } else {
-            $url = $this->config()->get('service.docs_url');
+            $url = $this->config->get('service.docs_url');
         }
 
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
-        $urlService->openUrl($url);
+        $this->urlService->openUrl($url);
     }
 
     /**
