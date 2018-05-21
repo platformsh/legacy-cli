@@ -2,7 +2,12 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
@@ -13,8 +18,34 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DbDumpCommand extends CommandBase
 {
-
     protected static $defaultName = 'db:dump';
+
+    private $filesystem;
+    private $git;
+    private $questionHelper;
+    private $relationships;
+    private $selector;
+    private $shell;
+    private $ssh;
+
+    public function __construct(
+        Filesystem $filesystem,
+        Git $git,
+        QuestionHelper $questionHelper,
+        Relationships $relationships,
+        Selector $selector,
+        Shell $shell,
+        Ssh $ssh
+    ) {
+        $this->filesystem = $filesystem;
+        $this->git = $git;
+        $this->questionHelper = $questionHelper;
+        $this->relationships = $relationships;
+        $this->selector = $selector;
+        $this->shell = $shell;
+        $this->ssh = $ssh;
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -27,9 +58,14 @@ class DbDumpCommand extends CommandBase
             ->addOption('table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to include')
             ->addOption('exclude-table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to exclude')
             ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data');
-        $this->addProjectOption()->addEnvironmentOption()->addAppOption();
-        Relationships::configureInput($this->getDefinition());
-        Ssh::configureInput($this->getDefinition());
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->selector->addAppOption($definition);
+        $this->relationships->configureInput($definition);
+        $this->ssh->configureInput($definition);
+
         $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
         $this->addExample('Create an SQL dump file');
         $this->addExample('Create a gzipped SQL dump file named "dump.sql.gz"', '--gzip -f dump.sql.gz');
@@ -37,19 +73,16 @@ class DbDumpCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $projectRoot = $this->getProjectRoot();
-        $environment = $this->getSelectedEnvironment();
-        $appName = $this->selectApp($input);
+        $selection = $this->selector->getSelection($input);
+        $projectRoot = $this->selector->getProjectRoot();
+        $environment = $selection->getEnvironment();
+        $appName = $selection->getAppName();
         $sshUrl = $environment->getSshUrl($appName);
         $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;
         $gzip = $input->getOption('gzip');
         $includedTables = $input->getOption('table');
         $excludedTables = $input->getOption('exclude-table');
         $schemaOnly = $input->getOption('schema-only');
-
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
 
         $dumpFile = null;
         if (!$input->getOption('stdout')) {
@@ -103,14 +136,12 @@ class DbDumpCommand extends CommandBase
             }
 
             // Make the filename absolute.
-            $dumpFile = $fs->makePathAbsolute($dumpFile);
+            $dumpFile = $this->filesystem->makePathAbsolute($dumpFile);
         }
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
-                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
+                if (!$this->questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
                     return 1;
                 }
             }
@@ -121,17 +152,14 @@ class DbDumpCommand extends CommandBase
             ));
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-
-        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
+        $database = $this->relationships->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             return 1;
         }
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = 'pg_dump --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database);
+                $dumpCommand = 'pg_dump --clean --blobs ' . $this->relationships->getDbCommandArgs('pg_dump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --schema-only';
                 }
@@ -145,7 +173,7 @@ class DbDumpCommand extends CommandBase
 
             default:
                 $dumpCommand = 'mysqldump --single-transaction '
-                    . $relationships->getDbCommandArgs('mysqldump', $database);
+                    . $this->relationships->getDbCommandArgs('mysqldump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
                 }
@@ -161,9 +189,7 @@ class DbDumpCommand extends CommandBase
                 break;
         }
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $sshCommand = $ssh->getSshCommand();
+        $sshCommand = $this->ssh->getSshCommand();
 
         if ($gzip) {
             // If dump compression is enabled, pipe the dump command into gzip,
@@ -190,9 +216,7 @@ class DbDumpCommand extends CommandBase
 
         // Execute the SSH command.
         $start = microtime(true);
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        $exitCode = $shell->executeSimple($command);
+        $exitCode = $this->shell->executeSimple($command);
 
         if ($exitCode === 0) {
             $this->stdErr->writeln('The dump completed successfully', OutputInterface::VERBOSITY_VERBOSE);
@@ -205,9 +229,7 @@ class DbDumpCommand extends CommandBase
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
         if ($dumpFile && file_exists($dumpFile) && $projectRoot && strpos($dumpFile, $projectRoot) === 0) {
-            /** @var \Platformsh\Cli\Service\Git $git */
-            $git = $this->getService('git');
-            if (!$git->checkIgnore($dumpFile, $projectRoot)) {
+            if (!$this->git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
                 if ($pos = strrpos($dumpFile, '--dump.sql')) {
                     $extension = substr($dumpFile, $pos);
