@@ -32,7 +32,6 @@ class Composer extends BuildFlavorBase
                 '--prefer-dist',
                 '--optimize-autoloader',
                 '--no-interaction',
-                '--no-ansi',
             ];
             if ($this->stdErr->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
                 $args[] = '-vvv';
