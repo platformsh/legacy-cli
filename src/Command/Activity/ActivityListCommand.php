@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Command\Activity;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
@@ -17,19 +19,24 @@ class ActivityListCommand extends CommandBase
 {
     protected static $defaultName = 'activity:list';
 
+    private $api;
+    private $config;
+    private $formatter;
     private $selector;
     private $table;
-    private $propertyFormatter;
 
     public function __construct(
+        Api $api,
+        Config $config,
         Selector $selector,
         Table $table,
-        PropertyFormatter $propertyFormatter
-    )
-    {
+        PropertyFormatter $formatter
+    ) {
+        $this->api = $api;
+        $this->config = $config;
         $this->selector = $selector;
         $this->table = $table;
-        $this->propertyFormatter = $propertyFormatter;
+        $this->formatter = $formatter;
         parent::__construct();
     }
 
@@ -49,7 +56,7 @@ class ActivityListCommand extends CommandBase
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
         $this->table->configureInput($definition);
-        $this->propertyFormatter->configureInput($definition);
+        $this->formatter->configureInput($definition);
 
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
@@ -111,7 +118,7 @@ class ActivityListCommand extends CommandBase
         foreach ($activities as $activity) {
             $row = [
                 new AdaptiveTableCell($activity->id, ['wrap' => false]),
-                $this->propertyFormatter->format($activity['created_at'], 'created_at'),
+                $this->formatter->format($activity['created_at'], 'created_at'),
                 ActivityMonitor::getFormattedDescription($activity, !$this->table->formatIsMachineReadable()),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
@@ -141,7 +148,7 @@ class ActivityListCommand extends CommandBase
                 $this->stdErr->writeln(
                     sprintf(
                         'Activities for the project <info>%s</info>:',
-                        $this->api()->getProjectLabel($project)
+                        $this->api->getProjectLabel($project)
                     )
                 );
             }
@@ -150,7 +157,7 @@ class ActivityListCommand extends CommandBase
         $this->table->render($rows, $headers);
 
         if (!$this->table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view the log for an activity, run: <info>%s activity:log [id]</info>',
