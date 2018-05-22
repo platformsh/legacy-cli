@@ -20,11 +20,6 @@ services:
     Platformsh\Cli\Local\LocalBuild: {}
     Platformsh\Cli\Local\LocalProject: {}
 
-    # Aliases @todo remove these
-    table: '@Platformsh\Cli\Service\Table'
-    config: '@Platformsh\Cli\Service\Config'
-    question_helper: '@Platformsh\Cli\Service\QuestionHelper'
-
     # Configure the cache service.
     cache:
         class:     '\Doctrine\Common\Cache\CacheProvider'

@@ -10,6 +10,8 @@ use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\SelfUpdater;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\State;
@@ -32,9 +34,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected $stdErr;
 
     protected $runningViaMulti = false;
-
-    /** @var \Platformsh\Cli\Service\Api|null */
-    private $api;
 
     /** @var InputInterface|null */
     private $input;
@@ -66,27 +65,24 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->input = $input;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
+        $this->api();
+
         $this->promptLegacyMigrate();
     }
 
     /**
      * Set up the API object.
-     *
-     * @return \Platformsh\Cli\Service\Api
      */
-    protected function api()
+    private function api()
     {
-        if (!isset($this->api)) {
-            $this->api = $this->getService(Api::class);
-            $this->api
-                ->dispatcher
+        static $api;
+        if (!isset($api)) {
+            $api = Application::container()->get(Api::class);
+            $api->dispatcher
                 ->addListener('login_required', [$this, 'login']);
-            $this->api
-                ->dispatcher
+            $api->dispatcher
                 ->addListener('environments_changed', [$this, 'updateDrushAliases']);
         }
-
-        return $this->api;
     }
 
     /**
@@ -101,11 +97,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         static $asked = false;
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService(LocalProject::class);
+        $localProject = Application::container()->get(LocalProject::class);
         if ($localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
             $asked = true;
 
-            $projectRoot = $this->getProjectRoot();
+            $projectRoot = $localProject->getProjectRoot();
             $timestamp = time();
             $promptMigrate = true;
             if ($projectRoot) {
@@ -126,7 +122,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
                 }
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
+                $questionHelper = Application::container()->get(QuestionHelper::class);
                 if ($questionHelper->confirm('Migrate to the new structure?')) {
                     $code = $this->runOtherCommand('legacy-migrate');
                     exit($code);
@@ -198,7 +194,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Stop if updates were last checked after the embargo time.
         /** @var State $state */
-        $state = $this->getService(State::class);
+        $state = Application::container()->get(State::class);
         if ($state->get('updates.last_checked') > $embargoTime) {
             return;
         }
@@ -211,13 +207,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
         /** @var Shell $shell */
-        $shell = $this->getService(Shell::class);
+        $shell = Application::container()->get(Shell::class);
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = Application::container()->get(QuestionHelper::class);
         $currentVersion = $this->config()->get('application.version');
 
         /** @var SelfUpdater $cliUpdater */
-        $cliUpdater = $this->getService(SelfUpdater::class);
+        $cliUpdater = Application::container()->get(SelfUpdater::class);
         $cliUpdater->setAllowMajor(true);
         $cliUpdater->setTimeout(5);
 
@@ -273,9 +269,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $method = $this->config()->getWithDefault('application.login_method', 'browser');
             if ($method === 'browser') {
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
+                $questionHelper = Application::container()->get(QuestionHelper::class);
                 /** @var Url $urlService */
-                $urlService = $this->getService(Url::class);
+                $urlService = Application::container()->get(Url::class);
                 if ($urlService->canOpenUrls()
                     && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
                     $this->stdErr->writeln('');
@@ -305,7 +301,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     public function updateDrushAliases(EnvironmentsChangedEvent $event)
     {
-        $projectRoot = $this->getProjectRoot();
+        /** @var \Platformsh\Cli\Service\Selector $selector */
+        $selector = Application::container()->get(Selector::class);
+        $projectRoot = $selector->getProjectRoot();
         if (!$projectRoot) {
             return;
         }
@@ -314,7 +312,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
         // Double-check that the passed project is the current one.
-        $currentProject = $this->getCurrentProject();
+        $currentProject = $selector->getCurrentProject();
         if (!$currentProject || $currentProject->id != $event->getProject()->id) {
             return;
         }
@@ -323,7 +321,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
         /** @var Drush $drush */
-        $drush = $this->getService(Drush::class);
+        $drush = Application::container()->get(Drush::class);
         if ($drush->getVersion() === false) {
             $this->debug('Not updating Drush aliases: the Drush version cannot be determined.');
             return;
@@ -494,38 +492,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Get a service object.
-     *
-     * Services are configured in services.yml, and loaded via the Symfony
-     * Dependency Injection component.
-     *
-     * When using this method, always store the result in a temporary variable,
-     * so that the service's type can be hinted in a variable docblock (allowing
-     * IDEs and other analysers to check subsequent code). For example:
-     * <code>
-     *   /** @var \Platformsh\Cli\Service\Filesystem $fs *\/
-     *   $fs = $this->getService('fs');
-     * </code>
-     *
-     * @param string $name The service name. See services.yml for a list.
-     *
-     * @deprecated Should use DI instead
-     *
-     * @return object The associated service object.
-     */
-    protected function getService($name)
-    {
-        return Application::container()->get($name);
-    }
-
-    /**
      * Get the configuration service.
      *
      * @return \Platformsh\Cli\Service\Config
      */
-    protected function config()
+    private function config()
     {
-        return $this->getService(Config::class);
+        return Application::container()->get(Config::class);
     }
 
     /**
