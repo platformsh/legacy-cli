@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
@@ -14,13 +15,20 @@ class DomainListCommand extends DomainCommandBase
 {
     protected static $defaultName = 'domain:list';
 
+    private $api;
     private $config;
     private $formatter;
     private $selector;
     private $table;
 
-    public function __construct(Config $config, Selector $selector, PropertyFormatter $formatter, Table $table)
-    {
+    public function __construct(
+        Api $api,
+        Config $config,
+        Selector $selector,
+        PropertyFormatter $formatter,
+        Table $table
+    ) {
+        $this->api = $api;
         $this->config = $config;
         $this->formatter = $formatter;
         $this->selector = $selector;
@@ -69,7 +77,7 @@ class DomainListCommand extends DomainCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $project = $this->selector->getSelection($input)->getProject();
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
         try {
             $domains = $project->getDomains();
@@ -79,7 +87,7 @@ class DomainListCommand extends DomainCommandBase
         }
 
         if (empty($domains)) {
-            $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
+            $this->stdErr->writeln('No domains found for ' . $this->api->getProjectLabel($project) . '.');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(
                 'Add a domain to the project by running <info>' . $executable . ' domain:add [domain-name]</info>'

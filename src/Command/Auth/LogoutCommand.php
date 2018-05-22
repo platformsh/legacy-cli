@@ -6,6 +6,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,18 +19,21 @@ class LogoutCommand extends CommandBase
     private $cache;
     private $config;
     private $filesystem;
+    private $questionHelper;
 
     public function __construct(
         Api $api,
         CacheProvider $cache,
         Config $config,
-        Filesystem $filesystem
+        Filesystem $filesystem,
+        QuestionHelper $questionHelper
     )
     {
         $this->api = $api;
         $this->cache = $cache;
         $this->config = $config;
         $this->filesystem = $filesystem;
+        $this->questionHelper = $questionHelper;
         parent::__construct();
     }
 
@@ -37,7 +41,7 @@ class LogoutCommand extends CommandBase
     {
         $this->setAliases(['logout'])
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
-            ->setDescription('Log out of ' . $this->config()->get('service.name'));
+            ->setDescription('Log out of ' . $this->config->get('service.name'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -56,10 +60,8 @@ class LogoutCommand extends CommandBase
         }
 
         // Ask for a confirmation.
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
         if ($this->api->isLoggedIn()
-            && !$questionHelper->confirm("Are you sure you wish to log out?")) {
+            && !$this->questionHelper->confirm("Are you sure you wish to log out?")) {
             $this->stdErr->writeln('You remain logged in.');
 
             return 1;

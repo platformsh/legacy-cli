@@ -54,7 +54,7 @@ class EnvironmentActivateCommand extends CommandBase
         if ($selection->hasEnvironment()) {
             $toActivate = [$selection->getEnvironment()];
         } else {
-            $environments = $this->api()->getEnvironments($selection->getProject());
+            $environments = $this->api->getEnvironments($selection->getProject());
             $environmentIds = $input->getArgument('environment');
             $toActivate = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
@@ -79,7 +79,7 @@ class EnvironmentActivateCommand extends CommandBase
     protected function activateMultiple(array $environments, Project $project, InputInterface $input, OutputInterface $output)
     {
         $parentId = $input->getOption('parent');
-        if ($parentId && !$this->api()->getEnvironment($parentId, $project)) {
+        if ($parentId && !$this->api->getEnvironment($parentId, $project)) {
             $this->stdErr->writeln(sprintf('Parent environment not found: <error>%s</error>', $parentId));
             return false;
         }
@@ -90,7 +90,7 @@ class EnvironmentActivateCommand extends CommandBase
         $process = [];
         foreach ($environments as $environment) {
             $environmentId = $environment->id;
-            if (!$this->api()->checkEnvironmentOperation('activate', $environment)) {
+            if (!$this->api->checkEnvironmentOperation('activate', $environment)) {
                 if ($environment->isActive()) {
                     $output->writeln("The environment <info>$environmentId</info> is already active.");
                     $count--;
@@ -139,7 +139,7 @@ class EnvironmentActivateCommand extends CommandBase
                 $result = $this->activityMonitor->waitMultiple($activities, $project);
                 $success = $success && $result;
             }
-            $this->api()->clearEnvironmentsCache($project->id);
+            $this->api->clearEnvironmentsCache($project->id);
         }
 
         return $success;

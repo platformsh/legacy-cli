@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,11 +14,13 @@ class CertificateGetCommand extends CommandBase
 {
     protected static $defaultName = 'certificate:get';
 
+    private $api;
     private $selector;
     private $formatter;
 
-    public function __construct(Selector $selector, PropertyFormatter $formatter)
+    public function __construct(Api $api, Selector $selector, PropertyFormatter $formatter)
     {
+        $this->api = $api;
         $this->selector = $selector;
         $this->formatter = $formatter;
         parent::__construct();
@@ -42,7 +45,7 @@ class CertificateGetCommand extends CommandBase
         $cert = $project->getCertificate($id);
         if (!$cert) {
             try {
-                $cert = $this->api()->matchPartialId($id, $project->getCertificates(), 'Certificate');
+                $cert = $this->api->matchPartialId($id, $project->getCertificates(), 'Certificate');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
                 return 1;

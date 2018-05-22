@@ -91,7 +91,7 @@ class EnvironmentInfoCommand extends CommandBase
                 break;
 
             default:
-                $value = $this->api()->getNestedProperty($environment, $property);
+                $value = $this->api->getNestedProperty($environment, $property);
         }
 
         $output->writeln($this->formatter->format($value, $property));
@@ -153,7 +153,7 @@ class EnvironmentInfoCommand extends CommandBase
             $this->formatter->format($environment->$property, $property)
         ));
 
-        $this->api()->clearEnvironmentsCache($environment->project);
+        $this->api->clearEnvironmentsCache($environment->project);
 
         $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
@@ -211,7 +211,7 @@ class EnvironmentInfoCommand extends CommandBase
                 } elseif ($value === $environment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
-                } elseif (!$parentEnvironment = $this->api()->getEnvironment($value, $project)) {
+                } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $project)) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
                 } elseif ($parentEnvironment->parent === $environment->id) {

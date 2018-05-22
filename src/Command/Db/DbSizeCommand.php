@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Command\Db;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
@@ -19,6 +21,8 @@ class DbSizeCommand extends CommandBase
 
     protected static $defaultName = 'db:size';
 
+    private $api;
+    private $config;
     private $relationships;
     private $selector;
     private $shell;
@@ -26,12 +30,16 @@ class DbSizeCommand extends CommandBase
     private $table;
 
     public function __construct(
+        Api $api,
+        Config $config,
         Relationships $relationships,
         Selector $selector,
         Shell $shell,
         Ssh $ssh,
         Table $table
     ) {
+        $this->api = $api;
+        $this->config = $config;
         $this->relationships = $relationships;
         $this->selector = $selector;
         $this->shell = $shell;
@@ -60,7 +68,7 @@ class DbSizeCommand extends CommandBase
         $appName = $selection->getAppName();
 
         // Get the app config.
-        $webApp = $this->api()
+        $webApp = $this->api
             ->getCurrentDeployment($selection->getEnvironment(), true)
             ->getWebApp($appName);
         $appConfig = AppConfig::fromWebApp($webApp)->getNormalized();
@@ -205,10 +213,10 @@ class DbSizeCommand extends CommandBase
     private function getProjectServiceConfig(Environment $environment)
     {
         $servicesYaml = false;
-        $servicesYamlFilename = $this->config()->get('service.project_config_dir') . '/services.yaml';
+        $servicesYamlFilename = $this->config->get('service.project_config_dir') . '/services.yaml';
         $services = [];
         try {
-            $servicesYaml = $this->api()->readFile($servicesYamlFilename, $environment);
+            $servicesYaml = $this->api->readFile($servicesYamlFilename, $environment);
         } catch (ApiFeatureMissingException $e) {
             $this->debug($e->getMessage());
             if ($projectRoot = $this->selector->getProjectRoot()) {

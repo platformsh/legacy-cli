@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
@@ -15,12 +17,21 @@ class CertificateListCommand extends CommandBase
 
     protected static $defaultName = 'certificate:list';
 
-    private $selector;
+    private $api;
+    private $config;
     private $formatter;
+    private $selector;
     private $table;
 
-    public function __construct(Selector $selector, PropertyFormatter $formatter, Table $table)
-    {
+    public function __construct(
+        Api $api,
+        Config $config,
+        PropertyFormatter $formatter,
+        Selector $selector,
+        Table $table
+    ) {
+        $this->api = $api;
+        $this->config = $config;
         $this->selector = $selector;
         $this->formatter = $formatter;
         $this->table = $table;
@@ -81,7 +92,7 @@ class CertificateListCommand extends CommandBase
         }
 
         if (!$this->table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api()->getProjectLabel($project)));
+            $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api->getProjectLabel($project)));
         }
 
         $this->table->render($rows, $header);
@@ -90,7 +101,7 @@ class CertificateListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single certificate, run: <info>%s certificate:get <id></info>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
         }
 

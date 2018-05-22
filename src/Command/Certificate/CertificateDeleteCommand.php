@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Command\Certificate;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,13 +15,21 @@ class CertificateDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'certificate:delete';
 
-    private $selector;
     private $activityMonitor;
+    private $api;
+    private $selector;
+    private $questionHelper;
 
-    public function __construct(Selector $selector, ActivityMonitor $activityMonitor)
-    {
+    public function __construct(
+        ActivityMonitor $activityMonitor,
+        Api $api,
+        Selector $selector,
+        QuestionHelper $questionHelper
+    ) {
+        $this->api = $api;
         $this->selector = $selector;
         $this->activityMonitor = $activityMonitor;
+        $this->questionHelper = $questionHelper;
         parent::__construct();
     }
 
@@ -45,16 +55,14 @@ class CertificateDeleteCommand extends CommandBase
         $certificate = $project->getCertificate($id);
         if (!$certificate) {
             try {
-                $certificate = $this->api()->matchPartialId($id, $project->getCertificates(), 'Certificate');
+                $certificate = $this->api->matchPartialId($id, $project->getCertificates(), 'Certificate');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
                 return 1;
             }
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to delete the certificate <info>%s</info>?', $certificate->id))) {
+        if (!$this->questionHelper->confirm(sprintf('Are you sure you want to delete the certificate <info>%s</info>?', $certificate->id))) {
             return 1;
         }
 

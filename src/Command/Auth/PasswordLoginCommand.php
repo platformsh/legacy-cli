@@ -128,7 +128,8 @@ class PasswordLoginCommand extends CommandBase
             $this->api->getClient(false)
                 ->getConnector()
                 ->logIn($email, $password, true);
-        } catch (TfaRequiredException $e) {
+        }
+        catch (TfaRequiredException $e) {
             // If a two-factor authentication challenge is received, then ask
             // the user for their TOTP code, and then retry logging in.
             $output->writeln("\nTwo-factor authentication is required.");
@@ -145,10 +146,14 @@ class PasswordLoginCommand extends CommandBase
             });
             $question->setMaxAttempts(5);
             $this->questionHelper->ask($input, $output, $question);
-        } catch (IdentityProviderException $e) {
+        }
+        /** @noinspection PhpRedundantCatchClauseInspection */
+        catch (IdentityProviderException $e) {
             $output->writeln([
                 '',
-                '<error>Login failed. Please check your credentials.</error>',
+                '<error>' . rtrim($e->getMessage(), '.') . '.</error>',
+                '',
+                'Login failed. Please try again.',
                 '',
                 "Forgot your password? Or don't have a password yet? Visit:",
                 '  <comment>' . $this->config->get('service.accounts_url') . '/user/password</comment>',

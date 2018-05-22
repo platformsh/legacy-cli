@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -24,6 +25,7 @@ class EnvironmentPushCommand extends CommandBase
     private $activityMonitor;
     private $config;
     private $git;
+    private $localProject;
     private $questionHelper;
     private $selector;
     private $ssh;
@@ -33,6 +35,7 @@ class EnvironmentPushCommand extends CommandBase
         ActivityMonitor $activityMonitor,
         Config $config,
         Git $git,
+        LocalProject $localProject,
         QuestionHelper $questionHelper,
         Selector $selector,
         Ssh $ssh
@@ -41,12 +44,12 @@ class EnvironmentPushCommand extends CommandBase
         $this->activityMonitor = $activityMonitor;
         $this->config = $config;
         $this->git = $git;
+        $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         $this->ssh = $ssh;
         parent::__construct();
     }
-
 
     protected function configure()
     {
@@ -156,9 +159,7 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         // Ensure the correct Git remote exists.
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
-        $localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
+        $this->localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
 
         // Build the Git command.
         $gitArgs = [

@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
@@ -14,13 +16,23 @@ class DomainGetCommand extends DomainCommandBase
 {
     protected static $defaultName = 'domain:get';
 
+    private $api;
+    private $config;
     private $selector;
     private $table;
     private $formatter;
     private $questionHelper;
 
-    public function __construct(Selector $selector, Table $table, PropertyFormatter $formatter, QuestionHelper $questionHelper)
-    {
+    public function __construct(
+        Api $api,
+        Config $config,
+        Selector $selector,
+        PropertyFormatter $formatter,
+        QuestionHelper $questionHelper,
+        Table $table
+    ) {
+        $this->api = $api;
+        $this->config = $config;
         $this->selector = $selector;
         $this->table = $table;
         $this->formatter = $formatter;
@@ -72,7 +84,7 @@ class DomainGetCommand extends DomainCommandBase
         }
 
         if ($property = $input->getOption('property')) {
-            $value = $this->api()->getNestedProperty($domain, $property);
+            $value = $this->api->getNestedProperty($domain, $property);
             $output->writeln($this->formatter->format($value, $property));
 
             return 0;
@@ -91,7 +103,7 @@ class DomainGetCommand extends DomainCommandBase
         $this->table->renderSimple($values, $properties);
 
         $this->stdErr->writeln('');
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         $this->stdErr->writeln([
             'To update a domain, run: <info>' . $executable . ' domain:update [domain-name]</info>',
             'To delete a domain, run: <info>' . $executable . ' domain:delete [domain-name]</info>',
