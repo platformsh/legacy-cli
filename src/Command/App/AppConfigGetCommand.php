@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,11 +13,13 @@ class AppConfigGetCommand extends CommandBase
 {
     protected static $defaultName = 'app:config-get';
 
+    private $api;
     private $selector;
     private $formatter;
 
-    public function __construct(Selector $selector, PropertyFormatter $formatter)
+    public function __construct(Api $api, Selector $selector, PropertyFormatter $formatter)
     {
+        $this->api = $api;
         $this->selector = $selector;
         $this->formatter = $formatter;
         parent::__construct();
@@ -40,7 +43,7 @@ class AppConfigGetCommand extends CommandBase
     {
         $selection = $this->selector->getSelection($input);
 
-        $appConfig = $this->api()
+        $appConfig = $this->api
             ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'))
             ->getWebApp($selection->getAppName())
             ->getProperties();

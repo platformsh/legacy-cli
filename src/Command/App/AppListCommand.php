@@ -3,6 +3,8 @@ namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,14 +13,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class AppListCommand extends CommandBase
 {
-
     protected static $defaultName = 'app:list';
 
+    private $api;
+    private $config;
     private $selector;
     private $table;
 
-    public function __construct(Selector $selector, Table $table)
+    public function __construct(Api $api, Config $config, Selector $selector, Table $table)
     {
+        $this->api = $api;
+        $this->config = $config;
         $this->selector = $selector;
         $this->table = $table;
         parent::__construct();
@@ -47,7 +52,7 @@ class AppListCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
 
         // Find a list of deployed web apps.
-        $apps = $this->api()
+        $apps = $this->api
             ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'))
             ->webapps;
 
@@ -58,7 +63,7 @@ class AppListCommand extends CommandBase
         $showLocalPath = false;
         $localApps = [];
         if (($projectRoot = $this->selector->getProjectRoot()) && $this->selector->getCurrentProject()->id === $selection->getProject()->id) {
-            $localApps = LocalApplication::getApplications($projectRoot, $this->config());
+            $localApps = LocalApplication::getApplications($projectRoot, $this->config);
             $showLocalPath = true;
         }
         // Get the local path for a given application.
