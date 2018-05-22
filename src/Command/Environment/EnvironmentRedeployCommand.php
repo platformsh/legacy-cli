@@ -1,14 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentRedeployCommand extends CommandBase
+class EnvironmentRedeployCommand extends Command
 {
     protected static $defaultName = 'environment:redeploy';
 
