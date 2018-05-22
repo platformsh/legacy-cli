@@ -2,6 +2,10 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -10,6 +14,25 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentHttpAccessCommand extends CommandBase
 {
     protected static $defaultName = 'environment:http-access';
+
+    private $activityMonitor;
+    private $api;
+    private $formatter;
+    private $selector;
+
+    public function __construct(
+        ActivityMonitor $activityMonitor,
+        Api $api,
+        PropertyFormatter $formatter,
+        Selector $selector
+    )
+    {
+        $this->activityMonitor = $activityMonitor;
+        $this->api = $api;
+        $this->formatter = $formatter;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -34,9 +57,12 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 InputOption::VALUE_REQUIRED,
                 'Whether access control should be enabled: 1 to enable, 0 to disable'
             );
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+
+        $definition = $this->getDefinition();
+        $this->selector->addEnvironmentOption($definition);
+        $this->selector->addProjectOption($definition);
+        $this->activityMonitor->addWaitOptions($definition);
+
         $this->addExample('Require a username and password', '--auth myname:mypassword');
         $this->addExample('Restrict access to only one IP address', '--access deny:any --access allow:69.208.1.192');
         $this->addExample('Remove the password requirement, keeping IP restrictions', '--auth 0');
@@ -132,7 +158,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $auth = $input->getOption('auth');
         $access = $input->getOption('access');
@@ -160,12 +186,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
         }
 
         // Ensure the environment is refreshed.
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         $selectedEnvironment->ensureFull();
         $environmentId = $selectedEnvironment->id;
-
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
 
         if (!empty($accessOpts)) {
             $current = (array) $selectedEnvironment->http_access;
@@ -187,19 +210,17 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
                 // Patch the environment with the changes.
                 $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
-                $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
+                $this->api->clearEnvironmentsCache($selectedEnvironment->project);
 
                 $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
-                $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
+                $output->writeln($this->formatter->format($selectedEnvironment->http_access, 'http_access'));
 
                 $success = true;
                 if (!$result->countActivities()) {
                     $this->redeployWarning();
-                } elseif ($this->shouldWait($input)) {
-                    /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-                    $activityMonitor = $this->getService('activity_monitor');
-                    $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+                } elseif ($this->activityMonitor->shouldWait($input)) {
+                    $success = $this->activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
                 }
 
                 return $success ? 0 : 1;
@@ -207,7 +228,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         }
 
         $this->stdErr->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
-        $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
+        $output->writeln($this->formatter->format($selectedEnvironment->http_access, 'http_access'));
 
         return 0;
     }
