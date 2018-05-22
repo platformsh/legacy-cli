@@ -103,7 +103,7 @@ class Selector
         }
 
         // Select the project.
-        $project = $this->selectProject($projectId, $projectHost);
+        $project = $this->selectProject($input, $projectId, $projectHost);
 
         // Select the environment.
         $envOptionName = 'environment';
@@ -124,11 +124,11 @@ class Selector
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
-                $environment = $this->selectEnvironment($project, $argument);
+                $environment = $this->selectEnvironment($input, $project, $argument);
             }
         } elseif ($project && $input->hasOption($envOptionName)) {
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
-            $environment = $this->selectEnvironment($project, $environmentId, !$envNotRequired);
+            $environment = $this->selectEnvironment($input, $project, $environmentId, !$envNotRequired);
         }
 
         // Select the app.
@@ -164,12 +164,13 @@ class Selector
     /**
      * Select the project for the user, based on input or the environment.
      *
-     * @param string $projectId
-     * @param string $host
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param string                                          $projectId
+     * @param string                                          $host
      *
      * @return Project
      */
-    private function selectProject($projectId = null, $host = null)
+    private function selectProject(InputInterface $input, $projectId = null, $host = null)
     {
         if (!empty($projectId)) {
             $project = $this->api->getProject($projectId, $host);
@@ -183,13 +184,13 @@ class Selector
         }
 
         $project = $this->getCurrentProject();
-        if (!$project && isset($this->input) && $this->input->isInteractive()) {
+        if (!$project && $input->isInteractive()) {
             $projects = $this->api->getProjects();
             if (count($projects) > 0 && count($projects) < 25) {
                 $this->debug('No project specified: offering a choice...');
-                $projectId = $this->offerProjectChoice($projects);
+                $projectId = $this->offerProjectChoice($input, $projects);
 
-                return $this->selectProject($projectId);
+                return $this->selectProject($input, $projectId);
             }
         }
         if (!$project) {
@@ -233,19 +234,18 @@ class Selector
     /**
      * Select the current environment for the user.
      *
-     * @throws \RuntimeException If the current environment cannot be found.
-     *
-     * @param Project $project
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param Project                                         $project
      *   The project, or null if no project is selected.
-     * @param string|null $environmentId
+     * @param string|null                                     $environmentId
      *   The environment ID specified by the user, or null to auto-detect the
      *   environment.
-     * @param bool $required
+     * @param bool                                            $required
      *   Whether it's required to have an environment.
      *
      * @return Environment|null
      */
-    private function selectEnvironment(Project $project, $environmentId = null, $required = true)
+    private function selectEnvironment(InputInterface $input, Project $project, $environmentId = null, $required = true)
     {
         $envPrefix = $this->config->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
@@ -271,9 +271,9 @@ class Selector
             return $environment;
         }
 
-        if ($required && isset($this->input) && $this->input->isInteractive()) {
+        if ($required && $input->isInteractive()) {
             $this->debug('No environment specified: offering a choice...');
-            return $this->offerEnvironmentChoice($this->api->getEnvironments($project));
+            return $this->offerEnvironmentChoice($input, $this->api->getEnvironments($project));
         }
 
         if ($required) {
@@ -334,15 +334,16 @@ class Selector
     /**
      * Offer the user an interactive choice of projects.
      *
-     * @param Project[] $projects
-     * @param string    $text
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param Project[]                                       $projects
+     * @param string                                          $text
      *
      * @return string
      *   The chosen project ID.
      */
-    protected final function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    public function offerProjectChoice(InputInterface $input, array $projects, $text = 'Enter a number to choose a project:')
     {
-        if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
+        if (!$input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
 
@@ -361,13 +362,14 @@ class Selector
     /**
      * Offers a choice of environments.
      *
-     * @param Environment[] $environments
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param Environment[]                                   $environments
      *
      * @return Environment
      */
-    protected final function offerEnvironmentChoice(array $environments)
+    private function offerEnvironmentChoice(InputInterface $input, array $environments)
     {
-        if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
+        if (!$input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
         }
 

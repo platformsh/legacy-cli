@@ -2,9 +2,19 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Cocur\Slugify\Slugify;
+use Platformsh\Cli\Application;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\Selection;
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,60 +28,80 @@ class ProjectGetCommand extends CommandBase
 
     protected static $defaultName = 'project:get';
 
+    private $api;
+    private $config;
+    private $filesystem;
+    private $git;
+    private $localProject;
+    private $questionHelper;
+    private $selector;
+    private $ssh;
+
+    public function __construct(
+        Api $api,
+        Config $config,
+        Filesystem $filesystem,
+        Git $git,
+        LocalProject $localProject,
+        QuestionHelper $questionHelper,
+        Selector $selector,
+        Ssh $ssh
+    ) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->filesystem = $filesystem;
+        $this->git = $git;
+        $this->localProject = $localProject;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        $this->ssh = $ssh;
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this->setAliases(['get'])
             ->setDescription('Clone a project locally')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title');
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master' or the first available environment")
-            ->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname")
             ->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
-        Ssh::configureInput($this->getDefinition());
+        $this->ssh->configureInput($this->getDefinition());
+
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->validateInput($input);
+        $project = $selection->getProject();
+        $environment = $selection->getEnvironment();
         $projectRoot = $this->projectRoot;
 
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
+        $projectRootRelative = $this->filesystem->makePathRelative($projectRoot, getcwd());
 
-        $projectRootRelative = $fs->makePathRelative($projectRoot, getcwd());
-
-        $git->ensureInstalled();
-        $git->setSshCommand($ssh->getSshCommand());
+        $this->git->ensureInstalled();
+        $this->git->setSshCommand($this->ssh->getSshCommand());
 
         // First check if the repo actually exists.
         try {
-            $repoExists = $git->remoteRefExists($gitUrl, 'refs/heads/' . $environment->id)
-                || $git->remoteRefExists($gitUrl);
+            $repoExists = $this->git->remoteRefExists($gitUrl, 'refs/heads/' . $environment->id)
+                || $this->git->remoteRefExists($gitUrl);
         } catch (\RuntimeException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln(sprintf(
                 '<error>Failed to connect to the %s Git server</error>',
-                $this->config()->get('service.name')
+                $this->config->get('service.name')
             ));
 
             $this->suggestSshRemedies();
 
             return 1;
         }
-
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
 
         // If the remote repository doesn't exist, then locally we need to
         // create the folder, run git init, and attach the remote.
@@ -84,58 +114,57 @@ class ProjectGetCommand extends CommandBase
             }
 
             $this->debug('Initializing the repository');
-            $git->init($projectRoot, true);
+            $this->git->init($projectRoot, true);
 
             $this->debug('Initializing the project');
-            $localProject->mapDirectory($projectRoot, $project);
+            $this->localProject->mapDirectory($projectRoot, $project);
 
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Your project has been initialized and connected to <info>%s</info>!',
-                $this->config()->get('service.name')
+                $this->config->get('service.name')
             ));
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Commit and push to the <info>master</info> branch of the <info>%s</info> Git remote'
                 . ', and %s will build your project automatically.',
-                $this->config()->get('detection.git_remote_name'),
-                $this->config()->get('service.name')
+                $this->config->get('detection.git_remote_name'),
+                $this->config->get('service.name')
             ));
 
             return 0;
         }
 
         // We have a repo! Yay. Clone it.
-        $projectLabel = $this->api()->getProjectLabel($project);
+        $projectLabel = $this->api->getProjectLabel($project);
         $this->stdErr->writeln('Downloading project ' . $projectLabel);
         $cloneArgs = [
             '--branch',
             $environment->id,
             '--origin',
-            $this->config()->get('detection.git_remote_name'),
+            $this->config->get('detection.git_remote_name'),
         ];
         if ($output->isDecorated()) {
             $cloneArgs[] = '--progress';
         }
-        $cloned = $git->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
+        $cloned = $this->git->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
             $this->stdErr->writeln(sprintf(
                 'Please check your SSH credentials or contact %s support',
-                $this->config()->get('service.name')
+                $this->config->get('service.name')
             ));
 
             return 1;
         }
 
         $this->debug('Initializing the project');
-        $localProject->mapDirectory($projectRoot, $project);
-        $this->setProjectRoot($projectRoot);
+        $this->localProject->mapDirectory($projectRoot, $project);
 
         $this->debug('Downloading submodules (if any)');
-        $git->updateSubmodules(true, $projectRoot);
+        $this->git->updateSubmodules(true, $projectRoot);
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln(sprintf(
@@ -143,6 +172,9 @@ class ProjectGetCommand extends CommandBase
             $projectLabel,
             $projectRootRelative
         ));
+
+        // Change to the project directory.
+        chdir($projectRoot);
 
         // Return early if there is no code in the repository.
         if (!glob($projectRoot . '/*', GLOB_NOSORT)) {
@@ -166,19 +198,23 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Building the project locally for the first time. Run <info>%s build</info> to repeat this.',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
             $options = ['no-clean' => true];
-            /** @var \Platformsh\Cli\Local\LocalBuild $builder */
-            $builder = $this->getService('local.build');
-            $success = $builder->build($options, $projectRoot);
+            try {
+                /** @var LocalBuild $builder $builder */
+                $builder = Application::container()->get(LocalBuild::class);
+                $success = $builder->build($options, $projectRoot);
+            } catch (\Exception $e) {
+                $success = false;
+            }
         } else {
             $this->stdErr->writeln(sprintf(
                 "\nYou can build the project with: "
                 . "\n    cd %s"
                 . "\n    %s build",
                 $projectRootRelative,
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
         }
 
@@ -186,44 +222,47 @@ class ProjectGetCommand extends CommandBase
     }
 
     /**
-     * {@inheritdoc}
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     *
+     * @return Selection
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false)
+    private function validateInput(InputInterface $input)
     {
         if ($input->getOption('project') && $input->getArgument('project')) {
             throw new InvalidArgumentException('You cannot use both the --project option and the <project> argument.');
         }
-        $projectId = $input->getOption('project') ?: $input->getArgument('project');
-        $environmentId = $input->getOption('environment');
-        $host = $input->getOption('host');
+        if (!$input->getOption('project') && $input->getArgument('project')) {
+            $input->setOption('project', $input->getArgument('project'));
+        }
         if (empty($projectId)) {
-            if ($input->isInteractive() && ($projects = $this->api()->getProjects(true))) {
-                $projectId = $this->offerProjectChoice($projects, 'Enter a number to choose which project to clone:');
+            if ($input->isInteractive() && ($projects = $this->api->getProjects(true))) {
+                $projectId = $this->selector->offerProjectChoice($input, $projects, 'Enter a number to choose which project to clone:');
+                $input->setOption('project', $projectId);
             } else {
                 throw new InvalidArgumentException('No project specified');
             }
-        } else {
-            /** @var \Platformsh\Cli\Service\Identifier $identifier */
-            $identifier = $this->getService('identifier');
-            $result = $identifier->identify($projectId);
-            $projectId = $result['projectId'];
-            $host = $host ?: $result['host'];
-            $environmentId = $environmentId ?: $result['environmentId'];
         }
 
-        $project = $this->selectProject($projectId, $host);
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        if (!$selection->hasEnvironment()) {
+            $environments = $this->api->getEnvironments($project);
+            $environmentId = isset($environments['master']) ? 'master' : key($environments);
+            if (count($environments) > 1) {
+                $environmentId = $this->questionHelper->askInput('Environment', $environmentId, array_keys($environments));
+            }
+            $selection = new Selection($project, $environments[$environmentId], $selection->getAppName());
+        }
 
         $directory = $input->getArgument('directory');
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            $directory = $questionHelper->askInput('Directory', $directory, [$directory, $projectId]);
+            $directory = $this->questionHelper->askInput('Directory', $directory, [$directory, $projectId]);
         }
 
-        if ($projectRoot = $this->getProjectRoot()) {
+        if ($projectRoot = $this->selector->getProjectRoot()) {
             if (strpos(realpath(dirname($directory)), $projectRoot) === 0) {
                 throw new InvalidArgumentException('A project cannot be cloned inside another project.');
             }
@@ -237,15 +276,7 @@ class ProjectGetCommand extends CommandBase
         }
         $this->projectRoot = $parent . '/' . basename($directory);
 
-        if (!$environmentId) {
-            $environments = $this->api()->getEnvironments($project);
-            $environmentId = isset($environments['master']) ? 'master' : key($environments);
-            if (count($environments) > 1) {
-                $environmentId = $questionHelper->askInput('Environment', $environmentId, array_keys($environments));
-            }
-        }
-
-        $this->selectEnvironment($environmentId);
+        return $selection;
     }
 
     /**
@@ -255,7 +286,7 @@ class ProjectGetCommand extends CommandBase
     {
         $sshKeys = [];
         try {
-            $sshKeys = $this->api()->getClient(false)->getSshKeys();
+            $sshKeys = $this->api->getClient(false)->getSshKeys();
         } catch (\Exception $e) {
             // Ignore exceptions.
         }
@@ -265,12 +296,12 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('Please check your SSH credentials');
             $this->stdErr->writeln(sprintf(
                 'You can list your keys with: <comment>%s ssh-keys</comment>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
         } else {
             $this->stdErr->writeln(sprintf(
                 'You probably need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
         }
     }
