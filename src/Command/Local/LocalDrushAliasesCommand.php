@@ -6,6 +6,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -19,6 +20,7 @@ class LocalDrushAliasesCommand extends CommandBase
 {
     protected static $defaultName = 'local:drush-aliases';
 
+    private $api;
     private $drush;
     private $filesystem;
     private $localProject;
@@ -26,12 +28,14 @@ class LocalDrushAliasesCommand extends CommandBase
     private $questionHelper;
 
     public function __construct(
+        Api $api,
         Drush $drush,
         Filesystem $filesystem,
         LocalProject $localProject,
         Selector $selector,
         QuestionHelper $questionHelper
     ) {
+        $this->api = $api;
         $this->drush = $drush;
         $this->filesystem = $filesystem;
         $this->localProject = $localProject;
@@ -116,7 +120,7 @@ class LocalDrushAliasesCommand extends CommandBase
                 $drush->setAliasGroup($new_group, $projectRoot);
             }
 
-            $environments = $this->api()->getEnvironments($project, true, false);
+            $environments = $this->api->getEnvironments($project, true, false);
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
             $this->ensureDrushConfig($drush);
@@ -135,7 +139,7 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         if (!empty($aliases)) {
-            $this->stdErr->writeln('Drush aliases for ' . $this->api()->getProjectLabel($project) . ':');
+            $this->stdErr->writeln('Drush aliases for ' . $this->api->getProjectLabel($project) . ':');
             foreach (array_keys($aliases) as $name) {
                 $output->writeln('    @' . ltrim($name, '@'));
             }

@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -17,18 +18,20 @@ class LocalBuildCommand extends CommandBase
 {
     protected static $defaultName = 'local:build';
 
+    private $config;
     private $questionHelper;
     private $filesystem;
     private $localBuild;
     private $localProject;
 
     public function __construct(
+        Config $config,
         QuestionHelper $questionHelper,
         Filesystem $filesystem,
         LocalBuild $localBuild,
         LocalProject $localProject
-    )
-    {
+    ) {
+        $this->config = $config;
         $this->questionHelper = $questionHelper;
         $this->filesystem = $filesystem;
         $this->localBuild = $localBuild;
@@ -57,7 +60,7 @@ class LocalBuildCommand extends CommandBase
                 'destination',
                 'd',
                 InputOption::VALUE_REQUIRED,
-                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config()->get('local.web_root')
+                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config->get('local.web_root')
             )
             ->addOption(
                 'copy',
@@ -145,7 +148,7 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
-            $default = file_exists($this->config()->get('service.app_config_file')) || is_dir('.git') ? '.' : null;
+            $default = file_exists($this->config->get('service.app_config_file')) || is_dir('.git') ? '.' : null;
             $sourceDirOption = $this->questionHelper->askInput('Source directory', $default);
         }
 
@@ -157,7 +160,7 @@ class LocalBuildCommand extends CommandBase
 
             // Sensible handling if the user provides a project root as the
             // source directory.
-            if (file_exists($sourceDir . $this->config()->get('local.project_config'))) {
+            if (file_exists($sourceDir . $this->config->get('local.project_config'))) {
                 $projectRoot = $sourceDir;
                 $sourceDir = $projectRoot;
             }
@@ -172,7 +175,7 @@ class LocalBuildCommand extends CommandBase
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
             $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd()
-                ? $this->config()->get('local.web_root')
+                ? $this->config->get('local.web_root')
                 : null;
             $destination = $this->questionHelper->askInput('Build destination', $default);
         }
@@ -184,7 +187,7 @@ class LocalBuildCommand extends CommandBase
                 'Project root not found. Specify --destination or go to a project directory.'
             );
         } else {
-            $destination = $projectRoot . '/' . $this->config()->get('local.web_root');
+            $destination = $projectRoot . '/' . $this->config->get('local.web_root');
         }
 
         // Ensure no conflicts between source and destination.
