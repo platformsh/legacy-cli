@@ -2,6 +2,10 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Input\InputArgument;
@@ -10,17 +14,37 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwareInterface
 {
-
     protected static $defaultName = 'environment:synchronize';
+
+    private $api;
+    private $activityMonitor;
+    private $questionHelper;
+    private $selector;
+
+    public function __construct(
+        Api $api,
+        ActivityMonitor $activityMonitor,
+        QuestionHelper $questionHelper,
+        Selector $selector
+    ) {
+        $this->api = $api;
+        $this->activityMonitor = $activityMonitor;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this->setAliases(['sync'])
             ->setDescription("Synchronize an environment's code and/or data from its parent")
             ->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+
+        $definition = $this->getDefinition();
+        $this->selector->addEnvironmentOption($definition);
+        $this->selector->addProjectOption($definition);
+        $this->activityMonitor->addWaitOptions($definition);
+
         $this->setHelp(<<<EOT
 This command synchronizes to a child environment from its parent environment.
 
@@ -36,26 +60,23 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        if (!$this->api()->checkEnvironmentOperation('synchronize', $selectedEnvironment)) {
+        if (!$this->api->checkEnvironmentOperation('synchronize', $selectedEnvironment)) {
             $this->stdErr->writeln(
                 "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
             if ($selectedEnvironment->is_dirty) {
-                $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
+                $this->api->clearEnvironmentsCache($selectedEnvironment->project);
             }
 
             return 1;
         }
 
         $parentId = $selectedEnvironment->parent;
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
 
         if ($synchronize = $input->getArgument('synchronize')) {
             // The input was invalid.
@@ -70,15 +91,15 @@ EOT
                 $parentId,
                 $environmentId
             );
-            if (!$questionHelper->confirm($confirmText)) {
+            if (!$this->questionHelper->confirm($confirmText)) {
                 return 1;
             }
         } else {
-            $syncCode = $questionHelper->confirm(
+            $syncCode = $this->questionHelper->confirm(
                 "Synchronize code from <info>$parentId</info> to <info>$environmentId</info>?",
                 false
             );
-            $syncData = $questionHelper->confirm(
+            $syncData = $this->questionHelper->confirm(
                 "Synchronize data from <info>$parentId</info> to <info>$environmentId</info>?",
                 false
             );
@@ -92,10 +113,8 @@ EOT
         $this->stdErr->writeln("Synchronizing environment <info>$environmentId</info>");
 
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog(
+        if ($this->activityMonitor->shouldWait($input)) {
+            $success = $this->activityMonitor->waitAndLog(
                 $activity,
                 "Synchronization complete",
                 "Synchronization failed"
