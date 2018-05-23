@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -10,23 +12,40 @@ class WebCommand extends CommandBase
 {
     protected static $defaultName = 'web';
 
+    private $config;
+    private $selector;
+    private $urlService;
+
+    public function __construct(
+        Config $config,
+        Selector $selector,
+        Url $urlService
+    ) {
+        $this->config = $config;
+        $this->selector = $selector;
+        $this->urlService = $urlService;
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this->setDescription('Open the Web UI');
-        Url::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+
+        $definition = $this->getDefinition();
+        $this->urlService->configureInput($definition);
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Attempt to select the appropriate project and environment.
         try {
-            $this->validateInput($input);
-            $environmentId = $this->getSelectedEnvironment()->id;
+            $selection = $this->selector->getSelection($input);
+            $environmentId = $selection->getEnvironment()->id;
         } catch (\Exception $e) {
             // If a project has been specified but is not found, then error out.
-            if ($input->getOption('project') && !$this->hasSelectedProject()) {
+            if ($input->getOption('project')) {
                 throw $e;
             }
 
@@ -36,17 +55,11 @@ class WebCommand extends CommandBase
             $environmentId = $input->getOption('environment');
         }
 
-        if ($this->hasSelectedProject()) {
-            $url = $this->getSelectedProject()->getLink('#ui');
-            if (!empty($environmentId)) {
-                $url .= '/environments/' . rawurlencode($environmentId);
-            }
-        } else {
-            $url = $this->config()->get('service.accounts_url');
+        $url = $selection->getProject()->getLink('#ui');
+        if ($selection->hasEnvironment()) {
+            $url .= '/environments/' . rawurlencode($environmentId);
         }
 
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
-        $urlService->openUrl($url);
+        $this->urlService->openUrl($url);
     }
 }
