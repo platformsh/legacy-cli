@@ -1,10 +1,9 @@
 <?php
-namespace Platformsh\Cli\Command\Integration;
+namespace Platformsh\Cli\Service;
 
 use GuzzleHttp\Exception\GuzzleException;
 use function GuzzleHttp\json_decode;
-use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Client\Model\Integration;
+use Platformsh\Client\Model\Integration as IntegrationResource;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\EmailAddressField;
@@ -12,16 +11,38 @@ use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class IntegrationCommandBase extends CommandBase
+class Integration
 {
-    /** @var Form */
+    /** @var \Platformsh\ConsoleForm\Form */
     private $form;
+
+    private $api;
+    private $config;
+    private $formatter;
+    private $stdErr;
+    private $table;
+
+    public function __construct(
+        Api $api,
+        Config $config,
+        OutputInterface $output,
+        PropertyFormatter $formatter,
+        Table $table
+    ) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->formatter = $formatter;
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $this->table = $table;
+    }
 
     /**
      * @return Form
      */
-    protected function getForm()
+    public function getForm()
     {
         if (!isset($this->form)) {
             $this->form = Form::fromArray($this->getFields());
@@ -202,7 +223,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.email',
                 ]],
                 'description' => 'The From address for alert emails',
-                'default' => $this->config()->getWithDefault('service.default_from_address', null),
+                'default' => $this->config->getWithDefault('service.default_from_address', null),
             ]),
             'recipients' => new ArrayField('Recipients', [
                 'conditions' => ['type' => [
@@ -241,7 +262,7 @@ abstract class IntegrationCommandBase extends CommandBase
     /**
      * @param \Platformsh\Client\Model\Integration $integration
      */
-    protected function ensureHooks(Integration $integration)
+    public function ensureHooks(IntegrationResource $integration)
     {
         if ($integration->type === 'github') {
             $hooksApiUrl = sprintf('https://api.github.com/repos/%s/hooks', $integration->getProperty('repository'));
@@ -282,7 +303,7 @@ abstract class IntegrationCommandBase extends CommandBase
             return;
         }
 
-        $client = $this->api()->getHttpClient();
+        $client = $this->api->getHttpClient();
 
         $this->stdErr->writeln(sprintf(
             'Checking webhook configuration on the repository: <info>%s</info>',
@@ -362,7 +383,7 @@ abstract class IntegrationCommandBase extends CommandBase
      *
      * @return array|false
      */
-    private function findWebHook(Integration $integration, array $jsonResult)
+    private function findWebHook(IntegrationResource $integration, array $jsonResult)
     {
         $type = $integration->type;
         $hookUrl = $integration->getLink('#hook');
@@ -379,23 +400,18 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
-     * @param Integration     $integration
+     * @param \Platformsh\Client\Model\Integration $integration
      */
-    protected function displayIntegration(Integration $integration)
+    public function displayIntegration(IntegrationResource $integration)
     {
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $info = [];
         foreach ($integration->getProperties() as $property => $value) {
-            $info[$property] = $formatter->format($value, $property);
+            $info[$property] = $this->formatter->format($value, $property);
         }
         if ($integration->hasLink('#hook')) {
-            $info['hook_url'] = $formatter->format($integration->getLink('#hook'));
+            $info['hook_url'] = $this->formatter->format($integration->getLink('#hook'));
         }
 
-        $table->renderSimple(array_values($info), array_keys($info));
+        $this->table->renderSimple(array_values($info), array_keys($info));
     }
 }
