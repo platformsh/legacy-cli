@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Service;
 
 use GuzzleHttp\Exception\GuzzleException;
 use function GuzzleHttp\json_decode;
-use Platformsh\Client\Model\Integration as IntegrationResource;
+use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\EmailAddressField;
@@ -14,7 +14,7 @@ use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Integration
+class IntegrationService
 {
     /** @var \Platformsh\ConsoleForm\Form */
     private $form;
@@ -262,7 +262,7 @@ class Integration
     /**
      * @param \Platformsh\Client\Model\Integration $integration
      */
-    public function ensureHooks(IntegrationResource $integration)
+    public function ensureHooks(Integration $integration)
     {
         if ($integration->type === 'github') {
             $hooksApiUrl = sprintf('https://api.github.com/repos/%s/hooks', $integration->getProperty('repository'));
@@ -383,7 +383,7 @@ class Integration
      *
      * @return array|false
      */
-    private function findWebHook(IntegrationResource $integration, array $jsonResult)
+    private function findWebHook(Integration $integration, array $jsonResult)
     {
         $type = $integration->type;
         $hookUrl = $integration->getLink('#hook');
@@ -402,7 +402,7 @@ class Integration
     /**
      * @param \Platformsh\Client\Model\Integration $integration
      */
-    public function displayIntegration(IntegrationResource $integration)
+    public function displayIntegration(Integration $integration)
     {
         $info = [];
         foreach ($integration->getProperties() as $property => $value) {

@@ -1,13 +1,36 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\IntegrationService;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationUpdateCommand extends IntegrationCommandBase
+class IntegrationUpdateCommand extends CommandBase
 {
     protected static $defaultName = 'integration:update';
+
+    private $activityMonitor;
+    private $api;
+    private $integrationService;
+    private $selector;
+
+    public function __construct(
+        ActivityMonitor $activityMonitor,
+        Api $api,
+        IntegrationService $integration,
+        Selector $selector
+    ) {
+        $this->api = $api;
+        $this->activityMonitor = $activityMonitor;
+        $this->integrationService = $integration;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -16,8 +39,12 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     {
         $this->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
             ->setDescription('Update an integration');
-        $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addWaitOptions();
+
+        $definition = $this->getDefinition();
+        $this->integrationService->getForm()->configureInputDefinition($definition);
+        $this->selector->addProjectOption($definition);
+        $this->activityMonitor->addWaitOptions($definition);
+
         $this->addExample(
             'Switch on the "fetch branches" option for a specific integration',
             'ZXhhbXBsZSB --fetch-branches 1'
@@ -26,14 +53,13 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $project = $this->selector->getSelection($input)->getProject();
 
         $id = $input->getArgument('id');
-        $project = $this->getSelectedProject();
         $integration = $project->getIntegration($id);
         if (!$integration) {
             try {
-                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+                $integration = $this->api->matchPartialId($id, $project->getIntegrations(), 'Integration');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
                 return 1;
@@ -41,7 +67,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         }
 
         $values = [];
-        $form = $this->getForm();
+        $form = $this->integrationService->getForm();
         $currentValues = $integration->getProperties();
         foreach ($form->getFields() as $key => $field) {
             $value = $field->getValueFromInput($input);
@@ -51,7 +77,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         }
         if (!$values) {
             $this->stdErr->writeln('No changed values were provided to update.');
-            $this->ensureHooks($integration);
+            $this->integrationService->ensureHooks($integration);
 
             return 1;
         }
@@ -67,14 +93,12 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         $result = $integration->update($values);
         $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
-        $this->ensureHooks($integration);
+        $this->integrationService->ensureHooks($integration);
 
-        $this->displayIntegration($integration);
+        $this->integrationService->displayIntegration($integration);
 
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        if ($this->activityMonitor->shouldWait($input)) {
+            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;
