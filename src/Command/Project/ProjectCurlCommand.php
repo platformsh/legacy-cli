@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -10,6 +12,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectCurlCommand extends CommandBase
 {
     protected static $defaultName = 'project:curl';
+
+    private $api;
+    private $selector;
+
+    public function __construct(Api $api, Selector $selector) {
+        $this->api = $api;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -21,15 +32,15 @@ class ProjectCurlCommand extends CommandBase
             ->addOption('head', 'I', InputOption::VALUE_NONE, 'Fetch headers only')
             ->addOption('header', 'H', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Extra header(s)');
         $this->setHidden(true);
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addExample('Change the project title', '-X PATCH -d \'{"title": "New title"}\'');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $project = $this->selector->getSelection($input)->getProject();
 
-        $url = $this->getSelectedProject()->getUri();
+        $url = $project->getUri();
 
         if ($path = $input->getArgument('path')) {
             if (parse_url($path, PHP_URL_HOST)) {
@@ -40,7 +51,7 @@ class ProjectCurlCommand extends CommandBase
             $url .= '/' . ltrim($path, '/');
         }
 
-        $token = $this->api()->getAccessToken();
+        $token = $this->api->getAccessToken();
         $commandline = sprintf(
             'curl -H %s %s',
             escapeshellarg('Authorization: Bearer ' . $token),
