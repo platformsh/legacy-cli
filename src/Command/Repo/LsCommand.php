@@ -3,6 +3,9 @@
 namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,6 +15,22 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LsCommand extends CommandBase
 {
     protected static $defaultName = 'repo:ls';
+
+    private $api;
+    private $config;
+    private $selector;
+
+    public function __construct(
+        Api $api,
+        Config $config,
+        Selector $selector
+    ) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->selector = $selector;
+        parent::__construct();
+    }
+
 
     /**
      * {@inheritdoc}
@@ -23,8 +42,11 @@ class LsCommand extends CommandBase
             ->addOption('directories', 'd', InputOption::VALUE_NONE, 'Show directories only')
             ->addOption('files', 'f', InputOption::VALUE_NONE, 'Show files only')
             ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+
     }
 
     /**
@@ -32,16 +54,16 @@ class LsCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $environment = $this->selector->getSelection($input)->getEnvironment();
         try {
-            $tree = $this->api()->getTree($this->getSelectedEnvironment(), $input->getArgument('path'));
+            $tree = $this->api->getTree($environment, $input->getArgument('path'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',
                 $e->getMessage(),
                 $e->getPath()
             ));
-            $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config->get('application.executable')));
 
             return 3;
         }
