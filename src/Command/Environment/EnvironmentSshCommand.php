@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,6 +15,21 @@ class EnvironmentSshCommand extends CommandBase
 {
     protected static $defaultName = 'environment:ssh';
 
+    private $selector;
+    private $shell;
+    private $ssh;
+
+    public function __construct(
+        Selector $selector,
+        Shell $shell,
+        Ssh $ssh
+    ) {
+        $this->selector = $selector;
+        $this->shell = $shell;
+        $this->ssh = $ssh;
+        parent::__construct();
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -23,18 +40,19 @@ class EnvironmentSshCommand extends CommandBase
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
             ->setDescription('SSH to the current environment');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addAppOption();
-        Ssh::configureInput($this->getDefinition());
+
+        $definition = $this->getDefinition();
+        $this->selector->addAllOptions($definition);
+        $this->ssh->configureInput($definition);
+
         $this->addExample('Read recent messages in the deploy log', "'tail /var/log/deploy.log'");
         $this->addExample('Open a shell over SSH');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input);
+        $environment = $selection->getEnvironment();
 
         if ($input->getOption('all')) {
             $output->writeln(array_values($environment->getSshUrls()));
@@ -42,7 +60,7 @@ class EnvironmentSshCommand extends CommandBase
             return 0;
         }
 
-        $sshUrl = $environment->getSshUrl($this->selectApp($input));
+        $sshUrl = $environment->getSshUrl($selection->getAppName());
 
         if ($input->getOption('pipe')) {
             $output->write($sshUrl);
@@ -55,10 +73,8 @@ class EnvironmentSshCommand extends CommandBase
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
         $sshOptions = [];
-        $command = $ssh->getSshCommand($sshOptions);
+        $command = $this->ssh->getSshCommand($sshOptions);
         if ($this->isTerminal(STDIN)) {
             $command .= ' -t';
         }
@@ -67,9 +83,6 @@ class EnvironmentSshCommand extends CommandBase
             $command .= ' ' . escapeshellarg($remoteCommand);
         }
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        return $shell->executeSimple($command);
+        return $this->shell->executeSimple($command);
     }
 }
