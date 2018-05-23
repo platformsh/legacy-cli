@@ -2,7 +2,10 @@
 namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -11,6 +14,24 @@ use Symfony\Component\Console\Output\OutputInterface;
 class RouteGetCommand extends CommandBase
 {
     protected static $defaultName = 'route:get';
+
+    private $api;
+    private $formatter;
+    private $questionHelper;
+    private $selector;
+
+    public function __construct(
+        Api $api,
+        PropertyFormatter $formatter,
+        QuestionHelper $questionHelper,
+        Selector $selector
+    ) {
+        $this->api = $api;
+        $this->formatter = $formatter;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -21,19 +42,22 @@ class RouteGetCommand extends CommandBase
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
-        PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->formatter->configureInput($definition);
+
         $this->addExample('View the URL to the https://{default}/ route', "'https://{default}/' -P url");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $environment = $this->selector->getSelection($input)->getEnvironment();
 
-        $environment = $this->getSelectedEnvironment();
-
-        $routes = $this->api()->getCurrentDeployment($environment, $input->getOption('refresh'))->routes;
+        $routes = $this->api
+            ->getCurrentDeployment($environment, $input->getOption('refresh'))
+            ->routes;
 
         $selectedRoute = false;
         $originalUrl = $input->getArgument('route');
@@ -43,14 +67,12 @@ class RouteGetCommand extends CommandBase
 
                 return 1;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
             $items = [];
             foreach ($routes as $route) {
                 $items[$route->original_url] = $route->original_url;
             }
-            uksort($items, [$this->api(), 'urlSort']);
-            $originalUrl = $questionHelper->choose($items, 'Enter a number to choose a route:');
+            uksort($items, [$this->api, 'urlSort']);
+            $originalUrl = $this->questionHelper->choose($items, 'Enter a number to choose a route:');
         }
 
         foreach ($routes as $url => $route) {
@@ -67,10 +89,7 @@ class RouteGetCommand extends CommandBase
             return 1;
         }
 
-        /** @var PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
-
-        $propertyFormatter->displayData($output, $selectedRoute, $input->getOption('property'));
+        $this->formatter->displayData($output, $selectedRoute, $input->getOption('property'));
 
         return 0;
     }
