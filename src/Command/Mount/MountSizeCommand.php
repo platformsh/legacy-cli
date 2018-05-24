@@ -2,6 +2,11 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\MountService;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Helper\Helper;
@@ -9,8 +14,33 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class MountSizeCommand extends MountCommandBase
+class MountSizeCommand extends CommandBase
 {
+    protected static $defaultName = 'mount:size';
+
+    private $config;
+    private $mountService;
+    private $selector;
+    private $shell;
+    private $ssh;
+    private $table;
+
+    public function __construct(
+        Config $config,
+        MountService $mountService,
+        Selector $selector,
+        Shell $shell,
+        Ssh $ssh,
+        Table $table
+    ) {
+        $this->config = $config;
+        $this->mountService = $mountService;
+        $this->selector = $selector;
+        $this->shell = $shell;
+        $this->ssh = $ssh;
+        $this->table = $table;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -21,11 +51,11 @@ class MountSizeCommand extends MountCommandBase
             ->setName('mount:size')
             ->setDescription('Check the disk usage of mounts')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
-        Table::configureInput($this->getDefinition());
-        Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+
+        $definition = $this->getDefinition();
+        $this->selector->addAllOptions($definition);
+        $this->table->configureInput($definition);
+        $this->ssh->configureInput($definition);
     }
 
     /**
@@ -33,11 +63,12 @@ class MountSizeCommand extends MountCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $appName = $this->selectApp($input);
+        $appName = $selection->getAppName();
+        $appConfig = $this->mountService
+            ->getAppConfig($selection->getEnvironment(), $appName, (bool) $input->getOption('refresh'));
 
-        $appConfig = $this->getAppConfig($appName);
         if (empty($appConfig['mounts'])) {
             $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
 
@@ -61,7 +92,7 @@ class MountSizeCommand extends MountCommandBase
         //      mounts.
         //   3. Run a 'du' command on each of the mounted paths, to find their
         //      individual sizes.
-        $appDirVar = $this->config()->get('service.env_prefix') . 'APP_DIR';
+        $appDirVar = $this->config->get('service.env_prefix') . 'APP_DIR';
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
@@ -76,14 +107,10 @@ class MountSizeCommand extends MountCommandBase
         // Connect to the application via SSH and run the commands.
         $sshArgs = [
             'ssh',
-            $this->getSelectedEnvironment()->getSshUrl($appName),
+            $selection->getEnvironment()->getSshUrl($appName),
         ];
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $sshArgs = array_merge($sshArgs, $ssh->getSshArgs());
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        $result = $shell->execute(array_merge($sshArgs, [$command]), null, true);
+        $sshArgs = array_merge($sshArgs, $this->ssh->getSshArgs());
+        $result = $this->shell->execute(array_merge($sshArgs, [$command]), null, true);
 
         // Separate the commands' output.
         list($appDir, $dfOutput, $duOutput) = explode("\n\n", $result, 3);
@@ -128,9 +155,6 @@ class MountSizeCommand extends MountCommandBase
             list($mountSizes[$mountPath],) = explode("\t", $duOutputSplit[$i], 2);
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
         $header = ['Mount(s)', 'Size(s)', 'Disk', 'Used', 'Available', 'Capacity'];
 
         $showInBytes = $input->getOption('bytes');
@@ -158,7 +182,7 @@ class MountSizeCommand extends MountCommandBase
             $rows[] = $row;
         }
 
-        $table->render($rows, $header);
+        $this->table->render($rows, $header);
 
         return 0;
     }

@@ -1,11 +1,12 @@
 <?php
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\Application;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Local\BuildFlavor\BuildFlavorInterface;
-use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Service\MountService;
 use Platformsh\Cli\Util\YamlParser;
 use Symfony\Component\Finder\Finder;
 
@@ -16,7 +17,7 @@ class LocalApplication
     protected $config;
     protected $sourceDir;
     protected $cliConfig;
-    protected $mount;
+    protected $mountService;
 
     /**
      * @param string      $appRoot
@@ -31,7 +32,7 @@ class LocalApplication
         $this->cliConfig = $cliConfig ?: new Config();
         $this->appRoot = $appRoot;
         $this->sourceDir = $sourceDir ?: $appRoot;
-        $this->mount = new Mount();
+        $this->mountService = Application::container()->get(MountService::class);
     }
 
     /**
@@ -156,7 +157,7 @@ class LocalApplication
      */
     public function getSharedFileMounts()
     {
-        return $this->mount->getSharedFileMounts($this->getConfig());
+        return $this->mountService->getSharedFileMounts($this->getConfig());
     }
 
     /**
