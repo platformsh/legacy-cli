@@ -3,7 +3,10 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,11 +18,24 @@ class SubscriptionInfoCommand extends CommandBase
 {
     protected static $defaultName = 'subscription:info';
 
+    private $api;
     private $formatter;
+    private $questionHelper;
+    private $selector;
+    private $table;
 
-    public function __construct(PropertyFormatter $formatter)
-    {
+    public function __construct(
+        Api $api,
+        PropertyFormatter $formatter,
+        QuestionHelper $questionHelper,
+        Selector $selector,
+        Table $table
+    ) {
+        $this->api = $api;
         $this->formatter = $formatter;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        $this->table = $table;
         parent::__construct();
     }
 
@@ -33,9 +49,12 @@ class SubscriptionInfoCommand extends CommandBase
             ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
             ->setDescription('Read or modify subscription properties');
         $this->setHidden(true);
-        $this->formatter->configureInput($this->getDefinition());
-        Table::configureInput($this->getDefinition());
-        $this->addProjectOption();
+
+        $definition = $this->getDefinition();
+        $this->formatter->configureInput($definition);
+        $this->table->configureInput($definition);
+        $this->selector->addProjectOption($definition);
+
         $this->addExample('View all subscription properties')
              ->addExample('View the subscription status', 'status')
              ->addExample('View the storage limit (in MiB)', 'storage');
@@ -45,12 +64,12 @@ class SubscriptionInfoCommand extends CommandBase
     {
         $id = $input->getOption('id');
         if (empty($id)) {
-            $this->validateInput($input);
-            $project = $this->getSelectedProject();
+            $selection = $this->selector->getSelection($input);
+            $project = $selection->getProject();
             $id = $project->getSubscriptionId();
         }
 
-        $subscription = $this->api()->getClient()
+        $subscription = $this->api->getClient()
                              ->getSubscription($id);
         if (!$subscription) {
             $this->stdErr->writeln(sprintf('Subscription not found: <error>%s</error>', $id));
@@ -74,7 +93,7 @@ class SubscriptionInfoCommand extends CommandBase
                 break;
 
             default:
-                $value = $this->api()->getNestedProperty($subscription, $property);
+                $value = $this->api->getNestedProperty($subscription, $property);
         }
 
         $output->writeln($this->formatter->format($value, $property));
@@ -95,9 +114,7 @@ class SubscriptionInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
 
         return 0;
     }
@@ -129,8 +146,6 @@ class SubscriptionInfoCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
         $confirmMessage = sprintf(
             "Are you sure you want to change property '%s' from <comment>%s</comment> to <comment>%s</comment>?",
             $property,
@@ -142,7 +157,7 @@ class SubscriptionInfoCommand extends CommandBase
             is_numeric($value) && $value > $currentValue ? 'increase' : 'change'
         );
         $confirmMessage = $warning . "\n" . $confirmMessage;
-        if (!$questionHelper->confirm($confirmMessage)) {
+        if (!$this->questionHelper->confirm($confirmMessage)) {
             return 1;
         }
 
