@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
@@ -15,19 +15,19 @@ class EnvironmentHttpAccessCommand extends CommandBase
 {
     protected static $defaultName = 'environment:http-access';
 
-    private $activityMonitor;
+    private $activityService;
     private $api;
     private $formatter;
     private $selector;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Api $api,
         PropertyFormatter $formatter,
         Selector $selector
     )
     {
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->api = $api;
         $this->formatter = $formatter;
         $this->selector = $selector;
@@ -61,7 +61,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
 
         $this->addExample('Require a username and password', '--auth myname:mypassword');
         $this->addExample('Restrict access to only one IP address', '--access deny:any --access allow:69.208.1.192');
@@ -219,8 +219,8 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 $success = true;
                 if (!$result->countActivities()) {
                     $this->redeployWarning();
-                } elseif ($this->activityMonitor->shouldWait($input)) {
-                    $success = $this->activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
+                } elseif ($this->activityService->shouldWait($input)) {
+                    $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());
                 }
 
                 return $success ? 0 : 1;

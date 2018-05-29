@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,14 +16,14 @@ class ProjectVariableSetCommand extends CommandBase
 {
     protected static $defaultName = 'project:variable:set';
 
-    private $activityMonitor;
+    private $activityService;
     private $selector;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Selector $selector
     ) {
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->selector = $selector;
         parent::__construct();
     }
@@ -42,7 +42,7 @@ class ProjectVariableSetCommand extends CommandBase
             ->setDescription('Set a variable for a project');
         $this->setHidden(true);
         $this->selector->addProjectOption($this->getDefinition());
-        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $this->activityService->configureInput($this->getDefinition());
         $this->addExample('Set the variable "example" to the string "123"', 'example 123');
         $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
         $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
@@ -82,8 +82,8 @@ class ProjectVariableSetCommand extends CommandBase
         $success = true;
         if (!$result->countActivities()) {
             $this->redeployWarning();
-        } elseif ($this->activityMonitor->shouldWait($input)) {
-            $success = $this->activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
+        } elseif ($this->activityService->shouldWait($input)) {
+            $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

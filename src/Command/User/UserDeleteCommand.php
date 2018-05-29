@@ -54,9 +54,9 @@ class UserDeleteCommand extends CommandBase
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $activityMonitor->waitMultiple($result->getActivities(), $project);
+            /** @var \Platformsh\Cli\Service\ActivityService $activityService */
+            $activityService = $this->getService('activity_monitor');
+            $activityService->waitMultiple($result->getActivities(), $project);
         }
 
         // If the user was deleting themselves from the project, then invalidate

@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,14 +13,14 @@ class DomainDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'domain:delete';
 
-    private $activityMonitor;
+    private $activityService;
     private $selector;
     private $questionHelper;
 
-    public function __construct(Selector $selector, ActivityMonitor $activityMonitor, QuestionHelper $questionHelper)
+    public function __construct(Selector $selector, ActivityService $activityService, QuestionHelper $questionHelper)
     {
         $this->selector = $selector;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->questionHelper = $questionHelper;
         parent::__construct();
     }
@@ -33,7 +33,7 @@ class DomainDeleteCommand extends CommandBase
         $this->setDescription('Delete a domain from the project')
             ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->selector->addProjectOption($this->getDefinition());
-        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $this->activityService->configureInput($this->getDefinition());
         $this->addExample('Delete the domain example.com', 'example.com');
     }
 
@@ -61,8 +61,8 @@ class DomainDeleteCommand extends CommandBase
 
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

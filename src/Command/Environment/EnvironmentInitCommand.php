@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
@@ -18,18 +18,18 @@ class EnvironmentInitCommand extends CommandBase
     protected static $defaultName = 'environment:init';
 
     private $api;
-    private $activityMonitor;
+    private $activityService;
     private $questionHelper;
     private $selector;
 
     public function __construct(
         Api $api,
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         QuestionHelper $questionHelper,
         Selector $selector
     ) {
         $this->api = $api;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct();
@@ -47,7 +47,7 @@ class EnvironmentInitCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -89,8 +89,8 @@ class EnvironmentInitCommand extends CommandBase
 
         $this->api->clearEnvironmentsCache($environment->project);
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            $this->activityMonitor->waitAndLog($activity);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitAndLog($activity);
         }
 
         return 0;

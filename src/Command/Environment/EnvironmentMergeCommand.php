@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
@@ -15,18 +15,18 @@ class EnvironmentMergeCommand extends CommandBase
     protected static $defaultName = 'environment:merge';
 
     private $api;
-    private $activityMonitor;
+    private $activityService;
     private $questionHelper;
     private $selector;
 
     public function __construct(
         Api $api,
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         QuestionHelper $questionHelper,
         Selector $selector
     ) {
         $this->api = $api;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct();
@@ -41,7 +41,7 @@ class EnvironmentMergeCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
 
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
         $this->setHelp(
@@ -83,8 +83,8 @@ class EnvironmentMergeCommand extends CommandBase
         $this->api->clearEnvironmentsCache($selectedEnvironment->project);
 
         $activity = $selectedEnvironment->merge();
-        if ($this->activityMonitor->shouldWait($input)) {
-            $success = $this->activityMonitor->waitAndLog(
+        if ($this->activityService->shouldWait($input)) {
+            $success = $this->activityService->waitAndLog(
                 $activity,
                 'Merge complete',
                 'Merge failed'

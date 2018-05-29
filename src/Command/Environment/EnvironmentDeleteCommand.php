@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
@@ -22,7 +22,7 @@ class EnvironmentDeleteCommand extends CommandBase
     protected static $defaultName = 'environment:delete';
 
     private $api;
-    private $activityMonitor;
+    private $activityService;
     private $config;
     private $git;
     private $localProject;
@@ -31,7 +31,7 @@ class EnvironmentDeleteCommand extends CommandBase
 
     public function __construct(
         Api $api,
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Config $config,
         Git $git,
         LocalProject $localProject,
@@ -39,7 +39,7 @@ class EnvironmentDeleteCommand extends CommandBase
         Selector $selector
     ) {
         $this->api = $api;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->config = $config;
         $this->git = $git;
         $this->localProject = $localProject;
@@ -61,7 +61,7 @@ class EnvironmentDeleteCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
 
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
@@ -234,7 +234,7 @@ EOF
                 if ($this->questionHelper->confirm("Are you sure you want to delete the environment <comment>$environmentId</comment>?")) {
                     $deactivate[$environmentId] = $environment;
                     if (!$input->getOption('no-delete-branch')
-                        && $this->activityMonitor->shouldWait($input)
+                        && $this->activityService->shouldWait($input)
                         && ($input->getOption('delete-branch')
                             || (
                                 $input->isInteractive()
@@ -268,8 +268,8 @@ EOF
             }
         }
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            if (!$this->activityMonitor->waitMultiple($deactivateActivities, $project)) {
+        if ($this->activityService->shouldWait($input)) {
+            if (!$this->activityService->waitMultiple($deactivateActivities, $project)) {
                 $error = true;
             }
         }

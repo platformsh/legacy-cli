@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
@@ -22,7 +22,7 @@ class EnvironmentPushCommand extends CommandBase
     protected static $defaultName = 'environment:push';
 
     private $api;
-    private $activityMonitor;
+    private $activityService;
     private $config;
     private $git;
     private $localProject;
@@ -32,7 +32,7 @@ class EnvironmentPushCommand extends CommandBase
 
     public function __construct(
         Api $api,
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Config $config,
         Git $git,
         LocalProject $localProject,
@@ -41,7 +41,7 @@ class EnvironmentPushCommand extends CommandBase
         Ssh $ssh
     ) {
         $this->api = $api;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->config = $config;
         $this->git = $git;
         $this->localProject = $localProject;
@@ -66,7 +66,7 @@ class EnvironmentPushCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
         $this->ssh->configureInput($definition);
 
         $this->addExample('Push code to the current environment');
@@ -176,7 +176,7 @@ class EnvironmentPushCommand extends CommandBase
         // Build the SSH command to use with Git.
         $extraSshOptions = [];
         $env = [];
-        if (!$this->activityMonitor->shouldWait($input)) {
+        if (!$this->activityService->shouldWait($input)) {
             $extraSshOptions['SendEnv'] = 'PLATFORMSH_PUSH_NO_WAIT';
             $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }

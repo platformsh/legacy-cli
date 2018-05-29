@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Selection;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -19,25 +19,27 @@ class ActivityGetCommand extends CommandBase
 {
     protected static $defaultName = 'activity:get';
 
+    private $activityService;
     private $selector;
     private $table;
-    private $propertyFormatter;
+    private $formatter;
     private $api;
     private $config;
 
     public function __construct(
-        Selector $selector,
-        Table $table,
-        PropertyFormatter $propertyFormatter,
+        ActivityService $activityService,
         Api $api,
-        Config $config
-    )
-    {
-        $this->selector = $selector;
-        $this->table = $table;
-        $this->propertyFormatter = $propertyFormatter;
+        Config $config,
+        PropertyFormatter $formatter,
+        Selector $selector,
+        Table $table
+    ) {
+        $this->activityService = $activityService;
         $this->api = $api;
         $this->config = $config;
+        $this->formatter = $formatter;
+        $this->selector = $selector;
+        $this->table = $table;
         parent::__construct();
     }
 
@@ -56,7 +58,7 @@ class ActivityGetCommand extends CommandBase
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
         $this->table->configureInput($definition);
-        $this->propertyFormatter->configureInput($definition);
+        $this->formatter->configureInput($definition);
 
         $this->addExample('Find the time a project was created', '--all --type project.create -P completed_at');
         $this->addExample('Find the duration (in seconds) of the last activity', '-P duration');
@@ -91,9 +93,9 @@ class ActivityGetCommand extends CommandBase
         $properties = $activity->getProperties();
 
         if (!$input->getOption('property') && !$this->table->formatIsMachineReadable()) {
-            $properties['description'] = ActivityMonitor::getFormattedDescription($activity, true);
+            $properties['description'] = $this->activityService->getFormattedDescription($activity, true);
         } else {
-            $properties['description'] = ActivityMonitor::getFormattedDescription($activity, false);
+            $properties['description'] = $this->activityService->getFormattedDescription($activity, false);
             if ($input->getOption('property')) {
                 $properties['description_html'] = $activity->description;
             }
@@ -105,7 +107,7 @@ class ActivityGetCommand extends CommandBase
         }
 
         if ($property = $input->getOption('property')) {
-            $this->propertyFormatter->displayData($output, $properties, $property);
+            $this->formatter->displayData($output, $properties, $property);
             return 0;
         }
 
@@ -121,7 +123,7 @@ class ActivityGetCommand extends CommandBase
         $rows = [];
         foreach ($properties as $property => $value) {
             $header[] = $property;
-            $rows[] = $this->propertyFormatter->format($value, $property);
+            $rows[] = $this->formatter->format($value, $property);
         }
 
         $this->table->renderSimple($rows, $header);

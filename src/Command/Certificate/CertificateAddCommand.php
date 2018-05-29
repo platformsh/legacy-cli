@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Util\SslUtil;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,12 +14,12 @@ class CertificateAddCommand extends CommandBase
     protected static $defaultName = 'certificate:add';
 
     private $selector;
-    private $activityMonitor;
+    private $activityService;
 
-    public function __construct(Selector $selector, ActivityMonitor $activityMonitor)
+    public function __construct(Selector $selector, ActivityService $activityService)
     {
         $this->selector = $selector;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         parent::__construct();
     }
 
@@ -30,7 +30,7 @@ class CertificateAddCommand extends CommandBase
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the certificate private key file')
             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file');
         $this->selector->addProjectOption($this->getDefinition());
-        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $this->activityService->configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -49,8 +49,8 @@ class CertificateAddCommand extends CommandBase
 
         $result = $project->addCertificate($options['certificate'], $options['key'], $options['chain']);
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

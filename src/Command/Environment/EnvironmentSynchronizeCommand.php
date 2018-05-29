@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
@@ -17,18 +17,18 @@ class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwa
     protected static $defaultName = 'environment:synchronize';
 
     private $api;
-    private $activityMonitor;
+    private $activityService;
     private $questionHelper;
     private $selector;
 
     public function __construct(
         Api $api,
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         QuestionHelper $questionHelper,
         Selector $selector
     ) {
         $this->api = $api;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct();
@@ -43,7 +43,7 @@ class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwa
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
 
         $this->setHelp(<<<EOT
 This command synchronizes to a child environment from its parent environment.
@@ -113,8 +113,8 @@ EOT
         $this->stdErr->writeln("Synchronizing environment <info>$environmentId</info>");
 
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
-        if ($this->activityMonitor->shouldWait($input)) {
-            $success = $this->activityMonitor->waitAndLog(
+        if ($this->activityService->shouldWait($input)) {
+            $success = $this->activityService->waitAndLog(
                 $activity,
                 "Synchronization complete",
                 "Synchronization failed"

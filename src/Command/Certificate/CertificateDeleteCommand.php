@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Certificate;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
@@ -15,20 +15,20 @@ class CertificateDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'certificate:delete';
 
-    private $activityMonitor;
+    private $activityService;
     private $api;
     private $selector;
     private $questionHelper;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Api $api,
         Selector $selector,
         QuestionHelper $questionHelper
     ) {
         $this->api = $api;
         $this->selector = $selector;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->questionHelper = $questionHelper;
         parent::__construct();
     }
@@ -41,7 +41,7 @@ class CertificateDeleteCommand extends CommandBase
         $this->setDescription('Delete a certificate from the project')
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
         $this->selector->addProjectOption($this->getDefinition());
-        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $this->activityService->configureInput($this->getDefinition());
     }
 
     /**
@@ -79,8 +79,8 @@ class CertificateDeleteCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('The certificate <info>%s</info> has been deleted.', $certificate->id));
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

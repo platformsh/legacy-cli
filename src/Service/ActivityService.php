@@ -12,22 +12,22 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityMonitor
+class ActivityService implements InputConfiguringInterface
 {
 
-    protected static $resultNames = [
+    private static $resultNames = [
         Activity::RESULT_FAILURE => 'failure',
         Activity::RESULT_SUCCESS => 'success',
     ];
 
-    protected static $stateNames = [
+    private static $stateNames = [
         Activity::STATE_PENDING => 'pending',
         Activity::STATE_COMPLETE => 'complete',
         Activity::STATE_IN_PROGRESS => 'in progress',
     ];
 
     private $config;
-    private $output;
+    private $stdErr;
 
     /**
      * @param \Platformsh\Cli\Service\Config                    $config
@@ -36,15 +36,7 @@ class ActivityMonitor
     public function __construct(Config $config, OutputInterface $output)
     {
         $this->config = $config;
-        $this->output = $output;
-    }
-
-    /**
-     * @return \Symfony\Component\Console\Output\OutputInterface
-     */
-    protected function getStdErr()
-    {
-        return $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
     /**
@@ -55,7 +47,7 @@ class ActivityMonitor
      *
      * @return string
      */
-    protected function indent($string, $prefix = '    ')
+    private function indent($string, $prefix = '    ')
     {
         return preg_replace('/^/m', $prefix, $string);
     }
@@ -71,16 +63,14 @@ class ActivityMonitor
      */
     public function waitAndLog(Activity $activity, $success = null, $failure = null)
     {
-        $stdErr = $this->getStdErr();
-
-        $stdErr->writeln(sprintf(
+        $this->stdErr->writeln(sprintf(
             'Waiting for the activity <info>%s</info> (%s):',
             $activity->id,
             self::getFormattedDescription($activity)
         ));
 
         // The progress bar will show elapsed time and the activity's state.
-        $bar = $this->newProgressBar($stdErr);
+        $bar = $this->newProgressBar($this->stdErr);
         $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
             return $this->formatState($activity->state);
         });
@@ -94,29 +84,29 @@ class ActivityMonitor
                 $bar->advance();
             },
             // Display new log output when it is available.
-            function ($log) use ($stdErr, $bar) {
+            function ($log) use ($bar) {
                 // Clear the progress bar and ensure the current line is flushed.
                 $bar->clear();
-                $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
+                $this->stdErr->write($this->stdErr->isDecorated() ? "\n\033[1A" : "\n");
 
                 // Display the new log output.
-                $stdErr->write($this->indent($log));
+                $this->stdErr->write($this->indent($log));
 
                 // Display the progress bar again.
                 $bar->advance();
             }
         );
         $bar->finish();
-        $stdErr->writeln('');
+        $this->stdErr->writeln('');
 
         // Display the success or failure messages.
         switch ($activity['result']) {
             case Activity::RESULT_SUCCESS:
-                $stdErr->writeln($success ?: "Activity <info>{$activity->id}</info> succeeded");
+                $this->stdErr->writeln($success ?: "Activity <info>{$activity->id}</info> succeeded");
                 return true;
 
             case Activity::RESULT_FAILURE:
-                $stdErr->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
+                $this->stdErr->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
                 return false;
         }
 
@@ -137,8 +127,6 @@ class ActivityMonitor
      */
     public function waitMultiple(array $activities, Project $project)
     {
-        $stdErr = $this->getStdErr();
-
         $count = count($activities);
         if ($count == 0) {
             return true;
@@ -146,11 +134,11 @@ class ActivityMonitor
             return $this->waitAndLog(reset($activities));
         }
 
-        $stdErr->writeln(sprintf('Waiting for %d activities...', $count));
+        $this->stdErr->writeln(sprintf('Waiting for %d activities...', $count));
 
         // The progress bar will show elapsed time and all of the activities'
         // states.
-        $bar = $this->newProgressBar($stdErr);
+        $bar = $this->newProgressBar($this->stdErr);
         $states = [];
         foreach ($activities as $activity) {
             $state = $activity->state;
@@ -207,7 +195,7 @@ class ActivityMonitor
             $bar->advance();
         }
         $bar->finish();
-        $stdErr->writeln('');
+        $this->stdErr->writeln('');
 
         // Display success or failure messages for each activity.
         $success = true;
@@ -215,17 +203,17 @@ class ActivityMonitor
             $description = self::getFormattedDescription($activity);
             switch ($activity['result']) {
                 case Activity::RESULT_SUCCESS:
-                    $stdErr->writeln(sprintf('Activity <info>%s</info> succeeded: %s', $activity->id, $description));
+                    $this->stdErr->writeln(sprintf('Activity <info>%s</info> succeeded: %s', $activity->id, $description));
                     break;
 
                 case Activity::RESULT_FAILURE:
                     $success = false;
-                    $stdErr->writeln(sprintf('Activity <error>%s</error> failed', $activity->id));
+                    $this->stdErr->writeln(sprintf('Activity <error>%s</error> failed', $activity->id));
 
                     // If the activity failed, show the complete log.
-                    $stdErr->writeln('  Description: ' . $description);
-                    $stdErr->writeln('  Log:');
-                    $stdErr->writeln($this->indent($activity->log));
+                    $this->stdErr->writeln('  Description: ' . $description);
+                    $this->stdErr->writeln('  Log:');
+                    $this->stdErr->writeln($this->indent($activity->log));
                     break;
             }
         }
@@ -240,7 +228,7 @@ class ActivityMonitor
      *
      * @return string
      */
-    public static function formatState($state)
+    public function formatState($state)
     {
         return isset(self::$stateNames[$state]) ? self::$stateNames[$state] : $state;
     }
@@ -253,13 +241,15 @@ class ActivityMonitor
      *
      * @return string
      */
-    public static function formatResult($result, $decorate = true)
+    public function formatResult($result, $decorate = true)
     {
-        $name = isset(self::$stateNames[$result]) ? self::$stateNames[$result] : $result;
+        $name = isset(self::$resultNames[$result]) ? self::$resultNames[$result] : $result;
 
-        return $decorate && $result === Activity::RESULT_FAILURE
-            ? '<error>' . $name . '</error>'
-            : $name;
+        if ($decorate && $result === Activity::RESULT_FAILURE) {
+            return '<bg=red>' . $name . '</>';
+        }
+
+        return $name;
     }
 
     /**
@@ -269,7 +259,7 @@ class ActivityMonitor
      *
      * @return ProgressBar
      */
-    protected function newProgressBar(OutputInterface $output)
+    private function newProgressBar(OutputInterface $output)
     {
         // If the console output is not decorated (i.e. it does not support
         // ANSI), use NullOutput to suppress the progress bar entirely.
@@ -286,7 +276,7 @@ class ActivityMonitor
      *
      * @return string
      */
-    public static function getFormattedDescription(Activity $activity, $withDecoration = true)
+    public function getFormattedDescription(Activity $activity, $withDecoration = true)
     {
         if (!$withDecoration) {
             return $activity->getDescription(false);
@@ -309,11 +299,11 @@ class ActivityMonitor
     }
 
     /**
-     * Add both the --no-wait and --wait options.
+     * {@inheritdoc}
      *
-     * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
+     * Add both the --no-wait and --wait options.
      */
-    public function addWaitOptions(InputDefinition $inputDefinition)
+    public function configureInput(InputDefinition $inputDefinition)
     {
         $description = 'Wait for the operation to complete';
         if (!$this->detectRunningInHook()) {
@@ -344,7 +334,7 @@ class ActivityMonitor
             $message = "\n<comment>Warning:</comment> $serviceName hook environment detected: assuming <comment>--no-wait</comment> by default."
                 . "\nTo avoid ambiguity, please specify either --no-wait or --wait."
                 . "\n";
-            $this->getStdErr()->writeln($message);
+            $this->stdErr->writeln($message);
 
             return false;
         }

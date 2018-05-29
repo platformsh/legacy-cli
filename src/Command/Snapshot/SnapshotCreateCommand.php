@@ -2,22 +2,42 @@
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SnapshotCreateCommand extends CommandBase
 {
-
     protected static $defaultName = 'snapshot:create';
+
+    private $activityService;
+    private $api;
+    private $selector;
+
+    public function __construct(
+        ActivityService $activityService,
+        Api $api,
+        Selector $selector
+    ) {
+        $this->activityService = $activityService;
+        $this->api = $api;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this->setDescription('Make a snapshot of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->activityService->configureInput($definition);
+
         $this->setHiddenAliases(['backup', 'environment:backup']);
         $this->addExample('Make a snapshot of the current environment');
         $this->addExample('Request a snapshot (and exit quickly)', '--no-wait');
@@ -25,16 +45,16 @@ class SnapshotCreateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
-        if (!$this->api()->checkEnvironmentOperation('backup', $selectedEnvironment)) {
+        if (!$this->api->checkEnvironmentOperation('backup', $selectedEnvironment)) {
             $this->stdErr->writeln(
                 "Operation not available: cannot create a snapshot of <error>$environmentId</error>"
             );
             if ($selectedEnvironment->is_dirty) {
-                $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
+                $this->api->clearEnvironmentsCache($selectedEnvironment->project);
             }
 
             return 1;
@@ -44,7 +64,7 @@ class SnapshotCreateCommand extends CommandBase
 
         $this->stdErr->writeln("Creating a snapshot of <info>$environmentId</info>");
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityService->shouldWait($input)) {
             $this->stdErr->writeln('Waiting for the snapshot to complete...');
 
             // Strongly recommend using --no-wait in a cron job.
@@ -54,9 +74,7 @@ class SnapshotCreateCommand extends CommandBase
                 );
             }
 
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog(
+            $success = $this->activityService->waitAndLog(
                 $activity,
                 'A snapshot of environment <info>' . $environmentId . '</info> has been created',
                 'The snapshot failed'

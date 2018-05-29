@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
@@ -19,7 +19,7 @@ class EnvironmentBranchCommand extends CommandBase
 
     protected static $defaultName = 'environment:branch';
 
-    protected $activityMonitor;
+    protected $activityService;
     protected $api;
     protected $config;
     protected $git;
@@ -28,7 +28,7 @@ class EnvironmentBranchCommand extends CommandBase
     protected $ssh;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Api $api,
         Config $config,
         Git $git,
@@ -36,7 +36,7 @@ class EnvironmentBranchCommand extends CommandBase
         Selector $selector,
         Ssh $ssh
     ) {
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->api = $api;
         $this->config = $config;
         $this->git = $git;
@@ -68,7 +68,7 @@ class EnvironmentBranchCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
         $this->ssh->configureInput($definition);
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
@@ -181,8 +181,8 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $remoteSuccess = true;
-        if ($this->activityMonitor->shouldWait($input)) {
-            $remoteSuccess = $this->activityMonitor->waitAndLog(
+        if ($this->activityService->shouldWait($input)) {
+            $remoteSuccess = $this->activityService->waitAndLog(
                 $activity,
                 "The environment <info>$branchName</info> has been created.",
                 '<error>Branching failed</error>'

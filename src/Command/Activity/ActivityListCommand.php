@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -19,6 +19,7 @@ class ActivityListCommand extends CommandBase
 {
     protected static $defaultName = 'activity:list';
 
+    private $activityService;
     private $api;
     private $config;
     private $formatter;
@@ -26,12 +27,14 @@ class ActivityListCommand extends CommandBase
     private $table;
 
     public function __construct(
+        ActivityService $activityService,
         Api $api,
         Config $config,
         Selector $selector,
         Table $table,
         PropertyFormatter $formatter
     ) {
+        $this->activityService = $activityService;
         $this->api = $api;
         $this->config = $config;
         $this->selector = $selector;
@@ -119,10 +122,10 @@ class ActivityListCommand extends CommandBase
             $row = [
                 new AdaptiveTableCell($activity->id, ['wrap' => false]),
                 $this->formatter->format($activity['created_at'], 'created_at'),
-                ActivityMonitor::getFormattedDescription($activity, !$this->table->formatIsMachineReadable()),
+                $this->activityService->getFormattedDescription($activity, !$this->table->formatIsMachineReadable()),
                 $activity->getCompletionPercent() . '%',
-                ActivityMonitor::formatState($activity->state),
-                ActivityMonitor::formatResult($activity->result, !$this->table->formatIsMachineReadable()),
+                $this->activityService->formatState($activity->state),
+                $this->activityService->formatResult($activity->result, !$this->table->formatIsMachineReadable()),
             ];
             if (!$environmentSpecific) {
                 $row[] = implode(', ', $activity->environments);

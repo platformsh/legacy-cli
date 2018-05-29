@@ -300,9 +300,9 @@ class UserAddCommand extends CommandBase
 
         // Wait for activities to complete.
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            if (!$activityMonitor->waitMultiple($activities, $project)) {
+            /** @var \Platformsh\Cli\Service\ActivityService $activityService */
+            $activityService = $this->getService('activity_monitor');
+            if (!$activityService->waitMultiple($activities, $project)) {
                 return 1;
             }
         }

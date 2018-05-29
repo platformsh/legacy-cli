@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -33,7 +33,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
     public function __construct(
         Api $api,
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         CacheProvider $cache,
         Config $config,
         QuestionHelper $questionHelper,

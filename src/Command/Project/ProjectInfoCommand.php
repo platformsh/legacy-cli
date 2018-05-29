@@ -3,7 +3,7 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
@@ -18,20 +18,20 @@ class ProjectInfoCommand extends CommandBase
 {
     protected static $defaultName = 'project:info';
 
-    private $activityMonitor;
+    private $activityService;
     private $api;
     private $formatter;
     private $selector;
     private $table;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Api $api,
         PropertyFormatter $formatter,
         Selector $selector,
         Table $table
     ) {
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->api = $api;
         $this->formatter = $formatter;
         $this->selector = $selector;
@@ -53,7 +53,7 @@ class ProjectInfoCommand extends CommandBase
         $this->formatter->configureInput($definition);
         $this->table->configureInput($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
 
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
@@ -85,7 +85,7 @@ class ProjectInfoCommand extends CommandBase
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $project, !$this->activityMonitor->shouldWait($input));
+            return $this->setProperty($property, $value, $project, !$this->activityService->shouldWait($input));
         }
 
         switch ($property) {
@@ -167,7 +167,7 @@ class ProjectInfoCommand extends CommandBase
 
         $success = true;
         if (!$noWait) {
-            $success = $this->activityMonitor->waitMultiple($result->getActivities(), $project);
+            $success = $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return $success ? 0 : 1;

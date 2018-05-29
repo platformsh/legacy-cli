@@ -2,6 +2,10 @@
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -9,16 +13,36 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SnapshotRestoreCommand extends CommandBase
 {
-
     protected static $defaultName = 'snapshot:restore';
+
+    private $activityService;
+    private $api;
+    private $questionHelper;
+    private $selector;
+
+    public function __construct(
+        ActivityService $activityService,
+        Api $api,
+        QuestionHelper $questionHelper,
+        Selector $selector
+    ) {
+        $this->activityService = $activityService;
+        $this->api = $api;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this->setDescription('Restore an environment snapshot')
             ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->activityService->configureInput($definition);
+
         $this->setHiddenAliases(['environment:restore']);
         $this->addExample('Restore the most recent snapshot');
         $this->addExample('Restore a specific snapshot', '92c9a4b2aa75422efb3d');
@@ -26,9 +50,7 @@ class SnapshotRestoreCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-
-        $environment = $this->getSelectedEnvironment();
+        $environment = $this->selector->getSelection($input)->getEnvironment();
 
         $snapshotName = $input->getArgument('snapshot');
         if (!empty($snapshotName)) {
@@ -72,11 +94,9 @@ class SnapshotRestoreCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
         $name = $selectedActivity['payload']['backup_name'];
         $date = date('c', strtotime($selectedActivity['created_at']));
-        if (!$questionHelper->confirm(
+        if (!$this->questionHelper->confirm(
             "Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment>?"
         )) {
             return 1;
@@ -85,11 +105,8 @@ class SnapshotRestoreCommand extends CommandBase
         $this->stdErr->writeln("Restoring snapshot <info>$name</info>");
 
         $activity = $selectedActivity->restore();
-        if ($this->shouldWait($input)) {
-            $this->stdErr->writeln('Waiting for the restore to complete...');
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog(
+        if ($this->activityService->shouldWait($input)) {
+            $success = $this->activityService->waitAndLog(
                 $activity,
                 'The snapshot was successfully restored',
                 'Restoring failed'

@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\IntegrationService;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
@@ -13,18 +13,18 @@ class IntegrationAddCommand extends CommandBase
 {
     protected static $defaultName = 'integration:add';
 
-    private $activityMonitor;
+    private $activityService;
     private $integrationService;
     private $questionHelper;
     private $selector;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         IntegrationService $integration,
         QuestionHelper $questionHelper,
         Selector $selector
     ) {
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->integrationService = $integration;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
@@ -41,7 +41,7 @@ class IntegrationAddCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->integrationService->getForm()->configureInputDefinition($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
 
         $this->addExample(
             'Add an integration with a GitHub repository',
@@ -79,8 +79,8 @@ class IntegrationAddCommand extends CommandBase
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 
         $success = true;
-        if ($this->activityMonitor->shouldWait($input)) {
-            $success = $this->activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
+        if ($this->activityService->shouldWait($input)) {
+            $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         $this->integrationService->displayIntegration($integration);

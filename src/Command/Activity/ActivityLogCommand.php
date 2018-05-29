@@ -2,7 +2,8 @@
 namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Client\Model\Activity;
@@ -17,16 +18,21 @@ class ActivityLogCommand extends CommandBase
 {
     protected static $defaultName = 'activity:log';
 
+    private $activityService;
+    private $api;
     private $selector;
     private $propertyFormatter;
 
     public function __construct(
+        ActivityService $activityService,
+        Api $api,
         Selector $selector,
-        PropertyFormatter $propertyFormatter
-    )
-    {
+        PropertyFormatter $formatter
+    ) {
+        $this->activityService = $activityService;
+        $this->api = $api;
         $this->selector = $selector;
-        $this->propertyFormatter = $propertyFormatter;
+        $this->propertyFormatter = $formatter;
         parent::__construct();
     }
 
@@ -67,7 +73,7 @@ class ActivityLogCommand extends CommandBase
             if (!$activity) {
                 $activities = $selection->getEnvironment()
                     ->getActivities(0, $input->getOption('type'));
-                $activity = $this->api()->matchPartialId($id, $activities, 'Activity');
+                $activity = $this->api->matchPartialId($id, $activities, 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -93,9 +99,9 @@ class ActivityLogCommand extends CommandBase
 
         $this->stdErr->writeln([
             sprintf('<info>Activity ID: </info>%s', $activity->id),
-            sprintf('<info>Description: </info>%s', ActivityMonitor::getFormattedDescription($activity)),
+            sprintf('<info>Description: </info>%s', $this->activityService->getFormattedDescription($activity)),
             sprintf('<info>Created: </info>%s', $this->propertyFormatter->format($activity->created_at, 'created_at')),
-            sprintf('<info>State: </info>%s', ActivityMonitor::formatState($activity->state)),
+            sprintf('<info>State: </info>%s', $this->activityService->formatState($activity->state)),
             '<info>Log: </info>',
         ]);
 
@@ -104,7 +110,7 @@ class ActivityLogCommand extends CommandBase
             $progressOutput = $this->stdErr->isDecorated() ? $this->stdErr : new NullOutput();
             $bar = new ProgressBar($progressOutput);
             $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
-                return ActivityMonitor::formatState($activity->state);
+                return $this->activityService->formatState($activity->state);
             });
             $bar->setFormat('[%bar%] %elapsed:6s% (%state%)');
             $bar->start();
@@ -131,7 +137,7 @@ class ActivityLogCommand extends CommandBase
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
             // clear the cache.
-            $this->api()->clearEnvironmentsCache($activity->project);
+            $this->api->clearEnvironmentsCache($activity->project);
         } else {
             $output->writeln($activity->log);
         }

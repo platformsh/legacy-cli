@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\IntegrationService;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -15,20 +15,20 @@ class IntegrationDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'integration:delete';
 
-    private $activityMonitor;
+    private $activityService;
     private $api;
     private $integrationService;
     private $questionHelper;
     private $selector;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Api $api,
         IntegrationService $integration,
         QuestionHelper $questionHelper,
         Selector $selector
     ) {
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->api = $api;
         $this->integrationService = $integration;
         $this->questionHelper = $questionHelper;
@@ -46,7 +46,7 @@ class IntegrationDeleteCommand extends CommandBase
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -74,8 +74,8 @@ class IntegrationDeleteCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('Deleted integration <info>%s</info>', $integration->id));
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

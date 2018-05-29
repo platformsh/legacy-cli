@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -10,13 +10,13 @@ class DomainUpdateCommand extends DomainCommandBase
 {
     protected static $defaultName = 'domain:update';
 
-    private $activityMonitor;
+    private $activityService;
     private $selector;
 
-    public function __construct(Selector $selector, ActivityMonitor $activityMonitor)
+    public function __construct(Selector $selector, ActivityService $activityService)
     {
         $this->selector = $selector;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         parent::__construct();
     }
 
@@ -28,7 +28,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $this->setDescription('Update a domain');
         $this->addDomainOptions();
         $this->selector->addProjectOption($this->getDefinition());
-        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $this->activityService->configureInput($this->getDefinition());
         $this->addExample(
             'Update the certificate for the domain example.com',
             'example.com --cert secure-example-com.crt --key secure-example-com.key'
@@ -70,8 +70,8 @@ class DomainUpdateCommand extends DomainCommandBase
 
         $result = $domain->update(['ssl' => $this->sslOptions]);
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\IntegrationService;
 use Platformsh\Cli\Service\Selector;
@@ -14,19 +14,19 @@ class IntegrationUpdateCommand extends CommandBase
 {
     protected static $defaultName = 'integration:update';
 
-    private $activityMonitor;
+    private $activityService;
     private $api;
     private $integrationService;
     private $selector;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Api $api,
         IntegrationService $integration,
         Selector $selector
     ) {
         $this->api = $api;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->integrationService = $integration;
         $this->selector = $selector;
         parent::__construct();
@@ -43,7 +43,7 @@ class IntegrationUpdateCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->integrationService->getForm()->configureInputDefinition($definition);
         $this->selector->addProjectOption($definition);
-        $this->activityMonitor->addWaitOptions($definition);
+        $this->activityService->configureInput($definition);
 
         $this->addExample(
             'Switch on the "fetch branches" option for a specific integration',
@@ -97,8 +97,8 @@ class IntegrationUpdateCommand extends CommandBase
 
         $this->integrationService->displayIntegration($integration);
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;

@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,14 +15,14 @@ class ProjectVariableDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'project:variable:delete';
 
-    private $activityMonitor;
+    private $activityService;
     private $selector;
 
     public function __construct(
-        ActivityMonitor $activityMonitor,
+        ActivityService $activityService,
         Selector $selector
     ) {
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         $this->selector = $selector;
         parent::__construct();
     }
@@ -36,7 +36,7 @@ class ProjectVariableDeleteCommand extends CommandBase
             ->setDescription('Delete a variable from a project');
         $this->setHidden(true);
         $this->selector->addProjectOption($this->getDefinition());
-        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $this->activityService->configureInput($this->getDefinition());
         $this->addExample('Delete the variable "example"', 'example');
     }
 

@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -11,13 +11,13 @@ class DomainAddCommand extends DomainCommandBase
 {
     protected static $defaultName = 'domain:add';
 
-    private $activityMonitor;
+    private $activityService;
     private $selector;
 
-    public function __construct(Selector $selector, ActivityMonitor $activityMonitor)
+    public function __construct(Selector $selector, ActivityService $activityService)
     {
         $this->selector = $selector;
-        $this->activityMonitor = $activityMonitor;
+        $this->activityService = $activityService;
         parent::__construct();
     }
 
@@ -29,7 +29,7 @@ class DomainAddCommand extends DomainCommandBase
         $this->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
         $this->selector->addProjectOption($this->getDefinition());
-        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $this->activityService->configureInput($this->getDefinition());
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
             'Add the domain secure.example.com with SSL enabled',
@@ -64,8 +64,8 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        if ($this->activityMonitor->shouldWait($input)) {
-            $this->activityMonitor->waitMultiple($result->getActivities(), $project);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return 0;
