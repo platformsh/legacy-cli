@@ -488,17 +488,6 @@ class Selector
     }
 
     /**
-     * @param string $root
-     */
-    private function setProjectRoot($root)
-    {
-        if (!is_dir($root)) {
-            throw new \InvalidArgumentException("Invalid project root: $root");
-        }
-        $this->projectRoot = $root;
-    }
-
-    /**
      * @return string|false
      */
     public function getProjectRoot()
