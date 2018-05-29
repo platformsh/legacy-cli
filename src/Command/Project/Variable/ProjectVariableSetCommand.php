@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,6 +15,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectVariableSetCommand extends CommandBase
 {
     protected static $defaultName = 'project:variable:set';
+
+    private $activityMonitor;
+    private $selector;
+
+    public function __construct(
+        ActivityMonitor $activityMonitor,
+        Selector $selector
+    ) {
+        $this->activityMonitor = $activityMonitor;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -27,8 +41,8 @@ class ProjectVariableSetCommand extends CommandBase
             ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime')
             ->setDescription('Set a variable for a project');
         $this->setHidden(true);
-        $this->addProjectOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Set the variable "example" to the string "123"', 'example 123');
         $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
         $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
@@ -37,13 +51,13 @@ class ProjectVariableSetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $variableName = $input->getArgument('name');
         $variableValue = $input->getArgument('value');
         $json = $input->getOption('json');
-        $supressBuild = $input->getOption('no-visible-build');
-        $supressRuntime = $input->getOption('no-visible-runtime');
+        $suppressBuild = $input->getOption('no-visible-build');
+        $suppressRuntime = $input->getOption('no-visible-runtime');
 
         if ($json && !$this->validateJson($variableValue)) {
             throw new \Exception("Invalid JSON: <error>$variableValue</error>");
@@ -51,7 +65,7 @@ class ProjectVariableSetCommand extends CommandBase
 
         // Check whether the variable already exists. If there is no change,
         // quit early.
-        $existing = $this->getSelectedProject()
+        $existing = $selection->getProject()
                          ->getVariable($variableName);
         if ($existing && $existing->value === $variableValue && $existing->is_json == $json) {
             $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
@@ -60,18 +74,16 @@ class ProjectVariableSetCommand extends CommandBase
         }
 
         // Set the variable to a new value.
-        $result = $this->getSelectedProject()
-                       ->setVariable($variableName, $variableValue, $json, !$supressBuild, !$supressRuntime);
+        $result = $selection->getProject()
+                       ->setVariable($variableName, $variableValue, $json, !$suppressBuild, !$suppressRuntime);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
         $success = true;
         if (!$result->countActivities()) {
             $this->redeployWarning();
-        } elseif ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        } elseif ($this->activityMonitor->shouldWait($input)) {
+            $success = $this->activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

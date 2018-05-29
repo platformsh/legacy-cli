@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -13,6 +15,18 @@ class ProjectVariableDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'project:variable:delete';
 
+    private $activityMonitor;
+    private $selector;
+
+    public function __construct(
+        ActivityMonitor $activityMonitor,
+        Selector $selector
+    ) {
+        $this->activityMonitor = $activityMonitor;
+        $this->selector = $selector;
+        parent::__construct();
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -21,19 +35,19 @@ class ProjectVariableDeleteCommand extends CommandBase
         $this->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->setDescription('Delete a variable from a project');
         $this->setHidden(true);
-        $this->addProjectOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete the variable "example"', 'example');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         return $this->runOtherCommand('variable:delete', [
                 'name' => $input->getArgument('name'),
                 '--level' => 'project',
-                '--project' => $this->getSelectedProject()->id,
+                '--project' => $selection->getProject()->id,
             ] + array_filter([
                 '--wait' => $input->getOption('wait'),
                 '--no-wait' => $input->getOption('no-wait'),
