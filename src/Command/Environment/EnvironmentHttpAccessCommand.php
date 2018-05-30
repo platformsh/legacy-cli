@@ -218,7 +218,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
                 $success = true;
                 if (!$result->countActivities()) {
-                    $this->redeployWarning();
+                    $this->activityService->redeployWarning();
                 } elseif ($this->activityService->shouldWait($input)) {
                     $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());
                 }

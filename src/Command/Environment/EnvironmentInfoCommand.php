@@ -160,7 +160,7 @@ class EnvironmentInfoCommand extends CommandBase
         if ($result->countActivities() && $shouldWait) {
             $success = $this->activityService->waitMultiple($result->getActivities(), $project);
         } elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
-            $this->redeployWarning();
+            $this->activityService->redeployWarning();
         }
 
         return $success ? 0 : 1;

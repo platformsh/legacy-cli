@@ -359,4 +359,16 @@ class ActivityService implements InputConfiguringInterface
 
         return false;
     }
+
+    /**
+     * Warn the user that the remote environment needs redeploying.
+     */
+    public function redeployWarning()
+    {
+        $this->stdErr->writeln([
+            '',
+            '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
+            'To redeploy an environment, run: <info>' . $this->config->get('application.executable') . ' redeploy</info>',
+        ]);
+    }
 }
