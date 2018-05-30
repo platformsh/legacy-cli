@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Variable;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -17,11 +18,16 @@ class VariableEnableCommand extends CommandBase
 
     private $activityService;
     private $selector;
+    private $subCommandRunner;
 
-    public function __construct(ActivityService $activityService, Selector $selector)
-    {
+    public function __construct(
+        ActivityService $activityService,
+        Selector $selector,
+        SubCommandRunner $subCommandRunner
+    ) {
         $this->activityService = $activityService;
         $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -42,16 +48,9 @@ class VariableEnableCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
-
-        return $this->runOtherCommand('variable:update', [
-                'name' => $input->getArgument('name'),
-                '--enabled' => 'true',
-                '--project' => $selection->getProject()->id,
-                '--environment' => $selection->getEnvironment()->id,
-            ] + array_filter([
-                '--wait' => $input->getOption('wait'),
-                '--no-wait' => $input->getOption('no-wait'),
-            ]));
+        return $this->subCommandRunner->run('variable:update', [
+            'name' => $input->getArgument('name'),
+            '--enabled' => 'true',
+        ]);
     }
 }

@@ -52,6 +52,8 @@ class Application extends ParentApplication
                 ?: TimezoneUtil::getTimezone()
         );
 
+        self::container()->set(__CLASS__, $this);
+
         $this->setCommandLoader(self::container()->get('console.command_loader'));
 
         $this->setDefaultCommand('welcome');
@@ -225,6 +227,16 @@ class Application extends ParentApplication
         // The parent class has a similar (private) property named
         // $runningCommand.
         $this->currentCommand = $command;
+    }
+
+    /**
+     * Get the current command.
+     *
+     * @return ConsoleCommand|null
+     */
+    public function getCurrentCommand()
+    {
+        return $this->currentCommand;
     }
 
     /**

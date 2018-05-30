@@ -6,6 +6,7 @@ use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\VariableService;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
@@ -22,6 +23,7 @@ class VariableGetCommand extends CommandBase
     private $config;
     private $formatter;
     private $selector;
+    private $subCommandRunner;
     private $table;
     private $variableService;
 
@@ -31,12 +33,14 @@ class VariableGetCommand extends CommandBase
         PropertyFormatter $formatter,
         Selector $selector,
         Table $table,
+        SubCommandRunner $subCommandRunner,
         VariableService $variableService
     ) {
         $this->activityService = $activityService;
         $this->config = $config;
         $this->formatter = $formatter;
         $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
         $this->table = $table;
         $this->variableService = $variableService;
         parent::__construct();
@@ -65,7 +69,7 @@ class VariableGetCommand extends CommandBase
 
         $name = $input->getArgument('name');
         if (!$name) {
-            return $this->runOtherCommand('variable:list', array_filter([
+            return $this->subCommandRunner->run('variable:list', array_filter([
                 '--level' => $level,
                 '--project' => $selection->getProject()->id,
                 '--environment' => $selection->hasEnvironment() ? $selection->getEnvironment()->id : null,

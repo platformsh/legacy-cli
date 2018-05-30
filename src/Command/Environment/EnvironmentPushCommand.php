@@ -12,6 +12,7 @@ use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -31,6 +32,7 @@ class EnvironmentPushCommand extends CommandBase
     private $relationships;
     private $selector;
     private $ssh;
+    private $subCommandRunner;
 
     public function __construct(
         Api $api,
@@ -41,7 +43,8 @@ class EnvironmentPushCommand extends CommandBase
         QuestionHelper $questionHelper,
         Relationships $relationships,
         Selector $selector,
-        Ssh $ssh
+        Ssh $ssh,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->api = $api;
         $this->activityService = $activityService;
@@ -52,6 +55,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->relationships = $relationships;
         $this->selector = $selector;
         $this->ssh = $ssh;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -212,7 +216,7 @@ class EnvironmentPushCommand extends CommandBase
                 '--no-wait' => $input->getOption('no-wait'),
             ];
 
-            return $this->runOtherCommand('environment:activate', $args);
+            return $this->subCommandRunner->run('environment:activate', $args);
         }
 
         return 0;

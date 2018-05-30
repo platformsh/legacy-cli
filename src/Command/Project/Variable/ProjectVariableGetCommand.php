@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,13 +19,16 @@ class ProjectVariableGetCommand extends CommandBase
 
     private $table;
     private $selector;
+    private $subCommandRunner;
 
     public function __construct(
         Table $table,
-        Selector $selector
+        Selector $selector,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->table = $table;
         $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -46,15 +50,9 @@ class ProjectVariableGetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
-
-        return $this->runOtherCommand('variable:get', [
+        return $this->subCommandRunner->run('variable:get', [
             'name' => $input->getArgument('name'),
             '--level' => 'project',
-            '--project' => $selection->getProject()->id,
-            ] + array_filter([
-                '--format' => $input->getOption('format'),
-                '--pipe' => $input->getOption('pipe'),
-            ]));
+        ]);
     }
 }

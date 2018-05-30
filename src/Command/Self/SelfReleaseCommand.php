@@ -8,6 +8,7 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -21,17 +22,20 @@ class SelfReleaseCommand extends CommandBase
     private $git;
     private $questionHelper;
     private $shell;
+    private $subCommandRunner;
 
     public function __construct(
         Config $config,
         Git $git,
         Shell $shell,
-        QuestionHelper $questionHelper
+        QuestionHelper $questionHelper,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->config = $config;
         $this->git = $git;
         $this->questionHelper = $questionHelper;
         $this->shell = $shell;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -152,7 +156,7 @@ class SelfReleaseCommand extends CommandBase
         }
         if (!$pharFilename) {
             $pharFilename = sys_get_temp_dir() . '/' . $this->config->get('application.executable') . '.phar';
-            $result = $this->runOtherCommand('self:build', [
+            $result = $this->subCommandRunner->run('self:build', [
                 '--output' => $pharFilename,
                 '--yes' => true,
             ]);

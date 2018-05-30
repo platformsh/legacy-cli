@@ -7,6 +7,7 @@ use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Cli\Console\ProcessManager;
@@ -22,18 +23,20 @@ class ServerStartCommand extends ServerCommandBase
     private $config;
     private $localProject;
     private $questionHelper;
+    private $subCommandRunner;
     private $urlService;
 
     public function __construct(
         Config $config,
         LocalProject $localProject,
         QuestionHelper $questionHelper,
+        SubCommandRunner $subCommandRunner,
         Url $url
-    )
-    {
+    ) {
         $this->config = $config;
         $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
+        $this->subCommandRunner = $subCommandRunner;
         $this->urlService = $url;
         parent::__construct($config, $localProject);
     }
@@ -110,7 +113,7 @@ class ServerStartCommand extends ServerCommandBase
 
             if ($input->getOption('tunnel')) {
                 $bufferedOutput = new BufferedOutput();
-                $result = $this->runOtherCommand(
+                $result = $this->subCommandRunner->run(
                     'tunnel:info',
                     ['--encode' => true] + ($app->isSingle() ? [] : ['--app' => $appId]),
                     $bufferedOutput

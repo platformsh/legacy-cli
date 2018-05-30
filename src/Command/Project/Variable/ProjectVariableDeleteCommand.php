@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Project\Variable;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -17,13 +18,16 @@ class ProjectVariableDeleteCommand extends CommandBase
 
     private $activityService;
     private $selector;
+    private $subCommandRunner;
 
     public function __construct(
         ActivityService $activityService,
-        Selector $selector
+        Selector $selector,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->activityService = $activityService;
         $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -42,15 +46,9 @@ class ProjectVariableDeleteCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
-
-        return $this->runOtherCommand('variable:delete', [
-                'name' => $input->getArgument('name'),
-                '--level' => 'project',
-                '--project' => $selection->getProject()->id,
-            ] + array_filter([
-                '--wait' => $input->getOption('wait'),
-                '--no-wait' => $input->getOption('no-wait'),
-            ]));
+        return $this->subCommandRunner->run('variable:delete', [
+            'name' => $input->getArgument('name'),
+            '--level' => 'project'
+        ]);
     }
 }

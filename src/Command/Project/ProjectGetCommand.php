@@ -16,6 +16,7 @@ use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -36,6 +37,7 @@ class ProjectGetCommand extends CommandBase
     private $questionHelper;
     private $selector;
     private $ssh;
+    private $subCommandRunner;
 
     public function __construct(
         Api $api,
@@ -45,7 +47,8 @@ class ProjectGetCommand extends CommandBase
         LocalProject $localProject,
         QuestionHelper $questionHelper,
         Selector $selector,
-        Ssh $ssh
+        Ssh $ssh,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->api = $api;
         $this->config = $config;
@@ -55,6 +58,7 @@ class ProjectGetCommand extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         $this->ssh = $ssh;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -185,7 +189,7 @@ class ProjectGetCommand extends CommandBase
         if ($this->getApplication()->has('local:drush-aliases') && Drupal::isDrupal($projectRoot)) {
             $this->stdErr->writeln('');
             try {
-                $this->runOtherCommand('local:drush-aliases');
+                $this->subCommandRunner->run('local:drush-aliases');
             } catch (DependencyMissingException $e) {
                 $this->stdErr->writeln(sprintf('<comment>%s</comment>', $e->getMessage()));
             }

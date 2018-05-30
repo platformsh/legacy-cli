@@ -33,6 +33,7 @@ abstract class BaseBuildFlavorTest extends TestCase
     {
         self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
         self::$config = new CliConfig();
+        Application::container()->set('application', new Application());
         Application::container()->set('output', self::$output);
     }
 

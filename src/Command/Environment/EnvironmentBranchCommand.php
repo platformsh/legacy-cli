@@ -9,6 +9,7 @@ use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -16,16 +17,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentBranchCommand extends CommandBase
 {
-
     protected static $defaultName = 'environment:branch';
 
-    protected $activityService;
-    protected $api;
-    protected $config;
-    protected $git;
-    protected $questionHelper;
-    protected $selector;
-    protected $ssh;
+    private $activityService;
+    private $api;
+    private $config;
+    private $git;
+    private $questionHelper;
+    private $selector;
+    private $ssh;
+    private $subCommandRunner;
 
     public function __construct(
         ActivityService $activityService,
@@ -34,7 +35,8 @@ class EnvironmentBranchCommand extends CommandBase
         Git $git,
         QuestionHelper $questionHelper,
         Selector $selector,
-        Ssh $ssh
+        Ssh $ssh,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->activityService = $activityService;
         $this->api = $api;
@@ -43,6 +45,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         $this->ssh = $ssh;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -84,10 +87,7 @@ class EnvironmentBranchCommand extends CommandBase
         if (empty($branchName)) {
             if ($input->isInteractive()) {
                 // List environments.
-                return $this->runOtherCommand(
-                    'environments',
-                    ['--project' => $selectedProject->id]
-                );
+                return $this->subCommandRunner->run('environments');
             }
             $this->stdErr->writeln("<error>You must specify the name of the new branch.</error>");
 
@@ -105,7 +105,7 @@ class EnvironmentBranchCommand extends CommandBase
                 "The environment <comment>$branchName</comment> already exists. Check out?"
             );
             if ($checkout) {
-                return $this->runOtherCommand(
+                return $this->subCommandRunner->run(
                     'environment:checkout',
                     ['id' => $environment->id]
                 );

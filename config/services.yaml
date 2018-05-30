@@ -28,7 +28,10 @@ services:
         arguments: ['@Platformsh\Cli\Service\Config']
     Doctrine\Common\Cache\CacheProvider: '@cache'
 
-    # Configure the input and output services.
+    # Configure higher level services.
+    Platformsh\Cli\Application:
+        public: true
+        synthetic: true
     output:
         public: true
         synthetic: true

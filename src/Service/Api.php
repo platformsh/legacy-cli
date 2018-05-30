@@ -9,12 +9,12 @@ use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
+use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
-use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\Storage\File;
@@ -68,17 +68,22 @@ class Api
     /**
      * Constructor.
      *
-     * @param Config|null                $config
-     * @param CacheProvider|null            $cache
-     * @param EventDispatcherInterface|null $dispatcher
+     * @param Config                   $config
+     * @param CacheProvider            $cache
+     * @param AutoLogin                $autoLogin
      */
     public function __construct(
-        Config $config = null,
-        CacheProvider $cache = null,
-        EventDispatcherInterface $dispatcher = null
+        Config $config,
+        CacheProvider $cache,
+        AutoLoginListener $autoLogin
     ) {
         $this->config = $config ?: new Config();
-        $this->dispatcher = $dispatcher ?: new EventDispatcher();
+        $this->dispatcher = new EventDispatcher();
+        $this->dispatcher->addListener(
+            'login.required',
+            [$autoLogin, 'onLoginRequired']
+        );
+        // @todo set up Drush alias listener
 
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
 
@@ -211,7 +216,7 @@ class Api
             self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
-                $this->dispatcher->dispatch('login_required');
+                $this->dispatcher->dispatch('login.required');
             }
         }
 

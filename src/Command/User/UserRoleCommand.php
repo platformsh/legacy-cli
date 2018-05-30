@@ -6,6 +6,7 @@ use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,17 +21,20 @@ class UserRoleCommand extends CommandBase
     private $api;
     private $questionHelper;
     private $selector;
+    private $subCommandRunner;
 
     public function __construct(
         ActivityService $activityService,
         Api $api,
         QuestionHelper $questionHelper,
-        Selector $selector
+        Selector $selector,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->activityService = $activityService;
         $this->api = $api;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -118,6 +122,6 @@ class UserRoleCommand extends CommandBase
             '--yes' => true,
         ];
 
-        return $this->runOtherCommand('user:add', $args, $output);
+        return $this->subCommandRunner->run('user:add', $args);
     }
 }

@@ -4,17 +4,14 @@ namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Application;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Url;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -58,24 +55,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->input = $input;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
-        $this->api();
-
         $this->promptLegacyMigrate();
-    }
-
-    /**
-     * Set up the API object.
-     */
-    private function api()
-    {
-        static $api;
-        if (!isset($api)) {
-            $api = Application::container()->get(Api::class);
-            $api->dispatcher
-                ->addListener('login_required', [$this, 'login']);
-            $api->dispatcher
-                ->addListener('environments_changed', [$this, 'updateDrushAliases']);
-        }
     }
 
     /**
@@ -117,7 +97,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
                 $questionHelper = Application::container()->get(QuestionHelper::class);
                 if ($questionHelper->confirm('Migrate to the new structure?')) {
-                    $code = $this->runOtherCommand('legacy-migrate');
+                    /** @var \Platformsh\Cli\Service\SubCommandRunner $subCommandRunner */
+                    $subCommandRunner = Application::container()->get(SubCommandRunner::class);
+                    $code = $subCommandRunner->run('legacy-migrate');
                     exit($code);
                 }
             } else {
@@ -127,41 +109,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 ));
             }
             $this->stdErr->writeln('');
-        }
-    }
-
-    /**
-     * Log in the user.
-     *
-     * This is called via the 'login_required' event.
-     *
-     * @see Api::getClient()
-     */
-    public function login()
-    {
-        $success = false;
-        if ($this->output && $this->input && $this->input->isInteractive()) {
-            $method = $this->config()->getWithDefault('application.login_method', 'browser');
-            if ($method === 'browser') {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = Application::container()->get(QuestionHelper::class);
-                /** @var Url $urlService */
-                $urlService = Application::container()->get(Url::class);
-                if ($urlService->canOpenUrls()
-                    && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
-                    $this->stdErr->writeln('');
-                    $exitCode = $this->runOtherCommand('auth:browser-login');
-                    $this->stdErr->writeln('');
-                    $success = $exitCode === 0;
-                }
-            } elseif ($method === 'password') {
-                $exitCode = $this->runOtherCommand('auth:password-login');
-                $this->stdErr->writeln('');
-                $success = $exitCode === 0;
-            }
-        }
-        if (!$success) {
-            throw new LoginRequiredException();
         }
     }
 
@@ -222,56 +169,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
             'To redeploy an environment, run: <info>' . $this->config()->get('application.executable') . ' redeploy</info>',
         ]);
-    }
-
-    /**
-     * Run another CLI command.
-     *
-     * @param string         $name
-     *   The name of the other command.
-     * @param array          $arguments
-     *   Arguments for the other command.
-     * @param OutputInterface $output
-     *   The output for the other command. Defaults to the current output.
-     *
-     * @return int
-     */
-    protected function runOtherCommand($name, array $arguments = [], OutputInterface $output = null)
-    {
-        /** @var \Platformsh\Cli\Application $application */
-        $application = $this->getApplication();
-        $command = $application->find($name);
-
-        // Pass on interactivity arguments to the other command.
-        if (isset($this->input)) {
-            $arguments += [
-                '--yes' => $this->input->getOption('yes'),
-                '--no' => $this->input->getOption('no'),
-            ];
-        }
-
-        $cmdInput = new ArrayInput(['command' => $name] + $arguments);
-        if (!empty($arguments['--yes']) || !empty($arguments['--no'])) {
-            $cmdInput->setInteractive(false);
-        } elseif (isset($this->input)) {
-            $cmdInput->setInteractive($this->input->isInteractive());
-        }
-
-        $this->debug('Running command: ' . $name);
-
-        // Give the other command an entirely new service container, because the
-        // "input" and "output" parameters, and all their dependents, need to
-        // change.
-        // @todo upgrade this now the container belongs to the application
-
-        $application->setCurrentCommand($command);
-        $result = $command->run($cmdInput, $output ?: $this->output);
-        $application->setCurrentCommand($this);
-
-        // Restore the old service container.
-        // @todo
-
-        return $result;
     }
 
     /**

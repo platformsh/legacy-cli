@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,15 +15,18 @@ class WelcomeCommand extends CommandBase
 
     private $api;
     private $config;
+    private $subCommandRunner;
     private $selector;
 
     public function __construct(
         Api $api,
         Config $config,
+        SubCommandRunner $subCommandRunner,
         Selector $selector
     ) {
         $this->api = $api;
         $this->config = $config;
+        $this->subCommandRunner = $subCommandRunner;
         $this->selector = $selector;
         parent::__construct();
     }
@@ -63,11 +67,11 @@ class WelcomeCommand extends CommandBase
             }
 
             // Show the environments.
-            $this->runOtherCommand('environment:list', ['--refresh' => 0]);
+            $this->subCommandRunner->run('environment:list', ['--refresh' => 0]);
             $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>\n");
         } else {
             // The project is not known. Show all projects.
-            $this->runOtherCommand('project:list', ['--refresh' => 0]);
+            $this->subCommandRunner->run('project:list', ['--refresh' => 0]);
             $this->stdErr->writeln('');
         }
 
