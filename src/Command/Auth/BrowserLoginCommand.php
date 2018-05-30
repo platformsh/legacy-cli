@@ -57,7 +57,7 @@ class BrowserLoginCommand extends CommandBase
         $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
             . "\n\nAlternatively, to log in with a username and password in the terminal, use:\n    <info>"
             . $executable . ' auth:password-login</info>';
-        if ($aHelp = $this->getApiTokenHelp()) {
+        if ($aHelp = $this->api->getApiTokenHelp()) {
             $help .= "\n\n" . $aHelp;
         }
         $this->setHelp($help);
@@ -71,7 +71,7 @@ class BrowserLoginCommand extends CommandBase
         }
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive login is not supported.');
-            if ($aHelp = $this->getApiTokenHelp('comment')) {
+            if ($aHelp = $this->api->getApiTokenHelp('comment')) {
                 $this->stdErr->writeln("\n" . $aHelp);
             }
             return 1;
