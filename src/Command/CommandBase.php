@@ -3,13 +3,9 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Application;
-use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\QuestionHelper;
-use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -105,53 +101,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 ));
             }
             $this->stdErr->writeln('');
-        }
-    }
-
-    /**
-     * Update the user's local Drush aliases.
-     *
-     * This is called via the 'environments_changed' event.
-     *
-     * @see \Platformsh\Cli\Service\Api::getEnvironments()
-     *
-     * @param EnvironmentsChangedEvent $event
-     */
-    public function updateDrushAliases(EnvironmentsChangedEvent $event)
-    {
-        /** @var \Platformsh\Cli\Service\Selector $selector */
-        $selector = Application::container()->get(Selector::class);
-        $projectRoot = $selector->getProjectRoot();
-        if (!$projectRoot) {
-            return;
-        }
-        // Make sure the local:drush-aliases command is enabled.
-        if (!$this->getApplication()->has('local:drush-aliases')) {
-            return;
-        }
-        // Double-check that the passed project is the current one.
-        $currentProject = $selector->getCurrentProject();
-        if (!$currentProject || $currentProject->id != $event->getProject()->id) {
-            return;
-        }
-        // Ignore the project if it doesn't contain a Drupal application.
-        if (!Drupal::isDrupal($projectRoot)) {
-            return;
-        }
-        /** @var Drush $drush */
-        $drush = Application::container()->get(Drush::class);
-        if ($drush->getVersion() === false) {
-            $this->debug('Not updating Drush aliases: the Drush version cannot be determined.');
-            return;
-        }
-        $this->debug('Updating Drush aliases');
-        try {
-            $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
-        } catch (\Exception $e) {
-            $this->stdErr->writeln(sprintf(
-                "<comment>Failed to update Drush aliases:</comment>\n%s\n",
-                preg_replace('/^/m', '  ', trim($e->getMessage()))
-            ));
         }
     }
 

@@ -65,17 +65,11 @@ class Api
     /** @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null */
     protected $sessionStorage;
 
-    /**
-     * Constructor.
-     *
-     * @param Config                   $config
-     * @param CacheProvider            $cache
-     * @param AutoLogin                $autoLogin
-     */
     public function __construct(
         Config $config,
         CacheProvider $cache,
-        AutoLoginListener $autoLogin
+        AutoLoginListener $autoLogin,
+        DrushAliasUpdater $drushAliasUpdater
     ) {
         $this->config = $config ?: new Config();
         $this->dispatcher = new EventDispatcher();
@@ -83,7 +77,10 @@ class Api
             'login.required',
             [$autoLogin, 'onLoginRequired']
         );
-        // @todo set up Drush alias listener
+        $this->dispatcher->addListener(
+            'environments.changed',
+            [$drushAliasUpdater, 'onEnvironmentsChanged']
+        );
 
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
 
@@ -340,7 +337,7 @@ class Api
             // Dispatch an event if the list of environments has changed.
             if ($events && (!$cached || array_diff_key($environments, $cached))) {
                 $this->dispatcher->dispatch(
-                    'environments_changed',
+                    'environments.changed',
                     new EnvironmentsChangedEvent($project, $environments)
                 );
             }
