@@ -9,6 +9,7 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Exception\EnvironmentStateException;
@@ -27,6 +28,7 @@ class EnvironmentPushCommand extends CommandBase
     private $git;
     private $localProject;
     private $questionHelper;
+    private $relationships;
     private $selector;
     private $ssh;
 
@@ -37,6 +39,7 @@ class EnvironmentPushCommand extends CommandBase
         Git $git,
         LocalProject $localProject,
         QuestionHelper $questionHelper,
+        Relationships $relationships,
         Selector $selector,
         Ssh $ssh
     ) {
@@ -46,6 +49,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->git = $git;
         $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
+        $this->relationships = $relationships;
         $this->selector = $selector;
         $this->ssh = $ssh;
         parent::__construct();
@@ -193,9 +197,7 @@ class EnvironmentPushCommand extends CommandBase
         if ($selection->hasEnvironment()) {
             try {
                 $sshUrl = $selection->getEnvironment()->getSshUrl();
-                /** @var \Platformsh\Cli\Service\Relationships $relationships */
-                $relationships = $this->getService('relationships');
-                $relationships->clearCaches($sshUrl);
+                $this->relationships->clearCaches($sshUrl);
             } catch (EnvironmentStateException $e) {
                 // Ignore environments with a missing SSH URL.
             }
