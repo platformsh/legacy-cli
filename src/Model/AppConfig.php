@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Model;
 
 use Platformsh\Cli\Exception\InvalidConfigException;
+use Platformsh\Cli\Service\MountService;
 use Platformsh\Client\Model\Deployment\WebApp;
 
 /**
@@ -109,6 +110,10 @@ class AppConfig
             foreach ($oldConfig['blacklist'] as $pattern) {
                 $location['rules'][$pattern]['allow'] = false;
             }
+        }
+
+        if (!empty($config['mounts'])) {
+            $config['mounts'] = MountService::normalizeMounts($config['mounts']);
         }
 
         return $config;

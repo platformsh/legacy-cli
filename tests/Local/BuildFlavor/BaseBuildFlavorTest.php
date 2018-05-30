@@ -9,6 +9,7 @@ use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Tests\HasTempDirTrait;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 abstract class BaseBuildFlavorTest extends TestCase
@@ -33,8 +34,6 @@ abstract class BaseBuildFlavorTest extends TestCase
     {
         self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
         self::$config = new CliConfig();
-        Application::container()->set('application', new Application());
-        Application::container()->set('output', self::$output);
     }
 
     /**

@@ -163,11 +163,11 @@ class MountService
      *
      * @return array
      */
-    public function normalizeMounts(array $mounts)
+    public static function normalizeMounts(array $mounts)
     {
         $normalized = [];
         foreach ($mounts as $path => $definition) {
-            $normalized[$this->normalizeRelativePath($path)] = $this->normalizeDefinition($definition);
+            $normalized[self::normalizeRelativePath($path)] = self::normalizeDefinition($definition);
         }
 
         return $normalized;
@@ -199,7 +199,7 @@ class MountService
      *
      * @return string
      */
-    private function normalizeRelativePath($path)
+    private static function normalizeRelativePath($path)
     {
         return trim(trim($path), '/');
     }
@@ -212,7 +212,7 @@ class MountService
      * @return array
      *   An array containing at least 'source', and probably 'source_path'.
      */
-    private function normalizeDefinition($definition)
+    private static function normalizeDefinition($definition)
     {
         if (!is_array($definition)) {
             if (!is_string($definition) || strpos($definition, 'shared:files') === false) {
@@ -226,7 +226,7 @@ class MountService
             throw new \InvalidArgumentException('Invalid mount definition: ' . json_encode($definition));
         }
         if (isset($definition['source_path'])) {
-            $definition['source_path'] = $this->normalizeRelativePath($definition['source_path']);
+            $definition['source_path'] = self::normalizeRelativePath($definition['source_path']);
         }
 
         return $definition;
