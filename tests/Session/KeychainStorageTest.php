@@ -25,6 +25,7 @@ class KeychainStorageTest extends TestCase
         foreach ($testData as $key => $value) {
             $session->set($key, $value);
         }
+        $session->save();
 
         // Reset the session, reload from the keychain, and check session data.
         $session = new Session('default', [], $keychain);
