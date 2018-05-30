@@ -42,21 +42,19 @@ class SshKeyListCommand extends CommandBase
                 $this->config->get('service.name')
             ));
         } else {
-            /** @var \Platformsh\Cli\Service\Table $table */
-            $table = $this->getService('table');
             $headers = ['ID', 'Title', 'Fingerprint'];
             $rows = [];
             foreach ($keys as $key) {
                 $rows[] = [$key['key_id'], $key['title'], $key['fingerprint']];
             }
-            if ($table->formatIsMachineReadable()) {
-                $table->render($rows, $headers);
+            if ($this->table->formatIsMachineReadable()) {
+                $this->table->render($rows, $headers);
 
                 return 0;
             }
 
             $this->stdErr->writeln("Your SSH keys are:");
-            $table->render($rows, $headers);
+            $this->table->render($rows, $headers);
         }
 
         $this->stdErr->writeln('');
