@@ -32,8 +32,7 @@ class BrowserLoginCommand extends CommandBase
         Api $api,
         CacheProvider $cache,
         Url $url
-    )
-    {
+    ) {
         $this->config = $config;
         $this->api = $api;
         $this->cache = $cache;
@@ -53,7 +52,7 @@ class BrowserLoginCommand extends CommandBase
 
         $this->setDescription('Log in to ' . $service . ' via a browser')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
-        Url::configureInput($this->getDefinition());
+        $this->url->configureInput($this->getDefinition());
 
         $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
             . "\n\nAlternatively, to log in with a username and password in the terminal, use:\n    <info>"
