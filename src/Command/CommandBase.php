@@ -18,9 +18,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     protected $runningViaMulti = false;
 
-    /** @var InputInterface|null */
-    private $input;
-
     /**
      * @see self::setHiddenAliases()
      *
@@ -40,8 +37,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
-        // Set up dependencies that are only needed once per command run.
-        $this->input = $input;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
@@ -100,27 +95,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function debug($message)
     {
         $this->labeledMessage('DEBUG', $message, OutputInterface::VERBOSITY_DEBUG);
-    }
-
-    /**
-     * Print a warning about an deprecated option.
-     *
-     * @param string[] $options
-     */
-    protected function warnAboutDeprecatedOptions(array $options)
-    {
-        if (!isset($this->input)) {
-            return;
-        }
-        foreach ($options as $option) {
-            if ($this->input->hasOption($option) && $this->input->getOption($option)) {
-                $this->labeledMessage(
-                    'DEPRECATED',
-                    'The option --' . $option . ' is deprecated and no longer used. It will be removed in a future version.',
-                    OutputInterface::VERBOSITY_VERBOSE
-                );
-            }
-        }
     }
 
     /**
