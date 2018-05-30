@@ -2,7 +2,9 @@
 namespace Platformsh\Cli;
 
 use Platformsh\Cli\Console\EventSubscriber;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\LegacyMigration;
 use Platformsh\Cli\Service\SelfUpdateChecker;
 use Platformsh\Cli\Util\TimezoneUtil;
 use Symfony\Component\Config\FileLocator;
@@ -192,6 +194,13 @@ class Application extends ParentApplication
      */
     protected function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
     {
+        $this->setCurrentCommand($command);
+
+        // Build the command synopsis early, so it doesn't include default
+        // options and arguments (such as --help and <command>).
+        // @todo find a better solution for this?
+        $this->currentCommand->getSynopsis();
+
         // Work around a bug in Console which means the default command's input
         // is always considered to be interactive.
         if ($command->getName() === 'welcome'
@@ -200,18 +209,23 @@ class Application extends ParentApplication
             $input->setInteractive(false);
         }
 
-        if ($input->isInteractive()) {
+        // Check for automatic updates.
+        $noChecks = in_array($command->getName(), ['welcome', '_completion']);
+        if ($input->isInteractive() && !$noChecks) {
             /** @var SelfUpdateChecker $checker */
             $checker = self::container()->get(SelfUpdateChecker::class);
             $checker->checkUpdates();
         }
 
-        $this->setCurrentCommand($command);
-
-        // Build the command synopsis early, so it doesn't include default
-        // options and arguments (such as --help and <command>).
-        // @todo find a better solution for this?
-        $this->currentCommand->getSynopsis();
+        if (!$noChecks && $command->getName() !== 'legacy-migrate') {
+            /** @var LocalProject $localProject */
+            $localProject = self::container()->get(LocalProject::class);
+            if ($localProject->getLegacyProjectRoot()) {
+                /** @var LegacyMigration $legacyMigration */
+                $legacyMigration = self::container()->get(LegacyMigration::class);
+                $legacyMigration->check();
+            }
+        }
 
         return parent::doRunCommand($command, $input, $output);
     }

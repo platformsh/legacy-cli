@@ -3,10 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Application;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\QuestionHelper;
-use Platformsh\Cli\Service\SubCommandRunner;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -46,62 +43,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Set up dependencies that are only needed once per command run.
         $this->input = $input;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-
-        $this->promptLegacyMigrate();
-    }
-
-    /**
-     * Prompt the user to migrate from the legacy project file structure.
-     *
-     * If the input is interactive, the user will be asked to migrate up to once
-     * per hour. The time they were last asked will be stored in the project
-     * configuration. If the input is not interactive, the user will be warned
-     * (on every command run) that they should run the 'legacy-migrate' command.
-     */
-    private function promptLegacyMigrate()
-    {
-        static $asked = false;
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = Application::container()->get(LocalProject::class);
-        if ($localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
-            $asked = true;
-
-            $projectRoot = $localProject->getProjectRoot();
-            $timestamp = time();
-            $promptMigrate = true;
-            if ($projectRoot) {
-                $projectConfig = $localProject->getProjectConfig($projectRoot);
-                if (isset($projectConfig['migrate']['3.x']['last_asked'])
-                    && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
-                    $promptMigrate = false;
-                }
-            }
-
-            $this->stdErr->writeln(sprintf(
-                'You are in a project using an old file structure, from previous versions of the %s.',
-                $this->config()->get('application.name')
-            ));
-            if ($this->input->isInteractive() && $promptMigrate) {
-                if ($projectRoot && isset($projectConfig)) {
-                    $projectConfig['migrate']['3.x']['last_asked'] = $timestamp;
-                    $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
-                }
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = Application::container()->get(QuestionHelper::class);
-                if ($questionHelper->confirm('Migrate to the new structure?')) {
-                    /** @var \Platformsh\Cli\Service\SubCommandRunner $subCommandRunner */
-                    $subCommandRunner = Application::container()->get(SubCommandRunner::class);
-                    $code = $subCommandRunner->run('legacy-migrate');
-                    exit($code);
-                }
-            } else {
-                $this->stdErr->writeln(sprintf(
-                    'Fix this with: <comment>%s legacy-migrate</comment>',
-                    $this->config()->get('application.executable')
-                ));
-            }
-            $this->stdErr->writeln('');
-        }
     }
 
     /**
