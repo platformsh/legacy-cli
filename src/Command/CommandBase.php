@@ -12,12 +12,8 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\SelfUpdater;
-use Platformsh\Cli\Service\Shell;
-use Platformsh\Cli\Service\State;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -26,9 +22,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 abstract class CommandBase extends Command implements MultiAwareInterface
 {
     use HasExamplesTrait;
-
-    /** @var bool */
-    private static $checkedUpdates;
 
     /** @var OutputInterface|null */
     protected $stdErr;
@@ -135,124 +128,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             $this->stdErr->writeln('');
         }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function interact(InputInterface $input, OutputInterface $output)
-    {
-        // Work around a bug in Console which means the default command's input
-        // is always considered to be interactive.
-        if ($this->getName() === 'welcome'
-            && isset($GLOBALS['argv'])
-            && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
-            $input->setInteractive(false);
-            return;
-        }
-
-        $this->checkUpdates();
-    }
-
-    /**
-     * Check for updates.
-     */
-    protected function checkUpdates()
-    {
-        // Avoid checking more than once in this process.
-        if (self::$checkedUpdates) {
-            return;
-        }
-        self::$checkedUpdates = true;
-
-        // Check that the Phar extension is available.
-        if (!extension_loaded('Phar')) {
-            return;
-        }
-
-        // Get the filename of the Phar, or stop if this instance of the CLI is
-        // not a Phar.
-        $pharFilename = \Phar::running(false);
-        if (!$pharFilename) {
-            return;
-        }
-
-        // Check if the file is writable.
-        if (!is_writable($pharFilename)) {
-            return;
-        }
-
-        // Check if updates are configured.
-        $config = $this->config();
-        if (!$config->get('updates.check')) {
-            return;
-        }
-
-        // Determine an embargo time, after which updates can be checked.
-        $timestamp = time();
-        $embargoTime = $timestamp - $config->get('updates.check_interval');
-
-        // Stop if updates were last checked after the embargo time.
-        /** @var State $state */
-        $state = Application::container()->get(State::class);
-        if ($state->get('updates.last_checked') > $embargoTime) {
-            return;
-        }
-
-        // Stop if the Phar was updated after the embargo time.
-        if (filemtime($pharFilename) > $embargoTime) {
-            return;
-        }
-
-        // Ensure classes are auto-loaded if they may be needed after the
-        // update.
-        /** @var Shell $shell */
-        $shell = Application::container()->get(Shell::class);
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = Application::container()->get(QuestionHelper::class);
-        $currentVersion = $this->config()->get('application.version');
-
-        /** @var SelfUpdater $cliUpdater */
-        $cliUpdater = Application::container()->get(SelfUpdater::class);
-        $cliUpdater->setAllowMajor(true);
-        $cliUpdater->setTimeout(5);
-
-        try {
-            $newVersion = $cliUpdater->update(null, $currentVersion);
-        } catch (\RuntimeException $e) {
-            if (strpos($e->getMessage(), 'Failed to download') !== false) {
-                $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
-                $newVersion = false;
-            } else {
-                throw $e;
-            }
-        }
-
-        $state->set('updates.last_checked', $timestamp);
-
-        // If the update was successful, and it's not a major version change,
-        // then prompt the user to continue after updating.
-        if ($newVersion !== false) {
-            $exitCode = 0;
-            list($currentMajorVersion,) = explode('.', $currentVersion, 2);
-            list($newMajorVersion,) = explode('.', $newVersion, 2);
-            if ($newMajorVersion === $currentMajorVersion
-                && isset($this->input)
-                && $this->input instanceof ArgvInput
-                && is_executable($pharFilename)) {
-                $originalCommand = $this->input->__toString();
-                $questionText = "\n"
-                    . 'Original command: <info>' . $originalCommand . '</info>'
-                    . "\n\n" . 'Continue?';
-                if ($questionHelper->confirm($questionText)) {
-                    $this->stdErr->writeln('');
-                    $exitCode = $shell->executeSimple(escapeshellarg($pharFilename) . ' ' . $originalCommand);
-                }
-            }
-            exit($exitCode);
-        }
-
-        $this->stdErr->writeln('');
     }
 
     /**

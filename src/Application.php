@@ -3,6 +3,7 @@ namespace Platformsh\Cli;
 
 use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\SelfUpdateChecker;
 use Platformsh\Cli\Util\TimezoneUtil;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as ParentApplication;
@@ -190,6 +191,20 @@ class Application extends ParentApplication
      */
     protected function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
     {
+        // Work around a bug in Console which means the default command's input
+        // is always considered to be interactive.
+        if ($command->getName() === 'welcome'
+            && isset($GLOBALS['argv'])
+            && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
+            $input->setInteractive(false);
+        }
+
+        if ($input->isInteractive()) {
+            /** @var SelfUpdateChecker $checker */
+            $checker = self::container()->get(SelfUpdateChecker::class);
+            $checker->checkUpdates();
+        }
+
         $this->setCurrentCommand($command);
 
         // Build the command synopsis early, so it doesn't include default
