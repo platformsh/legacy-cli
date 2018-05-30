@@ -28,9 +28,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /** @var InputInterface|null */
     private $input;
 
-    /** @var OutputInterface|null */
-    private $output;
-
     /**
      * @see self::setHiddenAliases()
      *
@@ -51,7 +48,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         // Set up dependencies that are only needed once per command run.
-        $this->output = $output;
         $this->input = $input;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
