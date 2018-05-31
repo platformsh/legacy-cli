@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli;
 
+use Platformsh\Cli\Command\WelcomeCommand;
 use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
@@ -37,13 +38,14 @@ class Application extends ParentApplication
     private $config;
 
     /** @var \Symfony\Component\DependencyInjection\Container */
-    private static $container;
+    private $container;
 
     /**
      * {@inheritdoc}
      */
     public function __construct(Config $config = null)
     {
+        // Initialize configuration (from config.yaml).
         $this->config = $config ?: new Config();
         parent::__construct($this->config->get('application.name'), $this->config->get('application.version'));
 
@@ -53,12 +55,21 @@ class Application extends ParentApplication
                 ?: TimezoneUtil::getTimezone()
         );
 
-        self::container()->set(__CLASS__, $this);
+        // Set this application as the synthetic service named
+        // "Platformsh\Cli\Application".
+        $this->container()->set(__CLASS__, $this);
 
-        $this->setCommandLoader(self::container()->get('console.command_loader'));
+        // Set up the command loader, which will load commands that are tagged
+        // appropriately in the services.yaml container configuration (any
+        // services tagged with "console.command").
+        /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
+        $loader = $this->container()->get('console.command_loader');
+        $this->setCommandLoader($loader);
 
-        $this->setDefaultCommand('welcome');
+        // Set "welcome" as the default command.
+        $this->setDefaultCommand(WelcomeCommand::getDefaultName());
 
+        // Set up an event subscriber, which will listen for Console events.
         $dispatcher = new EventDispatcher();
         $dispatcher->addSubscriber(new EventSubscriber($this->config));
         $this->setDispatcher($dispatcher);
@@ -84,23 +95,23 @@ class Application extends ParentApplication
      *
      * @return ContainerInterface
      */
-    private static function container(): ContainerInterface
+    private function container()
     {
         $cacheFile = __DIR__ . '/../config/cache/container.php';
         $servicesFile = __DIR__ . '/../config/services.yaml';
 
-        if (!isset(self::$container)) {
+        if (!isset($this->container)) {
             if (file_exists($cacheFile) && !getenv('PLATFORMSH_CLI_DEBUG')) {
                 // Load the cached container.
                 /** @noinspection PhpIncludeInspection */
                 require_once $cacheFile;
                 /** @noinspection PhpUndefinedClassInspection */
-                self::$container = new \ProjectServiceContainer();
+                $this->container = new \ProjectServiceContainer();
             } else {
                 // Compile a new container.
-                self::$container = new ContainerBuilder();
+                $this->container = new ContainerBuilder();
                 try {
-                    (new YamlFileLoader(self::$container, new FileLocator()))
+                    (new YamlFileLoader($this->container, new FileLocator()))
                         ->load($servicesFile);
                 } catch (\Exception $e) {
                     throw new \RuntimeException(sprintf(
@@ -109,9 +120,9 @@ class Application extends ParentApplication
                         $e->getMessage()
                     ));
                 }
-                self::$container->addCompilerPass(new AddConsoleCommandPass());
-                self::$container->compile();
-                $dumper = new PhpDumper(self::$container);
+                $this->container->addCompilerPass(new AddConsoleCommandPass());
+                $this->container->compile();
+                $dumper = new PhpDumper($this->container);
                 if (!is_dir(dirname($cacheFile))) {
                     mkdir(dirname($cacheFile), 0755, true);
                 }
@@ -119,7 +130,7 @@ class Application extends ParentApplication
             }
         }
 
-        return self::$container;
+        return $this->container;
     }
 
     /**
@@ -179,8 +190,8 @@ class Application extends ParentApplication
     protected function configureIO(InputInterface $input, OutputInterface $output)
     {
         // Set the input and output in the service container.
-        self::container()->set('input', $input);
-        self::container()->set('output', $output);
+        $this->container()->set('input', $input);
+        $this->container()->set('output', $output);
 
         parent::configureIO($input, $output);
 
@@ -240,16 +251,16 @@ class Application extends ParentApplication
         $noChecks = in_array($command->getName(), ['welcome', '_completion']);
         if ($input->isInteractive() && !$noChecks) {
             /** @var SelfUpdateChecker $checker */
-            $checker = self::container()->get(SelfUpdateChecker::class);
+            $checker = $this->container()->get(SelfUpdateChecker::class);
             $checker->checkUpdates();
         }
 
         if (!$noChecks && $command->getName() !== 'legacy-migrate') {
             /** @var LocalProject $localProject */
-            $localProject = self::container()->get(LocalProject::class);
+            $localProject = $this->container()->get(LocalProject::class);
             if ($localProject->getLegacyProjectRoot()) {
                 /** @var LegacyMigration $legacyMigration */
-                $legacyMigration = self::container()->get(LegacyMigration::class);
+                $legacyMigration = $this->container()->get(LegacyMigration::class);
                 $legacyMigration->check();
             }
         }
