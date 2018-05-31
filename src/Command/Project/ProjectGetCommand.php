@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Cocur\Slugify\Slugify;
-use Platformsh\Cli\Application;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Selection;
 use Platformsh\Cli\Exception\DependencyMissingException;

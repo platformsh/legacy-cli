@@ -8,7 +8,6 @@ namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\Cache;
 use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\NullOutput;
