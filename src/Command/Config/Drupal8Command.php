@@ -32,6 +32,7 @@ class Drupal8Command extends PhpCommand implements ConfigGenerateInterface
 
         $fields['runtime_version'] = $commonFields['runtime_version'];
         $fields['webroot'] = $commonFields['webroot'];
+        $fields['build_flavor'] = $commonFields['build_flavor'];
 
         $fields['install_profile'] = new Field('Install profile', [
             'optionName' => 'install-profile',
