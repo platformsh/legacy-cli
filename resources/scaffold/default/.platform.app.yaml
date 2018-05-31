@@ -1,0 +1,42 @@
+# This file describes an application. You can have multiple applications
+# in the same project.
+
+# The name of this app. Must be unique within a project.
+name: app
+
+# The type of the application to build.
+type: php
+build:
+    flavor: composer
+
+# The relationships of the application with services or other applications.
+#
+# The left-hand side is the name of the relationship as it will be exposed
+# to the application in the PLATFORM_RELATIONSHIPS variable. The right-hand
+# side is in the form `<service name>:<endpoint name>`.
+relationships:
+#    database: 'mysqldb:mysql'
+#    solr: 'solrsearch:solr'
+#    redis: 'rediscache:redis'
+
+variables:
+    php:
+        # Turn display errors off when you're ready to launch.
+        display_errors: On
+
+# The size of the persistent disk of the application (in MB).
+disk: 512
+
+# The mounts that will be performed when the package is deployed.
+mounts:
+    # A small placeholder scratch space if needed.
+    "/var": "shared:files/var"
+
+# The configuration of app when it is exposed to the web.
+web:
+    locations:
+        "/":
+            # The public directory of the app, relative to its root.
+            root: "web"
+            # The front-controller script to send non-static requests to.
+            passthru: "/index.php"
