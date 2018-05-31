@@ -87,10 +87,5 @@ hooks:
       cd {{ webroot }}
       drush -y updatedb
 
-# The configuration of scheduled execution.
-crons:
-    drupal:
-        spec: '*/20 * * * *'
-        cmd: 'cd {{ webroot }} ; drush core-cron'
-
 {% include 'includes/relationships.yaml.twig' %}
+{% include 'includes/crons.yaml.twig' %}

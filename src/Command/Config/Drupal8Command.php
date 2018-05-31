@@ -59,8 +59,11 @@ class Drupal8Command extends PhpCommand implements ConfigGenerateInterface
             'type' => 'mysql:10.0',
             'disk' => $this->parameters['db_disk'],
         ];
+        $this->parameters['relationships']['database'] = 'mysqldb:mysql';
+        $this->parameters['crons']['drupal'] = [
+            'spec' => '*/20 * * * *',
+            'cmd' => 'cd ' . $this->appRoot . '; drush core-cron'
         ];
-        $parameters['relationships']['database'] = 'mysqldb:mysql';
     }
 
     /**

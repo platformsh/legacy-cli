@@ -43,6 +43,10 @@ class Drupal7Command extends PhpCommand implements ConfigGenerateInterface
             'type' => 'mysql:10.0',
             'disk' => 2048,
         ];
-        $parameters['relationships']['database'] = 'mysqldb:mysql';
+        $this->parameters['relationships']['database'] = 'mysqldb:mysql';
+        $this->parameters['crons']['drupal'] = [
+            'spec' => '*/20 * * * *',
+            'cmd' => 'cd ' . $this->appRoot . '; drush core-cron'
+        ];
     }
 }

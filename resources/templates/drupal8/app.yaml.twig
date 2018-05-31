@@ -93,4 +93,6 @@ crons:
         spec: '*/20 * * * *'
         cmd: 'cd {{ webroot }} ; drush core-cron'
 
+{% include 'includes/crons.yaml.twig' %}
+
 {% include 'includes/relationships.yaml.twig' %}
