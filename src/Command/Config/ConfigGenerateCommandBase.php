@@ -152,16 +152,18 @@ abstract class ConfigGenerateCommandBase extends CommandBase implements ConfigGe
             : $repoRoot;
         unset($this->parameters['application_root'], $this->parameters['application_subdir']);
 
-        $this->parameters += ['services' => [], 'relationships' => []];
+        $this->parameters += ['services' => [], 'relationships' => [], 'crons' => []];
 
         $this->alterParameters();
 
         // These parameter values lose their top level key when used in a template.
         $nested_keys = ['relationships', 'crons'];
         foreach ($nested_keys as $key) {
-            $store = $this->parameters[$key];
-            unset($this->parameters[$key]);
-            $this->parameters[$key][$key] = $store;
+            if (array_key_exists($key, $this->parameters) && !empty($this->parameters[$key])) {
+                $store = $this->parameters[$key];
+                unset($this->parameters[$key]);
+                $this->parameters[$key][$key] = $store;
+            }
         }
 
         $noOverwrite = $input->getOption('no-overwrite');
