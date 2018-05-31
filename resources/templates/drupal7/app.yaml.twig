@@ -1,25 +1,19 @@
-# This file describes an application. You can have multiple applications
-# in the same project.
-#
-# See https://docs.platform.sh/user_guide/reference/platform-app-yaml.html
+{% extends 'app.yaml.twig' %}
 
-# The name of this app. Must be unique within a project.
-name: '{{ application_name }}'
-
-# Configuration of the build of this application.
-type: '{{ runtime }}:{{ runtime_version }}'
-
+{% block build %}
 # Configuration of the build of this application.
 build:
     flavor: drupal
+{% endblock %}
 
-{% include 'includes/relationships.yaml.twig' %}
-
+{% block dependencies %}
 # The build-time dependencies of the app.
 dependencies:
     php:
         "drush/drush": "^8.0"
+{% endblock %}
 
+{% block web %}
 # The configuration of app when it is exposed to the web.
 web:
     # Specific parameters for different URL prefixes.
@@ -71,22 +65,22 @@ web:
                 # Provide a longer TTL (2 weeks) for aggregated CSS and JS files.
                 '^/sites/default/files/(css|js)':
                     expires: 2w
+{% endblock %}
 
-# The size of the persistent disk of the application (in MB).
-disk: {{ application_disk }}
-
+{% block mounts %}
 # The mounts that will be performed when the package is deployed.
 mounts:
     '/{{ webroot }}/sites/default/files': 'shared:files/files'
     '/tmp': 'shared:files/tmp'
     '/private': 'shared:files/private'
     '/drush-backups': 'shared:files/drush-backups'
+{% endblock %}
 
+{% block hooks %}
 # The hooks executed at various points in the lifecycle of the application.
 hooks:
     # We run deploy hook after your application has been deployed and started.
     deploy: |
         cd {{ webroot }}
         drush -y updatedb
-
-{% include 'includes/crons.yaml.twig' %}
+{% endblock %}

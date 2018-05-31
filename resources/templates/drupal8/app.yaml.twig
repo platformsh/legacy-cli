@@ -1,20 +1,13 @@
-# This file describes an application. You can have multiple applications
-# in the same project.
-#
-# See https://docs.platform.sh/user_guide/reference/platform-app-yaml.html
+{% extends 'app.yaml.twig' %}
 
-# The name of this app. Must be unique within a project.
-name: '{{ application_name }}'
+{% block dependencies %}
+# The build-time dependencies of the app.
+dependencies:
+    php:
+        "drush/drush": "^8.0"
+{% endblock %}
 
-# Configuration of the build of this application.
-type: '{{ runtime }}:{{ runtime_version }}'
-
-{% include 'includes/relationships.yaml.twig' %}
-
-# Configuration of the build of this application.
-build:
-    flavor: composer
-
+{% block web %}
 # The configuration of app when it is exposed to the web.
 web:
     # Specific parameters for different URL prefixes.
@@ -66,10 +59,9 @@ web:
                 # Provide a longer TTL (2 weeks) for aggregated CSS and JS files.
                 '^/sites/default/files/(css|js)':
                     expires: 2w
+{% endblock %}
 
-# The size of the persistent disk of the application (in MB).
-disk: {{ application_disk|yaml }}
-
+{% block mounts %}
 # The 'mounts' describe writable, persistent filesystem mounts in the application. The keys are
 # directory paths, relative to the application root. The values are strings such as
 # 'shared:files/NAME', where NAME is just a unique name for the mount.
@@ -78,7 +70,9 @@ mounts:
     '/tmp': 'shared:files/tmp'
     '/private': 'shared:files/private'
     '/drush-backups': 'shared:files/drush-backups'
+{% endblock %}
 
+{% block hooks %}
 # The hooks executed at various points in the lifecycle of the application.
 hooks:
     # The deploy hook runs after your application has been deployed and started.
@@ -88,8 +82,4 @@ hooks:
         drush -y updatedb
         drush -y config-import
         drush -y entup
-
-{% include 'includes/crons.yaml.twig' %}
-
-
-
+{% endblock %}
