@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Drush;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 
 class Drupal extends BuildFlavorBase
@@ -40,6 +39,7 @@ class Drupal extends BuildFlavorBase
         $finder->in($directory)
                ->files()
                ->depth($depth)
+               ->exclude(['node_modules', 'vendor'])
                ->name('project.make*')
                ->name('drupal-org.make*');
         foreach ($finder as $file) {
@@ -95,8 +95,8 @@ class Drupal extends BuildFlavorBase
 
             if (!$this->copy) {
                 $this->copyGitIgnore('drupal/gitignore-vanilla');
-                $this->checkIgnored('sites/default/settings.local.php');
-                $this->checkIgnored('sites/default/files');
+                $this->checkIgnored($this->getWebRoot() . '/sites/default/settings.local.php');
+                $this->checkIgnored($this->getWebRoot() . '/sites/default/files');
             }
         }
 
@@ -111,10 +111,13 @@ class Drupal extends BuildFlavorBase
      */
     protected function checkIgnored($filename, $suggestion = null)
     {
+        if (!file_exists($filename)) {
+            return;
+        }
         if (!$repositoryDir = $this->gitHelper->getRoot($this->appRoot)) {
             return;
         }
-        $relative = $this->fsHelper->makePathRelative($this->appRoot . '/' . $filename, $repositoryDir);
+        $relative = $this->fsHelper->makePathRelative($filename, $repositoryDir);
         if (!$this->gitHelper->checkIgnore($relative, $repositoryDir)) {
             $suggestion = $suggestion ?: $relative;
             $this->stdErr->writeln("<comment>You should exclude this file using .gitignore:</comment> $suggestion");

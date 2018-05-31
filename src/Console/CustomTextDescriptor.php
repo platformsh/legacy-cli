@@ -13,6 +13,8 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;
+use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Terminal;
 
 class CustomTextDescriptor extends TextDescriptor
@@ -103,7 +105,7 @@ class CustomTextDescriptor extends TextDescriptor
 
             if ($describedNamespace) {
                 $this->writeText(
-                    sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $describedNamespace),
+                    sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $application->findNamespace($describedNamespace)),
                     $options
                 );
             } else {
@@ -117,7 +119,7 @@ class CustomTextDescriptor extends TextDescriptor
                 $commands = [];
                 foreach ($namespace['commands'] as $name) {
                     $command = $description->getCommand($name);
-                    if ($command instanceof CanHideInListInterface && $command->isHiddenInList()) {
+                    if (empty($options['all']) && $command instanceof CanHideInListInterface && $command->isHiddenInList()) {
                         continue;
                     }
                     $commands[$name] = $command;
@@ -148,17 +150,12 @@ class CustomTextDescriptor extends TextDescriptor
                         $aliases = $command->getVisibleAliases();
                     }
 
-                    // Colour local commands differently from remote ones.
-                    $commandDescription = $command->getDescription();
-                    if ($command instanceof CommandBase && !$command->isLocal()) {
-                        $commandDescription = "<fg=cyan>$commandDescription</fg=cyan>";
-                    }
                     $this->writeText("\n");
                     $this->writeText(
                         sprintf(
                             "  %-${width}s %s",
                             "<info>$name</info>" . $this->formatAliases($aliases),
-                            $commandDescription
+                            $command->getDescription()
                         ),
                         $options
                     );
@@ -238,5 +235,74 @@ class CustomTextDescriptor extends TextDescriptor
         $width += strlen('<info></info>');
 
         return $width;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function describeInputOption(InputOption $option, array $options = array())
+    {
+        if ($option->acceptValue() && null !== $option->getDefault() && (!is_array($option->getDefault()) || count($option->getDefault()))) {
+            $default = sprintf('<comment> [default: %s]</comment>', $this->formatDefaultValue($option->getDefault()));
+        } else {
+            $default = '';
+        }
+
+        $value = '';
+        if ($option->acceptValue()) {
+            $value = '='.strtoupper($option->getName());
+
+            if ($option->isValueOptional()) {
+                $value = '['.$value.']';
+            }
+        }
+
+        $totalWidth = isset($options['total_width']) ? $options['total_width'] : $this->calculateTotalWidthForOptions(array($option));
+        $synopsis = sprintf('%s%s',
+            $option->getShortcut() ? sprintf('-%s, ', $option->getShortcut()) : '    ',
+            sprintf('--%s%s', $option->getName(), $value)
+        );
+
+        $spacingWidth = $totalWidth - Helper::strlen($synopsis);
+
+        // Ensure the description is indented and word-wrapped to fit the
+        // terminal width.
+        $descriptionWidth = (new Terminal())->getWidth() - $totalWidth - 4;
+        $description = $option->getDescription();
+        $description .= $default;
+        if ($option->isArray()) {
+            $description .= '<comment> (multiple values allowed)</comment>';
+        }
+        $description = preg_replace('/\s*[\r\n]\s*/', "\n".str_repeat(' ', $totalWidth + 4), wordwrap($description, $descriptionWidth));
+
+        $this->writeText(sprintf('  <info>%s</info>  %s%s',
+            $synopsis,
+            str_repeat(' ', $spacingWidth),
+            $description
+        ), $options);
+    }
+
+    /**
+     * @param InputOption[] $options
+     *
+     * @return int
+     */
+    private function calculateTotalWidthForOptions(array $options)
+    {
+        $totalWidth = 0;
+        foreach ($options as $option) {
+            // "-" + shortcut + ", --" + name
+            $nameLength = 1 + max(Helper::strlen($option->getShortcut()), 1) + 4 + Helper::strlen($option->getName());
+
+            if ($option->acceptValue()) {
+                $valueLength = 1 + Helper::strlen($option->getName()); // = + value
+                $valueLength += $option->isValueOptional() ? 2 : 0; // [ + ]
+
+                $nameLength += $valueLength;
+            }
+            $totalWidth = max($totalWidth, $nameLength);
+        }
+
+        return $totalWidth;
     }
 }

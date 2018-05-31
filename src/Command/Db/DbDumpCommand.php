@@ -2,8 +2,10 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -35,7 +37,7 @@ class DbDumpCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $projectRoot = $this->getProjectRoot();
         $environment = $this->getSelectedEnvironment();
         $appName = $this->selectApp($input);
         $sshUrl = $environment->getSshUrl($appName);
@@ -50,27 +52,6 @@ class DbDumpCommand extends CommandBase
 
         $dumpFile = null;
         if (!$input->getOption('stdout')) {
-            // Determine a default dump filename.
-            $defaultFilename = $project->id . '--' . $environment->id;
-            if ($appName !== null) {
-                $defaultFilename .= '--' . $appName;
-            }
-            if ($includedTables) {
-                $defaultFilename .= '--' . implode(',', $includedTables);
-            }
-            if ($excludedTables) {
-                $defaultFilename .= '--excl-' . implode(',', $excludedTables);
-            }
-            if ($schemaOnly) {
-                $defaultFilename .= '--schema';
-            }
-            $defaultFilename .= '--dump.sql';
-            if ($gzip) {
-                $defaultFilename .= '.gz';
-            }
-            $projectRoot = $this->getProjectRoot();
-            $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
-
             // Process the user --file option.
             if ($fileOption = $input->getOption('file')) {
                 if (is_dir($fileOption)) {
@@ -80,6 +61,21 @@ class DbDumpCommand extends CommandBase
                     return 1;
                 }
                 $dumpFile = rtrim($fileOption, '/');
+                if (!$gzip && preg_match('/\.gz$/i', $dumpFile)) {
+                    $this->stdErr->writeln('Warning: the filename ends with ".gz", but the dump will be plain-text.');
+                    $this->stdErr->writeln('Use <comment>--gzip</comment> to create a compressed dump.');
+                    $this->stdErr->writeln('');
+                }
+            } else {
+                $defaultFilename = $this->getDefaultFilename(
+                    $environment,
+                    $appName,
+                    $includedTables,
+                    $excludedTables,
+                    $schemaOnly,
+                    $gzip
+                );
+                $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
             }
 
             // Process the user --directory option.
@@ -134,29 +130,32 @@ class DbDumpCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = 'pg_dump --clean --blobs ' . $relationships->getSqlCommandArgs('pg_dump', $database);
+                $dumpCommand = 'pg_dump --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --schema-only';
                 }
                 foreach ($includedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg('--table=' . $table);
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--table=' . $table);
                 }
                 foreach ($excludedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg('--exclude-table=' . $table);
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--exclude-table=' . $table);
                 }
                 break;
 
             default:
-                $dumpCommand = 'mysqldump --no-autocommit --single-transaction --opt --quote-names '
-                    . $relationships->getSqlCommandArgs('mysqldump', $database);
+                $dumpCommand = 'mysqldump --single-transaction '
+                    . $relationships->getDbCommandArgs('mysqldump', $database);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
                 }
                 foreach ($excludedTables as $table) {
-                    $dumpCommand .= ' ' . escapeshellarg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
                 }
                 if ($includedTables) {
-                    $dumpCommand .= ' --tables ' . implode(' ', array_map('escapeshellarg', $includedTables));
+                    $dumpCommand .= ' --tables '
+                        . implode(' ', array_map(function ($table) {
+                            return OsUtil::escapePosixShellArg($table);
+                        }, $includedTables));
                 }
                 break;
         }
@@ -166,9 +165,15 @@ class DbDumpCommand extends CommandBase
         $sshCommand = $ssh->getSshCommand();
 
         if ($gzip) {
-            $dumpCommand .= ' | gzip --stdout';
+            // If dump compression is enabled, pipe the dump command into gzip,
+            // but not before switching on "pipefail" to ensure a non-zero exit
+            // code is returned if any part of the pipe fails.
+            $dumpCommand = 'set -o pipefail;'
+                . $dumpCommand
+                . ' | gzip --stdout';
         } else {
-            // Compress data transparently as it's sent over the SSH connection.
+            // If dump compression is not enabled, data can still be compressed
+            // transparently as it's streamed over the SSH connection.
             $sshCommand .= ' -C';
         }
 
@@ -198,7 +203,7 @@ class DbDumpCommand extends CommandBase
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
-        if ($dumpFile && file_exists($dumpFile) && isset($projectRoot) && strpos($dumpFile, $projectRoot) === 0) {
+        if ($dumpFile && file_exists($dumpFile) && $projectRoot && strpos($dumpFile, $projectRoot) === 0) {
             /** @var \Platformsh\Cli\Service\Git $git */
             $git = $this->getService('git');
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
@@ -212,5 +217,46 @@ class DbDumpCommand extends CommandBase
         }
 
         return $exitCode;
+    }
+
+    /**
+     * Get the default dump filename.
+     *
+     * @param Environment $environment
+     * @param string|null $appName
+     * @param array       $includedTables
+     * @param array       $excludedTables
+     * @param bool        $schemaOnly
+     * @param bool        $gzip
+     *
+     * @return string
+     */
+    private function getDefaultFilename(
+        Environment $environment,
+        $appName = null,
+        array $includedTables = [],
+        array $excludedTables = [],
+        $schemaOnly = false,
+        $gzip = false)
+    {
+        $defaultFilename = $environment->project . '--' . $environment->machine_name;
+        if ($appName !== null) {
+            $defaultFilename .= '--' . $appName;
+        }
+        if ($includedTables) {
+            $defaultFilename .= '--' . implode(',', $includedTables);
+        }
+        if ($excludedTables) {
+            $defaultFilename .= '--excl-' . implode(',', $excludedTables);
+        }
+        if ($schemaOnly) {
+            $defaultFilename .= '--schema';
+        }
+        $defaultFilename .= '--dump.sql';
+        if ($gzip) {
+            $defaultFilename .= '.gz';
+        }
+
+        return $defaultFilename;
     }
 }

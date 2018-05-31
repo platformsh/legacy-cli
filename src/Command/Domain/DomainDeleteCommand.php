@@ -17,7 +17,7 @@ class DomainDeleteCommand extends CommandBase
             ->setName('domain:delete')
             ->setDescription('Delete a domain from the project')
             ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample('Delete the domain example.com', 'example.com');
     }
 
@@ -48,7 +48,7 @@ class DomainDeleteCommand extends CommandBase
 
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);

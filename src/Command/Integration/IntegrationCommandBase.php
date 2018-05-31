@@ -1,10 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
+use Platformsh\ConsoleForm\Field\EmailAddressField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
@@ -32,33 +34,52 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     private function getFields()
     {
-        $types = [
-            'github',
-            'hipchat',
-            'webhook',
-        ];
-
         return [
-            'type' => new OptionsField('Type', [
+            'type' => new OptionsField('Integration type', [
                 'optionName' => 'type',
-                'description' => 'The integration type (\'' . implode('\', \'', $types) . '\')',
-                'options' => $types,
+                'description' => 'The integration type',
+                'questionLine' => '',
+                'options' => [
+                    'github',
+                    'gitlab',
+                    'hipchat',
+                    'webhook',
+                    'health.email',
+                    'health.pagerduty',
+                    'health.slack',
+                ],
             ]),
             'token' => new Field('Token', [
                 'conditions' => ['type' => [
                     'github',
+                    'gitlab',
                     'hipchat',
+                    'health.slack',
                 ]],
                 'description' => 'An OAuth token for the integration',
+            ]),
+            'base_url' => new UrlField('Base URL', [
+                'conditions' => ['type' => [
+                    'gitlab',
+                ]],
+                'description' => 'The base URL of the GitLab installation',
+            ]),
+            'project' => new Field('Project', [
+                'optionName' => 'gitlab-project',
+                'conditions' => ['type' => [
+                    'gitlab',
+                ]],
+                'description' => 'The GitLab project (e.g. \'namespace/repo\')',
                 'validator' => function ($string) {
-                    return base64_decode($string, true) !== false;
+                    return strpos($string, '/', 1) !== false;
                 },
             ]),
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
                     'github',
                 ]],
-                'description' => 'GitHub: the repository to track (the URL, e.g. \'https://github.com/user/repo\')',
+                'description' => 'GitHub: the repository to track (e.g. \'user/repo\' or \'https://github.com/user/repo\')',
+                'questionLine' => 'The GitHub repository (e.g. \'user/repo\' or \'https://github.com/user/repo\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
@@ -70,17 +91,59 @@ abstract class IntegrationCommandBase extends CommandBase
                     return $string;
                 },
             ]),
+            'build_merge_requests' => new BooleanField('Build merge requests', [
+                'conditions' => ['type' => [
+                    'gitlab',
+                ]],
+                'description' => 'GitLab: build merge requests as environments',
+                'questionLine' => 'Build every merge request as an environment',
+            ]),
             'build_pull_requests' => new BooleanField('Build pull requests', [
                 'conditions' => ['type' => [
                     'github',
                 ]],
                 'description' => 'GitHub: build pull requests as environments',
+                'questionLine' => 'Build every pull request as an environment',
+            ]),
+            'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
+              'conditions' => [
+                'type' => [
+                  'github',
+                ],
+                'build_pull_requests' => true,
+              ],
+              'default' => false,
+              'description' => 'GitHub: build pull requests based on their post-merge state',
+              'questionLine' => 'Build pull requests based on their post-merge state',
+            ]),
+            'merge_requests_clone_parent_data' => new BooleanField('Clone data for merge requests', [
+                'optionName' => 'merge-requests-clone-parent-data',
+                'conditions' => [
+                    'type' => [
+                        'gitlab',
+                    ],
+                    'build_merge_requests' => true,
+                ],
+                'description' => 'GitLab: clone data for merge requests',
+                'questionLine' => "Clone the parent environment's data for merge requests",
+            ]),
+            'pull_requests_clone_parent_data' => new BooleanField('Clone data for pull requests', [
+                'optionName' => 'pull-requests-clone-parent-data',
+                'conditions' => [
+                    'type' => [
+                        'github',
+                    ],
+                    'build_pull_requests' => true,
+                ],
+                'description' => 'GitHub: clone data for pull requests',
+                'questionLine' => "Clone the parent environment's data for pull requests",
             ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'github',
+                    'gitlab',
                 ]],
-                'description' => 'GitHub: sync all branches',
+                'description' => 'Fetch all branches (as inactive environments)',
             ]),
             'room' => new Field('HipChat room ID', [
                 'conditions' => ['type' => [
@@ -88,12 +151,14 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'validator' => 'is_numeric',
                 'optionName' => 'room',
+                'questionLine' => 'What is the HipChat room ID (numeric)?',
             ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
                     'webhook',
                 ]],
                 'description' => 'Generic webhook: a URL to receive JSON data',
+                'questionLine' => 'What is the webhook URL (to which JSON data will be posted)?',
             ]),
             'events' => new ArrayField('Events to report', [
                 'conditions' => ['type' => [
@@ -101,7 +166,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'webhook',
                 ]],
                 'default' => ['*'],
-                'description' => 'Events to report, e.g. environment.push',
+                'description' => 'A list of events to report, e.g. environment.push',
                 'optionName' => 'events',
             ]),
             'states' => new ArrayField('States to report', [
@@ -110,17 +175,205 @@ abstract class IntegrationCommandBase extends CommandBase
                     'webhook',
                 ]],
                 'default' => ['complete'],
-                'description' => 'States to report, e.g. pending, in_progress, complete',
+                'description' => 'A list of states to report, e.g. pending, in_progress, complete',
                 'optionName' => 'states',
             ]),
-            'environments' => new ArrayField('Environments', [
+            'environments' => new ArrayField('Included environments', [
+                'optionName' => 'environments',
                 'conditions' => ['type' => [
                     'webhook',
+                    'hipchat',
                 ]],
                 'default' => ['*'],
-                'description' => 'Generic webhook: the environments relevant to the hook',
+                'description' => 'The environment IDs to include',
+            ]),
+            'excluded_environments' => new ArrayField('Excluded environments', [
+                'conditions' => ['type' => [
+                    'webhook',
+                    'hipchat',
+                ]],
+                'default' => [],
+                'description' => 'The environment IDs to exclude',
+                'required' => false,
+            ]),
+            'from_address' => new EmailAddressField('From address', [
+                'conditions' => ['type' => [
+                    'health.email',
+                ]],
+                'description' => 'The From address for alert emails',
+                'default' => $this->config()->getWithDefault('service.default_from_address', null),
+            ]),
+            'recipients' => new ArrayField('Recipients', [
+                'conditions' => ['type' => [
+                    'health.email',
+                ]],
+                'description' => 'The recipient email address(es)',
+                'validator' => function ($emails) {
+                    $invalid = array_filter($emails, function ($email) {
+                        return !filter_var($email, FILTER_VALIDATE_EMAIL);
+                    });
+                    if (count($invalid)) {
+                        return sprintf('Invalid email address(es): %s', implode(', ', $invalid));
+                    }
+
+                    return true;
+                },
+            ]),
+            'channel' => new Field('Channel', [
+                'conditions' => ['type' => [
+                    'health.slack',
+                ]],
+                'description' => 'The Slack channel',
+            ]),
+            'routing_key' => new Field('Routing key', [
+                'conditions' => ['type' => [
+                    'health.pagerduty',
+                ]],
+                'description' => 'The PagerDuty routing key',
             ]),
         ];
+    }
+
+    /**
+     * @param \Platformsh\Client\Model\Integration $integration
+     */
+    protected function ensureHooks(Integration $integration)
+    {
+        if ($integration->type === 'github') {
+            $hooksApiUrl = sprintf('https://api.github.com/repos/%s/hooks', $integration->getProperty('repository'));
+            $requestOptions = [
+                'auth' => false,
+                'headers' => [
+                    'Accept' => 'application/vnd.github.v3+json',
+                    'Authorization' => 'token ' . $integration->getProperty('token'),
+                ],
+            ];
+            $payload = [
+                'name' => 'web',
+                'config' => [
+                    'url' => $integration->getLink('#hook'),
+                    'content_type' => 'json',
+                ],
+                'events' => ['*'],
+                'active' => true,
+            ];
+            $repoName = $integration->getProperty('repository');
+        } elseif ($integration->type === 'gitlab') {
+            $baseUrl = rtrim($integration->getProperty('base_url'), '/');
+            $hooksApiUrl = sprintf('%s/api/v4/projects/%s/hooks', $baseUrl, rawurlencode($integration->getProperty('project')));
+            $requestOptions = [
+                'auth' => false,
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Private-Token' => $integration->getProperty('token'),
+                ],
+            ];
+            $payload = [
+                'url' => $integration->getLink('#hook'),
+                'push_events' => true,
+                'merge_requests_events' => true,
+            ];
+            $repoName = $baseUrl . '/' . $integration->getProperty('project');
+        } else {
+            return;
+        }
+
+        $client = $this->api()->getHttpClient();
+
+        $this->stdErr->writeln(sprintf(
+            'Checking webhook configuration on the repository: <info>%s</info>',
+            $repoName
+        ));
+
+        try {
+            $hooks = $client->get($hooksApiUrl, $requestOptions)->json();
+            $hook = $this->findWebHook($integration, $hooks);
+            if (!$hook) {
+                $this->stdErr->writeln('  Creating new webhook');
+                $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
+                $this->stdErr->writeln('  Webhook created successfully');
+            }
+            elseif ($this->arraysDiffer($hook, $payload)) {
+                // The GitLab API requires PUT for editing project hooks. The
+                // GitHub API requires PATCH.
+                $method = $integration->type === 'gitlab' ? 'put' : 'patch';
+                $hookApiUrl = $hooksApiUrl . '/' . rawurlencode($hook['id']);
+
+                $this->stdErr->writeln('  Updating webhook');
+                $client->send(
+                    $client->createRequest($method, $hookApiUrl, ['json' => $payload] + $requestOptions)
+                );
+                $this->stdErr->writeln('  Webhook updated successfully');
+            }
+            else {
+                $this->stdErr->writeln('  Valid configuration found');
+            }
+        } catch (TransferException $e) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('  <comment>Failed to read or write webhooks:</comment>');
+            $this->stdErr->writeln('  ' . $e->getMessage());
+            $this->stdErr->writeln(sprintf(
+                "\n  Please ensure a webhook exists manually.\n  Hook URL: %s",
+                $integration->getLink('#hook')
+            ));
+        }
+    }
+
+    /**
+     * Checks if $array2 has any values missing or different from $array1.
+     *
+     * Runs recursively for multidimensional arrays.
+     *
+     * @param array $array1
+     * @param array $array2
+     *
+     * @return bool
+     */
+    private function arraysDiffer(array $array1, array $array2)
+    {
+        foreach ($array2 as $property => $value) {
+            if (!array_key_exists($property, $array1)) {
+                return true;
+            }
+            if (is_array($value)) {
+                if (!is_array($array1[$property])) {
+                    return true;
+                }
+                if ($array1[$property] != $value && $this->arraysDiffer($array1[$property], $value)) {
+                    return true;
+                }
+                continue;
+            }
+            if ($array1[$property] != $value) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Find if a valid webhook exists in a service's hooks list.
+     *
+     * @param \Platformsh\Client\Model\Integration $integration
+     * @param array                                $jsonResult
+     *
+     * @return array|false
+     */
+    private function findWebHook(Integration $integration, array $jsonResult)
+    {
+        $type = $integration->type;
+        $hookUrl = $integration->getLink('#hook');
+        foreach ($jsonResult as $hook) {
+            if ($type === 'github' && $hook['config']['url'] === $hookUrl) {
+                return $hook;
+            }
+            if ($type === 'gitlab' && $hook['url'] === $hookUrl) {
+                return $hook;
+            }
+        }
+
+        return false;
     }
 
     /**

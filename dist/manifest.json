@@ -1,0 +1,113 @@
+[
+    {
+        "name": "platform.phar",
+        "sha1": "9bac0042061ac37dba58fdf727ba9e63026bc134",
+        "sha256": "21cebaa8c35b6212771a2b2eb4ded62d5befa0d2af8aac9fce5d2e72ccebe03e",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.29.2/platform.phar",
+        "version": "3.29.2",
+        "php": {
+            "min": "5.5.9"
+        },
+        "updating": [
+            {
+                "notes": "Major changes since version 2.x.x:\n\n* In version 2.x.x, the CLI had a project file structure including a 'repository' directory (and a 'builds' directory, 'shared', etc.). In version 3.x.x, this is no longer the case: the CLI operates directly inside your project's Git repository. The CLI will work with the old file structure, and there is a migration tool ('platform legacy-migrate') for updating to the new structure.\n\n* The web root has changed location from 'www' to '_www', to avoid conflicts with actual project files in the repo.\n\n* The CLI now requires PHP version 5.5.9 (minimum) due to updated dependencies.\n\nVersion 3.x.x also comes with many other smaller improvements and bug fixes.",
+                "hide from": "3"
+            },
+            {
+                "notes": "The web root has moved again, from '.www' to '_www'. If you have already been using version 3, you may wish to update your local web server configuration.",
+                "show from": "3",
+                "hide from": "3.0.2"
+            },
+            {
+                "notes": "* Adds 'db:size' command for a rough estimate of DB disk usage\n* Fixes database commands where the relationship name is not 'database'\n* Fixes 'sql' command on PostgreSQL databases\n\nSee: https://github.com/platformsh/platformsh-cli/releases/v3.8.0",
+                "show from": "3.7",
+                "hide from": "3.8"
+            },
+            {
+                "notes": "* Adds `environment:push` (`push`) command\n* Adds `--identity-file` option to commands using SSH\n* Adds `--parent` option to `environment:activate` command",
+                "show from": "3.9",
+                "hide from": "3.10"
+            },
+            {
+                "notes": "This release adds new options to the db:dump command:\n  --gzip (-z) to compress the output\n  --table to specify the table(s) to include\n  --exclude-table to specify the table(s) to exclude\n  --schema-only to include only schemas, not data\n\nAnd other minor bug fixes. See:\nhttps://github.com/platformsh/platformsh-cli/releases/v3.11.0",
+                "show from": "3.10",
+                "hide from": "3.11"
+            },
+            {
+                "notes": "* Add `project:set-remote` command\n* Clarify self-update messages\n* Some minor bug fixes in the `branch`, `checkout`, and `integration:get` commands",
+                "show from": "3.11",
+                "hide from": "3.12"
+            },
+            {
+                "notes": "* Improve `get` command when the user does not have access to `master` branch\n* Allow `web` command to be used with a non-existent environment ID\n* Allow `updates.check` to be overridden by an env var, e.g. `PLATFORMSH_CLI_UPDATES_CHECK=0`\n* More specific suggested `.gitignore` file for Drupal vanilla projects",
+                "show from": "3.12",
+                "hide from": "3.12.1"
+            },
+            {
+                "notes": "\n* The `build` command now installs build-time dependencies by default (use\n  `--no-deps` for the old behavior).\n* This release also adds commands to run a local web server (the PHP built-in\n  server). But these commands are at a \"beta\" stability, and they can only be\n  enabled via a feature flag, for example:\n\n  # ---- ~/.platformsh/config.yaml ----\n  experimental:\n      # Enable \"platform create\" command.\n      enable_create: true\n      # Enable \"platform server:run\" and related commands.\n      enable_local_server: true\n",
+                "show from": "3.12.1",
+                "hide from": "3.13.0"
+            },
+            {
+                "notes": "* Added `route:get` command to view a resolved route to an application\n* Renamed `environment:routes` command to `route:list` (still under the alias `routes`)\n* Improved caching for relationships, routes, and app config\n* Fixed integration option names",
+                "show from": "3.13.0",
+                "hide from": "3.14.0"
+            },
+            {
+                "notes": "This release adds `certificate` commands, to list, add, and delete SSL certificates from a project, including new automatically-provisioned Let's Encrypt certificates.\n\nOther changes since v3.14.5:\n\n* Fix an issue using `ssh` command on Windows\n* Make detection of the system timezone fallback to the PHP default\n* Use pseudo-terminal for SSH where possible (enables colors for some CLI programs)\n* Minor improvements to `activity:list`",
+                "show from": "3.14.0",
+                "hide from": "3.15.0"
+            },
+            {
+                "notes": "* Added a `--directory` option to `db:dump`\n* Added ability to load more than 10 activities in `activity:list`\n* Added `auth:token` and `project:curl` commands (intended for support and debugging)\n* Updated `self::install` so it doesn't write Bashisms to `.profile`\n* Updated activity descriptions\n* Switched to GitBook native search (rather than Google) in `docs` command",
+                "show from": "3.15.0",
+                "hide from": "3.16.0"
+            },
+            {
+                "notes": "* Added new `mount:upload` and `mount:download` commands, which help\n  transferring files to and from writable file mounts, and a `mount:list`\n  command which shows the available mounts. Thanks to @markushausammann for the\n  PR.\n* Users may now log in with their username instead of their email address.\n* Fixed a bug introduced in v3.20.5, which unintentionally hid output from\n  external commands.",
+                "show from": "3.20.0",
+                "hide from": "3.21.0"
+            },
+            {
+                "notes": "* Added automatic generation of YAML-format Drush site aliases for Drupal projects (in addition to the current PHP-format site aliases). Use `platform drush-aliases -r` to recreate aliases.\n* Moved site aliases from `~/.drush` to `~/.drush/site-aliases`.\n* Fixed the table of environments to stop wrapping environment IDs (it was breaking color formatting).\n* Changed wording of 'rebuild' warning, to 'redeploy'.",
+                "show from": "3.21.0",
+                "hide from": "3.22.0"
+            },
+            {
+                "notes": "- A public website URL can now be used in the --project (-p) option\n- Added `--exclude` and `--include` options to `mount` commands\n- Added `--excluded-environments` option for webhook integrations*\n- Added Gitlab integration support*\n\n(* the last two will apply to an upcoming Platform.sh version, 2.7)",
+                "show from": "3.22.0",
+                "hide from": "3.23.0"
+            },
+            {
+                "notes": "* Add repo:cat and repo:ls commands\n* Allow default target/source in mount:upload and mount:download when --yes is used\n* Add -W alias to --no-wait option in push command\n* (from Symfony Console 3.4) Allow case-insensitive command shortcuts\n* (from Symfony Console 3.4) Fix combining one-letter options\n* Write curl debug output to STDERR, not STDOUT\n* Fix some Drush 9.0.0-rc1 compatibility issues",
+                "show from": "3.23.0",
+                "hide from": "3.24.0"
+            },
+            {
+                "notes": "* Extends interactive question text in `integration:add` command, to clarify the meaning of options, their defaults, and their syntax\n* Adds support for the \"Enabled\" (`is_enabled`) flag on environment variables.\n* Adds `--no-expired` and `--only-expired` options to `certificate:list`\n* Improves the \"project not found\" message, to suggest other project IDs\n* Implements omitting non-required empty fields when adding an integration (allows earlier support for new integration options without breaking older projects)\n* Adds the SSH_AGENT_PID to auto inherited environment variables (fixes using an SSH agent to manage keys when used with the CLI's Git commands)\n* Adds an experimental `redis` command to connect to a Redis container (hidden from the command list for now)\n* Adds experimental OS X Keychain support (enabled via `experimental.use_keychain`)",
+                "show from": "3.24.0",
+                "hide from": "3.25.0"
+            },
+            {
+                "notes": "New features:\n* Support remote projects/environments in app:list command.\n* Add worker:list (workers) command.\n* Use \"deployments\" HTTP API (instead of SSH) in app:config command.\n* Auto-ensure webhooks on GitHub and GitLab integrations, where possible.\n\nOther changes:\n* Skip updates check if the Phar file is not writable.\n* Remove different coloration for local commands in `list` (there are so few listed).\n* Recommend --no-wait if snapshot:create is run in a non-TTY.\n* Suggest project:set-remote in RootNotFoundException.\n* Fix environment:drush (drush) command to use configured document root, or PLATFORM_DOCUMENT_ROOT where available.\n* Be stricter about when to use $_ENV, when getting parent variables for PHP <7.1.",
+                "show from": "3.25.0",
+                "hide from": "3.26.0"
+            },
+            {
+                "notes": "* Use browser login by default (the old login method is available as `auth:password-login`).\n* Set `--build-pull-requests-post-merge` to false by default (GitHub integrations).\n* Respect `--no-wait` in `environment:init`, and clear the environment cache afterwards.\n* In the `project:delete` command, leave access control to the API.\n* Support disabling or enabling colorized output via the CLICOLOR_FORCE environment variable.",
+                "show from": "3.26.0",
+                "hide from": "3.27.0"
+            },
+            {
+                "notes": "* Improved `activity:log` output to show more activity information.\n* Added `activity:get` command, hidden for now.\n* Added `--date-fmt` option to `activity:list` and `snapshot:list`.\n* Added detection for the date.timezone ini setting, and the TZ environment variable.\n* Fixed inverted requirement of -e/-a options in activity:log (`-a` should make `-e` not required).\n* Fixed user-defined aliases being prefixed with \"@\" (thanks to @GROwen, #677).\n* Avoid fatal error if invalid YAML config is encountered during updateDrushAliases().\n* Fixed SSH commands for very old OpenSSH versions <5.9 (using -t instead of RequestTTY).\n* Updated dependencies (mainly Symfony 3.4.2 -> 3.4.4).",
+                "show from": "3.27.0",
+                "hide from": "3.28.0"
+            },
+            {
+                "notes": "* [user:add] Improve `user:add` command to allow setting roles on all environments (aliased to `user:update`)\n* [user:get] Add `user:get` command (aliased to and deprecating `user:role`)\n* [db:dump] Remove --no-autocommit and simplify mysqldump args (#683)\n* Expand redeploy warning to recommend `vset`\n* [activity:get] Check for empty started_at when calculating duration\n* [redis] Recommend \"redis info\" command",
+                "show from": "3.28.0",
+                "hide from": "3.29.0"
+            }
+        ]
+    }
+]

@@ -18,7 +18,7 @@ class EnvironmentMergeCommand extends CommandBase
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
         $this->setHelp(
             'This command will initiate a Git merge of the specified environment into its parent environment.'
@@ -32,7 +32,7 @@ class EnvironmentMergeCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        if (!$selectedEnvironment->operationAvailable('merge')) {
+        if (!$this->api()->checkEnvironmentOperation('merge', $selectedEnvironment)) {
             $this->stdErr->writeln(sprintf(
                 "Operation not available: The environment <error>%s</error> can't be merged.",
                 $environmentId
@@ -44,7 +44,7 @@ class EnvironmentMergeCommand extends CommandBase
         $parentId = $selectedEnvironment->parent;
 
         $confirmText = sprintf(
-            'Are you sure you want to merge <info>%s</info> with its parent, <info>%s</info>?',
+            'Are you sure you want to merge <info>%s</info> into its parent, <info>%s</info>?',
             $environmentId,
             $parentId
         );
@@ -55,7 +55,7 @@ class EnvironmentMergeCommand extends CommandBase
         }
 
         $this->stdErr->writeln(sprintf(
-            'Merging <info>%s</info> with <info>%s</info>',
+            'Merging <info>%s</info> into <info>%s</info>',
             $environmentId,
             $parentId
         ));
@@ -63,7 +63,7 @@ class EnvironmentMergeCommand extends CommandBase
         $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
 
         $activity = $selectedEnvironment->merge();
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitAndLog(

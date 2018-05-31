@@ -18,7 +18,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 class EventSubscriber implements EventSubscriberInterface
 {
     protected $config;
-    protected $api;
 
     /**
      * @param \Platformsh\Cli\Service\Config $config
@@ -62,29 +61,31 @@ class EventSubscriber implements EventSubscriberInterface
         if (($exception instanceof ClientException || $exception instanceof ServerException)
             && ($response = $exception->getResponse())) {
             $request = $exception->getRequest();
+            $requestConfig = $request->getConfig();
             $response->getBody()->seek(0);
             $json = (array) json_decode($response->getBody()->getContents(), true);
 
             // Create a friendlier message for the OAuth2 "Invalid refresh token"
             // error.
-            $loginCommand = sprintf('%s login', $this->config->get('application.executable'));
             if ($response->getStatusCode() === 400
                 && isset($json['error_description'])
                 && $json['error_description'] === 'Invalid refresh token') {
                 $event->setException(new LoginRequiredException(
-                    "Invalid refresh token. \nPlease log in again by running: $loginCommand",
+                    'Invalid refresh token.',
                     $request,
-                    $response
+                    $response,
+                    $this->config
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 401) {
+            } elseif ($response->getStatusCode() === 401 && $requestConfig['auth'] === 'oauth2') {
                 $event->setException(new LoginRequiredException(
-                    "Unauthorized. \nPlease log in again by running: $loginCommand",
+                    'Unauthorized.',
                     $request,
-                    $response
+                    $response,
+                    $this->config
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 403) {
+            } elseif ($response->getStatusCode() === 403 && $requestConfig['auth'] === 'oauth2') {
                 $event->setException(new PermissionDeniedException(
                     "Permission denied. Check your project or environment permissions.",
                     $request,

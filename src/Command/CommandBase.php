@@ -6,8 +6,9 @@ use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
@@ -243,6 +244,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             return;
         }
 
+        // Check if the file is writable.
+        if (!is_writable($pharFilename)) {
+            return;
+        }
+
         // Check if updates are configured.
         $config = $this->config();
         if (!$config->get('updates.check')) {
@@ -276,7 +282,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
         $cliUpdater = $this->getService('self_updater');
         $cliUpdater->setAllowMajor(true);
-        $cliUpdater->setTimeout(10);
+        $cliUpdater->setTimeout(5);
 
         try {
             $newVersion = $cliUpdater->update(null, $currentVersion);
@@ -325,13 +331,28 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     public function login()
     {
-        if (!$this->output || (isset($this->input) && !$this->input->isInteractive())) {
-            throw new LoginRequiredException();
+        $success = false;
+        if ($this->output && $this->input && $this->input->isInteractive()) {
+            $method = $this->config()->getWithDefault('application.login_method', 'browser');
+            if ($method === 'browser') {
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
+                $urlService = $this->getService('url');
+                if ($urlService->canOpenUrls()
+                    && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
+                    $this->stdErr->writeln('');
+                    $exitCode = $this->runOtherCommand('auth:browser-login');
+                    $this->stdErr->writeln('');
+                    $success = $exitCode === 0;
+                }
+            } elseif ($method === 'password') {
+                $exitCode = $this->runOtherCommand('auth:password-login');
+                $this->stdErr->writeln('');
+                $success = $exitCode === 0;
+            }
         }
-        $exitCode = $this->runOtherCommand('login');
-        $this->stdErr->writeln('');
-        if ($exitCode) {
-            throw new \Exception('Login failed');
+        if (!$success) {
+            throw new LoginRequiredException();
         }
     }
 
@@ -367,17 +388,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
             $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
-            // There is a chance that the project isn't available.
             if (!$project) {
-                if (isset($config['host'])) {
-                    $projectUrl = sprintf('https://%s/projects/%s', $config['host'], $config['id']);
-                    $message = "Project not found: " . $projectUrl
-                        . "\nThe project probably no longer exists.";
-                } else {
-                    $message = "Project not found: " . $config['id']
-                        . "\nEither you do not have access to the project or it no longer exists.";
-                }
-                throw new ProjectNotFoundException($message);
+                throw new ProjectNotFoundException(
+                    "Project not found: " . $config['id']
+                    . "\nEither you do not have access to the project or it no longer exists."
+                );
             }
             $this->debug('Project ' . $config['id'] . ' is mapped to the current directory');
         }
@@ -471,6 +486,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!$projectRoot) {
             return;
         }
+        // Make sure the local:drush-aliases command is enabled.
+        if (!$this->getApplication()->has('local:drush-aliases')) {
+            return;
+        }
         // Double-check that the passed project is the current one.
         $currentProject = $this->getCurrentProject();
         if (!$currentProject || $currentProject->id != $event->getProject()->id) {
@@ -480,10 +499,21 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         if (!Drupal::isDrupal($projectRoot)) {
             return;
         }
-        $this->debug('Updating Drush aliases');
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
-        $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
+        if ($drush->getVersion() === false) {
+            $this->debug('Not updating Drush aliases: the Drush version cannot be determined.');
+            return;
+        }
+        $this->debug('Updating Drush aliases');
+        try {
+            $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
+        } catch (\Exception $e) {
+            $this->stdErr->writeln(sprintf(
+                "<comment>Failed to update Drush aliases:</comment>\n%s\n",
+                preg_replace('/^/m', '  ', trim($e->getMessage()))
+            ));
+        }
     }
 
     /**
@@ -531,13 +561,14 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Warn the user that the remote environment needs rebuilding.
+     * Warn the user that the remote environment needs redeploying.
      */
-    protected function rebuildWarning()
+    protected function redeployWarning()
     {
         $this->stdErr->writeln([
-            '<comment>The remote environment must be rebuilt for the change to take effect.</comment>',
-            "Use 'git push' with new commit(s) to trigger a rebuild."
+            '',
+            '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
+            'To redeploy an environment, run: <info>' . $this->config()->get('application.executable') . ' redeploy</info>',
         ]);
     }
 
@@ -548,7 +579,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function addProjectOption()
     {
-        $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID');
+        $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL');
         $this->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname");
 
         return $this;
@@ -577,16 +608,61 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Add the --no-wait option.
-     *
-     * @param string $description
-     *
-     * @return CommandBase
+     * Add both the --no-wait and --wait options.
      */
-    protected function addNoWaitOption($description = 'Do not wait for the operation to complete')
+    protected function addWaitOptions()
     {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        return $this->addOption('no-wait', null, InputOption::VALUE_NONE, $description);
+        $this->addOption('no-wait', 'W', InputOption::VALUE_NONE, 'Do not wait for the operation to complete');
+        if ($this->detectRunningInHook()) {
+            $this->addOption('wait', null, InputOption::VALUE_NONE, 'Wait for the operation to complete');
+        } else {
+            $this->addOption('wait', null, InputOption::VALUE_NONE, 'Wait for the operation to complete (default)');
+        }
+    }
+
+    /**
+     * Returns whether we should wait for an operation to complete.
+     *
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     *
+     * @return bool
+     */
+    protected function shouldWait(InputInterface $input)
+    {
+        if ($input->hasOption('no-wait') && $input->getOption('no-wait')) {
+            return false;
+        }
+        if ($input->hasOption('wait') && $input->getOption('wait')) {
+            return true;
+        }
+        if ($this->detectRunningInHook()) {
+            $serviceName = $this->config()->get('service.name');
+            $message = "\n<comment>Warning:</comment> $serviceName hook environment detected: assuming <comment>--no-wait</comment> by default."
+                . "\nTo avoid ambiguity, please specify either --no-wait or --wait."
+                . "\n";
+            $this->stdErr->writeln($message);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Detects a Platform.sh non-terminal Dash environment; i.e. a hook.
+     *
+     * @return bool
+     */
+    protected function detectRunningInHook()
+    {
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if (getenv($envPrefix . 'PROJECT')
+            && basename(getenv('SHELL')) === 'dash'
+            && !$this->isTerminal(STDIN)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -600,23 +676,62 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function selectProject($projectId = null, $host = null)
     {
         if (!empty($projectId)) {
-            $project = $this->api()->getProject($projectId, $host);
-            if (!$project) {
-                throw new ConsoleInvalidArgumentException('Specified project not found: ' . $projectId);
+            $this->project = $this->api()->getProject($projectId, $host);
+            if (!$this->project) {
+                throw new ConsoleInvalidArgumentException($this->getProjectNotFoundMessage($projectId));
             }
-        } else {
-            $project = $this->getCurrentProject();
-            if (!$project) {
-                throw new RootNotFoundException(
-                    "Could not determine the current project."
-                    . "\nSpecify it manually using --project or go to a project directory."
-                );
+
+            $this->debug('Selected project: ' . $this->project->id);
+
+            return $this->project;
+        }
+
+        $this->project = $this->getCurrentProject();
+        if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
+            $projects = $this->api()->getProjects();
+            if (count($projects) > 0 && count($projects) < 25) {
+                $this->debug('No project specified: offering a choice...');
+                $projectId = $this->offerProjectChoice($projects);
+
+                return $this->selectProject($projectId);
+            }
+        }
+        if (!$this->project) {
+            throw new RootNotFoundException(
+                "Could not determine the current project."
+                . "\n\nSpecify it using --project, or go to a project directory."
+            );
+        }
+
+        return $this->project;
+    }
+
+    /**
+     * Format an error message about a not-found project.
+     *
+     * @param string $projectId
+     *
+     * @return string
+     */
+    private function getProjectNotFoundMessage($projectId)
+    {
+        $message = 'Specified project not found: ' . $projectId;
+        if ($projects = $this->api()->getProjects()) {
+            $message .= "\n\nYour projects are:";
+            $limit = 8;
+            foreach (array_slice($projects, 0, $limit) as $project) {
+                $message .= "\n    " . $project->id;
+                if ($project->title) {
+                    $message .= ' - ' . $project->title;
+                }
+            }
+            if (count($projects) > $limit) {
+                $message .= "\n    ...";
+                $message .= "\n\n    List projects with: " . $this->config()->get('application.executable') . ' project:list';
             }
         }
 
-        $this->project = $project;
-
-        return $this->project;
+        return $message;
     }
 
     /**
@@ -632,6 +747,16 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function selectEnvironment($environmentId = null, $required = true)
     {
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
+            $environmentId = getenv($envPrefix . 'BRANCH');
+            $this->stdErr->writeln(sprintf(
+                'Environment ID read from environment variable %s: %s',
+                $envPrefix . 'BRANCH',
+                $environmentId
+            ), OutputInterface::VERBOSITY_VERBOSE);
+        }
+
         if (!empty($environmentId)) {
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
@@ -639,12 +764,18 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
 
             $this->environment = $environment;
+            $this->debug('Selected environment: ' . $environment->id);
             return;
         }
 
-        // If no ID is specified, try to auto-detect the current environment.
         if ($environment = $this->getCurrentEnvironment($this->project)) {
             $this->environment = $environment;
+            return;
+        }
+
+        if ($required && isset($this->input) && $this->input->isInteractive()) {
+            $this->debug('No environment specified: offering a choice...');
+            $this->environment = $this->offerEnvironmentChoice($this->api()->getEnvironments($this->project));
             return;
         }
 
@@ -665,109 +796,47 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *
      * @param InputInterface $input
      *   The user input object.
-     * @param callable|null $filter
-     *   A filter callback that takes one argument: a LocalApplication object.
      *
      * @return string|null
      *   The application name, or null if it could not be found.
      */
-    protected function selectApp(InputInterface $input, callable $filter = null)
+    protected function selectApp(InputInterface $input)
     {
         $appName = $input->getOption('app');
         if ($appName) {
             return $appName;
         }
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot || !$this->selectedProjectIsCurrent()) {
-            return null;
+
+        try {
+            $apps = array_map(function (WebApp $app) {
+                return $app->name;
+            }, $this->getSelectedEnvironment()->getCurrentDeployment()->webapps);
+            if (!count($apps)) {
+                return null;
+            }
+        } catch (EnvironmentStateException $e) {
+            if (!$e->getEnvironment()->isActive()) {
+                throw new EnvironmentStateException(
+                    sprintf('Could not find applications: the environment "%s" is not currently active.', $e->getEnvironment()->id),
+                    $e->getEnvironment()
+                );
+            }
+            throw $e;
         }
 
-        $this->debug('Searching for applications in local repository');
-        /** @var LocalApplication[] $apps */
-        $apps = LocalApplication::getApplications($projectRoot, $this->config());
-
-        if ($filter) {
-            $apps = array_filter($apps, $filter);
-        }
-
-        if (count($apps) > 1 && $input->isInteractive()) {
+        $this->debug('Found app(s): ' . implode(',', $apps));
+        if (count($apps) === 1) {
+            $appName = reset($apps);
+        } elseif ($input->isInteractive()) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            $choices = [];
-            foreach ($apps as $app) {
-                $choices[$app->getName()] = $app->getName();
-            }
+            $choices = array_combine($apps, $apps);
             $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:');
         }
 
         $input->setOption('app', $appName);
 
         return $appName;
-    }
-
-    /**
-     * Parse the project ID and possibly other details from a provided URL.
-     *
-     * @param string $url
-     *     A web UI, API, or public URL of the project.
-     *
-     * @throws \InvalidArgumentException
-     *     If the project ID can't be found in the URL.
-     *
-     * @return array
-     *     An array of containing at least a 'projectId'. Keys 'host',
-     *     'environmentId', and 'appId' will be either null or strings.
-     */
-    protected function parseProjectId($url)
-    {
-        $result = [
-            'projectId' => null,
-            'host' => null,
-            'environmentId' => null,
-            'appId' => null,
-        ];
-
-        // If it's a plain alphanumeric string, then it's an ID already.
-        if (!preg_match('/\W/', $url)) {
-            $result['projectId'] = $url;
-
-            return $result;
-        }
-
-        $this->debug('Parsing URL to determine project ID');
-
-        $host = parse_url($url, PHP_URL_HOST);
-        $path = parse_url($url, PHP_URL_PATH);
-        $site_domains_pattern = '(' . implode('|', array_map('preg_quote', $this->config()->get('detection.site_domains'))) . ')';
-        $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
-        if (!strpos($path, '/projects/')
-            && preg_match($site_pattern, $host)) {
-            list($env_project_app,) = explode('.', $host, 2);
-            if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
-                $env_project_app = substr($env_project_app, $tripleDashPos + 3);
-            }
-            if (($doubleDashPos = strrpos($env_project_app, '--')) !== false) {
-                $env_project = substr($env_project_app, 0, $doubleDashPos);
-                $result['appId'] = substr($env_project_app, $doubleDashPos + 2);
-            } else {
-                $env_project = $env_project_app;
-            }
-            if (($dashPos = strrpos($env_project, '-')) !== false) {
-                $result['projectId'] = substr($env_project, $dashPos + 1);
-                $result['environmentId'] = substr($env_project, 0, $dashPos);
-            }
-        } else {
-            $result['host'] = $host;
-            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
-            if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
-                $result['environmentId'] = rawurldecode(basename($matches[1]));
-            }
-        }
-        if (empty($result['projectId']) || preg_match('/\W/', $result['projectId'])) {
-            throw new ConsoleInvalidArgumentException(sprintf('Invalid project URL: %s', $url));
-        }
-
-        return $result;
     }
 
     /**
@@ -779,8 +848,12 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      * @return string
      *   The chosen project ID.
      */
-    protected function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    protected final function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
     {
+        if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
+            throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
+        }
+
         $projectList = [];
         foreach ($projects as $project) {
             $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
@@ -789,7 +862,41 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        return $questionHelper->choose($projectList, $text);
+        $id = $questionHelper->choose($projectList, $text, null, false);
+
+        $this->stdErr->writeln('');
+
+        return $id;
+    }
+
+    /**
+     * Offers a choice of environments.
+     *
+     * @param Environment[] $environments
+     *
+     * @return Environment
+     */
+    protected final function offerEnvironmentChoice(array $environments)
+    {
+        if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
+            throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
+        }
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $default = $this->api()->getDefaultEnvironmentId($environments);
+
+        $id = $questionHelper->askInput('Environment ID', $default, array_keys($environments), function ($value) use ($environments) {
+            if (!isset($environments[$value])) {
+                throw new \RuntimeException('Environment not found: ' . $value);
+            }
+
+            return $value;
+        });
+
+        $this->stdErr->writeln('');
+
+        return $environments[$id];
     }
 
     /**
@@ -802,17 +909,46 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
         $environmentId = null;
 
-        // Parse the project ID.
+        // Identify the project.
         if ($projectId !== null) {
-            $result = $this->parseProjectId($projectId);
+            /** @var \Platformsh\Cli\Service\Identifier $identifier */
+            $identifier = $this->getService('identifier');
+            $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
             $projectHost = $projectHost ?: $result['host'];
             $environmentId = $result['environmentId'];
         }
 
-        // Set the --app option based on the parsed project URL, if relevant.
-        if (isset($result['appId']) && $input->hasOption('app') && !$input->getOption('app')) {
-            $input->setOption('app', $result['appId']);
+        // Load the project ID from an environment variable, if available.
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if ($projectId === null && getenv($envPrefix . 'PROJECT')) {
+            $projectId = getenv($envPrefix . 'PROJECT');
+            $this->stdErr->writeln(sprintf(
+                'Project ID read from environment variable %s: %s',
+                $envPrefix . 'PROJECT',
+                $projectId
+            ), OutputInterface::VERBOSITY_VERBOSE);
+        }
+
+        // Set the --app option.
+        if ($input->hasOption('app') && !$input->getOption('app')) {
+            // An app ID might be provided from the parsed project URL.
+            if (isset($result) && isset($result['appId'])) {
+                $input->setOption('app', $result['appId']);
+                $this->debug(sprintf(
+                    'App name identified as: %s',
+                    $input->getOption('app')
+                ));
+            }
+            // Or from an environment variable.
+            elseif (getenv($envPrefix . 'APPLICATION_NAME')) {
+                $input->setOption('app', getenv($envPrefix . 'APPLICATION_NAME'));
+                $this->stdErr->writeln(sprintf(
+                    'App name read from environment variable %s: %s',
+                    $envPrefix . 'APPLICATION_NAME',
+                    $input->getOption('app')
+                ), OutputInterface::VERBOSITY_VERBOSE);
+            }
         }
 
         // Select the project.
@@ -842,8 +978,6 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
             $this->selectEnvironment($environmentId, !$envNotRequired);
         }
-
-        $this->debug('Validated input');
     }
 
     /**
@@ -1007,8 +1141,41 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function debug($message)
     {
+        $this->labeledMessage('DEBUG', $message, OutputInterface::VERBOSITY_DEBUG);
+    }
+
+    /**
+     * Print a warning about an deprecated option.
+     *
+     * @param string[] $options
+     */
+    protected function warnAboutDeprecatedOptions(array $options)
+    {
+        if (!isset($this->input)) {
+            return;
+        }
+        foreach ($options as $option) {
+            if ($this->input->hasOption($option) && $this->input->getOption($option)) {
+                $this->labeledMessage(
+                    'DEPRECATED',
+                    'The option --' . $option . ' is deprecated and no longer used. It will be removed in a future version.',
+                    OutputInterface::VERBOSITY_VERBOSE
+                );
+            }
+        }
+    }
+
+    /**
+     * Print a message with a label.
+     *
+     * @param string $label
+     * @param string $message
+     * @param int    $options
+     */
+    private function labeledMessage($label, $message, $options = 0)
+    {
         if (isset($this->stdErr)) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
+            $this->stdErr->writeln('<options=reverse>' . strtoupper($label) . '</> ' . $message, $options);
         }
     }
 
@@ -1111,5 +1278,30 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     protected function isTerminal($descriptor)
     {
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isEnabled()
+    {
+        return $this->config()->isCommandEnabled($this->getName());
+    }
+
+    /**
+     * Get help on how to use API tokens.
+     *
+     * @param string $tag
+     *
+     * @return string|null
+     */
+    protected function getApiTokenHelp($tag = 'info')
+    {
+        if ($this->config()->has('service.api_token_help_url')) {
+            return "To authenticate non-interactively using an API token, see:\n    <$tag>"
+                . $this->config()->get('service.api_token_help_url') . "</$tag>";
+        }
+
+        return null;
     }
 }

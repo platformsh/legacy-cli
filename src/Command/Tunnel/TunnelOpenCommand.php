@@ -53,7 +53,7 @@ class TunnelOpenCommand extends TunnelCommandBase
             return 1;
         }
 
-        $logFile = $this->config()->getUserConfigDir() . '/tunnels.log';
+        $logFile = $this->config()->getWritableUserDir() . '/tunnels.log';
         if (!$log = $this->openLog($logFile)) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: %s', $logFile));
             return 1;
@@ -149,10 +149,16 @@ class TunnelOpenCommand extends TunnelCommandBase
 
         if (!$error) {
             $executable = $this->config()->get('application.executable');
+            $variable = $this->config()->get('service.env_prefix') . 'RELATIONSHIPS';
             $this->stdErr->writeln('');
             $this->stdErr->writeln("List tunnels with: <info>$executable tunnels</info>");
             $this->stdErr->writeln("View tunnel details with: <info>$executable tunnel:info</info>");
             $this->stdErr->writeln("Close tunnels with: <info>$executable tunnel:close</info>");
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(
+                "Save encoded tunnel details to the $variable variable using:"
+                . "\n  <info>export $variable=\"$($executable tunnel:info --encode)\"</info>"
+            );
         }
 
         $processManager->killParent($error);

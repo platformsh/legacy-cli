@@ -7,19 +7,19 @@
         "doctrine/cache": "~1.5",
         "guzzlehttp/guzzle": "^5.3",
         "guzzlehttp/ringphp": "^1.1",
-        "platformsh/console-form": "0.0.10",
-        "platformsh/client": "^0.10",
+        "platformsh/console-form": ">=0.0.20 <2.0",
+        "platformsh/client": ">=0.19.0 <2.0",
         "symfony/console": "^3.0 !=3.2.5 !=3.2.6",
         "symfony/yaml": "^3.0 || ^2.6",
         "symfony/finder": "^3.0",
         "symfony/filesystem": "^3.0",
-        "symfony/process": "^3.0 !=3.2.5 !=3.2.6 !=3.2.7",
+        "symfony/process": "^3.0 >=3.4",
         "stecman/symfony-console-completion": "~0.7",
         "symfony/event-dispatcher": "^3.0",
         "padraic/phar-updater": "^1.0",
         "symfony/dependency-injection": "^3.1",
         "symfony/config": "^3.1",
-        "twig/twig": "^1.33"
+        "paragonie/random_compat": "^2.0"
     },
     "suggest": {
         "drush/drush": "For Drupal projects"
@@ -36,9 +36,8 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^4.3 <4.8",
-        "drush/drush": "^8.0",
-        "sensiolabs/security-checker": "^3.0"
+        "phpunit/phpunit": "^4.3 !=4.8.0",
+        "drush/drush": "^8.0"
     },
     "authors": [
         {
@@ -54,6 +53,11 @@
     "extra": {
         "patches": {
             "commerceguys/guzzle-oauth2-plugin": {}
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "5.5.9"
         }
     }
 }

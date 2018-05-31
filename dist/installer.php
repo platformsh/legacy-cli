@@ -143,18 +143,18 @@ check(
 );
 
 // The necessary checks have passed. Start downloading the right version.
-output(PHP_EOL . "Download", 'heading');
+output(PHP_EOL . 'Download', 'heading');
 
-output("  Finding the latest version...");
+output('  Finding the latest version...');
 $manifest = file_get_contents(CLI_UPDATE_MANIFEST_URL);
 if ($manifest === false) {
-    output("  Failed to download manifest file: " . CLI_UPDATE_MANIFEST_URL, 'error');
+    output('  Failed to download manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
     exit(1);
 }
 
 $manifest = json_decode($manifest);
 if ($manifest === null) {
-    output("  Failed to decode manifest file: " . CLI_UPDATE_MANIFEST_URL, 'error');
+    output('  Failed to decode manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
     exit(1);
 }
 
@@ -169,131 +169,62 @@ foreach ($manifest as $item) {
     }
 }
 if (empty($latest)) {
-    output("  No download was found.", 'error');
+    output('  No download was found.', 'error');
     exit(1);
 }
 
 output("  Downloading version {$latest->version}...");
 if (!file_put_contents(CLI_PHAR, file_get_contents($latest->url))) {
-    output("  The download failed.", 'error');
+    output('  The download failed.', 'error');
 }
 
-output("  Checking file integrity...");
-if ($latest->sha1 !== sha1_file(CLI_PHAR)) {
+$pharPath = realpath(CLI_PHAR) ?: CLI_PHAR;
+
+output('  Checking file integrity...');
+if ($latest->sha256 !== hash_file('sha256', $pharPath)) {
     unlink(CLI_PHAR);
-    output("  The download was corrupted.", 'error');
+    output('  The download was corrupted.', 'error');
     exit(1);
 }
 
-output("  Checking that the file is a valid Phar (PHP Archive)...");
+output('  Checking that the file is a valid Phar (PHP Archive)...');
 
 try {
-    new Phar(CLI_PHAR);
+    new Phar($pharPath);
 } catch (Exception $e) {
-    output("  The file is not a valid Phar archive.", 'error');
+    output('  The file is not a valid Phar archive.', 'error');
 
     throw $e;
 }
 
-output("  Making the Phar executable...");
-chmod(CLI_PHAR, 0755);
+output(PHP_EOL . 'Install', 'heading');
 
-// Attempt automatic configuration of the shell (including the PATH).
-$installedInHomeDir = false;
-$configured = false;
-if ($home = getHomeDirectory()) {
-    $configDir = $home . '/' . CLI_CONFIG_DIR;
+output('  Making the Phar executable...');
+if (!chmod($pharPath, 0755)) {
+    output('  Failed to make the Phar executable: ' . $pharPath, 'warning');
+}
 
-    if (!file_exists($configDir . '/bin')) {
-        mkdir($configDir . '/bin', 0700, true);
-    }
-
-    // Extract the shell-config.rc file out of the Phar, so that it can be included
-    // in the user's shell configuration. N.B. reading from a Phar only works
-    // while it still has the '.phar' extension.
-    output('  Extracting the shell configuration file...');
-    $rcDestination = $configDir . '/shell-config.rc';
-    $rcSource = 'phar://' . CLI_PHAR . '/shell-config.rc';
-    if (($rcContents = file_get_contents($rcSource)) === false) {
-        output(sprintf('  Failed to read file: %s', $rcSource), 'warning');
-    }
-    elseif (file_put_contents($rcDestination, $rcContents) === false) {
-        output(sprintf('  Failed to write file: %s', $rcDestination), 'warning');
-    }
-
-    output("  Installing the Phar into your home directory...");
-    if (rename(CLI_PHAR, $configDir . '/bin/' . CLI_EXECUTABLE)) {
-        $installedInHomeDir = true;
-        output(
-            "  The Phar was saved to: " . $configDir . '/bin/' . CLI_EXECUTABLE
-        );
+if ($homeDir = getHomeDirectory()) {
+    output('  Moving the Phar to your home directory...');
+    $binDir = $homeDir . '/' . CLI_CONFIG_DIR . '/bin';
+    if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
+        output('  Failed to create directory: ' . $binDir, 'error');
+    } elseif (!rename($pharPath, $binDir . '/' . CLI_EXECUTABLE)) {
+        output('  Failed to move the Phar to: ' . $binDir . '/' . CLI_EXECUTABLE, 'error');
     } else {
-        output("  Failed to move the Phar.", 'warning');
-    }
-
-    // Configure the user's shell to add to the $PATH and to source the
-    // shell-config.rc file.
-    if ($shellConfigFile = findShellConfigFile($home)) {
-        output("  Configuring the shell...");
-        $configured = true;
-        $currentShellConfig = file_get_contents($shellConfigFile);
-        if ($currentShellConfig === false) {
-            $currentShellConfig = '';
-        }
-
-        // Backwards compatibility for the old 'platform.rc'.
-        // @todo remove any time after about late 2016.
-        $oldRcLocation = str_replace('/shell-config.rc', '/platform.rc', $rcDestination);
-        if (file_exists($oldRcLocation)) {
-            @unlink($oldRcLocation);
-        }
-        if (strpos($currentShellConfig, $oldRcLocation) !== false) {
-            $currentShellConfig = str_replace($oldRcLocation, $rcDestination, $currentShellConfig);
-            if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
-                output("  Failed to configure the shell automatically.", 'warning');
-            }
-        }
-        // End backwards compatibility section.
-
-        if (strpos($currentShellConfig, $configDir . "/bin") === false) {
-            $currentShellConfig .= PHP_EOL . PHP_EOL
-                . "# Automatically added by the " . CLI_NAME . " installer" . PHP_EOL
-                . "export PATH=\"$configDir/bin:\$PATH\"" . PHP_EOL
-                . '. ' . escapeshellarg($rcDestination) . " 2>/dev/null || true" . PHP_EOL;
-            if (!file_put_contents($shellConfigFile, $currentShellConfig)) {
-                $configured = false;
-                output("  Failed to configure the shell automatically.", 'warning');
-            }
-        }
+        $pharPath = $binDir . '/' . CLI_EXECUTABLE;
+        output('  Successfully moved the Phar to: ' . $pharPath);
     }
 }
 
-output(
-    PHP_EOL . "The " . CLI_NAME . " v{$latest->version} was installed successfully!",
-    'success'
-);
-
-// Tell the user what to do if the automatic installation succeeded.
-if ($installedInHomeDir) {
-    if ($configured) {
-        output(PHP_EOL . "To get started, run:", 'info');
-        $toSource = getcwd() === $home ? str_replace(getcwd() . '/', '', $shellConfigFile) : $shellConfigFile;
-        output('  source ' . $toSource);
-        output('  ' . CLI_EXECUTABLE);
-    } else {
-        output(PHP_EOL . "Add this to your shell configuration file:", 'info');
-        output('  export PATH="' . $home . '/' . CLI_CONFIG_DIR . '/bin:$PATH"');
-        output('  . ' . escapeshellarg($rcDestination) . ' 2>/dev/null || true');
-        output(PHP_EOL . "Start a new shell, and then you can run '" . CLI_EXECUTABLE . "'", 'info');
-    }
+output(PHP_EOL . '  Running self:install command...');
+putenv('CLICOLOR_FORCE=' . is_ansi() ? '1' : '0');
+exec('php ' . $pharPath . ' self:install --yes 2>&1', $output, $return_var);
+output(preg_replace('/^/m', '  ', implode(PHP_EOL, $output)));
+if ($return_var === 0) {
+    output(PHP_EOL . '  The installation completed successfully.');
 } else {
-    // Otherwise, the user still has a Phar file.
-    output(PHP_EOL . "Use it as a local file:", 'info');
-    output('  php ' . CLI_PHAR);
-
-    output(PHP_EOL . "Or install it globally on your system:", 'info');
-    output('  mv ' . CLI_PHAR . ' /usr/local/bin/' . CLI_EXECUTABLE);
-    output('  ' . CLI_EXECUTABLE);
+    exit($return_var);
 }
 
 /**
@@ -373,37 +304,6 @@ function is_ansi()
     return (DIRECTORY_SEPARATOR == '\\')
         ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
         : (function_exists('posix_isatty') && posix_isatty(1));
-}
-
-/**
- * Finds a shell configuration file for the user.
- *
- * @param string $home
- *   The user's home directory.
- *
- * @see \Platformsh\Cli\Command\Self\SelfInstallCommand::findShellConfigFile()
- *
- * @return string|false
- *   The absolute path to an existing shell config file, or false on failure.
- */
-function findShellConfigFile($home)
-{
-    $candidates = array(
-        '.bash_profile',
-        '.bashrc',
-    );
-    $shell = str_replace('/bin/', '', getenv('SHELL'));
-    if ($shell === 'zsh') {
-        array_unshift($candidates, '.zshrc');
-        array_unshift($candidates, '.zprofile');
-    }
-    foreach ($candidates as $candidate) {
-        if (file_exists($home . DIRECTORY_SEPARATOR . $candidate)) {
-            return $home . DIRECTORY_SEPARATOR . $candidate;
-        }
-    }
-
-    return false;
 }
 
 /**

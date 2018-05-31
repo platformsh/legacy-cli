@@ -9,24 +9,13 @@ use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectCreateCommand extends CommandBase
 {
     /** @var Form */
     protected $form;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isEnabled()
-    {
-        $config = $this->config();
-
-        return parent::isEnabled()
-            && $config->has('experimental.enable_create')
-            && $config->get('experimental.enable_create');
-    }
 
     /**
      * {@inheritdoc}
@@ -40,6 +29,25 @@ class ProjectCreateCommand extends CommandBase
 
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
+
+        $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
+            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
+
+        $this->setHelp(<<<EOF
+Use this command to create a new project.
+
+An interactive form will be presented with the available options. But if the
+command is run non-interactively (with --yes), the form will not be displayed,
+and the --region option will be required.
+
+A project subscription will be requested, and then checked periodically (every 3
+seconds) until the project has been activated, or until the process times out
+(after 15 minutes by default).
+
+If known, the project ID will be output to STDOUT. All other output will be sent
+to STDERR.
+EOF
+        );
     }
 
     /**
@@ -56,11 +64,16 @@ class ProjectCreateCommand extends CommandBase
             ->getClient()
             ->getSubscriptionEstimate($options['plan'], $options['storage'], $options['environments'], 1);
         $costConfirm = sprintf(
-            'The estimated monthly cost of this project is: <comment>%s</comment>'
-            . "\n\n"
-            . 'Are you sure you want to continue?',
+            'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
         );
+        if ($this->config()->has('service.pricing_url')) {
+            $costConfirm .= sprintf(
+                "\nPricing information: <comment>%s</comment>",
+                $this->config()->get('service.pricing_url')
+            );
+        }
+        $costConfirm .= "\n\nAre you sure you want to continue?";
         if (!$questionHelper->confirm($costConfirm)) {
             return 1;
         }
@@ -90,17 +103,20 @@ class ProjectCreateCommand extends CommandBase
         $bot = new Bot($this->stdErr);
         $timedOut = false;
         $start = $lastCheck = time();
+        $checkInterval = 3;
+        $checkTimeout = $this->getTimeOption($input, 'check-timeout', 1, 3600);
+        $totalTimeout = $this->getTimeOption($input, 'timeout', 0, 3600);
         while ($subscription->isPending() && !$timedOut) {
             $bot->render();
-            // Attempt to check the subscription every 3 seconds. This also
-            // waits 3 seconds before the first check, which allows the server
-            // a little more leeway to act on the initial request.
-            if (time() - $lastCheck >= 3) {
+            // Attempt to check the subscription every $checkInterval seconds.
+            // This also waits $checkInterval seconds before the first check,
+            // which allows the server a little more leeway to act on the
+            // initial request.
+            if (time() - $lastCheck >= $checkInterval) {
+                $lastCheck = time();
                 try {
-                    // Each request can only last up to 3 seconds (otherwise the
-                    // animation would be blocked).
-                    $subscription->refresh(['timeout' => 3, 'exceptions' => false]);
-                    $lastCheck = time();
+                    // The API call will timeout after $checkTimeout seconds.
+                    $subscription->refresh(['timeout' => $checkTimeout, 'exceptions' => false]);
                 } catch (ConnectException $e) {
                     if (strpos($e->getMessage(), 'timed out') !== false) {
                         $this->debug($e->getMessage());
@@ -109,22 +125,31 @@ class ProjectCreateCommand extends CommandBase
                     }
                 }
             }
-            // Time out after 15 minutes.
-            $timedOut = time() - $start > 900;
+            // Check the total timeout.
+            $timedOut = $totalTimeout ? time() - $start > $totalTimeout : false;
         }
         $this->stdErr->writeln('');
 
         if (!$subscription->isActive()) {
             if ($timedOut) {
                 $this->stdErr->writeln('<error>The project failed to activate on time</error>');
-                $this->stdErr->writeln('View your active projects at: ' . $this->config()->get('service.accounts_url'));
             } else {
                 $this->stdErr->writeln('<error>The project failed to activate</error>');
             }
+
+            if (!empty($subscription->project_id)) {
+                $output->writeln($subscription->project_id);
+            }
+
+            $this->stdErr->writeln(sprintf('View your active projects with: <info>%s project:list</info>', $this->config()->get('application.executable')));
+
             return 1;
         }
 
         $this->stdErr->writeln("The project is now ready!");
+        $output->writeln($subscription->project_id);
+        $this->stdErr->writeln('');
+
         $this->stdErr->writeln("  Region: <info>{$subscription->project_region}</info>");
         $this->stdErr->writeln("  Project ID: <info>{$subscription->project_id}</info>");
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
@@ -153,19 +178,27 @@ class ProjectCreateCommand extends CommandBase
     /**
      * Return a list of regions.
      *
-     * The default list is in the config `service.available_regions`. This can
-     * be overridden by the user config `experimental.available_regions`.
+     * The default list is in the config `service.available_regions`. This is
+     * replaced at runtime by an API call.
      *
-     * @return string[]
+     * @param bool $runtime
+     *
+     * @return array
      */
-    protected function getAvailableRegions()
+    protected function getAvailableRegions($runtime = false)
     {
-        $config = $this->config();
-        if ($config->has('experimental.available_regions')) {
-            return $config->get('experimental.available_regions');
+        if ($runtime) {
+            $regions = [];
+            foreach ($this->api()->getClient()->getRegions() as $region) {
+                if ($region->available) {
+                    $regions[$region->id] = $region->label;
+                }
+            }
+        } else {
+            $regions = (array) $this->config()->get('service.available_regions');
         }
 
-        return $config->get('service.available_regions');
+        return $regions;
     }
 
     /**
@@ -179,18 +212,23 @@ class ProjectCreateCommand extends CommandBase
           'title' => new Field('Project title', [
             'optionName' => 'title',
             'description' => 'The initial project title',
+            'questionLine' => '',
             'default' => 'Untitled Project',
           ]),
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
             'options' => $this->getAvailableRegions(),
+            'optionsCallback' => function () {
+                return $this->getAvailableRegions(true);
+            },
           ]),
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
             'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
+            'allowOther' => true,
           ]),
           'environments' => new Field('Environments', [
             'optionName' => 'environments',
@@ -208,5 +246,27 @@ class ProjectCreateCommand extends CommandBase
             },
           ]),
         ];
+    }
+
+    /**
+     * Get a numeric option value while ensuring it's a reasonable number.
+     *
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param string                                          $optionName
+     * @param int                                             $min
+     * @param int                                             $max
+     *
+     * @return float|int
+     */
+    private function getTimeOption(InputInterface $input, $optionName, $min = 0, $max = 3600)
+    {
+        $value = $input->getOption($optionName);
+        if ($value <= $min) {
+            $value = $min;
+        } elseif ($value > $max) {
+            $value = $max;
+        }
+
+        return $value;
     }
 }

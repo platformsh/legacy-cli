@@ -70,7 +70,7 @@ class ActivityMonitor
         $stdErr->writeln(sprintf(
             'Waiting for the activity <info>%s</info> (%s):',
             $activity->id,
-            $activity->getDescription()
+            self::getFormattedDescription($activity)
         ));
 
         // The progress bar will show elapsed time and the activity's state.
@@ -206,7 +206,7 @@ class ActivityMonitor
         // Display success or failure messages for each activity.
         $success = true;
         foreach ($activities as $activity) {
-            $description = $activity->getDescription();
+            $description = self::getFormattedDescription($activity);
             switch ($activity['result']) {
                 case Activity::RESULT_SUCCESS:
                     $stdErr->writeln(sprintf('Activity <info>%s</info> succeeded: %s', $activity->id, $description));
@@ -270,5 +270,35 @@ class ActivityMonitor
         $progressOutput = $output->isDecorated() ? $output : new NullOutput();
 
         return new ProgressBar($progressOutput);
+    }
+
+    /**
+     * Get the formatted description of an activity.
+     *
+     * @param \Platformsh\Client\Model\Activity $activity
+     * @param bool                              $withDecoration
+     *
+     * @return string
+     */
+    public static function getFormattedDescription(Activity $activity, $withDecoration = true)
+    {
+        if (!$withDecoration) {
+            return $activity->getDescription(false);
+        }
+        $value = $activity->getDescription(true);
+
+        // Replace description HTML elements with Symfony Console decoration
+        // tags.
+        $value = preg_replace('@<[^/][^>]+>@', '<options=underscore>', $value);
+        $value = preg_replace('@</[^>]+>@', '</>', $value);
+
+        // Replace literal tags like "&lt;info&;gt;" with escaped tags like
+        // "\<info>".
+        $value = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', $value);
+
+        // Decode other HTML entities.
+        $value = html_entity_decode($value, ENT_QUOTES, 'utf-8');
+
+        return $value;
     }
 }

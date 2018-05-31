@@ -19,7 +19,7 @@ class CertificateDeleteCommand extends CommandBase
             ->setDescription('Delete a certificate from the project')
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
         $this->addProjectOption();
-        $this->addNoWaitOption();
+        $this->addWaitOptions();
     }
 
     /**
@@ -61,7 +61,7 @@ class CertificateDeleteCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('The certificate <info>%s</info> has been deleted.', $certificate->id));
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);

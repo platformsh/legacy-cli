@@ -2,9 +2,10 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -61,39 +62,28 @@ class EnvironmentDrushCommand extends CommandBase
             $drushCommand .= " --quiet";
         }
 
-        $appName = $this->selectApp($input, function (LocalApplication $app) {
-            return Drupal::isDrupal($app->getRoot());
-        });
+        $appName = $this->selectApp($input);
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
-        // Get the LocalApplication object for the specified application, if
-        // available.
-        $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && $this->selectedProjectIsCurrent()) {
-            $app = LocalApplication::getApplication($appName, $projectRoot, $this->config());
-        }
+        // Get the document root for the application, to find the Drupal root.
+        $deployment = $this->api()->getCurrentDeployment($selectedEnvironment);
+        $remoteApp = $deployment->getWebApp($appName);
+        $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();
 
-        // Use the local application configuration (if available) to determine
-        // the correct Drupal root.
-        if (isset($app)) {
-            $drupalRoot = '/app/' . $app->getDocumentRoot();
-        } else {
-            // Fall back to the PLATFORM_DOCUMENT_ROOT environment variable,
-            // which is usually correct, except where the document_root was
-            // specified as '/'.
-            $documentRootEnvVar = $this->config()->get('service.env_prefix') . 'DOCUMENT_ROOT';
-            $drupalRoot = '${' . $documentRootEnvVar . ':-/app/public}';
-
-            $this->debug('<comment>Warning:</comment> using $' . $documentRootEnvVar . ' for the Drupal root. This fails in cases where the document_root is /.');
-        }
+        // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
+        // determine the path to Drupal. Fall back to a combination of the known
+        // document root and the PLATFORM_APP_DIR variable.
+        $envPrefix = (string) $this->config()->get('service.env_prefix');
+        $appRoot = sprintf('${%sAPP_DIR:-/app}', $envPrefix);
+        $drupalRoot = sprintf('${%sDOCUMENT_ROOT:-%s}', $envPrefix, $appRoot . '/' . $relativeDocRoot);
 
         $columns = (new Terminal())->getWidth();
 
         $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";
-        if ($environmentUrl = $selectedEnvironment->getLink('public-url')) {
-            $sshDrushCommand .= " --uri=" . escapeshellarg($environmentUrl);
+        if ($siteUrl = $this->api()->getSiteUrl($selectedEnvironment, $appName, $deployment)) {
+            $sshDrushCommand .= " --uri=" . OsUtil::escapePosixShellArg($siteUrl);
         }
         $sshDrushCommand .= ' ' . $drushCommand;
 

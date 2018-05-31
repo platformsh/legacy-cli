@@ -3,6 +3,7 @@ namespace Platformsh\Cli;
 
 use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Util\TimezoneUtil;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
@@ -34,7 +35,11 @@ class Application extends ParentApplication
         $this->cliConfig = new Config();
         parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
 
-        $this->setDefaultTimezone();
+        // Use the configured timezone, or fall back to the system timezone.
+        date_default_timezone_set(
+            $this->cliConfig->getWithDefault('application.timezone', null)
+                ?: TimezoneUtil::getTimezone()
+        );
 
         $this->addCommands($this->getCommands());
 
@@ -88,6 +93,7 @@ class Application extends ParentApplication
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\LegacyMigrateCommand();
         $commands[] = new Command\MultiCommand();
+        $commands[] = new Command\Activity\ActivityGetCommand();
         $commands[] = new Command\Activity\ActivityListCommand();
         $commands[] = new Command\Activity\ActivityLogCommand();
         $commands[] = new Command\App\AppConfigGetCommand();
@@ -95,7 +101,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthInfoCommand();
         $commands[] = new Command\Auth\AuthTokenCommand();
         $commands[] = new Command\Auth\LogoutCommand();
-        $commands[] = new Command\Auth\LoginCommand();
+        $commands[] = new Command\Auth\PasswordLoginCommand();
+        $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Certificate\CertificateAddCommand();
         $commands[] = new Command\Certificate\CertificateDeleteCommand();
         $commands[] = new Command\Certificate\CertificateGetCommand();
@@ -121,8 +128,10 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentListCommand();
         $commands[] = new Command\Environment\EnvironmentLogCommand();
         $commands[] = new Command\Environment\EnvironmentInfoCommand();
+        $commands[] = new Command\Environment\EnvironmentInitCommand();
         $commands[] = new Command\Environment\EnvironmentMergeCommand();
         $commands[] = new Command\Environment\EnvironmentPushCommand();
+        $commands[] = new Command\Environment\EnvironmentRedeployCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
@@ -137,6 +146,11 @@ class Application extends ParentApplication
         $commands[] = new Command\Local\LocalCleanCommand();
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
         $commands[] = new Command\Local\LocalDirCommand();
+        $commands[] = new Command\Mount\MountListCommand();
+        $commands[] = new Command\Mount\MountDownloadCommand();
+        $commands[] = new Command\Mount\MountSizeCommand();
+        $commands[] = new Command\Mount\MountUploadCommand();
+        $commands[] = new Command\Project\ProjectClearBuildCacheCommand();
         $commands[] = new Command\Project\ProjectCurlCommand();
         $commands[] = new Command\Project\ProjectCreateCommand();
         $commands[] = new Command\Project\ProjectDeleteCommand();
@@ -147,15 +161,24 @@ class Application extends ParentApplication
         $commands[] = new Command\Project\Variable\ProjectVariableDeleteCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableGetCommand();
         $commands[] = new Command\Project\Variable\ProjectVariableSetCommand();
+        $commands[] = new Command\Repo\CatCommand();
+        $commands[] = new Command\Repo\LsCommand();
         $commands[] = new Command\Route\RouteListCommand();
         $commands[] = new Command\Route\RouteGetCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
         $commands[] = new Command\Self\SelfInstallCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
+        $commands[] = new Command\Self\SelfReleaseCommand();
+        $commands[] = new Command\Self\SelfStatsCommand();
         $commands[] = new Command\Server\ServerRunCommand();
         $commands[] = new Command\Server\ServerStartCommand();
         $commands[] = new Command\Server\ServerListCommand();
         $commands[] = new Command\Server\ServerStopCommand();
+        $commands[] = new Command\Service\MongoDB\MongoDumpCommand();
+        $commands[] = new Command\Service\MongoDB\MongoExportCommand();
+        $commands[] = new Command\Service\MongoDB\MongoRestoreCommand();
+        $commands[] = new Command\Service\MongoDB\MongoShellCommand();
+        $commands[] = new Command\Service\RedisCliCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
         $commands[] = new Command\Snapshot\SnapshotListCommand();
         $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
@@ -171,11 +194,17 @@ class Application extends ParentApplication
         $commands[] = new Command\User\UserDeleteCommand();
         $commands[] = new Command\User\UserListCommand();
         $commands[] = new Command\User\UserRoleCommand();
+        $commands[] = new Command\Variable\VariableCreateCommand();
         $commands[] = new Command\Variable\VariableDeleteCommand();
+        $commands[] = new Command\Variable\VariableDisableCommand();
+        $commands[] = new Command\Variable\VariableEnableCommand();
         $commands[] = new Command\Variable\VariableGetCommand();
+        $commands[] = new Command\Variable\VariableListCommand();
         $commands[] = new Command\Variable\VariableSetCommand();
+        $commands[] = new Command\Variable\VariableUpdateCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
+        $commands[] = new Command\Worker\WorkerListCommand();
 
         return $commands;
     }
@@ -214,6 +243,15 @@ class Application extends ParentApplication
             $input->setInteractive(false);
         }
 
+        // Allow the CLICOLOR_FORCE environment variable to override whether
+        // colors are used in the output.
+        /* @see StreamOutput::hasColorSupport() */
+        if (getenv('CLICOLOR_FORCE') === '0') {
+            $output->setDecorated(false);
+        } elseif (getenv('CLICOLOR_FORCE') === '1') {
+            $output->setDecorated(true);
+        }
+
         parent::configureIO($input, $output);
     }
 
@@ -242,40 +280,6 @@ class Application extends ParentApplication
         // The parent class has a similar (private) property named
         // $runningCommand.
         $this->currentCommand = $command;
-    }
-
-    /**
-     * Set the default PHP timezone according to the system timezone.
-     *
-     * PHP >=5.4 removed the autodetection of the system timezone, so it is
-     * re-implemented here.
-     */
-    protected function setDefaultTimezone()
-    {
-        $timezone = date_default_timezone_get();
-
-        if (is_link('/etc/localtime')) {
-            // Mac OS X (and older Linuxes)
-            // /etc/localtime is a symlink to the timezone in /usr/share/zoneinfo.
-            $filename = readlink('/etc/localtime');
-            if (strpos($filename, '/usr/share/zoneinfo/') === 0) {
-                $timezone = substr($filename, 20);
-            }
-        } elseif (file_exists('/etc/timezone')) {
-            // Ubuntu / Debian.
-            $data = file_get_contents('/etc/timezone');
-            if ($data) {
-                $timezone = trim($data);
-            }
-        } elseif (file_exists('/etc/sysconfig/clock')) {
-            // RHEL/CentOS
-            $data = parse_ini_file('/etc/sysconfig/clock');
-            if (!empty($data['ZONE'])) {
-                $timezone = trim($data['ZONE']);
-            }
-        }
-
-        date_default_timezone_set($timezone);
     }
 
     /**

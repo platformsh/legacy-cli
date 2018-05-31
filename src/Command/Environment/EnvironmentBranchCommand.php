@@ -25,10 +25,16 @@ class EnvironmentBranchCommand extends CommandBase
                 null,
                 InputOption::VALUE_NONE,
                 "Create the new environment even if the branch cannot be checked out locally"
+            )
+            ->addOption(
+                'no-clone-parent',
+                null,
+                InputOption::VALUE_NONE,
+                "Do not clone the parent branch's data"
             );
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption("Do not wait for the environment to be branched");
+             ->addWaitOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
@@ -76,7 +82,7 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        if (!$parentEnvironment->operationAvailable('branch')) {
+        if (!$this->api()->checkEnvironmentOperation('branch', $parentEnvironment)) {
             $this->stdErr->writeln(
                 "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
             );
@@ -110,7 +116,7 @@ class EnvironmentBranchCommand extends CommandBase
         ));
 
         $title = $input->getOption('title') ?: $branchName;
-        $activity = $parentEnvironment->branch($title, $branchName);
+        $activity = $parentEnvironment->branch($title, $branchName, !$input->getOption('no-clone-parent'));
 
         // Clear the environments cache, as branching has started.
         $this->api()->clearEnvironmentsCache($selectedProject->id);
@@ -147,7 +153,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $remoteSuccess = true;
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $remoteSuccess = $activityMonitor->waitAndLog(

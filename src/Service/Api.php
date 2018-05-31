@@ -3,10 +3,16 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Event\ErrorEvent;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
+use Platformsh\Cli\Exception\ApiFeatureMissingException;
+use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
+use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
@@ -47,8 +53,17 @@ class Api
     /** @var bool */
     protected static $environmentsCacheRefreshed = false;
 
+    /** @var \Platformsh\Client\Model\Account[] */
+    protected static $accountsCache = [];
+
+    /** @var \Platformsh\Client\Model\ProjectAccess[] */
+    protected static $projectAccessesCache = [];
+
     /** @var array */
     protected static $notFound = [];
+
+    /** @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null */
+    protected $sessionStorage;
 
     /**
      * Constructor.
@@ -151,16 +166,17 @@ class Api
      *
      * @param bool $autoLogin Whether to log in, if the client is not already
      *                        authenticated (default: true).
+     * @param bool $reset     Whether to re-initialize the client.
      *
      * @return PlatformClient
      */
-    public function getClient($autoLogin = true)
+    public function getClient($autoLogin = true, $reset = false)
     {
-        if (!isset(self::$client)) {
+        if (!isset(self::$client) || $reset) {
             $connectorOptions = [];
-            $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
+            $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
             $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
-            $connectorOptions['debug'] = $this->config->get('api.debug');
+            $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
             $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
             $connectorOptions['user_agent'] = $this->getUserAgent();
             $connectorOptions['api_token'] = $this->apiToken;
@@ -186,12 +202,27 @@ class Api
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
             $session->setId('cli-' . $this->sessionId);
-            $session->setStorage(new File($this->config->getUserConfigDir() . '/.session'));
+
+            $this->sessionStorage = KeychainStorage::isSupported()
+                && $this->config->isExperimentEnabled('use_keychain')
+                ? new KeychainStorage($this->config->get('application.name'))
+                : new File($this->config->getWritableUserDir() . '/.session');
+            $session->setStorage($this->sessionStorage);
 
             self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
+            }
+
+            try {
+                $connector->getClient()->getEmitter()->on('error', function (ErrorEvent $event) {
+                    if ($event->getResponse() && $event->getResponse()->getStatusCode() === 403) {
+                        $this->on403($event);
+                    }
+                });
+            } catch (\RuntimeException $e) {
+                // Ignore errors if the user is not logged in at this stage.
             }
         }
 
@@ -229,7 +260,7 @@ class Api
 
             $this->cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
         } else {
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $id => $data) {
                 $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
             }
@@ -273,7 +304,7 @@ class Api
                 $this->cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
             }
         } else {
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
@@ -325,7 +356,7 @@ class Api
         } else {
             $environments = [];
             $endpoint = $project->getUri();
-            $guzzleClient = $this->getClient()->getConnector()->getClient();
+            $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);
             }
@@ -357,16 +388,19 @@ class Api
 
         $environments = $this->getEnvironments($project, $refresh);
 
-        // Retry if the environment was not found in the cache.
-        if (!isset($environments[$id])
-            && $refresh === null
-            && !self::$environmentsCacheRefreshed) {
-            $environments = $this->getEnvironments($project, true);
-        }
-
         // Look for the environment by ID.
         if (isset($environments[$id])) {
             return $environments[$id];
+        }
+
+        // Retry directly if the environment was not found in the cache.
+        if ($refresh === null) {
+            if ($environment = $project->getEnvironment($id)) {
+                // If the environment was found directly, the cache must be out
+                // of date.
+                $this->clearEnvironmentsCache($project->id);
+                return $environment;
+            }
         }
 
         // Look for the environment by machine name.
@@ -389,7 +423,8 @@ class Api
      * @param bool $reset
      *
      * @return array
-     *   An array containing at least 'uuid', 'mail', and 'display_name'.
+     *   An array containing at least 'username', 'uuid', 'mail', and
+     *   'display_name'.
      */
     public function getMyAccount($reset = false)
     {
@@ -413,10 +448,15 @@ class Api
      */
     public function getAccount(ProjectAccess $user, $reset = false)
     {
+        if (isset(self::$accountsCache[$user->id]) && !$reset) {
+            return self::$accountsCache[$user->id];
+        }
+
         $cacheKey = 'account:' . $user->id;
         if ($reset || !($details = $this->cache->fetch($cacheKey))) {
             $details = $user->getAccount()->getProperties();
             $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
+            self::$accountsCache[$user->id] = $details;
         }
 
         return $details;
@@ -523,16 +563,34 @@ class Api
     }
 
     /**
+     * Load project users ("project access" records).
+     *
+     * @param \Platformsh\Client\Model\Project $project
+     * @param bool                             $reset
+     *
+     * @return ProjectAccess[]
+     */
+    public function getProjectAccesses(Project $project, $reset = false)
+    {
+        if ($reset || !isset(self::$projectAccessesCache[$project->id])) {
+            self::$projectAccessesCache[$project->id] = $project->getUsers();
+        }
+
+        return self::$projectAccessesCache[$project->id];
+    }
+
+    /**
      * Load a project user ("project access" record) by email address.
      *
      * @param Project $project
      * @param string  $email
+     * @param bool    $reset
      *
      * @return ProjectAccess|false
      */
-    public function loadProjectAccessByEmail(Project $project, $email)
+    public function loadProjectAccessByEmail(Project $project, $email, $reset = false)
     {
-        foreach ($project->getUsers() as $user) {
+        foreach ($this->getProjectAccesses($project, $reset) as $user) {
             $account = $this->getAccount($user);
             if ($account['email'] === $email) {
                 return $user;
@@ -579,7 +637,7 @@ class Api
 
         if (count($matched) > 1) {
             $matchedIds = array_map(function (ApiResource $resource) {
-                return $resource->id;
+                return $resource->getProperty('id');
             }, $matched);
             throw new \InvalidArgumentException(sprintf(
                 'The partial ID "<error>%s</error>" is ambiguous; it matches the following %s IDs: %s',
@@ -613,5 +671,252 @@ class Api
         }
 
         return $token;
+    }
+
+    /**
+     * Sort URLs, preferring shorter ones with HTTPS.
+     *
+     * @param string $a
+     * @param string $b
+     *
+     * @return int
+    */
+    public function urlSort($a, $b)
+    {
+        $result = 0;
+        foreach ([$a, $b] as $key => $url) {
+            if (parse_url($url, PHP_URL_SCHEME) === 'https') {
+                $result += $key === 0 ? -2 : 2;
+            }
+        }
+        $result += strlen($a) <= strlen($b) ? -1 : 1;
+
+        return $result;
+    }
+
+    /**
+     * Get the HTTP client.
+     *
+     * @return ClientInterface
+     */
+    public function getHttpClient()
+    {
+        return $this->getClient(false)->getConnector()->getClient();
+    }
+
+    /**
+     * Read a file in the environment, using the Git Data API.
+     *
+     * @param string      $filename
+     * @param Environment $environment
+     *
+     * @throws \RuntimeException on error.
+     *
+     * @return string|false
+     *   The raw contents of the file, or false if the file is not found.
+     */
+    public function readFile($filename, Environment $environment)
+    {
+        $cacheKey = implode(':', ['raw', $environment->project, $filename]);
+        $data = $this->cache->fetch($cacheKey);
+        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
+            // Find the file.
+            if (($tree = $this->getTree($environment, dirname($filename)))
+                && ($blob = $tree->getBlob(basename($filename)))) {
+                $raw = $blob->getRawContent();
+            } else {
+                $raw = false;
+            }
+            $data = ['raw' => $raw, 'commit_sha' => $environment->head_commit];
+            // Skip caching if the file is bigger than 100 KiB.
+            if ($raw === false || strlen($raw) <= 102400) {
+                $this->cache->save($cacheKey, $data);
+            }
+        }
+
+        return $data['raw'];
+    }
+
+    /**
+     * Get a Git Tree object (a repository directory) for an environment.
+     *
+     * @param Environment $environment
+     * @param string      $path
+     *
+     * @return Tree|false
+     */
+    public function getTree(Environment $environment, $path = '.')
+    {
+        $cacheKey = implode(':', ['tree', $environment->project, $path]);
+        $data = $this->cache->fetch($cacheKey);
+        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
+            if (!$head = $environment->getHeadCommit()) {
+                // This is unlikely to happen, unless the project doesn't have the
+                // Git Data API available at all (e.g. old Git version).
+                throw new ApiFeatureMissingException(sprintf(
+                    'The project %s does not support the Git Data API.',
+                    $environment->project
+                ));
+            }
+            if (!$headTree = $head->getTree()) {
+                // This is even less likely to happen.
+                throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
+            }
+            $tree = $headTree->getTree($path);
+            $this->cache->save($cacheKey, [
+                'tree' => $tree ? $tree->getData() : null,
+                'uri' => $tree ? $tree->getUri() : null,
+                'commit_sha' => $environment->head_commit,
+            ]);
+        } elseif (empty($data['tree'])) {
+            return false;
+        } else {
+            $tree = new Tree($data['tree'], $data['uri'], $this->getHttpClient(), true);
+        }
+
+        return $tree;
+    }
+
+    /**
+     * Delete all keychain keys.
+     */
+    public function deleteFromKeychain()
+    {
+        if ($this->sessionStorage instanceof KeychainStorage) {
+            $this->sessionStorage->deleteAll();
+        }
+    }
+
+    /**
+     * Get the current deployment for an environment.
+     *
+     * @param Environment $environment
+     * @param bool        $refresh
+     *
+     * @return EnvironmentDeployment
+     */
+    public function getCurrentDeployment(Environment $environment, $refresh = false)
+    {
+        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id]);
+        $data = $this->cache->fetch($cacheKey);
+        if ($data === false || $refresh) {
+            $deployment = $environment->getCurrentDeployment();
+            $data = $deployment->getData();
+            $data['_uri'] = $deployment->getUri();
+            $this->cache->save($cacheKey, $data, $this->config->get('api.environments_ttl'));
+        } else {
+            $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
+        }
+
+        return $deployment;
+    }
+
+    /**
+     * Get the default environment in a list.
+     *
+     * @param array $environments An array of environments, keyed by ID.
+     *
+     * @return string|null
+     */
+    public function getDefaultEnvironmentId(array $environments)
+    {
+        // If there is only one environment, use that.
+        if (count($environments) <= 1) {
+            $environment = reset($environments);
+
+            return $environment ? $environment->id : null;
+        }
+
+        // Check if there is only one "main" environment.
+        $main = array_filter($environments, function (Environment $environment) {
+            return $environment->is_main;
+        });
+        if (count($main) === 1) {
+            $environment = reset($main);
+
+            return $environment ? $environment->id : null;
+        }
+
+        // Check if there is a "master" environment.
+        if (isset($environments['master'])) {
+            return 'master';
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the preferred site URL for an environment and app.
+     *
+     * @param \Platformsh\Client\Model\Environment                           $environment
+     * @param string                                                         $appName
+     * @param \Platformsh\Client\Model\Deployment\EnvironmentDeployment|null $deployment
+     *
+     * @return string|null
+     */
+    public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
+    {
+        $deployment = $deployment ?: $this->getCurrentDeployment($environment);
+        $routes = $deployment->routes;
+        $appUrls = [];
+        foreach ($routes as $url => $route) {
+            if ($route->type === 'upstream' && $route->__get('upstream') === $appName) {
+                $appUrls[] = $url;
+            }
+        }
+        usort($appUrls, [$this, 'urlSort']);
+        $siteUrl = reset($appUrls);
+        if ($siteUrl) {
+            return $siteUrl;
+        }
+        if ($environment->hasLink('public-url')) {
+            return $environment->getLink('public-url');
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if an operation is available on an environment.
+     *
+     * This auto-refreshes the environment data if the operation is not
+     * available.
+     *
+     * @param string                               $op
+     * @param \Platformsh\Client\Model\Environment $environment
+     *
+     * @return bool
+     */
+    public function checkEnvironmentOperation($op, Environment $environment)
+    {
+        if ($environment->operationAvailable($op)) {
+            return true;
+        }
+
+        $refresh = self::$environmentsCacheRefreshed ? null : true;
+        $environment = $this->getEnvironment($environment->id, $this->getProject($environment->project), $refresh);
+
+        return $environment->operationAvailable($op);
+    }
+
+    /**
+     * React on an API 403 request.
+     *
+     * @param \GuzzleHttp\Event\ErrorEvent $event
+     */
+    private function on403(ErrorEvent $event)
+    {
+        $url = $event->getRequest()->getUrl();
+        $path = parse_url($url, PHP_URL_PATH);
+        if ($path && strpos($path, '/api/projects/') === 0) {
+            // Clear the environments cache for environment request errors.
+            if (preg_match('#^/api/projects/([^/]+?)/environments/#', $path, $matches)) {
+                $this->clearEnvironmentsCache($matches[1]);
+            }
+            // Clear the projects cache for other project request errors.
+            if (preg_match('#^/api/projects/([^/]+?)[/$]/#', $path, $matches)) {
+                $this->clearProjectsCache();
+            }
+        }
     }
 }

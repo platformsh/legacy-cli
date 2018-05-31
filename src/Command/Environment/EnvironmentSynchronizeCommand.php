@@ -20,7 +20,7 @@ class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwa
             ->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->setHelp(<<<EOT
 This command synchronizes to a child environment from its parent environment.
 
@@ -41,7 +41,7 @@ EOT
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        if (!$selectedEnvironment->operationAvailable('synchronize')) {
+        if (!$this->api()->checkEnvironmentOperation('synchronize', $selectedEnvironment)) {
             $this->stdErr->writeln(
                 "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
@@ -92,7 +92,7 @@ EOT
         $this->stdErr->writeln("Synchronizing environment <info>$environmentId</info>");
 
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode);
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitAndLog(

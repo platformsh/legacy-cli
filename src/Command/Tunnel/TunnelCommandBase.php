@@ -2,12 +2,11 @@
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
-use Symfony\Component\Process\ProcessBuilder;
+use Symfony\Component\Process\Process;
 
 abstract class TunnelCommandBase extends CommandBase
 {
@@ -68,7 +67,7 @@ abstract class TunnelCommandBase extends CommandBase
         if (!isset($this->tunnelInfo)) {
             $this->tunnelInfo = [];
             // @todo move this to State service (in a new major version)
-            $filename = $this->config()->getUserConfigDir() . '/tunnel-info.json';
+            $filename = $this->config()->getWritableUserDir() . '/tunnel-info.json';
             if (file_exists($filename)) {
                 $this->debug(sprintf('Loading tunnel info from %s', $filename));
                 $this->tunnelInfo = (array) json_decode(file_get_contents($filename), true);
@@ -97,7 +96,7 @@ abstract class TunnelCommandBase extends CommandBase
 
     protected function saveTunnelInfo()
     {
-        $filename = $this->config()->getUserConfigDir() . '/tunnel-info.json';
+        $filename = $this->config()->getWritableUserDir() . '/tunnel-info.json';
         if (!empty($this->tunnelInfo)) {
             $this->debug('Saving tunnel info to: ' . $filename);
             if (!file_put_contents($filename, json_encode($this->tunnelInfo))) {
@@ -208,7 +207,7 @@ abstract class TunnelCommandBase extends CommandBase
     protected function getPidFile(array $tunnel)
     {
         $key = $this->getTunnelKey($tunnel);
-        $dir = $this->config()->getUserConfigDir() . '/.tunnels';
+        $dir = $this->config()->getWritableUserDir() . '/.tunnels';
         if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $dir);
         }
@@ -228,12 +227,11 @@ abstract class TunnelCommandBase extends CommandBase
     protected function createTunnelProcess($url, $remoteHost, $remotePort, $localPort, array $extraArgs = [])
     {
         $args = ['ssh', '-n', '-N', '-L', implode(':', [$localPort, $remoteHost, $remotePort]), $url];
-        if (!OsUtil::isWindows()) {
-            array_unshift($args, 'exec');
-        }
         $args = array_merge($args, $extraArgs);
+        $process = new Process($args);
+        $process->setTimeout(null);
 
-        return ProcessBuilder::create($args)->getProcess();
+        return $process;
     }
 
     /**

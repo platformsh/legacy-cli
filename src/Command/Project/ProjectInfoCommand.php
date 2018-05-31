@@ -29,7 +29,7 @@ class ProjectInfoCommand extends CommandBase
             ->setDescription('Read or set properties for a project');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
@@ -49,13 +49,21 @@ class ProjectInfoCommand extends CommandBase
 
         $property = $input->getArgument('property');
 
+        // Setting the pseudo-properties 'git' and 'url', and un-setting the
+        // property 'entropy', are done twice in this command so that
+        // lazy-loading still works.
         if (!$property) {
-            return $this->listProperties($project->getProperties());
+            $properties = $project->getProperties();
+            $properties['git'] = $project->getGitUrl();
+            $properties['url'] = $project->getUri();
+            unset($properties['entropy']);
+
+            return $this->listProperties($properties);
         }
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $project, $input->getOption('no-wait'));
+            return $this->setProperty($property, $value, $project, !$this->shouldWait($input));
         }
 
         switch ($property) {
@@ -66,6 +74,9 @@ class ProjectInfoCommand extends CommandBase
             case 'url':
                 $value = $project->getUri();
                 break;
+
+            case 'entropy':
+                throw new \InvalidArgumentException('Property not found: ' . $property);
 
             default:
                 $value = $this->api()->getNestedProperty($project, $property);
@@ -153,7 +164,11 @@ class ProjectInfoCommand extends CommandBase
      */
     protected function getType($property)
     {
-        $writableProperties = ['title' => 'string'];
+        $writableProperties = [
+            'title' => 'string',
+            'description' => 'string',
+            'default_domain' => 'string',
+        ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
     }

@@ -1,0 +1,26 @@
+# Platform.sh CLI shell configuration for Bash and ZSH.
+
+# Enable auto-completion.
+if HOOK=$(platform _completion -g -p platform 2>/dev/null); then
+    . <(echo "$HOOK") 2>/dev/null
+fi
+
+# Alias: run Drush commands on the local environment, from any directory.
+platform_local_drush() {
+    local GROUP
+    GROUP="$(platform drush-aliases --no --pipe 2>/dev/null)"
+    CODE=$?
+    if [ "$CODE" = 2 ]; then
+        echo "$0"': This can only be run from inside a project directory' >&2
+        return "$CODE"
+    elif [ ! "$CODE" = 0 ]; then
+        echo "$0"': Drush alias group not found' >&2
+        return "$CODE"
+    fi
+    if [ -z "$1" ]; then
+        drush @"$GROUP"._local status
+    else
+        drush @"$GROUP"._local "$@"
+    fi
+}
+alias pldr=platform_local_drush

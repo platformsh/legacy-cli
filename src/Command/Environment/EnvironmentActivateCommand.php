@@ -20,7 +20,7 @@ class EnvironmentActivateCommand extends CommandBase
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
     }
 
@@ -68,12 +68,13 @@ class EnvironmentActivateCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
         foreach ($environments as $environment) {
             $environmentId = $environment->id;
-            if ($environment->isActive()) {
-                $output->writeln("The environment <info>$environmentId</info> is already active.");
-                $count--;
-                continue;
-            }
-            if (!$environment->operationAvailable('activate')) {
+            if (!$this->api()->checkEnvironmentOperation('activate', $environment)) {
+                if ($environment->isActive()) {
+                    $output->writeln("The environment <info>$environmentId</info> is already active.");
+                    $count--;
+                    continue;
+                }
+
                 $output->writeln(
                     "Operation not available: The environment <error>$environmentId</error> can't be activated."
                 );
@@ -112,7 +113,7 @@ class EnvironmentActivateCommand extends CommandBase
         $success = $processed >= $count;
 
         if ($processed) {
-            if (!$input->getOption('no-wait')) {
+            if ($this->shouldWait($input)) {
                 /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
                 $activityMonitor = $this->getService('activity_monitor');
                 $result = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());

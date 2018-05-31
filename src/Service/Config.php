@@ -16,6 +16,8 @@ class Config
 
     protected $userConfig = null;
 
+    private $fs;
+
     /**
      * @param array|null  $env
      * @param string|null $defaultsFile
@@ -23,7 +25,7 @@ class Config
      */
     public function __construct(array $env = null, $defaultsFile = null, $reset = false)
     {
-        $this->env = $env !== null ? $env : $_ENV;
+        $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
         if (empty(self::$config) || $reset) {
             $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
@@ -34,8 +36,21 @@ class Config
     }
 
     /**
-     * @param string $name
-     * @param bool   $notNull
+     * Find all current environment variables.
+     *
+     * @return array
+     */
+    private function getDefaultEnv()
+    {
+        return PHP_VERSION_ID >= 70100 ? getenv() : $_ENV;
+    }
+
+    /**
+     * Check if a configuration value is defined.
+     *
+     * @param string $name    The configuration name (e.g. 'application.name').
+     * @param bool   $notNull Set false to treat null configuration values as
+     *                        defined.
      *
      * @return bool
      */
@@ -47,9 +62,13 @@ class Config
     }
 
     /**
-     * @param string $name
+     * Get a configuration value.
      *
-     * @return mixed
+     * @param string $name The configuration name (e.g. 'application.name').
+     *
+     * @throws \RuntimeException if the configuration is not defined.
+     *
+     * @return null|string|bool|array
      */
     public function get($name)
     {
@@ -62,11 +81,70 @@ class Config
     }
 
     /**
+     * Get a configuration value, specifying a default if it does not exist.
+     *
+     * @param string $name
+     * @param mixed  $default
+     *
+     * @return mixed
+     */
+    public function getWithDefault($name, $default)
+    {
+        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        if (!$exists) {
+            return $default;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Get the directory where the CLI is normally installed and configured.
+     *
+     * @param bool $absolute Whether to return an absolute path. If false,
+     *                       the path will be relative to the home directory.
+     *
      * @return string
      */
-    public function getUserConfigDir()
+    public function getUserConfigDir($absolute = true)
     {
-        return Filesystem::getHomeDirectory() . '/' . $this->get('application.user_config_dir');
+        $path = $this->get('application.user_config_dir');
+
+        return $absolute ? $this->fs()->getHomeDirectory() . '/' . $path : $path;
+    }
+
+    /**
+     * Inject the filesystem service.
+     *
+     * @param Filesystem $fs
+     */
+    public function setFs(Filesystem $fs)
+    {
+        $this->fs = $fs;
+    }
+
+    /**
+     * @return \Platformsh\Cli\Service\Filesystem
+     */
+    private function fs()
+    {
+        return $this->fs ?: new Filesystem();
+    }
+
+    /**
+     * @return string
+     */
+    public function getWritableUserDir()
+    {
+        $configDir = $this->getUserConfigDir();
+
+        // If the config directory is not writable (e.g. if we are on a
+        // Platform.sh environment), use a temporary directory instead.
+        if (!$this->fs()->canWrite($configDir) || (file_exists($configDir) && !is_dir($configDir))) {
+            return sys_get_temp_dir() . '/' . $this->get('application.tmp_sub_dir');
+        }
+
+        return $configDir;
     }
 
     /**
@@ -151,6 +229,9 @@ class Config
             'local.drush_executable' => 'local.drush_executable',
             'experimental' => 'experimental',
             'updates' => 'updates',
+            'application.login_method' => 'application.login_method',
+            'application.date_format' => 'application.date_format',
+            'application.timezone' => 'application.timezone',
         ];
 
         $userConfig = $this->getUserConfig();
@@ -170,5 +251,42 @@ class Config
                 }
             }
         }
+    }
+
+    /**
+     * Test if an experiment (a feature flag) is enabled.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isExperimentEnabled($name)
+    {
+        return !empty(self::$config['experimental']['all_experiments']) || !empty(self::$config['experimental'][$name]);
+    }
+
+    /**
+     * Test if a command should be enabled.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isCommandEnabled($name)
+    {
+        if (!empty(self::$config['application']['disabled_commands'])
+            && in_array($name, self::$config['application']['disabled_commands'])) {
+            return false;
+        }
+        if (!empty(self::$config['application']['experimental_commands'])
+            && in_array($name, self::$config['application']['experimental_commands'])) {
+            return !empty(self::$config['experimental']['all_experiments'])
+                || (
+                    !empty(self::$config['experimental']['enable_commands'])
+                    && in_array($name, self::$config['experimental']['enable_commands'])
+                );
+        }
+
+        return true;
     }
 }

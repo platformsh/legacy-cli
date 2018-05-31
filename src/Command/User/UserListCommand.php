@@ -29,7 +29,7 @@ class UserListCommand extends CommandBase
         $i = 0;
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        foreach ($project->getUsers() as $projectAccess) {
+        foreach ($this->api()->getProjectAccesses($project) as $projectAccess) {
             $account = $this->api()->getAccount($projectAccess);
             $role = $projectAccess->role;
             $weight = $i++;
@@ -39,12 +39,20 @@ class UserListCommand extends CommandBase
                     $role .= ' (owner)';
                 }
             }
-            $rows[$weight] = [$account['email'], $account['display_name'], $role];
+            $rows[$weight] = [$account['email'], $account['display_name'], $role, $projectAccess->id];
         }
 
         ksort($rows);
 
-        $table->render(array_values($rows), ['Email address', 'Name', 'Project role']);
+        $table->render(array_values($rows), ['Email address', 'Name', 'Project role', 'ID']);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $executable = $this->config()->get('application.executable');
+            $this->stdErr->writeln("To view a user's role(s), run: <info>$executable user:get [email]</info>");
+            $this->stdErr->writeln("To change a user's role(s), run: <info>$executable user:add [email]</info>");
+        }
+
         return 0;
     }
 }

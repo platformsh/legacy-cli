@@ -9,7 +9,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 * Git
 * A Bash-like shell:
   * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
-  * On Windows: [Bash on Ubuntu](https://msdn.microsoft.com/en-gb/commandline/wsl/about) on Windows (recommended), or a Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
+  * On Windows: [Windows Subsystem for Linux](https://msdn.microsoft.com/en-gb/commandline/wsl/about) (recommended), or another Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
   * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
@@ -25,9 +25,8 @@ This is the recommended installation method. Simply use this command:
 
 ### Installing manually
 
-1. Download the latest stable package from the
-  [Releases page](https://github.com/platformsh/platformsh-cli/releases)
-  (look for the latest `platform.phar` file).
+1. Download the `platform.phar` file from the
+  [latest release](https://github.com/platformsh/platformsh-cli/releases/latest).
 
 2. Rename the file to `platform`, ensure it is executable, and move it into a
   directory in your PATH (use `echo $PATH` to see your options).
@@ -64,9 +63,8 @@ Global options:
   --quiet          -q Do not output any message
   --verbose        -v|vv|vvv Increase the verbosity of messages
   --version        -V Display this application version
-  --yes            -y Answer "yes" to all prompts
+  --yes            -y Answer "yes" to all prompts; disable interaction
   --no             -n Answer "no" to all prompts
-  --shell          -s Launch the shell
 
 Available commands:
   clear-cache (clearcache, cc)              Clear the CLI cache
@@ -76,15 +74,17 @@ Available commands:
   multi                                     Execute a command on multiple projects
   web                                       Open the Web UI
 activity
+  activity:get                              View detailed information on a single activity
   activity:list (activities)                Get a list of activities for an environment or project
   activity:log                              Display the log for an activity
 app
   app:config-get                            View the configuration of an app
-  app:list (apps)                           Get a list of all apps in the local repository
+  app:list (apps)                           List apps in the project
 auth
+  auth:browser-login (login)                Log in to Platform.sh via a browser
   auth:info                                 Display your account information
-  auth:login (login)                        Log in to Platform.sh
   auth:logout (logout)                      Log out of Platform.sh
+  auth:password-login                       Log in to Platform.sh using a username and password
 certificate
   certificate:add                           Add an SSL certificate to the project
   certificate:delete                        Delete a certificate from the project
@@ -112,7 +112,8 @@ environment
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
-  environment:relationships (relationships)   Show an environment's relationships
+  environment:redeploy (redeploy)           Redeploy an environment
+  environment:relationships (relationships) Show an environment's relationships
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment
@@ -126,17 +127,24 @@ local
   local:build (build)                       Build the current project locally
   local:dir (dir)                           Find the local project root
   local:drush-aliases (drush-aliases)       Find the project's Drush aliases
+mount
+  mount:download                            Download files from a mount, using rsync
+  mount:list (mounts)                       Get a list of mounts
+  mount:size                                Check the disk usage of mounts
+  mount:upload                              Upload files to a mount, using rsync
 project
+  project:clear-build-cache                 Clear a project's build cache
+  project:create (create)                   Create a new project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
   project:list (projects)                   Get a list of all active projects
   project:set-remote                        Set the remote project for the current Git repository
-  project:variable:delete                   Delete a variable from a project
-  project:variable:get (project-variables, pvget)   View variable(s) for a project
-  project:variable:set (pvset)              Set a variable for a project
+repo
+  repo:cat                                  Read a file in the project repository
+  repo:ls                                   List files in the project repository
 route
-  route:get                                 View a route
+  route:get                                 View a resolved route
   route:list (routes)                       List all routes for an environment
 self
   self:install                              Install or update CLI configuration files
@@ -160,14 +168,18 @@ tunnel
   tunnel:list (tunnels)                     List SSH tunnels
   tunnel:open                               Open SSH tunnels to an app's relationships
 user
-  user:add                                  Add a user to the project
-  user:delete                               Delete a user
+  user:add (user:update)                    Add a user to the project, or set their role(s)
+  user:delete                               Delete a user from the project
+  user:get                                  View a user's role(s)
   user:list (users)                         List project users
-  user:role                                 View or change a user's role
 variable
+  variable:create                           Create a variable
   variable:delete                           Delete a variable from an environment
-  variable:get (variables, vget)            View variable(s) for an environment
-  variable:set (vset)                       Set a variable for an environment
+  variable:get (vget)                       View a variable
+  variable:list (variables)                 List variables
+  variable:update                           Update a variable
+worker
+  worker:list (workers)                     Get a list of all deployed workers
 ```
 
 ## Known issues
@@ -177,6 +189,22 @@ variable
 The CLI caches details of your projects and their environments, and some other
 information. These caches could become out-of-date. You can clear caches with
 the command `platform clear-cache` (or `platform cc` for short).
+
+## Authentication
+
+There are currently three ways to authenticate:
+
+1. `platform login` (AKA `platform auth:browser-login`): this opens a temporary
+  local server and a browser, allowing you to log in to Platform.sh via the
+  normal login form, including via services like Bitbucket, GitHub and Google.
+
+2. `platform auth:password-login`: this allows you to log in with a username and
+  password, and a two-factor token if applicable.
+
+3. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
+  these allow non-interactive authentication. See
+  [Customization](#customization) below for how to use an API token. Remember to
+  use a separate machine account if you want to limit the token's access.
 
 ## Customization
 
@@ -190,6 +218,20 @@ api:
   # Run 'platform logout --all' if you change this value.
   token_file: null
 
+application:
+  # The method used for interactive login: 'browser' or 'password' (defaults to
+  # 'browser').
+  login_method: browser
+
+  # The default timezone for times displayed or interpreted by the CLI.
+  # An empty (falsy) value here means the PHP or system timezone will be used.
+  # For a list of timezones, see: http://php.net/manual/en/timezones.php
+  timezone: ~
+
+  # The default date format string, for dates and times displayed by the CLI.
+  # For a list of formats, see: http://php.net/manual/en/function.date.php
+  date_format: c
+
 local:
   # Set this to true to avoid some Windows symlink issues.
   copy_on_windows: false
@@ -201,17 +243,18 @@ updates:
   # Whether to check for automatic updates.
   check: true
 
-  # The interval between checking for updates (seconds).
-  check_interval: 86400
+  # The interval between checking for updates (in seconds). 604800 = 7 days.
+  check_interval: 604800
 ```
 
 Other customization is available via environment variables:
 
-* `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging
+* `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging. _Warning_: this will print all request information in the terminal, including sensitive access tokens.
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
-* `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It is usually preferable to use `config.yaml` as above.
+* `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It may be better to use `config.yaml` as above, depending on your system. The environment variable is preferable on CI systems like Jenkins and GitLab.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
+* `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 
 ## Contributing

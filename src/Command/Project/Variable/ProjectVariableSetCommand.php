@@ -7,8 +7,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * @deprecated Use variable:create and variable:update instead (with --level project)
+ */
 class ProjectVariableSetCommand extends CommandBase
 {
+    protected $hiddenInList = true;
+
     /**
      * {@inheritdoc}
      */
@@ -21,10 +26,10 @@ class ProjectVariableSetCommand extends CommandBase
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('no-visible-build', null, InputOption::VALUE_NONE, 'Do not expose this variable at build time')
-            ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not e\Expose this variable at deploy and runtime')
+            ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime')
             ->setDescription('Set a variable for a project');
         $this->addProjectOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Set the variable "example" to the string "123"', 'example 123');
         $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
         $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
@@ -63,8 +68,8 @@ class ProjectVariableSetCommand extends CommandBase
 
         $success = true;
         if (!$result->countActivities()) {
-            $this->rebuildWarning();
-        } elseif (!$input->getOption('no-wait')) {
+            $this->redeployWarning();
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

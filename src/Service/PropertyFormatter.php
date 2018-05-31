@@ -11,14 +11,16 @@ use Symfony\Component\Yaml\Yaml;
 
 class PropertyFormatter implements InputConfiguringInterface
 {
-    const DEFAULT_DATE_FORMAT = 'c';
-
     /** @var InputInterface|null */
     protected $input;
 
-    public function __construct(InputInterface $input = null)
+    /** @var \Platformsh\Cli\Service\Config */
+    protected $config;
+
+    public function __construct(InputInterface $input = null, Config $config = null)
     {
         $this->input = $input;
+        $this->config = $config ?: new Config();
     }
 
     /**
@@ -39,8 +41,11 @@ class PropertyFormatter implements InputConfiguringInterface
             case 'created_at':
             case 'updated_at':
             case 'expires_at':
+            case 'started_at':
+            case 'completed_at':
             case 'ssl.expires_on':
-                return $this->formatDate($value);
+                $value = $this->formatDate($value);
+                break;
 
             case 'ssl':
                 if ($property === 'ssl' && is_array($value) && isset($value['expires_on'])) {
@@ -67,14 +72,15 @@ class PropertyFormatter implements InputConfiguringInterface
             null,
             InputOption::VALUE_REQUIRED,
             'The date format (as a PHP date format string)',
-            self::DEFAULT_DATE_FORMAT
+            // @todo refactor so this can be non-static and use injected config
+            (new Config())->getWithDefault('application.date_format', 'c')
         ));
     }
 
     /**
      * @param string $value
      *
-     * @return string
+     * @return string|null
      */
     protected function formatDate($value)
     {
@@ -82,7 +88,9 @@ class PropertyFormatter implements InputConfiguringInterface
         if (isset($this->input) && $this->input->hasOption('date-fmt')) {
             $format = $this->input->getOption('date-fmt');
         }
-        $format = $format ?: self::DEFAULT_DATE_FORMAT;
+        if ($format === null) {
+            $format = $this->config->getWithDefault('application.date_format', 'c');
+        }
 
         // Workaround for the ssl.expires_on date, which is currently a
         // timestamp in milliseconds.
@@ -92,7 +100,7 @@ class PropertyFormatter implements InputConfiguringInterface
 
         $timestamp = is_numeric($value) ? $value : strtotime($value);
 
-        return date($format, $timestamp);
+        return $timestamp === false ? null : date($format, $timestamp);
     }
 
     /**

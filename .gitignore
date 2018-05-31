@@ -1,2 +1,4 @@
 /vendor
 /*.phar
+.idea/
+/release-changelog.md

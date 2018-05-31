@@ -8,7 +8,6 @@ use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\ProcessBuilder;
 
 class Shell
 {
@@ -18,8 +17,6 @@ class Shell
 
     /** @var OutputInterface */
     protected $stdErr;
-
-    protected $defaultTimeout = 3600;
 
     public function __construct(OutputInterface $output = null)
     {
@@ -78,19 +75,29 @@ class Shell
      * @param bool        $mustRun
      * @param bool        $quiet
      * @param array       $env
+     * @param int|null    $timeout
      *
-     * @throws \Exception
+     * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If $mustRun is enabled and the command fails.
      *
      * @return bool|string
      *   False if the command fails, true if it succeeds with no output, or a
      *   string if it succeeds with output.
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [])
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
     {
-        $builder = new ProcessBuilder($args);
-        $process = $builder->getProcess();
-        $process->setTimeout($this->defaultTimeout);
+        $process = new Process($args, null, null, null, $timeout);
+
+        // Avoid adding 'exec' to every command. It is not needed in this
+        // context as we do not need to send signals to the process. Also it
+        // causes compatibility issues, at least with the shell built-in command
+        // 'command' on  Travis containers.
+        // See https://github.com/symfony/symfony/issues/23495
+        $process->setCommandLine($process->getCommandLine());
+
+        if ($timeout === null) {
+            set_time_limit(0);
+        }
 
         $this->stdErr->writeln(
             "Running command: <info>" . $process->getCommandLine() . "</info>",
@@ -102,9 +109,9 @@ class Shell
             $process->setEnv($env + $this->getParentEnv());
         }
 
-        if ($dir) {
-            $this->showWorkingDirMessage($dir);
+        if ($dir && is_dir($dir)) {
             $process->setWorkingDirectory($dir);
+            $this->showWorkingDirMessage($dir);
         }
 
         $result = $this->runProcess($process, $mustRun, $quiet);
@@ -139,21 +146,27 @@ class Shell
     /**
      * Attempt to read useful environment variables from the parent process.
      *
-     * We can't rely on the PHP having a variables_order that includes 'e', so
-     * $_ENV may be empty.
-     *
      * @return array
      */
     protected function getParentEnv()
     {
-        if (!empty($_ENV)) {
+        if (PHP_VERSION_ID >= 70100) {
+            return getenv();
+        }
+        // In PHP <7.1 there isn't a way to read all of the current environment
+        // variables. If PHP is running with a variables_order that includes
+        // 'e', then $_ENV should be populated.
+        if (!empty($_ENV) && stripos(ini_get('variables_order'), 'e') !== false) {
             return $_ENV;
         }
 
+        // If $_ENV is empty, then we can only use a whitelist of all the
+        // variables that we might want to use.
         $candidates = [
             'TERM',
             'TERM_SESSION_ID',
             'TMPDIR',
+            'SSH_AGENT_PID',
             'SSH_AUTH_SOCK',
             'PATH',
             'LANG',
@@ -167,21 +180,24 @@ class Shell
             $variables[$name] = getenv($name);
         }
 
-        return array_filter($variables);
+        return array_filter($variables, function ($value) {
+            return $value !== false;
+        });
     }
 
     /**
      * Run a process.
      *
-     * @param Process     $process
-     * @param bool        $mustRun
-     * @param bool        $quiet
+     * @param Process $process
+     * @param bool    $mustRun
+     * @param bool    $quiet
+     *
+     * @throws \Symfony\Component\Process\Exception\RuntimeException
+     *   If the process fails or times out, and $mustRun is true.
      *
      * @return int|string
      *   The exit code of the process if it fails, true if it succeeds with no
      *   output, or a string if it succeeds with output.
-     *
-     * @throws \Exception
      */
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
     {
@@ -194,16 +210,12 @@ class Shell
             if (!$mustRun) {
                 return $process->getExitCode();
             }
-            // The default for ProcessFailedException is to print the entire
-            // STDOUT and STDERR. But if $quiet is disabled, then the user will
-            // have already seen the command's output.  So we need to re-throw
-            // the exception with a much shorter message.
-            $message = "The command failed with the exit code: " . $process->getExitCode();
-            $message .= "\n\nFull command: " . $process->getCommandLine();
-            if ($quiet) {
-                $message .= "\n\nError output:\n" . $process->getErrorOutput();
-            }
-            throw new \Exception($message);
+            // The default for Symfony's ProcessFailedException is to print the
+            // entire STDOUT and STDERR. But if $quiet is disabled, then the user
+            // will have already seen the command's output.  So we need to
+            // re-throw the exception with our own ProcessFailedException, which
+            // will generate a much shorter message.
+            throw new \Platformsh\Cli\Exception\ProcessFailedException($process, $quiet);
         }
         $output = $process->getOutput();
 

@@ -25,7 +25,7 @@ class EnvironmentDeleteCommand extends CommandBase
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environments not to delete');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption();
+             ->addWaitOptions();
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with "master"', '--merged master');
@@ -201,7 +201,7 @@ EOF
                 if ($questionHelper->confirm("Are you sure you want to delete the environment <comment>$environmentId</comment>?")) {
                     $deactivate[$environmentId] = $environment;
                     if (!$input->getOption('no-delete-branch')
-                        && !$input->getOption('no-wait')
+                        && $this->shouldWait($input)
                         && ($input->getOption('delete-branch')
                             || (
                                 $input->isInteractive()
@@ -235,7 +235,7 @@ EOF
             }
         }
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             if (!$activityMonitor->waitMultiple($deactivateActivities, $this->getSelectedProject())) {
@@ -259,6 +259,10 @@ EOF
             } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
             }
+        }
+
+        if ($deleted > 0) {
+            $output->writeln("Run <info>git fetch --prune</info> to remove deleted branches from your local cache.");
         }
 
         if ($deleted < count($delete) || $deactivated < count($deactivate)) {

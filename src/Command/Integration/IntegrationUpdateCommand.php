@@ -17,7 +17,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             ->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
             ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample(
             'Switch on the "fetch branches" option for a specific integration',
             'ZXhhbXBsZSB --fetch-branches 1'
@@ -29,12 +29,15 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $this->validateInput($input);
 
         $id = $input->getArgument('id');
-        $integration = $this->getSelectedProject()
-                            ->getIntegration($id);
+        $project = $this->getSelectedProject();
+        $integration = $project->getIntegration($id);
         if (!$integration) {
-            $this->stdErr->writeln("Integration not found: <error>$id</error>");
-
-            return 1;
+            try {
+                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return 1;
+            }
         }
 
         $values = [];
@@ -47,7 +50,8 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
         if (!$values) {
-            $this->stdErr->writeln("No changed values were provided to update");
+            $this->stdErr->writeln('No changed values were provided to update.');
+            $this->ensureHooks($integration);
 
             return 1;
         }
@@ -62,11 +66,12 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         }
 
         $result = $integration->update($values);
-        $this->stdErr->writeln("Integration <info>$id</info> (<info>{$integration->type}</info>) updated");
+        $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
+        $this->ensureHooks($integration);
 
         $this->displayIntegration($integration);
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

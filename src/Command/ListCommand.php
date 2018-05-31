@@ -10,10 +10,17 @@ use Platformsh\Cli\Console\CustomTextDescriptor;
 use Symfony\Component\Console\Command\ListCommand as ParentListCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ListCommand extends ParentListCommand
 {
+
+    protected function configure()
+    {
+        parent::configure();
+        $this->addOption('all', null, InputOption::VALUE_NONE, 'Show all commands, including hidden ones');
+    }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -26,6 +33,7 @@ class ListCommand extends ParentListCommand
                 'format' => $input->getOption('format'),
                 'raw_text' => $input->getOption('raw'),
                 'namespace' => $input->getArgument('namespace'),
+                'all' => $input->getOption('all'),
             ]
         );
     }

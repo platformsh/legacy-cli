@@ -22,6 +22,8 @@ class CertificateListCommand extends CommandBase
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');
         $this->addOption('only-auto', null, InputOption::VALUE_NONE, 'Show only auto-provisioned certificates');
         $this->addOption('no-auto', null, InputOption::VALUE_NONE, 'Show only manually added certificates');
+        $this->addOption('only-expired', null, InputOption::VALUE_NONE, 'Show only expired certificates');
+        $this->addOption('no-expired', null, InputOption::VALUE_NONE, 'Show only non-expired certificates');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
@@ -31,7 +33,7 @@ class CertificateListCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        $filterOptions = ['domain', 'issuer', 'only-auto', 'no-auto'];
+        $filterOptions = ['domain', 'issuer', 'only-auto', 'no-auto', 'only-expired', 'no-expired'];
         $filters = array_filter(array_intersect_key($input->getOptions(), array_flip($filterOptions)));
 
         $project = $this->getSelectedProject();
@@ -126,8 +128,32 @@ class CertificateListCommand extends CommandBase
                         return !$cert->is_provisioned;
                     });
                     break;
+
+                case 'no-expired':
+                    $certs = array_filter($certs, function (Certificate $cert) {
+                        return !$this->isExpired($cert);
+                    });
+                    break;
+
+                case 'only-expired':
+                    $certs = array_filter($certs, function (Certificate $cert) {
+                        return $this->isExpired($cert);
+                    });
+                    break;
             }
         }
+    }
+
+    /**
+     * Check if a certificate has expired.
+     *
+     * @param \Platformsh\Client\Model\Certificate $cert
+     *
+     * @return bool
+     */
+    private function isExpired(Certificate $cert)
+    {
+        return time() >= strtotime($cert->expires_at);
     }
 
     /**

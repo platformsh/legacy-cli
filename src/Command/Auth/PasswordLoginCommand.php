@@ -3,38 +3,51 @@ namespace Platformsh\Cli\Command\Auth;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
-use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class LoginCommand extends CommandBase
+class PasswordLoginCommand extends CommandBase
 {
 
     protected function configure()
     {
         $service = $this->config()->get('service.name');
         $accountsUrl = $this->config()->get('service.accounts_url');
-        $this
-            ->setName('auth:login')
-            ->setAliases(['login'])
-            ->setDescription('Log in to ' . $service);
-        $help = 'Use this command to log in to your ' . $service . ' account.'
+        $executable = $this->config()->get('application.executable');
+
+        $this->setName('auth:password-login');
+        if ($this->config()->get('application.login_method') === 'password') {
+            $this->setAliases(['login']);
+        }
+
+        $this->setHiddenAliases(['auth:login']);
+        $this->setDescription('Log in to ' . $service . ' using a username and password');
+
+        $help = 'Use this command to log in to your ' . $service . ' account in the terminal.'
             . "\n\nYou can create an account at:\n    <info>" . $accountsUrl . '</info>'
             . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>"
-            . $accountsUrl . '/user/password</info>';
+            . $accountsUrl . '/user/password</info>'
+            . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
+            . $executable . ' auth:browser-login</info>';
+        if ($aHelp = $this->getApiTokenHelp()) {
+            $help .= "\n\n" . $aHelp;
+        }
         $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Disable the API token for this command.
         if ($this->api()->hasApiToken()) {
-            throw new \Exception('Cannot log in: an API token is set');
+            $this->stdErr->writeln('Cannot log in: an API token is set');
+            return 1;
         }
-        // Login can only happen during interactive use.
         if (!$input->isInteractive()) {
-            throw new RuntimeException('Non-interactive login not supported');
+            $this->stdErr->writeln('Non-interactive login is not supported.');
+            if ($aHelp = $this->getApiTokenHelp('comment')) {
+                $this->stdErr->writeln("\n" . $aHelp);
+            }
+            return 1;
         }
 
         $this->stdErr->writeln(
@@ -47,10 +60,14 @@ class LoginCommand extends CommandBase
         $cache = $this->getService('cache');
         $cache->flushAll();
 
-        $info = $this->api()->getClient(false)->getAccountInfo();
-        if (isset($info['mail'])) {
+        $info = $this->api()->getClient(false, true)->getAccountInfo();
+        if (isset($info['username'], $info['mail'])) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('You are logged in as <info>' . $info['mail'] . '</info>.');
+            $this->stdErr->writeln(sprintf(
+                'You are logged in as <info>%s</info> (%s).',
+                $info['username'],
+                $info['mail']
+            ));
         }
     }
 
@@ -59,18 +76,8 @@ class LoginCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $question = new Question('Your email address: ');
-        $question->setValidator(
-            function ($answer) {
-                if (empty($answer) || !filter_var($answer, FILTER_VALIDATE_EMAIL)) {
-                    throw new \RuntimeException(
-                        'Please provide a valid email address.'
-                    );
-                }
-
-                return $answer;
-            }
-        );
+        $question = new Question('Your email address or username: ');
+        $question->setValidator([$this, 'validateUsernameOrEmail']);
         $question->setMaxAttempts(5);
         $email = $questionHelper->ask($input, $output, $question);
 
@@ -138,5 +145,36 @@ class LoginCommand extends CommandBase
                 throw $e;
             }
         }
+    }
+
+    /**
+     * Validation callback for the username or email address.
+     *
+     * @param string $username
+     *
+     * @return string
+     */
+    public function validateUsernameOrEmail($username)
+    {
+        $username = trim($username);
+        if (!strlen($username) || (!filter_var($username, FILTER_VALIDATE_EMAIL) && !$this->validateUsername($username))) {
+            throw new \RuntimeException(
+                'Please enter a valid email address or username.'
+            );
+        }
+
+        return $username;
+    }
+
+    /**
+     * Validate a username.
+     *
+     * @param string $username
+     *
+     * @return bool
+     */
+    protected function validateUsername($username)
+    {
+        return preg_match('/^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$/', $username) === 1;
     }
 }

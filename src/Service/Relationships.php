@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -27,11 +28,13 @@ class Relationships implements InputConfiguringInterface
     public static function configureInput(InputDefinition $definition)
     {
         $definition->addOption(
-            new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The database relationship to use')
+            new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The service relationship to use')
         );
     }
 
     /**
+     * Choose a database for the user.
+     *
      * @param string          $sshUrl
      * @param InputInterface  $input
      * @param OutputInterface $output
@@ -40,22 +43,39 @@ class Relationships implements InputConfiguringInterface
      */
     public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
     {
+        return $this->chooseService($sshUrl, $input, $output, ['mysql', 'pgsql']);
+    }
+
+    /**
+     * Choose a service for the user.
+     *
+     * @param string          $sshUrl
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     * @param string[]        $schemes Filter by scheme.
+     *
+     * @return array|false
+     */
+    public function chooseService($sshUrl, InputInterface $input, OutputInterface $output, $schemes = [])
+    {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $relationships = $this->getRelationships($sshUrl);
 
-        // Filter to find database (mysql and pgsql) relationships.
-        $relationships = array_filter($relationships, function (array $relationship) {
-            foreach ($relationship as $key => $service) {
-                if ($service['scheme'] === 'mysql' || $service['scheme'] === 'pgsql') {
-                    return true;
+        // Filter to find services matching the schemes.
+        if (!empty($schemes)) {
+            $relationships = array_filter($relationships, function (array $relationship) use ($schemes) {
+                foreach ($relationship as $key => $service) {
+                    if (isset($service['scheme']) && in_array($service['scheme'], $schemes, true)) {
+                        return true;
+                    }
                 }
-            }
 
-            return false;
-        });
+                return false;
+            });
+        }
 
         if (empty($relationships)) {
-            $stdErr->writeln('No databases found');
+            $stdErr->writeln(sprintf('No relationships found matching scheme(s): <error>%s</error>.', implode(', ', $schemes)));
             return false;
         }
 
@@ -63,7 +83,7 @@ class Relationships implements InputConfiguringInterface
         if ($input->hasOption('relationship')
             && ($relationshipName = $input->getOption('relationship'))) {
             if (!isset($relationships[$relationshipName])) {
-                $stdErr->writeln('Database relationship not found: ' . $relationshipName);
+                $stdErr->writeln('Relationship not found: ' . $relationshipName);
                 return false;
             }
             $relationships = array_intersect_key($relationships, [$relationshipName => true]);
@@ -78,15 +98,15 @@ class Relationships implements InputConfiguringInterface
                 $choices[$name . $separator . $key] = $name . ($serviceCount > 1 ? '.' . $key : '');
             }
         }
-        $choice = $questionHelper->choose($choices, 'Enter a number to choose a database:');
+        $choice = $questionHelper->choose($choices, 'Enter a number to choose a relationship:');
         list($name, $key) = explode($separator, $choice, 2);
-        $database = $relationships[$name][$key];
+        $service = $relationships[$name][$key];
 
-        // Add metadata about the database.
-        $database['_relationship_name'] = $name;
-        $database['_relationship_key'] = $key;
+        // Add metadata about the service.
+        $service['_relationship_name'] = $name;
+        $service['_relationship_key'] = $key;
 
-        return $database;
+        return $service;
     }
 
     /**
@@ -112,30 +132,60 @@ class Relationships implements InputConfiguringInterface
      * @return string
      *   The command line arguments (excluding the $command).
      */
-    public function getSqlCommandArgs($command, array $database)
+    public function getDbCommandArgs($command, array $database)
     {
         switch ($command) {
             case 'psql':
             case 'pg_dump':
-                $arguments = "'postgresql://%s:%s@%s:%d/%s'";
-                break;
+                return OsUtil::escapePosixShellArg(sprintf(
+                    'postgresql://%s:%s@%s:%d/%s',
+                    $database['username'],
+                    $database['password'],
+                    $database['host'],
+                    $database['port'],
+                    $database['path']
+                ));
 
             case 'mysql':
             case 'mysqldump':
-                $arguments = "'--user=%s' '--password=%s' '--host=%s' --port=%d '%s'";
-                break;
+                return sprintf(
+                    '--user=%s --password=%s --host=%s --port=%d %s',
+                    OsUtil::escapePosixShellArg($database['username']),
+                    OsUtil::escapePosixShellArg($database['password']),
+                    OsUtil::escapePosixShellArg($database['host']),
+                    $database['port'],
+                    OsUtil::escapePosixShellArg($database['path'])
+                );
 
-            default:
-                throw new \InvalidArgumentException('Unrecognised command: ' . $command);
+            case 'mongo':
+            case 'mongodump':
+            case 'mongoexport':
+            case 'mongorestore':
+                $args = sprintf(
+                    '--username %s --password %s --host %s --port %d --authenticationDatabase %s',
+                    OsUtil::escapePosixShellArg($database['username']),
+                    OsUtil::escapePosixShellArg($database['password']),
+                    OsUtil::escapePosixShellArg($database['host']),
+                    $database['port'],
+                    OsUtil::escapePosixShellArg($database['path'])
+                );
+                if ($command === 'mongo') {
+                    $args .= ' ' . OsUtil::escapePosixShellArg($database['path']);
+                } else {
+                    $args .= ' --db ' . OsUtil::escapePosixShellArg($database['path']);
+                }
+
+                return $args;
         }
 
-        return sprintf(
-            $arguments,
-            $database['username'],
-            $database['password'],
-            $database['host'],
-            $database['port'],
-            $database['path']
-        );
+        throw new \InvalidArgumentException('Unrecognised command: ' . $command);
+    }
+
+    /**
+     * @param string $sshUrl
+     */
+    public function clearCaches($sshUrl)
+    {
+        $this->envVarService->clearCaches($sshUrl);
     }
 }

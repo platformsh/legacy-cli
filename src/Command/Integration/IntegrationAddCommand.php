@@ -16,10 +16,14 @@ class IntegrationAddCommand extends IntegrationCommandBase
             ->setName('integration:add')
             ->setDescription('Add an integration to the project');
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addNoWaitOption();
+        $this->addProjectOption()->addWaitOptions();
         $this->addExample(
             'Add an integration with a GitHub repository',
-            '--type github --repository myuser/example-repo --token UFpYS1MzQktjNw --fetch-branches 0'
+            '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
+        );
+        $this->addExample(
+            'Add an integration with a GitLab repository',
+            '--type gitlab --repository mygroup/example-repo --token 22fe4d70dfbc20e4f668568a0b5422e2 --base-url https://gitlab.example.com'
         );
     }
 
@@ -32,16 +36,25 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $values = $this->getForm()
                        ->resolveOptions($input, $this->stdErr, $questionHelper);
 
+        // Omit all empty, non-required fields when creating a new integration.
+        foreach ($this->getForm()->getFields() as $name => $field) {
+            if (isset($values[$name]) && !$field->isRequired() && $field->isEmpty($values[$name])) {
+                unset($values[$name]);
+            }
+        }
+
         $result = $this->getSelectedProject()
                        ->addIntegration($values['type'], $values);
 
         /** @var Integration $integration */
         $integration = $result->getEntity();
 
+        $this->ensureHooks($integration);
+
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 
         $success = true;
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

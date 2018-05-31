@@ -23,9 +23,10 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
-            ->addOption('no-wait', null, InputOption::VALUE_NONE, 'After pushing, do not wait for build or deploy')
+            ->addOption('set-upstream', 'u', InputOption::VALUE_NONE, 'Set the target environment as the upstream for the source branch')
             ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment after pushing')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent (only used with --activate)');
+        $this->addWaitOptions();
         $this->addProjectOption()
             ->addEnvironmentOption();
         Ssh::configureInput($this->getDefinition());
@@ -104,10 +105,10 @@ class EnvironmentPushCommand extends CommandBase
             // Determine whether to activate the environment after pushing.
             if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
                 $activate = $input->getOption('activate')
-                    || $questionHelper->confirm(sprintf(
+                    || ($input->isInteractive() && $questionHelper->confirm(sprintf(
                         'Activate <info>%s</info> after pushing?',
                         $target
-                    ));
+                    )));
             }
 
             // If activating, determine what the environment's parent should be.
@@ -133,7 +134,7 @@ class EnvironmentPushCommand extends CommandBase
             $this->config()->get('detection.git_remote_name'),
             $source . ':refs/heads/' . $target,
         ];
-        foreach (['force', 'force-with-lease'] as $option) {
+        foreach (['force', 'force-with-lease', 'set-upstream'] as $option) {
             if ($input->getOption($option)) {
                 $gitArgs[] = '--' . $option;
             }
@@ -144,7 +145,7 @@ class EnvironmentPushCommand extends CommandBase
         $ssh = $this->getService('ssh');
         $extraSshOptions = [];
         $env = [];
-        if ($input->getOption('no-wait')) {
+        if (!$this->shouldWait($input)) {
             $extraSshOptions['SendEnv'] = 'PLATFORMSH_PUSH_NO_WAIT';
             $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }
@@ -161,9 +162,9 @@ class EnvironmentPushCommand extends CommandBase
         if ($this->hasSelectedEnvironment()) {
             try {
                 $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
-                /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarService */
-                $envVarService = $this->getService('remote_env_vars');
-                $envVarService->clearCaches($sshUrl);
+                /** @var \Platformsh\Cli\Service\Relationships $relationships */
+                $relationships = $this->getService('relationships');
+                $relationships->clearCaches($sshUrl);
             } catch (EnvironmentStateException $e) {
                 // Ignore environments with a missing SSH URL.
             }

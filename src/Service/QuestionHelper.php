@@ -56,6 +56,9 @@ class QuestionHelper extends BaseQuestionHelper
         } elseif ($no && !$yes) {
             $this->output->writeln($questionText . 'n');
             return false;
+        } elseif (!$this->input->isInteractive()) {
+            $this->output->writeln($questionText . ($default ? 'y' : 'n'));
+            return $default;
         }
         $question = new ConfirmationQuestion($questionText, $default);
 
@@ -63,28 +66,28 @@ class QuestionHelper extends BaseQuestionHelper
     }
 
     /**
-     * @param array           $items   An associative array of choices.
-     * @param string          $text    Some text to precede the choices.
-     * @param mixed           $default A default (as a key in $items).
+     * Provides an interactive choice question.
+     *
+     * @param array  $items     An associative array of choices.
+     * @param string $text      Some text to precede the choices.
+     * @param mixed  $default   A default (as a key in $items).
+     * @param bool   $skipOnOne Whether to skip the choice if there is only one
+     *                          item.
      *
      * @throws \RuntimeException on failure
      *
      * @return mixed
      *   The chosen item (as a key in $items).
      */
-    public function choose(array $items, $text = 'Enter a number to choose an item:', $default = null)
+    public function choose(array $items, $text = 'Enter a number to choose an item:', $default = null, $skipOnOne = true)
     {
-        if (count($items) === 1) {
+        if (count($items) === 1 && $skipOnOne) {
             return key($items);
         }
         $itemList = array_values($items);
         $defaultKey = $default !== null ? array_search($default, $itemList) : null;
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
         $question->setMaxAttempts(5);
-
-        // Unfortunately the default autocompletion can cause '2' to be
-        // completed to '20', etc.
-        $question->setAutocompleterValues(null);
 
         $choice = $this->ask($this->input, $this->output, $question);
         $choiceKey = array_search($choice, $items);
@@ -98,14 +101,15 @@ class QuestionHelper extends BaseQuestionHelper
     /**
      * Ask a simple question which requires input.
      *
-     * @param string $questionText
-     * @param mixed  $default
-     * @param array  $autoCompleterValues
+     * @param string   $questionText
+     * @param mixed    $default
+     * @param array    $autoCompleterValues
+     * @param callable $validator
      *
      * @return string
      *   The user's answer.
      */
-    public function askInput($questionText, $default = null, array $autoCompleterValues = [])
+    public function askInput($questionText, $default = null, array $autoCompleterValues = [], callable $validator = null)
     {
         if ($default !== null) {
             $questionText .= ' <question>[' . $default . ']</question>';
@@ -114,6 +118,10 @@ class QuestionHelper extends BaseQuestionHelper
         $question = new Question($questionText, $default);
         if (!empty($autoCompleterValues)) {
             $question->setAutocompleterValues($autoCompleterValues);
+        }
+        if ($validator !== null) {
+            $question->setValidator($validator);
+            $question->setMaxAttempts(5);
         }
 
         return $this->ask($this->input, $this->output, $question);

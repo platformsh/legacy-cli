@@ -17,9 +17,10 @@ class SnapshotCreateCommand extends CommandBase
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addNoWaitOption('Do not wait for the snapshot to complete');
+             ->addWaitOptions();
         $this->setHiddenAliases(['backup', 'environment:backup']);
         $this->addExample('Make a snapshot of the current environment');
+        $this->addExample('Request a snapshot (and exit quickly)', '--no-wait');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -28,7 +29,7 @@ class SnapshotCreateCommand extends CommandBase
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
-        if (!$selectedEnvironment->operationAvailable('backup')) {
+        if (!$this->api()->checkEnvironmentOperation('backup', $selectedEnvironment)) {
             $this->stdErr->writeln(
                 "Operation not available: cannot create a snapshot of <error>$environmentId</error>"
             );
@@ -43,8 +44,16 @@ class SnapshotCreateCommand extends CommandBase
 
         $this->stdErr->writeln("Creating a snapshot of <info>$environmentId</info>");
 
-        if (!$input->getOption('no-wait')) {
+        if ($this->shouldWait($input)) {
             $this->stdErr->writeln('Waiting for the snapshot to complete...');
+
+            // Strongly recommend using --no-wait in a cron job.
+            if (!$this->isTerminal(STDIN)) {
+                $this->stdErr->writeln(
+                    '<comment>Warning:</comment> use the --no-wait (-W) option if you are running this in a cron job.'
+                );
+            }
+
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitAndLog(

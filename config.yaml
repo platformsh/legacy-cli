@@ -9,6 +9,32 @@ application:
   user_config_dir: '.platformsh'
   user_state_file: '.platformsh/state.json'
   env_prefix: 'PLATFORMSH_CLI_'
+  tmp_sub_dir: 'platformsh-cli-tmp'
+  github_repo: 'platformsh/platformsh-cli'
+  release_branch: 'master'
+
+  # The default interactive login method: either 'browser' or 'password'.
+  # This can be overridden in the user config file.
+  login_method: browser
+
+  # The default timezone for times displayed or interpreted by the CLI.
+  # An empty (falsy) value here means the PHP or system timezone will be used.
+  # For a list of timezones, see: http://php.net/manual/en/timezones.php
+  # This can be overridden in the user config file.
+  timezone: ~
+
+  # The default date format string. This can be overridden in the user config
+  # file, or  by the --date-fmt option. For a list of formats, see:
+  # http://php.net/manual/en/function.date.php
+  date_format: c
+
+  # Disabled commands (a list of full command names).
+  disabled_commands: []
+
+  # Experimental commands (a list of full command names). Enable these in the
+  # user config file: the array 'enable_commands' inside the 'experimental'
+  # section.
+  experimental_commands: []
 
 # Configuration for working with projects locally.
 local:
@@ -29,14 +55,20 @@ local:
 service:
   name: 'Platform.sh'
   env_prefix: 'PLATFORM_'
+  header_prefix: 'X-Platform'
   app_config_file: '.platform.app.yaml'
   project_config_dir: '.platform'
   docs_url: 'https://docs.platform.sh'
-  docs_search_url: 'https://docs.platform.sh/?q={{ terms }}'
+  docs_search_url: 'https://www.google.com/search?q=site%3Adocs.platform.sh%20{{ terms }}'
   accounts_url: 'https://accounts.platform.sh'
+  pricing_url: 'https://platform.sh/pricing'
+  default_from_address: 'noreply@platform.sh'
+  api_token_help_url: 'https://docs.platform.sh/gettingstarted/cli/api-tokens.html'
   available_regions:
     - eu.platform.sh
     - us.platform.sh
+    - au.platform.sh
+    - nl-1.platform.sh
   available_plans:
     - development
     - standard
@@ -75,7 +107,8 @@ detection:
 # Automatic updates.
 # This can be overridden in the user config file.
 updates:
-  check_interval: 86400
+  # The interval between automatic update checks (in seconds). 604800 = 7 days.
+  check_interval: 604800
 
   # Overridden by {application.env_prefix}UPDATES_CHECK env var.
   check: true

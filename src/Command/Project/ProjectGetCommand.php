@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Project;
 
 use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -55,8 +56,9 @@ class ProjectGetCommand extends CommandBase
 
         // First check if the repo actually exists.
         try {
-            $repoExists = $git->remoteRepoExists($gitUrl);
-        } catch (\Exception $e) {
+            $repoExists = $git->remoteRefExists($gitUrl, 'refs/heads/' . $environment->id)
+                || $git->remoteRefExists($gitUrl);
+        } catch (\RuntimeException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln(sprintf(
                 '<error>Failed to connect to the %s Git server</error>',
@@ -148,16 +150,13 @@ class ProjectGetCommand extends CommandBase
         }
 
         // Ensure that Drush aliases are created.
-        if (Drupal::isDrupal($projectRoot)) {
+        if ($this->getApplication()->has('local:drush-aliases') && Drupal::isDrupal($projectRoot)) {
             $this->stdErr->writeln('');
-            $this->runOtherCommand(
-                'local:drush-aliases',
-                [
-                    // The default Drush alias group is the final part of the
-                    // directory path.
-                    '--group' => basename($projectRoot),
-                ]
-            );
+            try {
+                $this->runOtherCommand('local:drush-aliases');
+            } catch (DependencyMissingException $e) {
+                $this->stdErr->writeln(sprintf('<comment>%s</comment>', $e->getMessage()));
+            }
         }
 
         // Launch the first build.
@@ -204,7 +203,9 @@ class ProjectGetCommand extends CommandBase
                 throw new InvalidArgumentException('No project specified');
             }
         } else {
-            $result = $this->parseProjectId($projectId);
+            /** @var \Platformsh\Cli\Service\Identifier $identifier */
+            $identifier = $this->getService('identifier');
+            $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
             $host = $host ?: $result['host'];
             $environmentId = $environmentId ?: $result['environmentId'];
@@ -212,19 +213,13 @@ class ProjectGetCommand extends CommandBase
 
         $project = $this->selectProject($projectId, $host);
 
-        if (!$environmentId) {
-            $environments = $this->api()->getEnvironments($project);
-            $environmentId = isset($environments['master']) ? 'master' : key($environments);
-        }
-
-        $this->selectEnvironment($environmentId);
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
         $directory = $input->getArgument('directory');
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
             $directory = $questionHelper->askInput('Directory', $directory, [$directory, $projectId]);
         }
 
@@ -241,6 +236,16 @@ class ProjectGetCommand extends CommandBase
             throw new InvalidArgumentException("Not a directory: " . dirname($directory));
         }
         $this->projectRoot = $parent . '/' . basename($directory);
+
+        if (!$environmentId) {
+            $environments = $this->api()->getEnvironments($project);
+            $environmentId = isset($environments['master']) ? 'master' : key($environments);
+            if (count($environments) > 1) {
+                $environmentId = $questionHelper->askInput('Environment', $environmentId, array_keys($environments));
+            }
+        }
+
+        $this->selectEnvironment($environmentId);
     }
 
     /**
