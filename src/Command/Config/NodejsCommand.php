@@ -26,10 +26,10 @@ class NodejsCommand extends ConfigGenerateCommandBase
      * {@inheritdoc}
      */
     public function getFields() {
-            'options' => ['6.0', '7.5'],
-            'default' => '7.5',
         $fields['runtime_version'] = new OptionsField('Node.js version', [
             'optionName' => 'runtime-version',
+            'options' => ['6.11', '8.9', '10'],
+            'default' => '10',
         ]);
 
         return $fields;
