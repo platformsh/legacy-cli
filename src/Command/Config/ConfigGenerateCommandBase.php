@@ -241,7 +241,7 @@ abstract class ConfigGenerateCommandBase extends CommandBase implements ConfigGe
             $options = [
                 'debug' => true,
                 'cache' => false,
-                'strict_variables' => true,
+                'strict_variables' => false,
                 'autoescape' => false,
             ];
             $this->engine = new \Twig_Environment(new TemplateLoader(CLI_ROOT . '/resources/templates', $cache), $options);
