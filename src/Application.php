@@ -65,6 +65,21 @@ class Application extends ParentApplication
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * Prevent commands being enabled, according to config.yaml configuration.
+     */
+    public function add(ConsoleCommand $command)
+    {
+        if (!$this->cliConfig->isCommandEnabled($command->getName())) {
+            $command->setApplication(null);
+            return null;
+        }
+
+        return parent::add($command);
+    }
+
+    /**
      * Returns the Dependency Injection Container for the whole application.
      *
      * @return ContainerInterface

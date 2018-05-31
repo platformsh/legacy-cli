@@ -2,8 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Application;
-use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -24,13 +22,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @var array
      */
     private $hiddenAliases = [];
-
-    /**
-     * The command synopsis.
-     *
-     * @var array
-     */
-    private $synopsis = [];
 
     /**
      * @inheritdoc
@@ -68,26 +59,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * {@inheritdoc}
-     *
-     * Overrides the default method so that the description is not repeated
-     * twice.
-     */
-    public function getProcessedHelp()
-    {
-        $help = $this->getHelp();
-        if ($help === '') {
-            return $help;
-        }
-        $name = $this->getName();
-
-        $placeholders = ['%command.name%', '%command.full_name%'];
-        $replacements = [$name, $this->config()->get('application.executable') . ' ' . $name];
-
-        return str_replace($placeholders, $replacements, $help);
-    }
-
-    /**
      * Print a message if debug output is enabled.
      *
      * @param string $message
@@ -112,16 +83,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Get the configuration service.
-     *
-     * @return \Platformsh\Cli\Service\Config
-     */
-    private function config()
-    {
-        return Application::container()->get(Config::class);
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function canBeRunMultipleTimes()
@@ -138,28 +99,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function getSynopsis($short = false)
-    {
-        $key = $short ? 'short' : 'long';
-
-        if (!isset($this->synopsis[$key])) {
-            $aliases = $this->getVisibleAliases();
-            $name = $this->getName();
-            $shortName = count($aliases) === 1 ? reset($aliases) : $name;
-            $this->synopsis[$key] = trim(sprintf(
-                '%s %s %s',
-                $this->config()->get('application.executable'),
-                $shortName,
-                $this->getDefinition()->getSynopsis($short)
-            ));
-        }
-
-        return $this->synopsis[$key];
-    }
-
-    /**
      * @param resource|int $descriptor
      *
      * @return bool
@@ -167,13 +106,5 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function isTerminal($descriptor)
     {
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isEnabled()
-    {
-        return $this->config()->isCommandEnabled($this->getName());
     }
 }

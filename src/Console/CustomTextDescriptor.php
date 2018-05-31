@@ -62,7 +62,8 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText("\n");
         }
 
-        if ($help = $command->getProcessedHelp()) {
+        $help = $command->getProcessedHelp();
+        if ($help && $help !== $description) {
             $this->writeText("\n");
             $this->writeText('<comment>Help:</comment>', $options);
             $this->writeText("\n");
