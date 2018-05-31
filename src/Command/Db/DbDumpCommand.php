@@ -260,7 +260,7 @@ class DbDumpCommand extends CommandBase
         $schemaOnly = false,
         $gzip = false)
     {
-        $defaultFilename = $environment->project . '--' . $environment->id;
+        $defaultFilename = $environment->project . '--' . $environment->machine_name;
         if ($appName !== null) {
             $defaultFilename .= '--' . $appName;
         }
