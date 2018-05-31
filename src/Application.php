@@ -331,7 +331,7 @@ class Application extends ParentApplication
             // be checked.
             // @todo make aliases part of the services.yaml file to keep the performance benefit of lazy-loading?
             /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
-            $loader = self::$container->get('console.command_loader');
+            $loader = $this->container()->get('console.command_loader');
             foreach ($loader->getNames() as $loaderName) {
                 if (!$this->has($loaderName)) {
                     $this->add($loader->get($loaderName));
