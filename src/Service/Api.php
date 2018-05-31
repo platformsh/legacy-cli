@@ -9,12 +9,12 @@ use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
+use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
-use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\Storage\File;
@@ -65,21 +65,12 @@ class Api
     /** @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null */
     protected $sessionStorage;
 
-    /**
-     * Constructor.
-     *
-     * @param Config|null                $config
-     * @param CacheProvider|null            $cache
-     * @param EventDispatcherInterface|null $dispatcher
-     */
     public function __construct(
         Config $config = null,
-        CacheProvider $cache = null,
-        EventDispatcherInterface $dispatcher = null
+        CacheProvider $cache = null
     ) {
         $this->config = $config ?: new Config();
-        $this->dispatcher = $dispatcher ?: new EventDispatcher();
-
+        $this->dispatcher = new EventDispatcher();
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
 
         $this->sessionId = $this->config->get('api.session_id') ?: 'default';
@@ -110,6 +101,28 @@ class Api
                 $this->apiTokenType = 'access';
             }
         }
+    }
+
+    /**
+     * Sets up listeners (called by the DI container).
+     *
+     * @required
+     *
+     * @param \Platformsh\Cli\Service\AutoLoginListener $autoLoginListener
+     * @param \Platformsh\Cli\Service\DrushAliasUpdater $drushAliasUpdater
+     */
+    public function injectListeners(
+        AutoLoginListener $autoLoginListener,
+        DrushAliasUpdater $drushAliasUpdater
+    ) {
+        $this->dispatcher->addListener(
+            'login.required',
+            [$autoLoginListener, 'onLoginRequired']
+        );
+        $this->dispatcher->addListener(
+            'environments.changed',
+            [$drushAliasUpdater, 'onEnvironmentsChanged']
+        );
     }
 
     /**
@@ -211,7 +224,7 @@ class Api
             self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
-                $this->dispatcher->dispatch('login_required');
+                $this->dispatcher->dispatch('login.required');
             }
         }
 
@@ -335,7 +348,7 @@ class Api
             // Dispatch an event if the list of environments has changed.
             if ($events && (!$cached || array_diff_key($environments, $cached))) {
                 $this->dispatcher->dispatch(
-                    'environments_changed',
+                    'environments.changed',
                     new EnvironmentsChangedEvent($project, $environments)
                 );
             }
@@ -886,5 +899,22 @@ class Api
         $environment = $this->getEnvironment($environment->id, $this->getProject($environment->project), $refresh);
 
         return $environment->operationAvailable($op);
+    }
+
+    /**
+     * Get help on how to use API tokens.
+     *
+     * @param string $tag
+     *
+     * @return string|null
+     */
+    public function getApiTokenHelp($tag = 'info')
+    {
+        if ($this->config->has('service.api_token_help_url')) {
+            return "To authenticate non-interactively using an API token, see:\n    <$tag>"
+                . $this->config->get('service.api_token_help_url') . "</$tag>";
+        }
+
+        return null;
     }
 }

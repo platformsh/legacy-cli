@@ -2,6 +2,9 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,22 +13,41 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentRelationshipsCommand extends CommandBase
 {
+    protected static $defaultName = 'environment:relationships';
+
+    private $formatter;
+    private $relationships;
+    private $selector;
+    private $ssh;
+
+    public function __construct(
+        PropertyFormatter $formatter,
+        Relationships $relationships,
+        Selector $selector,
+        Ssh $ssh
+    ) {
+        $this->formatter = $formatter;
+        $this->relationships = $relationships;
+        $this->selector = $selector;
+        $this->ssh = $ssh;
+        parent::__construct();
+    }
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('environment:relationships')
-            ->setAliases(['relationships'])
+        $this->setAliases(['relationships'])
             ->setDescription('Show an environment\'s relationships')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the relationships');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addAppOption();
-        Ssh::configureInput($this->getDefinition());
+
+        $definition = $this->getDefinition();
+        $this->selector->addAllOptions($definition);
+        $this->ssh->configureInput($definition);
+
         $this->addExample("View all the current environment's relationships");
         $this->addExample("View the 'master' environment's relationships", 'master');
         $this->addExample("View the 'master' environment's database port", 'master --property database.0.port');
@@ -33,18 +55,12 @@ class EnvironmentRelationshipsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $app = $this->selectApp($input);
-        $environment = $this->getSelectedEnvironment();
+        $sshUrl = $selection->getEnvironment()
+            ->getSshUrl($selection->getAppName());
+        $value = $this->relationships->getRelationships($sshUrl, $input->getOption('refresh'));
 
-        $sshUrl = $environment->getSshUrl($app);
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $value = $relationshipsService->getRelationships($sshUrl, $input->getOption('refresh'));
-
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-        $formatter->displayData($output, $value, $input->getOption('property'));
+        $this->formatter->displayData($output, $value, $input->getOption('property'));
     }
 }

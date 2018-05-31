@@ -1,11 +1,18 @@
 <?php
 namespace Platformsh\Cli;
 
+use Platformsh\Cli\Command\WelcomeCommand;
 use Platformsh\Cli\Console\EventSubscriber;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\LegacyMigration;
+use Platformsh\Cli\Service\SelfUpdateChecker;
 use Platformsh\Cli\Util\TimezoneUtil;
+use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
+use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
+use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Exception\InvalidOptionException as ConsoleInvalidOptionException;
 use Symfony\Component\Console\Exception\RuntimeException as ConsoleRuntimeException;
@@ -14,7 +21,10 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Terminal;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
@@ -22,32 +32,105 @@ class Application extends ParentApplication
     /**
      * @var ConsoleCommand|null
      */
-    protected $currentCommand;
+    private $currentCommand;
 
     /** @var Config */
-    protected $cliConfig;
+    private $config;
+
+    /** @var \Symfony\Component\DependencyInjection\Container */
+    private $container;
 
     /**
      * {@inheritdoc}
      */
-    public function __construct()
+    public function __construct(Config $config = null)
     {
-        $this->cliConfig = new Config();
-        parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
+        // Initialize configuration (from config.yaml).
+        $this->config = $config ?: new Config();
+        parent::__construct($this->config->get('application.name'), $this->config->get('application.version'));
 
         // Use the configured timezone, or fall back to the system timezone.
         date_default_timezone_set(
-            $this->cliConfig->getWithDefault('application.timezone', null)
+            $this->config->getWithDefault('application.timezone', null)
                 ?: TimezoneUtil::getTimezone()
         );
 
-        $this->addCommands($this->getCommands());
+        // Set this application as the synthetic service named
+        // "Platformsh\Cli\Application".
+        $this->container()->set(__CLASS__, $this);
 
-        $this->setDefaultCommand('welcome');
+        // Set up the command loader, which will load commands that are tagged
+        // appropriately in the services.yaml container configuration (any
+        // services tagged with "console.command").
+        /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
+        $loader = $this->container()->get('console.command_loader');
+        $this->setCommandLoader($loader);
 
+        // Set "welcome" as the default command.
+        $this->setDefaultCommand(WelcomeCommand::getDefaultName());
+
+        // Set up an event subscriber, which will listen for Console events.
         $dispatcher = new EventDispatcher();
-        $dispatcher->addSubscriber(new EventSubscriber($this->cliConfig));
+        $dispatcher->addSubscriber(new EventSubscriber($this->config));
         $this->setDispatcher($dispatcher);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Prevent commands being enabled, according to config.yaml configuration.
+     */
+    public function add(ConsoleCommand $command)
+    {
+        if (!$this->config->isCommandEnabled($command->getName())) {
+            $command->setApplication(null);
+            return null;
+        }
+
+        return parent::add($command);
+    }
+
+    /**
+     * Returns the Dependency Injection Container for the whole application.
+     *
+     * @return ContainerInterface
+     */
+    private function container()
+    {
+        $cacheFile = __DIR__ . '/../config/cache/container.php';
+        $servicesFile = __DIR__ . '/../config/services.yaml';
+
+        if (!isset($this->container)) {
+            if (file_exists($cacheFile) && !getenv('PLATFORMSH_CLI_DEBUG')) {
+                // Load the cached container.
+                /** @noinspection PhpIncludeInspection */
+                require_once $cacheFile;
+                /** @noinspection PhpUndefinedClassInspection */
+                $this->container = new \ProjectServiceContainer();
+            } else {
+                // Compile a new container.
+                $this->container = new ContainerBuilder();
+                try {
+                    (new YamlFileLoader($this->container, new FileLocator()))
+                        ->load($servicesFile);
+                } catch (\Exception $e) {
+                    throw new \RuntimeException(sprintf(
+                        'Failed to load services.yaml file %s: %s',
+                        $servicesFile,
+                        $e->getMessage()
+                    ));
+                }
+                $this->container->addCompilerPass(new AddConsoleCommandPass());
+                $this->container->compile();
+                $dumper = new PhpDumper($this->container);
+                if (!is_dir(dirname($cacheFile))) {
+                    mkdir(dirname($cacheFile), 0755, true);
+                }
+                file_put_contents($cacheFile, $dumper->dump());
+            }
+        }
+
+        return $this->container;
     }
 
     /**
@@ -75,134 +158,6 @@ class Application extends ParentApplication
         // Override the default commands to add a custom HelpCommand and
         // ListCommand.
         return [new Command\HelpCommand(), new Command\ListCommand()];
-    }
-
-    /**
-     * @return \Symfony\Component\Console\Command\Command[]
-     */
-    protected function getCommands()
-    {
-        static $commands = [];
-        if (count($commands)) {
-            return $commands;
-        }
-
-        $commands[] = new Command\BotCommand();
-        $commands[] = new Command\ClearCacheCommand();
-        $commands[] = new Command\CompletionCommand();
-        $commands[] = new Command\DocsCommand();
-        $commands[] = new Command\LegacyMigrateCommand();
-        $commands[] = new Command\MultiCommand();
-        $commands[] = new Command\Activity\ActivityGetCommand();
-        $commands[] = new Command\Activity\ActivityListCommand();
-        $commands[] = new Command\Activity\ActivityLogCommand();
-        $commands[] = new Command\App\AppConfigGetCommand();
-        $commands[] = new Command\App\AppListCommand();
-        $commands[] = new Command\Auth\AuthInfoCommand();
-        $commands[] = new Command\Auth\AuthTokenCommand();
-        $commands[] = new Command\Auth\LogoutCommand();
-        $commands[] = new Command\Auth\PasswordLoginCommand();
-        $commands[] = new Command\Auth\BrowserLoginCommand();
-        $commands[] = new Command\Certificate\CertificateAddCommand();
-        $commands[] = new Command\Certificate\CertificateDeleteCommand();
-        $commands[] = new Command\Certificate\CertificateGetCommand();
-        $commands[] = new Command\Certificate\CertificateListCommand();
-        $commands[] = new Command\Db\DbSqlCommand();
-        $commands[] = new Command\Db\DbDumpCommand();
-        $commands[] = new Command\Db\DbSizeCommand();
-        $commands[] = new Command\Domain\DomainAddCommand();
-        $commands[] = new Command\Domain\DomainDeleteCommand();
-        $commands[] = new Command\Domain\DomainGetCommand();
-        $commands[] = new Command\Domain\DomainListCommand();
-        $commands[] = new Command\Domain\DomainUpdateCommand();
-        $commands[] = new Command\Environment\EnvironmentActivateCommand();
-        $commands[] = new Command\Environment\EnvironmentBranchCommand();
-        $commands[] = new Command\Environment\EnvironmentCheckoutCommand();
-        $commands[] = new Command\Environment\EnvironmentDeleteCommand();
-        $commands[] = new Command\Environment\EnvironmentDrushCommand();
-        $commands[] = new Command\Environment\EnvironmentHttpAccessCommand();
-        $commands[] = new Command\Environment\EnvironmentListCommand();
-        $commands[] = new Command\Environment\EnvironmentLogCommand();
-        $commands[] = new Command\Environment\EnvironmentInfoCommand();
-        $commands[] = new Command\Environment\EnvironmentInitCommand();
-        $commands[] = new Command\Environment\EnvironmentMergeCommand();
-        $commands[] = new Command\Environment\EnvironmentPushCommand();
-        $commands[] = new Command\Environment\EnvironmentRedeployCommand();
-        $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
-        $commands[] = new Command\Environment\EnvironmentSshCommand();
-        $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
-        $commands[] = new Command\Environment\EnvironmentUrlCommand();
-        $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();
-        $commands[] = new Command\Integration\IntegrationAddCommand();
-        $commands[] = new Command\Integration\IntegrationDeleteCommand();
-        $commands[] = new Command\Integration\IntegrationGetCommand();
-        $commands[] = new Command\Integration\IntegrationListCommand();
-        $commands[] = new Command\Integration\IntegrationUpdateCommand();
-        $commands[] = new Command\Local\LocalBuildCommand();
-        $commands[] = new Command\Local\LocalCleanCommand();
-        $commands[] = new Command\Local\LocalDrushAliasesCommand();
-        $commands[] = new Command\Local\LocalDirCommand();
-        $commands[] = new Command\Mount\MountListCommand();
-        $commands[] = new Command\Mount\MountDownloadCommand();
-        $commands[] = new Command\Mount\MountSizeCommand();
-        $commands[] = new Command\Mount\MountUploadCommand();
-        $commands[] = new Command\Project\ProjectClearBuildCacheCommand();
-        $commands[] = new Command\Project\ProjectCurlCommand();
-        $commands[] = new Command\Project\ProjectCreateCommand();
-        $commands[] = new Command\Project\ProjectDeleteCommand();
-        $commands[] = new Command\Project\ProjectGetCommand();
-        $commands[] = new Command\Project\ProjectListCommand();
-        $commands[] = new Command\Project\ProjectInfoCommand();
-        $commands[] = new Command\Project\ProjectSetRemoteCommand();
-        $commands[] = new Command\Project\Variable\ProjectVariableDeleteCommand();
-        $commands[] = new Command\Project\Variable\ProjectVariableGetCommand();
-        $commands[] = new Command\Project\Variable\ProjectVariableSetCommand();
-        $commands[] = new Command\Repo\CatCommand();
-        $commands[] = new Command\Repo\LsCommand();
-        $commands[] = new Command\Route\RouteListCommand();
-        $commands[] = new Command\Route\RouteGetCommand();
-        $commands[] = new Command\Self\SelfBuildCommand();
-        $commands[] = new Command\Self\SelfInstallCommand();
-        $commands[] = new Command\Self\SelfUpdateCommand();
-        $commands[] = new Command\Self\SelfReleaseCommand();
-        $commands[] = new Command\Self\SelfStatsCommand();
-        $commands[] = new Command\Server\ServerRunCommand();
-        $commands[] = new Command\Server\ServerStartCommand();
-        $commands[] = new Command\Server\ServerListCommand();
-        $commands[] = new Command\Server\ServerStopCommand();
-        $commands[] = new Command\Service\MongoDB\MongoDumpCommand();
-        $commands[] = new Command\Service\MongoDB\MongoExportCommand();
-        $commands[] = new Command\Service\MongoDB\MongoRestoreCommand();
-        $commands[] = new Command\Service\MongoDB\MongoShellCommand();
-        $commands[] = new Command\Service\RedisCliCommand();
-        $commands[] = new Command\Snapshot\SnapshotCreateCommand();
-        $commands[] = new Command\Snapshot\SnapshotListCommand();
-        $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
-        $commands[] = new Command\SshKey\SshKeyAddCommand();
-        $commands[] = new Command\SshKey\SshKeyDeleteCommand();
-        $commands[] = new Command\SshKey\SshKeyListCommand();
-        $commands[] = new Command\SubscriptionInfoCommand();
-        $commands[] = new Command\Tunnel\TunnelCloseCommand();
-        $commands[] = new Command\Tunnel\TunnelInfoCommand();
-        $commands[] = new Command\Tunnel\TunnelListCommand();
-        $commands[] = new Command\Tunnel\TunnelOpenCommand();
-        $commands[] = new Command\User\UserAddCommand();
-        $commands[] = new Command\User\UserDeleteCommand();
-        $commands[] = new Command\User\UserListCommand();
-        $commands[] = new Command\User\UserRoleCommand();
-        $commands[] = new Command\Variable\VariableCreateCommand();
-        $commands[] = new Command\Variable\VariableDeleteCommand();
-        $commands[] = new Command\Variable\VariableDisableCommand();
-        $commands[] = new Command\Variable\VariableEnableCommand();
-        $commands[] = new Command\Variable\VariableGetCommand();
-        $commands[] = new Command\Variable\VariableListCommand();
-        $commands[] = new Command\Variable\VariableSetCommand();
-        $commands[] = new Command\Variable\VariableUpdateCommand();
-        $commands[] = new Command\WelcomeCommand();
-        $commands[] = new Command\WebCommand();
-        $commands[] = new Command\Worker\WorkerListCommand();
-
-        return $commands;
     }
 
     /**
@@ -234,6 +189,12 @@ class Application extends ParentApplication
      */
     protected function configureIO(InputInterface $input, OutputInterface $output)
     {
+        // Set the input and output in the service container.
+        $this->container()->set('input', $input);
+        $this->container()->set('output', $output);
+
+        parent::configureIO($input, $output);
+
         // Set the input to non-interactive if the yes or no options are used.
         if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
             $input->setInteractive(false);
@@ -248,7 +209,22 @@ class Application extends ParentApplication
             $output->setDecorated(true);
         }
 
-        parent::configureIO($input, $output);
+        // The api.debug config option triggers debug-level output.
+        if ($this->config->get('api.debug')) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+        }
+
+        // Tune error reporting based on the output verbosity.
+        ini_set('log_errors', 0);
+        ini_set('display_errors', 0);
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            error_reporting(E_ALL);
+            ini_set('display_errors', 1);
+        } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
+            error_reporting(false);
+        } else {
+            error_reporting(E_PARSE | E_ERROR);
+        }
     }
 
     /**
@@ -262,6 +238,32 @@ class Application extends ParentApplication
         // options and arguments (such as --help and <command>).
         // @todo find a better solution for this?
         $this->currentCommand->getSynopsis();
+
+        // Work around a bug in Console which means the default command's input
+        // is always considered to be interactive.
+        if ($command->getName() === 'welcome'
+            && isset($GLOBALS['argv'])
+            && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
+            $input->setInteractive(false);
+        }
+
+        // Check for automatic updates.
+        $noChecks = in_array($command->getName(), ['welcome', '_completion']);
+        if ($input->isInteractive() && !$noChecks) {
+            /** @var SelfUpdateChecker $checker */
+            $checker = $this->container()->get(SelfUpdateChecker::class);
+            $checker->checkUpdates();
+        }
+
+        if (!$noChecks && $command->getName() !== 'legacy-migrate') {
+            /** @var LocalProject $localProject */
+            $localProject = $this->container()->get(LocalProject::class);
+            if ($localProject->getLegacyProjectRoot()) {
+                /** @var LegacyMigration $legacyMigration */
+                $legacyMigration = $this->container()->get(LegacyMigration::class);
+                $legacyMigration->check();
+            }
+        }
 
         return parent::doRunCommand($command, $input, $output);
     }
@@ -279,77 +281,29 @@ class Application extends ParentApplication
     }
 
     /**
+     * Get the current command.
+     *
+     * @return ConsoleCommand|null
+     */
+    public function getCurrentCommand()
+    {
+        return $this->currentCommand;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function renderException(\Exception $e, OutputInterface $output)
     {
         $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-        $main = $e;
 
-        do {
-            $exceptionName = get_class($e);
-            if (($pos = strrpos($exceptionName, '\\')) !== false) {
-                $exceptionName = substr($exceptionName, $pos + 1);
-            }
-            $title = sprintf('  [%s]  ', $exceptionName);
-
-            $len = strlen($title);
-
-            $width = (new Terminal())->getWidth() - 1;
-            $formatter = $output->getFormatter();
-            $lines = array();
-            foreach (preg_split('/\r?\n/', $e->getMessage()) as $line) {
-                foreach (str_split($line, $width - 4) as $chunk) {
-                    // pre-format lines to get the right string length
-                    $lineLength = strlen(preg_replace('/\[[^m]*m/', '', $formatter->format($chunk))) + 4;
-                    $lines[] = array($chunk, $lineLength);
-
-                    $len = max($lineLength, $len);
-                }
-            }
-
-            $messages = array();
-            $messages[] = $emptyLine = $formatter->format(sprintf('<error>%s</error>', str_repeat(' ', $len)));
-            $messages[] = $formatter->format(sprintf('<error>%s%s</error>', $title, str_repeat(' ', max(0, $len - strlen($title)))));
-            foreach ($lines as $line) {
-                $messages[] = $formatter->format(sprintf('<error>  %s  %s</error>', $line[0], str_repeat(' ', $len - $line[1])));
-            }
-            $messages[] = $emptyLine;
-            $messages[] = '';
-
-            $output->writeln($messages, OutputInterface::OUTPUT_RAW | OutputInterface::VERBOSITY_QUIET);
-
-            if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-                $output->writeln('<comment>Exception trace:</comment>', OutputInterface::VERBOSITY_QUIET);
-
-                // exception related properties
-                $trace = $e->getTrace();
-                array_unshift($trace, array(
-                    'function' => '',
-                    'file' => $e->getFile() !== null ? $e->getFile() : 'n/a',
-                    'line' => $e->getLine() !== null ? $e->getLine() : 'n/a',
-                    'args' => array(),
-                ));
-
-                for ($i = 0, $count = count($trace); $i < $count; ++$i) {
-                    $class = isset($trace[$i]['class']) ? $trace[$i]['class'] : '';
-                    $type = isset($trace[$i]['type']) ? $trace[$i]['type'] : '';
-                    $function = $trace[$i]['function'];
-                    $file = isset($trace[$i]['file']) ? $trace[$i]['file'] : 'n/a';
-                    $line = isset($trace[$i]['line']) ? $trace[$i]['line'] : 'n/a';
-
-                    $output->writeln(sprintf(' %s%s%s() at <info>%s:%s</info>', $class, $type, $function, $file, $line), OutputInterface::VERBOSITY_QUIET);
-                }
-
-                $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-            }
-        } while ($e = $e->getPrevious());
+        $this->doRenderException($e, $output);
 
         if (isset($this->currentCommand)
             && $this->currentCommand->getName() !== 'welcome'
-            && ($main instanceof ConsoleInvalidArgumentException
-                || $main instanceof ConsoleInvalidOptionException
-                || $main instanceof ConsoleRuntimeException
+            && ($e instanceof ConsoleInvalidArgumentException
+                || $e instanceof ConsoleInvalidOptionException
+                || $e instanceof ConsoleRuntimeException
             )) {
             $output->writeln(
                 sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()),
@@ -358,10 +312,32 @@ class Application extends ParentApplication
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
             $output->writeln(sprintf(
                 'For more information, type: <info>%s help %s</info>',
-                $this->cliConfig->get('application.executable'),
+                $this->config->get('application.executable'),
                 $this->currentCommand->getName()
             ), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function find($name)
+    {
+        try {
+            return parent::find($name);
+        } catch (CommandNotFoundException $e) {
+            // If a command is not found, load all commands so that aliases can
+            // be checked.
+            // @todo make aliases part of the services.yaml file to keep the performance benefit of lazy-loading?
+            /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
+            $loader = self::$container->get('console.command_loader');
+            foreach ($loader->getNames() as $loaderName) {
+                if (!$this->has($loaderName)) {
+                    $this->add($loader->get($loaderName));
+                }
+            }
+            return parent::find($name);
         }
     }
 }

@@ -2,6 +2,10 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Domain;
 use Symfony\Component\Console\Input\InputInterface;
@@ -9,17 +13,40 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainListCommand extends DomainCommandBase
 {
+    protected static $defaultName = 'domain:list';
+
+    private $api;
+    private $config;
+    private $formatter;
+    private $selector;
+    private $table;
+
+    public function __construct(
+        Api $api,
+        Config $config,
+        Selector $selector,
+        PropertyFormatter $formatter,
+        Table $table
+    ) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->formatter = $formatter;
+        $this->selector = $selector;
+        $this->table = $table;
+        parent::__construct();
+    }
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:list')
-            ->setAliases(['domains'])
+        $this->setAliases(['domains'])
             ->setDescription('Get a list of all domains');
-        Table::configureInput($this->getDefinition());
-        $this->addProjectOption();
+
+        $definition = $this->getDefinition();
+        $this->table->configureInput($definition);
+        $this->selector->addProjectOption($definition);
     }
 
     /**
@@ -33,14 +60,11 @@ class DomainListCommand extends DomainCommandBase
     {
         $rows = [];
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         foreach ($tree as $domain) {
             $rows[] = [
                 $domain->id,
-                $formatter->format((bool) $domain['ssl']['has_certificate']),
-                $formatter->format($domain['created_at'], 'created_at'),
+                $this->formatter->format((bool) $domain['ssl']['has_certificate']),
+                $this->formatter->format($domain['created_at'], 'created_at'),
             ];
         }
 
@@ -52,9 +76,8 @@ class DomainListCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
-        $executable = $this->config()->get('application.executable');
+        $project = $this->selector->getSelection($input)->getProject();
+        $executable = $this->config->get('application.executable');
 
         try {
             $domains = $project->getDomains();
@@ -64,7 +87,7 @@ class DomainListCommand extends DomainCommandBase
         }
 
         if (empty($domains)) {
-            $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
+            $this->stdErr->writeln('No domains found for ' . $this->api->getProjectLabel($project) . '.');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(
                 'Add a domain to the project by running <info>' . $executable . ' domain:add [domain-name]</info>'
@@ -73,19 +96,17 @@ class DomainListCommand extends DomainCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
         $header = ['Name', 'SSL enabled', 'Creation date'];
         $rows = $this->buildDomainRows($domains);
 
-        if ($table->formatIsMachineReadable()) {
-            $table->render($rows, $header);
+        if ($this->table->formatIsMachineReadable()) {
+            $this->table->render($rows, $header);
 
             return 0;
         }
 
         $this->stdErr->writeln("Your domains are: ");
-        $table->render($rows, $header);
+        $this->table->render($rows, $header);
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln([

@@ -2,7 +2,10 @@
 namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Certificate;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,11 +15,32 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CertificateListCommand extends CommandBase
 {
 
+    protected static $defaultName = 'certificate:list';
+
+    private $api;
+    private $config;
+    private $formatter;
+    private $selector;
+    private $table;
+
+    public function __construct(
+        Api $api,
+        Config $config,
+        PropertyFormatter $formatter,
+        Selector $selector,
+        Table $table
+    ) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->selector = $selector;
+        $this->formatter = $formatter;
+        $this->table = $table;
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $this
-            ->setName('certificate:list')
-            ->setAliases(['certificates'])
+        $this->setAliases(['certificates'])
             ->setDescription('List project certificates');
         $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');
@@ -24,19 +48,19 @@ class CertificateListCommand extends CommandBase
         $this->addOption('no-auto', null, InputOption::VALUE_NONE, 'Show only manually added certificates');
         $this->addOption('only-expired', null, InputOption::VALUE_NONE, 'Show only expired certificates');
         $this->addOption('no-expired', null, InputOption::VALUE_NONE, 'Show only non-expired certificates');
-        PropertyFormatter::configureInput($this->getDefinition());
-        Table::configureInput($this->getDefinition());
-        $this->addProjectOption();
+
+        $definition = $this->getDefinition();
+        $this->formatter->configureInput($definition);
+        $this->table->configureInput($definition);
+        $this->selector->addProjectOption($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $project = $this->selector->getSelection($input)->getProject();
 
         $filterOptions = ['domain', 'issuer', 'only-auto', 'no-auto', 'only-expired', 'no-expired'];
         $filters = array_filter(array_intersect_key($input->getOptions(), array_flip($filterOptions)));
-
-        $project = $this->getSelectedProject();
 
         $certs = $project->getCertificates();
 
@@ -55,34 +79,29 @@ class CertificateListCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
-
         $header = ['ID', 'Domain(s)', 'Created', 'Expires', 'Issuer'];
         $rows = [];
         foreach ($certs as $cert) {
             $rows[] = [
                 $cert->id,
                 implode("\n", $cert->domains),
-                $propertyFormatter->format($cert->created_at, 'created_at'),
-                $propertyFormatter->format($cert->expires_at, 'expires_at'),
+                $this->formatter->format($cert->created_at, 'created_at'),
+                $this->formatter->format($cert->expires_at, 'expires_at'),
                 $this->getCertificateIssuerByAlias($cert, 'commonName') ?: '',
             ];
         }
 
-        if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api()->getProjectLabel($project)));
+        if (!$this->table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api->getProjectLabel($project)));
         }
 
-        $table->render($rows, $header);
+        $this->table->render($rows, $header);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single certificate, run: <info>%s certificate:get <id></info>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
         }
 

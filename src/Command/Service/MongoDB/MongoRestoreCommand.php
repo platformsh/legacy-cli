@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -13,42 +15,57 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoRestoreCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected static $defaultName = 'service:mongo:restore';
+
+    private $relationships;
+    private $selector;
+    private $shell;
+    private $ssh;
+
+    public function __construct(
+        Relationships $relationships,
+        Selector $selector,
+        Shell $shell,
+        Ssh $ssh
+    ) {
+        $this->relationships = $relationships;
+        $this->selector = $selector;
+        $this->shell = $shell;
+        $this->ssh = $ssh;
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('service:mongo:restore');
         $this->setAliases(['mongorestore']);
         $this->setDescription('Restore a binary archive dump of data into MongoDB');
+        $this->setHidden(true);
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
-        Relationships::configureInput($this->getDefinition());
-        Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+
+        $definition = $this->getDefinition();
+        $this->relationships->configureInput($definition);
+        $this->ssh->configureInput($definition);
+        $this->selector->addAllOptions($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $appName = $this->selectApp($input);
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($appName);
+        $sshUrl = $selection->getEnvironment()
+            ->getSshUrl($selection->getAppName());
 
         $streams = [STDIN];
         if (!stream_select($streams, $write, $except, 0)) {
             throw new InvalidArgumentException('This command requires a mongodump archive to be piped into STDIN');
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $service = $relationshipsService->chooseService($sshUrl, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($sshUrl, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
 
-        $command = 'mongorestore ' . $relationshipsService->getDbCommandArgs('mongorestore', $service);
+        $command = 'mongorestore ' . $this->relationships->getDbCommandArgs('mongorestore', $service);
 
         if ($input->getOption('collection')) {
             $command .= ' --collection ' . OsUtil::escapePosixShellArg($input->getOption('collection'));
@@ -64,16 +81,10 @@ class MongoRestoreCommand extends CommandBase
 
         set_time_limit(0);
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        $sshCommand = $ssh->getSshCommand($sshOptions);
+        $sshCommand = $this->ssh->getSshCommand($sshOptions);
         $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($command);
 
-        return $shell->executeSimple($sshCommand);
+        return $this->shell->executeSimple($sshCommand);
     }
 }

@@ -2,7 +2,12 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -10,30 +15,56 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentInitCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected static $defaultName = 'environment:init';
+
+    private $api;
+    private $activityService;
+    private $questionHelper;
+    private $selector;
+
+    public function __construct(
+        Api $api,
+        ActivityService $activityService,
+        QuestionHelper $questionHelper,
+        Selector $selector
+    ) {
+        $this->api = $api;
+        $this->activityService = $activityService;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('environment:init')
-            ->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
+        $this->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addWaitOptions();
+        $this->setHidden(true);
+
+        $definition = $this->getDefinition();
+        $this->selector->addEnvironmentOption($definition);
+        $this->selector->addProjectOption($definition);
+        $this->activityService->configureInput($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, true);
-        if (!$this->hasSelectedEnvironment()) {
-            $this->selectEnvironment('master');
+        $selection = $this->selector->getSelection($input);
+        if ($selection->hasEnvironment()) {
+            $environment = $selection->getEnvironment();
+        } else {
+            $project = $selection->getProject();
+            $environment = $this->api->getEnvironment(
+                $this->api->getDefaultEnvironmentId($this->api->getEnvironments($project)),
+                $project
+            );
+            if (!$environment) {
+                throw new InvalidArgumentException('No environment selected');
+            }
         }
-
-        $environment = $this->getSelectedEnvironment();
 
         $url = $input->getArgument('url');
         $profile = $input->getOption('profile') ?: basename($url);
@@ -56,12 +87,10 @@ class EnvironmentInitCommand extends CommandBase
             throw $e;
         }
 
-        $this->api()->clearEnvironmentsCache($environment->project);
+        $this->api->clearEnvironmentsCache($environment->project);
 
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $activityMonitor->waitAndLog($activity);
+        if ($this->activityService->shouldWait($input)) {
+            $this->activityService->waitAndLog($activity);
         }
 
         return 0;

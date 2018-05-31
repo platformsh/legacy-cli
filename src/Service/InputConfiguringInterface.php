@@ -6,5 +6,12 @@ use Symfony\Component\Console\Input\InputDefinition;
 
 interface InputConfiguringInterface
 {
-    public static function configureInput(InputDefinition $definition);
+    /**
+     * Add options or arguments to a command's input definition.
+     *
+     * @param \Symfony\Component\Console\Input\InputDefinition $definition
+     *
+     * @return void
+     */
+    public function configureInput(InputDefinition $definition);
 }

@@ -28,7 +28,7 @@ class Config
         $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
         if (empty(self::$config) || $reset) {
-            $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
+            $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config/config.yaml';
             self::$config = $this->loadConfigFromFile($defaultsFile);
             $this->applyUserConfigOverrides();
             $this->applyEnvironmentOverrides();

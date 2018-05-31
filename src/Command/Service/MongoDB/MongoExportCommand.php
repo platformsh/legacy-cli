@@ -3,7 +3,10 @@
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
@@ -15,28 +18,50 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 {
-    protected $hiddenInList = true;
+    protected static $defaultName = 'service:mongo:export';
+
+    private $questionHelper;
+    private $relationships;
+    private $selector;
+    private $shell;
+    private $ssh;
+
+    public function __construct(
+        QuestionHelper $questionHelper,
+        Relationships $relationships,
+        Selector $selector,
+        Shell $shell,
+        Ssh $ssh
+    ) {
+        $this->questionHelper = $questionHelper;
+        $this->relationships = $relationships;
+        $this->selector = $selector;
+        $this->shell = $shell;
+        $this->ssh = $ssh;
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('service:mongo:export');
         $this->setAliases(['mongoexport']);
         $this->setDescription('Export data from MongoDB');
+        $this->setHidden(true);
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to export');
         $this->addOption('jsonArray', null, InputOption::VALUE_NONE, 'Export data as a single JSON array');
         $this->addOption('type', null, InputOption::VALUE_REQUIRED, 'The export type, e.g. "csv"');
         $this->addOption('fields', 'f', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'The fields to export');
-        Relationships::configureInput($this->getDefinition());
-        Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+
+        $definition = $this->getDefinition();
+        $this->relationships->configureInput($definition);
+        $this->ssh->configureInput($definition);
+        $this->selector->addAllOptions($definition);
+
         $this->addExample('Export a CSV from the "users" collection', '-c users --type csv -f name,email');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         if ($input->getOption('type') === 'csv' && !$input->getOption('fields')) {
             throw new InvalidArgumentException(
@@ -45,12 +70,10 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             );
         }
 
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($this->selectApp($input));
+        $sshUrl = $selection->getEnvironment()
+            ->getSshUrl($selection->getAppName());
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $service = $relationshipsService->chooseService($sshUrl, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($sshUrl, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
@@ -64,13 +87,11 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             if (empty($collections)) {
                 throw new InvalidArgumentException('No collections found. You can specify one with the --collection (-c) option.');
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $collection = $questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
+            $collection = $this->questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
             $this->stdErr->writeln('');
         }
 
-        $command = 'mongoexport ' . $relationshipsService->getDbCommandArgs('mongoexport', $service);
+        $command = 'mongoexport ' . $this->relationships->getDbCommandArgs('mongoexport', $service);
         $command .= ' --collection ' . OsUtil::escapePosixShellArg($collection);
 
         if ($input->getOption('type')) {
@@ -92,17 +113,11 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             $command .= ' --verbose';
         }
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        $sshCommand = $ssh->getSshCommand($sshOptions);
+        $sshCommand = $this->ssh->getSshCommand($sshOptions);
         $sshCommand .= ' ' . escapeshellarg($sshUrl)
             . ' ' . escapeshellarg($command);
 
-        return $shell->executeSimple($sshCommand);
+        return $this->shell->executeSimple($sshCommand);
     }
 
     /**
@@ -115,25 +130,18 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
      */
     private function getCollections(array $service, $sshUrl)
     {
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
         $js = 'printjson(db.getCollectionNames())';
 
         $command = 'mongo '
-            . $relationshipsService->getDbCommandArgs('mongo', $service)
+            . $this->relationships->getDbCommandArgs('mongo', $service)
             . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js);
 
-        $sshArgs = array_merge(['ssh'], $ssh->getSshArgs());
+        $sshArgs = array_merge(['ssh'], $this->ssh->getSshArgs());
         $sshArgs[] = $sshUrl;
         $sshArgs[] = $command;
 
         /** @noinspection PhpUnhandledExceptionInspection */
-        $result = $shell->execute($sshArgs, null, true);
+        $result = $this->shell->execute($sshArgs, null, true);
         if (!is_string($result)) {
             return [];
         }

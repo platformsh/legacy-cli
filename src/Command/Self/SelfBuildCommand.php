@@ -2,6 +2,10 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Shell;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -9,17 +13,33 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfBuildCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $local = true;
+    protected static $defaultName = 'self:build';
+
+    private $config;
+    private $filesystem;
+    private $questionHelper;
+    private $shell;
+
+    public function __construct(
+        Config $config,
+        Filesystem $filesystem,
+        QuestionHelper $questionHelper,
+        Shell $shell
+    ) {
+        $this->config = $config;
+        $this->filesystem = $filesystem;
+        $this->questionHelper = $questionHelper;
+        $this->shell = $shell;
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this
-            ->setName('self:build')
-            ->setDescription('Build a new package of the CLI')
+        $this->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
-            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
-            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
+            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config->get('application.executable') . '.phar')
+            ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, ' Skip rebuilding Composer dependencies');
+        $this->setHidden(true);
     }
 
     public function isEnabled()
@@ -48,9 +68,7 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        if (!$shell->commandExists('box')) {
+        if (!$this->shell->commandExists('box')) {
             $this->stdErr->writeln('Command not found: <error>box</error>');
             $this->stdErr->writeln('The Box utility is required to build new CLI packages. Try:');
             $this->stdErr->writeln('  composer global require kherge/box:~2.5');
@@ -63,13 +81,11 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        $version = $this->config()->get('application.version');
+        $version = $this->config->get('application.version');
 
         $boxConfig = [];
         if ($outputFilename) {
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
-            $boxConfig['output'] = $fs->makePathAbsolute($outputFilename);
+            $boxConfig['output'] = $this->filesystem->makePathAbsolute($outputFilename);
             $phar = $boxConfig['output'];
         } else {
             // Default output: cli-VERSION.phar in the current directory.
@@ -80,12 +96,9 @@ class SelfBuildCommand extends CommandBase
             $boxConfig['key'] = realpath($keyFilename);
         }
 
-        if (file_exists($phar)) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            if (!$questionHelper->confirm("File exists: <comment>$phar</comment>. Overwrite?")) {
-                return 1;
-            }
+        if (file_exists($phar)
+            && !$this->questionHelper->confirm("File exists: <comment>$phar</comment>. Overwrite?")) {
+            return 1;
         }
 
         if (!$input->getOption('no-composer-rebuild')) {
@@ -93,10 +106,10 @@ class SelfBuildCommand extends CommandBase
 
             // Remove the 'vendor' directory, in case the developer has incorporated
             // their own version of dependencies locally.
-            $shell->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
+            $this->shell->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
 
-            $shell->execute([
-                $shell->resolveCommand('composer'),
+            $this->shell->execute([
+                $this->shell->resolveCommand('composer'),
                 'install',
                 '--no-dev',
                 '--classmap-authoritative',
@@ -105,7 +118,7 @@ class SelfBuildCommand extends CommandBase
             ], CLI_ROOT, true, false);
         }
 
-        $boxArgs = [$shell->resolveCommand('box'), 'build', '--no-interaction'];
+        $boxArgs = [$this->shell->resolveCommand('box'), 'build', '--no-interaction'];
 
         // Create a temporary box.json file for this build.
         if (!empty($boxConfig)) {
@@ -118,7 +131,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         $this->stdErr->writeln('Building Phar package using Box');
-        $result = $shell->execute($boxArgs, CLI_ROOT, false, true);
+        $result = $this->shell->execute($boxArgs, CLI_ROOT, false, true);
 
         // Clean up the temporary file, regardless of errors.
         if (!empty($tmpJson)) {

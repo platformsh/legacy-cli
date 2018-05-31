@@ -1,10 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use League\OAuth2\Client\Token\AccessToken;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
@@ -17,25 +20,44 @@ use Symfony\Component\Process\Process;
 
 class BrowserLoginCommand extends CommandBase
 {
+    protected static $defaultName = 'auth:browser-login';
+
+    private $config;
+    private $api;
+    private $cache;
+    private $url;
+
+    public function __construct(
+        Config $config,
+        Api $api,
+        CacheProvider $cache,
+        Url $url
+    ) {
+        $this->config = $config;
+        $this->api = $api;
+        $this->cache = $cache;
+        $this->url = $url;
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $service = $this->config()->get('service.name');
-        $applicationName = $this->config()->get('application.name');
-        $executable = $this->config()->get('application.executable');
+        $service = $this->config->get('service.name');
+        $applicationName = $this->config->get('application.name');
+        $executable = $this->config->get('application.executable');
 
-        $this->setName('auth:browser-login');
-        if ($this->config()->get('application.login_method') === 'browser') {
+        if ($this->config->get('application.login_method') === 'browser') {
             $this->setAliases(['login']);
         }
 
         $this->setDescription('Log in to ' . $service . ' via a browser')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
-        Url::configureInput($this->getDefinition());
+        $this->url->configureInput($this->getDefinition());
 
         $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
             . "\n\nAlternatively, to log in with a username and password in the terminal, use:\n    <info>"
             . $executable . ' auth:password-login</info>';
-        if ($aHelp = $this->getApiTokenHelp()) {
+        if ($aHelp = $this->api->getApiTokenHelp()) {
             $help .= "\n\n" . $aHelp;
         }
         $this->setHelp($help);
@@ -43,25 +65,25 @@ class BrowserLoginCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($this->api()->hasApiToken()) {
+        if ($this->api->hasApiToken()) {
             $this->stdErr->writeln('Cannot log in: an API token is set');
             return 1;
         }
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive login is not supported.');
-            if ($aHelp = $this->getApiTokenHelp('comment')) {
+            if ($aHelp = $this->api->getApiTokenHelp('comment')) {
                 $this->stdErr->writeln("\n" . $aHelp);
             }
             return 1;
         }
-        $connector = $this->api()->getClient(false)->getConnector();
+        $connector = $this->api->getClient(false)->getConnector();
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
             // Get account information, simultaneously checking whether the API
             // login is still valid. If the request works, then do not log in
             // again (unless --force is used). If the request fails, proceed
             // with login.
             try {
-                $account = $this->api()->getMyAccount(true);
+                $account = $this->api->getMyAccount(true);
 
                 $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
                     $account['username'],
@@ -93,7 +115,7 @@ class BrowserLoginCommand extends CommandBase
             if (stripos($e->getMessage(), 'failed to find') !== false) {
                 $this->stdErr->writeln(sprintf('Failed to find an available port between <error>%d</error> and <error>%d</error>.', $start, $end));
                 $this->stdErr->writeln('Check if you have unnecessary services running on these ports.');
-                $this->stdErr->writeln(sprintf('For more options, run: <info>%s help login</info>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln(sprintf('For more options, run: <info>%s help login</info>', $this->config->get('application.executable')));
 
                 return 1;
             }
@@ -104,7 +126,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Then create the document root for the local server. This needs to be
         // outside the CLI itself (since the CLI may be run as a Phar).
-        $listenerDir = $this->config()->getWritableUserDir() . '/oauth-listener';
+        $listenerDir = $this->config->getWritableUserDir() . '/oauth-listener';
         $this->createDocumentRoot($listenerDir);
 
         // Create the file where an authorization code will be saved (by the
@@ -116,7 +138,7 @@ class BrowserLoginCommand extends CommandBase
         chmod($codeFile, 0600);
 
         // Find the authorization and token URLs.
-        $apiUrl = $this->config()->get('api.accounts_api_url');
+        $apiUrl = $this->config->get('api.accounts_api_url');
         $authHost = parse_url($apiUrl, PHP_URL_HOST);
         $authScheme = parse_url($apiUrl, PHP_URL_SCHEME) ?: 'https';
         if (!$authHost) {
@@ -135,10 +157,10 @@ class BrowserLoginCommand extends CommandBase
             $listenerDir
         ]);
         $process->setEnv([
-            'CLI_OAUTH_APP_NAME' => $this->config()->get('application.name'),
+            'CLI_OAUTH_APP_NAME' => $this->config->get('application.name'),
             'CLI_OAUTH_STATE' => $this->getRandomState(),
             'CLI_OAUTH_AUTH_URL' => $authUrl,
-            'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
+            'CLI_OAUTH_CLIENT_ID' => $this->config->get('api.oauth2_client_id'),
             'CLI_OAUTH_FILE' => $codeFile,
         ]);
         $process->setTimeout(null);
@@ -157,9 +179,7 @@ class BrowserLoginCommand extends CommandBase
         }
 
         // Open the local server URL in a browser (or print the URL).
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
-        if ($urlService->openUrl($localUrl, false)) {
+        if ($this->url->openUrl($localUrl, false)) {
             $this->stdErr->writeln(sprintf('Opened URL: <info>%s</info>', $localUrl));
             $this->stdErr->writeln('Please use the browser to log in.');
         } else {
@@ -171,7 +191,7 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln('<options=bold>Help:</>');
         $this->stdErr->writeln('  Use Ctrl+C to quit this process.');
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         $this->stdErr->writeln(sprintf('  To log in within the terminal instead, quit and run: <info>%s auth:password-login</info>', $executable));
         $this->stdErr->writeln(sprintf('  For more info, quit and run: <info>%s help login</info>', $executable));
         $this->stdErr->writeln('');
@@ -208,12 +228,10 @@ class BrowserLoginCommand extends CommandBase
         $token = $this->getAccessToken($code, $localUrl, $tokenUrl);
 
         // Finalize login: clear the cache and save the new credentials.
-        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-        $cache = $this->getService('cache');
-        $cache->flushAll();
+        $this->cache->flushAll();
 
         // Reset the API client so that it will use the new tokens.
-        $client = $this->api()->getClient(false, true);
+        $client = $this->api->getClient(false, true);
         $this->saveAccessToken($token, $client->getConnector()->getSession());
         $this->stdErr->writeln('You are logged in.');
 
@@ -271,11 +289,11 @@ class BrowserLoginCommand extends CommandBase
                 'json' => [
                     'grant_type' => 'authorization_code',
                     'code' => $authCode,
-                    'client_id' => $this->config()->get('api.oauth2_client_id'),
+                    'client_id' => $this->config->get('api.oauth2_client_id'),
                     'redirect_uri' => $redirectUri,
                 ],
                 'auth' => false,
-                'verify' => !$this->config()->get('api.skip_ssl'),
+                'verify' => !$this->config->get('api.skip_ssl'),
             ]
         );
 

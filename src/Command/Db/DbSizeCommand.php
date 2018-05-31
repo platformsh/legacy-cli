@@ -4,38 +4,72 @@ namespace Platformsh\Cli\Command\Db;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\YamlParser;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DbSizeCommand extends CommandBase
 {
 
+    protected static $defaultName = 'db:size';
+
+    private $api;
+    private $config;
+    private $relationships;
+    private $selector;
+    private $shell;
+    private $ssh;
+    private $table;
+
+    public function __construct(
+        Api $api,
+        Config $config,
+        Relationships $relationships,
+        Selector $selector,
+        Shell $shell,
+        Ssh $ssh,
+        Table $table
+    ) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->relationships = $relationships;
+        $this->selector = $selector;
+        $this->shell = $shell;
+        $this->ssh = $ssh;
+        $this->table = $table;
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $this->setName('db:size')
-            ->setDescription('Estimate the disk usage of a database')
+        $this->setDescription('Estimate the disk usage of a database')
             ->setHelp(
                 "This is an estimate of the database disk usage. It does not represent its real size on disk."
             );
-        $this->addProjectOption()->addEnvironmentOption()->addAppOption();
-        Relationships::configureInput($this->getDefinition());
-        Table::configureInput($this->getDefinition());
-        Ssh::configureInput($this->getDefinition());
+
+        $definition = $this->getDefinition();
+        $this->selector->addAllOptions($definition);
+        $this->relationships->configureInput($definition);
+        $this->ssh->configureInput($definition);
+        $this->table->configureInput($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $appName = $this->selectApp($input);
+        $selection = $this->selector->getSelection($input);
+        $appName = $selection->getAppName();
 
         // Get the app config.
-        $webApp = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), true)
+        $webApp = $this->api
+            ->getCurrentDeployment($selection->getEnvironment(), true)
             ->getWebApp($appName);
         $appConfig = AppConfig::fromWebApp($webApp)->getNormalized();
         if (empty($appConfig['relationships'])) {
@@ -43,11 +77,9 @@ class DbSizeCommand extends CommandBase
             return 1;
         }
 
-        $sshUrl = $this->getSelectedEnvironment()->getSshUrl($appName);
+        $sshUrl = $selection->getEnvironment()->getSshUrl($appName);
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
+        $database = $this->relationships->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;
@@ -67,7 +99,7 @@ class DbSizeCommand extends CommandBase
         }
 
         // Load services yaml.
-        $services = $this->getProjectServiceConfig();
+        $services = $this->getProjectServiceConfig($selection->getEnvironment());
         if (!empty($services[$dbServiceName]['disk'])) {
             $allocatedDisk = $services[$dbServiceName]['disk'];
         } else {
@@ -75,32 +107,25 @@ class DbSizeCommand extends CommandBase
             $allocatedDisk = false;
         }
 
-        /** @var Shell $shell */
-        $shell = $this->getService('shell');
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-
         $this->stdErr->writeln('Checking database <comment>' . $dbServiceName . '</comment>...');
 
         $command = ['ssh'];
-        $command = array_merge($command, $ssh->getSshArgs());
+        $command = array_merge($command, $this->ssh->getSshArgs());
         $command[] = $sshUrl;
         switch ($database['scheme']) {
             case 'pgsql':
                 $command[] = $this->psqlQuery($database);
-                $result = $shell->execute($command, null, true);
+                $result = $this->shell->execute($command, null, true);
                 $resultArr = explode(PHP_EOL, $result);
                 $estimatedUsage = array_sum($resultArr) / 1048576;
                 break;
             default:
                 $command[] = $this->mysqlQuery($database);
-                $estimatedUsage = $shell->execute($command, null, true);
+                $estimatedUsage = $this->shell->execute($command, null, true);
                 break;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        $machineReadable = $table->formatIsMachineReadable();
+        $machineReadable = $this->table->formatIsMachineReadable();
 
         if ($allocatedDisk !== false) {
             $propertyNames = ['max', 'used', 'percent_used'];
@@ -117,7 +142,7 @@ class DbSizeCommand extends CommandBase
             ];
         }
 
-        $table->renderSimple($values, $propertyNames);
+        $this->table->renderSimple($values, $propertyNames);
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
@@ -143,9 +168,7 @@ class DbSizeCommand extends CommandBase
           . ' GROUP BY pg_class.relkind, nspname'
           . ' ORDER BY sum(pg_relation_size(pg_class.oid)) DESC;';
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-        $dbUrl = $relationships->getDbCommandArgs('psql', $database);
+        $dbUrl = $this->relationships->getDbCommandArgs('psql', $database);
 
         return sprintf(
             "psql --echo-hidden -t --no-align %s -c '%s'",
@@ -171,9 +194,7 @@ class DbSizeCommand extends CommandBase
             . '/' . (1048576 + 150) . ' AS estimated_actual_disk_usage'
             . ' FROM information_schema.tables';
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-        $connectionParams = $relationships->getDbCommandArgs('mysql', $database);
+        $connectionParams = $this->relationships->getDbCommandArgs('mysql', $database);
 
         return sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
@@ -185,18 +206,20 @@ class DbSizeCommand extends CommandBase
     /**
      * Find the service configuration (from services.yaml).
      *
+     * @param Environment $environment
+     *
      * @return array
      */
-    private function getProjectServiceConfig()
+    private function getProjectServiceConfig(Environment $environment)
     {
         $servicesYaml = false;
-        $servicesYamlFilename = $this->config()->get('service.project_config_dir') . '/services.yaml';
+        $servicesYamlFilename = $this->config->get('service.project_config_dir') . '/services.yaml';
         $services = [];
         try {
-            $servicesYaml = $this->api()->readFile($servicesYamlFilename, $this->getSelectedEnvironment());
+            $servicesYaml = $this->api->readFile($servicesYamlFilename, $environment);
         } catch (ApiFeatureMissingException $e) {
             $this->debug($e->getMessage());
-            if ($projectRoot = $this->getProjectRoot()) {
+            if ($projectRoot = $this->selector->getProjectRoot()) {
                 $this->debug('Reading file in local project: ' . $projectRoot . '/' . $servicesYamlFilename);
                 $servicesYaml = file_get_contents($projectRoot . '/' . $servicesYamlFilename);
             }

@@ -2,20 +2,33 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfInstallCommand extends CommandBase
 {
-    protected $local = true;
+    protected static $defaultName = 'self:install';
+
+    private $config;
+    private $questionHelper;
+
+    public function __construct(
+        Config $config,
+        QuestionHelper $questionHelper
+    ) {
+        $this->config = $config;
+        $this->questionHelper = $questionHelper;
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('self:install')
-             ->setDescription('Install or update CLI configuration files');
+        $this->setDescription('Install or update CLI configuration files');
         $this->setHiddenAliases(['local:install']);
-        $cliName = $this->config()->get('application.name');
+        $cliName = $this->config->get('application.name');
         $this->setHelp(<<<EOT
 This command automatically installs shell configuration for the {$cliName},
 adding autocompletion support and handy aliases. Bash and ZSH are supported.
@@ -25,7 +38,7 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $configDir = $this->config()->getUserConfigDir();
+        $configDir = $this->config->getUserConfigDir();
 
         $rcFiles = [
             'shell-config.rc',
@@ -55,7 +68,7 @@ EOT
             }
         }
 
-        $configDirRelative = $this->config()->getUserConfigDir(false);
+        $configDirRelative = $this->config->getUserConfigDir(false);
         $rcDestination = $configDirRelative . '/' . 'shell-config.rc';
         $suggestedShellConfig = sprintf(
             'export PATH=%s:"$PATH"',
@@ -71,17 +84,15 @@ EOT
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 "To use the %s, run:\n    <info>%s</info>",
-                $this->config()->get('application.name'),
-                $this->config()->get('application.executable')
+                $this->config->get('application.name'),
+                $this->config->get('application.executable')
             ));
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        if ($shellConfigFile === false || !$questionHelper->confirm('Do you want to update the file automatically?')) {
+        if ($shellConfigFile === false || !$this->questionHelper->confirm('Do you want to update the file automatically?')) {
             $suggestedShellConfig = PHP_EOL
-                . '# ' . $this->config()->get('application.name') . ' configuration'
+                . '# ' . $this->config->get('application.name') . ' configuration'
                 . PHP_EOL
                 . $suggestedShellConfig;
 
@@ -101,7 +112,7 @@ EOT
             return 1;
         }
 
-        $begin = '# BEGIN SNIPPET: Automatically added by the ' . $this->config()->get('application.name');
+        $begin = '# BEGIN SNIPPET: Automatically added by the ' . $this->config->get('application.name');
         $end = '# END SNIPPET';
 
         $beginPos = strpos($currentShellConfig, $begin);
@@ -138,9 +149,9 @@ EOT
         $this->stdErr->writeln('Updated successfully.');
         $this->stdErr->writeln('');
         $this->stdErr->writeln([
-            'To use the ' . $this->config()->get('application.name') . ', run:',
+            'To use the ' . $this->config->get('application.name') . ', run:',
             '    <info>source ' . $shortPath . '</info> # (or start a new terminal)',
-            '    <info>' . $this->config()->get('application.executable'),
+            '    <info>' . $this->config->get('application.executable'),
         ]);
 
         return 0;
@@ -156,7 +167,7 @@ EOT
     protected function findShellConfigFile()
     {
         // Special handling for the .environment file on Platform.sh environments.
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT') !== false
             && getenv($envPrefix . 'APP_DIR') !== false
             && getenv($envPrefix . 'APP_DIR') === Filesystem::getHomeDirectory()) {

@@ -65,7 +65,7 @@ class PropertyFormatter implements InputConfiguringInterface
      *
      * @param InputDefinition $definition
      */
-    public static function configureInput(InputDefinition $definition)
+    public function configureInput(InputDefinition $definition)
     {
         $definition->addOption(new InputOption(
             'date-fmt',

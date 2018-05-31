@@ -2,6 +2,11 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,17 +15,40 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class UserRoleCommand extends CommandBase
 {
+    protected static $defaultName = 'user:get';
+
+    private $activityService;
+    private $api;
+    private $questionHelper;
+    private $selector;
+    private $subCommandRunner;
+
+    public function __construct(
+        ActivityService $activityService,
+        Api $api,
+        QuestionHelper $questionHelper,
+        Selector $selector,
+        SubCommandRunner $subCommandRunner
+    ) {
+        $this->activityService = $activityService;
+        $this->api = $api;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $this
-            ->setName('user:get')
-            ->setDescription("View a user's role(s)")
+        $this->setDescription("View a user's role(s)")
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->activityService->configureInput($definition);
 
         // Backwards compatibility.
         $this->setHiddenAliases(['user:role']);
@@ -38,26 +66,23 @@ class UserRoleCommand extends CommandBase
             return 1;
         }
 
-        $this->validateInput($input, $level !== 'environment');
-        $project = $this->getSelectedProject();
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $selection = $this->selector->getSelection($input, $level !== 'environment');
+        $project = $selection->getProject();
 
         // Load the user.
         $email = $input->getArgument('email');
         if ($email === null && $input->isInteractive()) {
             $choices = [];
-            foreach ($this->api()->getProjectAccesses($project) as $access) {
-                $account = $this->api()->getAccount($access);
+            foreach ($this->api->getProjectAccesses($project) as $access) {
+                $account = $this->api->getAccount($access);
                 $choices[$account['email']] = sprintf('%s (%s)', $account['display_name'], $account['email']);
             }
-            $email = $questionHelper->choose($choices, 'Enter a number to choose a user:');
+            $email = $this->questionHelper->choose($choices, 'Enter a number to choose a user:');
             if (count($choices) > 1) {
                 $this->stdErr->writeln('');
             }
         }
-        $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email);
+        $projectAccess = $this->api->loadProjectAccessByEmail($project, $email);
         if (!$projectAccess) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
 
@@ -69,7 +94,7 @@ class UserRoleCommand extends CommandBase
                 $currentRole = $projectAccess->role;
             } else {
                 $currentRole = $projectAccess->role === ProjectAccess::ROLE_ADMIN ? 'admin' : false;
-                $accesses = $this->getSelectedEnvironment()->getUsers();
+                $accesses = $selection->getEnvironment()->getUsers();
                 foreach ($accesses as $access) {
                     if ($access->user === $projectAccess->id) {
                         $currentRole = $access->role;
@@ -80,7 +105,7 @@ class UserRoleCommand extends CommandBase
                     $this->stdErr->writeln(sprintf(
                         'The user <error>%s</error> could not be found on the environment <error>%s</error>.',
                         $email,
-                        $this->getSelectedEnvironment()->id
+                        $selection->getEnvironment()->id
                     ));
 
                     return 1;
@@ -97,6 +122,6 @@ class UserRoleCommand extends CommandBase
             '--yes' => true,
         ];
 
-        return $this->runOtherCommand('user:add', $args, $output);
+        return $this->subCommandRunner->run('user:add', $args);
     }
 }

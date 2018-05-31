@@ -1,0 +1,42 @@
+# Services are classes providing functionality needed in multiple places.
+#
+# See https://symfony.com/doc/current/service_container.html
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # Set up all classes in src/Command as console commands.
+    Platformsh\Cli\Command\:
+        resource: '../src/Command/*'
+        tags: [console.command]
+
+    # Set up all classes in src/Service as services automatically.
+    Platformsh\Cli\Service\:
+        resource: '../src/Service/*'
+        public: true
+
+    Platformsh\Cli\Local\LocalBuild: {}
+    Platformsh\Cli\Local\LocalProject:
+        public: true
+
+    # Configure the cache service.
+    cache:
+        class:     '\Doctrine\Common\Cache\CacheProvider'
+        factory:   'Platformsh\Cli\Service\CacheFactory:createCacheProvider'
+        arguments: ['@Platformsh\Cli\Service\Config']
+    Doctrine\Common\Cache\CacheProvider: '@cache'
+
+    # Configure higher level services.
+    Platformsh\Cli\Application:
+        public: true
+        synthetic: true
+    output:
+        public: true
+        synthetic: true
+    Symfony\Component\Console\Output\OutputInterface: '@output'
+    input:
+        public: true
+        synthetic: true
+    Symfony\Component\Console\Input\InputInterface: '@input'

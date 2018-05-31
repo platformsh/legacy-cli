@@ -5,7 +5,12 @@ use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Drush;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -13,13 +18,35 @@ use Symfony\Component\Yaml\Yaml;
 
 class LocalDrushAliasesCommand extends CommandBase
 {
-    protected $local = true;
+    protected static $defaultName = 'local:drush-aliases';
+
+    private $api;
+    private $drush;
+    private $filesystem;
+    private $localProject;
+    private $selector;
+    private $questionHelper;
+
+    public function __construct(
+        Api $api,
+        Drush $drush,
+        Filesystem $filesystem,
+        LocalProject $localProject,
+        Selector $selector,
+        QuestionHelper $questionHelper
+    ) {
+        $this->api = $api;
+        $this->drush = $drush;
+        $this->filesystem = $filesystem;
+        $this->localProject = $localProject;
+        $this->selector = $selector;
+        $this->questionHelper = $questionHelper;
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this
-            ->setName('local:drush-aliases')
-            ->setAliases(['drush-aliases'])
+        $this->setAliases(['drush-aliases'])
             ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
             ->addOption('group', 'g', InputOption::VALUE_REQUIRED, 'Recreate the aliases with a new group name.')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
@@ -27,27 +54,26 @@ class LocalDrushAliasesCommand extends CommandBase
         $this->addExample('Change the alias group to @example', '-g example');
     }
 
-    public function isHiddenInList()
+    public function isHidden()
     {
         // Hide this command in the list if the project is not Drupal.
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->localProject->getProjectRoot();
         if ($projectRoot && !Drupal::isDrupal($projectRoot)) {
             return true;
         }
 
-        return parent::isHiddenInList();
+        return parent::isHidden();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $projectRoot = $this->getProjectRoot();
-        $project = $this->getCurrentProject();
+        $projectRoot = $this->localProject->getProjectRoot();
+        $project = $this->selector->getCurrentProject();
         if (!$projectRoot || !$project) {
             throw new RootNotFoundException();
         }
 
-        /** @var \Platformsh\Cli\Service\Drush $drush */
-        $drush = $this->getService('drush');
+        $drush = $this->drush;
 
         if (!$drush->getDrupalApps($projectRoot)) {
             $this->stdErr->writeln('No Drupal applications found.');
@@ -83,27 +109,24 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $this->stdErr->writeln("Creating Drush aliases in the group <info>@$new_group</info>");
 
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-
             if ($new_group !== $current_group) {
                 $existing = $drush->getAliases($new_group);
                 if (!empty($existing)) {
                     $question = "The Drush alias group <info>@$new_group</info> already exists. Overwrite?";
-                    if (!$questionHelper->confirm($question, false)) {
+                    if (!$this->questionHelper->confirm($question, false)) {
                         return 1;
                     }
                 }
                 $drush->setAliasGroup($new_group, $projectRoot);
             }
 
-            $environments = $this->api()->getEnvironments($project, true, false);
+            $environments = $this->api->getEnvironments($project, true, false);
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
             $this->ensureDrushConfig($drush);
 
             if ($new_group !== $current_group && !empty($aliases)) {
-                if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
+                if ($this->questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
                     $drush->deleteOldAliases($current_group);
                 }
             }
@@ -116,7 +139,7 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         if (!empty($aliases)) {
-            $this->stdErr->writeln('Drush aliases for ' . $this->api()->getProjectLabel($project) . ':');
+            $this->stdErr->writeln('Drush aliases for ' . $this->api->getProjectLabel($project) . ':');
             foreach (array_keys($aliases) as $name) {
                 $output->writeln('    @' . ltrim($name, '@'));
             }
@@ -127,7 +150,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
     /**
      * Ensure that the .drush/drush.yml file has the right config.
-     * 
+     *
      * @param \Platformsh\Cli\Service\Drush $drush
      */
     protected function ensureDrushConfig(Drush $drush)
@@ -155,9 +178,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $drushConfig['drush']['paths']['alias-path'][] = $aliasPath;
 
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
-            $fs->writeFile($drushYml, Yaml::dump($drushConfig, 5));
+            $this->filesystem->writeFile($drushYml, Yaml::dump($drushConfig, 5));
         }
     }
 
@@ -174,11 +195,9 @@ class LocalDrushAliasesCommand extends CommandBase
             return;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
         $newDrushDirRelative = str_replace($drush->getHomeDir() . '/', '~/', $newDrushDir);
         $confirmText = "Do you want to move your global Drush alias files from <comment>~/.drush</comment> to <comment>$newDrushDirRelative</comment>?";
-        if (!$questionHelper->confirm($confirmText)) {
+        if (!$this->questionHelper->confirm($confirmText)) {
             return;
         }
 

@@ -3,27 +3,36 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Console\Animation;
+use Platformsh\Cli\Service\Config;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class BotCommand extends CommandBase
+class BotCommand extends Command
 {
-    protected $hiddenInList = true;
-    protected $local = true;
+    protected static $defaultName = 'bot';
+
+    private $config;
+
+    public function __construct(Config $config)
+    {
+        $this->config = $config;
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('bot')
-            ->setDescription('The ' . $this->config()->get('service.name') . ' Bot')
+        $this->setDescription('The ' . $this->config->get('service.name') . ' Bot')
             ->addOption('party', null, InputOption::VALUE_NONE)
-            ->addOption('parrot', null, InputOption::VALUE_NONE);
+            ->addOption('parrot', null, InputOption::VALUE_NONE)
+            ->setHidden(true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $dir = CLI_ROOT . '/resources/bot';
-        $signature = $this->config()->get('service.name');
+        $signature = $this->config->get('service.name');
         $party = $input->getOption('party');
         $interval = $party ? 120000 : 500000;
 

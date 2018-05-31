@@ -29,7 +29,7 @@ class Url implements InputConfiguringInterface
     /**
      * @param \Symfony\Component\Console\Input\InputDefinition $definition
      */
-    public static function configureInput(InputDefinition $definition)
+    public function configureInput(InputDefinition $definition)
     {
         $definition->addOption(new InputOption(
             'browser',

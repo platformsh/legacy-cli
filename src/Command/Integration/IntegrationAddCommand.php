@@ -1,22 +1,48 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Client\Model\Integration;
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\IntegrationService;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationAddCommand extends IntegrationCommandBase
+class IntegrationAddCommand extends CommandBase
 {
+    protected static $defaultName = 'integration:add';
+
+    private $activityService;
+    private $integrationService;
+    private $questionHelper;
+    private $selector;
+
+    public function __construct(
+        ActivityService $activityService,
+        IntegrationService $integration,
+        QuestionHelper $questionHelper,
+        Selector $selector
+    ) {
+        $this->activityService = $activityService;
+        $this->integrationService = $integration;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        parent::__construct();
+    }
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('integration:add')
-            ->setDescription('Add an integration to the project');
-        $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addWaitOptions();
+        $this->setDescription('Add an integration to the project');
+
+        $definition = $this->getDefinition();
+        $this->integrationService->getForm()->configureInputDefinition($definition);
+        $this->selector->addProjectOption($definition);
+        $this->activityService->configureInput($definition);
+
         $this->addExample(
             'Add an integration with a GitHub repository',
             '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
@@ -29,38 +55,35 @@ class IntegrationAddCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        $values = $this->getForm()
-                       ->resolveOptions($input, $this->stdErr, $questionHelper);
+        $values = $this->integrationService->getForm()
+                       ->resolveOptions($input, $this->stdErr, $this->questionHelper);
 
         // Omit all empty, non-required fields when creating a new integration.
-        foreach ($this->getForm()->getFields() as $name => $field) {
+        foreach ($this->integrationService->getForm()->getFields() as $name => $field) {
             if (isset($values[$name]) && !$field->isRequired() && $field->isEmpty($values[$name])) {
                 unset($values[$name]);
             }
         }
 
-        $result = $this->getSelectedProject()
+        $result = $selection->getProject()
                        ->addIntegration($values['type'], $values);
 
-        /** @var Integration $integration */
+        /** @var \Platformsh\Client\Model\Integration $integration */
+        /** @noinspection PhpUnhandledExceptionInspection */
         $integration = $result->getEntity();
 
-        $this->ensureHooks($integration);
+        $this->integrationService->ensureHooks($integration);
 
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 
         $success = true;
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        if ($this->activityService->shouldWait($input)) {
+            $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
-        $this->displayIntegration($integration);
+        $this->integrationService->displayIntegration($integration);
 
         return $success ? 0 : 1;
     }
