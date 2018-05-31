@@ -30,8 +30,13 @@ class Selector
     private $questionHelper;
     private $git;
 
+    /** @var Project|null */
+    private $currentProject;
+
+    /** @var string|null */
     private $projectRoot;
 
+    /** @var string */
     private $envArgName = 'environment';
 
     public function __construct(
