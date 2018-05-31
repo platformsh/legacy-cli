@@ -13,6 +13,7 @@ use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
 use Symfony\Component\Console\Exception\CommandNotFoundException;
+use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Exception\InvalidOptionException as ConsoleInvalidOptionException;
 use Symfony\Component\Console\Exception\RuntimeException as ConsoleRuntimeException;
@@ -301,10 +302,7 @@ class Application extends ParentApplication
 
         if (isset($this->currentCommand)
             && $this->currentCommand->getName() !== 'welcome'
-            && ($e instanceof ConsoleInvalidArgumentException
-                || $e instanceof ConsoleInvalidOptionException
-                || $e instanceof ConsoleRuntimeException
-            )) {
+            && $e instanceof ExceptionInterface) {
             $output->writeln(
                 sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()),
                 OutputInterface::VERBOSITY_QUIET
