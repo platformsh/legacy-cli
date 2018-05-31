@@ -65,30 +65,42 @@ class Application extends ParentApplication
     }
 
     /**
+     * Returns the Dependency Injection Container for the whole application.
+     *
      * @return ContainerInterface
      */
     public static function container(): ContainerInterface
     {
+        $cacheFile = __DIR__ . '/../config/cache/container.php';
+        $servicesFile = __DIR__ . '/../config/services.yaml';
+
         if (!isset(self::$container)) {
-            $file = __DIR__ . '/../config/cache/container.php';
-            if (file_exists($file) && !getenv('PLATFORMSH_CLI_DEBUG')) {
+            if (file_exists($cacheFile) && !getenv('PLATFORMSH_CLI_DEBUG')) {
                 // Load the cached container.
                 /** @noinspection PhpIncludeInspection */
-                require_once $file;
+                require_once $cacheFile;
                 /** @noinspection PhpUndefinedClassInspection */
                 self::$container = new \ProjectServiceContainer();
             } else {
                 // Compile a new container.
                 self::$container = new ContainerBuilder();
-                (new YamlFileLoader(self::$container, new FileLocator()))
-                    ->load(__DIR__ . '/../config/services.yaml');
+                try {
+                    (new YamlFileLoader(self::$container, new FileLocator()))
+                        ->load($servicesFile);
+                } catch (\Exception $e) {
+                    throw new \RuntimeException(sprintf(
+                        'Failed to load services.yaml file %s: %s',
+                        $servicesFile,
+                        $e->getMessage()
+                    ));
+                }
                 self::$container->addCompilerPass(new AddConsoleCommandPass());
                 self::$container->compile();
                 $dumper = new PhpDumper(self::$container);
-                if (!is_dir(dirname($file))) {
-                    mkdir(dirname($file), 0755, true);
+                if (!is_dir(dirname($cacheFile))) {
+                    mkdir(dirname($cacheFile), 0755, true);
                 }
-                file_put_contents($file, $dumper->dump());
+                file_put_contents($cacheFile, $dumper->dump());
             }
         }
 
