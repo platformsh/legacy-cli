@@ -66,22 +66,11 @@ class Api
     protected $sessionStorage;
 
     public function __construct(
-        Config $config,
-        CacheProvider $cache,
-        AutoLoginListener $autoLogin,
-        DrushAliasUpdater $drushAliasUpdater
+        Config $config = null,
+        CacheProvider $cache = null
     ) {
         $this->config = $config ?: new Config();
         $this->dispatcher = new EventDispatcher();
-        $this->dispatcher->addListener(
-            'login.required',
-            [$autoLogin, 'onLoginRequired']
-        );
-        $this->dispatcher->addListener(
-            'environments.changed',
-            [$drushAliasUpdater, 'onEnvironmentsChanged']
-        );
-
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
 
         $this->sessionId = $this->config->get('api.session_id') ?: 'default';
@@ -112,6 +101,28 @@ class Api
                 $this->apiTokenType = 'access';
             }
         }
+    }
+
+    /**
+     * Sets up listeners (called by the DI container).
+     *
+     * @required
+     *
+     * @param \Platformsh\Cli\Service\AutoLoginListener $autoLoginListener
+     * @param \Platformsh\Cli\Service\DrushAliasUpdater $drushAliasUpdater
+     */
+    public function injectListeners(
+        AutoLoginListener $autoLoginListener,
+        DrushAliasUpdater $drushAliasUpdater
+    ) {
+        $this->dispatcher->addListener(
+            'login.required',
+            [$autoLoginListener, 'onLoginRequired']
+        );
+        $this->dispatcher->addListener(
+            'environments.changed',
+            [$drushAliasUpdater, 'onEnvironmentsChanged']
+        );
     }
 
     /**
