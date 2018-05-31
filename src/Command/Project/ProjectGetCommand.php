@@ -33,6 +33,7 @@ class ProjectGetCommand extends CommandBase
     private $config;
     private $filesystem;
     private $git;
+    private $localBuild;
     private $localProject;
     private $questionHelper;
     private $selector;
@@ -44,6 +45,7 @@ class ProjectGetCommand extends CommandBase
         Config $config,
         Filesystem $filesystem,
         Git $git,
+        LocalBuild $localBuild,
         LocalProject $localProject,
         QuestionHelper $questionHelper,
         Selector $selector,
@@ -54,6 +56,7 @@ class ProjectGetCommand extends CommandBase
         $this->config = $config;
         $this->filesystem = $filesystem;
         $this->git = $git;
+        $this->localBuild = $localBuild;
         $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
@@ -206,9 +209,7 @@ class ProjectGetCommand extends CommandBase
             ));
             $options = ['no-clean' => true];
             try {
-                /** @var LocalBuild $builder $builder */
-                $builder = Application::container()->get(LocalBuild::class);
-                $success = $builder->build($options, $projectRoot);
+                $success = $this->localBuild->build($options, $projectRoot);
             } catch (\Exception $e) {
                 $success = false;
             }

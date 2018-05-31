@@ -84,7 +84,7 @@ class Application extends ParentApplication
      *
      * @return ContainerInterface
      */
-    public static function container(): ContainerInterface
+    private static function container(): ContainerInterface
     {
         $cacheFile = __DIR__ . '/../config/cache/container.php';
         $servicesFile = __DIR__ . '/../config/services.yaml';
