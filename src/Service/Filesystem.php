@@ -492,4 +492,14 @@ class Filesystem
         }
         throw new \RuntimeException("Tar command not found");
     }
+
+    /**
+     * @return SymfonyFilesystem
+     */
+    public function getFilesystem()
+    {
+        return $this->fs;
+    }
+
+
 }
