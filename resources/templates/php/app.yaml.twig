@@ -7,7 +7,7 @@
 name: '{{ application_name }}'
 
 # Configuration of the build of this application.
-type: 'php:{{ php_version }}'
+type: '{{ runtime }}:{{ runtime_version }}'
 
 {% include 'includes/relationships.yaml.twig' %}
 

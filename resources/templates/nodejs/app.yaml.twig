@@ -4,8 +4,11 @@
 # but wil likely need additional customization for your application.
 # See URL for more information.
 
+# The name of this app. Must be unique within a project.
 name: '{{ application_name }}'
-type: 'nodejs:{{ nodejs_version }}'
+
+# Configuration of the build of this application.
+type: '{{ runtime }}:{{ runtime_version }}'
 
 {% include 'includes/relationships.yaml.twig' %}
 

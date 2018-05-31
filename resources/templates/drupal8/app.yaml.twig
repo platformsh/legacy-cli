@@ -6,8 +6,8 @@
 # The name of this app. Must be unique within a project.
 name: '{{ application_name }}'
 
-# The runtime the application uses.
-type: 'php:{{ php_version }}'
+# Configuration of the build of this application.
+type: '{{ runtime }}:{{ runtime_version }}'
 
 {% include 'includes/relationships.yaml.twig' %}
 

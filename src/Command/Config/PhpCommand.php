@@ -30,8 +30,8 @@ class PhpCommand extends ConfigGenerateCommandBase implements ConfigGenerateInte
     {
         $fields = [];
 
-        $fields['php_version'] = new OptionsField('PHP version', [
-            'optionName' => 'php-version',
+        $fields['runtime_version'] = new OptionsField('PHP version', [
+            'optionName' => 'runtime-version',
             'options' => ['5.6', '7.0', '7.1', '7.2'],
             'default' => '7.2',
         ]);
@@ -72,4 +72,14 @@ class PhpCommand extends ConfigGenerateCommandBase implements ConfigGenerateInte
 
         return $fields;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function alterParameters()
+    {
+        $this->parameters['runtime'] = 'php';
+    }
+
+
 }

@@ -27,7 +27,7 @@ class Drupal7Command extends PhpCommand implements ConfigGenerateInterface
     {
         $commonFields = parent::getFields();
 
-        $fields['php_version'] = $commonFields['php_version'];
+        $fields['runtime_version'] = $commonFields['runtime_version'];
         $fields['webroot'] = $commonFields['webroot']
             ->set('default', 'public');
 
@@ -48,5 +48,6 @@ class Drupal7Command extends PhpCommand implements ConfigGenerateInterface
             'spec' => '*/20 * * * *',
             'cmd' => 'cd ' . $this->appRoot . '; drush core-cron'
         ];
+        $this->parameters['runtime'] = 'php';
     }
 }

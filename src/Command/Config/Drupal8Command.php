@@ -30,7 +30,7 @@ class Drupal8Command extends PhpCommand implements ConfigGenerateInterface
     {
         $commonFields = parent::getFields();
 
-        $fields['php_version'] = $commonFields['php_version'];
+        $fields['runtime_version'] = $commonFields['runtime_version'];
         $fields['webroot'] = $commonFields['webroot'];
 
         $fields['install_profile'] = new Field('Install profile', [
@@ -64,6 +64,7 @@ class Drupal8Command extends PhpCommand implements ConfigGenerateInterface
             'spec' => '*/20 * * * *',
             'cmd' => 'cd ' . $this->appRoot . '; drush core-cron'
         ];
+        $this->parameters['runtime'] = 'php';
     }
 
     /**
