@@ -32,8 +32,8 @@ class PhpCommand extends ConfigGenerateCommandBase implements ConfigGenerateInte
 
         $fields['php_version'] = new OptionsField('PHP version', [
             'optionName' => 'php-version',
-            'options' => ['5.6', '7.0', '7.1'],
-            'default' => '7.1',
+            'options' => ['5.6', '7.0', '7.1', '7.2'],
+            'default' => '7.2',
         ]);
 
         $fields['build_flavor'] = new OptionsField('Build flavor', [
