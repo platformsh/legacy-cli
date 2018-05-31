@@ -31,10 +31,10 @@ class Application extends ParentApplication
     /**
      * @var ConsoleCommand|null
      */
-    protected $currentCommand;
+    private $currentCommand;
 
     /** @var Config */
-    protected $cliConfig;
+    private $config;
 
     /** @var \Symfony\Component\DependencyInjection\Container */
     private static $container;
@@ -42,14 +42,14 @@ class Application extends ParentApplication
     /**
      * {@inheritdoc}
      */
-    public function __construct()
+    public function __construct(Config $config = null)
     {
-        $this->cliConfig = new Config();
-        parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
+        $this->config = $config ?: new Config();
+        parent::__construct($this->config->get('application.name'), $this->config->get('application.version'));
 
         // Use the configured timezone, or fall back to the system timezone.
         date_default_timezone_set(
-            $this->cliConfig->getWithDefault('application.timezone', null)
+            $this->config->getWithDefault('application.timezone', null)
                 ?: TimezoneUtil::getTimezone()
         );
 
@@ -60,7 +60,7 @@ class Application extends ParentApplication
         $this->setDefaultCommand('welcome');
 
         $dispatcher = new EventDispatcher();
-        $dispatcher->addSubscriber(new EventSubscriber($this->cliConfig));
+        $dispatcher->addSubscriber(new EventSubscriber($this->config));
         $this->setDispatcher($dispatcher);
     }
 
@@ -71,7 +71,7 @@ class Application extends ParentApplication
      */
     public function add(ConsoleCommand $command)
     {
-        if (!$this->cliConfig->isCommandEnabled($command->getName())) {
+        if (!$this->config->isCommandEnabled($command->getName())) {
             $command->setApplication(null);
             return null;
         }
@@ -199,7 +199,7 @@ class Application extends ParentApplication
         }
 
         // The api.debug config option triggers debug-level output.
-        if ($this->cliConfig->get('api.debug')) {
+        if ($this->config->get('api.debug')) {
             $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
 
@@ -301,7 +301,7 @@ class Application extends ParentApplication
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
             $output->writeln(sprintf(
                 'For more information, type: <info>%s help %s</info>',
-                $this->cliConfig->get('application.executable'),
+                $this->config->get('application.executable'),
                 $this->currentCommand->getName()
             ), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
