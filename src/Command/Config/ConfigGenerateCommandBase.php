@@ -144,21 +144,24 @@ abstract class ConfigGenerateCommandBase extends CommandBase implements ConfigGe
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $parameters = $this->form->resolveOptions($input, $output, $questionHelper);
-        $appRoot = isset($parameters['application_root'])
-            ? $repoRoot . '/' . $parameters['application_root']
+
+        $this->parameters = $this->form->resolveOptions($input, $output, $questionHelper);
+
+        $this->appRoot = isset($this->parameters['application_root'])
+            ? $repoRoot . '/' . $this->parameters['application_root']
             : $repoRoot;
-        unset($parameters['application_root'], $parameters['application_subdir']);
-        $parameters += ['services' => [], 'relationships' => []];
-        $this->alterParameters($parameters);
-        $this->parameters = $parameters;
-        $this->appRoot = $appRoot;
+        unset($this->parameters['application_root'], $this->parameters['application_subdir']);
+
+        $this->parameters += ['services' => [], 'relationships' => []];
+
+        $this->alterParameters();
+
 
         $noOverwrite = $input->getOption('no-overwrite');
         foreach ($this->getTemplateTypes() as $templateType => $destination) {
             $template = $this->getTemplate($templateType);
-            $content = $this->renderTemplate($template, $parameters);
-            $destinationAbsolute = $appRoot . '/' . $destination;
+            $content = $this->renderTemplate($template, $this->parameters);
+            $destinationAbsolute = $this->appRoot . '/' . $destination;
             if (file_exists($destinationAbsolute)) {
                 $this->stdErr->write(sprintf('The file <comment>%s</comment> already exists.', $destination));
                 if ($noOverwrite) {

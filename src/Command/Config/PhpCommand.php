@@ -72,12 +72,4 @@ class PhpCommand extends ConfigGenerateCommandBase implements ConfigGenerateInte
 
         return $fields;
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getFields()
-    {
-        return self::getCommonFields();
-    }
 }

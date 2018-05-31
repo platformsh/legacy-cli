@@ -25,7 +25,7 @@ class Drupal7Command extends PhpCommand implements ConfigGenerateInterface
      */
     public function getFields()
     {
-        $commonFields = PhpCommand::getCommonFields();
+        $commonFields = parent::getFields();
 
         $fields['php_version'] = $commonFields['php_version'];
         $fields['webroot'] = $commonFields['webroot']
@@ -39,7 +39,7 @@ class Drupal7Command extends PhpCommand implements ConfigGenerateInterface
      */
     public function alterParameters()
     {
-        $parameters['services']['mysqldb'] = [
+        $this->parameters['services']['mysqldb'] = [
             'type' => 'mysql:10.0',
             'disk' => 2048,
         ];
