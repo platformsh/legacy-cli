@@ -9,6 +9,8 @@ name: '{{ application_name }}'
 # The runtime the application uses.
 type: 'php:{{ php_version }}'
 
+{% include 'includes/relationships.yaml.twig' %}
+
 # Configuration of the build of this application.
 build:
     flavor: composer
@@ -81,18 +83,13 @@ mounts:
 hooks:
     # The deploy hook runs after your application has been deployed and started.
     deploy: |
-      cd {{ webroot }}
-      drush -y cache-rebuild
-      drush -y updatedb
-      drush -y config-import
-      drush -y entup
-
-# The configuration of scheduled execution.
-crons:
-    drupal:
-        spec: '*/20 * * * *'
-        cmd: 'cd {{ webroot }} ; drush core-cron'
+        cd {{ webroot }}
+        drush -y cache-rebuild
+        drush -y updatedb
+        drush -y config-import
+        drush -y entup
 
 {% include 'includes/crons.yaml.twig' %}
 
-{% include 'includes/relationships.yaml.twig' %}
+
+

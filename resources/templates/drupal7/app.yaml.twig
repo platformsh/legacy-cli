@@ -13,6 +13,8 @@ type: 'php:{{ php_version }}'
 build:
     flavor: drupal
 
+{% include 'includes/relationships.yaml.twig' %}
+
 # The build-time dependencies of the app.
 dependencies:
     php:
@@ -84,8 +86,7 @@ mounts:
 hooks:
     # We run deploy hook after your application has been deployed and started.
     deploy: |
-      cd {{ webroot }}
-      drush -y updatedb
+        cd {{ webroot }}
+        drush -y updatedb
 
-{% include 'includes/relationships.yaml.twig' %}
 {% include 'includes/crons.yaml.twig' %}

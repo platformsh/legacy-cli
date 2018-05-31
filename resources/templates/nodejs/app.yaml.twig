@@ -7,6 +7,8 @@
 name: '{{ application_name }}'
 type: 'nodejs:{{ nodejs_version }}'
 
+{% include 'includes/relationships.yaml.twig' %}
+
 # Dependencies list tools that are not part of your application but that are needed
 # to build or run it.
 dependencies:
@@ -39,5 +41,4 @@ disk: {{ application_disk|yaml }}
 mounts:
   "/run": "shared:files/run"
 
-{% include 'includes/relationships.yaml.twig' %}
 {% include 'includes/crons.yaml.twig' %}
