@@ -2,12 +2,12 @@
 
 namespace Platformsh\Cli\Command\Config;
 
-class Drupal7Command extends ConfigGenerateCommandBase
+class Drupal7Command extends PhpCommand implements ConfigGenerateInterface
 {
     /**
      * {@inheritdoc}
      */
-    protected function getKey()
+    public function getKey()
     {
         return 'drupal7';
     }
@@ -15,7 +15,7 @@ class Drupal7Command extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getLabel()
+    public function getLabel()
     {
         return 'Drupal 7';
     }
@@ -23,7 +23,7 @@ class Drupal7Command extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getFields()
+    public function getFields()
     {
         $commonFields = PhpCommand::getCommonFields();
 
@@ -37,7 +37,7 @@ class Drupal7Command extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function alterParameters(array &$parameters)
+    public function alterParameters()
     {
         $parameters['services']['mysqldb'] = [
             'type' => 'mysql:10.0',

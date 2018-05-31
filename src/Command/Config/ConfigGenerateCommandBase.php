@@ -18,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 
-abstract class ConfigGenerateCommandBase extends CommandBase
+abstract class ConfigGenerateCommandBase extends CommandBase implements ConfigGenerateInterface
 {
     /** {@inheritdoc} */
     protected $hiddenInList = true;
@@ -39,19 +39,19 @@ abstract class ConfigGenerateCommandBase extends CommandBase
     private $engine;
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
-    abstract protected function getKey();
+    abstract public function getKey();
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
-    abstract protected function getLabel();
+    abstract public function getLabel();
 
     /**
-     * @return Field[]
+     * {@inheritdoc}
      */
-    abstract protected function getFields();
+    abstract public function getFields();
 
     /**
      * @param Field[] $fields
@@ -98,6 +98,9 @@ abstract class ConfigGenerateCommandBase extends CommandBase
         return array_merge($pre, $fields, $post);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function configure()
     {
         $this->setName('config:generate:' . $this->getKey());
@@ -108,6 +111,10 @@ abstract class ConfigGenerateCommandBase extends CommandBase
     }
 
     /**
+     * Determine where we are building this template.
+     *
+     * @todo Make this default to the current directory if no git
+     *
      * @return string|false
      */
     protected function getRepositoryRoot()
@@ -125,6 +132,9 @@ abstract class ConfigGenerateCommandBase extends CommandBase
         return $this->repoRoot;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $repoRoot = $this->getRepositoryRoot();
@@ -184,17 +194,17 @@ abstract class ConfigGenerateCommandBase extends CommandBase
     }
 
     /**
-     * @param array &$parameters
+     * {@inheritdoc}
      */
-    protected function alterParameters(array &$parameters)
+    public function alterParameters()
     {
         // Override this to modify parameters.
     }
 
     /**
-     * @return array An array of destination filenames, keyed by template type.
+     * {@inheritdoc}
      */
-    protected function getTemplateTypes()
+    public function getTemplateTypes()
     {
         return [
             'app.yaml' => $this->config()->get('service.app_config_file'),
@@ -204,6 +214,8 @@ abstract class ConfigGenerateCommandBase extends CommandBase
     }
 
     /**
+     * Render a template file.
+     *
      * @param string $template
      * @param array  $parameters
      *

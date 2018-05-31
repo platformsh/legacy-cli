@@ -9,7 +9,7 @@ class NodejsCommand extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getKey()
+    public function getKey()
     {
         return 'nodejs';
     }
@@ -17,7 +17,7 @@ class NodejsCommand extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getLabel()
+    public function getLabel()
     {
         return 'Generic Node.js';
     }
@@ -25,7 +25,7 @@ class NodejsCommand extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getFields() {
+    public function getFields() {
         $fields['nodejs_version'] = new OptionsField('Node.js version', [
             'optionName' => 'nodejs-version',
             'options' => ['6.0', '7.5'],

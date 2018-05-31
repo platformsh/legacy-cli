@@ -5,12 +5,12 @@ namespace Platformsh\Cli\Command\Config;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 
-class PhpCommand extends ConfigGenerateCommandBase
+class PhpCommand extends ConfigGenerateCommandBase implements ConfigGenerateInterface
 {
     /**
      * {@inheritdoc}
      */
-    protected function getKey()
+    public function getKey()
     {
         return 'php';
     }
@@ -18,15 +18,15 @@ class PhpCommand extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getLabel()
+    public function getLabel()
     {
         return 'Generic PHP';
     }
 
     /**
-     * @return Field[]
+     * {@inheritdoc}
      */
-    public static function getCommonFields()
+    public function getFields()
     {
         $fields = [];
 

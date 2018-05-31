@@ -5,12 +5,12 @@ namespace Platformsh\Cli\Command\Config;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 
-class Drupal8Command extends ConfigGenerateCommandBase
+class Drupal8Command extends PhpCommand implements ConfigGenerateInterface
 {
     /**
      * {@inheritdoc}
      */
-    protected function getKey()
+    public function getKey()
     {
         return 'drupal8';
     }
@@ -18,7 +18,7 @@ class Drupal8Command extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getLabel()
+    public function getLabel()
     {
         return 'Drupal 8';
     }
@@ -26,7 +26,7 @@ class Drupal8Command extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getFields()
+    public function getFields()
     {
         $commonFields = PhpCommand::getCommonFields();
 
@@ -53,7 +53,7 @@ class Drupal8Command extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function alterParameters(array &$parameters)
+    public function alterParameters()
     {
         $parameters['services']['mysqldb'] = [
             'type' => 'mysql:10.0',
@@ -65,7 +65,7 @@ class Drupal8Command extends ConfigGenerateCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function getTemplateTypes()
+    public function getTemplateTypes()
     {
         $types = parent::getTemplateTypes();
         $webRoot = isset($this->parameters['webroot']) ? $this->parameters['webroot'] : 'web';
