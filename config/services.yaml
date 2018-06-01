@@ -4,7 +4,7 @@
 services:
     _defaults:
         autowire: true
-        autoconfigure: true
+        autoconfigure: false
         public: false
 
     # Set up all classes in src/Command as console commands.
