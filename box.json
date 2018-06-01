@@ -32,5 +32,5 @@
   ],
   "main": "bin/platform",
   "output": "platform.phar",
-  "stub": "stub.php"
+  "stub": "resources/phar-stub.php"
 }
