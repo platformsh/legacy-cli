@@ -191,8 +191,8 @@ class Application extends ParentApplication
     protected function configureIO(InputInterface $input, OutputInterface $output)
     {
         // Set the input and output in the service container.
-        $this->container()->set('input', $input);
-        $this->container()->set('output', $output);
+        $this->container()->set(InputInterface::class, $input);
+        $this->container()->set(OutputInterface::class, $output);
 
         parent::configureIO($input, $output);
 

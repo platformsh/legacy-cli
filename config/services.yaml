@@ -1,4 +1,4 @@
-# Services are classes providing functionality needed in multiple places.
+# Configuration file for services (dependency injection).
 #
 # See https://symfony.com/doc/current/service_container.html
 services:
@@ -15,28 +15,31 @@ services:
     # Set up all classes in src/Service as services automatically.
     Platformsh\Cli\Service\:
         resource: '../src/Service/*'
-        public: true
 
+    # A couple of services are not inside the \Platformsh\Cli\Service namespace.
     Platformsh\Cli\Local\LocalBuild: {}
     Platformsh\Cli\Local\LocalProject:
         public: true
 
-    # Configure the cache service.
-    cache:
-        class:     '\Doctrine\Common\Cache\CacheProvider'
+    # A couple of other services have to be public.
+    Platformsh\Cli\Service\LegacyMigration:
+        public: true
+    Platformsh\Cli\Service\SelfUpdateChecker:
+        public: true
+
+    # Configure the cache service, which is created via a factory.
+    Doctrine\Common\Cache\CacheProvider:
         factory:   'Platformsh\Cli\Service\CacheFactory:createCacheProvider'
         arguments: ['@Platformsh\Cli\Service\Config']
-    Doctrine\Common\Cache\CacheProvider: '@cache'
 
-    # Configure higher level services.
+    # Configure synthetic services, which are created and set after the
+    # container is compiled.
     Platformsh\Cli\Application:
         public: true
         synthetic: true
-    output:
+    Symfony\Component\Console\Output\OutputInterface:
         public: true
         synthetic: true
-    Symfony\Component\Console\Output\OutputInterface: '@output'
-    input:
+    Symfony\Component\Console\Input\InputInterface:
         public: true
         synthetic: true
-    Symfony\Component\Console\Input\InputInterface: '@input'
