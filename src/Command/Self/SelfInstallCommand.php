@@ -46,7 +46,7 @@ EOT
         ];
         $fs = new \Symfony\Component\Filesystem\Filesystem();
         foreach ($rcFiles as $rcFile) {
-            if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
+            if (($rcContents = file_get_contents(CLI_ROOT . '/resources/' . $rcFile)) === false) {
                 $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
 
                 return 1;
