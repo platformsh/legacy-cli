@@ -45,13 +45,14 @@ EOT
 
         $currentShellConfig = '';
 
-        if ($shellConfigFile !== false && file_exists($shellConfigFile)) {
-            $this->stdErr->writeln(sprintf('Reading shell configuration file: %s', $shellConfigFile));
-
-            $currentShellConfig = file_get_contents($shellConfigFile);
-            if ($currentShellConfig === false) {
-                $this->stdErr->writeln('Failed to read file');
-                return 1;
+        if ($shellConfigFile !== false) {
+            $this->stdErr->writeln(sprintf('Selected shell configuration file: <info>%s</info>', $shellConfigFile));
+            if (file_exists($shellConfigFile)) {
+                $currentShellConfig = file_get_contents($shellConfigFile);
+                if ($currentShellConfig === false) {
+                    $this->stdErr->writeln('Failed to read file.');
+                    return 1;
+                }
             }
         }
 
@@ -68,7 +69,7 @@ EOT
         );
 
         if (strpos($currentShellConfig, $suggestedShellConfig) !== false) {
-            $this->stdErr->writeln(sprintf('Already configured: <info>%s</info>', $shellConfigFile));
+            $this->stdErr->writeln(sprintf('Already configured.', $shellConfigFile));
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 "To use the %s, run:\n    <info>%s</info>",
@@ -80,11 +81,22 @@ EOT
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if ($shellConfigFile === false || !$questionHelper->confirm('Do you want to update the file automatically?')) {
+        $modify = false;
+        if ($shellConfigFile !== false) {
+            $confirmText = file_exists($shellConfigFile)
+                ? 'Do you want to update the file automatically?'
+                : 'Do you want to create the file automatically?';
+            if ($questionHelper->confirm($confirmText)) {
+                $modify = true;
+            }
+        }
+
+        if (!$modify) {
             $suggestedShellConfig = PHP_EOL
                 . '# ' . $this->config()->get('application.name') . ' configuration'
                 . PHP_EOL
                 . $suggestedShellConfig;
+            $this->stdErr->writeln('');
 
             if ($shellConfigFile !== false) {
                 $this->stdErr->writeln(sprintf(
@@ -98,7 +110,7 @@ EOT
                 ));
             }
 
-            $this->stdErr->writeln(preg_replace('/^/m', '  ', $suggestedShellConfig));
+            $this->stdErr->writeln($suggestedShellConfig);
             return 1;
         }
 
