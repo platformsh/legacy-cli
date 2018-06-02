@@ -91,11 +91,16 @@ EOT
             }
         }
 
+        $appName = $this->config()->get('application.name');
+        $begin = '# BEGIN SNIPPET: ' . $appName . ' configuration';
+        $end = '# END SNIPPET';
+
         if (!$modify) {
             $suggestedShellConfig = PHP_EOL
-                . '# ' . $this->config()->get('application.name') . ' configuration'
+                . $begin
                 . PHP_EOL
-                . $suggestedShellConfig;
+                . $suggestedShellConfig
+                . ' ' . $end;
             $this->stdErr->writeln('');
 
             if ($shellConfigFile !== false) {
@@ -114,11 +119,25 @@ EOT
             return 1;
         }
 
-        $begin = '# BEGIN SNIPPET: Automatically added by the ' . $this->config()->get('application.name');
-        $end = '# END SNIPPET';
-
+        // Look for the position of the $begin string in the current config.
         $beginPos = strpos($currentShellConfig, $begin);
-        $endPos = strpos($currentShellConfig, $end, $beginPos ?: 0);
+
+        // Otherwise, look for a line that loosely matches the $begin string.
+        if ($beginPos === false) {
+            $beginPattern = '/^' . preg_quote('# BEGIN SNIPPET:') . '[^\n]*' . preg_quote($appName) . '[^\n]*$/m';
+            if (preg_match($beginPattern, $currentShellConfig, $matches, PREG_OFFSET_CAPTURE)) {
+                $beginPos = $matches[0][1];
+            }
+        }
+
+        // Find the snippet's end: the first occurrence of $end after $begin.
+        $endPos = false;
+        if ($beginPos !== false) {
+            $endPos = strpos($currentShellConfig, $end, $beginPos);
+        }
+
+        // If an existing snippet has been found, update it. Otherwise, add a
+        // new snippet to the end of the file.
         if ($beginPos !== false && $endPos !== false && $endPos > $beginPos) {
             $newShellConfig = substr_replace(
                 $currentShellConfig,
