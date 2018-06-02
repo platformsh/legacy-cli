@@ -69,7 +69,7 @@ EOT
         );
 
         if (strpos($currentShellConfig, $suggestedShellConfig) !== false) {
-            $this->stdErr->writeln(sprintf('Already configured.', $shellConfigFile));
+            $this->stdErr->writeln('Already configured.');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 "To use the %s, run:\n    <info>%s</info>",
@@ -91,11 +91,11 @@ EOT
             }
         }
 
-        $appName = $this->config()->get('application.name');
+        $appName = (string) $this->config()->get('application.name');
         $begin = '# BEGIN SNIPPET: ' . $appName . ' configuration';
         $end = '# END SNIPPET';
 
-        if (!$modify) {
+        if ($shellConfigFile === false || !$modify) {
             $suggestedShellConfig = PHP_EOL
                 . $begin
                 . PHP_EOL
@@ -109,10 +109,9 @@ EOT
                     $shellConfigFile
                 ));
             } else {
-                $this->stdErr->writeln(sprintf(
-                    'To set up the CLI, add the following lines to your shell configuration file:',
-                    $shellConfigFile
-                ));
+                $this->stdErr->writeln(
+                    'To set up the CLI, add the following lines to your shell configuration file:'
+                );
             }
 
             $this->stdErr->writeln($suggestedShellConfig);
