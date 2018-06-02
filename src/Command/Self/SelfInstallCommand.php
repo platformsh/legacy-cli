@@ -151,8 +151,7 @@ EOT
      * Finds a shell configuration file for the user.
      *
      * @return string|false
-     *   The absolute path to an existing shell config file, or false on
-     *   failure.
+     *   The absolute path to a shell config file, or false on failure.
      */
     protected function findShellConfigFile()
     {
@@ -177,6 +176,13 @@ EOT
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
                 return $homeDir . DIRECTORY_SEPARATOR . $candidate;
             }
+        }
+
+        // If none of the files exist (yet), then pick the first one.
+        if (is_writable($homeDir)) {
+            $filename = reset($candidates) ?: '.bash_profile';
+
+            return $homeDir . DIRECTORY_SEPARATOR . $filename;
         }
 
         return false;
