@@ -324,12 +324,14 @@ class Application extends ParentApplication
         } catch (CommandNotFoundException $e) {
             // If a command is not found, load all commands so that aliases can
             // be checked.
-            // @todo make aliases part of the services.yaml file to keep the performance benefit of lazy-loading?
             /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
             $loader = $this->container()->get('console.command_loader');
-            foreach ($loader->getNames() as $loaderName) {
-                if (!$this->has($loaderName)) {
-                    $this->add($loader->get($loaderName));
+            foreach ($loader->getNames() as $commandName) {
+                $command = $this->add($loader->get($commandName));
+
+                // Return early if the alias is an exact match.
+                if ($command && in_array($name, $command->getAliases(), true)) {
+                    return $command;
                 }
             }
             return parent::find($name);
