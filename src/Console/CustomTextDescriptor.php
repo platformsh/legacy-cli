@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * @file
  * Override Symfony Console's TextDescriptor to customize the appearance of the

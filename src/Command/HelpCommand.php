@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * @file
  * Override Symfony Console's HelpCommand to customize the appearance of help.

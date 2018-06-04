@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Platformsh\Cli\Console;
 
@@ -300,7 +301,7 @@ class AdaptiveTable extends Table
         asort($originalColumnWidths, SORT_NUMERIC);
         foreach ($originalColumnWidths as $column => $columnWidth) {
             $columnRatio = ($maxContentWidth / $totalWidth) * $columnWidth;
-            $maxColumnWidth = round($columnRatio);
+            $maxColumnWidth = (int) round($columnRatio);
 
             // Do not change the width of columns which are already narrower
             // than the minimum.
@@ -349,7 +350,7 @@ class AdaptiveTable extends Table
     private function getCellWidth($cell)
     {
         $lineWidths = [0];
-        foreach (explode(PHP_EOL, $cell) as $line) {
+        foreach (explode(PHP_EOL, (string) $cell) as $line) {
             $lineWidths[] = Helper::strlenWithoutDecoration($this->outputCopy->getFormatter(), $line);
         }
         $cellWidth = max($lineWidths);

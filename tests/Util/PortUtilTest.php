@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Platformsh\Cli\Tests\Util;
 
@@ -17,7 +18,7 @@ class PortUtilTest extends TestCase
         // test that a new number is returned.
         exec('lsof -sTCP:LISTEN -i@127.0.0.1 -P -n', $output, $returnVar);
         if ($returnVar === 0 && preg_match('/127\.0\.0\.1:([0-9]+)/', end($output), $matches)) {
-            $openPort = $matches[1];
+            $openPort = (int) $matches[1];
             $this->assertNotEquals($util->getPort($openPort), $openPort);
         }
         else {
