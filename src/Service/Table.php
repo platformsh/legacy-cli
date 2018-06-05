@@ -48,7 +48,7 @@ class Table implements InputConfiguringInterface
      *
      * @param InputDefinition $definition
      */
-    public function configureInput(InputDefinition $definition)
+    public function configureInput(InputDefinition $definition): void
     {
         $description = 'The output format ("table", "csv", or "tsv")';
         $option = new InputOption('format', null, InputOption::VALUE_REQUIRED, $description, 'table');

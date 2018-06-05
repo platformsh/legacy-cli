@@ -48,7 +48,7 @@ class ActivityService implements InputConfiguringInterface
      *
      * @return string
      */
-    private function indent($string, $prefix = '    ')
+    private function indent(string $string, string $prefix = '    '): string
     {
         return preg_replace('/^/m', $prefix, $string);
     }
@@ -62,7 +62,7 @@ class ActivityService implements InputConfiguringInterface
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $success = null, $failure = null)
+    public function waitAndLog(Activity $activity, ?string $success = null, ?string $failure = null): bool
     {
         $this->stdErr->writeln(sprintf(
             'Waiting for the activity <info>%s</info> (%s):',
@@ -126,7 +126,7 @@ class ActivityService implements InputConfiguringInterface
      * @return bool
      *   True if all activities succeed, false otherwise.
      */
-    public function waitMultiple(array $activities, Project $project)
+    public function waitMultiple(array $activities, Project $project): bool
     {
         $count = count($activities);
         if ($count == 0) {
@@ -229,7 +229,7 @@ class ActivityService implements InputConfiguringInterface
      *
      * @return string
      */
-    public function formatState($state)
+    public function formatState(string $state): string
     {
         return isset(self::$stateNames[$state]) ? self::$stateNames[$state] : $state;
     }
@@ -242,7 +242,7 @@ class ActivityService implements InputConfiguringInterface
      *
      * @return string
      */
-    public function formatResult($result, $decorate = true)
+    public function formatResult(string $result, bool $decorate = true): string
     {
         $name = isset(self::$resultNames[$result]) ? self::$resultNames[$result] : $result;
 
@@ -277,7 +277,7 @@ class ActivityService implements InputConfiguringInterface
      *
      * @return string
      */
-    public function getFormattedDescription(Activity $activity, $withDecoration = true)
+    public function getFormattedDescription(Activity $activity, bool $withDecoration = true): string
     {
         if (!$withDecoration) {
             return $activity->getDescription(false);
@@ -304,7 +304,7 @@ class ActivityService implements InputConfiguringInterface
      *
      * Add both the --no-wait and --wait options.
      */
-    public function configureInput(InputDefinition $inputDefinition)
+    public function configureInput(InputDefinition $inputDefinition): void
     {
         $description = 'Wait for the operation to complete';
         if (!$this->detectRunningInHook()) {
@@ -322,7 +322,7 @@ class ActivityService implements InputConfiguringInterface
      *
      * @return bool
      */
-    public function shouldWait(InputInterface $input)
+    public function shouldWait(InputInterface $input): bool
     {
         if ($input->hasOption('no-wait') && $input->getOption('no-wait')) {
             return false;
@@ -348,7 +348,7 @@ class ActivityService implements InputConfiguringInterface
      *
      * @return bool
      */
-    private function detectRunningInHook()
+    private function detectRunningInHook(): bool
     {
         $envPrefix = $this->config->get('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT')
@@ -364,7 +364,7 @@ class ActivityService implements InputConfiguringInterface
     /**
      * Warn the user that the remote environment needs redeploying.
      */
-    public function redeployWarning()
+    public function redeployWarning(): void
     {
         $this->stdErr->writeln([
             '',

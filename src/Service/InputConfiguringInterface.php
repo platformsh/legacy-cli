@@ -14,5 +14,5 @@ interface InputConfiguringInterface
      *
      * @return void
      */
-    public function configureInput(InputDefinition $definition);
+    public function configureInput(InputDefinition $definition): void;
 }

@@ -67,8 +67,8 @@ class Api
     protected $sessionStorage;
 
     public function __construct(
-        Config $config = null,
-        CacheProvider $cache = null
+        ?Config $config = null,
+        ?CacheProvider $cache = null
     ) {
         $this->config = $config ?: new Config();
         $this->dispatcher = new EventDispatcher();
@@ -115,7 +115,7 @@ class Api
     public function injectListeners(
         AutoLoginListener $autoLoginListener,
         DrushAliasUpdater $drushAliasUpdater
-    ) {
+    ): void {
         $this->dispatcher->addListener(
             'login.required',
             [$autoLoginListener, 'onLoginRequired']
@@ -134,7 +134,7 @@ class Api
      *
      * @return string
      */
-    protected function loadTokenFromFile($filename)
+    protected function loadTokenFromFile(string $filename): string
     {
         if (strpos($filename, '/') !== 0 && strpos($filename, '\\') !== 0) {
             $filename = $this->config->getUserConfigDir() . '/' . $filename;
@@ -153,7 +153,7 @@ class Api
      *
      * @return bool
      */
-    public function hasApiToken()
+    public function hasApiToken(): bool
     {
         return isset($this->apiToken);
     }
@@ -163,7 +163,7 @@ class Api
      *
      * @return string
      */
-    protected function getUserAgent()
+    protected function getUserAgent(): string
     {
         return sprintf(
             '%s/%s (%s; %s; PHP %s)',
@@ -184,7 +184,7 @@ class Api
      *
      * @return PlatformClient
      */
-    public function getClient($autoLogin = true, $reset = false)
+    public function getClient(bool $autoLogin = true, bool $reset = false): PlatformClient
     {
         if (!isset(self::$client) || $reset) {
             $connectorOptions = [];
@@ -239,7 +239,7 @@ class Api
      *
      * @return Project[] The user's projects, keyed by project ID.
      */
-    public function getProjects($refresh = null)
+    public function getProjects(?bool $refresh = null)
     {
         $cacheKey = sprintf('%s:projects', $this->sessionId);
 
@@ -281,7 +281,7 @@ class Api
      *
      * @return Project|false
      */
-    public function getProject($id, $host = null, $refresh = null)
+    public function getProject(string $id, ?string $host = null, ?bool $refresh = null)
     {
         // Find the project in the user's main project list. This uses a
         // separate cache.
@@ -325,7 +325,7 @@ class Api
      *
      * @return Environment[] The user's environments, keyed by ID.
      */
-    public function getEnvironments(Project $project, $refresh = null, $events = true)
+    public function getEnvironments(Project $project, ?bool $refresh = null, ?bool $events = true): array
     {
         $projectId = $project->id;
 
@@ -381,7 +381,7 @@ class Api
      *
      * @return Environment|false The environment, or false if not found.
      */
-    public function getEnvironment($id, Project $project, $refresh = null, $tryMachineName = false)
+    public function getEnvironment(string $id, Project $project, ?bool $refresh = null, ?bool $tryMachineName = false)
     {
         // Statically cache not found environments.
         $cacheKey = $project->id . ':' . $id . ($tryMachineName ? ':mn' : '');
@@ -429,7 +429,7 @@ class Api
      *   An array containing at least 'username', 'uuid', 'mail', and
      *   'display_name'.
      */
-    public function getMyAccount($reset = false)
+    public function getMyAccount(bool $reset = false): array
     {
         $cacheKey = sprintf('%s:my-account', $this->sessionId);
         if ($reset || !($info = $this->cache->fetch($cacheKey))) {
@@ -449,7 +449,7 @@ class Api
      * @return array
      *   An array containing 'email' and 'display_name'.
      */
-    public function getAccount(ProjectAccess $user, $reset = false)
+    public function getAccount(ProjectAccess $user, bool $reset = false): array
     {
         if (isset(self::$accountsCache[$user->id]) && !$reset) {
             return self::$accountsCache[$user->id];
@@ -472,7 +472,7 @@ class Api
      *
      * @param string $projectId
      */
-    public function clearEnvironmentsCache($projectId)
+    public function clearEnvironmentsCache(string $projectId): void
     {
         $this->cache->delete('environments:' . $projectId);
         unset(self::$environmentsCache[$projectId]);
@@ -486,7 +486,7 @@ class Api
     /**
      * Clear the projects cache.
      */
-    public function clearProjectsCache()
+    public function clearProjectsCache(): void
     {
         $this->cache->delete(sprintf('%s:projects', $this->sessionId));
         $this->cache->delete(sprintf('%s:my-account', $this->sessionId));
@@ -500,7 +500,7 @@ class Api
      *
      * @return ApiResourceBase[]
      */
-    public static function sortResources(array &$resources, $propertyPath)
+    public static function sortResources(array &$resources, string $propertyPath): array
     {
         uasort($resources, function (ApiResourceBase $a, ApiResourceBase $b) use ($propertyPath) {
             $valueA = static::getNestedProperty($a, $propertyPath, false);
@@ -533,7 +533,7 @@ class Api
      *
      * @return mixed
      */
-    public static function getNestedProperty(ApiResourceBase $resource, $propertyPath, $lazyLoad = true)
+    public static function getNestedProperty(ApiResourceBase $resource, string $propertyPath, bool $lazyLoad = true)
     {
         if (!strpos($propertyPath, '.')) {
             return $resource->getProperty($propertyPath, true, $lazyLoad);
@@ -560,7 +560,7 @@ class Api
     /**
      * @return bool
      */
-    public function isLoggedIn()
+    public function isLoggedIn(): bool
     {
         return $this->getClient(false)->getConnector()->isLoggedIn();
     }
@@ -573,7 +573,7 @@ class Api
      *
      * @return ProjectAccess[]
      */
-    public function getProjectAccesses(Project $project, $reset = false)
+    public function getProjectAccesses(Project $project, bool $reset = false): array
     {
         if ($reset || !isset(self::$projectAccessesCache[$project->id])) {
             self::$projectAccessesCache[$project->id] = $project->getUsers();
@@ -591,7 +591,7 @@ class Api
      *
      * @return ProjectAccess|false
      */
-    public function loadProjectAccessByEmail(Project $project, $email, $reset = false)
+    public function loadProjectAccessByEmail(Project $project, string $email, bool $reset = false)
     {
         foreach ($this->getProjectAccesses($project, $reset) as $user) {
             $account = $this->getAccount($user);
@@ -611,7 +611,7 @@ class Api
      *
      * @return string
      */
-    public function getProjectLabel(Project $project, $tag = 'info')
+    public function getProjectLabel(Project $project, $tag = 'info'): string
     {
         $title = $project->title;
         $pattern = $title ? '%2$s (%3$s)' : '%3$s';
@@ -632,7 +632,7 @@ class Api
      * @return ApiResourceBase
      *   The resource, if one (and only one) is matched.
      */
-    public function matchPartialId($id, array $resources, $name = 'Resource')
+    public function matchPartialId(string $id, array $resources, string $name = 'Resource'): ApiResourceBase
     {
         $matched = array_filter($resources, function (ApiResourceBase $resource) use ($id) {
             return strpos($resource->getProperty('id'), $id) === 0;
@@ -660,15 +660,15 @@ class Api
      *
      * @return string
      */
-    public function getAccessToken()
+    public function getAccessToken(): string
     {
         $session = $this->getClient()->getConnector()->getSession();
-        $token = $session->get('accessToken');
+        $token = (string) $session->get('accessToken');
         $expires = $session->get('expires');
         if (!$token || $expires < time()) {
             // Force a connection to the API to ensure there is an access token.
             $this->getMyAccount(true);
-            if (!$token = $session->get('accessToken')) {
+            if (!$token = (string) $session->get('accessToken')) {
                 throw new \RuntimeException('No access token found');
             }
         }
@@ -684,7 +684,7 @@ class Api
      *
      * @return int
     */
-    public function urlSort($a, $b)
+    public function urlSort(string $a, string $b): int
     {
         $result = 0;
         foreach ([$a, $b] as $key => $url) {
@@ -702,7 +702,7 @@ class Api
      *
      * @return ClientInterface
      */
-    public function getHttpClient()
+    public function getHttpClient(): ClientInterface
     {
         return $this->getClient(false)->getConnector()->getClient();
     }
@@ -718,7 +718,7 @@ class Api
      * @return string|false
      *   The raw contents of the file, or false if the file is not found.
      */
-    public function readFile($filename, Environment $environment)
+    public function readFile(string $filename, Environment $environment)
     {
         $cacheKey = implode(':', ['raw', $environment->project, $filename]);
         $data = $this->cache->fetch($cacheKey);
@@ -748,7 +748,7 @@ class Api
      *
      * @return Tree|false
      */
-    public function getTree(Environment $environment, $path = '.')
+    public function getTree(Environment $environment, string $path = '.')
     {
         $cacheKey = implode(':', ['tree', $environment->project, $path]);
         $data = $this->cache->fetch($cacheKey);
@@ -783,7 +783,7 @@ class Api
     /**
      * Delete all keychain keys.
      */
-    public function deleteFromKeychain()
+    public function deleteFromKeychain(): void
     {
         if ($this->sessionStorage instanceof KeychainStorage) {
             $this->sessionStorage->deleteAll();
@@ -798,7 +798,7 @@ class Api
      *
      * @return EnvironmentDeployment
      */
-    public function getCurrentDeployment(Environment $environment, $refresh = false)
+    public function getCurrentDeployment(Environment $environment, bool $refresh = false): EnvironmentDeployment
     {
         $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id]);
         $data = $this->cache->fetch($cacheKey);
@@ -821,7 +821,7 @@ class Api
      *
      * @return string|null
      */
-    public function getDefaultEnvironmentId(array $environments)
+    public function getDefaultEnvironmentId(array $environments): ?string
     {
         // If there is only one environment, use that.
         if (count($environments) <= 1) {
@@ -857,7 +857,7 @@ class Api
      *
      * @return string|null
      */
-    public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
+    public function getSiteUrl(Environment $environment, string $appName, ?EnvironmentDeployment $deployment = null): ?string
     {
         $deployment = $deployment ?: $this->getCurrentDeployment($environment);
         $routes = $deployment->routes;
@@ -890,7 +890,7 @@ class Api
      *
      * @return bool
      */
-    public function checkEnvironmentOperation($op, Environment $environment)
+    public function checkEnvironmentOperation(string $op, Environment $environment): bool
     {
         if ($environment->operationAvailable($op)) {
             return true;
@@ -909,7 +909,7 @@ class Api
      *
      * @return string|null
      */
-    public function getApiTokenHelp($tag = 'info')
+    public function getApiTokenHelp(string $tag = 'info'): ?string
     {
         if ($this->config->has('service.api_token_help_url')) {
             return "To authenticate non-interactively using an API token, see:\n    <$tag>"

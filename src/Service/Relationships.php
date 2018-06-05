@@ -26,7 +26,7 @@ class Relationships implements InputConfiguringInterface
     /**
      * @param \Symfony\Component\Console\Input\InputDefinition $definition
      */
-    public function configureInput(InputDefinition $definition)
+    public function configureInput(InputDefinition $definition): void
     {
         $definition->addOption(
             new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The service relationship to use')

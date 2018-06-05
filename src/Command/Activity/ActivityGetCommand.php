@@ -156,7 +156,7 @@ class ActivityGetCommand extends CommandBase
      *
      * @return \Platformsh\Client\Model\Activity[]
      */
-    private function getActivities(Selection $selection, InputInterface $input, $limit = 0)
+    private function getActivities(Selection $selection, InputInterface $input, int $limit = 0): array
     {
         if ($selection->hasEnvironment() && !$input->getOption('all')) {
             return $selection->getEnvironment()
@@ -175,7 +175,7 @@ class ActivityGetCommand extends CommandBase
      *
      * @return int|null
      */
-    private function getDuration(Activity $activity, $now = null)
+    private function getDuration(Activity $activity, ?int $now = null): ?int
     {
         if ($activity->isComplete()) {
             $end = strtotime($activity->completed_at);
