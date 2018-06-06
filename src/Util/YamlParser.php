@@ -110,7 +110,7 @@ class YamlParser
         if ($item instanceof TaggedValue) {
             $tag = $item->getTag();
             $value = $item->getValue();
-        } elseif (is_string($item) && $item[0] === '!' && preg_match('/\!([a-z]+)[ \t]+(.+)$/i', $item, $matches)) {
+        } elseif (is_string($item) && strlen($item) && $item[0] === '!' && preg_match('/\!([a-z]+)[ \t]+(.+)$/i', $item, $matches)) {
             $tag = $matches[1];
             $value = Yaml::parse($matches[2]);
             if (!is_string($value)) {
