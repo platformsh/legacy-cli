@@ -145,12 +145,13 @@ class BrowserLoginCommand extends CommandBase
         $process->start();
 
         // Give the local server some time to start before checking its status
-        // or opening the browser (0.5 seconds).
-        usleep(500000);
-
-        // Check the local server status.
+        // or opening the browser (0.3 seconds, looping with a timeout).
+        for ($start = microtime(true), $timeout = 10;
+             microtime(true) - $start <= $timeout && !$process->isRunning(); ) {
+            usleep(300000);
+        }
         if (!$process->isRunning()) {
-            $this->stdErr->writeln('Failed to start local web server.');
+            $this->stdErr->writeln('Failed to start local web server within ' . $timeout . ' seconds.');
             $this->stdErr->writeln(trim($process->getErrorOutput()));
 
             return 1;
