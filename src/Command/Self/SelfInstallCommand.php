@@ -31,7 +31,6 @@ EOT
             'shell-config.rc',
             'shell-config-bash.rc',
         ];
-        $rcDestination = $configDir . DIRECTORY_SEPARATOR . 'shell-config.rc';
         $fs = new \Symfony\Component\Filesystem\Filesystem();
         foreach ($rcFiles as $rcFile) {
             if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
@@ -46,27 +45,31 @@ EOT
 
         $currentShellConfig = '';
 
-        if ($shellConfigFile !== false && file_exists($shellConfigFile)) {
-            $this->stdErr->writeln(sprintf('Reading shell configuration file: %s', $shellConfigFile));
-
-            $currentShellConfig = file_get_contents($shellConfigFile);
-            if ($currentShellConfig === false) {
-                $this->stdErr->writeln('Failed to read file');
-                return 1;
+        if ($shellConfigFile !== false) {
+            $this->stdErr->writeln(sprintf('Selected shell configuration file: <info>%s</info>', $shellConfigFile));
+            if (file_exists($shellConfigFile)) {
+                $currentShellConfig = file_get_contents($shellConfigFile);
+                if ($currentShellConfig === false) {
+                    $this->stdErr->writeln('Failed to read file.');
+                    return 1;
+                }
             }
         }
 
-        $suggestedShellConfig = sprintf(
+        $configDirRelative = $this->config()->getUserConfigDir(false);
+        $rcDestination = $configDirRelative . '/' . 'shell-config.rc';
+        $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg(Filesystem::getHomeDirectory()) . '}';
+        $suggestedShellConfig .= PHP_EOL . sprintf(
             'export PATH=%s:"$PATH"',
-            escapeshellarg($configDir . '/bin')
+            '"$HOME/"' . escapeshellarg($configDirRelative . '/bin')
         );
         $suggestedShellConfig .= PHP_EOL . sprintf(
-            '[ -f %1$s ] && . %1$s',
-            escapeshellarg($rcDestination)
+            'if [ -f %1$s ]; then . %1$s; fi',
+            '"$HOME/"' . escapeshellarg($rcDestination)
         );
 
         if (strpos($currentShellConfig, $suggestedShellConfig) !== false) {
-            $this->stdErr->writeln(sprintf('Already configured: <info>%s</info>', $shellConfigFile));
+            $this->stdErr->writeln('Already configured.');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 "To use the %s, run:\n    <info>%s</info>",
@@ -78,11 +81,27 @@ EOT
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if ($shellConfigFile === false || !$questionHelper->confirm('Do you want to update the file automatically?')) {
+        $modify = false;
+        if ($shellConfigFile !== false) {
+            $confirmText = file_exists($shellConfigFile)
+                ? 'Do you want to update the file automatically?'
+                : 'Do you want to create the file automatically?';
+            if ($questionHelper->confirm($confirmText)) {
+                $modify = true;
+            }
+        }
+
+        $appName = (string) $this->config()->get('application.name');
+        $begin = '# BEGIN SNIPPET: ' . $appName . ' configuration';
+        $end = '# END SNIPPET';
+
+        if ($shellConfigFile === false || !$modify) {
             $suggestedShellConfig = PHP_EOL
-                . '# ' . $this->config()->get('application.name') . ' configuration'
+                . $begin
                 . PHP_EOL
-                . $suggestedShellConfig;
+                . $suggestedShellConfig
+                . ' ' . $end;
+            $this->stdErr->writeln('');
 
             if ($shellConfigFile !== false) {
                 $this->stdErr->writeln(sprintf(
@@ -90,21 +109,34 @@ EOT
                     $shellConfigFile
                 ));
             } else {
-                $this->stdErr->writeln(sprintf(
-                    'To set up the CLI, add the following lines to your shell configuration file:',
-                    $shellConfigFile
-                ));
+                $this->stdErr->writeln(
+                    'To set up the CLI, add the following lines to your shell configuration file:'
+                );
             }
 
-            $this->stdErr->writeln(preg_replace('/^/m', '  ', $suggestedShellConfig));
+            $this->stdErr->writeln($suggestedShellConfig);
             return 1;
         }
 
-        $begin = '# BEGIN SNIPPET: Automatically added by the ' . $this->config()->get('application.name');
-        $end = '# END SNIPPET';
-
+        // Look for the position of the $begin string in the current config.
         $beginPos = strpos($currentShellConfig, $begin);
-        $endPos = strpos($currentShellConfig, $end, $beginPos ?: 0);
+
+        // Otherwise, look for a line that loosely matches the $begin string.
+        if ($beginPos === false) {
+            $beginPattern = '/^' . preg_quote('# BEGIN SNIPPET:') . '[^\n]*' . preg_quote($appName) . '[^\n]*$/m';
+            if (preg_match($beginPattern, $currentShellConfig, $matches, PREG_OFFSET_CAPTURE)) {
+                $beginPos = $matches[0][1];
+            }
+        }
+
+        // Find the snippet's end: the first occurrence of $end after $begin.
+        $endPos = false;
+        if ($beginPos !== false) {
+            $endPos = strpos($currentShellConfig, $end, $beginPos);
+        }
+
+        // If an existing snippet has been found, update it. Otherwise, add a
+        // new snippet to the end of the file.
         if ($beginPos !== false && $endPos !== false && $endPos > $beginPos) {
             $newShellConfig = substr_replace(
                 $currentShellConfig,
@@ -149,8 +181,7 @@ EOT
      * Finds a shell configuration file for the user.
      *
      * @return string|false
-     *   The absolute path to an existing shell config file, or false on
-     *   failure.
+     *   The absolute path to a shell config file, or false on failure.
      */
     protected function findShellConfigFile()
     {
@@ -175,6 +206,13 @@ EOT
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
                 return $homeDir . DIRECTORY_SEPARATOR . $candidate;
             }
+        }
+
+        // If none of the files exist (yet), then pick the first one.
+        if (is_writable($homeDir)) {
+            $filename = reset($candidates) ?: '.bash_profile';
+
+            return $homeDir . DIRECTORY_SEPARATOR . $filename;
         }
 
         return false;

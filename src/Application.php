@@ -35,7 +35,11 @@ class Application extends ParentApplication
         $this->cliConfig = new Config();
         parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
 
-        date_default_timezone_set(TimezoneUtil::getTimezone());
+        // Use the configured timezone, or fall back to the system timezone.
+        date_default_timezone_set(
+            $this->cliConfig->getWithDefault('application.timezone', null)
+                ?: TimezoneUtil::getTimezone()
+        );
 
         $this->addCommands($this->getCommands());
 
@@ -140,6 +144,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Local\LocalDirCommand();
         $commands[] = new Command\Mount\MountListCommand();
         $commands[] = new Command\Mount\MountDownloadCommand();
+        $commands[] = new Command\Mount\MountSizeCommand();
         $commands[] = new Command\Mount\MountUploadCommand();
         $commands[] = new Command\Project\ProjectClearBuildCacheCommand();
         $commands[] = new Command\Project\ProjectCurlCommand();

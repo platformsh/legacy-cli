@@ -99,11 +99,18 @@ class Config
     }
 
     /**
+     * Get the directory where the CLI is normally installed and configured.
+     *
+     * @param bool $absolute Whether to return an absolute path. If false,
+     *                       the path will be relative to the home directory.
+     *
      * @return string
      */
-    public function getUserConfigDir()
+    public function getUserConfigDir($absolute = true)
     {
-        return $this->fs()->getHomeDirectory() . '/' . $this->get('application.user_config_dir');
+        $path = $this->get('application.user_config_dir');
+
+        return $absolute ? $this->fs()->getHomeDirectory() . '/' . $path : $path;
     }
 
     /**
@@ -224,6 +231,7 @@ class Config
             'updates' => 'updates',
             'application.login_method' => 'application.login_method',
             'application.date_format' => 'application.date_format',
+            'application.timezone' => 'application.timezone',
         ];
 
         $userConfig = $this->getUserConfig();

@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Event\ErrorEvent;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Session\KeychainStorage;
@@ -212,6 +213,16 @@ class Api
 
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
+            }
+
+            try {
+                $connector->getClient()->getEmitter()->on('error', function (ErrorEvent $event) {
+                    if ($event->getResponse() && $event->getResponse()->getStatusCode() === 403) {
+                        $this->on403($event);
+                    }
+                });
+            } catch (\RuntimeException $e) {
+                // Ignore errors if the user is not logged in at this stage.
             }
         }
 
@@ -886,5 +897,26 @@ class Api
         $environment = $this->getEnvironment($environment->id, $this->getProject($environment->project), $refresh);
 
         return $environment->operationAvailable($op);
+    }
+
+    /**
+     * React on an API 403 request.
+     *
+     * @param \GuzzleHttp\Event\ErrorEvent $event
+     */
+    private function on403(ErrorEvent $event)
+    {
+        $url = $event->getRequest()->getUrl();
+        $path = parse_url($url, PHP_URL_PATH);
+        if ($path && strpos($path, '/api/projects/') === 0) {
+            // Clear the environments cache for environment request errors.
+            if (preg_match('#^/api/projects/([^/]+?)/environments/#', $path, $matches)) {
+                $this->clearEnvironmentsCache($matches[1]);
+            }
+            // Clear the projects cache for other project request errors.
+            if (preg_match('#^/api/projects/([^/]+?)[/$]/#', $path, $matches)) {
+                $this->clearProjectsCache();
+            }
+        }
     }
 }

@@ -142,6 +142,7 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_FILE' => $codeFile,
         ]);
         $process->setTimeout(null);
+        $this->stdErr->writeln('Starting local web server with command: <info>' . $process->getCommandLine() . '</info>', OutputInterface::VERBOSITY_VERY_VERBOSE);
         $process->start();
 
         // Give the local server some time to start before checking its status

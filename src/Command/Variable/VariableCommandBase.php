@@ -200,9 +200,6 @@ abstract class VariableCommandBase extends CommandBase
             'default' => false,
         ]);
         $fields['is_sensitive'] = new BooleanField('Sensitive', [
-            'conditions' => [
-                'level' => self::LEVEL_ENVIRONMENT,
-            ],
             'description' => 'Whether the variable is sensitive',
             'questionLine' => 'Is the value sensitive?',
             'default' => false,
