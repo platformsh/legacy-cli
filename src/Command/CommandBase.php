@@ -41,7 +41,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @return CommandBase
      */
-    protected function setHiddenAliases(array $hiddenAliases)
+    protected function setHiddenAliases(array $hiddenAliases): CommandBase
     {
         $this->hiddenAliases = $hiddenAliases;
         $this->setAliases(array_merge($this->getAliases(), $hiddenAliases));
@@ -54,7 +54,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @return array
      */
-    public function getVisibleAliases()
+    public function getVisibleAliases(): array
     {
         return array_diff($this->getAliases(), $this->hiddenAliases);
     }
@@ -64,7 +64,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @param string $message
      */
-    protected function debug($message)
+    protected function debug(string $message): void
     {
         $this->labeledMessage('DEBUG', $message, OutputInterface::VERBOSITY_DEBUG);
     }
@@ -76,7 +76,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @param string $message
      * @param int    $options
      */
-    private function labeledMessage($label, $message, $options = 0)
+    private function labeledMessage(string $label, string $message, int $options = 0): void
     {
         if (isset($this->stdErr)) {
             $this->stdErr->writeln('<options=reverse>' . strtoupper($label) . '</> ' . $message, $options);
@@ -86,7 +86,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * {@inheritdoc}
      */
-    public function canBeRunMultipleTimes()
+    public function canBeRunMultipleTimes(): bool
     {
         return true;
     }
@@ -94,7 +94,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * {@inheritdoc}
      */
-    public function setRunningViaMulti($runningViaMulti = true)
+    public function setRunningViaMulti(bool $runningViaMulti = true): void
     {
         $this->runningViaMulti = $runningViaMulti;
     }
@@ -104,7 +104,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @return bool
      */
-    protected function isTerminal($descriptor)
+    protected function isTerminal($descriptor): bool
     {
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
     }

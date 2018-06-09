@@ -55,7 +55,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     /**
      * {@inheritdoc}
      */
-    public function canBeRunMultipleTimes()
+    public function canBeRunMultipleTimes(): bool
     {
         return false;
     }

@@ -46,7 +46,7 @@ class TunnelInfoCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    public function canBeRunMultipleTimes()
+    public function canBeRunMultipleTimes(): bool
     {
         return false;
     }

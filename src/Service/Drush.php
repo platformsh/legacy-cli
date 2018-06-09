@@ -17,25 +17,25 @@ use Platformsh\Client\Model\Project;
 class Drush
 {
     /** @var Shell */
-    protected $shellHelper;
+    private $shellHelper;
 
     /** @var LocalProject */
-    protected $localProject;
+    private $localProject;
 
     /** @var Config */
-    protected $config;
+    private $config;
 
     /** @var string|null */
-    protected $homeDir;
+    private $homeDir;
 
     /** @var array */
-    protected $aliases = [];
+    private $aliases = [];
 
     /** @var string|false|null */
-    protected $version;
+    private $version;
 
     /** @var string|null */
-    protected $executable;
+    private $executable;
 
     /**
      * @param Config|null       $config
@@ -52,12 +52,12 @@ class Drush
         $this->localProject = $localProject ?: new LocalProject();
     }
 
-    public function setHomeDir($homeDir)
+    public function setHomeDir(string $homeDir): void
     {
         $this->homeDir = $homeDir;
     }
 
-    public function getHomeDir()
+    public function getHomeDir(): string
     {
         return $this->homeDir ?: Filesystem::getHomeDirectory();
     }
@@ -67,7 +67,7 @@ class Drush
      *
      * @return string
      */
-    public function getDrushDir()
+    public function getDrushDir(): string
     {
         return $this->getHomeDir() . '/.drush';
     }
@@ -77,7 +77,7 @@ class Drush
      *
      * @return string
      */
-    public function getSiteAliasDir()
+    public function getSiteAliasDir(): string
     {
         $aliasDir = $this->getDrushDir() . '/site-aliases';
         if (!file_exists($aliasDir) && $this->getLegacyAliasFiles()) {
@@ -92,7 +92,7 @@ class Drush
      *
      * @return string[]
      */
-    public function getLegacyAliasFiles()
+    public function getLegacyAliasFiles(): array
     {
         return glob($this->getDrushDir() . '/*.alias*.*', GLOB_NOSORT);
     }
@@ -105,7 +105,7 @@ class Drush
      * @return string|false
      *   The Drush version, or false if it cannot be determined.
      */
-    public function getVersion($reset = false)
+    public function getVersion(bool $reset = false)
     {
         if ($reset || !isset($this->version)) {
             $this->version = $this->shellHelper->execute(
@@ -120,7 +120,7 @@ class Drush
     /**
      * @throws DependencyMissingException
      */
-    public function ensureInstalled()
+    public function ensureInstalled(): void
     {
         if ($this->getVersion() === false) {
             throw new DependencyMissingException('Drush is not installed');
@@ -132,7 +132,7 @@ class Drush
      *
      * @return bool
      */
-    public function supportsMakeLock()
+    public function supportsMakeLock(): bool
     {
         return version_compare($this->getVersion(), '7.0.0-rc1', '>=');
     }
@@ -151,7 +151,7 @@ class Drush
      *
      * @return string|bool
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
+    public function execute(array $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true)
     {
         array_unshift($args, $this->getDrushExecutable());
 
@@ -165,7 +165,7 @@ class Drush
      *   The absolute path to the executable, or 'drush' if the path is not
      *   known.
      */
-    protected function getDrushExecutable()
+    private function getDrushExecutable(): string
     {
         if (isset($this->executable)) {
             return $this->executable;
@@ -208,7 +208,7 @@ class Drush
     /**
      * @return bool
      */
-    public function clearCache()
+    public function clearCache(): bool
     {
         return (bool) $this->execute(['cache-clear', 'drush']);
     }
@@ -223,7 +223,7 @@ class Drush
      *
      * @return array
      */
-    public function getAliases($groupName, $reset = false)
+    public function getAliases(string $groupName, bool $reset = false): array
     {
         if (!$reset && isset($this->aliases[$groupName])) {
             return $this->aliases[$groupName];
@@ -256,18 +256,6 @@ class Drush
     }
 
     /**
-     * @return string
-     */
-    protected function getAutoRemoveKey()
-    {
-        return preg_replace(
-            '/[^a-z-]+/',
-            '-',
-            str_replace('.', '', strtolower($this->config->get('application.name')))
-        ) . '-auto-remove';
-    }
-
-    /**
      * Get the alias group for a project.
      *
      * @param Project $project
@@ -275,7 +263,7 @@ class Drush
      *
      * @return string
      */
-    public function getAliasGroup(Project $project, $projectRoot)
+    public function getAliasGroup(Project $project, string $projectRoot): string
     {
         $config = $this->localProject->getProjectConfig($projectRoot);
 
@@ -286,7 +274,7 @@ class Drush
      * @param string $newGroup
      * @param string $projectRoot
      */
-    public function setAliasGroup($newGroup, $projectRoot)
+    public function setAliasGroup(string $newGroup, string $projectRoot): void
     {
         $this->localProject->writeCurrentProjectConfig(['alias-group' => $newGroup], $projectRoot, true);
     }
@@ -301,7 +289,7 @@ class Drush
      *
      * @return bool True on success, false on failure.
      */
-    public function createAliases(Project $project, $projectRoot, $environments, $original = null)
+    public function createAliases(Project $project, string $projectRoot, array $environments, ?string $original = null): bool
     {
         if (!$apps = $this->getDrupalApps($projectRoot)) {
             return false;
@@ -324,7 +312,7 @@ class Drush
      *
      * @return LocalApplication[]
      */
-    public function getDrupalApps($projectRoot)
+    public function getDrupalApps(string $projectRoot): array
     {
         return array_filter(
             LocalApplication::getApplications($projectRoot, $this->config),
@@ -337,7 +325,7 @@ class Drush
     /**
      * @return SiteAliasTypeInterface[]
      */
-    protected function getSiteAliasTypes()
+    private function getSiteAliasTypes(): array
     {
         $types = [];
         $types[] = new DrushYaml($this->config, $this);
@@ -349,7 +337,7 @@ class Drush
     /**
      * @param string $group
      */
-    public function deleteOldAliases($group)
+    public function deleteOldAliases(string $group): void
     {
         foreach ($this->getSiteAliasTypes() as $type) {
             $type->deleteAliases($group);

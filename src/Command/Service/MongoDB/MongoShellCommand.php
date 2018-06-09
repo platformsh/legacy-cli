@@ -50,7 +50,7 @@ class MongoShellCommand extends CommandBase
         $this->addExample('Display collection names', "--eval 'printjson(db.getCollectionNames())'");
     }
 
-    public function canBeRunMultipleTimes()
+    public function canBeRunMultipleTimes(): bool
     {
         return false;
     }

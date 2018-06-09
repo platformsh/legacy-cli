@@ -11,11 +11,11 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Config
 {
-    protected static $config = [];
+    private static $config = [];
 
-    protected $env = [];
+    private $env = [];
 
-    protected $userConfig = null;
+    private $userConfig = null;
 
     private $fs;
 
@@ -24,7 +24,7 @@ class Config
      * @param string|null $defaultsFile
      * @param bool        $reset
      */
-    public function __construct(array $env = null, $defaultsFile = null, $reset = false)
+    public function __construct(array $env = null, ?string $defaultsFile = null, bool $reset = false)
     {
         $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
@@ -41,7 +41,7 @@ class Config
      *
      * @return array
      */
-    private function getDefaultEnv()
+    private function getDefaultEnv(): array
     {
         return PHP_VERSION_ID >= 70100 ? getenv() : $_ENV;
     }
@@ -55,7 +55,7 @@ class Config
      *
      * @return bool
      */
-    public function has($name, $notNull = true)
+    public function has(string $name, bool $notNull = true): bool
     {
         $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
 
@@ -71,7 +71,7 @@ class Config
      *
      * @return null|string|bool|array
      */
-    public function get($name)
+    public function get(string $name)
     {
         $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
         if (!$exists) {
@@ -89,7 +89,7 @@ class Config
      *
      * @return mixed
      */
-    public function getWithDefault($name, $default)
+    public function getWithDefault(string $name, $default)
     {
         $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
         if (!$exists) {
@@ -107,7 +107,7 @@ class Config
      *
      * @return string
      */
-    public function getUserConfigDir($absolute = true)
+    public function getUserConfigDir(bool $absolute = true): string
     {
         $path = $this->get('application.user_config_dir');
 
@@ -117,9 +117,11 @@ class Config
     /**
      * Inject the filesystem service.
      *
+     * @required
+     *
      * @param Filesystem $fs
      */
-    public function setFs(Filesystem $fs)
+    public function setFs(Filesystem $fs): void
     {
         $this->fs = $fs;
     }
@@ -127,7 +129,7 @@ class Config
     /**
      * @return \Platformsh\Cli\Service\Filesystem
      */
-    private function fs()
+    private function fs(): Filesystem
     {
         return $this->fs ?: new Filesystem();
     }
@@ -135,7 +137,7 @@ class Config
     /**
      * @return string
      */
-    public function getWritableUserDir()
+    public function getWritableUserDir(): string
     {
         $configDir = $this->getUserConfigDir();
 
@@ -153,7 +155,7 @@ class Config
      *
      * @return array
      */
-    protected function loadConfigFromFile($filename)
+    private function loadConfigFromFile(string $filename): array
     {
         $contents = file_get_contents($filename);
         if ($contents === false) {
@@ -163,7 +165,7 @@ class Config
         return (array) Yaml::parse($contents);
     }
 
-    protected function applyEnvironmentOverrides()
+    private function applyEnvironmentOverrides(): void
     {
         $overrideMap = [
             'TOKEN' => 'api.token',
@@ -195,7 +197,7 @@ class Config
      * @return mixed|false
      *   The value of the environment variable, or false if it is not set.
      */
-    protected function getEnv($name)
+    private function getEnv(string $name)
     {
         $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
         if (array_key_exists($prefix . $name, $this->env)) {
@@ -208,7 +210,7 @@ class Config
     /**
      * @return array
      */
-    public function getUserConfig()
+    public function getUserConfig(): array
     {
         if (!isset($this->userConfig)) {
             $this->userConfig = [];
@@ -221,7 +223,7 @@ class Config
         return $this->userConfig;
     }
 
-    protected function applyUserConfigOverrides()
+    private function applyUserConfigOverrides(): void
     {
         // A whitelist of allowed overrides.
         $overrideMap = [
@@ -261,7 +263,7 @@ class Config
      *
      * @return bool
      */
-    public function isExperimentEnabled($name)
+    public function isExperimentEnabled(string $name): bool
     {
         return !empty(self::$config['experimental']['all_experiments']) || !empty(self::$config['experimental'][$name]);
     }
@@ -273,7 +275,7 @@ class Config
      *
      * @return bool
      */
-    public function isCommandEnabled($name)
+    public function isCommandEnabled(string $name): bool
     {
         if (!empty(self::$config['application']['disabled_commands'])
             && in_array($name, self::$config['application']['disabled_commands'])) {

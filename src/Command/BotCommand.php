@@ -80,11 +80,11 @@ class BotCommand extends Command
         }
     }
 
-    private function addSignature(array $frames, $signature)
+    private function addSignature(array $frames, string $signature): array
     {
         $indent = '    ';
         if (strlen($signature) > 0) {
-            $signatureIndent = str_repeat(' ', strlen($indent) + 5 - floor(strlen($signature) / 2));
+            $signatureIndent = str_repeat(' ', strlen($indent) + 5 - intval(floor(strlen($signature) / 2)));
             $signature = "\n" . $signatureIndent . '<info>' . $signature . '</info>';
         }
 
@@ -93,7 +93,7 @@ class BotCommand extends Command
         }, $frames);
     }
 
-    private function addColor(array $frames)
+    private function addColor(array $frames): array
     {
         $colors = ['red', 'yellow', 'green', 'blue', 'magenta', 'cyan', 'white'];
         $partyFrames = [];

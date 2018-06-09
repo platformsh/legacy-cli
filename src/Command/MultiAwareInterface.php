@@ -10,10 +10,10 @@ interface MultiAwareInterface
      *
      * @return bool
      */
-    public function canBeRunMultipleTimes();
+    public function canBeRunMultipleTimes(): bool;
 
     /**
      * @param bool $runningViaMulti
      */
-    public function setRunningViaMulti($runningViaMulti = true);
+    public function setRunningViaMulti(bool $runningViaMulti = true): void;
 }
