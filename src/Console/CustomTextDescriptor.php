@@ -7,7 +7,6 @@
 
 namespace Platformsh\Cli\Console;
 
-use Platformsh\Cli\Command\CanHideInListInterface;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
@@ -119,7 +118,7 @@ class CustomTextDescriptor extends TextDescriptor
                 $commands = [];
                 foreach ($namespace['commands'] as $name) {
                     $command = $description->getCommand($name);
-                    if (empty($options['all']) && $command instanceof CanHideInListInterface && $command->isHiddenInList()) {
+                    if (empty($options['all']) && $command->isHidden()) {
                         continue;
                     }
                     $commands[$name] = $command;

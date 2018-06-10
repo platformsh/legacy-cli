@@ -23,7 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
-abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
+abstract class CommandBase extends Command implements MultiAwareInterface
 {
     use HasExamplesTrait;
 
@@ -96,7 +96,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     /**
      * {@inheritdoc}
      */
-    public function isHiddenInList()
+    public function isHidden()
     {
         return $this->hiddenInList;
     }
