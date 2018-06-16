@@ -51,7 +51,8 @@ class MountSizeCommand extends CommandBase
         $this
             ->setName('mount:size')
             ->setDescription('Check the disk usage of mounts')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
+            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition);
