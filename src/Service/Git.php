@@ -143,7 +143,7 @@ class Git
      *   The command output, true if there is no output, or false if the command
      *   fails.
      */
-    public function execute(array $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [])
+    public function execute(array $args, $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [])
     {
         // If enabled, set the working directory to the repository.
         if ($dir !== false) {
