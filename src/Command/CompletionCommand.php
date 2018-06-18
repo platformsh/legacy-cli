@@ -7,7 +7,7 @@ use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
 
-class CompletionCommand extends ParentCompletionCommand implements CanHideInListInterface
+class CompletionCommand extends ParentCompletionCommand
 {
 
     /** @var Api */
@@ -25,7 +25,7 @@ class CompletionCommand extends ParentCompletionCommand implements CanHideInList
     /**
      * {@inheritdoc}
      */
-    public function isHiddenInList()
+    public function isHidden()
     {
         return true;
     }
