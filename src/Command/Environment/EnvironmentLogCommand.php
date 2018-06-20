@@ -48,13 +48,19 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
 
+        $logDir = '/var/log';
+        if (strpos($sshUrl, 'ent-') === 0) {
+            $logDir = '/var/log/platform/"$USER"';
+            $this->debug('Detected Integrated UI configuration: using log directory: ' . $logDir);
+        }
+
         // Select the log file that the user specified.
         if ($logType = $input->getArgument('type')) {
             // @todo this might need to be cleverer
             if (substr($logType, -4) === '.log') {
                 $logType = substr($logType, 0, strlen($logType) - 4);
             }
-            $logFilename = '/var/log/' . $logType . '.log';
+            $logFilename = $logDir . '/' . OsUtil::escapePosixShellArg($logType . '.log');
         } elseif (!$input->isInteractive()) {
             $this->stdErr->writeln('No log type specified.');
             return 1;
@@ -67,7 +73,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             /** @var \Doctrine\Common\Cache\CacheProvider $cache */
             $cache = $this->getService('cache');
             if (!$result = $cache->fetch($cacheKey)) {
-                $result = $shell->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
+                $result = $shell->execute(['ssh', $sshUrl, 'ls -1 ' . $logDir . '/*.log']);
 
                 // Cache the list for 1 day.
                 $cache->save($cacheKey, $result, 86400);
@@ -75,8 +81,8 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
             // Provide a fallback list of files, in case the SSH command failed.
             $defaultFiles = [
-                '/var/log/access.log',
-                '/var/log/error.log',
+                $logDir . '/access.log',
+                $logDir . '/error.log',
             ];
             $files = $result ? explode("\n", $result) : $defaultFiles;
 
@@ -87,7 +93,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 
-        $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), OsUtil::escapePosixShellArg($logFilename));
+        $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), $logFilename);
         if ($input->getOption('tail')) {
             $command .= ' -f';
         }
