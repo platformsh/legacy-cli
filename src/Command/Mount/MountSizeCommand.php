@@ -65,7 +65,7 @@ class MountSizeCommand extends MountCommandBase
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
-        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts';
+        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts -x rpc_pipefs';
         $commands[] = 'echo';
         $commands[] = 'cd "$' . $appDirVar . '"';
         foreach ($mountPaths as $mountPath) {
@@ -94,7 +94,12 @@ class MountSizeCommand extends MountCommandBase
             if ($i === 0) {
                 continue;
             }
-            $path = $this->getDfColumn($line, 'path');
+            try {
+                $path = $this->getDfColumn($line, 'path');
+            } catch (\RuntimeException $e) {
+                $this->debug($e->getMessage());
+                continue;
+            }
             if (strpos($path, $appDir . '/') !== 0) {
                 continue;
             }
