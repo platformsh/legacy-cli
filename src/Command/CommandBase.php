@@ -810,7 +810,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         try {
             $apps = array_map(function (WebApp $app) {
                 return $app->name;
-            }, $this->getSelectedEnvironment()->getCurrentDeployment()->webapps);
+            }, $this->api()->getCurrentDeployment($this->getSelectedEnvironment())->webapps);
             if (!count($apps)) {
                 return null;
             }
