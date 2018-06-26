@@ -620,6 +620,27 @@ class Api
     }
 
     /**
+     * Returns an environment label.
+     *
+     * @param Environment  $environment
+     * @param string|false $tag
+     *
+     * @return string
+     */
+    public function getEnvironmentLabel(Environment $environment, $tag = 'info')
+    {
+        $id = $environment->id;
+        $title = $environment->title;
+        $use_title = $title && $title !== $id;
+        $pattern = $use_title ? '%2$s (%3$s)' : '%3$s';
+        if ($tag !== false) {
+            $pattern = $use_title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
+        }
+
+        return sprintf($pattern, $tag, $title, $id);
+    }
+
+    /**
      * Get a resource, matching on the beginning of the ID.
      *
      * @param string        $id
