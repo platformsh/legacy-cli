@@ -84,7 +84,7 @@ class EnvironmentBranchCommand extends CommandBase
 
         if (!$this->api()->checkEnvironmentOperation('branch', $parentEnvironment)) {
             $this->stdErr->writeln(
-                "Operation not available: The environment <error>{$parentEnvironment->id}</error> can't be branched."
+                "Operation not available: The environment " . $this->api()->getEnvironmentLabel($parentEnvironment, 'error') . " can't be branched."
             );
             if ($parentEnvironment->is_dirty) {
                 $this->api()->clearEnvironmentsCache($selectedProject->id);
@@ -109,13 +109,16 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
+        $title = $input->getOption('title') ?: $branchName;
+
         $this->stdErr->writeln(sprintf(
-            'Creating a new environment <info>%s</info>, branched from <info>%s</info>',
-            $branchName,
-            $parentEnvironment->title
+            'Creating a new environment %s, branched from %s',
+            $title && $title !== $branchName
+                ? '<info>' . $title . '</info> (' . $branchName . ')'
+                : '<info>' . $branchName . '</info>',
+            $this->api()->getEnvironmentLabel($parentEnvironment)
         ));
 
-        $title = $input->getOption('title') ?: $branchName;
         $activity = $parentEnvironment->branch($title, $branchName, !$input->getOption('no-clone-parent'));
 
         // Clear the environments cache, as branching has started.
