@@ -303,7 +303,7 @@ function is_ansi()
     // Everywhere else, default to ANSI if stdout is a terminal.
     return (DIRECTORY_SEPARATOR == '\\')
         ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
-        : (function_exists('posix_isatty') && posix_isatty(1));
+        : (function_exists('posix_isatty') && posix_isatty(STDOUT));
 }
 
 /**

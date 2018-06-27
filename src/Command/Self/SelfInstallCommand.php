@@ -41,19 +41,39 @@ EOT
             $fs->dumpFile($configDir . '/' . $rcFile, $rcContents);
         }
 
-        $shellConfigFile = $this->findShellConfigFile();
+        $shellConfigOverrideVar = $this->config()->get('application.env_prefix') . 'SHELL_CONFIG_FILE';
+        $shellConfigOverride = getenv($shellConfigOverrideVar);
+        if ($shellConfigOverride === '') {
+            $this->debug(sprintf('Shell config detection disabled via %s', $shellConfigOverrideVar));
+            $shellConfigFile = false;
+        } elseif ($shellConfigOverride !== false) {
+            /** @var \Platformsh\Cli\Service\Filesystem $fsService */
+            $fsService = $this->getService('fs');
+            if (!$fsService->canWrite($shellConfigOverride)) {
+                throw new \RuntimeException(sprintf(
+                    'File not writable: %s (defined in %s)',
+                    $shellConfigOverride,
+                    $shellConfigOverrideVar
+                ));
+            }
+            $this->debug(sprintf('Shell config file specified via %s', $shellConfigOverrideVar));
+            $shellConfigFile = $shellConfigOverride;
+        } else {
+            $shellConfigFile = $this->findShellConfigFile();
+        }
 
         $currentShellConfig = '';
 
         if ($shellConfigFile !== false) {
-            $this->stdErr->writeln(sprintf('Selected shell configuration file: <info>%s</info>', $shellConfigFile));
+            $this->stdErr->writeln(sprintf('Selected shell configuration file: <info>%s</info>', $this->getShortPath($shellConfigFile)));
             if (file_exists($shellConfigFile)) {
                 $currentShellConfig = file_get_contents($shellConfigFile);
                 if ($currentShellConfig === false) {
-                    $this->stdErr->writeln('Failed to read file.');
+                    $this->stdErr->writeln('Failed to read file: <error>' . $shellConfigFile . '</error>');
                     return 1;
                 }
             }
+            $this->stdErr->writeln('');
         }
 
         $configDirRelative = $this->config()->getUserConfigDir(false);
@@ -69,7 +89,7 @@ EOT
         );
 
         if (strpos($currentShellConfig, $suggestedShellConfig) !== false) {
-            $this->stdErr->writeln('Already configured.');
+            $this->stdErr->writeln('Already configured: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 "To use the %s, run:\n    <info>%s</info>",
@@ -82,13 +102,16 @@ EOT
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $modify = false;
+        $create = false;
         if ($shellConfigFile !== false) {
             $confirmText = file_exists($shellConfigFile)
                 ? 'Do you want to update the file automatically?'
                 : 'Do you want to create the file automatically?';
             if ($questionHelper->confirm($confirmText)) {
                 $modify = true;
+                $create = !file_exists($shellConfigFile);
             }
+            $this->stdErr->writeln('');
         }
 
         $appName = (string) $this->config()->get('application.name');
@@ -101,8 +124,6 @@ EOT
                 . PHP_EOL
                 . $suggestedShellConfig
                 . ' ' . $end;
-            $this->stdErr->writeln('');
-
             if ($shellConfigFile !== false) {
                 $this->stdErr->writeln(sprintf(
                     'To set up the CLI, add the following lines to: <comment>%s</comment>',
@@ -145,36 +166,60 @@ EOT
                 $endPos + strlen($end) - $beginPos
             );
         } else {
-            $newShellConfig = rtrim($currentShellConfig, PHP_EOL)
-                . PHP_EOL . PHP_EOL
-                . $begin . PHP_EOL . $suggestedShellConfig . ' ' . $end
+            $newShellConfig = rtrim($currentShellConfig, PHP_EOL);
+            if (strlen($newShellConfig)) {
+                $newShellConfig .= PHP_EOL . PHP_EOL;
+            }
+            $newShellConfig .= $begin
+                . PHP_EOL . $suggestedShellConfig . ' ' . $end
                 . PHP_EOL;
         }
 
-        copy($shellConfigFile, $shellConfigFile . '.cli.bak');
+        if (file_exists($shellConfigFile)) {
+            copy($shellConfigFile, $shellConfigFile . '.cli.bak');
+        }
 
         if (!file_put_contents($shellConfigFile, $newShellConfig)) {
-            $this->stdErr->writeln(sprintf('Failed to modify configuration file: %s', $shellConfigFile));
+            $this->stdErr->writeln(sprintf('Failed to write to configuration file: %s', $shellConfigFile));
             return 1;
         }
 
-        $shortPath = $shellConfigFile;
-        if (getcwd() === dirname($shellConfigFile)) {
-            $shortPath = basename($shellConfigFile);
-        }
-        if (strpos($shortPath, ' ')) {
-            $shortPath = escapeshellarg($shortPath);
+        if ($create) {
+            $this->stdErr->writeln('Configuration file created successfully: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
+        } else {
+            $this->stdErr->writeln('Configuration file updated successfully: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
         }
 
-        $this->stdErr->writeln('Updated successfully.');
         $this->stdErr->writeln('');
         $this->stdErr->writeln([
             'To use the ' . $this->config()->get('application.name') . ', run:',
-            '    <info>source ' . $shortPath . '</info> # (or start a new terminal)',
-            '    <info>' . $this->config()->get('application.executable'),
+            '    <info>source '
+                . str_replace(' ', '\\ ', $this->getShortPath($shellConfigFile))
+                . '</info> # (or start a new terminal)',
+            '    <info>' . $this->config()->get('application.executable') . '</info>',
         ]);
 
         return 0;
+    }
+
+    /**
+     * Shorten a filename for display.
+     *
+     * @param string $filename
+     *
+     * @return string
+     */
+    private function getShortPath($filename)
+    {
+        if (getcwd() === dirname($filename)) {
+            return basename($filename);
+        }
+        $homeDir = Filesystem::getHomeDirectory();
+        if (strpos($filename, $homeDir) === 0) {
+            return str_replace($homeDir, '~', $filename);
+        }
+
+        return $filename;
     }
 
     /**
@@ -193,26 +238,35 @@ EOT
             return getenv($envPrefix . 'APP_DIR') . '/.environment';
         }
 
+        $shell = null;
+        if (getenv('SHELL') !== false) {
+            $shell = basename(getenv('SHELL'));
+            $this->debug('Detected shell: ' . $shell);
+        }
+
         $candidates = [
             '.bash_profile',
             '.bashrc',
         ];
-        if (basename(getenv('SHELL')) === 'zsh' || getenv('ZSH')) {
+        if ($shell === 'zsh' || getenv('ZSH')) {
             array_unshift($candidates, '.zshrc');
             array_unshift($candidates, '.zprofile');
         }
         $homeDir = Filesystem::getHomeDirectory();
         foreach ($candidates as $candidate) {
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
+                $this->debug('Found existing config file: ' . $homeDir . DIRECTORY_SEPARATOR . $candidate);
+
                 return $homeDir . DIRECTORY_SEPARATOR . $candidate;
             }
         }
 
-        // If none of the files exist (yet), then pick the first one.
-        if (is_writable($homeDir)) {
-            $filename = reset($candidates) ?: '.bash_profile';
+        // If none of the files exist (yet), and we are on Bash, and the home
+        // directory is writable, then use ~/.bashrc.
+        if (is_writable($homeDir) && $shell === 'bash') {
+            $this->debug('Defaulting to ~/.bashrc');
 
-            return $homeDir . DIRECTORY_SEPARATOR . $filename;
+            return $homeDir . DIRECTORY_SEPARATOR . '.bashrc';
         }
 
         return false;
