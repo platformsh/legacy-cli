@@ -431,7 +431,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             && !empty($config['mapping'][$currentBranch])) {
             $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
             if ($environment) {
-                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
+                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $this->api()->getEnvironmentLabel($environment));
                 return $environment;
             } else {
                 unset($config['mapping'][$currentBranch]);
@@ -446,7 +446,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
-                $this->debug('Selected environment ' . $potentialEnvironment . ', based on Git upstream: ' . $upstream);
+                $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ', based on Git upstream: ' . $upstream);
                 return $environment;
             }
         }
@@ -463,7 +463,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 }
             }
             if ($environment) {
-                $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
+                $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ' based on branch name: ' . $currentBranch);
                 return $environment;
             }
         }
@@ -764,7 +764,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
 
             $this->environment = $environment;
-            $this->debug('Selected environment: ' . $environment->id);
+            $this->debug('Selected environment: ' . $this->api()->getEnvironmentLabel($environment));
             return;
         }
 
@@ -810,7 +810,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         try {
             $apps = array_map(function (WebApp $app) {
                 return $app->name;
-            }, $this->getSelectedEnvironment()->getCurrentDeployment()->webapps);
+            }, $this->api()->getCurrentDeployment($this->getSelectedEnvironment())->webapps);
             if (!count($apps)) {
                 return null;
             }
