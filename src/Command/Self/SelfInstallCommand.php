@@ -91,11 +91,8 @@ EOT
         if (strpos($currentShellConfig, $suggestedShellConfig) !== false) {
             $this->stdErr->writeln('Already configured: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf(
-                "To use the %s, run:\n    <info>%s</info>",
-                $this->config()->get('application.name'),
-                $this->config()->get('application.executable')
-            ));
+
+            $this->stdErr->writeln($this->getRunAdvice($shellConfigFile, $configDir . '/bin'));
             return 0;
         }
 
@@ -191,15 +188,46 @@ EOT
         }
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln([
-            'To use the ' . $this->config()->get('application.name') . ', run:',
-            '    <info>source '
-                . str_replace(' ', '\\ ', $this->getShortPath($shellConfigFile))
-                . '</info> # (or start a new terminal)',
-            '    <info>' . $this->config()->get('application.executable') . '</info>',
-        ]);
+        $this->stdErr->writeln($this->getRunAdvice($shellConfigFile, $configDir . '/bin'));
 
         return 0;
+    }
+
+    /**
+     * @param string $shellConfigFile
+     * @param string $binDir
+     *
+     * @return string[]
+     */
+    private function getRunAdvice($shellConfigFile, $binDir)
+    {
+        $advice = [
+            sprintf('To use the %s, run:', $this->config()->get('application.name'))
+        ];
+        if (!$this->inPath($binDir)) {
+            $sourceAdvice = sprintf('    <info>source %s</info>', str_replace(' ', '\\ ', $this->getShortPath($shellConfigFile)));
+            $sourceAdvice .= ' # (make sure your shell does this by default)';
+            $advice[] = $sourceAdvice;
+        }
+        $advice[] = sprintf('    <info>%s</info>', $this->config()->get('application.executable'));
+
+        return $advice;
+    }
+
+    /**
+     * Check if a directory is in the PATH.
+     *
+     * @return bool
+     */
+    private function inPath($dir)
+    {
+        $PATH = getenv('PATH');
+        $realpath = realpath($dir);
+        if (!$PATH || !$realpath) {
+            return false;
+        }
+
+        return in_array($realpath, explode(':', $PATH));
     }
 
     /**
@@ -245,8 +273,8 @@ EOT
         }
 
         $candidates = [
-            '.bash_profile',
             '.bashrc',
+            '.bash_profile',
         ];
         if ($shell === 'zsh' || getenv('ZSH')) {
             array_unshift($candidates, '.zshrc');
