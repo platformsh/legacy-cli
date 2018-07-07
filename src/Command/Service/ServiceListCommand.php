@@ -33,12 +33,20 @@ class ServiceListCommand extends CommandBase
         $this->validateInput($input);
 
         // Find a list of deployed services.
-        $services = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'))
-            ->services;
+        $deployment = $this->api()
+            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
+        $services = $deployment->services;
 
         if (!count($services)) {
             $this->stdErr->writeln('No services found.');
+
+            if ($deployment->webapps) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf(
+                    'To list applications, run: <info>%s apps</info>',
+                    $this->config()->get('application.executable')
+                ));
+            }
 
             return 0;
         }
@@ -67,6 +75,14 @@ class ServiceListCommand extends CommandBase
         }
 
         $table->render($rows, $headers);
+
+        if (!$table->formatIsMachineReadable() && $deployment->webapps) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To list applications, run: <info>%s apps</info>',
+                $this->config()->get('application.executable')
+            ));
+        }
 
         return 0;
     }
