@@ -106,8 +106,12 @@ local:
 pagination:
 
     # Whether pagination is enabled.
-    # Currently, this only applies to the projects (project:list) command.
+    # Currently, this only applies to the "list" and the "projects" commands.
     enabled: true
+
+    # The command to use for pagination. Defaults to the PAGER environment variable.
+    # Currently, this only applies to the "list" command.
+    command: ~
 
 updates:
   # Whether to check for automatic updates.
