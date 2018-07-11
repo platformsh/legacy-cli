@@ -12,12 +12,15 @@ class Fleets
     const FLEET_DOES_NOT_EXIST = 0;
     const FLEET_ALREADY_EXISTS = 1;
     const FLEET_ADDED = 2;
-    const FLEET_REMOVED = 3;
+    const FLEET_REMOVED = 5;
 
     const PROJECT_DOES_NOT_EXIST = 0;
     const PROJECT_ALREADY_EXISTS  = 1;
     const PROJECT_ADDED = 2;
-    const PROJECT_REMOVED = 3;
+    const PROJECT_AND_FLEET_ADDED = 3;
+    const PROJECT_REMOVED = 5;
+
+    const PROJECT_ACTIVE = TRUE;
 
     protected $fleetConfig;
 
@@ -113,17 +116,35 @@ class Fleets
      * @return bool
      */
     public function addProject($fleetName, $projectID) {
+        $fleetAdded = FALSE;
         $this->getFleetConfiguration();
+
         if (empty($this->fleetConfig['fleets']) || !array_key_exists($fleetName, $this->fleetConfig['fleets'])) {
             // No fleets are set.
             $this->fleetConfig['fleets'][$fleetName] = $this->defaultFleet();
+            $fleetAdded = TRUE;
         }
 
-        $this->fleetConfig['fleets'][$fleetName]['projects'][$projectID] = TRUE;
+        $projectExists = FALSE;
+        if (!array_key_exists($projectID, $this->fleetConfig['fleets'][$fleetName]['projects'][$projectID])) {
+            $this->fleetConfig['fleets'][$fleetName]['projects'][$projectID] = self::PROJECT_ACTIVE;
+        }
+        else {
+            $projectExists = TRUE;
+        }
 
         $this->saveFleetsConfiguration();
 
-        return TRUE;
+        if ($projectExists == TRUE) {
+            return self::PROJECT_ALREADY_EXISTS;
+        }
+
+        if ($fleetAdded == TRUE) {
+            return self::PROJECT_AND_FLEET_ADDED;
+        }
+        else {
+            return self::PROJECT_ADDED;
+        }
     }
 
     /**
