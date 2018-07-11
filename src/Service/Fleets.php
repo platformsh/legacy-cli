@@ -9,6 +9,16 @@ use Platformsh\Cli\Local\LocalProject;
 class Fleets
 {
 
+    const FLEET_DOES_NOT_EXIST = 0;
+    const FLEET_ALREADY_EXISTS = 1;
+    const FLEET_ADDED = 2;
+    const FLEET_REMOVED = 3;
+
+    const PROJECT_DOES_NOT_EXIST = 0;
+    const PROJECT_ALREADY_EXISTS  = 1;
+    const PROJECT_ADDED = 2;
+    const PROJECT_REMOVED = 3;
+
     protected $fleetConfig;
 
     protected $localProject;
@@ -66,14 +76,14 @@ class Fleets
         }
 
         if (array_key_exists($fleetName, $this->fleetConfig['fleets'])) {
-            return FALSE;
+            return self::FLEET_ALREADY_EXISTS;
         }
 
         $this->fleetConfig['fleets'][$fleetName] = $this->defaultFleet();
 
         $this->saveFleetsConfiguration();
 
-        return TRUE;
+        return self::FLEET_ADDED;
     }
 
     /**
@@ -86,10 +96,30 @@ class Fleets
         }
 
         if (!array_key_exists($fleetName, $this->fleetConfig['fleets'])) {
-            return FALSE;
+            return self::FLEET_DOES_NOT_EXIST;
         }
 
         unset($this->fleetConfig['fleets'][$fleetName]);
+
+        $this->saveFleetsConfiguration();
+
+        return self::FLEET_REMOVED;
+    }
+
+    /**
+     * @param $fleetName
+     * @param $projectID
+     *
+     * @return bool
+     */
+    public function addProject($fleetName, $projectID) {
+        $this->getFleetConfiguration();
+        if (empty($this->fleetConfig['fleets']) || !array_key_exists($fleetName, $this->fleetConfig['fleets'])) {
+            // No fleets are set.
+            $this->fleetConfig['fleets'][$fleetName] = $this->defaultFleet();
+        }
+
+        $this->fleetConfig['fleets'][$fleetName]['projects'][$projectID] = TRUE;
 
         $this->saveFleetsConfiguration();
 

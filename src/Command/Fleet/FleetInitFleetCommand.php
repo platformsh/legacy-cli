@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Fleet;
 
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Fleets;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,11 +30,16 @@ class FleetInitFleetCommand extends CommandBase
         /* @var $fleetConfig \Platformsh\Cli\Service\Fleets */
         $fleetConfig = $this->getService('fleets');
 
-        if($fleetConfig->addFleet($input->getArgument('name'))) {
+        $result = $fleetConfig->addFleet($input->getArgument('name'));
+
+        if($result == Fleets::FLEET_ADDED) {
             $this->stdErr->writeln('Added new fleet: ' . $input->getArgument('name'));
         }
-        else {
+        elseif ($result == Fleets::FLEET_ALREADY_EXISTS) {
             $this->stdErr->writeln('The fleet ' . $input->getArgument('name') . ' already exists.');
+        }
+        else {
+            $this->stdErr->writeln('The fleet ' . $input->getArgument('name') . ' could not be added.');
         };
 
     }

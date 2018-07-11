@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Fleet;
 
+use Platformsh\Cli\Service\Fleets;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,11 +29,16 @@ class FleetRemoveFleetCommand extends CommandBase
         /* @var $fleetConfig \Platformsh\Cli\Service\Fleets */
         $fleetConfig = $this->getService('fleets');
 
-        if($fleetConfig->removeFleet($input->getArgument('name'))) {
+        $result = $fleetConfig->removeFleet($input->getArgument('name'));
+
+        if($result == Fleets::FLEET_REMOVED) {
             $this->stdErr->writeln('Removed fleet: ' . $input->getArgument('name'));
         }
-        else {
+        elseif($result == Fleets::FLEET_DOES_NOT_EXIST) {
             $this->stdErr->writeln('The fleet ' . $input->getArgument('name') . ' was not found.');
+        }
+        else {
+            $this->stdErr->writeln('The fleet ' . $input->getArgument('name') . 'could not be removed');
         };
 
     }
