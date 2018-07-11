@@ -43,12 +43,15 @@ class FleetListFleets extends CommandBase
         $rows = [];
         foreach ($fleets['fleets'] as $fleetName => $fleetSettings) {
 
+            $count = count($fleetSettings['projects']);
+
             $rows[] = [
-                new AdaptiveTableCell($fleetName, ['wrap' => false])
+                new AdaptiveTableCell($fleetName, ['wrap' => false]),
+                new AdaptiveTableCell($count)
             ];
         }
 
-        $header = ['ID'];
+        $header = ['ID', 'No. of Projects'];
 
         // Display a simple table (and no messages) if the --format is
         // machine-readable (e.g. csv or tsv).
