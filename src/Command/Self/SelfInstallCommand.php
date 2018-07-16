@@ -205,7 +205,7 @@ EOT
             sprintf('To use the %s, run:', $this->config()->get('application.name'))
         ];
         if (!$this->inPath($binDir)) {
-            $sourceAdvice = sprintf('    <info>source %s</info>', str_replace(' ', '\\ ', $this->getShortPath($shellConfigFile)));
+            $sourceAdvice = sprintf('    <info>source %s</info>', $this->formatSourceArg($shellConfigFile));
             $sourceAdvice .= ' # (make sure your shell does this by default)';
             $advice[] = $sourceAdvice;
         }
@@ -228,6 +228,39 @@ EOT
         }
 
         return in_array($realpath, explode(':', $PATH));
+    }
+
+    /**
+     * Transform a filename into an argument for the 'source' command.
+     *
+     * This is only shown as advice to the user.
+     *
+     * @param string $filename
+     *
+     * @return string
+     */
+    private function formatSourceArg($filename)
+    {
+        $arg = $filename;
+
+        // Replace the home directory with ~, if not on Windows.
+        if (DIRECTORY_SEPARATOR !== '\\') {
+            $realpath = realpath($filename);
+            $homeDir = Filesystem::getHomeDirectory();
+            if ($realpath && strpos($realpath, $homeDir) === 0) {
+                $arg = '~/' . ltrim(substr($realpath, strlen($homeDir)), '/');
+            }
+        }
+
+        // Ensure the argument isn't a basename ('source' would look it up in
+        // the PATH).
+        if ($arg === basename($filename)) {
+            $arg = '.' . DIRECTORY_SEPARATOR . $filename;
+        }
+
+        // Crude argument escaping (escapeshellarg() would prevent tilde
+        // substitution).
+        return str_replace(' ', '\\ ', $arg);
     }
 
     /**
