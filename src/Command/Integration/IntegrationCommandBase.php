@@ -143,7 +143,17 @@ abstract class IntegrationCommandBase extends CommandBase
                     'github',
                     'gitlab',
                 ]],
-                'description' => 'Fetch all branches (as inactive environments)',
+                'description' => 'Fetch all branches from the remote (as inactive environments)',
+            ]),
+            'prune_branches' => new BooleanField('Prune branches', [
+                'conditions' => [
+                    'type' => [
+                        'github',
+                        'gitlab',
+                    ],
+                    'fetch_branches' => true,
+                ],
+                'description' => 'Delete branches that do not exist on the remote',
             ]),
             'room' => new Field('HipChat room ID', [
                 'conditions' => ['type' => [
