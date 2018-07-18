@@ -64,3 +64,43 @@ if (getenv('PLATFORM_VARIABLES')) {
 if (getenv('PLATFORM_PROJECT_ENTROPY') && empty($drupal_hash_salt)) {
   $drupal_hash_salt = getenv('PLATFORM_PROJECT_ENTROPY');
 }
+
+// Configure the Solr server.
+if (isset($_ENV['PLATFORM_RELATIONSHIPS'])) {
+  $relationships = json_decode(base64_decode($_ENV['PLATFORM_RELATIONSHIPS']), TRUE);
+
+  foreach ($relationships as $relationship_name => $relationship_info) {
+    // Valid Solr relationships have 'path'.
+    if (!empty($relationship_info[0]['path'])) {
+      $core = NULL;
+
+      // Valid Solr paths start with '/solr' and if it is not a default path it
+      // also includes the name of the Solr core.
+      if (preg_match('/^solr((\/)(.+))?/s', $relationship_info[0]['path'], $matches)) {
+
+        // Default Solr 4.10 config may not return the full path with the name
+        // of the Solr core.
+        if (empty($matches[3])) {
+          $core = 'collection1';
+        }
+        else {
+          $core = $matches[3];
+        }
+
+        // Use the relationship name as the Solr server name, defaults to the
+        // Drupal 'default_solr_server' default sever.
+        $solr_server_name = $relationship_info[0]['rel'];
+        if ($solr_server_name == 'solr') {
+          $solr_server_name = 'default_solr_server';
+        }
+
+        // Sets the Search API server configuration.
+        $config['search_api.server.' . $solr_server_name]['backend_config']['connector_config']['host'] = $relationship_info[0]['host'];
+        $config['search_api.server.' . $solr_server_name]['backend_config']['connector_config']['port'] = $relationship_info[0]['port'];
+        $config['search_api.server.' . $solr_server_name]['backend_config']['connector_config']['path'] = '/solr';
+        $config['search_api.server.' . $solr_server_name]['backend_config']['connector_config']['core'] = $core;
+      }
+    }
+  }
+}
+
