@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "fbcb8e4bbc77137fd2d69d84cb8f9921ebb2e15f",
-        "sha256": "2cd77ad649be9acad3ad09f1ccebf8b0eb7d99cbd2526161a9d00695d4ba0608",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.33.6/platform.phar",
-        "version": "3.33.6",
+        "sha1": "6ba8447c39441153c64a792870525c163f070f5c",
+        "sha256": "21fa3b8612b5b89c9bf82b213bcc72f50bd72ee97153042edab24d3a03e8efc4",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.34.0/platform.phar",
+        "version": "3.34.0",
         "php": {
             "min": "5.5.9"
         },
@@ -132,6 +132,11 @@
                 "notes": "* Add `mount:size` command to find the disk usage of writable mounts.\n* Add `--sensitive` option for project-level variables (affects commands:\n  `variable:create`, `variable:update`, and `variable:list`).\n* Clear environment/project caches after a 403 error.\n* Increase prominence of warning in `db:size` command.\n* Skip the automatic updates check if the Phar file is not writable.",
                 "show from": "3.32.0",
                 "hide from": "3.33.0"
+            },
+            {
+                "notes": "New features:\n\n* Add `service:list` (`services`) command.\n* Add --depth option to `project:get` (`get`) command (allow shallow clones).\n* Add --rebase option to the `environment:synchronize` (`sync`) command.\n* Add --prune-branches option for GitHub and GitLab integrations.\n* Add --worker option to the `environment:ssh` (`ssh`) command.\n\nOther changes:\n\n* When running pg_dump via the `db:dump` command, use the --no-owner flag.\n* Fix the `--all` option in the `list` command.\n* Prefer .bashrc over .bash_profile in the installer (self:install command).\n* Remove legacy API workaround in `integration:update`.\n* Update user commands for upstream API fix (improves performance).",
+                "show from": "3.33.0",
+                "hide from": "3.34.0"
             }
         ]
     }
