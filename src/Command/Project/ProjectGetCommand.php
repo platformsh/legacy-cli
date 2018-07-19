@@ -23,11 +23,11 @@ class ProjectGetCommand extends CommandBase
             ->setAliases(['get'])
             ->setDescription('Clone a project locally')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
-            ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title');
-        $this->addProjectOption();
-        $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master' or the first available environment")
-            ->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname")
+            ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title')
+            ->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master' or the first available environment")
+            ->addOption('depth', null, InputOption::VALUE_REQUIRED, 'Create a shallow clone: limit the number of commits in the history')
             ->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
+        $this->addProjectOption();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
@@ -117,6 +117,11 @@ class ProjectGetCommand extends CommandBase
         if ($output->isDecorated()) {
             $cloneArgs[] = '--progress';
         }
+        if ($input->getOption('depth')) {
+            $cloneArgs[] = '--depth';
+            $cloneArgs[] = $input->getOption('depth');
+            $cloneArgs[] = '--shallow-submodules';
+        }
         $cloned = $git->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
@@ -190,6 +195,9 @@ class ProjectGetCommand extends CommandBase
      */
     protected function validateInput(InputInterface $input, $envNotRequired = false)
     {
+        if ($input->getOption('depth') !== null && !preg_match('/^[0-9]+$/', $input->getOption('depth'))) {
+            throw new InvalidArgumentException('The --depth value must be an integer.');
+        }
         if ($input->getOption('project') && $input->getArgument('project')) {
             throw new InvalidArgumentException('You cannot use both the --project option and the <project> argument.');
         }

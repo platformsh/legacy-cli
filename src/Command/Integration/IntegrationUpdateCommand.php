@@ -56,15 +56,6 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             return 1;
         }
 
-        // Complete the PATCH request with the current values. This is a
-        // workaround: at the moment a PATCH with only the changed values will
-        // cause a 500 error.
-        foreach ($currentValues as $key => $currentValue) {
-            if ($key !== 'id' && !array_key_exists($key, $values)) {
-                $values[$key] = $currentValue;
-            }
-        }
-
         $result = $integration->update($values);
         $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
         $this->ensureHooks($integration);

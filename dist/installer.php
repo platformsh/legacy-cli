@@ -218,7 +218,7 @@ if ($homeDir = getHomeDirectory()) {
 }
 
 output(PHP_EOL . '  Running self:install command...');
-putenv('CLICOLOR_FORCE=' . is_ansi() ? '1' : '0');
+putenv('CLICOLOR_FORCE=' . (is_ansi() ? '1' : '0'));
 exec('php ' . $pharPath . ' self:install --yes 2>&1', $output, $return_var);
 output(preg_replace('/^/m', '  ', implode(PHP_EOL, $output)));
 if ($return_var === 0) {
@@ -303,7 +303,7 @@ function is_ansi()
     // Everywhere else, default to ANSI if stdout is a terminal.
     return (DIRECTORY_SEPARATOR == '\\')
         ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
-        : (function_exists('posix_isatty') && posix_isatty(STDOUT));
+        : (function_exists('posix_isatty') && posix_isatty(1));
 }
 
 /**
