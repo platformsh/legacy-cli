@@ -40,6 +40,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The integration type',
                 'questionLine' => '',
                 'options' => [
+                    'bitbucket',
                     'github',
                     'gitlab',
                     'hipchat',
@@ -57,6 +58,22 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.slack',
                 ]],
                 'description' => 'An OAuth token for the integration',
+            ]),
+            'key' => new Field('OAuth consumer key', [
+                'optionName' => 'key',
+                'conditions' => ['type' => [
+                    'bitbucket',
+                ]],
+                'description' => 'A Bitbucket OAuth consumer key',
+                'valueKeys' => ['app_credentials', 'key'],
+            ]),
+            'secret' => new Field('OAuth consumer secret', [
+                'optionName' => 'secret',
+                'conditions' => ['type' => [
+                    'bitbucket',
+                ]],
+                'description' => 'A Bitbucket OAuth consumer secret',
+                'valueKeys' => ['app_credentials', 'secret'],
             ]),
             'base_url' => new UrlField('Base URL', [
                 'conditions' => ['type' => [
@@ -76,10 +93,11 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
+                    'bitbucket',
                     'github',
                 ]],
-                'description' => 'GitHub: the repository to track (e.g. \'user/repo\' or \'https://github.com/user/repo\')',
-                'questionLine' => 'The GitHub repository (e.g. \'user/repo\' or \'https://github.com/user/repo\')',
+                'description' => 'The repository to track (e.g. \'user/repo\')',
+                'questionLine' => 'The repository (e.g. \'user/repo\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
@@ -100,10 +118,10 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'build_pull_requests' => new BooleanField('Build pull requests', [
                 'conditions' => ['type' => [
+                    'bitbucket',
                     'github',
                 ]],
-                'description' => 'GitHub: build pull requests as environments',
-                'questionLine' => 'Build every pull request as an environment',
+                'description' => 'Build every pull request as an environment',
             ]),
             'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
               'conditions' => [
@@ -113,8 +131,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'build_pull_requests' => true,
               ],
               'default' => false,
-              'description' => 'GitHub: build pull requests based on their post-merge state',
-              'questionLine' => 'Build pull requests based on their post-merge state',
+              'description' => 'Build pull requests based on their post-merge state',
             ]),
             'merge_requests_clone_parent_data' => new BooleanField('Clone data for merge requests', [
                 'optionName' => 'merge-requests-clone-parent-data',
@@ -135,11 +152,22 @@ abstract class IntegrationCommandBase extends CommandBase
                     ],
                     'build_pull_requests' => true,
                 ],
-                'description' => 'GitHub: clone data for pull requests',
-                'questionLine' => "Clone the parent environment's data for pull requests",
+                'description' => "Clone the parent environment's data for pull requests",
+            ]),
+            'resync_pull_requests' => new BooleanField('Re-sync pull requests', [
+                'optionName' => 'resync-pull-requests',
+                'conditions' => [
+                    'type' => [
+                        'bitbucket',
+                    ],
+                    'build_pull_requests' => true,
+                ],
+                'default' => false,
+                'description' => "Re-sync pull request environment data on every build",
             ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
+                    'bitbucket',
                     'github',
                     'gitlab',
                 ]],
@@ -148,6 +176,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'prune_branches' => new BooleanField('Prune branches', [
                 'conditions' => [
                     'type' => [
+                        'bitbucket',
                         'github',
                         'gitlab',
                     ],
