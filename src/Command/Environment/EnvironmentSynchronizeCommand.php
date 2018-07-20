@@ -102,7 +102,7 @@ EOT
             }
 
             if ($rebase && !$syncCode) {
-                $this->stdErr->writeln('<comment>Note:</comment> you specified the <comment>--rebase</comment> option, but you have not selected to synchronize code. Only data will be synchronized.');
+                $this->stdErr->writeln('<comment>Note:</comment> you specified the <comment>--rebase</comment> option, but this only applies to synchronizing code.');
             }
 
             $this->stdErr->writeln('');

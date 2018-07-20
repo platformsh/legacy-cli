@@ -60,6 +60,11 @@ class EnvironmentSshCommand extends CommandBase
             $sshUrl = $username . '--' . $worker . '@' . $rest;
         }
 
+        if ($input->getOption('pipe')) {
+            $output->write($sshUrl);
+            return 0;
+        }
+
         $remoteCommand = $input->getArgument('cmd');
         if (!$remoteCommand && $this->runningViaMulti) {
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
