@@ -89,7 +89,7 @@ class MountUploadCommand extends CommandBase
         $source = null;
         $defaultSource = null;
         if ($input->getOption('source')) {
-            $source = $input->getOption('source');
+            $source = (string) $input->getOption('source');
         } elseif ($projectRoot = $this->selector->getProjectRoot()) {
             $sharedMounts = $this->mountService->getSharedFileMounts($appConfig);
             if (isset($sharedMounts[$mountPath])) {

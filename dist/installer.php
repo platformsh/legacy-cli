@@ -195,7 +195,7 @@ if ($homeDir = getHomeDirectory()) {
 }
 
 output(PHP_EOL . '  Running self:install command...');
-putenv('CLICOLOR_FORCE=' . is_ansi() ? '1' : '0');
+putenv('CLICOLOR_FORCE=' . (is_ansi() ? '1' : '0'));
 exec('php ' . $pharPath . ' self:install --yes 2>&1', $output, $return_var);
 output(preg_replace('/^/m', '  ', implode(PHP_EOL, $output)));
 if ($return_var === 0) {

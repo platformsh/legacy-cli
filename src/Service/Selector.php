@@ -269,7 +269,7 @@ class Selector
                 throw new InvalidArgumentException('Specified environment not found: ' . $environmentId);
             }
 
-            $this->debug('Selected environment: ' . $environment->id);
+            $this->debug('Selected environment: ' . $this->api->getEnvironmentLabel($environment));
             return $environment;
         }
 
@@ -312,7 +312,7 @@ class Selector
         try {
             $apps = array_map(function (WebApp $app) {
                 return $app->name;
-            }, $environment->getCurrentDeployment()->webapps);
+            }, $this->api->getCurrentDeployment($environment)->webapps);
             if (!count($apps)) {
                 return null;
             }
@@ -453,7 +453,7 @@ class Selector
             && !empty($config['mapping'][$currentBranch])) {
             $environment = $this->api->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
             if ($environment) {
-                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
+                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $this->api->getEnvironmentLabel($environment));
                 return $environment;
             } else {
                 unset($config['mapping'][$currentBranch]);
@@ -468,7 +468,7 @@ class Selector
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->api->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
-                $this->debug('Selected environment ' . $potentialEnvironment . ', based on Git upstream: ' . $upstream);
+                $this->debug('Selected environment ' . $this->api->getEnvironmentLabel($environment) . ', based on Git upstream: ' . $upstream);
                 return $environment;
             }
         }
@@ -485,7 +485,7 @@ class Selector
                 }
             }
             if ($environment) {
-                $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
+                $this->debug('Selected environment ' . $this->api->getEnvironmentLabel($environment) . ' based on branch name: ' . $currentBranch);
                 return $environment;
             }
         }

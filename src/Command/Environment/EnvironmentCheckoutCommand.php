@@ -138,14 +138,15 @@ class EnvironmentCheckoutCommand extends CommandBase
         $environments = $this->api->getEnvironments($project);
         $currentEnvironment = $this->selector->getCurrentEnvironment($project);
         if ($currentEnvironment) {
-            $this->stdErr->writeln("The current environment is <info>{$currentEnvironment->title}</info>.");
+            $this->stdErr->writeln("The current environment is " . $this->api->getEnvironmentLabel($currentEnvironment) . ".");
+            $this->stdErr->writeln('');
         }
         $environmentList = [];
         foreach ($environments as $id => $environment) {
             if ($currentEnvironment && $id == $currentEnvironment->id) {
                 continue;
             }
-            $environmentList[$id] = $environment->title;
+            $environmentList[$id] = $this->api->getEnvironmentLabel($environment, false);
         }
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $projectConfig = $this->localProject->getProjectConfig($projectRoot);
@@ -174,8 +175,12 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         // If there's only one choice, QuestionHelper::choose() does not
         // interact. But we still need interactive confirmation at this point.
-        if ($this->questionHelper->confirm(sprintf('Check out environment <info>%s</info>?', reset($environmentList)))) {
-            return key($environmentList);
+        $environmentId = key($environmentList);
+        if ($environmentId !== false) {
+            $label = $this->api->getEnvironmentLabel($environments[$environmentId]);
+            if ($this->questionHelper->confirm(sprintf('Check out environment %s?', $label))) {
+                return $environmentId;
+            }
         }
 
         return false;

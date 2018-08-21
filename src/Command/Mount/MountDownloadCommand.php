@@ -90,7 +90,7 @@ class MountDownloadCommand extends CommandBase
         $target = null;
         $defaultTarget = null;
         if ($input->getOption('target')) {
-            $target = $input->getOption('target');
+            $target = (string) $input->getOption('target');
         } elseif ($projectRoot = $this->selector->getProjectRoot()) {
             $sharedMounts = $this->mountService->getSharedFileMounts($appConfig);
             if (isset($sharedMounts[$mountPath])) {

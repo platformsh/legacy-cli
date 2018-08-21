@@ -74,6 +74,7 @@ class ProjectGetCommand extends CommandBase
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title');
         $this->selector->addProjectOption($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master' or the first available environment")
+            ->addOption('depth', null, InputOption::VALUE_REQUIRED, 'Create a shallow clone: limit the number of commits in the history')
             ->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
         $this->ssh->configureInput($this->getDefinition());
 
@@ -155,6 +156,11 @@ class ProjectGetCommand extends CommandBase
         if ($output->isDecorated()) {
             $cloneArgs[] = '--progress';
         }
+        if ($input->getOption('depth')) {
+            $cloneArgs[] = '--depth';
+            $cloneArgs[] = $input->getOption('depth');
+            $cloneArgs[] = '--shallow-submodules';
+        }
         $cloned = $this->git->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
@@ -234,6 +240,9 @@ class ProjectGetCommand extends CommandBase
      */
     private function validateInput(InputInterface $input)
     {
+        if ($input->getOption('depth') !== null && !preg_match('/^[0-9]+$/', $input->getOption('depth'))) {
+            throw new InvalidArgumentException('The --depth value must be an integer.');
+        }
         if ($input->getOption('project') && $input->getArgument('project')) {
             throw new InvalidArgumentException('You cannot use both the --project option and the <project> argument.');
         }

@@ -54,9 +54,23 @@ class AppListCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
 
         // Find a list of deployed web apps.
-        $apps = $this->api
-            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'))
-            ->webapps;
+        $deployment = $this->api
+            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));
+        $apps = $deployment->webapps;
+
+        if (!count($apps)) {
+            $this->stdErr->writeln('No applications found.');
+
+            if ($deployment->services) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf(
+                    'To list services, run: <info>%s services</info>',
+                    $this->config->get('application.executable')
+                ));
+            }
+
+            return 0;
+        }
 
         // Determine whether to show the "Local path" of the app. This will be
         // found via matching the remote, deployed app with one in the local
@@ -94,6 +108,24 @@ class AppListCommand extends CommandBase
             $rows[] = $row;
         }
 
+        if (!$this->table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(sprintf(
+                'Applications on the project <info>%s</info>, environment <info>%s</info>:',
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment())
+            ));
+        }
+
         $this->table->render($rows, $headers);
+
+        if (!$this->table->formatIsMachineReadable() && $deployment->services) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To list services, run: <info>%s services</info>',
+                $this->config->get('application.executable')
+            ));
+        }
+
+        return 0;
     }
 }

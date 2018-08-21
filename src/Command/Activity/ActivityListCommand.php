@@ -91,8 +91,9 @@ class ActivityListCommand extends CommandBase
             $apiResource = $project;
         }
 
-        $activities = [];
         $type = $input->getOption('type');
+        $activities = $apiResource->getActivities($limit, $type, $startsAt);
+
         $progress = new ProgressBar($output->isDecorated() ? $this->stdErr : new NullOutput());
         $progress->setMessage('Loading activities...');
         $progress->setFormat('%message% %current% (max: %max%)');

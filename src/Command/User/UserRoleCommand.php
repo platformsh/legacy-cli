@@ -9,7 +9,6 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
-use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -84,7 +83,7 @@ class UserRoleCommand extends CommandBase
                 $this->stdErr->writeln('');
             }
         }
-        $projectAccess = $this->api->loadProjectAccessByEmail($project, $email);
+        $projectAccess = $this->api->loadProjectAccessByEmail($project, (string) $email);
         if (!$projectAccess) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
 
@@ -95,23 +94,8 @@ class UserRoleCommand extends CommandBase
             if ($level !== 'environment') {
                 $currentRole = $projectAccess->role;
             } else {
-                $currentRole = $projectAccess->role === ProjectAccess::ROLE_ADMIN ? 'admin' : false;
-                $accesses = $selection->getEnvironment()->getUsers();
-                foreach ($accesses as $access) {
-                    if ($access->user === $projectAccess->id) {
-                        $currentRole = $access->role;
-                        break;
-                    }
-                }
-                if (!$currentRole) {
-                    $this->stdErr->writeln(sprintf(
-                        'The user <error>%s</error> could not be found on the environment <error>%s</error>.',
-                        $email,
-                        $selection->getEnvironment()->id
-                    ));
-
-                    return 1;
-                }
+                $access = $selection->getEnvironment()->getUser($projectAccess->id);
+                $currentRole = $access ? $access->role : 'none';
             }
             $output->writeln($currentRole);
 

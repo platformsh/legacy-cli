@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
@@ -17,15 +18,18 @@ class EnvironmentSshCommand extends CommandBase
 {
     protected static $defaultName = 'environment:ssh';
 
+    private $api;
     private $selector;
     private $shell;
     private $ssh;
 
     public function __construct(
+        Api $api,
         Selector $selector,
         Shell $shell,
         Ssh $ssh
     ) {
+        $this->api = $api;
         $this->selector = $selector;
         $this->shell = $shell;
         $this->ssh = $ssh;
@@ -45,6 +49,7 @@ class EnvironmentSshCommand extends CommandBase
 
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition);
+        $this->addOption('worker', null, InputOption::VALUE_REQUIRED, 'SSH to a worker');
         $this->ssh->configureInput($definition);
 
         $this->addExample('Read recent messages in the deploy log', "'tail /var/log/deploy.log'");
@@ -62,7 +67,22 @@ class EnvironmentSshCommand extends CommandBase
             return 0;
         }
 
-        $sshUrl = $environment->getSshUrl($selection->getAppName());
+        $appName = $selection->getAppName();
+        $sshUrl = $environment->getSshUrl($appName);
+
+        if ($worker = $input->getOption('worker')) {
+            // Validate the worker.
+            $deployment = $this->api->getCurrentDeployment($environment);
+            try {
+                $deployment->getWorker($appName . '--' . $worker);
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln('Worker not found: <error>' . $worker . '</error>');
+
+                return 1;
+            }
+            list($username, $rest) = explode('@', $sshUrl, 2);
+            $sshUrl = $username . '--' . $worker . '@' . $rest;
+        }
 
         if ($input->getOption('pipe')) {
             $output->write($sshUrl);

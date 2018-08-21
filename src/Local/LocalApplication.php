@@ -18,6 +18,8 @@ class LocalApplication
     protected $sourceDir;
     protected $cliConfig;
 
+    private $single = false;
+
     /**
      * @param string      $appRoot
      * @param Config|null $cliConfig
@@ -44,11 +46,23 @@ class LocalApplication
     }
 
     /**
-     * Test whether this application is the only one in the project.
+     * Returns whether this application is the only one in the project.
+     *
+     * @return bool
      */
     public function isSingle()
     {
-       return $this->sourceDir === $this->appRoot;
+       return $this->single;
+    }
+
+    /**
+     * Set that this is is the only application in the project.
+     *
+     * @param bool $single
+     */
+    public function setSingle($single = true)
+    {
+        $this->single = $single;
     }
 
     /**
@@ -236,6 +250,7 @@ class LocalApplication
                ])
                ->depth('< 5');
 
+        /** @var \Platformsh\Cli\Local\LocalApplication[] $applications */
         $applications = [];
 
         /** @var \Symfony\Component\Finder\SplFileInfo $file */
@@ -248,6 +263,13 @@ class LocalApplication
         // directory as a single application.
         if (empty($applications)) {
             $applications[$directory] = new LocalApplication($directory, $config, $directory);
+        }
+
+        if (count($applications) === 1) {
+            foreach ($applications as $application) {
+                $application->setSingle(true);
+                break;
+            }
         }
 
         return $applications;

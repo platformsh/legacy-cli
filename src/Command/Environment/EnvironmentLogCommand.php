@@ -84,13 +84,22 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $sshUrl = $selection->getEnvironment()
             ->getSshUrl($selection->getAppName());
 
+        $logDir = '/var/log';
+
+        // Special handling for Platform.sh Enterprise (Integrated UI)
+        // environments.
+        if (preg_match('/^ent-.*?platform\.sh$/', $sshUrl)) {
+            $logDir = '/var/log/platform/"$USER"';
+            $this->debug('Detected Platform.sh Enterprise environment: using log directory: ' . $logDir);
+        }
+
         // Select the log file that the user specified.
         if ($logType = $input->getArgument('type')) {
             // @todo this might need to be cleverer
             if (substr($logType, -4) === '.log') {
                 $logType = substr($logType, 0, strlen($logType) - 4);
             }
-            $logFilename = '/var/log/' . $logType . '.log';
+            $logFilename = $logDir . '/' . OsUtil::escapePosixShellArg($logType . '.log');
         } elseif (!$input->isInteractive()) {
             $this->stdErr->writeln('No log type specified.');
             return 1;
@@ -98,7 +107,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $sshUrl);
             if (!$result = $this->cache->fetch($cacheKey)) {
-                $result = $this->shell->execute(['ssh', $sshUrl, 'ls -1 /var/log/*.log']);
+                $result = $this->shell->execute(['ssh', $sshUrl, 'ls -1 ' . $logDir . '/*.log']);
 
                 // Cache the list for 1 day.
                 $this->cache->save($cacheKey, $result, 86400);
@@ -106,8 +115,8 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
             // Provide a fallback list of files, in case the SSH command failed.
             $defaultFiles = [
-                '/var/log/access.log',
-                '/var/log/error.log',
+                $logDir . '/access.log',
+                $logDir . '/error.log',
             ];
             $files = $result ? explode("\n", $result) : $defaultFiles;
 

@@ -73,7 +73,7 @@ class MountService
      *
      * @todo this should be in another service
      */
-    public function validateDirectory($directory, $writable = false)
+    public function validateDirectory(string $directory, bool $writable = false)
     {
         if (!is_dir($directory)) {
             throw new \InvalidArgumentException(sprintf('Directory not found: %s', $directory));

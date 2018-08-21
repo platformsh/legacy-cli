@@ -9,6 +9,7 @@ namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\Cache;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\NullOutput;
@@ -123,8 +124,6 @@ class Identifier
      *
      * @param string $url
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     *
      * @return array
      */
     private function identifyFromHeaders($url)
@@ -165,12 +164,25 @@ class Identifier
                     'connect_timeout' => 5,
                     'allow_redirects' => false,
                 ]);
-                $cluster = $response->getHeader($this->config->get('service.header_prefix') . '-cluster');
-                $this->cache->save($cacheKey, $cluster, 86400);
+            } catch (RequestException $e) {
+                // We can use a failed response, if one exists.
+                if ($e->getResponse()) {
+                    $response = $e->getResponse();
+                } else {
+                    $this->debug($e->getMessage());
+
+                    return false;
+                }
             } catch (GuzzleException $e) {
                 $this->debug($e->getMessage());
 
                 return false;
+            }
+            $cluster = $response->getHeader($this->config->get('service.header_prefix') . '-cluster');
+            $canCache = !empty($cluster)
+                || ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
+            if ($canCache) {
+                $this->cache->save($cacheKey, $cluster, 86400);
             }
         }
 
