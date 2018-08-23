@@ -16,6 +16,7 @@ class LocalProject
     protected $git;
 
     protected static $projectConfigs = [];
+    protected static $fleetConfigs = [];
 
     public function __construct(Config $config = null, Git $git = null)
     {
@@ -254,6 +255,30 @@ class LocalProject
         }
 
         return $projectConfig;
+    }
+
+    /**
+     * Get the configuration for the current fleet.
+     *
+     * @param string|null $projectRoot
+     *
+     * @return array|null
+     *   The current project's configuration.
+     */
+    public function getFleetConfig($projectRoot = null)
+    {
+        $projectRoot = $projectRoot ?: $this->getProjectRoot();
+        if (isset(self::$fleetConfigs[$projectRoot])) {
+            return self::$fleetConfigs[$projectRoot];
+        }
+        $projectConfig = null;
+        $configFilename = $this->config->get('local.fleet_config');
+        if ($projectRoot && file_exists($projectRoot . '/' . $configFilename)) {
+            $yaml = new Parser();
+            $fleetConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
+            self::$fleetConfigs[$projectRoot] = $fleetConfig;
+        }
+        return $fleetConfig;
     }
 
     /**
