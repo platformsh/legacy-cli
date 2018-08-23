@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Parser;
 
 class MultiCommand extends CommandBase implements CompletionAwareInterface
 {
@@ -20,7 +21,8 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $this->setName('multi')
             ->setDescription('Execute a command on multiple projects')
             ->addArgument('cmd', InputArgument::REQUIRED, 'The command to execute')
-            ->addOption('projects', 'p', InputOption::VALUE_REQUIRED, 'A list of project IDs, separated by commas and/or whitespace')
+            ->addOption('fleet', 'f', InputOption::VALUE_OPTIONAL, 'A fleet config file, or the local fleet config if no file is specified. Overrides the --projects (-p) option.', false)
+            ->addOption('projects', 'p', InputOption::VALUE_OPTIONAL, 'A list of project IDs, separated by commas and/or whitespace')
             ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property by which to sort the list of project options', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the order of project options');
@@ -165,6 +167,40 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         return $projects;
     }
 
+    protected function getFleetList($fleet) {
+        $config = $this->getFleetConfig($fleet);
+        if (!$config) {
+            return false;
+        }
+
+        foreach ($config['projects'] as $key => $project) {
+            $projects[] = $project['id'];
+        }
+
+        return $projects;
+    }
+
+    /**
+     * Get the specified fleet config.
+     *
+     * @param $fleet
+     *   A fleet config file, or TRUE if the local fleet config should be
+     *   loaded.
+     */
+    protected function getFleetConfig($fleet) {
+        if ($fleet && file_exists($fleet)) {
+            $parser = new Parser();
+            $config = $parser->parse($fleet);
+
+            return $config;
+        }
+        else {
+            $local = $this->getService('local.project');
+            $config = $local->getFleetConfig();
+            return $config;
+        }
+    }
+
     /**
      * Get the projects selected by the user.
      *
@@ -179,7 +215,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
      */
     protected function getSelectedProjects(InputInterface $input)
     {
-        $projectList = $input->getOption('projects');
+        $projectList = (false !== $input->getOption('fleet')) ? $this->getFleetList($input->getOption('fleet')) : $input->getOption('projects');
 
         /** @var \Platformsh\Cli\Service\Identifier $identifier */
         $identifier = $this->getService('identifier');
@@ -187,7 +223,8 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         if (!empty($projectList)) {
             $missing = [];
             $selected = [];
-            foreach ($this->splitProjectList($projectList) as $projectId) {
+            $splitProjectList = is_array($projectList) ? $projectList : $this->splitProjectList($projectList);
+            foreach ($splitProjectList as $projectId) {
                 try {
                     $result = $identifier->identify($projectId);
                     $selected[$result['projectId']] = $this->api()->getProject($result['projectId'], $result['host']);
