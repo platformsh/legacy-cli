@@ -217,15 +217,16 @@ if ($homeDir = getHomeDirectory()) {
     }
 }
 
-output(PHP_EOL . '  Running self:install command...');
+output(PHP_EOL . '  Running self:install command...' . PHP_EOL);
 putenv('CLICOLOR_FORCE=' . (is_ansi() ? '1' : '0'));
-exec('php ' . $pharPath . ' self:install --yes 2>&1', $output, $return_var);
-output(preg_replace('/^/m', '  ', implode(PHP_EOL, $output)));
-if ($return_var === 0) {
-    output(PHP_EOL . '  The installation completed successfully.');
-} else {
-    exit($return_var);
+$commandline = 'php ' . $pharPath . ' self:install';
+if (!is_interactive()) {
+    $commandline .= ' --yes';
 }
+$process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
+$result = proc_close($process);
+
+exit($result);
 
 /**
  * Checks a condition, outputs a message, and exits if failed.
@@ -304,6 +305,25 @@ function is_ansi()
     return (DIRECTORY_SEPARATOR == '\\')
         ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
         : (function_exists('posix_isatty') && posix_isatty(1));
+}
+
+/**
+ * Returns whether the terminal is interactive.
+ *
+ * @return bool
+ */
+function is_interactive()
+{
+    global $argv;
+    if (!empty($argv) && array_intersect(['--no-interaction', '-y', '--yes'], $argv)) {
+        return false;
+    }
+
+    if (function_exists('posix_isatty')) {
+        return posix_isatty(STDOUT) && posix_isatty(STDERR);
+    }
+
+    return true;
 }
 
 /**
