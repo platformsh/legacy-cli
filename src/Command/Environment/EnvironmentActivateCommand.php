@@ -91,7 +91,7 @@ class EnvironmentActivateCommand extends CommandBase
         // Confirm which environments the user wishes to be activated.
         $process = [];
         foreach ($environments as $environment) {
-            if (!$this->api->checkEnvironmentOperation('activate', $environment)) {
+            if (!$environment->operationAvailable('activate', true)) {
                 if ($environment->isActive()) {
                     $output->writeln("The environment " . $this->api->getEnvironmentLabel($environment) . " is already active.");
                     $count--;

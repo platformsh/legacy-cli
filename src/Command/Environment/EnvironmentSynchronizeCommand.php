@@ -69,13 +69,10 @@ EOT
         $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        if (!$this->api->checkEnvironmentOperation('synchronize', $selectedEnvironment)) {
+        if (!$selectedEnvironment->operationAvailable('synchronize', true)) {
             $this->stdErr->writeln(
                 "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
-            if ($selectedEnvironment->is_dirty) {
-                $this->api->clearEnvironmentsCache($selectedEnvironment->project);
-            }
 
             return 1;
         }

@@ -7,6 +7,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -325,10 +326,20 @@ EOT
             '.bashrc',
             '.bash_profile',
         ];
+
+        // OS X ignores .bashrc if .bash_profile is present.
+        if (OsUtil::isOsX()) {
+            $candidates = [
+                '.bash_profile',
+                '.bashrc',
+            ];
+        }
+
         if ($shell === 'zsh' || getenv('ZSH')) {
             array_unshift($candidates, '.zshrc');
             array_unshift($candidates, '.zprofile');
         }
+
         $homeDir = Filesystem::getHomeDirectory();
         foreach ($candidates as $candidate) {
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
