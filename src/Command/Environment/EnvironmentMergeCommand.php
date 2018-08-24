@@ -32,7 +32,7 @@ class EnvironmentMergeCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        if (!$this->api()->checkEnvironmentOperation('merge', $selectedEnvironment)) {
+        if (!$selectedEnvironment->operationAvailable('merge', true)) {
             $this->stdErr->writeln(sprintf(
                 "Operation not available: The environment <error>%s</error> can't be merged.",
                 $environmentId

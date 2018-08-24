@@ -67,7 +67,7 @@ class EnvironmentActivateCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         foreach ($environments as $environment) {
-            if (!$this->api()->checkEnvironmentOperation('activate', $environment)) {
+            if (!$environment->operationAvailable('activate', true)) {
                 if ($environment->isActive()) {
                     $output->writeln("The environment " . $this->api()->getEnvironmentLabel($environment) . " is already active.");
                     $count--;
