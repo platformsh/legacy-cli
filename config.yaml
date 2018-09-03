@@ -68,6 +68,7 @@ service:
     - eu-2.platform.sh
     - us-2.platform.sh
     - au.platform.sh
+    - ca-1.platform.sh
   available_plans:
     - development
     - standard
