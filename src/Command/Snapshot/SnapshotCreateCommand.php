@@ -29,13 +29,10 @@ class SnapshotCreateCommand extends CommandBase
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
-        if (!$this->api()->checkEnvironmentOperation('backup', $selectedEnvironment)) {
+        if (!$selectedEnvironment->operationAvailable('backup', true)) {
             $this->stdErr->writeln(
                 "Operation not available: cannot create a snapshot of <error>$environmentId</error>"
             );
-            if ($selectedEnvironment->is_dirty) {
-                $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
-            }
 
             return 1;
         }
