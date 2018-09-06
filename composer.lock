@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b338e56e90da62248814ceda103b4f20",
+    "content-hash": "2b33af601c79f713d62db24f8a8f55c5",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -620,16 +620,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "2.0.0-beta.6",
+            "version": "2.0.0-beta7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "16ebf614dd9dd52a4eedc3a45e21da533ed7e11c"
+                "reference": "704150acab00208a65c6771e1d59525c31d9b9c9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/16ebf614dd9dd52a4eedc3a45e21da533ed7e11c",
-                "reference": "16ebf614dd9dd52a4eedc3a45e21da533ed7e11c",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/704150acab00208a65c6771e1d59525c31d9b9c9",
+                "reference": "704150acab00208a65c6771e1d59525c31d9b9c9",
                 "shasum": ""
             },
             "require": {
@@ -657,7 +657,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2018-08-23T09:40:10+00:00"
+            "time": "2018-09-15T20:59:55+00:00"
         },
         {
             "name": "platformsh/console-form",
