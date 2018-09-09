@@ -21,7 +21,7 @@ Run the CLI from the local source with:
 Run tests with:
 
 ```sh
-./vendor/bin/phpunit -c ./phpunit.xml
+./scripts/test/unit.sh
 ```
 
 Tests are also run on Travis CI: https://travis-ci.org/platformsh/platformsh-cli
