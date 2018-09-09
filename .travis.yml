@@ -2,9 +2,34 @@ language: php
 dist: trusty
 sudo: false
 
-php:
-  - 7.1
-  - 7.2
+php: nightly
+env: TEST_SCRIPT=scripts/test/unit.sh
+
+matrix:
+  include:
+    - php: 7.1
+      env: TEST_SCRIPT=scripts/test/security.sh
+    - php: 7.2
+      env: TEST_SCRIPT=scripts/test/security.sh
+
+    - php: 7.1
+      env: TEST_SCRIPT=scripts/test/installer.sh
+
+    - php: 7.1
+      env: TEST_SCRIPT=scripts/test/unit.sh
+    - php: 7.2
+      env: TEST_SCRIPT=scripts/test/unit.sh
+    - php: nightly
+      env: TEST_SCRIPT=scripts/test/unit.sh
+
+    - php: 7.2
+      env: TEST_SCRIPT=scripts/test/slow.sh
+
+  allow_failures:
+    - php: nightly
+    - env: TEST_SCRIPT=scripts/test/slow.sh
+
+  fast_finish: true
 
 cache:
   directories:
@@ -18,6 +43,4 @@ install:
 env:
   - PLATFORMSH_CLI_DRUSH=$HOME/.composer/vendor/bin/drush
 
-script:
-  - 'curl -H "Accept: text/plain" https://security.sensiolabs.org/check_lock -F lock=@./composer.lock'
-  - ./vendor/bin/phpunit -c ./phpunit.xml --coverage-text --exclude-group slow
+script: "$TEST_SCRIPT"

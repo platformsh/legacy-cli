@@ -4,11 +4,14 @@
  * Platform.sh CLI installer.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', 'https://platform.sh/cli/manifest.json');
+define('CLI_UPDATE_MANIFEST_URL', getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://platform.sh/cli/manifest.json');
 define('CLI_CONFIG_DIR', '.platformsh');
 define('CLI_EXECUTABLE', 'platform');
 define('CLI_NAME', 'Platform.sh CLI');
 define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
+
+// Set up the CLI I/O.
+setUpIo();
 
 set_error_handler(
     function ($code, $message) {
@@ -301,6 +304,30 @@ function is_interactive()
     }
 
     return true;
+}
+
+/**
+ * Sets up the STDIN, STDOUT and STDERR constants.
+ *
+ * Due to a PHP bug, these constants are not available when the PHP script is
+ * being read from stdin.
+ *
+ * @see https://bugs.php.net/bug.php?id=43283
+ */
+function setUpIo()
+{
+    if (PHP_SAPI !== 'cli') {
+        throw new RuntimeException('This can only be run via command-line PHP.');
+    }
+    if (!defined('STDIN')) {
+        define('STDIN', fopen('php://stdin',  'r'));
+    }
+    if (!defined('STDOUT')) {
+        define('STDOUT', fopen('php://stdout',  'w'));
+    }
+    if (!defined('STDERR')) {
+        define('STDERR', fopen('php://stderr',  'w'));
+    }
 }
 
 /**
