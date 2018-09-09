@@ -39,8 +39,6 @@ cache:
 install:
   - composer install --no-interaction
   - composer global require 'drush/drush:^8.0'
-
-env:
-  - PLATFORMSH_CLI_DRUSH=$HOME/.composer/vendor/bin/drush
+  - export PLATFORMSH_CLI_DRUSH=$HOME/.composer/vendor/bin/drush
 
 script: "$TEST_SCRIPT"
