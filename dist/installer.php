@@ -4,7 +4,7 @@
  * Platform.sh CLI installer.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', 'https://platform.sh/cli/manifest.json');
+define('CLI_UPDATE_MANIFEST_URL', getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://platform.sh/cli/manifest.json');
 define('CLI_CONFIG_DIR', '.platformsh');
 define('CLI_EXECUTABLE', 'platform');
 define('CLI_NAME', 'Platform.sh CLI');
