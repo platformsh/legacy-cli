@@ -147,7 +147,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             foreach ($this->drush->getAliases($groupName) as $name => $alias) {
                 // Remove the group prefix from the alias name.
                 $name = ltrim($name, '@');
-                if (strpos($name, $groupName . '.') === 0)  {
+                if (strpos($name, $groupName . '.') === 0) {
                     $name = substr($name, strlen($groupName . '.'));
                 }
 
