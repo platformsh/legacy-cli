@@ -6,6 +6,7 @@ namespace Platformsh\Cli\Command\Snapshot;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
@@ -19,17 +20,20 @@ class SnapshotListCommand extends CommandBase
     protected static $defaultName = 'snapshot:list';
 
     private $activityService;
+    private $api;
     private $formatter;
     private $selector;
     private $table;
 
     public function __construct(
         ActivityService $activityService,
+        Api $api,
         PropertyFormatter $formatter,
         Selector $selector,
         Table $table
     ) {
         $this->activityService = $activityService;
+        $this->api = $api;
         $this->formatter = $formatter;
         $this->selector = $selector;
         $this->table = $table;
@@ -40,8 +44,7 @@ class SnapshotListCommand extends CommandBase
     {
         $this->setAliases(['snapshots'])
             ->setDescription('List available snapshots of an environment')
-            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10)
-            ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only snapshots created before this date will be listed');
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of snapshots to list', 10);
 
         $definition = $this->getDefinition();
         $this->table->configureInput($definition);
@@ -49,41 +52,43 @@ class SnapshotListCommand extends CommandBase
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
 
-        $this->addExample('List the most recent snapshots')
-             ->addExample('List snapshots made before last week', "--start '1 week ago'");
+        $this->addExample('List the most recent snapshots');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $environment = $this->selector->getSelection($input)->getEnvironment();
-
-        $startsAt = null;
-        if ($input->getOption('start') && !($startsAt = strtotime($input->getOption('start')))) {
-            $this->stdErr->writeln('Invalid date: <error>' . $input->getOption('start') . '</error>');
-            return 1;
-        }
+        $selection = $this->selector->getSelection($input);
+        $selectedEnvironment = $selection->getEnvironment();
 
         if (!$this->table->formatIsMachineReadable()) {
-            $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");
+            $this->stdErr->writeln("Finding snapshots for the environment <info>{$selectedEnvironment->id}</info>");
         }
 
-        $activities = $environment->getActivities($input->getOption('limit'), 'environment.backup', $startsAt);
-        if (!$activities) {
+        $backups = $selectedEnvironment->getBackups($input->getOption('limit'));
+        if (!$backups) {
             $this->stdErr->writeln('No snapshots found');
             return 1;
         }
 
-        $headers = ['Created', 'Snapshot name', 'Progress', 'State', 'Result'];
+        $headers = ['Created', 'Snapshot name', 'Status', 'Commit'];
         $rows = [];
-        foreach ($activities as $activity) {
-            $snapshot_name = !empty($activity->payload['backup_name']) ? $activity->payload['backup_name'] : 'N/A';
+        foreach ($backups as $backup) {
             $rows[] = [
-                $this->formatter->format($activity->created_at, 'created_at'),
-                new AdaptiveTableCell($snapshot_name, ['wrap' => false]),
-                $activity->getCompletionPercent() . '%',
-                $this->activityService->formatState($activity->state),
-                $this->activityService->formatResult($activity->result, !$this->table->formatIsMachineReadable()),
+                $this->formatter->format($backup->created_at, 'created_at'),
+                new AdaptiveTableCell($backup->id, ['wrap' => false]),
+                $backup->status,
+                $backup->commit_id,
             ];
+        }
+
+        if (!$this->table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(
+                sprintf(
+                    'Snapshots for the project %s, environment %s:',
+                    $this->api->getProjectLabel($selection->getProject()),
+                    $this->api->getEnvironmentLabel($selectedEnvironment)
+                )
+            );
         }
 
         $this->table->render($rows, $headers);
