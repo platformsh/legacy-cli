@@ -39,6 +39,7 @@ abstract class TunnelCommandBase extends CommandBase
     {
         foreach ($this->getTunnelInfo() as $info) {
             if ($this->tunnelsAreEqual($tunnel, $info)) {
+                /** @noinspection PhpComposerExtensionStubsInspection */
                 if (isset($info['pid']) && function_exists('posix_kill') && !posix_kill($info['pid'], 0)) {
                     $this->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
@@ -77,6 +78,7 @@ abstract class TunnelCommandBase extends CommandBase
         if ($open) {
             $needsSave = false;
             foreach ($this->tunnelInfo as $key => $tunnel) {
+                /** @noinspection PhpComposerExtensionStubsInspection */
                 if (isset($tunnel['pid']) && function_exists('posix_kill') && !posix_kill($tunnel['pid'], 0)) {
                     $this->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
@@ -119,8 +121,10 @@ abstract class TunnelCommandBase extends CommandBase
     {
         $success = true;
         if (isset($tunnel['pid']) && function_exists('posix_kill')) {
+            /** @noinspection PhpComposerExtensionStubsInspection */
             $success = posix_kill($tunnel['pid'], SIGTERM);
             if (!$success) {
+                /** @noinspection PhpComposerExtensionStubsInspection */
                 $this->stdErr->writeln(sprintf(
                     'Failed to kill process <error>%d</error> (POSIX error %s)',
                     $tunnel['pid'],

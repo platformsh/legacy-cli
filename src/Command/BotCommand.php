@@ -59,6 +59,7 @@ class BotCommand extends CommandBase
         // Stay positive: return code 0 when the user quits.
         if (function_exists('pcntl_signal')) {
             declare(ticks = 1);
+            /** @noinspection PhpComposerExtensionStubsInspection */
             pcntl_signal(SIGINT, function () {
                 echo "\n";
                 exit;
