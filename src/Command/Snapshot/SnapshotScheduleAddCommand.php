@@ -42,7 +42,7 @@ class SnapshotScheduleAddCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Add an automated snapshot policy');
+        $this->setDescription('Add a scheduled snapshot policy');
 
         $definition = $this->getDefinition();
 
@@ -66,7 +66,7 @@ class SnapshotScheduleAddCommand extends CommandBase
         );
 
         $this->stdErr->writeln(sprintf(
-            'Created automated snapshot policy: interval <info>%s</info>, count <info>%d</info>.',
+            'Created scheduled snapshot policy: interval <info>%s</info>, count <info>%d</info>.',
             $values['interval'],
             $values['count']
         ));
@@ -91,7 +91,7 @@ class SnapshotScheduleAddCommand extends CommandBase
     {
         return [
             'interval' => new Field('Interval', [
-                'description' => 'The time interval between automated snapshots',
+                'description' => 'The time interval between scheduled snapshots',
                 'default' => '1h',
                 'validator' => function ($duration) {
                     $seconds = (new Duration($duration))->getSeconds();

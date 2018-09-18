@@ -45,6 +45,7 @@ class SnapshotScheduleListCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
+        $this->table->configureInput($definition);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

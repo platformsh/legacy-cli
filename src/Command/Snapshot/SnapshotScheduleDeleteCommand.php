@@ -4,11 +4,13 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\Selection;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Client\Model\Type\Duration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,25 +25,28 @@ class SnapshotScheduleDeleteCommand extends CommandBase
     private $config;
     private $questionHelper;
     private $selector;
+    private $subCommandRunner;
 
     public function __construct(
         ActivityService $activityService,
         Api $api,
         Config $config,
         QuestionHelper $questionHelper,
-        Selector $selector
+        Selector $selector,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->activityService = $activityService;
         $this->api = $api;
         $this->config = $config;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this->setDescription('Delete an automated snapshot policy');
+        $this->setDescription('Delete a scheduled snapshot policy');
         $this->addOption('interval', null, InputOption::VALUE_REQUIRED, 'The interval, of the policy to delete');
         $this->addOption('count', null, InputOption::VALUE_REQUIRED, 'The count, of the policy to delete');
 
@@ -83,18 +88,18 @@ class SnapshotScheduleDeleteCommand extends CommandBase
 
         if (!count($matchingPolicies)) {
             $this->stdErr->writeln('No matching policies found.');
+            $this->listPolicies($selection);
 
             return 1;
         }
 
-        if (count($matchingPolicies) > 1) {
+        if (count($matchingPolicies) > 1 && ($interval === null || $count === null)) {
             $this->stdErr->writeln('More than one matching policy found.');
             if ($interval === null && $count === null) {
-                $this->stdErr->writeln('Specify --interval and --count to find the policy to delete.');
+                $this->stdErr->writeln('Specify <comment>--interval</comment> and <comment>--count</comment> to find the policy to delete.');
             }
 
-            $executable = $this->config->get('application.executable');
-            $this->stdErr->writeln('List snapshot policies with: ' . $executable . ' snapshot:schedule:list');
+            $this->listPolicies($selection);
 
             return 1;
         }
@@ -110,7 +115,12 @@ class SnapshotScheduleDeleteCommand extends CommandBase
             return 1;
         }
 
+        // Remove the policy.
         unset($backupConfig['schedule'][$policyKey]);
+
+        // Reset keys so that the schedule is serialized as a JSON array.
+        $backupConfig['schedule'] = array_values($backupConfig['schedule']);
+
         $result = $selectedEnvironment->update([
             'backups' => $backupConfig,
         ]);
@@ -128,5 +138,19 @@ class SnapshotScheduleDeleteCommand extends CommandBase
         }
 
         return $success ? 0 : 1;
+    }
+
+    /**
+     * List snapshot policies.
+     *
+     * @param \Platformsh\Cli\Console\Selection $selection
+     */
+    private function listPolicies(Selection $selection)
+    {
+        $this->stdErr->writeln('');
+        $this->subCommandRunner->run('snapshot:schedule:list', [
+            '--project' => $selection->getProject()->id,
+            '--environment' => $selection->getEnvironment()->id,
+        ]);
     }
 }
