@@ -154,6 +154,13 @@ server
   server:run                                Run a local PHP web server
   server:start                              Run PHP web server(s) for the local project
   server:stop                               Stop local project web server(s)
+service
+  service:list (services)                   List services in the project
+  service:mongo:dump (mongodump)            Create a binary archive dump of data from MongoDB
+  service:mongo:export (mongoexport)        Export data from MongoDB
+  service:mongo:restore (mongorestore)      Restore a binary archive dump of data into MongoDB
+  service:mongo:shell (mongo)               Use the MongoDB shell
+  service:redis-cli (redis)                 Access the Redis CLI
 snapshot
   snapshot:create                           Make a snapshot of an environment
   snapshot:list (snapshots)                 List available snapshots of an environment
@@ -174,7 +181,7 @@ user
   user:list (users)                         List project users
 variable
   variable:create                           Create a variable
-  variable:delete                           Delete a variable from an environment
+  variable:delete                           Delete a variable
   variable:get (vget)                       View a variable
   variable:list (variables)                 List variables
   variable:update                           Update a variable

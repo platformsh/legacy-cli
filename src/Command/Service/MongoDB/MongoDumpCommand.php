@@ -14,8 +14,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoDumpCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:mongo:dump');

@@ -9,8 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ServiceListCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     /**
      * {@inheritdoc}
      */
