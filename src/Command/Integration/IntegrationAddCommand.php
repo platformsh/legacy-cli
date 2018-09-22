@@ -36,6 +36,16 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $values = $this->getForm()
                        ->resolveOptions($input, $this->stdErr, $questionHelper);
 
+        // Validate credentials for new Bitbucket integrations.
+        if (isset($values['type']) && $values['type'] === 'bitbucket' && isset($values['app_credentials'])) {
+            $result = $this->validateBitbucketCredentials($values['app_credentials']);
+            if ($result !== true) {
+                $this->stdErr->writeln($result);
+
+                return 1;
+            }
+        }
+
         // Omit all empty, non-required fields when creating a new integration.
         foreach ($this->getForm()->getFields() as $name => $field) {
             if (isset($values[$name]) && !$field->isRequired() && $field->isEmpty($values[$name])) {

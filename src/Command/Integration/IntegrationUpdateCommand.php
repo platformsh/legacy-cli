@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -40,23 +41,42 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
 
-        $values = [];
-        $form = $this->getForm();
-        $currentValues = $integration->getProperties();
-        foreach ($form->getFields() as $key => $field) {
+        // Get the values supplied via the command-line options.
+        $newValues = [];
+        foreach ($this->getForm()->getFields() as $key => $field) {
             $value = $field->getValueFromInput($input);
-            if ($value !== null && $currentValues[$key] !== $value) {
-                $values[$key] = $value;
+            $parents = $field->getValueKeys() ?: [$key];
+            if ($value !== null) {
+                NestedArrayUtil::setNestedArrayValue($newValues, $parents, $value, true);
             }
         }
-        if (!$values) {
+
+        // Merge current values with new values, accounting for nested arrays.
+        foreach ($integration->getProperties() as $key => $currentValue) {
+            if (isset($newValues[$key])) {
+                // If the new value is an array, it needs to be merged with the
+                // old values, e.g. ['foo' => 1, 'bar' => 7] plus ['foo' => 2]
+                // will become ['foo' => 2, 'bar' => 7].
+                if (is_array($currentValue)) {
+                    $newValues[$key] = array_replace_recursive($currentValue, $newValues[$key]);
+                }
+
+                // Remove any new values that are the same as the current value.
+                if ($this->valuesAreEqual($currentValue, $newValues[$key])) {
+                    unset($newValues[$key]);
+                }
+            }
+        }
+
+        if (!$newValues) {
             $this->stdErr->writeln('No changed values were provided to update.');
+            $this->stdErr->writeln('');
             $this->ensureHooks($integration);
 
             return 1;
         }
 
-        $result = $integration->update($values);
+        $result = $integration->update($newValues);
         $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
         $this->ensureHooks($integration);
 
@@ -69,5 +89,24 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         }
 
         return 0;
+    }
+
+    /**
+     * Compare new and old integration values.
+     *
+     * @param mixed $a
+     * @param mixed $b
+     *
+     * @return bool
+     *   True if the values are considered the same, false otherwise.
+     */
+    private function valuesAreEqual($a, $b)
+    {
+        if (is_array($a) && is_array($b)) {
+            ksort($a);
+            ksort($b);
+        }
+
+        return $a === $b;
     }
 }
