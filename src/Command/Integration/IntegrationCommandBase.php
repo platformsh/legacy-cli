@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
@@ -16,6 +17,9 @@ abstract class IntegrationCommandBase extends CommandBase
 {
     /** @var Form */
     private $form;
+
+    /** @var array */
+    private $bitbucketAccessTokens = [];
 
     /**
      * @return Form
@@ -313,6 +317,37 @@ abstract class IntegrationCommandBase extends CommandBase
                 'merge_requests_events' => true,
             ];
             $repoName = $baseUrl . '/' . $integration->getProperty('project');
+        } elseif ($integration->type === 'bitbucket' && $integration->hasProperty('app_credentials')) {
+            $appCredentials = $integration->getProperty('app_credentials');
+            $result = $this->validateBitbucketCredentials($appCredentials);
+            if ($result !== true) {
+                $this->stdErr->writeln($result);
+
+                return;
+            }
+            $accessToken = $this->getBitbucketAccessToken($appCredentials);
+            $hooksApiUrl = sprintf('https://api.bitbucket.org/2.0/repositories/%s/hooks', rawurlencode($integration->getProperty('repository')));
+            $requestOptions = [
+                'auth' => false,
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => 'Bearer ' . $accessToken,
+                ],
+            ];
+            $payload = [
+                'description' => 'Platform.sh: ' . $this->getSelectedProject()->id,
+                'url' => $integration->getLink('#hook'),
+                'active' => true,
+                'events' => [
+                    'pullrequest:created',
+                    'pullrequest:updated',
+                    'pullrequest:rejected',
+                    'pullrequest:fulfilled',
+                    'repo:updated',
+                    'repo:push',
+                ],
+            ];
+            $repoName = 'https://bitbucket.org/' . $integration->getProperty('repository');
         } else {
             return;
         }
@@ -332,11 +367,15 @@ abstract class IntegrationCommandBase extends CommandBase
                 $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
                 $this->stdErr->writeln('  Webhook created successfully');
             }
-            elseif ($this->arraysDiffer($hook, $payload)) {
-                // The GitLab API requires PUT for editing project hooks. The
-                // GitHub API requires PATCH.
-                $method = $integration->type === 'gitlab' ? 'put' : 'patch';
-                $hookApiUrl = $hooksApiUrl . '/' . rawurlencode($hook['id']);
+            elseif ($this->hookNeedsUpdate($integration, $hook, $payload)) {
+                // The GitLab and Bitbucket APIs require PUT for editing project
+                // hooks. The GitHub API requires PATCH.
+                $method = $integration->type === 'github' ? 'patch' : 'put';
+
+                // A Bitbucket hook has a 'uuid', others have an 'id'.
+                $id = $integration->type === 'bitbucket' ? $hook['uuid'] : $hook['id'];
+
+                $hookApiUrl = $hooksApiUrl . '/' . rawurlencode($id);
 
                 $this->stdErr->writeln('  Updating webhook');
                 $client->send(
@@ -356,6 +395,40 @@ abstract class IntegrationCommandBase extends CommandBase
                 $integration->getLink('#hook')
             ));
         }
+    }
+
+    /**
+     * Check if a hook needs updating.
+     *
+     * @param \Platformsh\Client\Model\Integration $integration
+     * @param array                                $hook
+     * @param array                                $payload
+     *
+     * @return bool
+     */
+    private function hookNeedsUpdate(Integration $integration, array $hook, array $payload)
+    {
+        if ($integration->type === 'bitbucket') {
+            foreach ($payload as $item => $value) {
+                if (!isset($hook[$item])) {
+                    return true;
+                }
+                if ($item === 'events') {
+                    sort($value);
+                    sort($hook[$item]);
+                    if ($value !== $hook[$item]) {
+                        return true;
+                    }
+                }
+                if ($hook[$item] !== $value) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return $this->arraysDiffer($hook, $payload);
     }
 
     /**
@@ -403,11 +476,19 @@ abstract class IntegrationCommandBase extends CommandBase
     {
         $type = $integration->type;
         $hookUrl = $integration->getLink('#hook');
-        foreach ($jsonResult as $hook) {
+        if ($integration->type === 'bitbucket') {
+            $hooks = $jsonResult['values'];
+        } else {
+            $hooks = $jsonResult;
+        }
+        foreach ($hooks as $hook) {
             if ($type === 'github' && $hook['config']['url'] === $hookUrl) {
                 return $hook;
             }
             if ($type === 'gitlab' && $hook['url'] === $hookUrl) {
+                return $hook;
+            }
+            if ($type === 'bitbucket' && $hook['url'] === $hookUrl) {
                 return $hook;
             }
         }
@@ -434,5 +515,60 @@ abstract class IntegrationCommandBase extends CommandBase
         }
 
         $table->renderSimple(array_values($info), array_keys($info));
+    }
+
+    /**
+     * Obtain an OAuth2 token for Bitbucket from the given app credentials.
+     *
+     * @param array $credentials
+     *
+     * @return string
+     */
+    protected function getBitbucketAccessToken(array $credentials)
+    {
+        if (isset($this->bitbucketAccessTokens[$credentials['key']])) {
+            return $this->bitbucketAccessTokens[$credentials['key']];
+        }
+        $result = $this->api()
+            ->getHttpClient()
+            ->post('https://bitbucket.org/site/oauth2/access_token', [
+                'auth' => [$credentials['key'], $credentials['secret']],
+                'body' => [
+                    'grant_type' => 'client_credentials',
+                ],
+            ]);
+
+        $data = $result->json();
+        if (!isset($data['access_token'])) {
+            throw new \RuntimeException('Access token not found in Bitbucket response');
+        }
+
+        $this->bitbucketAccessTokens[$credentials['key']] = $data['access_token'];
+
+        return $data['access_token'];
+    }
+
+    /**
+     * Validate Bitbucket credentials.
+     *
+     * @param array $credentials
+     *
+     * @return string|TRUE
+     */
+    protected function validateBitbucketCredentials(array $credentials)
+    {
+        try {
+            $this->getBitbucketAccessToken($credentials);
+        } catch (\Exception $e) {
+            $message = '<error>Invalid Bitbucket credentials</error>';
+            if ($e instanceof BadResponseException && $e->getResponse() && $e->getResponse()->getStatusCode() === 400) {
+                $message .= "\n" . 'Ensure that the OAuth consumer key and secret are valid.'
+                    . "\n" . 'Additionally, ensure that the OAuth consumer has a callback URL set (even just to <comment>http://localhost</comment>).';
+            }
+
+            return $message;
+        }
+
+        return TRUE;
     }
 }

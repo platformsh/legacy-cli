@@ -70,6 +70,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         if (!$newValues) {
             $this->stdErr->writeln('No changed values were provided to update.');
+            $this->stdErr->writeln('');
             $this->ensureHooks($integration);
 
             return 1;
