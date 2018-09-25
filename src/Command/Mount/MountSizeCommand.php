@@ -27,6 +27,16 @@ class MountSizeCommand extends MountCommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
+        $appConfigFile = $this->config()->get('service.app_config_file');
+        $this->setHelp(<<<EOF
+Use this command to check the disk size and usage for an application's mounts.
+
+Mounts are directories mounted into the application from a persistent, writable
+filesystem. They are configured in the <info>mounts</info> key in the <info>$appConfigFile</info> file.
+
+The filesystem's total size is determined by the <info>disk</info> key in the same file.
+EOF
+);
     }
 
     /**
