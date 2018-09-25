@@ -771,11 +771,11 @@ class Api
      */
     public function getTree(Environment $environment, $path = '.', $commitSha = null)
     {
-        $commitSha = $this->normalizeSha($environment, $commitSha);
+        $normalizedSha = $this->normalizeSha($environment, $commitSha);
         $cacheKey = implode(':', ['tree', $environment->project, $path, $commitSha]);
         $data = $this->cache->fetch($cacheKey);
         if (!is_array($data)) {
-            if (!$commit = $this->getCommit($environment, $commitSha)) {
+            if (!$commit = $this->getCommit($environment, $normalizedSha)) {
                 throw new \InvalidArgumentException(sprintf(
                     'Commit not found: %s',
                     $commitSha
@@ -830,30 +830,33 @@ class Api
     private function getCommit(Environment $environment, $sha = null)
     {
         $sha = $this->normalizeSha($environment, $sha);
-        $base = Project::getProjectBaseFromUrl($environment->getUri()) . '/git/commits';
 
-        // For commits suffixed by ^, count the number of parents to go back.
-        $numParents = 0;
-        if ($caretPos = strpos($sha, '^')) {
-            $numParents = substr_count($sha, '^', $caretPos);
+        // For commits containing ^, count the number of parents to go back.
+        $parents = [];
+        if (($caretPos = strpos($sha, '^')) !== false) {
+            preg_match_all('#\^([0-9]*)#', $sha, $matches);
+            foreach ($matches[1] as $match) {
+                $parents[] = intval($match) ?: 1;
+            }
             $sha = substr($sha, 0, $caretPos);
         }
 
-        // Get the base commit.
-        $commit = Commit::get($sha, $base, $this->getHttpClient());
+        // Get the first commit.
+        $baseUrl = Project::getProjectBaseFromUrl($environment->getUri()) . '/git/commits';
+        $client = $this->getHttpClient();
+        $commit = Commit::get($sha, $baseUrl, $client);
         if (!$commit) {
             return false;
         }
 
-        // Fetch parent commits recursively, up to the number of parents denoted
-        // by the caret suffix.
-        while ($commit !== false && $numParents > 0) {
-            $sha = reset($commit->parents);
-            if (!$sha) {
+        // Fetch parent commits recursively.
+        while ($commit !== false && count($parents)) {
+            $parent = array_shift($parents);
+            if (isset($commit->parents[$parent - 1])) {
+                $commit = Commit::get($commit->parents[$parent - 1], $baseUrl, $client);
+            } else {
                 return false;
             }
-            $commit = Commit::get($sha, $base, $this->getHttpClient());
-            $numParents--;
         }
 
         return $commit;
