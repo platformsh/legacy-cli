@@ -70,6 +70,12 @@ class UserGetCommand extends CommandBase
             return 1;
         }
 
+        if ($input->getOption('pipe') && !$role) {
+            $this->displayRole($projectAccess, $level, $output);
+
+            return 0;
+        }
+
         if ($level === null && $role && $this->hasSelectedEnvironment() && $input->isInteractive()) {
             $environment = $this->getSelectedEnvironment();
             $question = new ChoiceQuestion('What role level do you want to set to "' . $role . '"?', [
@@ -112,17 +118,29 @@ class UserGetCommand extends CommandBase
         }
 
         if ($input->getOption('pipe')) {
-            $uuid = $projectAccess->id;
             if ($level !== 'environment') {
-                $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email, true);
-                $currentRole = $projectAccess ? $projectAccess->role : 'none';
-            } else {
-                $access = $this->getSelectedEnvironment()->getUser($uuid);
-                $currentRole = $access ? $access->role : 'none';
+                $projectAccess->refresh();
             }
-            $output->writeln($currentRole);
+            $this->displayRole($projectAccess, $level, $output);
         }
 
         return 0;
+    }
+
+    /**
+     * @param \Platformsh\Client\Model\ProjectAccess            $projectAccess
+     * @param string                                            $level
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    private function displayRole(ProjectAccess $projectAccess, $level, OutputInterface $output)
+    {
+        $uuid = $projectAccess->id;
+        if ($level !== 'environment') {
+            $currentRole = $projectAccess ? $projectAccess->role : 'none';
+        } else {
+            $access = $this->getSelectedEnvironment()->getUser($uuid);
+            $currentRole = $access ? $access->role : 'none';
+        }
+        $output->writeln($currentRole);
     }
 }
