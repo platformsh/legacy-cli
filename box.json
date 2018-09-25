@@ -1,6 +1,7 @@
 {
   "chmod": "0755",
   "directories": [
+    "bin",
     "resources",
     "src"
   ],
@@ -14,10 +15,6 @@
     "vendor/symfony/console/Resources/bin/hiddeninput.exe"
   ],
   "finder": [
-    {
-      "in": "bin",
-      "name": "*"
-    },
     {
       "in": "vendor",
       "name": "*.php",
