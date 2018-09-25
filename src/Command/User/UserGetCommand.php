@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 
-class UserRoleCommand extends CommandBase
+class UserGetCommand extends CommandBase
 {
     protected function configure()
     {
