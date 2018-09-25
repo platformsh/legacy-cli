@@ -22,7 +22,8 @@ class LsCommand extends CommandBase
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to a subdirectory')
             ->addOption('directories', 'd', InputOption::VALUE_NONE, 'Show directories only')
             ->addOption('files', 'f', InputOption::VALUE_NONE, 'Show files only')
-            ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"');
+            ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"')
+            ->addOption('commit', null, InputOption::VALUE_REQUIRED, 'The Git commit SHA');
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -34,7 +35,7 @@ class LsCommand extends CommandBase
     {
         $this->validateInput($input);
         try {
-            $tree = $this->api()->getTree($this->getSelectedEnvironment(), $input->getArgument('path'));
+            $tree = $this->api()->getTree($this->getSelectedEnvironment(), $input->getArgument('path'), $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',

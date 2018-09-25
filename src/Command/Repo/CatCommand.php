@@ -6,6 +6,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class CatCommand extends CommandBase
@@ -18,7 +19,8 @@ class CatCommand extends CommandBase
         $this
             ->setName('repo:cat') // 🐱
             ->setDescription('Read a file in the project repository')
-            ->addArgument('path', InputArgument::REQUIRED, 'The path to the file');
+            ->addArgument('path', InputArgument::REQUIRED, 'The path to the file')
+            ->addOption('commit', null, InputOption::VALUE_REQUIRED, 'The Git commit SHA');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addExample(
@@ -35,7 +37,7 @@ class CatCommand extends CommandBase
         $this->validateInput($input);
         $path = $input->getArgument('path');
         try {
-            $content = $this->api()->readFile($path, $this->getSelectedEnvironment());
+            $content = $this->api()->readFile($path, $this->getSelectedEnvironment(), $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',
