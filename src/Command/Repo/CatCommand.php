@@ -20,7 +20,7 @@ class CatCommand extends CommandBase
             ->setName('repo:cat') // 🐱
             ->setDescription('Read a file in the project repository')
             ->addArgument('path', InputArgument::REQUIRED, 'The path to the file')
-            ->addOption('commit', null, InputOption::VALUE_REQUIRED, 'The Git commit SHA');
+            ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, LsCommand::COMMIT_OPTION_HELP);
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addExample(

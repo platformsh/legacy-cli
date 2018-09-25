@@ -11,6 +11,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LsCommand extends CommandBase
 {
+    const COMMIT_OPTION_HELP = 'The Git commit SHA. This can also accept the "HEAD" substitution, and a caret (^) suffix to denote parent commits. No other "git rev-list" syntax is supported.';
+
     /**
      * {@inheritdoc}
      */
@@ -23,7 +25,7 @@ class LsCommand extends CommandBase
             ->addOption('directories', 'd', InputOption::VALUE_NONE, 'Show directories only')
             ->addOption('files', 'f', InputOption::VALUE_NONE, 'Show files only')
             ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"')
-            ->addOption('commit', null, InputOption::VALUE_REQUIRED, 'The Git commit SHA');
+            ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, self::COMMIT_OPTION_HELP);
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
