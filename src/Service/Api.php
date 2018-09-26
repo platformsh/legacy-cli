@@ -6,12 +6,12 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Git\Commit;
 use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
@@ -730,25 +730,27 @@ class Api
      *
      * @param string      $filename
      * @param Environment $environment
+     * @param string|null $commitSha
      *
      * @throws \RuntimeException on error.
      *
      * @return string|false
      *   The raw contents of the file, or false if the file is not found.
      */
-    public function readFile($filename, Environment $environment)
+    public function readFile($filename, Environment $environment, $commitSha = null)
     {
-        $cacheKey = implode(':', ['raw', $environment->project, $filename]);
+        $commitSha = $this->normalizeSha($environment, $commitSha);
+        $cacheKey = implode(':', ['raw', $environment->project, $filename, $commitSha]);
         $data = $this->cache->fetch($cacheKey);
-        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
+        if (!is_array($data)) {
             // Find the file.
-            if (($tree = $this->getTree($environment, dirname($filename)))
+            if (($tree = $this->getTree($environment, dirname($filename), $commitSha))
                 && ($blob = $tree->getBlob(basename($filename)))) {
                 $raw = $blob->getRawContent();
             } else {
                 $raw = false;
             }
-            $data = ['raw' => $raw, 'commit_sha' => $environment->head_commit];
+            $data = ['raw' => $raw];
             // Skip caching if the file is bigger than 100 KiB.
             if ($raw === false || strlen($raw) <= 102400) {
                 $this->cache->save($cacheKey, $data);
@@ -763,31 +765,30 @@ class Api
      *
      * @param Environment $environment
      * @param string      $path
+     * @param string|null $commitSha
      *
      * @return Tree|false
      */
-    public function getTree(Environment $environment, $path = '.')
+    public function getTree(Environment $environment, $path = '.', $commitSha = null)
     {
-        $cacheKey = implode(':', ['tree', $environment->project, $path]);
+        $normalizedSha = $this->normalizeSha($environment, $commitSha);
+        $cacheKey = implode(':', ['tree', $environment->project, $path, $commitSha]);
         $data = $this->cache->fetch($cacheKey);
-        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
-            if (!$head = $environment->getHeadCommit()) {
-                // This is unlikely to happen, unless the project doesn't have the
-                // Git Data API available at all (e.g. old Git version).
-                throw new ApiFeatureMissingException(sprintf(
-                    'The project %s does not support the Git Data API.',
-                    $environment->project
+        if (!is_array($data)) {
+            if (!$commit = $this->getCommit($environment, $normalizedSha)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Commit not found: %s',
+                    $commitSha
                 ));
             }
-            if (!$headTree = $head->getTree()) {
-                // This is even less likely to happen.
-                throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
+            if (!$rootTree = $commit->getTree()) {
+                // This is unlikely to happen.
+                throw new \RuntimeException('Failed to get tree for commit: ' . $commit->id);
             }
-            $tree = $headTree->getTree($path);
+            $tree = $rootTree->getTree($path);
             $this->cache->save($cacheKey, [
                 'tree' => $tree ? $tree->getData() : null,
                 'uri' => $tree ? $tree->getUri() : null,
-                'commit_sha' => $environment->head_commit,
             ]);
         } elseif (empty($data['tree'])) {
             return false;
@@ -796,6 +797,69 @@ class Api
         }
 
         return $tree;
+    }
+
+    /**
+     * Normalize a commit SHA for API and caching purposes.
+     *
+     * @param \Platformsh\Client\Model\Environment $environment
+     * @param string|null                          $sha
+     *
+     * @return string
+     */
+    private function normalizeSha(Environment $environment, $sha = null)
+    {
+        if ($sha === null) {
+            return $environment->head_commit;
+        }
+        if (strpos($sha, 'HEAD') === 0) {
+            $sha = $environment->head_commit . substr($sha, 4);
+        }
+
+        return $sha;
+    }
+
+    /**
+     * Get a Git Commit object for an environment.
+     *
+     * @param \Platformsh\Client\Model\Environment $environment
+     * @param string|null                          $sha
+     *
+     * @return Commit|false
+     */
+    private function getCommit(Environment $environment, $sha = null)
+    {
+        $sha = $this->normalizeSha($environment, $sha);
+
+        // For commits containing ^, count the number of parents to go back.
+        $parents = [];
+        if (($caretPos = strpos($sha, '^')) !== false) {
+            preg_match_all('#\^([0-9]*)#', $sha, $matches);
+            foreach ($matches[1] as $match) {
+                $parents[] = intval($match) ?: 1;
+            }
+            $sha = substr($sha, 0, $caretPos);
+        }
+
+        // Get the first commit.
+        $baseUrl = Project::getProjectBaseFromUrl($environment->getUri()) . '/git/commits';
+        $client = $this->getHttpClient();
+        $commit = Commit::get($sha, $baseUrl, $client);
+        if (!$commit) {
+            return false;
+        }
+
+        // Fetch parent commits recursively.
+        while ($commit !== false && count($parents)) {
+            $parent = array_shift($parents);
+            if (isset($commit->parents[$parent - 1])) {
+                $commit = Commit::get($commit->parents[$parent - 1], $baseUrl, $client);
+            } else {
+                return false;
+            }
+        }
+
+        return $commit;
     }
 
     /**
