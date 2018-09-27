@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "5f2d76a8d5a0168870a32fce55738cf5af4d0718",
-        "sha256": "561ed33bd3fc5869fc9f65419aeb600f2cee439624183865b2370a6e31c7bf00",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.34.3/platform.phar",
-        "version": "3.34.3",
+        "sha1": "c0fcaf9b5da0fdcb2b75e64a5d012912f0e41069",
+        "sha256": "a2047d104f5d1e658ce2e54a76e1295bcc2a39d03c518f5d2ea7dc768a66f2cf",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.35.0/platform.phar",
+        "version": "3.35.0",
         "php": {
             "min": "5.5.9"
         },
@@ -137,6 +137,11 @@
                 "notes": "New features:\n\n* Add `service:list` (`services`) command.\n* Add --depth option to `project:get` (`get`) command (allow shallow clones).\n* Add --rebase option to the `environment:synchronize` (`sync`) command.\n* Add --prune-branches option for GitHub and GitLab integrations.\n* Add --worker option to the `environment:ssh` (`ssh`) command.\n\nOther changes:\n\n* When running pg_dump via the `db:dump` command, use the --no-owner flag.\n* Fix the `--all` option in the `list` command.\n* Prefer .bashrc over .bash_profile in the installer (self:install command).\n* Remove legacy API workaround in `integration:update`.\n* Update user commands for upstream API fix (improves performance).",
                 "show from": "3.33.0",
                 "hide from": "3.34.0"
+            },
+            {
+                "notes": "New features:\n\n* Add commit:list (commits) and commit:get commands for viewing commits via the\n  API.\n* Add --commit (-c) option to repo:cat and repo:ls commands.\n* Add Bitbucket integration support.\n\nBug fixes:\n\n* Fix drush alias group name prepending bug. Custom aliases were having the\n  alias group name prepended every time they were recreated, e.g. \"@foo.bar\"\n  would become \"@foo.foo.bar\".\n* Allow changing the value of a project-level sensitive variable.\n\nOther changes:\n\n* Add explanations for \"Operation not available\" on environment actions.\n* Add \"alias p=platform\" in the shell config.\n* Add additional help for the mount:size command.\n* Clean up --pipe output in the user:get command.\n* Show hidden service commands.",
+                "show from": "3.34.3",
+                "hide from": "3.35.0"
             }
         ]
     }
