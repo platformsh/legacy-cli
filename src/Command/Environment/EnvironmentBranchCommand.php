@@ -87,6 +87,12 @@ class EnvironmentBranchCommand extends CommandBase
                 "Operation not available: The environment " . $this->api()->getEnvironmentLabel($parentEnvironment, 'error') . " can't be branched."
             );
 
+            if ($parentEnvironment->is_dirty) {
+                $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
+            } elseif (!$parentEnvironment->isActive()) {
+                $this->stdErr->writeln('The environment is not active.');
+            }
+
             return 1;
         }
 

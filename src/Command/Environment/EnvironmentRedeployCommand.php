@@ -25,6 +25,18 @@ class EnvironmentRedeployCommand extends CommandBase
 
         $environment = $this->getSelectedEnvironment();
 
+        if (!$environment->operationAvailable('redeploy', true)) {
+            $this->stdErr->writeln(
+                "Operation not available: The environment " . $this->api()->getEnvironmentLabel($environment, 'error') . " can't be redeployed."
+            );
+
+            if (!$environment->isActive()) {
+                $this->stdErr->writeln('The environment is not active.');
+            }
+
+            return 1;
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         if (!$questionHelper->confirm('Are you sure you want to redeploy the environment <comment>' . $environment->id . '</comment>?')) {

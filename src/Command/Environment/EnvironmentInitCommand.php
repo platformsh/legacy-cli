@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Client\Exception\OperationUnavailableException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -44,17 +43,20 @@ class EnvironmentInitCommand extends CommandBase
             return 1;
         }
 
-        try {
-            $activity = $environment->initialize($profile, $url);
-        } catch (OperationUnavailableException $e) {
-            if ($environment->has_code) {
-                $this->stdErr->writeln(sprintf('The environment <error>%s</error> cannot be initialized: it already contains code.', $environment->id));
+        if (!$environment->operationAvailable('initialize', true)) {
+            $this->stdErr->writeln(sprintf(
+                "Operation not available: The environment <error>%s</error> can't be initialized.",
+                $environment->id
+            ));
 
-                return 1;
+            if ($environment->has_code) {
+                $this->stdErr->writeln('The environment already contains code.');
             }
 
-            throw $e;
+            return 1;
         }
+
+        $activity = $environment->initialize($profile, $url);
 
         $this->api()->clearEnvironmentsCache($environment->project);
 

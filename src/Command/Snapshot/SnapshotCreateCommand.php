@@ -34,6 +34,17 @@ class SnapshotCreateCommand extends CommandBase
                 "Operation not available: cannot create a snapshot of <error>$environmentId</error>"
             );
 
+            if ($selectedEnvironment->is_dirty) {
+                $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
+            } elseif (!$selectedEnvironment->isActive()) {
+                $this->stdErr->writeln('The environment is not active.');
+            }
+
+            $access = $selectedEnvironment->getUser($this->api()->getMyAccount()['id']);
+            if ($access->role !== 'admin') {
+                $this->stdErr->writeln('You must be an administrator to create a snapshot.');
+            }
+
             return 1;
         }
 
