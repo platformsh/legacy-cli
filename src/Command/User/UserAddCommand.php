@@ -259,14 +259,14 @@ class UserAddCommand extends CommandBase
             $activities = $result->getActivities();
             /** @var ProjectAccess $projectAccess */
             $projectAccess = $result->getEntity();
-            $uuid = $projectAccess->id;
+            $userId = $projectAccess->id;
         } elseif ($existingProjectAccess->role !== $desiredProjectRole) {
             $this->stdErr->writeln("Setting the user's project role to: $desiredProjectRole");
             $result = $existingProjectAccess->update(['role' => $desiredProjectRole]);
             $activities = $result->getActivities();
-            $uuid = $existingProjectAccess->id;
+            $userId = $existingProjectAccess->id;
         } else {
-            $uuid = $existingProjectAccess->id;
+            $userId = $existingProjectAccess->id;
             $activities = [];
         }
 
@@ -274,7 +274,7 @@ class UserAddCommand extends CommandBase
         if ($desiredProjectRole !== ProjectAccess::ROLE_ADMIN) {
             foreach ($this->api()->getEnvironments($project) as $environmentId => $environment) {
                 $role = isset($desiredEnvironmentRoles[$environmentId]) ? $desiredEnvironmentRoles[$environmentId] : 'none';
-                $access = $environment->getUser($uuid);
+                $access = $environment->getUser($userId);
                 if ($role === 'none') {
                     if ($access) {
                         $this->stdErr->writeln("Removing the user from the environment <info>$environmentId</info>");
@@ -291,7 +291,7 @@ class UserAddCommand extends CommandBase
                         $result = $access->update(['role' => $role]);
                     } else {
                         $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
-                        $result = $environment->addUser($uuid, $role);
+                        $result = $environment->addUser($userId, $role);
                     }
                 }
                 $activities = array_merge($activities, $result->getActivities());
