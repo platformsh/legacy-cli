@@ -76,13 +76,12 @@ class CommitListCommand extends CommandBase
         $progress->setMessage('Loading...');
         $progress->setFormat('%message% %current% (limit: %max%)');
         $progress->start($input->getOption('limit'));
-        for ($i = 1; $i <= $input->getOption('limit');) {
+        while (count($commits) < $input->getOption('limit')) {
             foreach (array_reverse($parent->parents) as $parentSha) {
                 if (isset($commits[$parentSha])) {
                     $parent = $commits[$parentSha];
                 } else {
                     $commits[$parentSha] = $parent = $gitData->getCommit($environment, $parentSha);
-                    $i++;
                     $progress->advance();
                 }
             }
