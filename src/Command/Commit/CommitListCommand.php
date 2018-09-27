@@ -76,12 +76,16 @@ class CommitListCommand extends CommandBase
         $progress->setMessage('Loading...');
         $progress->setFormat('%message% %current% (limit: %max%)');
         $progress->start($input->getOption('limit'));
-        for ($i = 1; $i <= $input->getOption('limit'); $i++) {
-            if (!isset($parent->parents[0])) {
-                break;
+        for ($i = 1; $i <= $input->getOption('limit');) {
+            foreach (array_reverse($parent->parents) as $parentSha) {
+                if (isset($commits[$parentSha])) {
+                    $parent = $commits[$parentSha];
+                } else {
+                    $commits[$parentSha] = $parent = $gitData->getCommit($environment, $parentSha);
+                    $i++;
+                    $progress->advance();
+                }
             }
-            $commits[] = $parent = $gitData->getCommit($environment, $parent->parents[0]);
-            $progress->advance();
         }
         $progress->clear();
 
@@ -92,7 +96,7 @@ class CommitListCommand extends CommandBase
         $rows = [];
         foreach ($commits as $commit) {
             $row = [];
-            $row[] = $formatter->format($commit->committer['date'], 'author.date');
+            $row[] = $formatter->format($commit->author['date'], 'author.date');
             $row[] = new AdaptiveTableCell($commit->sha, ['wrap' => false]);
             $row[] = $commit->author['name'];
             $row[] = $this->summarize($commit->message);
