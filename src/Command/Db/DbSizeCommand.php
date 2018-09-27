@@ -193,7 +193,9 @@ class DbSizeCommand extends CommandBase
         $servicesYamlFilename = $this->config()->get('service.project_config_dir') . '/services.yaml';
         $services = [];
         try {
-            $servicesYaml = $this->api()->readFile($servicesYamlFilename, $this->getSelectedEnvironment());
+            /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
+            $gitData = $this->getService('git_data_api');
+            $servicesYaml = $gitData->readFile($servicesYamlFilename, $this->getSelectedEnvironment());
         } catch (ApiFeatureMissingException $e) {
             $this->debug($e->getMessage());
             if ($projectRoot = $this->getProjectRoot()) {

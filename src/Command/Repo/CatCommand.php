@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,7 +21,7 @@ class CatCommand extends CommandBase
             ->setName('repo:cat') // 🐱
             ->setDescription('Read a file in the project repository')
             ->addArgument('path', InputArgument::REQUIRED, 'The path to the file')
-            ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, LsCommand::COMMIT_OPTION_HELP);
+            ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP);
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addExample(
@@ -37,7 +38,9 @@ class CatCommand extends CommandBase
         $this->validateInput($input);
         $path = $input->getArgument('path');
         try {
-            $content = $this->api()->readFile($path, $this->getSelectedEnvironment(), $input->getOption('commit'));
+            /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
+            $gitData = $this->getService('git_data_api');
+            $content = $gitData->readFile($path, $this->getSelectedEnvironment(), $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',

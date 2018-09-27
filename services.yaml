@@ -48,9 +48,13 @@ services:
         class:     '\Platformsh\Cli\Service\Git'
         arguments: ['@shell']
 
+    git_data_api:
+        class:     '\Platformsh\Cli\Service\GitDataApi'
+        arguments: ['@api']
+
     identifier:
         class:     '\Platformsh\Cli\Service\Identifier'
-        arguments: ['@config', '@api', '@output', '@cache']
+        arguments: ['@config', '@api', '@output']
 
     local.build:
         class:     '\Platformsh\Cli\Local\LocalBuild'
