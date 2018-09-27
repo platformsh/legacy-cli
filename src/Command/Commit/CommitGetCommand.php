@@ -32,8 +32,9 @@ class CommitGetCommand extends CommandBase
         PropertyFormatter::configureInput($definition);
 
         $this->addExample('Display the current commit on the environment');
+        $this->addExample('Display the previous commit', 'HEAD~');
         $this->addExample('Display the 3rd commit before the current one', 'HEAD~3');
-        $this->addExample('Display the second parent of the current commit (e.g. for merge commits)', "'HEAD^2'");
+        $this->addExample('Display the email address of the last commit author', '-P author.email');
     }
 
     /**
