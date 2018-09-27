@@ -193,7 +193,7 @@ class ProjectGetCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false)
+    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
     {
         if ($input->getOption('depth') !== null && !preg_match('/^[0-9]+$/', $input->getOption('depth'))) {
             throw new InvalidArgumentException('The --depth value must be an integer.');

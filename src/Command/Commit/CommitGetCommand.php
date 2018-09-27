@@ -41,13 +41,12 @@ class CommitGetCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $environment = $this->getSelectedEnvironment();
+        $this->validateInput($input, false, true);
 
         $commitSha = $input->getArgument('commit');
         /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
         $gitData = $this->getService('git_data_api');
-        $commit = $gitData->getCommit($environment, $commitSha);
+        $commit = $gitData->getCommit($this->getSelectedEnvironment(), $commitSha);
         if (!$commit) {
             if ($commitSha) {
                 $this->stdErr->writeln('Commit not found: <error>' . $commitSha . '</error>');

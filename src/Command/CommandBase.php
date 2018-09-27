@@ -744,8 +744,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *   environment.
      * @param bool $required
      *   Whether it's required to have an environment.
+     * @param bool $selectDefaultEnv
+     *   Whether to select a default environment.
      */
-    protected function selectEnvironment($environmentId = null, $required = true)
+    protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false)
     {
         $envPrefix = $this->config()->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
@@ -771,6 +773,15 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if ($environment = $this->getCurrentEnvironment($this->project)) {
             $this->environment = $environment;
             return;
+        }
+
+        if ($selectDefaultEnv) {
+            $environments = $this->api()->getEnvironments($this->project);
+            $defaultId = $this->api()->getDefaultEnvironmentId($environments);
+            if ($defaultId && isset($environments[$defaultId])) {
+                $this->environment = $environments[$defaultId];
+                return;
+            }
         }
 
         if ($required && isset($this->input) && $this->input->isInteractive()) {
@@ -900,10 +911,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * @param InputInterface  $input
-     * @param bool $envNotRequired
+     * @param InputInterface $input
+     * @param bool           $envNotRequired
+     * @param bool           $selectDefaultEnv
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false)
+    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
@@ -972,11 +984,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
-                $this->selectEnvironment($argument);
+                $this->selectEnvironment($argument, true, $selectDefaultEnv);
             }
         } elseif ($input->hasOption($envOptionName)) {
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
-            $this->selectEnvironment($environmentId, !$envNotRequired);
+            $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv);
         }
     }
 

@@ -44,7 +44,7 @@ class CommitListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, false, true);
         $environment = $this->getSelectedEnvironment();
 
         $startSha = $input->getArgument('commit');

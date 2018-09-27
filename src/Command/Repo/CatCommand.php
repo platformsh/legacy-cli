@@ -35,12 +35,14 @@ class CatCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, false, true);
+        $environment = $this->getSelectedEnvironment();
+
         $path = $input->getArgument('path');
         try {
             /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
             $gitData = $this->getService('git_data_api');
-            $content = $gitData->readFile($path, $this->getSelectedEnvironment(), $input->getOption('commit'));
+            $content = $gitData->readFile($path, $environment, $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',

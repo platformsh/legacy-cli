@@ -35,11 +35,13 @@ class LsCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, false, true);
+        $environment = $this->getSelectedEnvironment();
+
         try {
             /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
             $gitData = $this->getService('git_data_api');
-            $tree = $gitData->getTree($this->getSelectedEnvironment(), $input->getArgument('path'), $input->getOption('commit'));
+            $tree = $gitData->getTree($environment, $input->getArgument('path'), $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',

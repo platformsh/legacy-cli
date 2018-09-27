@@ -81,7 +81,7 @@ class ProjectDeleteCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false)
+    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
     {
         if ($projectId = $input->getArgument('project')) {
             if ($input->getOption('project')) {
