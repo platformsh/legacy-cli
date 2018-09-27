@@ -820,6 +820,36 @@ class Api
     }
 
     /**
+     * Parse the parents in a Git commit spec.
+     *
+     * @param string $sha
+     *
+     * @return int[]
+     *   A list of parents.
+     */
+    private function parseParents($sha)
+    {
+        if (!strpos($sha, '^') && !strpos($sha, '~')) {
+            return [];
+        }
+        preg_match_all('#[\^~][0-9]*#', $sha, $matches);
+        $parents = [];
+        foreach ($matches[0] as $match) {
+            $sign = $match[0];
+            $number = intval(substr($match, 1) ?: 1);
+            if ($sign === '~') {
+                for ($i = 1; $i <= $number; $i++) {
+                    $parents[] = 1;
+                }
+            } elseif ($sign === '^') {
+                $parents[] = intval($number);
+            }
+        }
+
+        return $parents;
+    }
+
+    /**
      * Get a Git Commit object for an environment.
      *
      * @param \Platformsh\Client\Model\Environment $environment
@@ -831,15 +861,8 @@ class Api
     {
         $sha = $this->normalizeSha($environment, $sha);
 
-        // For commits containing ^, count the number of parents to go back.
-        $parents = [];
-        if (($caretPos = strpos($sha, '^')) !== false) {
-            preg_match_all('#\^([0-9]*)#', $sha, $matches);
-            foreach ($matches[1] as $match) {
-                $parents[] = intval($match) ?: 1;
-            }
-            $sha = substr($sha, 0, $caretPos);
-        }
+        $parents = $this->parseParents($sha);
+        $sha = preg_replace('/[\^~].*$/', '', $sha);
 
         // Get the first commit.
         $baseUrl = Project::getProjectBaseFromUrl($environment->getUri()) . '/git/commits';

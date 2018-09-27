@@ -11,7 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LsCommand extends CommandBase
 {
-    const COMMIT_OPTION_HELP = 'The Git commit SHA. This can also accept the "HEAD" substitution, and a caret (^) suffix to denote parent commits. No other "git rev-list" syntax is supported.';
+    const COMMIT_OPTION_HELP = 'The Git commit SHA. This can also accept the "HEAD" substitution, and caret (^) or tilde (~) suffixes to denote parent commits. No other "git rev-list" syntax is supported.';
 
     /**
      * {@inheritdoc}
