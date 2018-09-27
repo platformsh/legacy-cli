@@ -139,7 +139,7 @@
                 "hide from": "3.34.0"
             },
             {
-                "notes": "New features:\n\n* Add commit:list (commits) and commit:get commands for viewing commits via the\n  API.\n* Add --commit (-c) option to repo:cat and repo:ls commands.\n* Add Bitbucket integration support.\n\nBug fixes:\n\n* Fix drush alias group name prepending bug. Custom aliases were having the\n  alias group name prepended every time they were recreated, e.g. \"@foo.bar\"\n  would become \"@foo.foo.bar\".\n* Allow changing the value of a project-level sensitive variable.\n\nOther changes:\n\n* Add explanations for \"Operation not available\" on environment actions.\n* Add \"alias p=platform\" in the shell config.\n* Add additional help for the mount:size command.\n* Clean up --pipe output in the user:get command.\n* Show hidden service commands.",
+                "notes": "New features:\n\n* Add commit:list (commits) and commit:get commands for viewing commits via the\n  API.\n* Add --commit (-c) option to repo:cat and repo:ls commands.\n* Add Bitbucket integration support.\n\nBug fixes:\n\n* Fix drush alias group name prepending bug. Custom aliases were having the\n  alias group name prepended every time they were recreated, e.g. \"@foo.bar\"\n  would become \"@foo.foo.bar\".\n* Allow changing the value of a project-level sensitive variable.\n\nOther changes:\n\n* Add explanations for \"Operation not available\" on environment actions.\n* Add additional help for the mount:size command.\n* Clean up --pipe output in the user:get command.\n* Show hidden service commands.",
                 "show from": "3.34.0",
                 "hide from": "3.35.0"
             }
