@@ -90,6 +90,9 @@ certificate
   certificate:delete                        Delete a certificate from the project
   certificate:get                           View a certificate
   certificate:list (certificates)           List project certificates
+commit
+  commit:get                                Show commit details
+  commit:list (commits)                     List commits
 db
   db:dump                                   Create a local dump of the remote database
   db:size                                   Estimate the disk usage of a database

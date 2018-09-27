@@ -2,18 +2,18 @@
 
 namespace Platformsh\Cli\Tests;
 
-use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\GitDataApi;
 
-class ApiServiceTest extends \PHPUnit_Framework_TestCase
+class GitDataApiServiceTest extends \PHPUnit_Framework_TestCase
 {
 
     /**
-     * Test Api::parseParents().
+     * Test GitDataApi::parseParents().
      */
     public function testParseParents()
     {
-        $api = new Api();
-        $reflection = new \ReflectionClass($api);
+        $gitData = new GitDataApi();
+        $reflection = new \ReflectionClass($gitData);
         $method = $reflection->getMethod('parseParents');
         $method->setAccessible(true);
 
@@ -26,7 +26,7 @@ class ApiServiceTest extends \PHPUnit_Framework_TestCase
 
         $actual = [];
         foreach (array_keys($expected) as $spec) {
-            $actual[$spec] = $method->invoke($api, $spec);
+            $actual[$spec] = $method->invoke($gitData, $spec);
         }
 
         $this->assertEquals($expected, $actual);

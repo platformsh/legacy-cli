@@ -6,7 +6,6 @@
 
 namespace Platformsh\Cli\Service;
 
-use Doctrine\Common\Cache\Cache;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -26,15 +25,14 @@ class Identifier
      * @param \Platformsh\Cli\Service\Config|null                    $config
      * @param \Platformsh\Cli\Service\Api|null                       $api
      * @param \Symfony\Component\Console\Output\OutputInterface|null $output
-     * @param \Doctrine\Common\Cache\Cache|null                      $cache
      */
-    public function __construct(Config $config = null, Api $api = null, OutputInterface $output = null, Cache $cache = null)
+    public function __construct(Config $config = null, Api $api = null, OutputInterface $output = null)
     {
         $this->config = $config ?: new Config();
         $this->api = $api ?: new Api();
         $output = $output ?: new NullOutput();
         $this->stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
-        $this->cache = $cache;
+        $this->cache = $this->api->getCache();
     }
 
     /**

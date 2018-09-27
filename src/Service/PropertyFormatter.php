@@ -50,6 +50,8 @@ class PropertyFormatter implements InputConfiguringInterface
                 }
                 break;
 
+            case 'author.date':
+            case 'committer.date':
             case 'created_at':
             case 'updated_at':
             case 'expires_at':
