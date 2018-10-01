@@ -79,6 +79,7 @@ service:
 # This can be overridden in the user config file.
 api:
   oauth2_client_id: 'platform-cli'
+  project_ttl: 3600
   projects_ttl: 3600
   environments_ttl: 600
   users_ttl: 3600
