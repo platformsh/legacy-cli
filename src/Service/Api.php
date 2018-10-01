@@ -14,6 +14,7 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
+use Platformsh\Client\Model\Subscription;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -244,7 +245,7 @@ class Api
      */
     public function getProjects($refresh = null)
     {
-        $cacheKey = sprintf('%s:projects', $this->sessionId);
+        $cacheKey = sprintf('%s:user-projects', $this->sessionId);
 
         /** @var Project[] $projects */
         $projects = [];
@@ -254,21 +255,24 @@ class Api
         if ($refresh === false && !$cached) {
             return [];
         } elseif ($refresh || !$cached) {
-            foreach ($this->getClient()->getProjects() as $project) {
-                $projects[$project->id] = $project;
+            $accountInfo = $this->getMyAccount((bool) $refresh);
+            foreach (isset($accountInfo['projects']) ? $accountInfo['projects'] : [] as $projectData) {
+                if ($project = $this->getProjectFromUrl($projectData['endpoint'], $refresh)) {
+                    $projects[$project->id] = $project;
+                }
             }
 
             $cachedProjects = [];
             foreach ($projects as $id => $project) {
-                $cachedProjects[$id] = $project->getData();
-                $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
+                $cachedProjects[$id]['data'] = $project->getData();
+                $cachedProjects[$id]['uri'] = $project->getUri();
             }
 
             $this->cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
         } else {
             $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $id => $data) {
-                $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
+                $projects[$id] = new Project($data['data'], $data['uri'], $guzzleClient);
             }
         }
 
@@ -286,11 +290,13 @@ class Api
      */
     public function getProject($id, $host = null, $refresh = null)
     {
-        // Find the project in the user's main project list. This uses a
+        // Find the project in the user's account list of projects. This uses a
         // separate cache.
-        $projects = $this->getProjects($refresh);
-        if (isset($projects[$id])) {
-            return $projects[$id];
+        $accountInfo = $this->getMyAccount((bool) $refresh);
+        foreach (isset($accountInfo['projects']) ? $accountInfo['projects'] : [] as $projectData) {
+            if ($projectData['id'] === $id) {
+                return $this->getProjectFromUrl($projectData['endpoint'], $refresh);
+            }
         }
 
         // Find the project directly.
@@ -299,21 +305,48 @@ class Api
         if ($refresh || !$cached) {
             $scheme = 'https';
             if ($host !== null && (($pos = strpos($host, '//')) !== false)) {
-                $scheme = parse_url($host, PHP_URL_SCHEME);
-                $host = substr($host, $pos + 2);
+                $url = sprintf('https://%s/api/projects/%s', $host, $id);
+                $project = $this->getProjectFromUrl($url, $refresh);
+            } else {
+                $project = $this->getClient()
+                    ->getProject($id, $host, $scheme !== 'http');
             }
-            $project = $this->getClient()
-                ->getProject($id, $host, $scheme !== 'http');
             if ($project) {
                 $toCache = $project->getData();
                 $toCache['_endpoint'] = $project->getUri(true);
-                $this->cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
+                $this->cache->save($cacheKey, $toCache, $this->config->get('api.project_ttl'));
             }
         } else {
             $guzzleClient = $this->getHttpClient();
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
+        }
+
+        return $project;
+    }
+
+    /**
+     * Get a (cached) project from a HAL link.
+     *
+     * @param string    $url
+     * @param bool|null $refresh
+     *
+     * @return Project|false
+     */
+    public function getProjectFromUrl($url, $refresh = null)
+    {
+        $cacheKey = sprintf('project:%s', $url);
+        $cached = $this->cache->fetch($cacheKey);
+        $project = false;
+        if (!$cached || $refresh) {
+            $project = Project::get($url, null, $this->getHttpClient());
+            if ($project) {
+                $cached = ['data' => $project->getData(), 'uri' => $project->getUri()];
+                $this->cache->save($cacheKey, $cached, $this->config->get('api.project_ttl'));
+            }
+        } elseif ($cached) {
+            $project = new Project($cached['data'], $cached['uri'], $this->getHttpClient(), true);
         }
 
         return $project;
