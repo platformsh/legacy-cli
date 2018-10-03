@@ -75,15 +75,16 @@ class CommitListCommand extends CommandBase
         $progress = new ProgressBar($output->isDecorated() ? $this->stdErr : new NullOutput());
         $progress->setMessage('Loading...');
         $progress->setFormat('%message% %current% (limit: %max%)');
-        $progress->start($input->getOption('limit'));
-        while (count($commits) < $input->getOption('limit')) {
-            foreach (array_reverse($parent->parents) as $parentSha) {
-                if (isset($commits[$parentSha])) {
-                    $parent = $commits[$parentSha];
-                } else {
-                    $commits[$parentSha] = $parent = $gitData->getCommit($environment, $parentSha);
-                    $progress->advance();
+        $limit = $input->getOption('limit');
+        $progress->start($limit);
+        for ($current = $parent;
+             count($current->parents) && count($commits) < $limit;) {
+            foreach (array_reverse($current->parents) as $parentSha) {
+                if (!isset($commits[$parentSha])) {
+                    $commits[$parentSha] = $gitData->getCommit($environment, $parentSha);
                 }
+                $current = $commits[$parentSha];
+                $progress->advance();
             }
         }
         $progress->clear();
