@@ -7,6 +7,7 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Commit;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -50,8 +51,8 @@ class CommitListCommand extends CommandBase
         $startSha = $input->getArgument('commit');
         /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
         $gitData = $this->getService('git_data_api');
-        $parent = $gitData->getCommit($environment, $startSha);
-        if (!$parent) {
+        $startCommit = $gitData->getCommit($environment, $startSha);
+        if (!$startCommit) {
             if ($startSha) {
                 $this->stdErr->writeln('Commit not found: <error>' . $startSha . '</error>');
             } else {
@@ -61,10 +62,7 @@ class CommitListCommand extends CommandBase
             return 1;
         }
 
-        /** @var Commit[] $commits */
-        $commits = [$parent];
-
-        if ($output->isDecorated()) {
+        if ($this->stdErr->isDecorated()) {
             $this->stdErr->writeln(sprintf(
                 'Commits on the project %s, environment %s:',
                 $this->api()->getProjectLabel($this->getSelectedProject()),
@@ -72,21 +70,7 @@ class CommitListCommand extends CommandBase
             ));
         }
 
-        $progress = new ProgressBar($output->isDecorated() ? $this->stdErr : new NullOutput());
-        $progress->setMessage('Loading...');
-        $progress->setFormat('%message% %current% (limit: %max%)');
-        $progress->start($input->getOption('limit'));
-        while (count($commits) < $input->getOption('limit')) {
-            foreach (array_reverse($parent->parents) as $parentSha) {
-                if (isset($commits[$parentSha])) {
-                    $parent = $commits[$parentSha];
-                } else {
-                    $commits[$parentSha] = $parent = $gitData->getCommit($environment, $parentSha);
-                    $progress->advance();
-                }
-            }
-        }
-        $progress->clear();
+        $commits = $this->loadCommitList($environment, $startCommit, $input->getOption('limit'));
 
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
@@ -108,6 +92,45 @@ class CommitListCommand extends CommandBase
         $table->render($rows, $header);
 
         return 0;
+    }
+
+    /**
+     * Load parent commits, recursively, up to the limit.
+     *
+     * @param \Platformsh\Client\Model\Environment $environment
+     * @param \Platformsh\Client\Model\Git\Commit  $startCommit
+     * @param int                                  $limit
+     *
+     * @return \Platformsh\Client\Model\Git\Commit[]
+     */
+    private function loadCommitList(Environment $environment, Commit $startCommit, $limit = 10)
+    {
+        /** @var Commit[] $commits */
+        $commits = [$startCommit];
+        if (!count($startCommit->parents) || $limit === 1) {
+            return $commits;
+        }
+
+        /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
+        $gitData = $this->getService('git_data_api');
+
+        $progress = new ProgressBar($this->stdErr->isDecorated() ? $this->stdErr : new NullOutput());
+        $progress->setMessage('Loading...');
+        $progress->setFormat('%message% %current% (limit: %max%)');
+        $progress->start($limit);
+        for ($currentCommit = $startCommit;
+             count($currentCommit->parents) && count($commits) < $limit;) {
+            foreach (array_reverse($currentCommit->parents) as $parentSha) {
+                if (!isset($commits[$parentSha])) {
+                    $commits[$parentSha] = $gitData->getCommit($environment, $parentSha);
+                }
+                $currentCommit = $commits[$parentSha];
+                $progress->advance();
+            }
+        }
+        $progress->clear();
+
+        return $commits;
     }
 
     /**

@@ -67,6 +67,11 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
+            if (!$this->getProjectRoot()) {
+                $this->stdErr->writeln("The environment <comment>$branchName</comment> already exists.");
+
+                return 1;
+            }
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             $checkout = $questionHelper->confirm(

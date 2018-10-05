@@ -335,7 +335,11 @@ abstract class IntegrationCommandBase extends CommandBase
                 ],
             ];
             $payload = [
-                'description' => 'Platform.sh: ' . $this->getSelectedProject()->id,
+                'description' => sprintf(
+                    '%s: %s',
+                    $this->config()->get('service.name'),
+                    $this->getSelectedProject()->id
+                ),
                 'url' => $integration->getLink('#hook'),
                 'active' => true,
                 'events' => [
