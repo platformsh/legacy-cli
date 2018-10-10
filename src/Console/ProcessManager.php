@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpComposerExtensionStubsInspection */
 declare(strict_types=1);
 
 namespace Platformsh\Cli\Console;

@@ -106,6 +106,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function isTerminal($descriptor): bool
     {
+        /** @noinspection PhpComposerExtensionStubsInspection */
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
     }
 }

@@ -7,26 +7,28 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class CatCommand extends CommandBase
 {
     protected static $defaultName = 'repo:cat'; // 🐱
 
-    private $api;
     private $config;
+    private $gitDataApi;
     private $selector;
 
     public function __construct(
-        Api $api,
         Config $config,
+        GitDataApi $gitDataApi,
         Selector $selector
     ) {
-        $this->api = $api;
         $this->config = $config;
+        $this->gitDataApi = $gitDataApi;
         $this->selector = $selector;
         parent::__construct();
     }
@@ -37,7 +39,8 @@ class CatCommand extends CommandBase
     protected function configure()
     {
         $this->setDescription('Read a file in the project repository')
-            ->addArgument('path', InputArgument::REQUIRED, 'The path to the file');
+            ->addArgument('path', InputArgument::REQUIRED, 'The path to the file')
+            ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP);
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
@@ -57,7 +60,7 @@ class CatCommand extends CommandBase
         $environment = $this->selector->getSelection($input)->getEnvironment();
         $path = $input->getArgument('path');
         try {
-            $content = $this->api->readFile($path, $environment);
+            $content = $this->gitDataApi->readFile($path, $environment, $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',

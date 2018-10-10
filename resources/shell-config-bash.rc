@@ -5,6 +5,12 @@ if HOOK=$(platform _completion -g -p platform 2>/dev/null); then
     . <(echo "$HOOK") 2>/dev/null
 fi
 
+# Alias: make the CLI available via "p", if a command with that name doesn't
+# already exist.
+if ! command -v p >/dev/null; then
+ alias p=platform
+fi
+
 # Alias: run Drush commands on the local environment, from any directory.
 platform_local_drush() {
     local GROUP

@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,21 +17,20 @@ class LsCommand extends CommandBase
 {
     protected static $defaultName = 'repo:ls';
 
-    private $api;
     private $config;
+    private $gitDataApi;
     private $selector;
 
     public function __construct(
-        Api $api,
         Config $config,
+        GitDataApi $gitDataApi,
         Selector $selector
     ) {
-        $this->api = $api;
         $this->config = $config;
+        $this->gitDataApi = $gitDataApi;
         $this->selector = $selector;
         parent::__construct();
     }
-
 
     /**
      * {@inheritdoc}
@@ -42,12 +41,12 @@ class LsCommand extends CommandBase
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to a subdirectory')
             ->addOption('directories', 'd', InputOption::VALUE_NONE, 'Show directories only')
             ->addOption('files', 'f', InputOption::VALUE_NONE, 'Show files only')
-            ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"');
+            ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"')
+            ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP);
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
-
     }
 
     /**
@@ -57,7 +56,7 @@ class LsCommand extends CommandBase
     {
         $environment = $this->selector->getSelection($input)->getEnvironment();
         try {
-            $tree = $this->api->getTree($environment, $input->getArgument('path'));
+            $tree = $this->gitDataApi->getTree($environment, $input->getArgument('path'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',

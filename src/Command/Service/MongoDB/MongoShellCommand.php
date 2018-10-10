@@ -39,7 +39,6 @@ class MongoShellCommand extends CommandBase
     {
         $this->setAliases(['mongo']);
         $this->setDescription('Use the MongoDB shell');
-        $this->setHidden(true);
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
 
         $definition = $this->getDefinition();

@@ -267,7 +267,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
      */
     private function splitProjectList($list)
     {
-        return array_unique(preg_split('/[,\s]+/', $list) ?: []);
+        return array_filter(array_unique(preg_split('/[,\s]+/', $list) ?: []));
     }
 
     /**

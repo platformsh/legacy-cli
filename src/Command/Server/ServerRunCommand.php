@@ -200,7 +200,8 @@ class ServerRunCommand extends ServerCommandBase
         try {
             $process->wait();
         } catch (RuntimeException $e) {
-            if (strpos($e->getMessage(), '"' . SIGTERM . '"')) {
+            // 15 = SIGTERM
+            if (strpos($e->getMessage(), '"15"')) {
                 $this->stdErr->writeln('The server was stopped');
                 return 1;
             }

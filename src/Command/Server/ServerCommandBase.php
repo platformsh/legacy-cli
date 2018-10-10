@@ -67,6 +67,7 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function isProcessDead($pid)
     {
+        /** @noinspection PhpComposerExtensionStubsInspection */
         return function_exists('posix_kill') && !posix_kill($pid, 0);
     }
 
@@ -157,8 +158,10 @@ abstract class ServerCommandBase extends CommandBase
     {
         $success = true;
         if ($pid && function_exists('posix_kill')) {
+            /** @noinspection PhpComposerExtensionStubsInspection */
             $success = posix_kill($pid, SIGTERM);
             if (!$success) {
+                /** @noinspection PhpComposerExtensionStubsInspection */
                 $this->stdErr->writeln(sprintf(
                     'Failed to kill process <error>%d</error> (POSIX error %s)',
                     $pid,

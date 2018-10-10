@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Service;
 
 use Platformsh\Cli\Command\CommandBase;
@@ -38,7 +40,6 @@ class ServiceListCommand extends CommandBase
     protected function configure()
     {
         $this->setAliases(['services'])
-            ->setHidden(true)
             ->setDescription('List services in the project')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 

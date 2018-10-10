@@ -39,6 +39,20 @@ class PropertyFormatter implements InputConfiguringInterface
             case 'token':
                 return '******';
 
+            case 'addon_credentials':
+                if (is_array($value) && isset($value['shared_secret'])) {
+                    $value['shared_secret'] = '******';
+                }
+                break;
+
+            case 'app_credentials':
+                if (is_array($value) && isset($value['secret'])) {
+                    $value['secret'] = '******';
+                }
+                break;
+
+            case 'author.date':
+            case 'committer.date':
             case 'created_at':
             case 'updated_at':
             case 'expires_at':

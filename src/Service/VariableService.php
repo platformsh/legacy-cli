@@ -281,7 +281,7 @@ class VariableService
     {
         return [
             'none' => 'No prefix: The variable will be part of <comment>$' . $this->config->get('service.env_prefix') . 'VARIABLES</comment>.',
-            'env' => 'env: The variable will be exposed directly, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
+            'env:' => 'env: The variable will be exposed directly, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
         ];
     }
 }

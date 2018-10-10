@@ -62,6 +62,16 @@ class IntegrationAddCommand extends CommandBase
         $values = $this->integrationService->getForm()
                        ->resolveOptions($input, $this->stdErr, $this->questionHelper);
 
+        // Validate credentials for new Bitbucket integrations.
+        if (isset($values['type']) && $values['type'] === 'bitbucket' && isset($values['app_credentials'])) {
+            $result = $this->validateBitbucketCredentials($values['app_credentials']);
+            if ($result !== true) {
+                $this->stdErr->writeln($result);
+
+                return 1;
+            }
+        }
+
         // Omit all empty, non-required fields when creating a new integration.
         foreach ($this->integrationService->getForm()->getFields() as $name => $field) {
             if (isset($values[$name]) && !$field->isRequired() && $field->isEmpty($values[$name])) {
@@ -76,7 +86,7 @@ class IntegrationAddCommand extends CommandBase
         /** @noinspection PhpUnhandledExceptionInspection */
         $integration = $result->getEntity();
 
-        $this->integrationService->ensureHooks($integration);
+        $this->integrationService->ensureHooks($integration, $project);
 
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 

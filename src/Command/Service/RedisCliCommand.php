@@ -39,7 +39,6 @@ class RedisCliCommand extends CommandBase
     {
         $this->setAliases(['redis']);
         $this->setDescription('Access the Redis CLI');
-        $this->setHidden(true);
         $this->addArgument('args', InputArgument::OPTIONAL, 'Arguments to add to the Redis command');
 
         $definition = $this->getDefinition();

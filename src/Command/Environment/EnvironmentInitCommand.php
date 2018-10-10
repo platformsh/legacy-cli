@@ -8,7 +8,6 @@ use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Client\Exception\OperationUnavailableException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -77,19 +76,22 @@ class EnvironmentInitCommand extends CommandBase
             return 1;
         }
 
-        try {
-            $activity = $environment->initialize($profile, $url);
-        } catch (OperationUnavailableException $e) {
-            if ($environment->has_code) {
-                $this->stdErr->writeln(sprintf('The environment <error>%s</error> cannot be initialized: it already contains code.', $environment->id));
+        if (!$environment->operationAvailable('initialize', true)) {
+            $this->stdErr->writeln(sprintf(
+                "Operation not available: The environment <error>%s</error> can't be initialized.",
+                $environment->id
+            ));
 
-                return 1;
+            if ($environment->has_code) {
+                $this->stdErr->writeln('The environment already contains code.');
             }
 
-            throw $e;
+            return 1;
         }
 
         $this->api->clearEnvironmentsCache($environment->project);
+
+        $activity = $environment->initialize($profile, $url);
 
         if ($this->activityService->shouldWait($input)) {
             $this->activityService->waitAndLog($activity);

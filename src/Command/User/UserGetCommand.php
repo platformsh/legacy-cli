@@ -14,7 +14,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UserRoleCommand extends CommandBase
+class UserGetCommand extends CommandBase
 {
     protected static $defaultName = 'user:get';
 

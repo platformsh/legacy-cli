@@ -8,6 +8,7 @@ use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
@@ -25,6 +26,7 @@ class DbSizeCommand extends CommandBase
 
     private $api;
     private $config;
+    private $gitDataApi;
     private $relationships;
     private $selector;
     private $shell;
@@ -34,6 +36,7 @@ class DbSizeCommand extends CommandBase
     public function __construct(
         Api $api,
         Config $config,
+        GitDataApi $gitDataApi,
         Relationships $relationships,
         Selector $selector,
         Shell $shell,
@@ -42,6 +45,7 @@ class DbSizeCommand extends CommandBase
     ) {
         $this->api = $api;
         $this->config = $config;
+        $this->gitDataApi = $gitDataApi;
         $this->relationships = $relationships;
         $this->selector = $selector;
         $this->shell = $shell;
@@ -218,7 +222,7 @@ class DbSizeCommand extends CommandBase
         $servicesYamlFilename = $this->config->get('service.project_config_dir') . '/services.yaml';
         $services = [];
         try {
-            $servicesYaml = $this->api->readFile($servicesYamlFilename, $environment);
+            $servicesYaml = $this->gitDataApi->readFile($servicesYamlFilename, $environment);
         } catch (ApiFeatureMissingException $e) {
             $this->debug($e->getMessage());
             if ($projectRoot = $this->selector->getProjectRoot()) {

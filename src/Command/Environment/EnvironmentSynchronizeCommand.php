@@ -74,6 +74,12 @@ EOT
                 "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
             );
 
+            if ($selectedEnvironment->parent === null) {
+                $this->stdErr->writeln('The environment does not have a parent.');
+            } elseif ($selectedEnvironment->is_dirty) {
+                $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
+            }
+
             return 1;
         }
 

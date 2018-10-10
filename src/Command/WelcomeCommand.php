@@ -58,7 +58,7 @@ class WelcomeCommand extends CommandBase
             if ($project->isSuspended()) {
                 $messages = [];
                 $messages[] = '<comment>This project is suspended.</comment>';
-                if ($project->owner === $this->api->getMyAccount()['uuid']) {
+                if ($project->owner === $this->api->getMyAccount()['id']) {
                     $messages[] = '<comment>Update your payment details to re-activate it: '
                         . $this->config->get('service.accounts_url')
                         . '</comment>';

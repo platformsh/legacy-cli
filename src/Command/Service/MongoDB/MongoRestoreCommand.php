@@ -40,7 +40,6 @@ class MongoRestoreCommand extends CommandBase
     {
         $this->setAliases(['mongorestore']);
         $this->setDescription('Restore a binary archive dump of data into MongoDB');
-        $this->setHidden(true);
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
 
         $definition = $this->getDefinition();

@@ -103,6 +103,11 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         if ($environment = $this->api->getEnvironment($branchName, $selectedProject)) {
+            if (!$this->selector->getProjectRoot()) {
+                $this->stdErr->writeln("The environment <comment>$branchName</comment> already exists.");
+
+                return 1;
+            }
             $checkout = $this->questionHelper->confirm(
                 "The environment <comment>$branchName</comment> already exists. Check out?"
             );
@@ -120,6 +125,12 @@ class EnvironmentBranchCommand extends CommandBase
             $this->stdErr->writeln(
                 "Operation not available: The environment " . $this->api->getEnvironmentLabel($parentEnvironment, 'error') . " can't be branched."
             );
+
+            if ($parentEnvironment->is_dirty) {
+                $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
+            } elseif (!$parentEnvironment->isActive()) {
+                $this->stdErr->writeln('The environment is not active.');
+            }
 
             return 1;
         }

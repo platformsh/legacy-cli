@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2b33af601c79f713d62db24f8a8f55c5",
+    "content-hash": "dfd75190423bc59565a3605de4071811",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -661,16 +661,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.22",
+            "version": "v0.0.23",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "9b657eafd7dbd01dcb0dcbe2218699e1c252bb9a"
+                "reference": "38f069fdb59885fdd1463831c1d557b1491b539f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/9b657eafd7dbd01dcb0dcbe2218699e1c252bb9a",
-                "reference": "9b657eafd7dbd01dcb0dcbe2218699e1c252bb9a",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/38f069fdb59885fdd1463831c1d557b1491b539f",
+                "reference": "38f069fdb59885fdd1463831c1d557b1491b539f",
                 "shasum": ""
             },
             "require": {
@@ -696,7 +696,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2018-07-20T19:16:54+00:00"
+            "time": "2018-09-09T20:47:21+00:00"
         },
         {
             "name": "platformsh/oauth2",
@@ -2886,7 +2886,8 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=7.1"
+        "php": ">=7.1",
+        "ext-json": "*"
     },
     "platform-dev": [],
     "platform-overrides": {
