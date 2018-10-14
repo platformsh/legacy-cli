@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Command\Auth;
 
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\BadResponseException;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
@@ -96,12 +96,8 @@ class BrowserLoginCommand extends CommandBase
                 $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
 
                 return 0;
-            } catch (BadResponseException $e) {
-                if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
-                    $this->debug('Already logged in, but a test request failed. Continuing with login.');
-                } else {
-                    throw $e;
-                }
+            } catch (IdentityProviderException $e) {
+                $this->debug('Already logged in, but a test request failed. Continuing with login.');
             }
         }
 
