@@ -82,7 +82,7 @@ class LogoutCommand extends CommandBase
                 $this->filesystem->remove($sessionsDir);
                 $this->stdErr->writeln('All session files have been deleted.');
             }
-        } elseif (is_dir($sessionsDir) && glob($sessionsDir . '/sess-cli-*', GLOB_NOSORT)) {
+        } elseif (is_dir($sessionsDir) && glob($sessionsDir . '/sess-cli-*/*', GLOB_NOSORT)) {
             $this->stdErr->writeln(sprintf(
                 'Other session files exist. Delete them with: <comment>%s logout --all</comment>',
                 $this->config->get('application.executable')

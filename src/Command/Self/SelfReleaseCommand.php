@@ -326,10 +326,6 @@ class SelfReleaseCommand extends CommandBase
         $this->stdErr->writeln('Release description:');
         $this->stdErr->writeln(preg_replace('/^/m', '  ', $releaseDescription));
         $this->stdErr->writeln('');
-
-        if (!$this->questionHelper->confirm('Is this OK?')) {
-            return 1;
-        }
         $http = new Client();
         $response = $http->post($repoApiUrl . '/releases', [
             'headers' => [
