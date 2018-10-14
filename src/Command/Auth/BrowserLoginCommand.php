@@ -213,9 +213,11 @@ class BrowserLoginCommand extends CommandBase
         $cache = $this->getService('cache');
         $cache->flushAll();
 
+        // Save the new tokens to the persistent session.
+        $this->saveAccessToken($token, $this->api()->getClient(false)->getConnector()->getSession());
+
         // Reset the API client so that it will use the new tokens.
         $client = $this->api()->getClient(false, true);
-        $this->saveAccessToken($token, $client->getConnector()->getSession());
         $this->stdErr->writeln('You are logged in.');
 
         // Show user account info.
