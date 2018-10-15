@@ -242,13 +242,18 @@ class Application extends ParentApplication
             $input->setInteractive(false);
         }
 
-        // Allow the CLICOLOR_FORCE environment variable to override whether
-        // colors are used in the output.
+        // Allow the NO_COLOR, CLICOLOR_FORCE, and TERM environment variables to
+        // override whether colors are used in the output.
+        // See: https://no-color.org
+        // See: https://en.wikipedia.org/wiki/Computer_terminal#Dumb_terminals
         /* @see StreamOutput::hasColorSupport() */
-        if (getenv('CLICOLOR_FORCE') === '0') {
-            $output->setDecorated(false);
-        } elseif (getenv('CLICOLOR_FORCE') === '1') {
+        if (getenv('CLICOLOR_FORCE') === '1') {
             $output->setDecorated(true);
+        } elseif (getenv('NO_COLOR')
+            || getenv('CLICOLOR_FORCE') === '0'
+            || getenv('TERM') === 'dumb'
+            || getenv($this->cliConfig->get('application.env_prefix') . 'NO_COLOR')) {
+            $output->setDecorated(false);
         }
 
         parent::configureIO($input, $output);
