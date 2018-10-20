@@ -120,8 +120,13 @@ class GitDataApi
             }
             throw $e;
         }
+        $data = $commit->getData();
+        // No need to cache API metadata.
+        if (isset($data['_links']['self']['meta'])) {
+            unset($data['_links']['self']['meta']);
+        }
         $this->cache->save($cacheKey, [
-            'data' => $commit->getData(),
+            'data' => $data,
             'uri' => $baseUrl,
         ], 0);
 
