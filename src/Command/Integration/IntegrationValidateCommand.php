@@ -1,13 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Exception\OperationUnavailableException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationValidateCommand extends CommandBase
+class IntegrationValidateCommand extends IntegrationCommandBase
 {
     /**
      * {@inheritdoc}
@@ -89,22 +88,7 @@ repository may be deleted."
 
         $this->stdErr->writeln('');
 
-        if (count($errors) === 1) {
-            $this->stdErr->writeln('The following error was found:');
-        } else {
-            $this->stdErr->writeln(sprintf(
-                'The following %d errors were found:',
-                count($errors)
-            ));
-        }
-
-        foreach ($errors as $key => $error) {
-            if (is_string($key) && strlen($key)) {
-                $output->writeln("$key: $error");
-            } else {
-                $output->writeln($error);
-            }
-        }
+        $this->listValidationErrors($errors, $output);
 
         // The exit code for an invalid integration (see the command help).
         return 4;

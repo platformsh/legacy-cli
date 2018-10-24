@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -76,7 +77,25 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             return 1;
         }
 
-        $result = $integration->update($newValues);
+        try {
+            $result = $integration->update($newValues);
+        } catch (BadResponseException $e) {
+            $errors = $integration->listValidationErrors($e);
+            if ($errors) {
+                $this->stdErr->writeln(sprintf(
+                    'The integration <error>%s</error> (type: %s) is invalid.',
+                    $integration->id,
+                    $integration->type
+                ));
+                $this->stdErr->writeln('');
+                $this->listValidationErrors($errors, $output);
+
+                return 4;
+            }
+
+            throw $e;
+        }
+
         $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
         $this->ensureHooks($integration);
 
