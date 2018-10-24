@@ -140,6 +140,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Integration\IntegrationGetCommand();
         $commands[] = new Command\Integration\IntegrationListCommand();
         $commands[] = new Command\Integration\IntegrationUpdateCommand();
+        $commands[] = new Command\Integration\IntegrationValidateCommand();
         $commands[] = new Command\Local\LocalBuildCommand();
         $commands[] = new Command\Local\LocalCleanCommand();
         $commands[] = new Command\Local\LocalDrushAliasesCommand();

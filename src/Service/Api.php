@@ -215,6 +215,12 @@ class Api
                 : new File($this->config->getWritableUserDir() . '/.session');
             $session->setStorage($this->sessionStorage);
 
+            // Ensure session data is (re-)loaded every time.
+            // @todo move this to the Session
+            if (!$session->getData()) {
+                $session->load(true);
+            }
+
             self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {

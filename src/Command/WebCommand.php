@@ -40,7 +40,12 @@ class WebCommand extends CommandBase
         if ($this->hasSelectedProject()) {
             $url = $this->getSelectedProject()->getLink('#ui');
             if (!empty($environmentId)) {
-                $url .= '/environments/' . rawurlencode($environmentId);
+                // New (alpha) UI links lack the /environments path component.
+                if (strpos($url, 'https://ui.') === 0) {
+                    $url .= '/' . rawurlencode($environmentId);
+                } else {
+                    $url .= '/environments/' . rawurlencode($environmentId);
+                }
             }
         } else {
             $url = $this->config()->get('service.accounts_url');
