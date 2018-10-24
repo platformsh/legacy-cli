@@ -18,7 +18,8 @@ class IntegrationValidateCommand extends IntegrationCommandBase
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->setDescription('Validate an existing integration');
         $this->addProjectOption();
-        $this->setHelp("This command allows you to check whether an integration is valid.
+        $this->setHelp(<<<EOF
+This command allows you to check whether an integration is valid.
 
 An exit code of 0 means the integration is valid, while 4 means it is invalid.
 Any other exit code indicates an unexpected error.
@@ -26,7 +27,8 @@ Any other exit code indicates an unexpected error.
 Integrations are validated automatically on creation and on update. However,
 because they involve external resources, it is possible for a valid integration
 to become invalid. For example, an access token may be revoked, or an external
-repository may be deleted."
+repository may be deleted.
+EOF
         );
     }
 
