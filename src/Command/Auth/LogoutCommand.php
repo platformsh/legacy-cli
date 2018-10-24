@@ -39,7 +39,7 @@ class LogoutCommand extends CommandBase
         $this->stdErr->writeln('You are now logged out.');
 
         // Check for other sessions.
-        $sessionsDir = $this->config()->getWritableUserDir() . '/.session';
+        $sessionsDir = $this->config()->getSessionDir();
         if ($input->getOption('all')) {
             $this->api()->deleteFromKeychain();
             if (is_dir($sessionsDir)) {
