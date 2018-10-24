@@ -28,6 +28,11 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(
+            ['type'],
+            'The option --%s is deprecated and will be removed in a future version.'
+        );
+
         $this->validateInput($input);
 
         $id = $input->getArgument('id');

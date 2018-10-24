@@ -1157,21 +1157,25 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Print a warning about an deprecated option.
+     * Print a warning about deprecated option(s).
      *
-     * @param string[] $options
+     * @param string[]    $options  A list of option names (without "--").
+     * @param string|null $template The warning message template. "%s" is
+     *                              replaced by the option name.
      */
-    protected function warnAboutDeprecatedOptions(array $options)
+    protected function warnAboutDeprecatedOptions(array $options, $template = null)
     {
         if (!isset($this->input)) {
             return;
+        }
+        if ($template === null) {
+            $template = 'The option --%s is deprecated and no longer used. It will be removed in a future version.';
         }
         foreach ($options as $option) {
             if ($this->input->hasOption($option) && $this->input->getOption($option)) {
                 $this->labeledMessage(
                     'DEPRECATED',
-                    'The option --' . $option . ' is deprecated and no longer used. It will be removed in a future version.',
-                    OutputInterface::VERBOSITY_VERBOSE
+                    sprintf($template, $option)
                 );
             }
         }
