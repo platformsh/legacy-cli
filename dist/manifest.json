@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "700e710509656235020ec838914778fe0445ea45",
-        "sha256": "7b00fc0d7cf4571af57c06d9ff0317d2d0b78f94aeeeea56b1519ac62ffb3ddc",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.35.4/platform.phar",
-        "version": "3.35.4",
+        "sha1": "c7badfe42069dc937eed95f67ff95741d1e50707",
+        "sha256": "ee3352a1cb799eee5cd727f5c880bf951110109d9ded2c64ffff0ef11de1c0e2",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.36.0/platform.phar",
+        "version": "3.36.0",
         "php": {
             "min": "5.5.9"
         },
@@ -142,6 +142,11 @@
                 "notes": "New features:\n\n* Add commit:list (commits) and commit:get commands for viewing commits via the\n  API.\n* Add --commit (-c) option to repo:cat and repo:ls commands.\n* Add Bitbucket integration support.\n\nBug fixes:\n\n* Fix drush alias group name prepending bug. Custom aliases were having the\n  alias group name prepended every time they were recreated, e.g. \"@foo.bar\"\n  would become \"@foo.foo.bar\".\n* Allow changing the value of a project-level sensitive variable.\n\nOther changes:\n\n* Add explanations for \"Operation not available\" on environment actions.\n* Add additional help for the mount:size command.\n* Clean up --pipe output in the user:get command.\n* Show hidden service commands.",
                 "show from": "3.34.0",
                 "hide from": "3.35.0"
+            },
+            {
+                "notes": "* Fix a further source of 'Not logged in' errors immediately after login.\n* Add `integration:validate` command, and improve error reporting in other\n  integration commands.\n* Deprecate the --type option in the `integration:update` command.\n* Fix alpha UI URLs for environments in the `web` command.",
+                "show from": "3.35.0",
+                "hide from": "3.36.0"
             }
         ]
     }
