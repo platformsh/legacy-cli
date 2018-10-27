@@ -4,6 +4,9 @@ namespace Platformsh\Cli\Tests\BuildFlavor;
 
 use Platformsh\Cli\Service\Filesystem;
 
+/**
+ * @group slow
+ */
 class DrupalTest extends BaseBuildFlavorTest
 {
 
