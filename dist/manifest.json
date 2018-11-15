@@ -1,10 +1,10 @@
 [
     {
-        "name": "sensiocloud.phar",
-        "sha1": "cdbe8eba1c7ebeb04d73d5f1781d32807c2df3dd",
-        "sha256": "95e2e4327824b190c8563a5f18cf8597af53cd0993bf10683286f430939a0bca",
-        "url": "https://accounts.sensio.cloud/sites/default/files/sensiocloud-v0.0.22.phar",
-        "version": "0.0.22",
+        "name": "symfony-cloud.phar",
+        "sha1": "164680fa084ae93d249fad45613d184ec8844aa4",
+        "sha256": "1c5492d9c277bc13f693fab4cc047d479a81cccbbb653c7c6de402a0849f80cf",
+        "url": "https://accounts.sensio.cloud/sites/default/files/symfony-cloud-v0.0.23.phar",
+        "version": "0.0.23",
         "php": {
             "min": "5.5.9"
         }

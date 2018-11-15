@@ -1,7 +1,7 @@
 # Metadata about the CLI application itself.
 application:
   name: 'SymfonyCloud (PHP) CLI'
-  version: '0.0.23-dev'
+  version: '0.0.23'
   executable: 'symfony-cloud'
   package_name: ~
   installer_url: 'https://accounts.sensio.cloud/cli/installer'
