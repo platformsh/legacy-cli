@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
-use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -55,7 +54,7 @@ class VariableUpdateCommand extends VariableCommandBase
         }
 
         // Handle sensitive variables' value (it isn't exposed in the API).
-        if ($variable instanceof EnvironmentLevelVariable && !$variable->hasProperty('value') && $variable->is_sensitive) {
+        if (!$variable->hasProperty('value') && $variable->is_sensitive) {
             $newValue = $fields['value']->getValueFromInput($input);
             if ($newValue !== null) {
                 $values['value'] = $newValue;

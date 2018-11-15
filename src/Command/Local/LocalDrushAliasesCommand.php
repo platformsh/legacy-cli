@@ -27,7 +27,7 @@ class LocalDrushAliasesCommand extends CommandBase
         $this->addExample('Change the alias group to @example', '-g example');
     }
 
-    public function isHiddenInList()
+    public function isHidden()
     {
         // Hide this command in the list if the project is not Drupal.
         $projectRoot = $this->getProjectRoot();
@@ -35,7 +35,7 @@ class LocalDrushAliasesCommand extends CommandBase
             return true;
         }
 
-        return parent::isHiddenInList();
+        return parent::isHidden();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

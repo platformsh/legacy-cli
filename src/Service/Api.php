@@ -6,13 +6,11 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
-use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
@@ -113,6 +111,14 @@ class Api
     }
 
     /**
+     * @return \Doctrine\Common\Cache\CacheProvider
+     */
+    public function getCache()
+    {
+        return $this->cache;
+    }
+
+    /**
      * Load an API token from a file.
      *
      * @param string $filename
@@ -206,8 +212,14 @@ class Api
             $this->sessionStorage = KeychainStorage::isSupported()
                 && $this->config->isExperimentEnabled('use_keychain')
                 ? new KeychainStorage($this->config->get('application.name'))
-                : new File($this->config->getWritableUserDir() . '/.session');
+                : new File($this->config->getSessionDir());
             $session->setStorage($this->sessionStorage);
+
+            // Ensure session data is (re-)loaded every time.
+            // @todo move this to the Session
+            if (!$session->getData()) {
+                $session->load(true);
+            }
 
             self::$client = new PlatformClient($connector);
 
@@ -423,7 +435,7 @@ class Api
      * @param bool $reset
      *
      * @return array
-     *   An array containing at least 'username', 'uuid', 'mail', and
+     *   An array containing at least 'username', 'id', 'mail', and
      *   'display_name'.
      */
     public function getMyAccount($reset = false)
@@ -620,6 +632,27 @@ class Api
     }
 
     /**
+     * Returns an environment label.
+     *
+     * @param Environment  $environment
+     * @param string|false $tag
+     *
+     * @return string
+     */
+    public function getEnvironmentLabel(Environment $environment, $tag = 'info')
+    {
+        $id = $environment->id;
+        $title = $environment->title;
+        $use_title = $title && $title !== $id;
+        $pattern = $use_title ? '%2$s (%3$s)' : '%3$s';
+        if ($tag !== false) {
+            $pattern = $use_title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
+        }
+
+        return sprintf($pattern, $tag, $title, $id);
+    }
+
+    /**
      * Get a resource, matching on the beginning of the ID.
      *
      * @param string        $id
@@ -702,79 +735,6 @@ class Api
     public function getHttpClient()
     {
         return $this->getClient(false)->getConnector()->getClient();
-    }
-
-    /**
-     * Read a file in the environment, using the Git Data API.
-     *
-     * @param string      $filename
-     * @param Environment $environment
-     *
-     * @throws \RuntimeException on error.
-     *
-     * @return string|false
-     *   The raw contents of the file, or false if the file is not found.
-     */
-    public function readFile($filename, Environment $environment)
-    {
-        $cacheKey = implode(':', ['raw', $environment->project, $filename]);
-        $data = $this->cache->fetch($cacheKey);
-        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
-            // Find the file.
-            if (($tree = $this->getTree($environment, dirname($filename)))
-                && ($blob = $tree->getBlob(basename($filename)))) {
-                $raw = $blob->getRawContent();
-            } else {
-                $raw = false;
-            }
-            $data = ['raw' => $raw, 'commit_sha' => $environment->head_commit];
-            // Skip caching if the file is bigger than 100 KiB.
-            if ($raw === false || strlen($raw) <= 102400) {
-                $this->cache->save($cacheKey, $data);
-            }
-        }
-
-        return $data['raw'];
-    }
-
-    /**
-     * Get a Git Tree object (a repository directory) for an environment.
-     *
-     * @param Environment $environment
-     * @param string      $path
-     *
-     * @return Tree|false
-     */
-    public function getTree(Environment $environment, $path = '.')
-    {
-        $cacheKey = implode(':', ['tree', $environment->project, $path]);
-        $data = $this->cache->fetch($cacheKey);
-        if (!is_array($data) || $data['commit_sha'] !== $environment->head_commit) {
-            if (!$head = $environment->getHeadCommit()) {
-                // This is unlikely to happen, unless the project doesn't have the
-                // Git Data API available at all (e.g. old Git version).
-                throw new ApiFeatureMissingException(sprintf(
-                    'The project %s does not support the Git Data API.',
-                    $environment->project
-                ));
-            }
-            if (!$headTree = $head->getTree()) {
-                // This is even less likely to happen.
-                throw new \RuntimeException('Failed to get tree for HEAD commit: ' . $head->id);
-            }
-            $tree = $headTree->getTree($path);
-            $this->cache->save($cacheKey, [
-                'tree' => $tree ? $tree->getData() : null,
-                'uri' => $tree ? $tree->getUri() : null,
-                'commit_sha' => $environment->head_commit,
-            ]);
-        } elseif (empty($data['tree'])) {
-            return false;
-        } else {
-            $tree = new Tree($data['tree'], $data['uri'], $this->getHttpClient(), true);
-        }
-
-        return $tree;
     }
 
     /**
@@ -874,29 +834,6 @@ class Api
         }
 
         return null;
-    }
-
-    /**
-     * Checks if an operation is available on an environment.
-     *
-     * This auto-refreshes the environment data if the operation is not
-     * available.
-     *
-     * @param string                               $op
-     * @param \Platformsh\Client\Model\Environment $environment
-     *
-     * @return bool
-     */
-    public function checkEnvironmentOperation($op, Environment $environment)
-    {
-        if ($environment->operationAvailable($op)) {
-            return true;
-        }
-
-        $refresh = self::$environmentsCacheRefreshed ? null : true;
-        $environment = $this->getEnvironment($environment->id, $this->getProject($environment->project), $refresh);
-
-        return $environment->operationAvailable($op);
     }
 
     /**

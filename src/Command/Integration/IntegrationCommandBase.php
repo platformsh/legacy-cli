@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
@@ -11,11 +12,15 @@ use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class IntegrationCommandBase extends CommandBase
 {
     /** @var Form */
     private $form;
+
+    /** @var array */
+    private $bitbucketAccessTokens = [];
 
     /**
      * @return Form
@@ -40,6 +45,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The integration type',
                 'questionLine' => '',
                 'options' => [
+                    'bitbucket',
                     'github',
                     'gitlab',
                     'hipchat',
@@ -57,6 +63,22 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.slack',
                 ]],
                 'description' => 'An OAuth token for the integration',
+            ]),
+            'key' => new Field('OAuth consumer key', [
+                'optionName' => 'key',
+                'conditions' => ['type' => [
+                    'bitbucket',
+                ]],
+                'description' => 'A Bitbucket OAuth consumer key',
+                'valueKeys' => ['app_credentials', 'key'],
+            ]),
+            'secret' => new Field('OAuth consumer secret', [
+                'optionName' => 'secret',
+                'conditions' => ['type' => [
+                    'bitbucket',
+                ]],
+                'description' => 'A Bitbucket OAuth consumer secret',
+                'valueKeys' => ['app_credentials', 'secret'],
             ]),
             'base_url' => new UrlField('Base URL', [
                 'conditions' => ['type' => [
@@ -76,10 +98,11 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
+                    'bitbucket',
                     'github',
                 ]],
-                'description' => 'GitHub: the repository to track (e.g. \'user/repo\' or \'https://github.com/user/repo\')',
-                'questionLine' => 'The GitHub repository (e.g. \'user/repo\' or \'https://github.com/user/repo\')',
+                'description' => 'The repository to track (e.g. \'user/repo\')',
+                'questionLine' => 'The repository (e.g. \'user/repo\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
@@ -100,10 +123,10 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'build_pull_requests' => new BooleanField('Build pull requests', [
                 'conditions' => ['type' => [
+                    'bitbucket',
                     'github',
                 ]],
-                'description' => 'GitHub: build pull requests as environments',
-                'questionLine' => 'Build every pull request as an environment',
+                'description' => 'Build every pull request as an environment',
             ]),
             'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
               'conditions' => [
@@ -113,8 +136,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'build_pull_requests' => true,
               ],
               'default' => false,
-              'description' => 'GitHub: build pull requests based on their post-merge state',
-              'questionLine' => 'Build pull requests based on their post-merge state',
+              'description' => 'Build pull requests based on their post-merge state',
             ]),
             'merge_requests_clone_parent_data' => new BooleanField('Clone data for merge requests', [
                 'optionName' => 'merge-requests-clone-parent-data',
@@ -135,15 +157,37 @@ abstract class IntegrationCommandBase extends CommandBase
                     ],
                     'build_pull_requests' => true,
                 ],
-                'description' => 'GitHub: clone data for pull requests',
-                'questionLine' => "Clone the parent environment's data for pull requests",
+                'description' => "Clone the parent environment's data for pull requests",
+            ]),
+            'resync_pull_requests' => new BooleanField('Re-sync pull requests', [
+                'optionName' => 'resync-pull-requests',
+                'conditions' => [
+                    'type' => [
+                        'bitbucket',
+                    ],
+                    'build_pull_requests' => true,
+                ],
+                'default' => false,
+                'description' => "Re-sync pull request environment data on every build",
             ]),
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
+                    'bitbucket',
                     'github',
                     'gitlab',
                 ]],
-                'description' => 'Fetch all branches (as inactive environments)',
+                'description' => 'Fetch all branches from the remote (as inactive environments)',
+            ]),
+            'prune_branches' => new BooleanField('Prune branches', [
+                'conditions' => [
+                    'type' => [
+                        'bitbucket',
+                        'github',
+                        'gitlab',
+                    ],
+                    'fetch_branches' => true,
+                ],
+                'description' => 'Delete branches that do not exist on the remote',
             ]),
             'room' => new Field('HipChat room ID', [
                 'conditions' => ['type' => [
@@ -274,6 +318,41 @@ abstract class IntegrationCommandBase extends CommandBase
                 'merge_requests_events' => true,
             ];
             $repoName = $baseUrl . '/' . $integration->getProperty('project');
+        } elseif ($integration->type === 'bitbucket' && $integration->hasProperty('app_credentials')) {
+            $appCredentials = $integration->getProperty('app_credentials');
+            $result = $this->validateBitbucketCredentials($appCredentials);
+            if ($result !== true) {
+                $this->stdErr->writeln($result);
+
+                return;
+            }
+            $accessToken = $this->getBitbucketAccessToken($appCredentials);
+            $hooksApiUrl = sprintf('https://api.bitbucket.org/2.0/repositories/%s/hooks', rawurlencode($integration->getProperty('repository')));
+            $requestOptions = [
+                'auth' => false,
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => 'Bearer ' . $accessToken,
+                ],
+            ];
+            $payload = [
+                'description' => sprintf(
+                    '%s: %s',
+                    $this->config()->get('service.name'),
+                    $this->getSelectedProject()->id
+                ),
+                'url' => $integration->getLink('#hook'),
+                'active' => true,
+                'events' => [
+                    'pullrequest:created',
+                    'pullrequest:updated',
+                    'pullrequest:rejected',
+                    'pullrequest:fulfilled',
+                    'repo:updated',
+                    'repo:push',
+                ],
+            ];
+            $repoName = 'https://bitbucket.org/' . $integration->getProperty('repository');
         } else {
             return;
         }
@@ -293,11 +372,15 @@ abstract class IntegrationCommandBase extends CommandBase
                 $client->post($hooksApiUrl, ['json' => $payload] + $requestOptions);
                 $this->stdErr->writeln('  Webhook created successfully');
             }
-            elseif ($this->arraysDiffer($hook, $payload)) {
-                // The GitLab API requires PUT for editing project hooks. The
-                // GitHub API requires PATCH.
-                $method = $integration->type === 'gitlab' ? 'put' : 'patch';
-                $hookApiUrl = $hooksApiUrl . '/' . rawurlencode($hook['id']);
+            elseif ($this->hookNeedsUpdate($integration, $hook, $payload)) {
+                // The GitLab and Bitbucket APIs require PUT for editing project
+                // hooks. The GitHub API requires PATCH.
+                $method = $integration->type === 'github' ? 'patch' : 'put';
+
+                // A Bitbucket hook has a 'uuid', others have an 'id'.
+                $id = $integration->type === 'bitbucket' ? $hook['uuid'] : $hook['id'];
+
+                $hookApiUrl = $hooksApiUrl . '/' . rawurlencode($id);
 
                 $this->stdErr->writeln('  Updating webhook');
                 $client->send(
@@ -317,6 +400,40 @@ abstract class IntegrationCommandBase extends CommandBase
                 $integration->getLink('#hook')
             ));
         }
+    }
+
+    /**
+     * Check if a hook needs updating.
+     *
+     * @param \Platformsh\Client\Model\Integration $integration
+     * @param array                                $hook
+     * @param array                                $payload
+     *
+     * @return bool
+     */
+    private function hookNeedsUpdate(Integration $integration, array $hook, array $payload)
+    {
+        if ($integration->type === 'bitbucket') {
+            foreach ($payload as $item => $value) {
+                if (!isset($hook[$item])) {
+                    return true;
+                }
+                if ($item === 'events') {
+                    sort($value);
+                    sort($hook[$item]);
+                    if ($value !== $hook[$item]) {
+                        return true;
+                    }
+                }
+                if ($hook[$item] !== $value) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return $this->arraysDiffer($hook, $payload);
     }
 
     /**
@@ -364,11 +481,19 @@ abstract class IntegrationCommandBase extends CommandBase
     {
         $type = $integration->type;
         $hookUrl = $integration->getLink('#hook');
-        foreach ($jsonResult as $hook) {
+        if ($integration->type === 'bitbucket') {
+            $hooks = $jsonResult['values'];
+        } else {
+            $hooks = $jsonResult;
+        }
+        foreach ($hooks as $hook) {
             if ($type === 'github' && $hook['config']['url'] === $hookUrl) {
                 return $hook;
             }
             if ($type === 'gitlab' && $hook['url'] === $hookUrl) {
+                return $hook;
+            }
+            if ($type === 'bitbucket' && $hook['url'] === $hookUrl) {
                 return $hook;
             }
         }
@@ -395,5 +520,86 @@ abstract class IntegrationCommandBase extends CommandBase
         }
 
         $table->renderSimple(array_values($info), array_keys($info));
+    }
+
+    /**
+     * Obtain an OAuth2 token for Bitbucket from the given app credentials.
+     *
+     * @param array $credentials
+     *
+     * @return string
+     */
+    protected function getBitbucketAccessToken(array $credentials)
+    {
+        if (isset($this->bitbucketAccessTokens[$credentials['key']])) {
+            return $this->bitbucketAccessTokens[$credentials['key']];
+        }
+        $result = $this->api()
+            ->getHttpClient()
+            ->post('https://bitbucket.org/site/oauth2/access_token', [
+                'auth' => [$credentials['key'], $credentials['secret']],
+                'body' => [
+                    'grant_type' => 'client_credentials',
+                ],
+            ]);
+
+        $data = $result->json();
+        if (!isset($data['access_token'])) {
+            throw new \RuntimeException('Access token not found in Bitbucket response');
+        }
+
+        $this->bitbucketAccessTokens[$credentials['key']] = $data['access_token'];
+
+        return $data['access_token'];
+    }
+
+    /**
+     * Validate Bitbucket credentials.
+     *
+     * @param array $credentials
+     *
+     * @return string|TRUE
+     */
+    protected function validateBitbucketCredentials(array $credentials)
+    {
+        try {
+            $this->getBitbucketAccessToken($credentials);
+        } catch (\Exception $e) {
+            $message = '<error>Invalid Bitbucket credentials</error>';
+            if ($e instanceof BadResponseException && $e->getResponse() && $e->getResponse()->getStatusCode() === 400) {
+                $message .= "\n" . 'Ensure that the OAuth consumer key and secret are valid.'
+                    . "\n" . 'Additionally, ensure that the OAuth consumer has a callback URL set (even just to <comment>http://localhost</comment>).';
+            }
+
+            return $message;
+        }
+
+        return TRUE;
+    }
+
+    /**
+     * Lists validation errors found in an integration.
+     *
+     * @param array                                             $errors
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    protected function listValidationErrors(array $errors, OutputInterface $output)
+    {
+        if (count($errors) === 1) {
+            $this->stdErr->writeln('The following error was found:');
+        } else {
+            $this->stdErr->writeln(sprintf(
+                'The following %d errors were found:',
+                count($errors)
+            ));
+        }
+
+        foreach ($errors as $key => $error) {
+            if (is_string($key) && strlen($key)) {
+                $output->writeln("$key: $error");
+            } else {
+                $output->writeln($error);
+            }
+        }
     }
 }

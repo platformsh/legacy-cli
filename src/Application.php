@@ -107,6 +107,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Certificate\CertificateDeleteCommand();
         $commands[] = new Command\Certificate\CertificateGetCommand();
         $commands[] = new Command\Certificate\CertificateListCommand();
+        $commands[] = new Command\Commit\CommitGetCommand();
+        $commands[] = new Command\Commit\CommitListCommand();
         $commands[] = new Command\Db\DbSqlCommand();
         $commands[] = new Command\Db\DbDumpCommand();
         $commands[] = new Command\Db\DbSizeCommand();
@@ -138,6 +140,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Integration\IntegrationGetCommand();
         $commands[] = new Command\Integration\IntegrationListCommand();
         $commands[] = new Command\Integration\IntegrationUpdateCommand();
+        $commands[] = new Command\Integration\IntegrationValidateCommand();
         $commands[] = new Command\Local\LocalBuildCommand();
         $commands[] = new Command\Local\LocalCleanCommand();
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
@@ -175,6 +178,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Service\MongoDB\MongoRestoreCommand();
         $commands[] = new Command\Service\MongoDB\MongoShellCommand();
         $commands[] = new Command\Service\RedisCliCommand();
+        $commands[] = new Command\Service\ServiceListCommand();
         $commands[] = new Command\Snapshot\SnapshotCreateCommand();
         $commands[] = new Command\Snapshot\SnapshotListCommand();
         $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
@@ -189,7 +193,7 @@ class Application extends ParentApplication
         $commands[] = new Command\User\UserAddCommand();
         $commands[] = new Command\User\UserDeleteCommand();
         $commands[] = new Command\User\UserListCommand();
-        $commands[] = new Command\User\UserRoleCommand();
+        $commands[] = new Command\User\UserGetCommand();
         $commands[] = new Command\Variable\VariableCreateCommand();
         $commands[] = new Command\Variable\VariableDeleteCommand();
         $commands[] = new Command\Variable\VariableDisableCommand();
@@ -239,13 +243,18 @@ class Application extends ParentApplication
             $input->setInteractive(false);
         }
 
-        // Allow the CLICOLOR_FORCE environment variable to override whether
-        // colors are used in the output.
+        // Allow the NO_COLOR, CLICOLOR_FORCE, and TERM environment variables to
+        // override whether colors are used in the output.
+        // See: https://no-color.org
+        // See: https://en.wikipedia.org/wiki/Computer_terminal#Dumb_terminals
         /* @see StreamOutput::hasColorSupport() */
-        if (getenv('CLICOLOR_FORCE') === '0') {
-            $output->setDecorated(false);
-        } elseif (getenv('CLICOLOR_FORCE') === '1') {
+        if (getenv('CLICOLOR_FORCE') === '1') {
             $output->setDecorated(true);
+        } elseif (getenv('NO_COLOR')
+            || getenv('CLICOLOR_FORCE') === '0'
+            || getenv('TERM') === 'dumb'
+            || getenv($this->cliConfig->get('application.env_prefix') . 'NO_COLOR')) {
+            $output->setDecorated(false);
         }
 
         parent::configureIO($input, $output);

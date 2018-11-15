@@ -29,7 +29,7 @@ EOF
         );
     }
 
-    public function isHiddenInList()
+    public function isHidden()
     {
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');

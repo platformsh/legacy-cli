@@ -15,8 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:mongo:export');

@@ -13,8 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoRestoreCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:mongo:restore');

@@ -357,11 +357,12 @@ class LocalBuild
             return false;
         }
 
-        $this->fsHelper->symlink($webRoot, $app->getLocalWebRoot($destination));
+        $localWebRoot = $app->getLocalWebRoot($destination);
+        $this->fsHelper->symlink($webRoot, $localWebRoot);
 
         $message = "\nBuild complete for application <info>$appId</info>";
         $this->output->writeln($message);
-        $this->output->writeln("Web root: <info>$destination</info>\n");
+        $this->output->writeln("Web root: <info>$localWebRoot</info>\n");
 
         return $success;
     }

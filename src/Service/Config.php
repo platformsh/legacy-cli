@@ -148,6 +148,14 @@ class Config
     }
 
     /**
+     * @return string
+     */
+    public function getSessionDir()
+    {
+        return $this->getWritableUserDir() . '/.session';
+    }
+
+    /**
      * @param string $filename
      *
      * @return array

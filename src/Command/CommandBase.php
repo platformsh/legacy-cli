@@ -23,7 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
-abstract class CommandBase extends Command implements CanHideInListInterface, MultiAwareInterface
+abstract class CommandBase extends Command implements MultiAwareInterface
 {
     use HasExamplesTrait;
 
@@ -96,7 +96,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     /**
      * {@inheritdoc}
      */
-    public function isHiddenInList()
+    public function isHidden()
     {
         return $this->hiddenInList;
     }
@@ -431,7 +431,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             && !empty($config['mapping'][$currentBranch])) {
             $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
             if ($environment) {
-                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $environment->id);
+                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $this->api()->getEnvironmentLabel($environment));
                 return $environment;
             } else {
                 unset($config['mapping'][$currentBranch]);
@@ -446,7 +446,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
-                $this->debug('Selected environment ' . $potentialEnvironment . ', based on Git upstream: ' . $upstream);
+                $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ', based on Git upstream: ' . $upstream);
                 return $environment;
             }
         }
@@ -463,7 +463,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
                 }
             }
             if ($environment) {
-                $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
+                $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ' based on branch name: ' . $currentBranch);
                 return $environment;
             }
         }
@@ -744,8 +744,10 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      *   environment.
      * @param bool $required
      *   Whether it's required to have an environment.
+     * @param bool $selectDefaultEnv
+     *   Whether to select a default environment.
      */
-    protected function selectEnvironment($environmentId = null, $required = true)
+    protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false)
     {
         $envPrefix = $this->config()->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
@@ -764,13 +766,22 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
 
             $this->environment = $environment;
-            $this->debug('Selected environment: ' . $environment->id);
+            $this->debug('Selected environment: ' . $this->api()->getEnvironmentLabel($environment));
             return;
         }
 
         if ($environment = $this->getCurrentEnvironment($this->project)) {
             $this->environment = $environment;
             return;
+        }
+
+        if ($selectDefaultEnv) {
+            $environments = $this->api()->getEnvironments($this->project);
+            $defaultId = $this->api()->getDefaultEnvironmentId($environments);
+            if ($defaultId && isset($environments[$defaultId])) {
+                $this->environment = $environments[$defaultId];
+                return;
+            }
         }
 
         if ($required && isset($this->input) && $this->input->isInteractive()) {
@@ -810,7 +821,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
         try {
             $apps = array_map(function (WebApp $app) {
                 return $app->name;
-            }, $this->getSelectedEnvironment()->getCurrentDeployment()->webapps);
+            }, $this->api()->getCurrentDeployment($this->getSelectedEnvironment())->webapps);
             if (!count($apps)) {
                 return null;
             }
@@ -900,10 +911,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * @param InputInterface  $input
-     * @param bool $envNotRequired
+     * @param InputInterface $input
+     * @param bool           $envNotRequired
+     * @param bool           $selectDefaultEnv
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false)
+    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
@@ -972,11 +984,11 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
-                $this->selectEnvironment($argument);
+                $this->selectEnvironment($argument, true, $selectDefaultEnv);
             }
         } elseif ($input->hasOption($envOptionName)) {
             $environmentId = $input->getOption($envOptionName) ?: $environmentId;
-            $this->selectEnvironment($environmentId, !$envNotRequired);
+            $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv);
         }
     }
 
@@ -1145,21 +1157,25 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
     }
 
     /**
-     * Print a warning about an deprecated option.
+     * Print a warning about deprecated option(s).
      *
-     * @param string[] $options
+     * @param string[]    $options  A list of option names (without "--").
+     * @param string|null $template The warning message template. "%s" is
+     *                              replaced by the option name.
      */
-    protected function warnAboutDeprecatedOptions(array $options)
+    protected function warnAboutDeprecatedOptions(array $options, $template = null)
     {
         if (!isset($this->input)) {
             return;
+        }
+        if ($template === null) {
+            $template = 'The option --%s is deprecated and no longer used. It will be removed in a future version.';
         }
         foreach ($options as $option) {
             if ($this->input->hasOption($option) && $this->input->getOption($option)) {
                 $this->labeledMessage(
                     'DEPRECATED',
-                    'The option --' . $option . ' is deprecated and no longer used. It will be removed in a future version.',
-                    OutputInterface::VERBOSITY_VERBOSE
+                    sprintf($template, $option)
                 );
             }
         }
@@ -1277,6 +1293,7 @@ abstract class CommandBase extends Command implements CanHideInListInterface, Mu
      */
     protected function isTerminal($descriptor)
     {
+        /** @noinspection PhpComposerExtensionStubsInspection */
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
     }
 

@@ -4,6 +4,9 @@ namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\Service\Git;
 
+/**
+ * @group slow
+ */
 class GitServiceTest extends \PHPUnit_Framework_TestCase
 {
 

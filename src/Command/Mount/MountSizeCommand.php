@@ -20,12 +20,23 @@ class MountSizeCommand extends MountCommandBase
         $this
             ->setName('mount:size')
             ->setDescription('Check the disk usage of mounts')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
+            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
         Table::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
+        $appConfigFile = $this->config()->get('service.app_config_file');
+        $this->setHelp(<<<EOF
+Use this command to check the disk size and usage for an application's mounts.
+
+Mounts are directories mounted into the application from a persistent, writable
+filesystem. They are configured in the <info>mounts</info> key in the <info>$appConfigFile</info> file.
+
+The filesystem's total size is determined by the <info>disk</info> key in the same file.
+EOF
+);
     }
 
     /**
@@ -37,7 +48,7 @@ class MountSizeCommand extends MountCommandBase
 
         $appName = $this->selectApp($input);
 
-        $appConfig = $this->getAppConfig($appName);
+        $appConfig = $this->getAppConfig($appName, $input->getOption('refresh'));
         if (empty($appConfig['mounts'])) {
             $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
 
@@ -65,9 +76,10 @@ class MountSizeCommand extends MountCommandBase
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
-        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts';
+        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts -x rpc_pipefs';
         $commands[] = 'echo';
         $commands[] = 'cd "$' . $appDirVar . '"';
+
         foreach ($mountPaths as $mountPath) {
             $commands[] = 'du --block-size=1 -s ' . escapeshellarg($mountPath);
         }
@@ -88,55 +100,16 @@ class MountSizeCommand extends MountCommandBase
         // Separate the commands' output.
         list($appDir, $dfOutput, $duOutput) = explode("\n\n", $result, 3);
 
-        // Parse the output of 'df', building a list of results.
-        $results = [];
-        foreach (explode("\n", $dfOutput) as $i => $line) {
-            if ($i === 0) {
-                continue;
-            }
-            $path = $this->getDfColumn($line, 'path');
-            if (strpos($path, $appDir . '/') !== 0) {
-                continue;
-            }
-            $mountPath = ltrim(substr($path, strlen($appDir)), '/');
-            if (!in_array($mountPath, $mountPaths)) {
-                continue;
-            }
-            $filesystem = $this->getDfColumn($line, 'filesystem');
-            if (isset($results[$filesystem])) {
-                $results[$filesystem]['mounts'][] = $mountPath;
-                continue;
-            }
-            $available = $this->getDfColumn($line, 'available');
-            $used = $this->getDfColumn($line, 'used');
-            $results[$filesystem] = [
-                'total' => $this->getDfColumn($line, 'total'),
-                'used' => $used,
-                'available' => $available,
-                'mounts' => [$mountPath],
-                'percent_used' => $used / $available * 100,
-            ];
-        }
+        // Parse the output.
+        $volumeInfo = $this->parseDf($dfOutput, $appDir, $mountPaths);
+        $mountSizes = $this->parseDu($duOutput, $mountPaths);
 
-        // Parse the 'du' output.
-        $mountSizes = [];
-        $duOutputSplit = explode("\n", $duOutput, count($mountPaths));
-        foreach ($mountPaths as $i => $mountPath) {
-            if (!isset($duOutputSplit[$i])) {
-                throw new \RuntimeException("Failed to find row $i of 'du' command output: \n" . $duOutput);
-            }
-            list($mountSizes[$mountPath],) = explode("\t", $duOutputSplit[$i], 2);
-        }
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
+        // Build a table of results: one line per mount, one (multi-line) row
+        // per filesystem.
         $header = ['Mount(s)', 'Size(s)', 'Disk', 'Used', 'Available', 'Capacity'];
-
-        $showInBytes = $input->getOption('bytes');
-
         $rows = [];
-        foreach ($results as $info) {
+        $showInBytes = $input->getOption('bytes');
+        foreach ($volumeInfo as $info) {
             $row = [];
             $row[] = implode("\n", $info['mounts']);
             $mountUsage = [];
@@ -158,6 +131,9 @@ class MountSizeCommand extends MountCommandBase
             $rows[] = $row;
         }
 
+
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         $table->render($rows, $header);
 
         return 0;
@@ -191,5 +167,75 @@ class MountSizeCommand extends MountCommandBase
         }
 
         return trim($matches[1]);
+    }
+
+    /**
+     * Parse the output of 'df', building a list of results per FS volume.
+     *
+     * @param string $dfOutput
+     * @param string $appDir
+     * @param array  $mountPaths
+     *
+     * @return array
+     */
+    private function parseDf($dfOutput, $appDir, array $mountPaths)
+    {
+        $results = [];
+        foreach (explode("\n", $dfOutput) as $i => $line) {
+            if ($i === 0) {
+                continue;
+            }
+            try {
+                $path = $this->getDfColumn($line, 'path');
+            } catch (\RuntimeException $e) {
+                $this->debug($e->getMessage());
+                continue;
+            }
+            if (strpos($path, $appDir . '/') !== 0) {
+                continue;
+            }
+            $mountPath = ltrim(substr($path, strlen($appDir)), '/');
+            if (!in_array($mountPath, $mountPaths)) {
+                continue;
+            }
+            $filesystem = $this->getDfColumn($line, 'filesystem');
+            if (isset($results[$filesystem])) {
+                $results[$filesystem]['mounts'][] = $mountPath;
+                continue;
+            }
+            $available = $this->getDfColumn($line, 'available');
+            $used = $this->getDfColumn($line, 'used');
+            $results[$filesystem] = [
+                'total' => $this->getDfColumn($line, 'total'),
+                'used' => $used,
+                'available' => $available,
+                'mounts' => [$mountPath],
+                'percent_used' => $used / $available * 100,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Parse the 'du' output.
+     *
+     * @param string $duOutput
+     * @param array  $mountPaths
+     *
+     * @return array A list of mount sizes (in bytes) keyed by mount path.
+     */
+    private function parseDu($duOutput, array $mountPaths)
+    {
+        $mountSizes = [];
+        $duOutputSplit = explode("\n", $duOutput, count($mountPaths));
+        foreach ($mountPaths as $i => $mountPath) {
+            if (!isset($duOutputSplit[$i])) {
+                throw new \RuntimeException("Failed to find row $i of 'du' command output: \n" . $duOutput);
+            }
+            list($mountSizes[$mountPath],) = explode("\t", $duOutputSplit[$i], 2);
+        }
+
+        return $mountSizes;
     }
 }

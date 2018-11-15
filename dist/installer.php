@@ -1,14 +1,17 @@
 <?php
 /**
  * @file
- * SensioCloud CLI installer.
+ * SymfonyCloud (PHP) CLI installer.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', 'https://accounts.sensio.cloud/cli/manifest.json');
-define('CLI_CONFIG_DIR', '.sensiocloud');
-define('CLI_EXECUTABLE', 'sensiocloud');
-define('CLI_NAME', 'SensioCloud CLI');
+define('CLI_UPDATE_MANIFEST_URL', getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://accounts.sensio.cloud/cli/manifest.json');
+define('CLI_CONFIG_DIR', '.symfony-cloud-cli');
+define('CLI_EXECUTABLE', 'symfony-cloud');
+define('CLI_NAME', 'SymfonyCloud (PHP) CLI');
 define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
+
+// Set up the CLI I/O.
+setUpIo();
 
 set_error_handler(
     function ($code, $message) {
@@ -217,15 +220,16 @@ if ($homeDir = getHomeDirectory()) {
     }
 }
 
-output(PHP_EOL . '  Running self:install command...');
-putenv('CLICOLOR_FORCE=' . is_ansi() ? '1' : '0');
-exec('php ' . $pharPath . ' self:install --yes 2>&1', $output, $return_var);
-output(preg_replace('/^/m', '  ', implode(PHP_EOL, $output)));
-if ($return_var === 0) {
-    output(PHP_EOL . '  The installation completed successfully.');
-} else {
-    exit($return_var);
+output(PHP_EOL . '  Running self:install command...' . PHP_EOL);
+putenv('CLICOLOR_FORCE=' . (is_ansi() ? '1' : '0'));
+$commandline = 'php ' . $pharPath . ' self:install';
+if (!is_interactive()) {
+    $commandline .= ' --yes';
 }
+$process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
+$result = proc_close($process);
+
+exit($result);
 
 /**
  * Checks a condition, outputs a message, and exits if failed.
@@ -304,6 +308,49 @@ function is_ansi()
     return (DIRECTORY_SEPARATOR == '\\')
         ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
         : (function_exists('posix_isatty') && posix_isatty(1));
+}
+
+/**
+ * Returns whether the terminal is interactive.
+ *
+ * @return bool
+ */
+function is_interactive()
+{
+    global $argv;
+    if (!empty($argv) && array_intersect(['--no-interaction', '-y', '--yes'], $argv)) {
+        return false;
+    }
+
+    if (function_exists('posix_isatty')) {
+        return posix_isatty(STDOUT) && posix_isatty(STDERR);
+    }
+
+    return true;
+}
+
+/**
+ * Sets up the STDIN, STDOUT and STDERR constants.
+ *
+ * Due to a PHP bug, these constants are not available when the PHP script is
+ * being read from stdin.
+ *
+ * @see https://bugs.php.net/bug.php?id=43283
+ */
+function setUpIo()
+{
+    if (PHP_SAPI !== 'cli') {
+        throw new RuntimeException('This can only be run via command-line PHP.');
+    }
+    if (!defined('STDIN')) {
+        define('STDIN', fopen('php://stdin',  'r'));
+    }
+    if (!defined('STDOUT')) {
+        define('STDOUT', fopen('php://stdout',  'w'));
+    }
+    if (!defined('STDERR')) {
+        define('STDERR', fopen('php://stderr',  'w'));
+    }
 }
 
 /**

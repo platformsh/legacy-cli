@@ -12,8 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoShellCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:mongo:shell');

@@ -1,4 +1,4 @@
-The **SensioCloud CLI** is a command-line interface for [SensioCloud](https://sensio.cloud). Use this tool to interact with your projects and to build them locally for development purposes.
+The **SymfonyCloud (PHP) CLI** is an unofficial command-line interface for [SymfonyCloud](https://symfony.cloud). Use this tool to interact with your projects and to build them locally for development purposes.
 
 ## Requirements
 

@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LsCommand extends CommandBase
 {
+
     /**
      * {@inheritdoc}
      */
@@ -22,7 +24,8 @@ class LsCommand extends CommandBase
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to a subdirectory')
             ->addOption('directories', 'd', InputOption::VALUE_NONE, 'Show directories only')
             ->addOption('files', 'f', InputOption::VALUE_NONE, 'Show files only')
-            ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"');
+            ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"')
+            ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP);
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -32,9 +35,13 @@ class LsCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, false, true);
+        $environment = $this->getSelectedEnvironment();
+
         try {
-            $tree = $this->api()->getTree($this->getSelectedEnvironment(), $input->getArgument('path'));
+            /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
+            $gitData = $this->getService('git_data_api');
+            $tree = $gitData->getTree($environment, $input->getArgument('path'), $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',

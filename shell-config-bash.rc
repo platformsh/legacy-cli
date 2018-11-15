@@ -1,6 +1,6 @@
-# SensioCloud shell configuration for Bash and ZSH.
+# SymfonyCloud (PHP) CLI shell configuration for Bash and ZSH.
 
 # Enable auto-completion.
-if HOOK=$(sensiocloud _completion -g -p sensiocloud 2>/dev/null); then
+if HOOK=$(symfony-cloud _completion -g -p symfony-cloud 2>/dev/null); then
     . <(echo "$HOOK") 2>/dev/null
 fi

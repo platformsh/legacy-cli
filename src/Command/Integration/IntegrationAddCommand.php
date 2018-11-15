@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -36,6 +37,16 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $values = $this->getForm()
                        ->resolveOptions($input, $this->stdErr, $questionHelper);
 
+        // Validate credentials for new Bitbucket integrations.
+        if (isset($values['type']) && $values['type'] === 'bitbucket' && isset($values['app_credentials'])) {
+            $result = $this->validateBitbucketCredentials($values['app_credentials']);
+            if ($result !== true) {
+                $this->stdErr->writeln($result);
+
+                return 1;
+            }
+        }
+
         // Omit all empty, non-required fields when creating a new integration.
         foreach ($this->getForm()->getFields() as $name => $field) {
             if (isset($values[$name]) && !$field->isRequired() && $field->isEmpty($values[$name])) {
@@ -43,8 +54,21 @@ class IntegrationAddCommand extends IntegrationCommandBase
             }
         }
 
-        $result = $this->getSelectedProject()
-                       ->addIntegration($values['type'], $values);
+
+        try {
+            $result = $this->getSelectedProject()
+                ->addIntegration($values['type'], $values);
+        } catch (BadResponseException $e) {
+            if ($errors = Integration::listValidationErrors($e)) {
+                $this->stdErr->writeln('<error>The integration is invalid.</error>');
+                $this->stdErr->writeln('');
+                $this->listValidationErrors($errors, $output);
+
+                return 4;
+            }
+
+            throw $e;
+        }
 
         /** @var Integration $integration */
         $integration = $result->getEntity();

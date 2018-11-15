@@ -12,8 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RedisCliCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this->setName('service:redis-cli');

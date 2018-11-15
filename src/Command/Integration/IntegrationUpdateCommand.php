@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,6 +28,11 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(
+            ['type'],
+            'The option --%s is deprecated and will be removed in a future version.'
+        );
+
         $this->validateInput($input);
 
         $id = $input->getArgument('id');
@@ -40,32 +47,60 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
 
-        $values = [];
-        $form = $this->getForm();
-        $currentValues = $integration->getProperties();
-        foreach ($form->getFields() as $key => $field) {
+        // Get the values supplied via the command-line options.
+        $newValues = [];
+        foreach ($this->getForm()->getFields() as $key => $field) {
             $value = $field->getValueFromInput($input);
-            if ($value !== null && $currentValues[$key] !== $value) {
-                $values[$key] = $value;
+            $parents = $field->getValueKeys() ?: [$key];
+            if ($value !== null) {
+                NestedArrayUtil::setNestedArrayValue($newValues, $parents, $value, true);
             }
         }
-        if (!$values) {
+
+        // Merge current values with new values, accounting for nested arrays.
+        foreach ($integration->getProperties() as $key => $currentValue) {
+            if (isset($newValues[$key])) {
+                // If the new value is an array, it needs to be merged with the
+                // old values, e.g. ['foo' => 1, 'bar' => 7] plus ['foo' => 2]
+                // will become ['foo' => 2, 'bar' => 7].
+                if (is_array($currentValue)) {
+                    $newValues[$key] = array_replace_recursive($currentValue, $newValues[$key]);
+                }
+
+                // Remove any new values that are the same as the current value.
+                if ($this->valuesAreEqual($currentValue, $newValues[$key])) {
+                    unset($newValues[$key]);
+                }
+            }
+        }
+
+        if (!$newValues) {
             $this->stdErr->writeln('No changed values were provided to update.');
+            $this->stdErr->writeln('');
             $this->ensureHooks($integration);
 
             return 1;
         }
 
-        // Complete the PATCH request with the current values. This is a
-        // workaround: at the moment a PATCH with only the changed values will
-        // cause a 500 error.
-        foreach ($currentValues as $key => $currentValue) {
-            if ($key !== 'id' && !array_key_exists($key, $values)) {
-                $values[$key] = $currentValue;
+        try {
+            $result = $integration->update($newValues);
+        } catch (BadResponseException $e) {
+            $errors = $integration->listValidationErrors($e);
+            if ($errors) {
+                $this->stdErr->writeln(sprintf(
+                    'The integration <error>%s</error> (type: %s) is invalid.',
+                    $integration->id,
+                    $integration->type
+                ));
+                $this->stdErr->writeln('');
+                $this->listValidationErrors($errors, $output);
+
+                return 4;
             }
+
+            throw $e;
         }
 
-        $result = $integration->update($values);
         $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
         $this->ensureHooks($integration);
 
@@ -78,5 +113,24 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         }
 
         return 0;
+    }
+
+    /**
+     * Compare new and old integration values.
+     *
+     * @param mixed $a
+     * @param mixed $b
+     *
+     * @return bool
+     *   True if the values are considered the same, false otherwise.
+     */
+    private function valuesAreEqual($a, $b)
+    {
+        if (is_array($a) && is_array($b)) {
+            ksort($a);
+            ksort($b);
+        }
+
+        return $a === $b;
     }
 }

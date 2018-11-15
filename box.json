@@ -1,6 +1,7 @@
 {
   "chmod": "0755",
   "directories": [
+    "bin",
     "resources",
     "src"
   ],
@@ -15,10 +16,6 @@
   ],
   "finder": [
     {
-      "in": "bin",
-      "name": "*"
-    },
-    {
       "in": "vendor",
       "name": "*.php",
       "exclude": [
@@ -29,6 +26,6 @@
     }
   ],
   "main": "bin/platform",
-  "output": "sensio-cloud.phar",
+  "output": "symfony-cloud.phar",
   "stub": "stub.php"
 }

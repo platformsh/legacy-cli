@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
