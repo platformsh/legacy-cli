@@ -6,7 +6,6 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\AppConfig;
-use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
@@ -30,7 +29,6 @@ class EnvironmentDrushCommand extends CommandBase
 
     public function __construct(
         Api $api,
-        ActivityService $activityService,
         Config $config,
         Selector $selector,
         Shell $shell,

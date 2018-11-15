@@ -62,7 +62,7 @@ class SnapshotCreateCommand extends CommandBase
                 $this->stdErr->writeln('The environment is not active.');
             }
 
-            $access = $selectedEnvironment->getUser($this->api()->getMyAccount()['id']);
+            $access = $selectedEnvironment->getUser($this->api->getMyAccount()['id']);
             if ($access->role !== 'admin') {
                 $this->stdErr->writeln('You must be an administrator to create a snapshot.');
             }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\GitDataApi;
