@@ -67,7 +67,7 @@ class KeychainStorage implements SessionStorageInterface
     private function loadFromFile($sessionId)
     {
         $id = preg_replace('/[^\w\-]+/', '-', $sessionId);
-        $dir = (new Config())->getWritableUserDir() . '/.session';
+        $dir = (new Config())->getSessionDir();
         $filename = "$dir/sess-$id/sess-$id.json";
         if (is_readable($filename) && ($contents = file_get_contents($filename))) {
             rename($filename, $filename . '.bak');

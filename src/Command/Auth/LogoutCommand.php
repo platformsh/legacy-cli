@@ -53,29 +53,18 @@ class LogoutCommand extends CommandBase
             $this->stdErr->writeln('<comment>Warning: an API token is set</comment>');
         }
 
-        if (!$this->api->isLoggedIn() && !$input->getOption('all')) {
-            $this->stdErr->writeln(
-                "You are not currently logged in"
-            );
-
-            return 0;
-        }
-
-        // Ask for a confirmation.
-        if ($this->api->isLoggedIn()
-            && !$this->questionHelper->confirm("Are you sure you wish to log out?")) {
-            $this->stdErr->writeln('You remain logged in.');
-
-            return 1;
-        }
-
+        // Log out.
         $this->api->getClient(false)
              ->getConnector()
              ->logOut();
+
+        // Clear the cache.
         $this->cache->flushAll();
+
         $this->stdErr->writeln('You are now logged out.');
 
-        $sessionsDir = $this->config->getWritableUserDir() . '/.session';
+        // Check for other sessions.
+        $sessionsDir = $this->config->getSessionDir();
         if ($input->getOption('all')) {
             $this->api->deleteFromKeychain();
             if (is_dir($sessionsDir)) {

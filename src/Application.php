@@ -210,7 +210,7 @@ class Application extends ParentApplication
         } elseif (getenv('NO_COLOR')
             || getenv('CLICOLOR_FORCE') === '0'
             || getenv('TERM') === 'dumb'
-            || getenv($this->cliConfig->get('application.env_prefix') . 'NO_COLOR')) {
+            || getenv($this->config->get('application.env_prefix') . 'NO_COLOR')) {
             $output->setDecorated(false);
         }
 

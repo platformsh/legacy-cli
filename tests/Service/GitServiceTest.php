@@ -6,6 +6,9 @@ namespace Platformsh\Cli\Tests;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Git;
 
+/**
+ * @group slow
+ */
 class GitServiceTest extends TestCase
 {
 

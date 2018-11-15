@@ -8,6 +8,8 @@ use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\IntegrationService;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
+use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -64,7 +66,7 @@ class IntegrationAddCommand extends CommandBase
 
         // Validate credentials for new Bitbucket integrations.
         if (isset($values['type']) && $values['type'] === 'bitbucket' && isset($values['app_credentials'])) {
-            $result = $this->validateBitbucketCredentials($values['app_credentials']);
+            $result = $this->integrationService->validateBitbucketCredentials($values['app_credentials']);
             if ($result !== true) {
                 $this->stdErr->writeln($result);
 
@@ -79,14 +81,26 @@ class IntegrationAddCommand extends CommandBase
             }
         }
 
-        $result = $selection->getProject()
-                       ->addIntegration($values['type'], $values);
+        try {
+            $result = $selection->getProject()
+                ->addIntegration($values['type'], $values);
+        } catch (BadResponseException $e) {
+            if ($errors = Integration::listValidationErrors($e)) {
+                $this->stdErr->writeln('<error>The integration is invalid.</error>');
+                $this->stdErr->writeln('');
+                $this->integrationService->listValidationErrors($errors, $output);
+
+                return 4;
+            }
+
+            throw $e;
+        }
 
         /** @var \Platformsh\Client\Model\Integration $integration */
         /** @noinspection PhpUnhandledExceptionInspection */
         $integration = $result->getEntity();
 
-        $this->integrationService->ensureHooks($integration, $project);
+        $this->integrationService->ensureHooks($integration, $selection->getProject());
 
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 

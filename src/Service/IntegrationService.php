@@ -582,7 +582,7 @@ class IntegrationService
      *
      * @return string|TRUE
      */
-    protected function validateBitbucketCredentials(array $credentials)
+    public function validateBitbucketCredentials(array $credentials)
     {
         try {
             $this->getBitbucketAccessToken($credentials);
@@ -597,5 +597,31 @@ class IntegrationService
         }
 
         return TRUE;
+    }
+
+    /**
+     * Lists validation errors found in an integration.
+     *
+     * @param array                                             $errors
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    public function listValidationErrors(array $errors, OutputInterface $output)
+    {
+        if (count($errors) === 1) {
+            $this->stdErr->writeln('The following error was found:');
+        } else {
+            $this->stdErr->writeln(sprintf(
+                'The following %d errors were found:',
+                count($errors)
+            ));
+        }
+
+        foreach ($errors as $key => $error) {
+            if (is_string($key) && strlen($key)) {
+                $output->writeln("$key: $error");
+            } else {
+                $output->writeln($error);
+            }
+        }
     }
 }
