@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTable;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -43,7 +44,7 @@ class Table implements InputConfiguringInterface
     }
 
     /**
-     * Add the --format option to a command's input definition.
+     * Add the --format and --columns options to a command's input definition.
      *
      * @param InputDefinition $definition
      */
@@ -51,6 +52,12 @@ class Table implements InputConfiguringInterface
     {
         $description = 'The output format ("table", "csv", or "tsv")';
         $option = new InputOption('format', null, InputOption::VALUE_REQUIRED, $description, 'table');
+        $definition->addOption($option);
+        $description = 'Columns to display (comma-separated list, or multiple values)';
+        $option = new InputOption('columns', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, $description);
+        $definition->addOption($option);
+        $description = 'Do not output the table header';
+        $option = new InputOption('no-header', null, InputOption::VALUE_NONE, $description);
         $definition->addOption($option);
     }
 
@@ -76,10 +83,21 @@ class Table implements InputConfiguringInterface
      *   The table rows.
      * @param string[] $header
      *   The table header (optional).
+     * @param string[] $defaultColumns
+     *   Default columns to display (optional). Columns are identified by
+     *   their name in $header, or alternatively by their key in $rows.
      */
-    public function render(array $rows, array $header = [])
+    public function render(array $rows, array $header = [], $defaultColumns = [])
     {
         $format = $this->getFormat();
+
+        $columnsToDisplay = $this->columnsToDisplay() ?: $defaultColumns;
+        $rows = $this->filterColumns($rows, $header, $columnsToDisplay);
+        $header = $this->filterColumns([0 => $header], $header, $columnsToDisplay)[0];
+
+        if ($this->input->hasOption('no-header') && $this->input->getOption('no-header')) {
+            $header = [];
+        }
 
         switch ($format) {
             case 'csv':
@@ -110,6 +128,75 @@ class Table implements InputConfiguringInterface
     public function formatIsMachineReadable()
     {
         return in_array($this->getFormat(), ['csv', 'tsv']);
+    }
+
+    /**
+     * Get the columns specified by the user.
+     *
+     * @return array
+     */
+    protected function columnsToDisplay()
+    {
+        if (!$this->input->hasOption('columns')) {
+            return [];
+        }
+        $columns = $this->input->getOption('columns');
+        if (count($columns) === 1) {
+            $columns = preg_split('/\s*,\s*/', $columns[0]);
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Filter rows by column names.
+     *
+     * @param array    $rows
+     * @param array    $header
+     * @param string[] $columnsToDisplay
+     *
+     * @return array
+     */
+    private function filterColumns(array $rows, array $header, array $columnsToDisplay)
+    {
+        if (empty($columnsToDisplay)) {
+            return $rows;
+        }
+
+        // The available columns are all the (lower-cased) values and string
+        // keys in $header.
+        $availableColumns = [];
+        foreach ($header as $key => $column) {
+            $availableColumns[strtolower($column)] = $key;
+            if (is_string($key)) {
+                $availableColumns[strtolower($key)] = $key;
+            }
+        }
+
+        // Validate the column names.
+        foreach ($columnsToDisplay as &$columnName) {
+            $columnNameLowered = strtolower($columnName);
+            if (!isset($availableColumns[$columnNameLowered])) {
+                throw new InvalidArgumentException(
+                    sprintf('Column not found: %s (available columns: %s)', $columnName, implode(', ', array_keys($availableColumns)))
+                );
+            }
+            $columnName = $columnNameLowered;
+        }
+
+        // Filter the rows for keys matching those in $availableColumns. If a
+        // key doesn't exist in a row, then the cell will be an empty string.
+        $newRows = [];
+        foreach ($rows as $row) {
+            $newRow = [];
+            foreach ($columnsToDisplay as $columnNameLowered) {
+                $key = $availableColumns[$columnNameLowered];
+                $newRow[] = array_key_exists($key, $row) ? $row[$key] : '';
+            }
+            $newRows[] = $newRow;
+        }
+
+        return $newRows;
     }
 
     /**

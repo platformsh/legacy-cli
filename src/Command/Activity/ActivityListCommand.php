@@ -93,26 +93,25 @@ class ActivityListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
+        $headers = ['ID', 'Created', 'Completed', 'Description', 'Progress', 'State', 'Result', 'Environment(s)'];
+        $defaultColumns = ['ID', 'Created', 'Description', 'Progress', 'State', 'Result'];
+
+        if (!$environmentSpecific) {
+            $defaultColumns[] = 'Environment(s)';
+        }
+
         $rows = [];
         foreach ($activities as $activity) {
-            $row = [
+            $rows[] = [
                 new AdaptiveTableCell($activity->id, ['wrap' => false]),
                 $formatter->format($activity['created_at'], 'created_at'),
+                $formatter->format($activity['completed_at'], 'completed_at'),
                 ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
                 ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
+                implode(', ', $activity->environments)
             ];
-            if (!$environmentSpecific) {
-                $row[] = implode(', ', $activity->environments);
-            }
-            $rows[] = $row;
-        }
-
-        $headers = ['ID', 'Created', 'Description', 'Progress', 'State', 'Result'];
-
-        if (!$environmentSpecific) {
-            $headers[] = 'Environment(s)';
         }
 
         if (!$table->formatIsMachineReadable()) {
@@ -133,7 +132,7 @@ class ActivityListCommand extends CommandBase
             }
         }
 
-        $table->render($rows, $headers);
+        $table->render($rows, $headers, $defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $executable = $this->config()->get('application.executable');
