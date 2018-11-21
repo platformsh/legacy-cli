@@ -16,6 +16,10 @@ services:
         # Auto-configuring is not necessary.
         autoconfigure: false
 
+    activity_loader:
+        class:     '\Platformsh\Cli\Service\ActivityLoader'
+        arguments: ['@output']
+
     activity_monitor:
         class:     '\Platformsh\Cli\Service\ActivityMonitor'
         arguments: ['@output']
