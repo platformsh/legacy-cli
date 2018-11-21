@@ -3,12 +3,12 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTable;
+use Platformsh\Cli\Util\Csv;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\StreamOutput;
 
 /**
  * Display a table in a format chosen by the user.
@@ -114,7 +114,7 @@ class Table implements InputConfiguringInterface
                 break;
 
             default:
-                throw new \InvalidArgumentException(sprintf('Invalid format: %s', $format));
+                throw new InvalidArgumentException(sprintf('Invalid format: %s', $format));
         }
     }
 
@@ -219,21 +219,13 @@ class Table implements InputConfiguringInterface
      * @param array  $rows
      * @param array  $header
      * @param string $delimiter
-     * @param string $enclosure
      */
-    protected function renderCsv($rows, $header, $delimiter = ',', $enclosure = '"')
+    protected function renderCsv(array $rows, array $header, $delimiter = ',')
     {
-        if ($this->output instanceof StreamOutput) {
-            $stream = $this->output->getStream();
-        } else {
-            throw new \RuntimeException('A stream output is required for the CSV format');
+        if (!empty($header)) {
+            array_unshift($rows, $header);
         }
-        if ($header) {
-            fputcsv($stream, $header, $delimiter, $enclosure);
-        }
-        foreach ($rows as $row) {
-            fputcsv($stream, $row, $delimiter, $enclosure);
-        }
+        $this->output->write((new Csv($delimiter))->format($rows));
     }
 
     /**

@@ -3,10 +3,11 @@
 namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\Csv;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\StreamOutput;
 
 class TableServiceTest extends \PHPUnit_Framework_TestCase
 {
@@ -15,8 +16,7 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
      */
     public function testColumns()
     {
-        $stream = fopen('php://memory', 'rw');
-        $output = new StreamOutput($stream);
+        $output = new BufferedOutput();
         $definition = new InputDefinition();
         Table::configureInput($definition);
         $tableService = new Table(new ArrayInput([
@@ -24,17 +24,19 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
             '--format' => 'csv',
         ], $definition), $output);
 
+        $header = ['Name', 'Value 1', 'Value 2', 'Value 3'];
         $rows = [
             ['foo', 1, 2, 3],
             ['bar', 4, 5, 6],
         ];
-        $header = ['Name', 'Value 1', 'Value 2', 'Value 3'];
-        $expected = "\"Value 2\",Name\n2,foo\n5,bar\n";
+        $expected = (new Csv())->format([
+            ['Value 2', 'Name'],
+            ['2', 'foo'],
+            ['5', 'bar'],
+        ]);
 
         $tableService->render($rows, $header);
-        fseek($stream, 0);
-        $actual = fread($stream, 1024);
-        fclose($stream);
+        $actual = $output->fetch();
 
         $this->assertEquals($expected, $actual);
     }
