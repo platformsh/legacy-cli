@@ -167,10 +167,8 @@ class Table implements InputConfiguringInterface
         // keys in $header.
         $availableColumns = [];
         foreach ($header as $key => $column) {
-            $availableColumns[strtolower($column)] = $key;
-            if (is_string($key)) {
-                $availableColumns[strtolower($key)] = $key;
-            }
+            $columnName = is_string($key) ? $key : $column;
+            $availableColumns[strtolower($columnName)] = $key;
         }
 
         // Validate the column names.
