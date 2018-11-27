@@ -92,6 +92,7 @@ class PasswordLoginCommand extends CommandBase
             }
         );
         $question->setHidden(true);
+        $question->setHiddenFallback(false);
         $question->setMaxAttempts(5);
         $password = $questionHelper->ask($input, $output, $question);
 
