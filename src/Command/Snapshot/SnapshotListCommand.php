@@ -50,7 +50,9 @@ class SnapshotListCommand extends CommandBase
             $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");
         }
 
-        $activities = $environment->getActivities($input->getOption('limit'), 'environment.backup', $startsAt);
+        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
+        $loader = $this->getService('activity_loader');
+        $activities = $loader->load($environment, $input->getOption('limit'), 'environment.backup', $startsAt);
         if (!$activities) {
             $this->stdErr->writeln('No snapshots found');
             return 1;
