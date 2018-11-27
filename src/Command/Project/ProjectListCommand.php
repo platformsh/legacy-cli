@@ -67,6 +67,9 @@ class ProjectListCommand extends CommandBase
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
 
+        $header = ['ID', 'Title', 'URL', 'Host'];
+        $defaultColumns = ['ID', 'Title', 'URL'];
+
         $rows = [];
         foreach ($projects as $project) {
             $title = $project->title ?: '[Untitled Project]';
@@ -83,15 +86,14 @@ class ProjectListCommand extends CommandBase
                 new AdaptiveTableCell($project->id, ['wrap' => false]),
                 $title,
                 $project->getLink('#ui'),
+                parse_url($project->getUri(), PHP_URL_HOST)
             ];
         }
-
-        $header = ['ID', 'Title', 'URL'];
 
         // Display a simple table (and no messages) if the --format is
         // machine-readable (e.g. csv or tsv).
         if ($machineReadable) {
-            $table->render($rows, $header);
+            $table->render($rows, $header, $defaultColumns);
 
             return 0;
         }
@@ -117,7 +119,7 @@ class ProjectListCommand extends CommandBase
             $this->stdErr->writeln('Your projects are: ');
         }
 
-        $table->render($rows, $header);
+        $table->render($rows, $header, $defaultColumns);
 
         $commandName = $this->config()->get('application.executable');
         $this->stdErr->writeln([
