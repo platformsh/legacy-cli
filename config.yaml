@@ -4,8 +4,8 @@ application:
   version: '0.0.24'
   executable: 'symfony-cloud'
   package_name: ~
-  installer_url: 'https://accounts.sensio.cloud/cli/installer'
-  manifest_url: 'https://accounts.sensio.cloud/cli/manifest.json'
+  installer_url: 'https://a.s5y.io/cli/installer'
+  manifest_url: 'https://a.s5y.io/cli/manifest.json'
   user_config_dir: '.symfony-cloud-cli'
   user_state_file: '.symfony-cloud-cli/state.json'
   env_prefix: 'SYMFONY_CLOUD_CLI_'
@@ -63,7 +63,7 @@ service:
   project_config_dir: '.symfony'
   docs_url: 'https://sensio.cloud'
   docs_search_url: 'https://www.google.com/search?q=site%3Asensio.cloud%20{{ terms }}'
-  accounts_url: 'https://accounts.sensio.cloud'
+  accounts_url: 'https://a.s5y.io'
   pricing_url: ~
   default_from_address: ~
   api_token_help_url: ~
@@ -84,7 +84,7 @@ api:
   users_ttl: 3600
 
   # Overridden by {application.env_prefix}ACCOUNTS_API env var.
-  accounts_api_url: 'https://accounts.sensio.cloud/api/sensio/'
+  accounts_api_url: 'https://a.s5y.io/api/platform/'
 
   # Overridden by {application.env_prefix}DEBUG env var.
   debug: false
