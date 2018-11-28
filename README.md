@@ -22,6 +22,12 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 This is the recommended installation method. Simply use this command:
 
     curl -sS https://platform.sh/cli/installer | php
+    
+### Installing on Windows (Git bash)
+```bash
+curl https://platform.sh/cli/installer -o cli-installer.php
+php cli-installer.php
+```
 
 ### Installing manually
 

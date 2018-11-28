@@ -62,7 +62,10 @@ class CommitListCommand extends CommandBase
             return 1;
         }
 
-        if ($this->stdErr->isDecorated()) {
+        /** @var Table $table */
+        $table = $this->getService('table');
+
+        if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Commits on the project %s, environment %s:',
                 $this->api()->getProjectLabel($this->getSelectedProject()),
@@ -79,15 +82,15 @@ class CommitListCommand extends CommandBase
         $rows = [];
         foreach ($commits as $commit) {
             $row = [];
-            $row[] = $formatter->format($commit->author['date'], 'author.date');
+            $row[] = new AdaptiveTableCell(
+                $formatter->format($commit->author['date'], 'author.date'),
+                ['wrap' => false]
+            );
             $row[] = new AdaptiveTableCell($commit->sha, ['wrap' => false]);
             $row[] = $commit->author['name'];
             $row[] = $this->summarize($commit->message);
             $rows[] = $row;
         }
-
-        /** @var Table $table */
-        $table = $this->getService('table');
 
         $table->render($rows, $header);
 

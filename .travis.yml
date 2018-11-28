@@ -1,6 +1,5 @@
 language: php
 dist: trusty
-sudo: false
 
 php: nightly
 env: TEST_SCRIPT=scripts/test/unit.sh
@@ -31,7 +30,6 @@ matrix:
 
   allow_failures:
     - php: nightly
-    - env: TEST_SCRIPT=scripts/test/slow.sh
 
   fast_finish: true
 

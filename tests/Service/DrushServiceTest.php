@@ -8,6 +8,9 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
 
+/**
+ * @group slow
+ */
 class DrushServiceTest extends \PHPUnit_Framework_TestCase
 {
     use HasTempDirTrait;

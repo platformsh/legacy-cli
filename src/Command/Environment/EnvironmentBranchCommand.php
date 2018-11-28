@@ -138,6 +138,7 @@ class EnvironmentBranchCommand extends CommandBase
         $ssh = $this->getService('ssh');
         $git->setSshCommand($ssh->getSshCommand());
 
+        $createdNew = false;
         if ($projectRoot) {
             // If the Git branch already exists locally, just check it out.
             $existsLocally = $git->branchExists($branchName, $projectRoot);
@@ -160,6 +161,7 @@ class EnvironmentBranchCommand extends CommandBase
                         return 1;
                     }
                 }
+                $createdNew = true;
             }
         }
 
@@ -173,9 +175,10 @@ class EnvironmentBranchCommand extends CommandBase
                 '<error>Branching failed</error>'
             );
 
-            // Set the local branch to track the remote branch. This requires
-            // first fetching the new branch from the remote.
-            if ($remoteSuccess && $projectRoot) {
+            // If a new local branch has been created, set it to track the
+            // remote branch. This requires first fetching the new branch from
+            // the remote.
+            if ($remoteSuccess && $projectRoot && $createdNew) {
                 $upstreamRemote = $this->config()->get('detection.git_remote_name');
                 $git->fetch($upstreamRemote, $branchName, $projectRoot);
                 $git->setUpstream($upstreamRemote . '/' . $branchName, $branchName, $projectRoot);
