@@ -61,8 +61,8 @@ service:
   header_prefix: 'x-symfonycloud'
   app_config_file: '.symfony.app.yaml'
   project_config_dir: '.symfony'
-  docs_url: 'https://sensio.cloud'
-  docs_search_url: 'https://www.google.com/search?q=site%3Asensio.cloud%20{{ terms }}'
+  docs_url: 'https://symfony.com/doc/cloud'
+  docs_search_url: 'https://www.google.com/search?q=site%3Asymfony.com%2Fdoc%2Fcloud%20{{ terms }}'
   accounts_url: 'https://a.s5y.io'
   pricing_url: ~
   default_from_address: ~
