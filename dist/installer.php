@@ -4,7 +4,7 @@
  * SymfonyCloud (PHP) CLI installer.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://accounts.sensio.cloud/cli/manifest.json');
+define('CLI_UPDATE_MANIFEST_URL', getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://a.s5y.io/cli/manifest.json');
 define('CLI_CONFIG_DIR', '.symfony-cloud-cli');
 define('CLI_EXECUTABLE', 'symfony-cloud');
 define('CLI_NAME', 'SymfonyCloud (PHP) CLI');
