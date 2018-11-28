@@ -38,9 +38,10 @@ class DomainListCommand extends DomainCommandBase
 
         foreach ($tree as $domain) {
             $rows[] = [
-                $domain->id,
-                $formatter->format((bool) $domain['ssl']['has_certificate']),
-                $formatter->format($domain['created_at'], 'created_at'),
+                'name' => $domain->id,
+                'ssl' => $formatter->format((bool) $domain['ssl']['has_certificate']),
+                'created_at' => $formatter->format($domain['created_at'], 'created_at'),
+                'updated_at' => $formatter->format($domain['updated_at'], 'updated_at'),
             ];
         }
 
@@ -75,17 +76,18 @@ class DomainListCommand extends DomainCommandBase
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $header = ['Name', 'SSL enabled', 'Creation date'];
+        $header = ['name' => 'Name', 'ssl' => 'SSL enabled', 'created_at' => 'Creation date', 'updated_at' => 'Updated date'];
+        $defaultColumns = ['name', 'ssl', 'created_at'];
         $rows = $this->buildDomainRows($domains);
 
         if ($table->formatIsMachineReadable()) {
-            $table->render($rows, $header);
+            $table->render($rows, $header, $defaultColumns);
 
             return 0;
         }
 
         $this->stdErr->writeln("Your domains are: ");
-        $table->render($rows, $header);
+        $table->render($rows, $header, $defaultColumns);
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln([
