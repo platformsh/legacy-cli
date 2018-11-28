@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "c7badfe42069dc937eed95f67ff95741d1e50707",
-        "sha256": "ee3352a1cb799eee5cd727f5c880bf951110109d9ded2c64ffff0ef11de1c0e2",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.36.0/platform.phar",
-        "version": "3.36.0",
+        "sha1": "99793bba2729e51a4ea425cbb069e9e0227d67b5",
+        "sha256": "6fcc456af03881579bdc67a53fcb7724f43e51c6723988a92f2a276d8323a9fb",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.37.0/platform.phar",
+        "version": "3.37.0",
         "php": {
             "min": "5.5.9"
         },
@@ -147,6 +147,11 @@
                 "notes": "* Fix a further source of 'Not logged in' errors immediately after login.\n* Add `integration:validate` command, and improve error reporting in other\n  integration commands.\n* Deprecate the --type option in the `integration:update` command.\n* Fix alpha UI URLs for environments in the `web` command.",
                 "show from": "3.35.0",
                 "hide from": "3.36.0"
+            },
+            {
+                "notes": "New features:\n\n* Add --columns option for all tables (to filter and order table columns).\n* Add non-default \"disk\" and \"size\" columns to app:list command.\n* Add non-default \"updated_at\" column to domains:list command.\n* Add non-default \"host\" column to project:list command.\n* Allow loading more than 10 snapshots via --limit in snapshot:list command.\n\nOther changes:\n\n* Change CSV/TSV table output to make it cleaner. CSV/TSV cells will now only\n  be enclosed in quote marks if necessary, conforming to RFC 4180.\n* Fail if password input cannot be hidden in auth:password-login command.\n* Set the remote only for new branches in environment:branch command.\n* Avoid wrapping dates in commit:list command.\n* Update list of allowed SSH key algorithms for ssh-key:add command.\n* Remove confirmation step in logout command.",
+                "show from": "3.36.0",
+                "hide from": "3.37.0"
             }
         ]
     }
