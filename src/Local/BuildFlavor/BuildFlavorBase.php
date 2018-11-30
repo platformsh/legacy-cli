@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Local\BuildFlavor;
 
+use Platformsh\Cli\Local\BuildCache\BuildCacheCollection;
+use Platformsh\Cli\Local\BuildCache\Manager;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
@@ -58,6 +60,9 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
 
     /** @var Shell */
     protected $shellHelper;
+
+    /** @var \Platformsh\Cli\Local\BuildCache\Manager */
+    protected $cacheManager;
 
     /** @var Config */
     protected $config;
@@ -126,6 +131,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
         $this->documentRoot = $app->getDocumentRoot();
         $this->settings = $settings;
         $this->config = $config;
+        $this->cacheManager = new Manager($settings['cache_dir'], $this->fsHelper);
 
         if ($this->config->get('local.copy_on_windows')) {
             $this->fsHelper->setCopyOnWindows(true);
@@ -266,7 +272,45 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
             $this->fsHelper->symlink($this->appRoot, $buildDir);
         }
 
+        $this->restoreFromBuildCache();
+
         return $buildDir;
+    }
+
+    /**
+     * Save to the build cache.
+     */
+    public function saveToBuildCache()
+    {
+        if (!empty($this->settings['no-cache'])) {
+            return;
+        }
+        $cacheCollection = BuildCacheCollection::fromAppConfig($this->app->getConfig());
+        $sourceDir = $this->app->getSourceDir();
+        foreach ($cacheCollection as $cache) {
+            if (!$this->cacheManager->findArchive($cache, $sourceDir)) {
+                $this->stdErr->writeln(sprintf('Saving to local cache: <info>%s</info>', $cache->getName()));
+                $this->cacheManager->save($cache, $sourceDir, $this->buildDir);
+            }
+        }
+    }
+
+    /**
+     * Restore from the build cache into the build directory.
+     */
+    protected function restoreFromBuildCache()
+    {
+        if (!empty($this->settings['no-cache'])) {
+            return;
+        }
+        $cacheCollection = BuildCacheCollection::fromAppConfig($this->app->getConfig());
+        $sourceDir = $this->app->getSourceDir();
+        foreach ($cacheCollection as $cache) {
+            if ($this->cacheManager->findArchive($cache, $sourceDir)) {
+                $this->stdErr->writeln(sprintf('Restoring from local cache: <info>%s</info>', $cache->getName()));
+                $this->cacheManager->restoreIfArchiveExists($cache, $sourceDir, $this->buildDir);
+            }
+        }
     }
 
     /**

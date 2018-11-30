@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Local\BuildCache;
 
+use Platformsh\Cli\Exception\InvalidConfigException;
+
 class BuildCache
 {
     private $name;
@@ -25,11 +27,11 @@ class BuildCache
         ];
         foreach (['allow_stale', 'share_between_apps'] as $key) {
             if (!is_bool($config[$key])) {
-                throw new \InvalidArgumentException("$key must be a Boolean (true or false)");
+                throw new InvalidConfigException("$key must be a Boolean (true or false)");
             }
         }
         if (!isset($config['watch'])) {
-            throw new \InvalidArgumentException("'watch' is required in cache configuration");
+            throw new InvalidConfigException("'watch' is required in cache configuration");
         }
 
         $this->name = $name;
@@ -50,7 +52,7 @@ class BuildCache
     public static function fromConfig($name, array $config)
     {
         if (empty($name) || !is_string($name)) {
-            throw new \InvalidArgumentException('The cache name must be a non-empty string.');
+            throw new InvalidConfigException('The cache name must be a non-empty string.');
         }
 
         return new self($name, $config);

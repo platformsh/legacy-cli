@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Local\BuildCache;
 
+use Platformsh\Cli\Exception\InvalidConfigException;
+
 class BuildCacheCollection implements \Iterator
 {
     /** @var \Platformsh\Cli\Local\BuildCache\BuildCache[] */
@@ -53,7 +55,7 @@ class BuildCacheCollection implements \Iterator
         $lastDirectory = null;
         foreach ($directories as $key => $directory) {
             if ($lastDirectory !== null && strpos($directory, $lastDirectory) === 0) {
-                throw new \InvalidArgumentException(sprintf('Cache directories cannot be nested (%s is inside %s)', $directory, $lastDirectory));
+                throw new InvalidConfigException(sprintf('Cache directories cannot be nested (%s is inside %s)', $directory, $lastDirectory));
             }
             $lastDirectory = $directory;
         }

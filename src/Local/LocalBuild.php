@@ -258,7 +258,9 @@ class LocalBuild
 
         $buildFlavor->setOutput($this->output);
 
-        $buildFlavor->prepare($tmpBuildDir, $app, $this->config, $this->settings);
+        $buildSettings = $this->settings;
+        $buildSettings['cache_dir'] = $sourceDir . '/' . $this->config->get('local.cache_dir');
+        $buildFlavor->prepare($tmpBuildDir, $app, $this->config, $buildSettings);
 
         $archive = false;
         if (empty($this->settings['no-archive']) && empty($this->settings['no-cache'])) {
@@ -309,6 +311,11 @@ class LocalBuild
                 // not archive the result.
                 $archive = false;
                 $success = false;
+            }
+
+            // Save to the build cache.
+            if ($success && empty($this->settings['no-cache']) && method_exists($buildFlavor, 'saveToBuildCache')) {
+                $buildFlavor->saveToBuildCache();
             }
 
             if ($archive && $buildFlavor->canArchive()) {
