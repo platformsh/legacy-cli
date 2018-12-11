@@ -64,9 +64,10 @@ class DomainListCommand extends DomainCommandBase
 
         foreach ($tree as $domain) {
             $rows[] = [
-                $domain->id,
-                $this->formatter->format((bool) $domain['ssl']['has_certificate']),
-                $this->formatter->format($domain['created_at'], 'created_at'),
+                'name' => $domain->id,
+                'ssl' => $this->formatter->format((bool) $domain['ssl']['has_certificate']),
+                'created_at' => $this->formatter->format($domain['created_at'], 'created_at'),
+                'updated_at' => $this->formatter->format($domain['updated_at'], 'updated_at'),
             ];
         }
 
@@ -98,17 +99,18 @@ class DomainListCommand extends DomainCommandBase
             return 1;
         }
 
-        $header = ['Name', 'SSL enabled', 'Creation date'];
+        $header = ['name' => 'Name', 'ssl' => 'SSL enabled', 'created_at' => 'Creation date', 'updated_at' => 'Updated date'];
+        $defaultColumns = ['name', 'ssl', 'created_at'];
         $rows = $this->buildDomainRows($domains);
 
         if ($this->table->formatIsMachineReadable()) {
-            $this->table->render($rows, $header);
+            $this->table->render($rows, $header, $defaultColumns);
 
             return 0;
         }
 
         $this->stdErr->writeln("Your domains are: ");
-        $this->table->render($rows, $header);
+        $this->table->render($rows, $header, $defaultColumns);
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln([

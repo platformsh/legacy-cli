@@ -229,15 +229,13 @@ EOF
                 $results[$filesystem]['mounts'][] = $mountPath;
                 continue;
             }
-            $available = $this->getDfColumn($line, 'available');
-            $used = $this->getDfColumn($line, 'used');
             $results[$filesystem] = [
                 'total' => $this->getDfColumn($line, 'total'),
-                'used' => $used,
-                'available' => $available,
+                'used' => $this->getDfColumn($line, 'used'),
+                'available' => $this->getDfColumn($line, 'available'),
                 'mounts' => [$mountPath],
-                'percent_used' => $used / $available * 100,
             ];
+            $results[$filesystem]['percent_used'] = $results[$filesystem]['used'] / $results[$filesystem]['total'] * 100;
         }
 
         return $results;

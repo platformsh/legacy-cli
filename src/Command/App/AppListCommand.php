@@ -94,16 +94,18 @@ class AppListCommand extends CommandBase
             return '';
         };
 
-        $headers = ['Name', 'Type'];
+        $headers = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
+        $defaultColumns = ['name', 'type'];
         if ($showLocalPath) {
-            $headers[] = 'Path';
+            $headers['path'] = 'Path';
+            $defaultColumns[] = 'Path';
         }
 
         $rows = [];
         foreach ($apps as $app) {
-            $row = [$app->name, $app->type];
+            $row = [$app->name, $app->type, 'disk' => $app->disk, $app->size];
             if ($showLocalPath) {
-                $row[] = $getLocalPath($app->name);
+                $row['path'] = $getLocalPath($app->name);
             }
             $rows[] = $row;
         }
@@ -116,7 +118,7 @@ class AppListCommand extends CommandBase
             ));
         }
 
-        $this->table->render($rows, $headers);
+        $this->table->render($rows, $headers, $defaultColumns);
 
         if (!$this->table->formatIsMachineReadable() && $deployment->services) {
             $this->stdErr->writeln('');

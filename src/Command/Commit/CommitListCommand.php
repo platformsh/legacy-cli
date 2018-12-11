@@ -85,7 +85,7 @@ class CommitListCommand extends CommandBase
             return 1;
         }
 
-        if ($this->stdErr->isDecorated()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Commits on the project %s, environment %s:',
                 $this->api->getProjectLabel($selection->getProject()),

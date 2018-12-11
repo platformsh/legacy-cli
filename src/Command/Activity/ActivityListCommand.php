@@ -11,10 +11,8 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityListCommand extends CommandBase
@@ -92,54 +90,33 @@ class ActivityListCommand extends CommandBase
         }
 
         $type = $input->getOption('type');
-        $activities = $apiResource->getActivities($limit, $type, $startsAt);
 
-        $progress = new ProgressBar($output->isDecorated() ? $this->stdErr : new NullOutput());
-        $progress->setMessage('Loading activities...');
-        $progress->setFormat('%message% %current% (max: %max%)');
-        $progress->start($limit);
-        while (count($activities) < $limit) {
-            if ($activity = end($activities)) {
-                $startsAt = strtotime($activity->created_at);
-            }
-            $nextActivities = $apiResource->getActivities($limit - count($activities), $type, $startsAt);
-            if (!count($nextActivities)) {
-                break;
-            }
-            foreach ($nextActivities as $activity) {
-                $activities[$activity->id] = $activity;
-            }
-            $progress->setProgress(count($activities));
-        }
-        $progress->clear();
-
-        /** @var \Platformsh\Client\Model\Activity[] $activities */
+        $activities = $this->activityService->load($apiResource, $limit, $type, $startsAt);
         if (!$activities) {
             $this->stdErr->writeln('No activities found');
 
             return 1;
         }
 
+        $headers = ['ID', 'Created', 'Completed', 'Description', 'Progress', 'State', 'Result', 'Environment(s)'];
+        $defaultColumns = ['ID', 'Created', 'Description', 'Progress', 'State', 'Result'];
+
+        if (!$environmentSpecific) {
+            $defaultColumns[] = 'Environment(s)';
+        }
+
         $rows = [];
         foreach ($activities as $activity) {
-            $row = [
+            $rows[] = [
                 new AdaptiveTableCell($activity->id, ['wrap' => false]),
                 $this->formatter->format($activity['created_at'], 'created_at'),
+                $this->formatter->format($activity['completed_at'], 'completed_at'),
                 $this->activityService->getFormattedDescription($activity, !$this->table->formatIsMachineReadable()),
                 $activity->getCompletionPercent() . '%',
                 $this->activityService->formatState($activity->state),
                 $this->activityService->formatResult($activity->result, !$this->table->formatIsMachineReadable()),
+                implode(', ', $activity->environments)
             ];
-            if (!$environmentSpecific) {
-                $row[] = implode(', ', $activity->environments);
-            }
-            $rows[] = $row;
-        }
-
-        $headers = ['ID', 'Created', 'Description', 'Progress', 'State', 'Result'];
-
-        if (!$environmentSpecific) {
-            $headers[] = 'Environment(s)';
         }
 
         if (!$this->table->formatIsMachineReadable()) {
@@ -160,7 +137,7 @@ class ActivityListCommand extends CommandBase
             }
         }
 
-        $this->table->render($rows, $headers);
+        $this->table->render($rows, $headers, $defaultColumns);
 
         if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->get('application.executable');

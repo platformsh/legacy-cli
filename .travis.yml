@@ -1,6 +1,5 @@
 language: php
 dist: trusty
-sudo: false
 
 php: nightly
 env: TEST_SCRIPT=scripts/test/unit.sh

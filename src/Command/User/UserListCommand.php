@@ -58,12 +58,12 @@ class UserListCommand extends CommandBase
                     $role .= ' (owner)';
                 }
             }
-            $rows[$weight] = [$account['email'], $account['display_name'], $role, $projectAccess->id];
+            $rows[$weight] = ['email' => $account['email'], $account['display_name'], 'role' => $role, $projectAccess->id];
         }
 
         ksort($rows);
 
-        $this->table->render(array_values($rows), ['Email address', 'Name', 'Project role', 'ID']);
+        $this->table->render(array_values($rows), ['email' => 'Email address', 'Name', 'role' => 'Project role', 'ID']);
 
         if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

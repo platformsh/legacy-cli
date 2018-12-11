@@ -75,14 +75,14 @@ class ServiceListCommand extends CommandBase
             return 0;
         }
 
-        $headers = ['Name', 'Type', 'Disk (MiB)', 'Size'];
+        $headers = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
 
         $rows = [];
         foreach ($services as $name => $service) {
             $row = [
                 $name,
                 $service->type,
-                $service->disk !== null ? $service->disk : '',
+                'disk' => $service->disk !== null ? $service->disk : '',
                 $service->size,
             ];
             $rows[] = $row;
