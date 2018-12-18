@@ -110,6 +110,9 @@ class Manager
 
         $subDirectory = $this->getSubdirectory($cache);
         if (is_dir($subDirectory) && ($files = scandir($subDirectory))) {
+            $files = array_filter($files, function ($filename) {
+                return $filename !== '.' && $filename !== '..';
+            });
             $files = array_map(function ($filename) use ($subDirectory) {
                 return $subDirectory . DIRECTORY_SEPARATOR . $filename;
             }, $files);
