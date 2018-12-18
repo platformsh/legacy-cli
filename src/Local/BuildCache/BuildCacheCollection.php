@@ -7,7 +7,7 @@ use Platformsh\Cli\Exception\InvalidConfigException;
 class BuildCacheCollection implements \Iterator
 {
     /** @var \Platformsh\Cli\Local\BuildCache\BuildCache[] */
-    private $caches;
+    private $caches = [];
 
     /**
      * Get a list of cache configurations from an app's config.
