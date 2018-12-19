@@ -51,12 +51,12 @@ class MountListCommand extends MountCommandBase
             return 0;
         }
 
-        $header = ['Mount path', 'Definition'];
+        $header = ['path' => 'Mount path', 'definition' => 'Definition'];
         $rows = [];
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
         foreach ($mounts as $path => $definition) {
-            $rows[] = [$path, $formatter->format($definition)];
+            $rows[] = ['path' => $path, 'definition' => $formatter->format($definition)];
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */
