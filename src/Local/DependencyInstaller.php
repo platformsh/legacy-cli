@@ -108,6 +108,7 @@ class DependencyInstaller
         $stacks = [
             'nodejs' => new DependencyManager\Npm($this->shell),
             'python' => new DependencyManager\Pip($this->shell),
+            'python3' => new DependencyManager\Pip($this->shell),
             'ruby' => new DependencyManager\Bundler($this->shell),
             'php' => new DependencyManager\Composer($this->shell),
         ];
