@@ -86,15 +86,23 @@ class DomainListCommand extends DomainCommandBase
             return 0;
         }
 
-        $this->stdErr->writeln("Your domains are: ");
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(sprintf(
+                'Domains on the project %s:',
+                $this->api()->getProjectLabel($project)
+            ));
+        }
+
         $table->render($rows, $header, $defaultColumns);
 
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln([
-            'To add a new domain, run: <info>' . $executable . ' domain:add [domain-name]</info>',
-            'To view a domain, run: <info>' . $executable . ' domain:get [domain-name]</info>',
-            'To delete a domain, run: <info>' . $executable . ' domain:delete [domain-name]</info>',
-        ]);
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln([
+                'To add a new domain, run: <info>' . $executable . ' domain:add [domain-name]</info>',
+                'To view a domain, run: <info>' . $executable . ' domain:get [domain-name]</info>',
+                'To delete a domain, run: <info>' . $executable . ' domain:delete [domain-name]</info>',
+            ]);
+        }
 
         return 0;
     }

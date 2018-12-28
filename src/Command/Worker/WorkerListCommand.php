@@ -49,6 +49,15 @@ class WorkerListCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(sprintf(
+                'Workers on the project <info>%s</info>, environment <info>%s</info>:',
+                $this->api()->getProjectLabel($this->getSelectedProject()),
+                $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
+            ));
+        }
+
         $table->render($rows, ['Name', 'Type', 'Commands']);
 
         return 0;

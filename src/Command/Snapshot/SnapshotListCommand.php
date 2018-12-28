@@ -46,10 +46,6 @@ class SnapshotListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln("Finding snapshots for the environment <info>{$environment->id}</info>");
-        }
-
         /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
         $loader = $this->getService('activity_loader');
         $activities = $loader->load($environment, $input->getOption('limit'), 'environment.backup', $startsAt);
@@ -69,6 +65,14 @@ class SnapshotListCommand extends CommandBase
                 ActivityMonitor::formatState($activity->state),
                 ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
             ];
+        }
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(sprintf(
+                'Snapshots on the project %s, environment %s:',
+                $this->api()->getProjectLabel($this->getSelectedProject()),
+                $this->api()->getEnvironmentLabel($environment)
+            ));
         }
 
         $table->render($rows, $headers);
