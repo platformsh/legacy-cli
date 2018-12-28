@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "86bfa3c9aaea41bd16b70bd7c406e96c56bbfcc6",
-        "sha256": "e22515734bead215cc7979c78faf57a02c1f9c8691245ce5003b50bf6ecde698",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.37.1/platform.phar",
-        "version": "3.37.1",
+        "sha1": "5749261b80dffa6216f4cb9dfb44044d3785a738",
+        "sha256": "889fa32372bbbbaf399d7fe514f02523864e0e290173f3dd68b5b283ad10efc4",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.37.2/platform.phar",
+        "version": "3.37.2",
         "php": {
             "min": "5.5.9"
         },
@@ -152,6 +152,11 @@
                 "notes": "New features:\n\n* Add --columns option for all tables (to filter and order table columns).\n* Add non-default \"disk\" and \"size\" columns to app:list command.\n* Add non-default \"updated_at\" column to domains:list command.\n* Add non-default \"host\" column to project:list command.\n* Allow loading more than 10 snapshots via --limit in snapshot:list command.\n\nOther changes:\n\n* Change CSV/TSV table output to make it cleaner. CSV/TSV cells will now only\n  be enclosed in quote marks if necessary, conforming to RFC 4180.\n* Fail if password input cannot be hidden in auth:password-login command.\n* Set the remote only for new branches in environment:branch command.\n* Avoid wrapping dates in commit:list command.\n* Update list of allowed SSH key algorithms for ssh-key:add command.\n* Remove confirmation step in logout command.",
                 "show from": "3.36.0",
                 "hide from": "3.37.0"
+            },
+            {
+                "notes": "* Revert csv/tsv table output to use LF instead of CRLF line breaks.\n* Display project and environment title/ID in the following commands:\n  `activity:list` (`activities`), `domain:list` (`domains`),\n  `route:list` (`routes`), `snapshot:list` (`snapshots`),\n  `user:list` (`users`), `worker:list` (`workers`) \n* Local build: handle `python3` dependencies type (same as `python`).\n* Define the `path` column in the `mount:list` (`mounts`) command.\n* Parse project URLs from the beta unified-UI.",
+                "show from": "3.37.0",
+                "hide from": "3.37.2"
             }
         ]
     }
