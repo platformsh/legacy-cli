@@ -95,18 +95,16 @@ class ActivityListCommand extends CommandBase
         }
 
         if (!$table->formatIsMachineReadable()) {
-            /** @var \Platformsh\Cli\Service\Api $api */
-            $api = $this->getService('api');
             if ($environmentSpecific) {
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s, environment %s:',
-                    $api->getProjectLabel($project),
-                    $api->getEnvironmentLabel($apiResource)
+                    $this->api()->getProjectLabel($project),
+                    $this->api()->getEnvironmentLabel($apiResource)
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s:',
-                    $api->getProjectLabel($project)
+                    $this->api()->getProjectLabel($project)
                 ));
             }
         }
