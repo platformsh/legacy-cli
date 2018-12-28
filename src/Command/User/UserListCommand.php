@@ -44,6 +44,13 @@ class UserListCommand extends CommandBase
 
         ksort($rows);
 
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(sprintf(
+                'Users on the project %s:',
+                $this->api()->getProjectLabel($project)
+            ));
+        }
+
         $table->render(array_values($rows), ['email' => 'Email address', 'Name', 'role' => 'Project role', 'ID']);
 
         if (!$table->formatIsMachineReadable()) {

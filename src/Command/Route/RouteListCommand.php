@@ -53,7 +53,11 @@ class RouteListCommand extends CommandBase
         }
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln("Routes for the environment <info>{$environment->id}</info>:");
+            $this->stdErr->writeln(sprintf(
+                'Routes on the project %s, environment %s:',
+                $this->api()->getProjectLabel($this->getSelectedProject()),
+                $this->api()->getEnvironmentLabel($environment)
+            ));
         }
 
         $table->render($rows, $header);

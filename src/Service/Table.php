@@ -223,7 +223,11 @@ class Table implements InputConfiguringInterface
         if (!empty($header)) {
             array_unshift($rows, $header);
         }
-        $this->output->write((new Csv($delimiter))->format($rows));
+        // RFC 4180 (the closest thing to a CSV standard) asks for CRLF line
+        // breaks, but these do not play nicely with POSIX shells whose
+        // default internal field separator (IFS) does not account for CR. So
+        // the line break character is forced as LF.
+        $this->output->write((new Csv($delimiter, "\n"))->format($rows));
     }
 
     /**

@@ -96,19 +96,16 @@ class ActivityListCommand extends CommandBase
 
         if (!$table->formatIsMachineReadable()) {
             if ($environmentSpecific) {
-                $this->stdErr->writeln(
-                    sprintf(
-                        'Activities for the environment <info>%s</info>:',
-                        $apiResource->id
-                    )
-                );
+                $this->stdErr->writeln(sprintf(
+                    'Activities on the project %s, environment %s:',
+                    $this->api()->getProjectLabel($project),
+                    $this->api()->getEnvironmentLabel($apiResource)
+                ));
             } else {
-                $this->stdErr->writeln(
-                    sprintf(
-                        'Activities for the project <info>%s</info>:',
-                        $this->api()->getProjectLabel($project)
-                    )
-                );
+                $this->stdErr->writeln(sprintf(
+                    'Activities on the project %s:',
+                    $this->api()->getProjectLabel($project)
+                ));
             }
         }
 
