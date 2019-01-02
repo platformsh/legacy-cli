@@ -22,8 +22,9 @@ class CertificateListCommand extends CommandBase
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');
         $this->addOption('only-auto', null, InputOption::VALUE_NONE, 'Show only auto-provisioned certificates');
         $this->addOption('no-auto', null, InputOption::VALUE_NONE, 'Show only manually added certificates');
+        $this->addOption('ignore-expiry', null, InputOption::VALUE_NONE, 'Show both expired and non-expired certificates');
         $this->addOption('only-expired', null, InputOption::VALUE_NONE, 'Show only expired certificates');
-        $this->addOption('no-expired', null, InputOption::VALUE_NONE, 'Show only non-expired certificates');
+        $this->addOption('no-expired', null, InputOption::VALUE_NONE, 'Show only non-expired certificates (default)');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
@@ -32,6 +33,12 @@ class CertificateListCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+
+        // Set --no-expired by default, if --ignore-expiry and --only-expired
+        // are not supplied.
+        if (!$input->getOption('ignore-expiry') && !$input->getOption('only-expired')) {
+            $input->setOption('no-expired', true);
+        }
 
         $filterOptions = ['domain', 'issuer', 'only-auto', 'no-auto', 'only-expired', 'no-expired'];
         $filters = array_filter(array_intersect_key($input->getOptions(), array_flip($filterOptions)));
@@ -47,6 +54,7 @@ class CertificateListCommand extends CommandBase
                 . implode('</comment>, <comment>--', array_keys($filters))
                 . '</comment>';
             $this->stdErr->writeln(sprintf('Filters in use: %s', $filtersUsed));
+            $this->stdErr->writeln('');
         }
 
         if (empty($certs)) {
