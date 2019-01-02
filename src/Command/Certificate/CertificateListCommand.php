@@ -68,12 +68,12 @@ class CertificateListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->getService('property_formatter');
 
-        $header = ['ID', 'Domain(s)', 'Created', 'Expires', 'Issuer'];
+        $header = ['ID', 'domains' => 'Domain(s)', 'Created', 'Expires', 'Issuer'];
         $rows = [];
         foreach ($certs as $cert) {
             $rows[] = [
                 $cert->id,
-                implode("\n", $cert->domains),
+                'domains' => implode("\n", $cert->domains),
                 $propertyFormatter->format($cert->created_at, 'created_at'),
                 $propertyFormatter->format($cert->expires_at, 'expires_at'),
                 $this->getCertificateIssuerByAlias($cert, 'commonName') ?: '',
