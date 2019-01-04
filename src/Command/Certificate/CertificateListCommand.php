@@ -16,7 +16,7 @@ class CertificateListCommand extends CommandBase
     {
         $this
             ->setName('certificate:list')
-            ->setAliases(['certificates'])
+            ->setAliases(['certificates', 'certs'])
             ->setDescription('List project certificates');
         $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');
