@@ -222,10 +222,7 @@ if ($homeDir = getHomeDirectory()) {
 
 output(PHP_EOL . '  Running self:install command...' . PHP_EOL);
 putenv('CLICOLOR_FORCE=' . (is_ansi() ? '1' : '0'));
-$commandline = 'php ' . $pharPath . ' self:install';
-if (!is_interactive()) {
-    $commandline .= ' --yes';
-}
+$commandline = 'php ' . $pharPath . ' self:install --yes';
 $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
 $result = proc_close($process);
 
@@ -308,25 +305,6 @@ function is_ansi()
     return (DIRECTORY_SEPARATOR == '\\')
         ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
         : (function_exists('posix_isatty') && posix_isatty(1));
-}
-
-/**
- * Returns whether the terminal is interactive.
- *
- * @return bool
- */
-function is_interactive()
-{
-    global $argv;
-    if (!empty($argv) && array_intersect(['--no-interaction', '-y', '--yes'], $argv)) {
-        return false;
-    }
-
-    if (function_exists('posix_isatty')) {
-        return posix_isatty(STDOUT) && posix_isatty(STDERR);
-    }
-
-    return true;
 }
 
 /**
