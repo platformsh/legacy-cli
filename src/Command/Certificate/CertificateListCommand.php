@@ -19,6 +19,7 @@ class CertificateListCommand extends CommandBase
             ->setAliases(['certificates', 'certs'])
             ->setDescription('List project certificates');
         $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
+        $this->addOption('exclude-domain', null, InputOption::VALUE_REQUIRED, 'Exclude certificates, matching by domain name (case-insensitive search)');
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');
         $this->addOption('only-auto', null, InputOption::VALUE_NONE, 'Show only auto-provisioned certificates');
         $this->addOption('no-auto', null, InputOption::VALUE_NONE, 'Show only manually added certificates');
@@ -40,7 +41,7 @@ class CertificateListCommand extends CommandBase
             $input->setOption('no-expired', true);
         }
 
-        $filterOptions = ['domain', 'issuer', 'only-auto', 'no-auto', 'only-expired', 'no-expired'];
+        $filterOptions = ['domain', 'exclude-domain', 'issuer', 'only-auto', 'no-auto', 'only-expired', 'no-expired'];
         $filters = array_filter(array_intersect_key($input->getOptions(), array_flip($filterOptions)));
 
         $project = $this->getSelectedProject();
@@ -102,14 +103,16 @@ class CertificateListCommand extends CommandBase
         foreach ($filters as $filter => $value) {
             switch ($filter) {
                 case 'domain':
-                    $certs = array_filter($certs, function (Certificate $cert) use ($value) {
+                case 'exclude-domain':
+                    $include = $filter === 'domain';
+                    $certs = array_filter($certs, function (Certificate $cert) use ($value, $include) {
                         foreach ($cert->domains as $domain) {
                             if (stripos($domain, $value) !== false) {
-                                return true;
+                                return $include;
                             }
                         }
 
-                        return false;
+                        return !$include;
                     });
                     break;
 
