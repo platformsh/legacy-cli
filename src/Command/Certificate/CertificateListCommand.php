@@ -26,9 +26,11 @@ class CertificateListCommand extends CommandBase
         $this->addOption('ignore-expiry', null, InputOption::VALUE_NONE, 'Show both expired and non-expired certificates');
         $this->addOption('only-expired', null, InputOption::VALUE_NONE, 'Show only expired certificates');
         $this->addOption('no-expired', null, InputOption::VALUE_NONE, 'Show only non-expired certificates (default)');
+        $this->addOption('pipe-domains', null, InputOption::VALUE_NONE, 'Only return a list of domain names covered by the certificates');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
+        $this->addExample('Output a list of domains covered by valid certificates', '--pipe-domains --no-expired');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -50,7 +52,7 @@ class CertificateListCommand extends CommandBase
 
         $this->filterCerts($certs, $filters);
 
-        if (!empty($filters)) {
+        if (!empty($filters) && !$input->getOption('pipe-domains')) {
             $filtersUsed = '<comment>--'
                 . implode('</comment>, <comment>--', array_keys($filters))
                 . '</comment>';
@@ -60,6 +62,16 @@ class CertificateListCommand extends CommandBase
 
         if (empty($certs)) {
             $this->stdErr->writeln("No certificates found");
+
+            return 0;
+        }
+
+        if ($input->getOption('pipe-domains')) {
+            foreach ($certs as $cert) {
+                foreach ($cert->domains as $domain) {
+                    $output->writeln($domain);
+                }
+            }
 
             return 0;
         }
