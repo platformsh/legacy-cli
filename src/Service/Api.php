@@ -623,9 +623,9 @@ class Api
     public function getProjectLabel(Project $project, $tag = 'info')
     {
         $title = $project->title;
-        $pattern = $title ? '%2$s (%3$s)' : '%3$s';
+        $pattern = strlen($title) > 0 ? '%2$s (%3$s)' : '%3$s';
         if ($tag !== false) {
-            $pattern = $title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
+            $pattern = strlen($title) > 0 ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
         }
 
         return sprintf($pattern, $tag, $title, $project->id);
@@ -643,7 +643,7 @@ class Api
     {
         $id = $environment->id;
         $title = $environment->title;
-        $use_title = $title && $title !== $id;
+        $use_title = strlen($title) > 0 && $title !== $id;
         $pattern = $use_title ? '%2$s (%3$s)' : '%3$s';
         if ($tag !== false) {
             $pattern = $use_title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
