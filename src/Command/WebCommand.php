@@ -39,7 +39,7 @@ class WebCommand extends CommandBase
 
         if ($this->hasSelectedProject()) {
             $url = $this->getSelectedProject()->getLink('#ui');
-            if (!empty($environmentId)) {
+            if ($environmentId !== null) {
                 // Unified-UI links lack the /environments path component.
                 if ($this->config()->has('detection.ui_domain') && parse_url($url, PHP_URL_HOST) === $this->config()->get('detection.ui_domain')) {
                     $url .= '/' . rawurlencode($environmentId);

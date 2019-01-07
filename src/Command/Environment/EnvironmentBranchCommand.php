@@ -47,7 +47,7 @@ class EnvironmentBranchCommand extends CommandBase
         $parentEnvironment = $this->getSelectedEnvironment();
 
         $branchName = $input->getArgument('id');
-        if (empty($branchName)) {
+        if ($branchName === null) {
             if ($input->isInteractive()) {
                 // List environments.
                 return $this->runOtherCommand(

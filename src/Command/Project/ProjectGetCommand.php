@@ -216,7 +216,7 @@ class ProjectGetCommand extends CommandBase
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
             $host = $host ?: $result['host'];
-            $environmentId = $environmentId ?: $result['environmentId'];
+            $environmentId = $environmentId !== null ? $environmentId : $result['environmentId'];
         }
 
         $project = $this->selectProject($projectId, $host);
@@ -245,7 +245,7 @@ class ProjectGetCommand extends CommandBase
         }
         $this->projectRoot = $parent . '/' . basename($directory);
 
-        if (!$environmentId) {
+        if ($environmentId === null) {
             $environments = $this->api()->getEnvironments($project);
             $environmentId = isset($environments['master']) ? 'master' : key($environments);
             if (count($environments) > 1) {
