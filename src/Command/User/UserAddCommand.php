@@ -21,11 +21,28 @@ class UserAddCommand extends CommandBase
         $this
             ->setName('user:add')
             ->setDescription('Add a user to the project')
-            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
-            ->addOption('role', 'r', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "The user's project role ('admin' or 'viewer') or environment-specific role (e.g. 'master:contributor' or 'stage:viewer').\nThe character % can be used as a wildcard in the environment ID e.g. '%:viewer'.\nThe role can be abbreviated, e.g. 'master:c'.");
+            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
+
+        $this->addRoleOption();
         $this->addProjectOption();
         $this->addWaitOptions();
+
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
+    }
+
+    /**
+     * Adds the --role (-r) option to the command.
+     */
+    protected function addRoleOption()
+    {
+        $this->addOption(
+            'role',
+            'r',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            "The user's project role ('admin' or 'viewer') or environment-specific role (e.g. 'master:contributor' or 'stage:viewer')."
+            . "\nThe character % can be used as a wildcard in the environment ID e.g. '%:viewer'."
+            . "\nThe role can be abbreviated, e.g. 'master:c'."
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
