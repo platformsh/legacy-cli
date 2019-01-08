@@ -123,7 +123,7 @@ class Identifier
             && $host === $this->config->get('detection.ui_domain')
             && preg_match('#^/[a-z0-9-]+/([a-z0-9-]+)(/([^/]+))?#', $path, $matches)) {
             $result['projectId'] = $matches[1];
-            if (!empty($matches[3])) {
+            if (isset($matches[3])) {
                 $result['environmentId'] = rawurldecode($matches[3]);
             }
 

@@ -40,7 +40,7 @@ class ProjectListCommand extends CommandBase
         if ($host = $input->getOption('host')) {
             $filters['host'] = $host;
         }
-        if ($title = $input->getOption('title')) {
+        if (($title = $input->getOption('title')) !== null) {
             $filters['title'] = $title;
         }
         if ($input->getOption('my')) {

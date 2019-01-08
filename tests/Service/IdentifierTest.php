@@ -74,4 +74,27 @@ class IdentifierTest extends \PHPUnit_Framework_TestCase
         ];
         $this->assertEquals($expected, $identifier->identify($url));
     }
+
+    public function testIdentifyWithEnvironmentIdOf0()
+    {
+        $identifier = new Identifier();
+
+        $url = 'https://eu-2.platform.sh/projects/4jkbdba6zde2i/environments/0';
+        $expected = [
+            'projectId' => '4jkbdba6zde2i',
+            'environmentId' => '0',
+            'host' => 'eu-2.platform.sh',
+            'appId' => null,
+        ];
+        $this->assertEquals($expected, $identifier->identify($url));
+
+        $url = 'https://ui.platform.sh/foo/4jkbdba6zde2i/0';
+        $expected = [
+            'projectId' => '4jkbdba6zde2i',
+            'environmentId' => '0',
+            'host' => null,
+            'appId' => null,
+        ];
+        $this->assertEquals($expected, $identifier->identify($url));
+    }
 }
