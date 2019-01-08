@@ -865,10 +865,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
 
+        // Build and sort a list of project options.
         $projectList = [];
         foreach ($projects as $project) {
             $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
         }
+        asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -896,6 +898,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $default = $this->api()->getDefaultEnvironmentId($environments);
+
+        // Build and sort a list of options (environment IDs).
+        $ids = array_keys($environments);
+        sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
         $id = $questionHelper->askInput('Environment ID', $default, array_keys($environments), function ($value) use ($environments) {
             if (!isset($environments[$value])) {
