@@ -18,6 +18,9 @@ class EnvironmentListCommand extends CommandBase
     protected $currentEnvironment;
     protected $mapping = [];
 
+    /** @var \Platformsh\Cli\Service\PropertyFormatter */
+    protected $formatter;
+
     /**
      * {@inheritdoc}
      */
@@ -107,6 +110,9 @@ class EnvironmentListCommand extends CommandBase
 
             $row[] = $this->formatEnvironmentStatus($environment->status);
 
+            $row[] = $this->formatter->format($environment->created_at, 'created_at');
+            $row[] = $this->formatter->format($environment->updated_at, 'updated_at');
+
             $rows[] = $row;
             if (isset($this->children[$environment->id])) {
                 $childRows = $this->buildEnvironmentRows(
@@ -173,20 +179,24 @@ class EnvironmentListCommand extends CommandBase
             $this->children['master'] = [];
         }
 
-        $headers = ['ID', 'Title', 'Status'];
+        $headers = ['ID', 'Title', 'Status', 'Created', 'Updated'];
+        $defaultColumns = ['id', 'title', 'status'];
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $this->formatter = $this->getService('property_formatter');
+
         if ($table->formatIsMachineReadable()) {
-            $table->render($this->buildEnvironmentRows($tree, false, false), $headers);
+            $table->render($this->buildEnvironmentRows($tree, false, false), $headers, $defaultColumns);
 
             return;
         }
 
         $this->stdErr->writeln("Your environments are: ");
 
-        $table->render($this->buildEnvironmentRows($tree), $headers);
+        $table->render($this->buildEnvironmentRows($tree), $headers, $defaultColumns);
 
         if (!$this->currentEnvironment) {
             return;
