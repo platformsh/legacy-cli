@@ -173,7 +173,7 @@ class EnvironmentListCommand extends CommandBase
             $this->children['master'] = [];
         }
 
-        $headers = ['ID', 'Name', 'Status'];
+        $headers = ['ID', 'Title', 'Status'];
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
