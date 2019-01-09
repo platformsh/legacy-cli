@@ -95,7 +95,7 @@ certificate
   certificate:add                           Add an SSL certificate to the project
   certificate:delete                        Delete a certificate from the project
   certificate:get                           View a certificate
-  certificate:list (certificates)           List project certificates
+  certificate:list (certificates, certs)    List project certificates
 commit
   commit:get                                Show commit details
   commit:list (commits)                     List commits
@@ -132,6 +132,7 @@ integration
   integration:get                           View details of an integration
   integration:list (integrations)           View a list of project integration(s)
   integration:update                        Update an integration
+  integration:validate                      Validate an existing integration
 local
   local:build (build)                       Build the current project locally
   local:dir (dir)                           Find the local project root
@@ -184,10 +185,11 @@ tunnel
   tunnel:list (tunnels)                     List SSH tunnels
   tunnel:open                               Open SSH tunnels to an app's relationships
 user
-  user:add (user:update)                    Add a user to the project, or set their role(s)
+  user:add                                  Add a user to the project
   user:delete                               Delete a user from the project
   user:get                                  View a user's role(s)
   user:list (users)                         List project users
+  user:update                               Update user role(s) on a project
 variable
   variable:create                           Create a variable
   variable:delete                           Delete a variable

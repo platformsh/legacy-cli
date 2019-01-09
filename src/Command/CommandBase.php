@@ -759,7 +759,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             ), OutputInterface::VERBOSITY_VERBOSE);
         }
 
-        if (!empty($environmentId)) {
+        if ($environmentId !== null) {
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
                 throw new ConsoleInvalidArgumentException('Specified environment not found: ' . $environmentId);
@@ -865,10 +865,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
 
+        // Build and sort a list of project options.
         $projectList = [];
         foreach ($projects as $project) {
             $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
         }
+        asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -896,6 +898,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $default = $this->api()->getDefaultEnvironmentId($environments);
+
+        // Build and sort a list of options (environment IDs).
+        $ids = array_keys($environments);
+        sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
         $id = $questionHelper->askInput('Environment ID', $default, array_keys($environments), function ($value) use ($environments) {
             if (!isset($environments[$value])) {
@@ -968,8 +974,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Select the environment.
         $envOptionName = 'environment';
-        if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
-            if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
+        if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName) !== null) {
+            if ($input->hasOption($envOptionName) && $input->getOption($envOptionName) !== null) {
                 throw new ConsoleInvalidArgumentException(
                     sprintf(
                         'You cannot use both the <%s> argument and the --%s option',
@@ -987,7 +993,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $this->selectEnvironment($argument, true, $selectDefaultEnv);
             }
         } elseif ($input->hasOption($envOptionName)) {
-            $environmentId = $input->getOption($envOptionName) ?: $environmentId;
+            if ($input->getOption($envOptionName) !== null) {
+                $environmentId = $input->getOption($envOptionName);
+            }
             $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv);
         }
     }

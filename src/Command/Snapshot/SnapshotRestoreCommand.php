@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SnapshotRestoreCommand extends CommandBase
@@ -15,7 +16,9 @@ class SnapshotRestoreCommand extends CommandBase
         $this
             ->setName('snapshot:restore')
             ->setDescription('Restore an environment snapshot')
-            ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one');
+            ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one')
+            ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the snapshot's current environment")
+            ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
@@ -72,19 +75,36 @@ class SnapshotRestoreCommand extends CommandBase
             return 1;
         }
 
+        // Validate the --branch-from option.
+        $branchFrom = $input->getOption('branch-from');
+        if ($branchFrom !== null && !$this->api()->getEnvironment($branchFrom, $this->getSelectedProject())) {
+            $this->stdErr->writeln(sprintf('Environment not found (in --branch-from): <error>%s</error>', $branchFrom));
+
+            return 1;
+        }
+
+        // Process the --target option.
+        $target = $input->getOption('target');
+        $targetEnvironment = $target !== null
+            ? $this->api()->getEnvironment($target, $this->getSelectedProject())
+            : $environment;
+        $targetLabel = $targetEnvironment
+            ? $this->api()->getEnvironmentLabel($targetEnvironment)
+            : '<info>' . $target . '</info>';
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $name = $selectedActivity['payload']['backup_name'];
         $date = date('c', strtotime($selectedActivity['created_at']));
         if (!$questionHelper->confirm(
-            "Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment>?"
+            "Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment> to environment $targetLabel?"
         )) {
             return 1;
         }
 
-        $this->stdErr->writeln("Restoring snapshot <info>$name</info>");
+        $this->stdErr->writeln("Restoring snapshot <info>$name</info> to $targetLabel");
 
-        $activity = $selectedActivity->restore();
+        $activity = $selectedActivity->restore($target, $branchFrom);
         if ($this->shouldWait($input)) {
             $this->stdErr->writeln('Waiting for the restore to complete...');
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
