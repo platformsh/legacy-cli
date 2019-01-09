@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "5749261b80dffa6216f4cb9dfb44044d3785a738",
-        "sha256": "889fa32372bbbbaf399d7fe514f02523864e0e290173f3dd68b5b283ad10efc4",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.37.2/platform.phar",
-        "version": "3.37.2",
+        "sha1": "5144fb0283e09583c7f5933324168194b6df4e61",
+        "sha256": "f6aa40652c031374338fdedc2b5fe45419477cb8d8c688639819f8cac11ddd13",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.38.0/platform.phar",
+        "version": "3.38.0",
         "php": {
             "min": "5.5.9"
         },
@@ -157,6 +157,11 @@
                 "notes": "* Revert csv/tsv table output to use LF instead of CRLF line breaks.\n* Display project and environment title/ID in the following commands:\n  `activity:list` (`activities`), `domain:list` (`domains`),\n  `route:list` (`routes`), `snapshot:list` (`snapshots`),\n  `user:list` (`users`), `worker:list` (`workers`) \n* Local build: handle `python3` dependencies type (same as `python`).\n* Define the `path` column in the `mount:list` (`mounts`) command.\n* Parse project URLs from the beta unified-UI.",
                 "show from": "3.37.0",
                 "hide from": "3.37.2"
+            },
+            {
+                "notes": "* Allow restoring snapshots to another environment in snapshot:restore command\n  (with new --target and --branch-from options).\n* Sort interactive project/environment choices alphabetically.\n* Fix \"Name\"/\"name\" column should always have been \"Title\"/\"title\" in\n  environment:list command.\n* Define \"created\" and \"updated\" columns in environment:list command.\n* Remove interactivity check from installer.\n* Fix: environments with an empty name (e.g. '0') not being recognized.\n* Fix documentation in user:list, user:add and user:update commands.\n* Various changes and new features in certificate:list command:\n  - only show non-expired certificates by default\n  - add --ignore-expiry option for the previous behavior\n  - add --exclude-domain option to filter out certificates from the list\n  - add --pipe-domains option to list domains covered by certificates\n  - add \"certs\" alias\n  - define \"domains\" column (for the --columns option)",
+                "show from": "3.37.0",
+                "hide from": "3.38.0"
             }
         ]
     }
