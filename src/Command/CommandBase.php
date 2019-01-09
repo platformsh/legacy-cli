@@ -974,7 +974,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Select the environment.
         $envOptionName = 'environment';
-        if ($input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName) !== null) {
+        if ($input->hasArgument($this->envArgName)
+            && $input->getArgument($this->envArgName) !== null
+            && $input->getArgument($this->envArgName) !== []) {
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName) !== null) {
                 throw new ConsoleInvalidArgumentException(
                     sprintf(
