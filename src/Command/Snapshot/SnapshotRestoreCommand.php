@@ -17,8 +17,8 @@ class SnapshotRestoreCommand extends CommandBase
             ->setName('snapshot:restore')
             ->setDescription('Restore an environment snapshot')
             ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one')
-            ->addOption('target', InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the snapshot's current environment")
-            ->addOption('branch-from', InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment');
+            ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the snapshot's current environment")
+            ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
