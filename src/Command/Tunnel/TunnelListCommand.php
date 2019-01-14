@@ -23,7 +23,6 @@ class TunnelListCommand extends TunnelCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->checkSupport();
         $tunnels = $this->getTunnelInfo();
         $allTunnelsCount = count($tunnels);
         if (!$allTunnelsCount) {
@@ -31,12 +30,19 @@ class TunnelListCommand extends TunnelCommandBase
             return 1;
         }
 
+        $executable = $this->config()->get('application.executable');
+
         // Filter tunnels according to the current project and environment, if
         // available.
         if (!$input->getOption('all')) {
             $tunnels = $this->filterTunnels($tunnels, $input);
             if (!count($tunnels)) {
-                $this->stdErr->writeln('No tunnels found. Use --all to view all tunnels.');
+                $this->stdErr->writeln('No tunnels found.');
+                $this->stdErr->writeln(sprintf(
+                    'List all tunnels with: <info>%s tunnels --all</info>',
+                    $executable
+                ));
+
                 return 1;
             }
         }
@@ -57,7 +63,6 @@ class TunnelListCommand extends TunnelCommandBase
         $table->render($rows, $headers);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
             $this->stdErr->writeln('');
 
             if (!$input->getOption('all') && count($tunnels) < $allTunnelsCount) {

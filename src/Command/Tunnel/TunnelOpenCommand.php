@@ -40,6 +40,7 @@ class TunnelOpenCommand extends TunnelCommandBase
             if (!$questionHelper->confirm($confirmText, false)) {
                 return 1;
             }
+            $this->stdErr->writeln('');
         }
 
         $appName = $this->selectApp($input);
@@ -135,8 +136,8 @@ class TunnelOpenCommand extends TunnelCommandBase
                 $this->saveTunnelInfo();
 
                 $this->stdErr->writeln(sprintf(
-                    'SSH tunnel opened on port %s to relationship: <info>%s</info>',
-                    $localPort,
+                    'SSH tunnel opened on port <info>%s</info> to relationship: <info>%s</info>',
+                    $tunnel['localPort'],
                     $relationshipString
                 ));
                 $processIds[] = $pid;
@@ -166,5 +167,18 @@ class TunnelOpenCommand extends TunnelCommandBase
         $processManager->monitor($log);
 
         return 0;
+    }
+
+    private function checkSupport()
+    {
+        $messages = [];
+        foreach (['pcntl', 'posix'] as $extension) {
+            if (!extension_loaded($extension)) {
+                $messages[] = sprintf('The "%s" extension is required.', $extension);
+            }
+        }
+        if (count($messages)) {
+            throw new \RuntimeException(implode("\n", $messages));
+        }
     }
 }
