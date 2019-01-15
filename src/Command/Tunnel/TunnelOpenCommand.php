@@ -20,6 +20,19 @@ class TunnelOpenCommand extends TunnelCommandBase
         $this->addEnvironmentOption();
         $this->addAppOption();
         Ssh::configureInput($this->getDefinition());
+        $this->setHelp(<<<EOF
+This command opens SSH tunnels to all of the relationships of an application.
+
+Connections can then be made to the application's services as if they were
+local, for example a local MySQL client can be used, or the Solr web
+administration endpoint can be accessed through a local browser.
+
+This command requires the posix and pcntl PHP extensions (as multiple
+background CLI processes are created to keep the SSH tunnels open). The
+<info>tunnel:single</info> command can be used on systems without these
+extensions.
+EOF
+        );
     }
 
     /**

@@ -184,6 +184,7 @@ tunnel
   tunnel:info                               View relationship info for SSH tunnels
   tunnel:list (tunnels)                     List SSH tunnels
   tunnel:open                               Open SSH tunnels to an app's relationships
+  tunnel:single                             Open a single SSH tunnel to an app relationship
 user
   user:add                                  Add a user to the project
   user:delete                               Delete a user from the project
