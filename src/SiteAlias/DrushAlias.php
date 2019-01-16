@@ -60,7 +60,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         $autoRemoveKey = $this->getAutoRemoveKey();
         $userDefinedAliases = [];
         foreach ($existingAliases as $name => $alias) {
-            if (!empty($alias[$autoRemoveKey])) {
+            if (!empty($alias[$autoRemoveKey]) || !empty($alias['options'][$autoRemoveKey])) {
                 // This is probably for a deleted environment.
                 continue;
             }
@@ -220,7 +220,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     {
         return [
             'root' => $app->getLocalWebRoot(),
-            $this->getAutoRemoveKey() => true,
+            'options' => [
+                $this->getAutoRemoveKey() => true,
+            ],
         ];
     }
 
@@ -242,7 +244,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         // Conveniently, the home directory is the same as the app root.
         $alias = [
             'root' => $app->getDocumentRoot(),
-            $this->getAutoRemoveKey() => true,
+            'options' => [
+                $this->getAutoRemoveKey() => true,
+            ],
         ];
 
         $sshUrl = $environment->getSshUrl($app->getName());
