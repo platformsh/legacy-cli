@@ -238,8 +238,10 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             return false;
         }
 
+        // The 'root' can be a relative path, relative to the home directory.
+        // Conveniently, the home directory is the same as the app root.
         $alias = [
-            'root' => '/app/' . $app->getDocumentRoot(),
+            'root' => $app->getDocumentRoot(),
             $this->getAutoRemoveKey() => true,
         ];
 
