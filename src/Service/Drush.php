@@ -255,18 +255,6 @@ class Drush
     }
 
     /**
-     * @return string
-     */
-    protected function getAutoRemoveKey()
-    {
-        return preg_replace(
-            '/[^a-z-]+/',
-            '-',
-            str_replace('.', '', strtolower($this->config->get('application.name')))
-        ) . '-auto-remove';
-    }
-
-    /**
      * Get the alias group for a project.
      *
      * @param Project $project
