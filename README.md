@@ -81,7 +81,7 @@ Available commands:
   web                                       Open the Web UI
 activity
   activity:get                              View detailed information on a single activity
-  activity:list (activities)                Get a list of activities for an environment or project
+  activity:list (activities, act)           Get a list of activities for an environment or project
   activity:log                              Display the log for an activity
 app
   app:config-get                            View the configuration of an app
@@ -117,7 +117,7 @@ environment
   environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
   environment:info                          Read or set properties for an environment
-  environment:list (environments)           Get a list of environments
+  environment:list (environments, env)      Get a list of environments
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
@@ -148,7 +148,7 @@ project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
-  project:list (projects)                   Get a list of all active projects
+  project:list (projects, pro)              Get a list of all active projects
   project:set-remote                        Set the remote project for the current Git repository
 repo
   repo:cat                                  Read a file in the project repository
@@ -190,7 +190,7 @@ variable
   variable:create                           Create a variable
   variable:delete                           Delete a variable
   variable:get (vget)                       View a variable
-  variable:list (variables)                 List variables
+  variable:list (variables, var)            List variables
   variable:update                           Update a variable
 worker
   worker:list (workers)                     Get a list of all deployed workers

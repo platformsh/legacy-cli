@@ -28,7 +28,7 @@ class EnvironmentListCommand extends CommandBase
     {
         $this
             ->setName('environment:list')
-            ->setAliases(['environments'])
+            ->setAliases(['environments', 'env'])
             ->setDescription('Get a list of environments')
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
