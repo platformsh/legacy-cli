@@ -75,31 +75,66 @@ class Relationships implements InputConfiguringInterface
         }
 
         if (empty($relationships)) {
-            $stdErr->writeln(sprintf('No relationships found matching scheme(s): <error>%s</error>.', implode(', ', $schemes)));
+            if (!empty($schemes)) {
+                $stdErr->writeln(sprintf('No relationships found matching scheme(s): <error>%s</error>.', implode(', ', $schemes)));
+            } else {
+                $stdErr->writeln(sprintf('No relationships found'));
+            }
             return false;
         }
 
-        // Use the --relationship option, if specified.
-        if ($input->hasOption('relationship')
-            && ($relationshipName = $input->getOption('relationship'))) {
-            if (!isset($relationships[$relationshipName])) {
-                $stdErr->writeln('Relationship not found: ' . $relationshipName);
-                return false;
-            }
-            $relationships = array_intersect_key($relationships, [$relationshipName => true]);
-        }
-
-        $questionHelper = new QuestionHelper($input, $output);
+        // Collapse relationships and services into a flat list.
         $choices = [];
-        $separator = '.';
         foreach ($relationships as $name => $relationship) {
             $serviceCount = count($relationship);
             foreach ($relationship as $key => $service) {
-                $choices[$name . $separator . $key] = $name . ($serviceCount > 1 ? '.' . $key : '');
+                $identifier = $name . ($serviceCount > 1 ? '.' . $key : '');
+                $choices[$identifier] = $identifier;
             }
         }
-        $choice = $questionHelper->choose($choices, 'Enter a number to choose a relationship:');
-        list($name, $key) = explode($separator, $choice, 2);
+
+        // Use the --relationship option, if specified.
+        $identifier = false;
+        if ($input->hasOption('relationship')
+            && ($relationshipName = $input->getOption('relationship'))) {
+            // Normalise the relationship name to remove a trailing ".0".
+            if (substr($relationshipName, -2) === '.0') {
+                $relationshipName = substr($relationshipName, 0, strlen($relationshipName) - 2);
+            }
+            if (!isset($choices[$relationshipName])) {
+                $stdErr->writeln('Relationship not found: <error>' . $relationshipName . '</error>');
+                return false;
+            }
+            $identifier = $relationshipName;
+        }
+
+        if (!$identifier && count($choices) === 1) {
+            $identifier = reset($choices);
+        }
+
+        if (!$identifier && !$input->isInteractive()) {
+            $stdErr->writeln('More than one relationship found.');
+            if ($input->hasOption('relationship')) {
+                $stdErr->writeln('Use the <error>--relationship</error> (-r) option to specify a relationship. Options:');
+                foreach (array_keys($choices) as $identifier) {
+                    $stdErr->writeln('    ' . $identifier);
+                }
+            }
+            return false;
+        }
+
+        if (!$identifier) {
+            $questionHelper = new QuestionHelper($input, $output);
+            $identifier = $questionHelper->choose($choices, 'Enter a number to choose a relationship:');
+            $stdErr->writeln('');
+        }
+
+        if (strpos($identifier, '.') !== false) {
+            list($name, $key) = explode('.', $identifier, 2);
+        } else {
+            $name = $identifier;
+            $key = 0;
+        }
         $service = $relationships[$name][$key];
 
         // Add metadata about the service.

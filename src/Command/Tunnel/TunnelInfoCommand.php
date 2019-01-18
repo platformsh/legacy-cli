@@ -23,9 +23,6 @@ class TunnelInfoCommand extends TunnelCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->checkSupport();
-        $this->validateInput($input);
-
         $tunnels = $this->getTunnelInfo();
         $relationships = [];
         foreach ($this->filterTunnels($tunnels, $input) as $key => $tunnel) {
