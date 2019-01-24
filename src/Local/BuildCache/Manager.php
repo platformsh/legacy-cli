@@ -8,6 +8,7 @@ class Manager
 {
     private $fs;
     private $cacheDir;
+    private $cacheKeys = [];
 
     public function __construct($cacheDir, Filesystem $fs = null)
     {
@@ -102,7 +103,7 @@ class Manager
      * @return string|false
      *   The absolute filename of the archive to restore, or false if no archive exists.
      */
-    public function findArchive(BuildCache $cache, $sourceDir, $exact = true)
+    public function findArchive(BuildCache $cache, $sourceDir, $exact = false)
     {
         $cacheKey = $this->getCacheKey($cache, $sourceDir);
         $filename = $this->getFilename($cache, $cacheKey);
@@ -169,6 +170,10 @@ class Manager
         if (!is_dir($sourceDir)) {
             throw new \InvalidArgumentException("Source directory not found: $sourceDir");
         }
+        $name = $cache->getName();
+        if (isset($this->cacheKeys[$name])) {
+            return $this->cacheKeys[$name];
+        }
 
         $hashes = [];
         foreach ($cache->getWatchedPaths() as $watchedPath) {
@@ -176,7 +181,7 @@ class Manager
                 $hashes[] = sha1_file($path);
             }
         }
-        $cacheKey = hash('sha256', implode(':', $hashes));
+        $this->cacheKeys[$name] = $cacheKey = hash('sha256', $name . ':' . implode(':', $hashes));
 
         return $cacheKey;
     }
