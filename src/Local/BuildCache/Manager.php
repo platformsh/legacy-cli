@@ -32,7 +32,7 @@ class Manager
     }
 
     /**
-     * Restore from a cache, if an archive exists.
+     * Restore from a cache.
      *
      * @param \Platformsh\Cli\Local\BuildCache\BuildCache $cache
      *   The cache configuration.
@@ -40,13 +40,17 @@ class Manager
      *   The absolute path to the source code directory.
      * @param string                                      $buildDir
      *   The absolute path to the build directory.
+     * @param string|NULL                                 $archive
+     *   The absolute filename of an archive, or NULL to find an archive.
      *
      * @return bool
      *  True if a cache was restored, false otherwise.
      */
-    public function restoreIfArchiveExists(BuildCache $cache, $sourceDir, $buildDir)
+    public function restore(BuildCache $cache, $sourceDir, $buildDir, $archive = null)
     {
-        $archive = $this->findArchive($cache, $sourceDir);
+        if ($archive === null) {
+            $archive = $this->findArchive($cache, $sourceDir, false);
+        }
         if (!$archive) {
             return false;
         }
@@ -93,18 +97,19 @@ class Manager
      *
      * @param \Platformsh\Cli\Local\BuildCache\BuildCache $cache
      * @param string                                      $sourceDir
+     * @param bool                                        $exact
      *
      * @return string|false
      *   The absolute filename of the archive to restore, or false if no archive exists.
      */
-    public function findArchive(BuildCache $cache, $sourceDir)
+    public function findArchive(BuildCache $cache, $sourceDir, $exact = true)
     {
         $cacheKey = $this->getCacheKey($cache, $sourceDir);
         $filename = $this->getFilename($cache, $cacheKey);
         if (file_exists($filename)) {
             return $filename;
         }
-        if (!$cache->allowStale()) {
+        if ($exact || !$cache->allowStale()) {
             return false;
         }
 

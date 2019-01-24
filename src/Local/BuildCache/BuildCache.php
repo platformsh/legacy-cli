@@ -9,7 +9,7 @@ class BuildCache
     private $name;
     private $directory;
     private $watch = [];
-    private $allowStale = true;
+    private $allowStale = false;
     private $shareBetweenApps = false;
 
     /**
@@ -22,7 +22,7 @@ class BuildCache
     {
         $config += [
             'directory' => null,
-            'allow_stale' => true,
+            'allow_stale' => false,
             'share_between_apps' => false,
         ];
         foreach (['allow_stale', 'share_between_apps'] as $key) {

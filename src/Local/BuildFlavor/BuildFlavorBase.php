@@ -292,7 +292,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
                 $this->stdErr->writeln(sprintf('Cache directory not found: <comment>%s</comment> (nothing to cache)', $cache->getDirectory()));
                 continue;
             }
-            if (!$this->cacheManager->findArchive($cache, $sourceDir)) {
+            if (!$this->cacheManager->findArchive($cache, $sourceDir, true)) {
                 $this->stdErr->writeln(sprintf('Saving to local cache: <info>%s</info>', $cache->getName()));
                 $this->cacheManager->save($cache, $sourceDir, $this->buildDir);
             }
@@ -310,9 +310,9 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
         $cacheCollection = BuildCacheCollection::fromAppConfig($this->app->getConfig());
         $sourceDir = $this->app->getSourceDir();
         foreach ($cacheCollection as $cache) {
-            if ($this->cacheManager->findArchive($cache, $sourceDir)) {
+            if ($archive = $this->cacheManager->findArchive($cache, $sourceDir)) {
                 $this->stdErr->writeln(sprintf('Restoring from local cache: <info>%s</info>', $cache->getName()));
-                $this->cacheManager->restoreIfArchiveExists($cache, $sourceDir, $this->buildDir);
+                $this->cacheManager->restore($cache, $sourceDir, $this->buildDir, $archive);
             }
         }
     }
