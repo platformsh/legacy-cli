@@ -141,7 +141,14 @@ class Manager
      */
     private function getSubdirectory(BuildCache $cache)
     {
-        return $this->cacheDir . DIRECTORY_SEPARATOR . trim($cache->getDirectory(), '/\\');
+        $path = $this->cacheDir;
+        $appName = $cache->canShareBetweenApps() ? '_shared' : $cache->getAppName();
+        if (!empty($appName)) {
+            $path .= DIRECTORY_SEPARATOR . trim($appName, '/\\');
+        }
+        $path .= DIRECTORY_SEPARATOR . trim($cache->getDirectory(), '/\\');
+
+        return $path;
     }
 
     /**
@@ -178,10 +185,12 @@ class Manager
         $hashes = [];
         foreach ($cache->getWatchedPaths() as $watchedPath) {
             foreach (glob($sourceDir . '/' . ltrim($watchedPath, '/\\')) as $path) {
-                $hashes[] = sha1_file($path);
+                $hashes[$path] = sha1_file($path);
             }
         }
-        $this->cacheKeys[$name] = $cacheKey = hash('sha256', $name . ':' . implode(':', $hashes));
+        ksort($hashes);
+
+        $cacheKeys[$name] = $cacheKey = hash('sha256', $name . ':' . implode(':', $hashes));
 
         return $cacheKey;
     }

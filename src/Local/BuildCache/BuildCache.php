@@ -7,6 +7,7 @@ use Platformsh\Cli\Exception\InvalidConfigException;
 class BuildCache
 {
     private $name;
+    private $appName;
     private $directory;
     private $watch = [];
     private $allowStale = false;
@@ -18,7 +19,7 @@ class BuildCache
      * @param string $name
      * @param array  $config
      */
-    private function __construct($name, array $config)
+    private function __construct($name, $appName, array $config)
     {
         $config += [
             'directory' => null,
@@ -35,6 +36,7 @@ class BuildCache
         }
 
         $this->name = $name;
+        $this->appName = $appName;
         $this->directory = $config['directory'];
         $this->allowStale = $config['allow_stale'];
         $this->shareBetweenApps = $config['share_between_apps'];
@@ -42,20 +44,21 @@ class BuildCache
     }
 
     /**
-     * Instantiate a BuildCache from app config.
+     * Instantiate a BuildCache from a config array.
      *
      * @param string $name
+     * @param string $appName
      * @param array  $config
      *
      * @return \Platformsh\Cli\Local\BuildCache\BuildCache
      */
-    public static function fromConfig($name, array $config)
+    public static function fromConfig($name, $appName, array $config)
     {
         if (empty($name) || !is_string($name)) {
             throw new InvalidConfigException('The cache name must be a non-empty string.');
         }
 
-        return new self($name, $config);
+        return new self($name, $appName, $config);
     }
 
     /**
@@ -64,6 +67,14 @@ class BuildCache
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAppName()
+    {
+        return $this->appName;
     }
 
     /**

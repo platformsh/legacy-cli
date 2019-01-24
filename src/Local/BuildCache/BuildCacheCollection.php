@@ -21,8 +21,9 @@ class BuildCacheCollection implements \Iterator
         $caches = new self();
 
         if (!empty($config['caches'])) {
+            $appName = isset($config['name']) ? $config['name'] : '';
             foreach ($config['caches'] as $name => $cache) {
-                $caches->push(BuildCache::fromConfig($name, $cache));
+                $caches->push(BuildCache::fromConfig($name, $appName, $cache));
             }
         }
 
