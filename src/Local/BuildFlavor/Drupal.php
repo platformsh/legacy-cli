@@ -180,7 +180,7 @@ class Drupal extends BuildFlavorBase
             'drupal-org.make.yml',
             'drupal-org.make',
         ];
-        if (empty($this->settings['lock'])) {
+        if (!empty($this->settings['lock'])) {
             $candidates = array_merge([
                 'project.make.lock',
                 'project.make.yml.lock',
