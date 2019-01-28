@@ -864,6 +864,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
+        
+        if (count($projects == 1)) {
+            return $projects[0]->id;
+        }
 
         // Build and sort a list of project options.
         $projectList = [];
