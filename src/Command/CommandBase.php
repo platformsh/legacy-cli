@@ -865,7 +865,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
         
-        if (count($projects == 1)) {
+        if (count($projects) == 1) {
             return $projects[0]->id;
         }
 
