@@ -48,8 +48,30 @@ class DbSqlCommand extends CommandBase
             return 1;
         }
 
-        $query = $input->getArgument('query');
         $schema = $input->getOption('schema');
+        if ($schema === null) {
+            $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+            $service = $deployment->getService($database['service']);
+            $schemas = !empty($service->configuration['schemas'])
+                ? $service->configuration['schemas']
+                : ['main'];
+            if (count($schemas) === 1) {
+                $schema = reset($schemas);
+            } else {
+                $choices = [];
+                foreach ($schemas as $schema) {
+                    $choices[$schema] = $schema === $database['path']
+                        ? $schema . ' (default)'
+                        : $schema;
+                }
+                $choices[''] = '(none)';
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
+                $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
+            }
+        }
+
+        $query = $input->getArgument('query');
 
         switch ($database['scheme']) {
             case 'pgsql':

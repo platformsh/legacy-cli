@@ -54,17 +54,36 @@ class DbDumpCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
 
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
         $database = $relationships->chooseDatabase($sshUrl, $input, $output);
         if (empty($database)) {
             return 1;
         }
 
-        $schema = $input->getOption('schema') ?: $database['path'];
+        $schema = $input->getOption('schema');
         if (empty($schema)) {
-            // @todo list schemas
-            $this->stdErr->writeln('The --schema is required.');
+            $deployment = $this->api()->getCurrentDeployment($environment);
+            $service = $deployment->getService($database['service']);
+            $schemas = !empty($service->configuration['schemas'])
+                ? $service->configuration['schemas']
+                : ['main'];
+            $choices = [];
+            foreach ($schemas as $schema) {
+                $choices[$schema] = $schema === $database['path']
+                    ? $schema . ' (default)'
+                    : $schema;
+            }
+            $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
+            if (empty($schema)) {
+                $this->stdErr->writeln('The --schema is required.');
+                if (!empty($schemas)) {
+                    $this->stdErr->writeln('Available schemas: ' . implode(', ', $schemas));
+                }
 
-            return 1;
+                return 1;
+            }
         }
 
         $dumpFile = null;
@@ -125,8 +144,6 @@ class DbDumpCommand extends CommandBase
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
                 if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
                     return 1;
                 }
