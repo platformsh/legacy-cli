@@ -18,7 +18,8 @@ class DbDumpCommand extends CommandBase
     {
         $this->setName('db:dump')
             ->setDescription('Create a local dump of the remote database');
-        $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
+        $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
+            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'A custom directory for the dump')
             ->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
@@ -128,9 +129,11 @@ class DbDumpCommand extends CommandBase
             return 1;
         }
 
+        $schema = $input->getOption('schema');
+
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = 'pg_dump --no-owner --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database);
+                $dumpCommand = 'pg_dump --no-owner --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database, $schema);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --schema-only';
                 }
@@ -144,7 +147,7 @@ class DbDumpCommand extends CommandBase
 
             default:
                 $dumpCommand = 'mysqldump --single-transaction '
-                    . $relationships->getDbCommandArgs('mysqldump', $database);
+                    . $relationships->getDbCommandArgs('mysqldump', $database, $schema);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
                 }
