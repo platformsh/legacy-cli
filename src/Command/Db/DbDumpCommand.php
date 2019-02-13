@@ -51,6 +51,22 @@ class DbDumpCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Filesystem $fs */
         $fs = $this->getService('fs');
 
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+
+        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
+        if (empty($database)) {
+            return 1;
+        }
+
+        $schema = $input->getOption('schema') ?: $database['path'];
+        if (empty($schema)) {
+            // @todo list schemas
+            $this->stdErr->writeln('The --schema is required.');
+
+            return 1;
+        }
+
         $dumpFile = null;
         if (!$input->getOption('stdout')) {
             // Process the user --file option.
@@ -70,7 +86,8 @@ class DbDumpCommand extends CommandBase
             } else {
                 $defaultFilename = $this->getDefaultFilename(
                     $environment,
-                    $appName,
+                    $database['service'],
+                    $schema,
                     $includedTables,
                     $excludedTables,
                     $schemaOnly,
@@ -120,16 +137,6 @@ class DbDumpCommand extends CommandBase
                 $dumpFile
             ));
         }
-
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-
-        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
-        if (empty($database)) {
-            return 1;
-        }
-
-        $schema = $input->getOption('schema');
 
         switch ($database['scheme']) {
             case 'pgsql':
@@ -226,7 +233,8 @@ class DbDumpCommand extends CommandBase
      * Get the default dump filename.
      *
      * @param Environment $environment
-     * @param string|null $appName
+     * @param string|null $dbServiceName
+     * @param string|null $schema
      * @param array       $includedTables
      * @param array       $excludedTables
      * @param bool        $schemaOnly
@@ -236,15 +244,19 @@ class DbDumpCommand extends CommandBase
      */
     private function getDefaultFilename(
         Environment $environment,
-        $appName = null,
+        $dbServiceName = null,
+        $schema = null,
         array $includedTables = [],
         array $excludedTables = [],
         $schemaOnly = false,
         $gzip = false)
     {
         $defaultFilename = $environment->project . '--' . $environment->machine_name;
-        if ($appName !== null) {
-            $defaultFilename .= '--' . $appName;
+        if ($dbServiceName !== null) {
+            $defaultFilename .= '--' . $dbServiceName;
+        }
+        if ($schema !== null) {
+            $defaultFilename .= '--' . $schema;
         }
         if ($includedTables) {
             $defaultFilename .= '--' . implode(',', $includedTables);
