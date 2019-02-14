@@ -53,34 +53,19 @@ class DbSizeCommand extends CommandBase
             return 1;
         }
 
-        // Find the database's service name in the relationships.
-        $dbServiceName = false;
-        foreach ($appConfig['relationships'] as $relationshipName => $relationship) {
-            if ($database['_relationship_name'] === $relationshipName) {
-                list($dbServiceName,) = explode(':', $relationship, 2);
-                break;
-            }
-        }
-        if (!$dbServiceName) {
-            $this->stdErr->writeln('Service name not found for relationship: ' . $database['_relationship_name']);
-            return 1;
-        }
-
-        // Load services yaml.
-        $services = $this->getProjectServiceConfig();
-        if (!empty($services[$dbServiceName]['disk'])) {
-            $allocatedDisk = $services[$dbServiceName]['disk'];
-        } else {
-            $this->stdErr->writeln('The allocated disk size could not be determined for service: <comment>' . $dbServiceName . '</comment>');
-            $allocatedDisk = false;
-        }
+        // Get information about the deployed service associated with the
+        // selected relationship.
+        $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+        $dbServiceName = $database['service'];
+        $service = $deployment->getService($dbServiceName);
+        $allocatedDisk = $service->disk;
 
         /** @var Shell $shell */
         $shell = $this->getService('shell');
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
 
-        $this->stdErr->writeln('Checking database <comment>' . $dbServiceName . '</comment>...');
+        $this->stdErr->writeln(sprintf('Checking database service <comment>%s</comment>...', $dbServiceName));
 
         $command = ['ssh'];
         $command = array_merge($command, $ssh->getSshArgs());
@@ -123,6 +108,23 @@ class DbSizeCommand extends CommandBase
         $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
         $this->stdErr->writeln("This is an estimate of the database's disk usage. It does not represent its real size on disk.");
 
+        // Find if not all the available schemas were accessible via this relationship.
+        if (isset($database['rel'])
+            && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
+            $schemas = !empty($service->configuration['schemas'])
+                ? $service->configuration['schemas']
+                : ['main'];
+            $accessible = array_keys($service->configuration['endpoints'][$database['rel']]['privileges']);
+            $missing = array_diff($schemas, $accessible);
+            if (!empty($missing)) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Additionally, not all schemas are accessible through this endpoint.');
+                $this->stdErr->writeln('  Endpoint:             ' . $database['rel']);
+                $this->stdErr->writeln('  Accessible schemas:   <info>' . implode(', ', $accessible) . '</info>');
+                $this->stdErr->writeln('  Inaccessible schemas: <comment>' . implode(', ', $missing) . '</comment>');
+            }
+        }
+
         return 0;
     }
 
@@ -145,7 +147,7 @@ class DbSizeCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-        $dbUrl = $relationships->getDbCommandArgs('psql', $database);
+        $dbUrl = $relationships->getDbCommandArgs('psql', $database, '');
 
         return sprintf(
             "psql --echo-hidden -t --no-align %s -c '%s'",
@@ -173,40 +175,12 @@ class DbSizeCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-        $connectionParams = $relationships->getDbCommandArgs('mysql', $database);
+        $connectionParams = $relationships->getDbCommandArgs('mysql', $database, '');
 
         return sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
             $connectionParams,
             $query
         );
-    }
-
-    /**
-     * Find the service configuration (from services.yaml).
-     *
-     * @return array
-     */
-    private function getProjectServiceConfig()
-    {
-        $servicesYaml = false;
-        $servicesYamlFilename = $this->config()->get('service.project_config_dir') . '/services.yaml';
-        $services = [];
-        try {
-            /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
-            $gitData = $this->getService('git_data_api');
-            $servicesYaml = $gitData->readFile($servicesYamlFilename, $this->getSelectedEnvironment());
-        } catch (ApiFeatureMissingException $e) {
-            $this->debug($e->getMessage());
-            if ($projectRoot = $this->getProjectRoot()) {
-                $this->debug('Reading file in local project: ' . $projectRoot . '/' . $servicesYamlFilename);
-                $servicesYaml = file_get_contents($projectRoot . '/' . $servicesYamlFilename);
-            }
-        }
-        if ($servicesYaml) {
-            $services = (new YamlParser())->parseContent($servicesYaml, $servicesYamlFilename);
-        }
-
-        return $services;
     }
 }
