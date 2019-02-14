@@ -18,7 +18,8 @@ class DbDumpCommand extends CommandBase
     {
         $this->setName('db:dump')
             ->setDescription('Create a local dump of the remote database');
-        $this->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
+        $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
+            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'A custom directory for the dump')
             ->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip')
             ->addOption('timestamp', 't', InputOption::VALUE_NONE, 'Add a timestamp to the dump filename')
@@ -50,6 +51,59 @@ class DbDumpCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Filesystem $fs */
         $fs = $this->getService('fs');
 
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
+        if (empty($database)) {
+            return 1;
+        }
+
+        $schema = $input->getOption('schema');
+        if (empty($schema)) {
+            // Get information about the deployed service associated with the
+            // selected relationship.
+            $deployment = $this->api()->getCurrentDeployment($environment);
+            $service = $deployment->getService($database['service']);
+
+            // Get a list of schemas from the service configuration.
+            $schemas = !empty($service->configuration['schemas'])
+                ? $service->configuration['schemas']
+                : ['main'];
+
+            // Filter the list by the schemas accessible from the endpoint.
+            if (isset($database['rel'])
+                && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
+                $schemas = array_intersect(
+                    $schemas,
+                    array_keys($service->configuration['endpoints'][$database['rel']]['privileges'])
+                );
+            }
+
+            // Provide the user with a choice of schemas.
+            $choices = [];
+            foreach ($schemas as $schema) {
+                $choices[$schema] = $schema;
+                if ($schema === $database['path']) {
+                    $choices[$schema] .= ' (default)';
+                }
+            }
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'] ? $database['path'] . ' (default)' : null, true);
+            if (empty($schema)) {
+                $this->stdErr->writeln('The --schema is required.');
+                if (!empty($schemas)) {
+                    $this->stdErr->writeln('Available schemas: ' . implode(', ', $schemas));
+                }
+
+                return 1;
+            }
+        }
+
         $dumpFile = null;
         if (!$input->getOption('stdout')) {
             // Process the user --file option.
@@ -69,7 +123,8 @@ class DbDumpCommand extends CommandBase
             } else {
                 $defaultFilename = $this->getDefaultFilename(
                     $environment,
-                    $appName,
+                    $database['service'],
+                    $schema,
                     $includedTables,
                     $excludedTables,
                     $schemaOnly,
@@ -107,8 +162,6 @@ class DbDumpCommand extends CommandBase
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
                 if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
                     return 1;
                 }
@@ -120,17 +173,9 @@ class DbDumpCommand extends CommandBase
             ));
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-
-        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
-        if (empty($database)) {
-            return 1;
-        }
-
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = 'pg_dump --no-owner --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database);
+                $dumpCommand = 'pg_dump --no-owner --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database, $schema);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --schema-only';
                 }
@@ -144,7 +189,7 @@ class DbDumpCommand extends CommandBase
 
             default:
                 $dumpCommand = 'mysqldump --single-transaction '
-                    . $relationships->getDbCommandArgs('mysqldump', $database);
+                    . $relationships->getDbCommandArgs('mysqldump', $database, $schema);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
                 }
@@ -223,7 +268,8 @@ class DbDumpCommand extends CommandBase
      * Get the default dump filename.
      *
      * @param Environment $environment
-     * @param string|null $appName
+     * @param string|null $dbServiceName
+     * @param string|null $schema
      * @param array       $includedTables
      * @param array       $excludedTables
      * @param bool        $schemaOnly
@@ -233,15 +279,19 @@ class DbDumpCommand extends CommandBase
      */
     private function getDefaultFilename(
         Environment $environment,
-        $appName = null,
+        $dbServiceName = null,
+        $schema = null,
         array $includedTables = [],
         array $excludedTables = [],
         $schemaOnly = false,
         $gzip = false)
     {
         $defaultFilename = $environment->project . '--' . $environment->machine_name;
-        if ($appName !== null) {
-            $defaultFilename .= '--' . $appName;
+        if ($dbServiceName !== null) {
+            $defaultFilename .= '--' . $dbServiceName;
+        }
+        if ($schema !== null) {
+            $defaultFilename .= '--' . $schema;
         }
         if ($includedTables) {
             $defaultFilename .= '--' . implode(',', $includedTables);
