@@ -89,6 +89,10 @@ class QuestionHelper extends BaseQuestionHelper
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
         $question->setMaxAttempts(5);
 
+        if (!$this->input->isInteractive()) {
+            return $question->getDefault();
+        }
+
         $choice = $this->ask($this->input, $this->output, $question);
         $choiceKey = array_search($choice, $items, true);
         if ($choiceKey === false) {
