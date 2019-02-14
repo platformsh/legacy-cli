@@ -76,9 +76,6 @@ class UserAddCommand extends CommandBase
                     $choices[$account['email']] = $this->getUserLabel($access);
                 }
                 $email = $questionHelper->choose($choices, 'Enter a number to choose a user to update:');
-                if (count($choices) > 1) {
-                    $hasOutput = true;
-                }
             } else {
                 $question = new Question("Enter the user's email address: ");
                 $question->setValidator(function ($answer) {

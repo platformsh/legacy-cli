@@ -126,7 +126,6 @@ class Relationships implements InputConfiguringInterface
         if (!$identifier) {
             $questionHelper = new QuestionHelper($input, $output);
             $identifier = $questionHelper->choose($choices, 'Enter a number to choose a relationship:');
-            $stdErr->writeln('');
         }
 
         if (strpos($identifier, '.') !== false) {

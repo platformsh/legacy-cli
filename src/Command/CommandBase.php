@@ -877,8 +877,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $id = $questionHelper->choose($projectList, $text, null, false);
 
-        $this->stdErr->writeln('');
-
         return $id;
     }
 

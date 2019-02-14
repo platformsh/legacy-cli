@@ -95,6 +95,8 @@ class QuestionHelper extends BaseQuestionHelper
             throw new \RuntimeException("Invalid value: $choice");
         }
 
+        $this->output->writeln('');
+
         return $choiceKey;
     }
 
