@@ -90,7 +90,16 @@ class QuestionHelper extends BaseQuestionHelper
         $question->setMaxAttempts(5);
 
         if (!$this->input->isInteractive()) {
-            return $question->getDefault();
+            if (!isset($defaultKey)) {
+                return null;
+            }
+            $choice = $itemList[$defaultKey];
+            $choiceKey = array_search($choice, $items, true);
+            if ($choiceKey === false) {
+                throw new \RuntimeException('Invalid default');
+            }
+
+            return $choiceKey;
         }
 
         $choice = $this->ask($this->input, $this->output, $question);
