@@ -50,24 +50,42 @@ class DbSqlCommand extends CommandBase
 
         $schema = $input->getOption('schema');
         if ($schema === null) {
+            // Get information about the deployed service associated with the
+            // selected relationship.
             $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
             $service = $deployment->getService($database['service']);
+
+            // Get a list of schemas from the service configuration.
             $schemas = !empty($service->configuration['schemas'])
                 ? $service->configuration['schemas']
                 : ['main'];
+
+            // Filter the list by the schemas accessible from the endpoint.
+            if (isset($database['rel'])
+                && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
+                $schemas = array_intersect(
+                    $schemas,
+                    array_keys($service->configuration['endpoints'][$database['rel']]['privileges'])
+                );
+            }
+
+            // Provide the user with a choice of schemas.
             if (count($schemas) === 1) {
                 $schema = reset($schemas);
             } else {
                 $choices = [];
+                $schemas[] = '(none)';
+                $default = ($database['path'] ?: '(none)');
                 foreach ($schemas as $schema) {
-                    $choices[$schema] = $schema === $database['path']
-                        ? $schema . ' (default)'
-                        : $schema;
+                    $choices[$schema] = $schema;
+                    if ($schema === $default) {
+                        $choices[$schema] .= ' (default)';
+                    }
                 }
-                $choices[''] = '(none)';
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
                 $questionHelper = $this->getService('question_helper');
-                $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
+                $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $default . ' (default)', true);
+                $schema = $schema === '(none)' ? '' : $schema;
             }
         }
 

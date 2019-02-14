@@ -64,18 +64,36 @@ class DbDumpCommand extends CommandBase
 
         $schema = $input->getOption('schema');
         if (empty($schema)) {
+            // Get information about the deployed service associated with the
+            // selected relationship.
             $deployment = $this->api()->getCurrentDeployment($environment);
             $service = $deployment->getService($database['service']);
+
+            // Get a list of schemas from the service configuration.
             $schemas = !empty($service->configuration['schemas'])
                 ? $service->configuration['schemas']
                 : ['main'];
+
+            // Filter the list by the schemas accessible from the endpoint.
+            if (isset($database['rel'])
+                && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
+                $schemas = array_intersect(
+                    $schemas,
+                    array_keys($service->configuration['endpoints'][$database['rel']]['privileges'])
+                );
+            }
+
+            // Provide the user with a choice of schemas.
             $choices = [];
             foreach ($schemas as $schema) {
-                $choices[$schema] = $schema === $database['path']
-                    ? $schema . ' (default)'
-                    : $schema;
+                $choices[$schema] = $schema;
+                if ($schema === $database['path']) {
+                    $choices[$schema] .= ' (default)';
+                }
             }
-            $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'] ? $database['path'] . ' (default)' : null, true);
             if (empty($schema)) {
                 $this->stdErr->writeln('The --schema is required.');
                 if (!empty($schemas)) {
