@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "a522451e18a9aa6d50c93b76903e13efd7a4c9a6",
-        "sha256": "f764ee7f83e659276e2876e3b80fda134045ab2ed9192d7f8574f2d56d559b28",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.39.0/platform.phar",
-        "version": "3.39.0",
+        "sha1": "72d7a75476e28557e49fbd14c1fd3265075a0891",
+        "sha256": "9d48efeff8ecfa4a0eea0826c6df8dba12827b8f3e9af0f3aa14b2bff299c420",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.40.0/platform.phar",
+        "version": "3.40.0",
         "php": {
             "min": "5.5.9"
         },
@@ -167,6 +167,11 @@
                 "notes": "New features:\n\n* Add tunnel:single command (allow opening a tunnel without posix/pcntl).\n\nBug fixes:\n\n* Fix bug where login to a new account does not log out from the old account.\n* Account for differing app roots in Drush aliases - allows generated Drush\n  aliases to work with Platform.sh Enterprise environments.\n* Fix Drush 9 alias compatibility (and remove Drush 9-beta compatibility).",
                 "show from": "3.38.0",
                 "hide from": "3.39.0"
+            },
+            {
+                "notes": "New features:\n\n* Support multiple schemas per database relationship:\n  - Add --schema option to `db:dump` and `db:sql` commands.\n  - Include the service name and schema in the `db:dump` default filename.\n  - Present a choice between schemas if no schema is specified.\n  - Make `db:size` schema agnostic but warn about inaccessible schemas.\n\nBug fixes:\n\n* Use a different Drush alias root for site-local versions 8 or 9. Drush 9\n  fails to find a Drupal root via a relative path in some circumstances.\n* Fix behavior of choice questions with no default in non-interactive mode.\n* Fix checkout command when there is only one branch.\n* Fix Drush lock files not being used in local:build command.\n\nOther changes:\n\n* Add some 3-letter command aliases:\n  - activity:list => activities => act\n  - environment:list => environments => env\n  - project:list => projects => pro\n  - variable:list => variables => var",
+                "show from": "3.39.0",
+                "hide from": "3.40.0"
             }
         ]
     }
