@@ -240,10 +240,27 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             return false;
         }
 
-        // The 'root' can be a relative path, relative to the home directory.
-        // Conveniently, the home directory is the same as the app root.
+        // Drush 8 (on the remote) accepts a relative path for the 'root'.
+        // Drush 9 (on the remote) does not accept a relative path for some
+        // structures of Drupal (e.g. where the Drupal root is inside the
+        // Composer root).
+        //
+        // Drush 9 will replace ~/ with the home directory, but Drush 8 won't.
+        //
+        // The Drush 9 relative path issue could be resolved via this PR:
+        // https://github.com/webflo/drupal-finder/pull/40
+        //
+        // The CLI cannot determine the Drush version on the remote, but it
+        // can make a guess based on the site-local Drush version. Those
+        // versions may become out of sync, but this is the best we can do for
+        // now. Relative 'root' support in Drush 9 would solve the problem.
+        $version = $this->drush->getVersion();
+        $root = $version !== false && version_compare($version, '9', '>=')
+            ? '~/' . $app->getDocumentRoot()
+            : $app->getDocumentRoot();
+
         $alias = [
-            'root' => $app->getDocumentRoot(),
+            'root' => $root,
             'options' => [
                 $this->getAutoRemoveKey() => true,
             ],
