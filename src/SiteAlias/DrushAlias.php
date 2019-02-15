@@ -248,7 +248,8 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         // can make a guess based on the site-local Drush version. Those
         // versions may become out of sync, but this is the best we can do for
         // now. Relative 'root' support in Drush 9 would solve the problem.
-        $root = version_compare($this->drush->getVersion(), '9', '>=')
+        $version = $this->drush->getVersion();
+        $root = $version !== false && version_compare($version, '9', '>=')
             ? '~/' . $app->getDocumentRoot()
             : $app->getDocumentRoot();
 
