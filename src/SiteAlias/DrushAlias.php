@@ -240,10 +240,20 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             return false;
         }
 
-        // The 'root' can be a relative path, relative to the home directory.
-        // Conveniently, the home directory is the same as the app root.
+        // Drush 8 (on the remote) accepts a relative path for the 'root'.
+        // Drush 9 (on the remote) does not accept a relative path, but it
+        // will replace ~/ with the home directory.
+        //
+        // The CLI cannot determine the Drush version on the remote, but it
+        // can make a guess based on the site-local Drush version. Those
+        // versions may become out of sync, but this is the best we can do for
+        // now. Relative 'root' support in Drush 9 would solve the problem.
+        $root = version_compare($this->drush->getVersion(), '9', '>=')
+            ? '~/' . $app->getDocumentRoot()
+            : $app->getDocumentRoot();
+
         $alias = [
-            'root' => $app->getDocumentRoot(),
+            'root' => $root,
             'options' => [
                 $this->getAutoRemoveKey() => true,
             ],
