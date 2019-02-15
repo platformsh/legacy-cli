@@ -244,6 +244,8 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         // Drush 9 (on the remote) does not accept a relative path, but it
         // will replace ~/ with the home directory.
         //
+        // Drush 9 issue: https://github.com/webflo/drupal-finder/pull/40
+        //
         // The CLI cannot determine the Drush version on the remote, but it
         // can make a guess based on the site-local Drush version. Those
         // versions may become out of sync, but this is the best we can do for
