@@ -39,7 +39,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         if ($branch === null) {
             if ($input->isInteractive()) {
                 $branch = $this->offerBranchChoice($project, $projectRoot);
-                if ($branch === null) {
+                if ($branch === false) {
                     return 1;
                 }
             } else {

@@ -15,7 +15,7 @@ class VariableListCommand extends VariableCommandBase
     {
         $this
             ->setName('variable:list')
-            ->setAliases(['variables'])
+            ->setAliases(['variables', 'var'])
             ->setDescription('List variables');
         $this->addLevelOption();
         Table::configureInput($this->getDefinition());

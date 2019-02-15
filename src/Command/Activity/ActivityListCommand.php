@@ -19,7 +19,7 @@ class ActivityListCommand extends CommandBase
     {
         $this
             ->setName('activity:list')
-            ->setAliases(['activities'])
+            ->setAliases(['activities', 'act'])
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')

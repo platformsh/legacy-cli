@@ -16,7 +16,7 @@ class ProjectListCommand extends CommandBase
     {
         $this
             ->setName('project:list')
-            ->setAliases(['projects'])
+            ->setAliases(['projects', 'pro'])
             ->setDescription('Get a list of all active projects')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs')
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname (exact match)')

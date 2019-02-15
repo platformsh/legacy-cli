@@ -126,7 +126,6 @@ class Relationships implements InputConfiguringInterface
         if (!$identifier) {
             $questionHelper = new QuestionHelper($input, $output);
             $identifier = $questionHelper->choose($choices, 'Enter a number to choose a relationship:');
-            $stdErr->writeln('');
         }
 
         if (strpos($identifier, '.') !== false) {
@@ -160,54 +159,74 @@ class Relationships implements InputConfiguringInterface
     /**
      * Returns command-line arguments to connect to a database.
      *
-     * @param string $command  The command that will need arguments (one of
-     *                         'psql', 'pg_dump', 'mysql', or 'mysqldump').
-     * @param array  $database The database definition from the relationship.
+     * @param string      $command        The command that will need arguments
+     *                                    (one of 'psql', 'pg_dump', 'mysql',
+     *                                    or 'mysqldump').
+     * @param array       $database       The database definition from the
+     *                                    relationship.
+     * @param string|null $schema         The name of a database schema, or
+     *                                    null to use the default schema, or
+     *                                    an empty string to not select a
+     *                                    schema.
      *
      * @return string
      *   The command line arguments (excluding the $command).
      */
-    public function getDbCommandArgs($command, array $database)
+    public function getDbCommandArgs($command, array $database, $schema = null)
     {
+        if ($schema === null) {
+            $schema = $database['path'];
+        }
+
         switch ($command) {
             case 'psql':
             case 'pg_dump':
-                return OsUtil::escapePosixShellArg(sprintf(
-                    'postgresql://%s:%s@%s:%d/%s',
+                $url = sprintf(
+                    'postgresql://%s:%s@%s:%d',
                     $database['username'],
                     $database['password'],
                     $database['host'],
-                    $database['port'],
-                    $database['path']
-                ));
+                    $database['port']
+                );
+                if ($schema !== '') {
+                    $url .= '/' . rawurlencode($schema);
+                }
+
+                return OsUtil::escapePosixShellArg($url);
 
             case 'mysql':
             case 'mysqldump':
-                return sprintf(
-                    '--user=%s --password=%s --host=%s --port=%d %s',
+                $args = sprintf(
+                    '--user=%s --password=%s --host=%s --port=%d',
                     OsUtil::escapePosixShellArg($database['username']),
                     OsUtil::escapePosixShellArg($database['password']),
                     OsUtil::escapePosixShellArg($database['host']),
-                    $database['port'],
-                    OsUtil::escapePosixShellArg($database['path'])
+                    $database['port']
                 );
+                if ($schema !== '') {
+                    $args .= ' ' . OsUtil::escapePosixShellArg($schema);
+                }
+
+                return $args;
 
             case 'mongo':
             case 'mongodump':
             case 'mongoexport':
             case 'mongorestore':
                 $args = sprintf(
-                    '--username %s --password %s --host %s --port %d --authenticationDatabase %s',
+                    '--username %s --password %s --host %s --port %d',
                     OsUtil::escapePosixShellArg($database['username']),
                     OsUtil::escapePosixShellArg($database['password']),
                     OsUtil::escapePosixShellArg($database['host']),
-                    $database['port'],
-                    OsUtil::escapePosixShellArg($database['path'])
+                    $database['port']
                 );
-                if ($command === 'mongo') {
-                    $args .= ' ' . OsUtil::escapePosixShellArg($database['path']);
-                } else {
-                    $args .= ' --db ' . OsUtil::escapePosixShellArg($database['path']);
+                if ($schema !== '') {
+                    $args .= '--authenticationDatabase ' . OsUtil::escapePosixShellArg($schema);
+                    if ($command === 'mongo') {
+                        $args .= ' ' . OsUtil::escapePosixShellArg($schema);
+                    } else {
+                        $args .= ' --db ' . OsUtil::escapePosixShellArg($schema);
+                    }
                 }
 
                 return $args;

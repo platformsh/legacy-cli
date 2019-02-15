@@ -65,7 +65,6 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             $collection = $questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
-            $this->stdErr->writeln('');
         }
 
         $command = 'mongoexport ' . $relationshipsService->getDbCommandArgs('mongoexport', $service);
