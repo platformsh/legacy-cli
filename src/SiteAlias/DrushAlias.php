@@ -241,10 +241,14 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         }
 
         // Drush 8 (on the remote) accepts a relative path for the 'root'.
-        // Drush 9 (on the remote) does not accept a relative path, but it
-        // will replace ~/ with the home directory.
+        // Drush 9 (on the remote) does not accept a relative path for some
+        // structures of Drupal (e.g. where the Drupal root is inside the
+        // Composer root).
         //
-        // Drush 9 issue: https://github.com/webflo/drupal-finder/pull/40
+        // Drush 9 will replace ~/ with the home directory, but Drush 8 won't.
+        //
+        // The Drush 9 relative path issue could be resolved via this PR:
+        // https://github.com/webflo/drupal-finder/pull/40
         //
         // The CLI cannot determine the Drush version on the remote, but it
         // can make a guess based on the site-local Drush version. Those
