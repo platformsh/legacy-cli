@@ -689,6 +689,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->project = $this->getCurrentProject();
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
             $projects = $this->api()->getProjects();
+            if (count($projects) === 1) {
+                $project = reset($projects);
+                $this->project = $project;
+                $this->debug('Selected project: ' . $this->api()->getProjectLabel($project, 'comment'));
+
+                return $project;
+            }
             if (count($projects) > 0 && count($projects) < 25) {
                 $this->debug('No project specified: offering a choice...');
                 $projectId = $this->offerProjectChoice($projects);
@@ -785,6 +792,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($required && isset($this->input) && $this->input->isInteractive()) {
+            $environments = $this->api()->getEnvironments($this->project);
+            if (count($environments) === 1) {
+                $environment = reset($environments);
+                $this->debug('Selected environment: ' . $this->api()->getEnvironmentLabel($environment, 'comment'));
+                $this->environment = $environment;
+                return;
+            }
+
             $this->debug('No environment specified: offering a choice...');
             $this->environment = $this->offerEnvironmentChoice($this->api()->getEnvironments($this->project));
             return;
