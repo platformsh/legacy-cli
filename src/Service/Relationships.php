@@ -134,16 +134,29 @@ class Relationships implements InputConfiguringInterface
             $name = $identifier;
             $key = 0;
         }
-        $service = $relationships[$name][$key];
+        $relationship = $relationships[$name][$key];
+
+        // Ensure the service name is included in the relationship info.
+        // This is for backwards compatibility with projects that do not have
+        // this information.
+        if (!isset($relationship['service'])) {
+            $appConfig = $this->envVarService->getArrayEnvVar('APPLICATION', $sshUrl);
+            if (!empty($appConfig['relationships'][$name]) && is_string($appConfig['relationships'][$name])) {
+                list($serviceName, ) = explode(':', $appConfig['relationships'][$name], 2);
+                $relationship['service'] = $serviceName;
+            }
+        }
 
         // Add metadata about the service.
-        $service['_relationship_name'] = $name;
-        $service['_relationship_key'] = $key;
+        $relationship['_relationship_name'] = $name;
+        $relationship['_relationship_key'] = $key;
 
-        return $service;
+        return $relationship;
     }
 
     /**
+     * Get the relationships deployed on the remote application.
+     *
      * @param string $sshUrl
      * @param bool   $refresh
      *
@@ -151,9 +164,7 @@ class Relationships implements InputConfiguringInterface
      */
     public function getRelationships($sshUrl, $refresh = false)
     {
-        $value = $this->envVarService->getEnvVar('RELATIONSHIPS', $sshUrl, $refresh);
-
-        return json_decode(base64_decode($value), true) ?: [];
+        return $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $sshUrl, $refresh);
     }
 
     /**
