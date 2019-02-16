@@ -87,9 +87,15 @@ class Relationships implements InputConfiguringInterface
         $choices = [];
         foreach ($relationships as $name => $relationship) {
             $serviceCount = count($relationship);
-            foreach ($relationship as $key => $service) {
+            foreach ($relationship as $key => $info) {
                 $identifier = $name . ($serviceCount > 1 ? '.' . $key : '');
-                $choices[$identifier] = $identifier;
+                if (isset($info['username']) && (!isset($info['host']) || $info['host'] === '127.0.0.1')) {
+                    $choices[$identifier] = sprintf('%s (%s)', $identifier, $info['username']);
+                } elseif (isset($info['username'], $info['host'])) {
+                    $choices[$identifier] = sprintf('%s (%s@%s)', $identifier, $info['username'], $info['host']);
+                } else {
+                    $choices[$identifier] = $identifier;
+                }
             }
         }
 
