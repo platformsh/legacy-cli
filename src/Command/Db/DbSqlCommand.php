@@ -69,10 +69,15 @@ class DbSqlCommand extends CommandBase
                 );
             }
 
-            // Provide the user with a choice of schemas.
-            if (count($schemas) === 1) {
+            // If the database path is not in the list of schemas, we have to
+            // use that - it probably indicates an integrated Enterprise
+            // environment.
+            if (!empty($database['path']) && !in_array($database['path'], $schemas, true)) {
+                $schema = $database['path'];
+            } elseif (count($schemas) === 1) {
                 $schema = reset($schemas);
             } else {
+                // Provide the user with a choice of schemas.
                 $choices = [];
                 $schemas[] = '(none)';
                 $default = ($database['path'] ?: '(none)');
