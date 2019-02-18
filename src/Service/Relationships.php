@@ -116,7 +116,7 @@ class Relationships implements InputConfiguringInterface
         }
 
         if (!$identifier && count($choices) === 1) {
-            $identifier = reset($choices);
+            $identifier = key($choices);
         }
 
         if (!$identifier && !$input->isInteractive()) {
