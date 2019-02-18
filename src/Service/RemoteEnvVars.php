@@ -59,6 +59,24 @@ class RemoteEnvVars
     }
 
     /**
+     * Read a complex environment variable (an associative array) from the application.
+     *
+     * @see \Platformsh\Cli\Service\RemoteEnvVars::getEnvVar()
+     *
+     * @param string $variable
+     * @param string $sshUrl
+     * @param bool   $refresh
+     *
+     * @return array
+     */
+    public function getArrayEnvVar($variable, $sshUrl, $refresh = false)
+    {
+        $value = $this->getEnvVar($variable, $sshUrl, $refresh);
+
+        return json_decode(base64_decode($value), true) ?: [];
+    }
+
+    /**
      * Clear caches for remote environment variables.
      *
      * @param string $sshUrl    The SSH URL to the application.

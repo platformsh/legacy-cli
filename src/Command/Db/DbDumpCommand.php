@@ -83,6 +83,13 @@ class DbDumpCommand extends CommandBase
                 );
             }
 
+            // If the database path is not in the list of schemas, we have to
+            // use that - it probably indicates an integrated Enterprise
+            // environment.
+            if (!empty($database['path']) && !in_array($database['path'], $schemas, true)) {
+                $schemas = [$database['path']];
+            }
+
             // Provide the user with a choice of schemas.
             $choices = [];
             foreach ($schemas as $schema) {

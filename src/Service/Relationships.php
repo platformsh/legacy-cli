@@ -87,9 +87,15 @@ class Relationships implements InputConfiguringInterface
         $choices = [];
         foreach ($relationships as $name => $relationship) {
             $serviceCount = count($relationship);
-            foreach ($relationship as $key => $service) {
+            foreach ($relationship as $key => $info) {
                 $identifier = $name . ($serviceCount > 1 ? '.' . $key : '');
-                $choices[$identifier] = $identifier;
+                if (isset($info['username']) && (!isset($info['host']) || $info['host'] === '127.0.0.1')) {
+                    $choices[$identifier] = sprintf('%s (%s)', $identifier, $info['username']);
+                } elseif (isset($info['username'], $info['host'])) {
+                    $choices[$identifier] = sprintf('%s (%s@%s)', $identifier, $info['username'], $info['host']);
+                } else {
+                    $choices[$identifier] = $identifier;
+                }
             }
         }
 
@@ -98,7 +104,8 @@ class Relationships implements InputConfiguringInterface
         if ($input->hasOption('relationship')
             && ($relationshipName = $input->getOption('relationship'))) {
             // Normalise the relationship name to remove a trailing ".0".
-            if (substr($relationshipName, -2) === '.0') {
+            if (substr($relationshipName, -2) === '.0'
+                && isset($relationships[$relationshipName]) && count($relationships[$relationshipName]) ===1) {
                 $relationshipName = substr($relationshipName, 0, strlen($relationshipName) - 2);
             }
             if (!isset($choices[$relationshipName])) {
@@ -134,16 +141,29 @@ class Relationships implements InputConfiguringInterface
             $name = $identifier;
             $key = 0;
         }
-        $service = $relationships[$name][$key];
+        $relationship = $relationships[$name][$key];
+
+        // Ensure the service name is included in the relationship info.
+        // This is for backwards compatibility with projects that do not have
+        // this information.
+        if (!isset($relationship['service'])) {
+            $appConfig = $this->envVarService->getArrayEnvVar('APPLICATION', $sshUrl);
+            if (!empty($appConfig['relationships'][$name]) && is_string($appConfig['relationships'][$name])) {
+                list($serviceName, ) = explode(':', $appConfig['relationships'][$name], 2);
+                $relationship['service'] = $serviceName;
+            }
+        }
 
         // Add metadata about the service.
-        $service['_relationship_name'] = $name;
-        $service['_relationship_key'] = $key;
+        $relationship['_relationship_name'] = $name;
+        $relationship['_relationship_key'] = $key;
 
-        return $service;
+        return $relationship;
     }
 
     /**
+     * Get the relationships deployed on the remote application.
+     *
      * @param string $sshUrl
      * @param bool   $refresh
      *
@@ -151,9 +171,7 @@ class Relationships implements InputConfiguringInterface
      */
     public function getRelationships($sshUrl, $refresh = false)
     {
-        $value = $this->envVarService->getEnvVar('RELATIONSHIPS', $sshUrl, $refresh);
-
-        return json_decode(base64_decode($value), true) ?: [];
+        return $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $sshUrl, $refresh);
     }
 
     /**
