@@ -240,33 +240,25 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             return false;
         }
 
-        // Drush 8 (on the remote) accepts a relative path for the 'root'.
-        // Drush 9 (on the remote) does not accept a relative path for some
-        // structures of Drupal (e.g. where the Drupal root is inside the
-        // Composer root).
-        //
-        // Drush 9 will replace ~/ with the home directory, but Drush 8 won't.
-        //
-        // The Drush 9 relative path issue could be resolved via this PR:
-        // https://github.com/webflo/drupal-finder/pull/40
-        //
-        // The CLI cannot determine the Drush version on the remote, but it
-        // can make a guess based on the site-local Drush version. Those
-        // versions may become out of sync, but this is the best we can do for
-        // now. Relative 'root' support in Drush 9 would solve the problem.
-        $version = $this->drush->getVersion();
-        $root = $version !== false && version_compare($version, '9', '>=')
-            ? '~/' . $app->getDocumentRoot()
-            : $app->getDocumentRoot();
+        $sshUrl = $environment->getSshUrl($app->getName());
 
         $alias = [
-            'root' => $root,
             'options' => [
                 $this->getAutoRemoveKey() => true,
             ],
         ];
 
-        $sshUrl = $environment->getSshUrl($app->getName());
+        // For most environments, we know the application root directory is
+        // '/app'. It's different in Enterprise environments.
+        if ($environment->deployment_target === 'enterprise') {
+            $appRoot = $this->drush->getCachedAppRoot($sshUrl);
+            if ($appRoot) {
+                $alias['root'] = rtrim($appRoot, '/') . '/' . $app->getDocumentRoot();
+            }
+        } else {
+            $alias['root'] = '/app/' . $app->getDocumentRoot();
+        }
+
         list($alias['user'], $alias['host']) = explode('@', $sshUrl, 2);
 
         if ($url = $this->getUrl($environment)) {

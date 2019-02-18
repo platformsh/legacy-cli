@@ -15,6 +15,9 @@ class LocalDrushAliasesCommand extends CommandBase
 {
     protected $local = true;
 
+    /** @var \Platformsh\Cli\Service\RemoteEnvVars|null */
+    private $envVarsService;
+
     protected function configure()
     {
         $this
@@ -49,7 +52,8 @@ class LocalDrushAliasesCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
 
-        if (!$drush->getDrupalApps($projectRoot)) {
+        $apps = $drush->getDrupalApps($projectRoot);
+        if (empty($apps)) {
             $this->stdErr->writeln('No Drupal applications found.');
 
             return 1;
@@ -98,6 +102,23 @@ class LocalDrushAliasesCommand extends CommandBase
             }
 
             $environments = $this->api()->getEnvironments($project, true, false);
+            try {
+                foreach ($environments as $environment) {
+                    if ($environment->deployment_target === 'enterprise') {
+                        foreach ($apps as $app) {
+                            $sshUrl = $environment->getSshUrl($app->getName());
+                            $appRoot = $this->envVarsService()->getEnvVar('APP_DIR', $sshUrl);
+                            if (!empty($appRoot) && !empty($sshUrl)) {
+                                $this->debug(sprintf('Enterprise app root for %s: %s', $sshUrl, $appRoot));
+                                $drush->setCachedAppRoot($sshUrl, $appRoot);
+                            }
+                        }
+                    }
+                }
+            } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
+                // Ignore SSH errors.
+            }
+
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
             $this->ensureDrushConfig($drush);
@@ -123,6 +144,17 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         return 0;
+    }
+
+    /**
+     * @return \Platformsh\Cli\Service\RemoteEnvVars
+     */
+    private function envVarsService() {
+        if (!isset($this->envVarsService)) {
+            $this->envVarsService = $this->getService('remote_env_vars');
+        }
+
+        return $this->envVarsService;
     }
 
     /**
