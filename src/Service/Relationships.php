@@ -104,7 +104,8 @@ class Relationships implements InputConfiguringInterface
         if ($input->hasOption('relationship')
             && ($relationshipName = $input->getOption('relationship'))) {
             // Normalise the relationship name to remove a trailing ".0".
-            if (substr($relationshipName, -2) === '.0') {
+            if (substr($relationshipName, -2) === '.0'
+                && isset($relationships[$relationshipName]) && count($relationships[$relationshipName]) ===1) {
                 $relationshipName = substr($relationshipName, 0, strlen($relationshipName) - 2);
             }
             if (!isset($choices[$relationshipName])) {
