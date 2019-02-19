@@ -102,21 +102,30 @@ class LocalDrushAliasesCommand extends CommandBase
             }
 
             $environments = $this->api()->getEnvironments($project, true, false);
-            try {
-                foreach ($environments as $environment) {
-                    if ($environment->deployment_target === 'enterprise') {
-                        foreach ($apps as $app) {
-                            $sshUrl = $environment->getSshUrl($app->getName());
-                            $appRoot = $this->envVarsService()->getEnvVar('APP_DIR', $sshUrl);
-                            if (!empty($appRoot) && !empty($sshUrl)) {
-                                $this->debug(sprintf('Enterprise app root for %s: %s', $sshUrl, $appRoot));
-                                $drush->setCachedAppRoot($sshUrl, $appRoot);
-                            }
-                        }
+
+            // Attempt to find the absolute application root directory for
+            // each Enterprise environment. This will be cached by the Drush
+            // service ($drush), for use while generating aliases.
+            foreach ($environments as $environment) {
+                if ($environment->deployment_target !== 'enterprise') {
+                    continue;
+                }
+                foreach ($apps as $app) {
+                    $sshUrl = $environment->getSshUrl($app->getName());
+                    if (empty($sshUrl)) {
+                        continue;
+                    }
+                    try {
+                        $appRoot = $this->envVarsService()->getEnvVar('APP_DIR', $sshUrl);
+                    } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
+                        // Ignore SSH errors.
+                        continue;
+                    }
+                    if (!empty($appRoot)) {
+                        $this->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
+                        $drush->setCachedAppRoot($sshUrl, $appRoot);
                     }
                 }
-            } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
-                // Ignore SSH errors.
             }
 
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
