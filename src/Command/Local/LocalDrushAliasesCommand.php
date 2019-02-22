@@ -118,7 +118,12 @@ class LocalDrushAliasesCommand extends CommandBase
                     try {
                         $appRoot = $this->envVarsService()->getEnvVar('APP_DIR', $sshUrl);
                     } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
-                        // Ignore SSH errors.
+                        $this->stdErr->writeln(sprintf(
+                            'Unable to find app root for environment %s, app %s',
+                            $this->api()->getEnvironmentLabel($environment, 'comment'),
+                            '<comment>' . $app->getName() . '</comment>'
+                        ));
+                        $this->stdErr->writeln($e->getMessage());
                         continue;
                     }
                     if (!empty($appRoot)) {
