@@ -15,9 +15,6 @@ class LocalDrushAliasesCommand extends CommandBase
 {
     protected $local = true;
 
-    /** @var \Platformsh\Cli\Service\RemoteEnvVars|null */
-    private $envVarsService;
-
     protected function configure()
     {
         $this
@@ -106,6 +103,8 @@ class LocalDrushAliasesCommand extends CommandBase
             // Attempt to find the absolute application root directory for
             // each Enterprise environment. This will be cached by the Drush
             // service ($drush), for use while generating aliases.
+            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
+            $envVarsService = $this->getService('remote_env_vars');
             foreach ($environments as $environment) {
                 if ($environment->deployment_target !== 'enterprise') {
                     continue;
@@ -116,7 +115,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         continue;
                     }
                     try {
-                        $appRoot = $this->envVarsService()->getEnvVar('APP_DIR', $sshUrl);
+                        $appRoot = $envVarsService->getEnvVar('APP_DIR', $sshUrl);
                     } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
                         $this->stdErr->writeln(sprintf(
                             'Unable to find app root for environment %s, app %s',
@@ -158,17 +157,6 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         return 0;
-    }
-
-    /**
-     * @return \Platformsh\Cli\Service\RemoteEnvVars
-     */
-    private function envVarsService() {
-        if (!isset($this->envVarsService)) {
-            $this->envVarsService = $this->getService('remote_env_vars');
-        }
-
-        return $this->envVarsService;
     }
 
     /**
