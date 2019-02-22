@@ -49,7 +49,8 @@ class LocalDrushAliasesCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
 
-        if (!$drush->getDrupalApps($projectRoot)) {
+        $apps = $drush->getDrupalApps($projectRoot);
+        if (empty($apps)) {
             $this->stdErr->writeln('No Drupal applications found.');
 
             return 1;
@@ -98,6 +99,39 @@ class LocalDrushAliasesCommand extends CommandBase
             }
 
             $environments = $this->api()->getEnvironments($project, true, false);
+
+            // Attempt to find the absolute application root directory for
+            // each Enterprise environment. This will be cached by the Drush
+            // service ($drush), for use while generating aliases.
+            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
+            $envVarsService = $this->getService('remote_env_vars');
+            foreach ($environments as $environment) {
+                if ($environment->deployment_target !== 'enterprise') {
+                    continue;
+                }
+                foreach ($apps as $app) {
+                    $sshUrl = $environment->getSshUrl($app->getName());
+                    if (empty($sshUrl)) {
+                        continue;
+                    }
+                    try {
+                        $appRoot = $envVarsService->getEnvVar('APP_DIR', $sshUrl);
+                    } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
+                        $this->stdErr->writeln(sprintf(
+                            'Unable to find app root for environment %s, app %s',
+                            $this->api()->getEnvironmentLabel($environment, 'comment'),
+                            '<comment>' . $app->getName() . '</comment>'
+                        ));
+                        $this->stdErr->writeln($e->getMessage());
+                        continue;
+                    }
+                    if (!empty($appRoot)) {
+                        $this->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
+                        $drush->setCachedAppRoot($sshUrl, $appRoot);
+                    }
+                }
+            }
+
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
             $this->ensureDrushConfig($drush);

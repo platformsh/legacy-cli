@@ -39,7 +39,10 @@ class RemoteEnvVars
      * @param bool   $refresh  Whether to refresh the cache.
      * @param int    $ttl      The cache lifetime of the result.
      *
-     * @return string
+     * @throws \Symfony\Component\Process\Exception\RuntimeException
+     *   If the SSH command fails.
+     *
+     * @return string The environment variable or an empty string.
      */
     public function getEnvVar($variable, $sshUrl, $refresh = false, $ttl = 3600)
     {
@@ -55,7 +58,7 @@ class RemoteEnvVars
             $this->cache->save($cacheKey, $cached, $ttl);
         }
 
-        return $cached;
+        return $cached ?: '';
     }
 
     /**
