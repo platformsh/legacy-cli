@@ -52,11 +52,15 @@ class DbSizeCommand extends CommandBase
             $this->stdErr->writeln('No database selected.');
             return 1;
         }
+        if (!isset($database['service'])) {
+            $this->stdErr->writeln('Unable to find database service information.');
+            return 1;
+        }
+        $dbServiceName = $database['service'];
 
         // Get information about the deployed service associated with the
         // selected relationship.
         $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
-        $dbServiceName = $database['service'];
         $service = $deployment->getService($dbServiceName);
         $allocatedDisk = $service->disk;
 

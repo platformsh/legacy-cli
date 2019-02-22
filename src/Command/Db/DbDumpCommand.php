@@ -67,15 +67,16 @@ class DbDumpCommand extends CommandBase
             // Get information about the deployed service associated with the
             // selected relationship.
             $deployment = $this->api()->getCurrentDeployment($environment);
-            $service = $deployment->getService($database['service']);
+            $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
 
             // Get a list of schemas from the service configuration.
-            $schemas = !empty($service->configuration['schemas'])
+            $schemas = $service && !empty($service->configuration['schemas'])
                 ? $service->configuration['schemas']
                 : ['main'];
 
             // Filter the list by the schemas accessible from the endpoint.
             if (isset($database['rel'])
+                && $service
                 && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
                 $schemas = array_intersect(
                     $schemas,
