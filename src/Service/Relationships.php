@@ -239,7 +239,7 @@ class Relationships implements InputConfiguringInterface
                     $database['port']
                 );
                 if ($schema !== '') {
-                    $args .= '--authenticationDatabase ' . OsUtil::escapePosixShellArg($schema);
+                    $args .= ' --authenticationDatabase ' . OsUtil::escapePosixShellArg($schema);
                     if ($command === 'mongo') {
                         $args .= ' ' . OsUtil::escapePosixShellArg($schema);
                     } else {
