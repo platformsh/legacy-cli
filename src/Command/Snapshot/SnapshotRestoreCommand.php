@@ -92,6 +92,16 @@ class SnapshotRestoreCommand extends CommandBase
             ? $this->api()->getEnvironmentLabel($targetEnvironment)
             : '<info>' . $target . '</info>';
 
+        // Do not allow restoring with --target on legacy regions: it can
+        // overwrite the wrong branch. This is a (hopefully) temporary measure.
+        if ((!$targetEnvironment || $targetEnvironment->id !== $environment->id)
+            && preg_match('#https://(eu|us)\.[pm]#', $this->getSelectedProject()->getUri())) {
+            $this->stdErr->writeln('Snapshots cannot be automatically restored to another environment on this region.');
+            $this->stdErr->writeln('Please contact support.');
+
+            return 1;
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $name = $selectedActivity['payload']['backup_name'];
