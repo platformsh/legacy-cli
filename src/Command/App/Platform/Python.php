@@ -4,18 +4,18 @@ namespace Platformsh\Cli\Command\App\Platform;
 
 use Platformsh\ConsoleForm\Field\OptionsField;
 
-class NodeJs extends Other
+class Python extends Other
 {
     public function type() {
-        return 'nodejs';
+        return 'python';
     }
 
     public function getFields() {
         $fields['runtime_version'] = new OptionsField('Version', [
-            'conditions' => ['type' => 'nodejs'],
+            'conditions' => ['type' => 'python'],
             'optionName' => 'runtime_version',
-            'options' => ['6.11', '8.9', '10'],
-            'default' => '10',
+            'options' => ['2.7', '3.5', '3.6', '3.7'],
+            'default' => '3.7',
         ]);
 
         return $fields;

@@ -7,34 +7,34 @@ use Platformsh\ConsoleForm\Field\OptionsField;
 
 class Php implements PlatformInterface {
 
-    public function name()
+    public function type()
     {
         return 'php';
     }
 
     public function getFields()
     {
-        $fields['php_version'] = new OptionsField('Version', [
+        $fields['runtime_version'] = new OptionsField('Version', [
             'conditions' => ['type' => 'php'],
-            'optionName' => 'php_version',
-            'options' => ['5.6', '7.0'],
-            'default' => '7.0',
+            'optionName' => 'runtime_version',
+            'options' => ['7.1', '7.2', '7.3'],
+            'default' => '7.3',
         ]);
 
         $fields['flavor'] = new OptionsField('Flavor', [
             'conditions' => ['type' => 'php'],
             'optionName' => 'flavor',
-            'options' => ['composer', 'drupal'],
+            'options' => ['none', 'composer', 'drupal'],
             'default' => 'composer',
         ]);
 
         $fields['webroot'] = new Field('Web directory', [
             'conditions' => ['type' => 'php'],
             'optionName' => 'webroot',
-            'default' => 'web',
+            'default' => 'public',
             'validator' => function ($value) {
                 if (preg_match('/^\/.*/', $value)) {
-                    return 'The web root must not begin with a /. It is a directory relative to the application root.';
+                    return 'The web root must not begin with a /. It is a directory relative to the application root from which you want to serve scripts and files.';
                 }
                 if (preg_match('/\s+/', $value)) {
                     return 'The web root must not contain spaces.';
@@ -73,15 +73,17 @@ class Php implements PlatformInterface {
 # See URL for more information.
 
 name: {name}
-type: php:{php_version}
+type: {type}:{runtime_version}
 
 build:
     flavor: {flavor}
 
-relationships:
-    database: "mysql:mysql"
-    solr: "solr:solr"
-    redis: "redis:redis"
+## You can add services in .platform/services.yaml, to use them in your application
+## you will need to create a relationship for example:
+#
+# relationships:
+#     database: "mysql:mysql"
+#     redis: "redis:redis"
 
 web:
     locations:
@@ -90,15 +92,14 @@ web:
             passthru: "{indexFile}"
 
 # The size in megabytes of persistent disk space to reserve as part of this application.
-disk: 2048
+disk: 1024
 
-# Each mount is a pairint of the local path on the application container to
-# the persistent mount where it lives. At this time, only 'shared:files' is
-# a supported mount.
-mounts:
-    "/public/sites/default/files": "shared:files/files"
-    "/tmp": "shared:files/tmp"
-    "/private": "shared:files/private"
+## Each mount is a pairint of the local path on the application container to
+## the persistent mount where it lives. At this time, only 'shared:files' is
+## a supported mount.
+#mounts:
+#    "/tmp": "shared:files/tmp"
+
 
 END;
         return $template;

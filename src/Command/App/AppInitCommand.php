@@ -1,8 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\App;
 
-use Platformsh\Cli\Command\App\Platform\NodeJs;
 use Platformsh\Cli\Command\App\Platform\Php;
+use Platformsh\Cli\Command\App\Platform\NodeJs;
+use Platformsh\Cli\Command\App\Platform\Ruby;
+use Platformsh\Cli\Command\App\Platform\Python;
+use Platformsh\Cli\Command\App\Platform\Golang;
+use Platformsh\Cli\Command\App\Platform\Java;
+use Platformsh\Cli\Command\App\Platform\OracleJava;
 use Platformsh\Cli\Command\App\Platform\PlatformInterface;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\ConsoleForm\Field\BooleanField;
@@ -23,6 +28,11 @@ class AppInitCommand extends CommandBase
     protected static $platforms = [
         'php' => Php::class,
         'nodejs' => NodeJs::class,
+        'ruby' => Ruby::class,
+        'python' => Python::class,
+        'golang' => Golang::class,
+        'java' => Java::class,
+        'oracle-java' => OracleJava::class,
     ];
 
     /**
@@ -32,7 +42,7 @@ class AppInitCommand extends CommandBase
     {
         $this->setName('app:init')
             ->setAliases(['init'])
-            ->setDescription('Create an application in the local repository');
+            ->setDescription('Create minimal Platform.sh configuration files');
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
     }
@@ -68,7 +78,7 @@ class AppInitCommand extends CommandBase
         $platforms = $this->getPlatforms();
 
         $languages = array_map(function (PlatformInterface $platform) {
-            return $platform->name();
+            return $platform->type();
         }, $platforms);
 
         $fields['type'] = new OptionsField('Application type', [
@@ -76,22 +86,15 @@ class AppInitCommand extends CommandBase
             'options' => $languages,
             'default' => 'php',
         ]);
+        
+        
+        /* 
+        FIXME need to implement here getting the specific runtime versionv      
+        */
 
         $fields = array_reduce($platforms, function ($fields, PlatformInterface $platform) {
             return $fields + $platform->getFields();
         }, $fields);
-
-        /*
-        $fields['type'] = new OptionsField('Application type', [
-            'optionName' => 'type',
-            'options' => [
-                'php:5.6',
-                'php:7.0',
-                'hhvm:3.8',
-            ],
-            'default' => 'php:7.0',
-        ]);
-        */
 
         $fields['subdir'] = new BooleanField('Create the application in a subdirectory', [
             'optionName' => 'subdir',
@@ -229,15 +232,10 @@ END;
 # See https://docs.platform.sh/user_guide/reference/services-yaml.html for more information.
 
 #mysqldb:
-#    type: mysql:5.5
+#    type: mysql:10.2
 #    disk: 2048
-
 #rediscache:
 #    type: redis:3.0
-
-#solrsearch:
-#    type: solr:3.6
-#    disk: 1024
 
 END;
 
@@ -256,4 +254,6 @@ END;
         $config_dir = $this->config()->get('service.project_config_dir');
         (new Filesystem())->dumpFile($projectRoot . '/' . $config_dir . '/' . $filename, $content);
     }
+
+    
 }

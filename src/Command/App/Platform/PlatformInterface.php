@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\App\Platform;
 
 interface PlatformInterface {
-    public function name();
+    public function type();
 
     public function getFields();
 

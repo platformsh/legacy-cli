@@ -4,18 +4,18 @@ namespace Platformsh\Cli\Command\App\Platform;
 
 use Platformsh\ConsoleForm\Field\OptionsField;
 
-class NodeJs extends Other
+class Golang extends Other
 {
     public function type() {
-        return 'nodejs';
+        return 'golang';
     }
 
     public function getFields() {
         $fields['runtime_version'] = new OptionsField('Version', [
-            'conditions' => ['type' => 'nodejs'],
+            'conditions' => ['type' => 'golang'],
             'optionName' => 'runtime_version',
-            'options' => ['6.11', '8.9', '10'],
-            'default' => '10',
+            'options' => ['1.11'],
+            'default' => '1.11',
         ]);
 
         return $fields;
