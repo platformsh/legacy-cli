@@ -45,6 +45,10 @@ EOF
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
 
+        // Disable PCRE JIT compilation to work around a PHP bug:
+        // https://bugs.php.net/bug.php?id=77260
+        ini_set('pcre.jit', 0);
+
         if ($environment->id === 'master') {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
