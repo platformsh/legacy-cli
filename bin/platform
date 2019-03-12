@@ -6,6 +6,19 @@ if (version_compare(PHP_VERSION, '5.5.9', '<')) {
     exit(1);
 }
 
+// Disable PCRE JIT compilation in commands using pcntl_fork(), to work around
+// a PHP bug in versions >= 7.3. This needs to happen before any runtime code.
+// See: https://bugs.php.net/bug.php?id=77260
+if (isset($GLOBALS['argv'][1])
+    && version_compare(PHP_VERSION, '7.3', '>=')
+    && ini_get('pcre.jit') == 1
+    && extension_loaded('pcntl')) {
+    $command = $GLOBALS['argv'][1];
+    if (strpos($command, ':') !== false && preg_match('/^(t|ser)[a-z]*\:(o|sta)[a-z]*$/', $command)) {
+        ini_set('pcre.jit', 0);
+    }
+}
+
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require __DIR__ . '/../vendor/autoload.php';
 } elseif (file_exists(__DIR__ . '/../../../autoload.php')) {
