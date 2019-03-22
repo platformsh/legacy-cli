@@ -19,6 +19,7 @@ use Symfony\Component\Process\PhpExecutableFinder;
 
 class SelfReleaseCommand extends CommandBase
 {
+    protected static $defaultName = 'self:release';
 
     private $config;
     private $git;
@@ -46,9 +47,7 @@ class SelfReleaseCommand extends CommandBase
         $defaultRepo = $this->config->getWithDefault('application.github_repo', null);
         $defaultReleaseBranch = $this->config->getWithDefault('application.release_branch', 'master');
 
-        $this
-            ->setName('self:release')
-            ->setDescription('Build and release a new version')
+        $this->setDescription('Build and release a new version')
             ->addOption('phar', null, InputOption::VALUE_REQUIRED, 'The path to a newly built Phar file')
             ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $defaultRepo)
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
