@@ -86,15 +86,30 @@ class QuestionHelper extends BaseQuestionHelper
             return key($items);
         }
         $itemList = array_values($items);
-        $defaultKey = $default !== null ? array_search($default, $itemList) : null;
+        $defaultKey = $default !== null ? array_search($default, $itemList, true) : null;
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
         $question->setMaxAttempts(5);
 
+        if (!$this->input->isInteractive()) {
+            if (!isset($defaultKey)) {
+                return null;
+            }
+            $choice = $itemList[$defaultKey];
+            $choiceKey = array_search($choice, $items, true);
+            if ($choiceKey === false) {
+                throw new \RuntimeException('Invalid default');
+            }
+
+            return $choiceKey;
+        }
+
         $choice = $this->ask($this->input, $this->output, $question);
-        $choiceKey = array_search($choice, $items);
+        $choiceKey = array_search($choice, $items, true);
         if ($choiceKey === false) {
             throw new \RuntimeException("Invalid value: $choice");
         }
+
+        $this->output->writeln('');
 
         return $choiceKey;
     }

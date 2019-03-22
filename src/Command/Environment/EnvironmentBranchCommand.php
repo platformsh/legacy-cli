@@ -86,7 +86,7 @@ class EnvironmentBranchCommand extends CommandBase
         $parentEnvironment = $selection->getEnvironment();
 
         $branchName = $input->getArgument('id');
-        if (empty($branchName)) {
+        if ($branchName === null) {
             if ($input->isInteractive()) {
                 // List environments.
                 return $this->subCommandRunner->run('environments');
@@ -151,11 +151,11 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        $title = $input->getOption('title') ?: $branchName;
+        $title = $input->getOption('title') !== null ? $input->getOption('title') : $branchName;
 
         $this->stdErr->writeln(sprintf(
             'Creating a new environment %s, branched from %s',
-            $title && $title !== $branchName
+            strlen($title) > 0 && $title !== $branchName
                 ? '<info>' . $title . '</info> (' . $branchName . ')'
                 : '<info>' . $branchName . '</info>',
             $this->api->getEnvironmentLabel($parentEnvironment)

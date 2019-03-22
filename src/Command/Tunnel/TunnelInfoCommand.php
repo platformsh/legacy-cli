@@ -53,10 +53,9 @@ class TunnelInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->tunnelService->checkSupport();
         $selection = $this->selector->getSelection($input);
-
         $tunnels = $this->tunnelService->getTunnelInfo();
+
         $relationships = [];
         foreach ($this->tunnelService->filterTunnels($tunnels, $selection) as $key => $tunnel) {
             $service = $tunnel['service'];

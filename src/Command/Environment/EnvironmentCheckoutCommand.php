@@ -70,10 +70,10 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         $branch = $input->getArgument('id');
-        if (empty($branch)) {
+        if ($branch === null) {
             if ($input->isInteractive()) {
                 $branch = $this->offerBranchChoice($project, $projectRoot);
-                if (empty($branch)) {
+                if ($branch === false) {
                     return 1;
                 }
             } else {
@@ -143,7 +143,10 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
         $environmentList = [];
         foreach ($environments as $id => $environment) {
-            if ($currentEnvironment && $id == $currentEnvironment->id) {
+            // The $id will be an integer for numeric environment names (as
+            // it was assigned to an array key), so it's cast back to a
+            // string for this comparison.
+            if ($currentEnvironment && (string) $id === $currentEnvironment->id) {
                 continue;
             }
             $environmentList[$id] = $this->api->getEnvironmentLabel($environment, false);
@@ -170,7 +173,11 @@ class EnvironmentCheckoutCommand extends CommandBase
         // If there's more than one choice, present the user with a list.
         if (count($environmentList) > 1) {
             $chooseEnvironmentText = "Enter a number to check out another environment:";
-            return $this->questionHelper->choose($environmentList, $chooseEnvironmentText);
+
+            // The environment ID will be an integer if it was numeric
+            // (because PHP does that with array keys), so it's cast back to
+            // a string here.
+            return (string) $this->questionHelper->choose($environmentList, $chooseEnvironmentText);
         }
 
         // If there's only one choice, QuestionHelper::choose() does not

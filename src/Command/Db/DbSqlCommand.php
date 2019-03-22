@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
@@ -19,17 +21,23 @@ class DbSqlCommand extends CommandBase
 {
     protected static $defaultName = 'db:sql';
 
+    private $api;
+    private $questionHelper;
     private $relationships;
     private $selector;
     private $shell;
     private $ssh;
 
     public function __construct(
+        Api $api,
+        QuestionHelper $questionHelper,
         Relationships $relationships,
         Selector $selector,
         Shell $shell,
         Ssh $ssh
     ) {
+        $this->api = $api;
+        $this->questionHelper = $questionHelper;
         $this->relationships = $relationships;
         $this->selector = $selector;
         $this->shell = $shell;
@@ -42,7 +50,8 @@ class DbSqlCommand extends CommandBase
         $this->setAliases(['sql'])
             ->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
-            ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output');
+            ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output')
+            ->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main"). Pass an empty string to not use any schema.');
 
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition);
@@ -70,11 +79,56 @@ class DbSqlCommand extends CommandBase
             return 1;
         }
 
+        $schema = $input->getOption('schema');
+        if ($schema === null) {
+            // Get information about the deployed service associated with the
+            // selected relationship.
+            $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
+            $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
+
+            // Get a list of schemas from the service configuration.
+            $schemas = $service && !empty($service->configuration['schemas'])
+                ? $service->configuration['schemas']
+                : ['main'];
+
+            // Filter the list by the schemas accessible from the endpoint.
+            if (isset($database['rel'])
+                && $service
+                && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
+                $schemas = array_intersect(
+                    $schemas,
+                    array_keys($service->configuration['endpoints'][$database['rel']]['privileges'])
+                );
+            }
+
+            // If the database path is not in the list of schemas, we have to
+            // use that - it probably indicates an integrated Enterprise
+            // environment.
+            if (!empty($database['path']) && !in_array($database['path'], $schemas, true)) {
+                $schema = $database['path'];
+            } elseif (count($schemas) === 1) {
+                $schema = reset($schemas);
+            } else {
+                // Provide the user with a choice of schemas.
+                $choices = [];
+                $schemas[] = '(none)';
+                $default = ($database['path'] ?: '(none)');
+                foreach ($schemas as $schema) {
+                    $choices[$schema] = $schema;
+                    if ($schema === $default) {
+                        $choices[$schema] .= ' (default)';
+                    }
+                }
+                $schema = $this->questionHelper->choose($choices, 'Enter a number to choose a schema:', $default . ' (default)', true);
+                $schema = $schema === '(none)' ? '' : $schema;
+            }
+        }
+
         $query = $input->getArgument('query');
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $sqlCommand = 'psql ' . $this->relationships->getDbCommandArgs('psql', $database);
+                $sqlCommand = 'psql ' . $this->relationships->getDbCommandArgs('psql', $database, $schema);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' -t';
@@ -84,7 +138,7 @@ class DbSqlCommand extends CommandBase
                 break;
 
             default:
-                $sqlCommand = 'mysql --no-auto-rehash ' . $this->relationships->getDbCommandArgs('mysql', $database);
+                $sqlCommand = 'mysql --no-auto-rehash ' . $this->relationships->getDbCommandArgs('mysql', $database, $schema);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' --batch --raw';

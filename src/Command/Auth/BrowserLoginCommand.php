@@ -226,11 +226,16 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('Login information received. Verifying...');
         $token = $this->getAccessToken($code, $localUrl, $tokenUrl);
 
-        // Finalize login: clear the cache and save the new credentials.
+        // Finalize login: call logOut() on the old connector, clear the cache
+        // and save the new credentials.
+        $connector = $this->api->getClient(false)->getConnector();
+        $session = $connector->getSession();
+        $connector->logOut();
+
         $this->cache->flushAll();
 
         // Save the new tokens to the persistent session.
-        $this->saveAccessToken($token, $this->api->getClient(false)->getConnector()->getSession());
+        $this->saveAccessToken($token, $session);
 
         // Reset the API client so that it will use the new tokens.
         $client = $this->api->getClient(false, true);

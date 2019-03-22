@@ -47,7 +47,6 @@ class TunnelCloseCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->tunnelService->checkSupport();
         $tunnels = $this->tunnelService->getTunnelInfo();
         $allTunnelsCount = count($tunnels);
         if (!$allTunnelsCount) {

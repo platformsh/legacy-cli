@@ -72,10 +72,13 @@ class MountListCommand extends CommandBase
             return 0;
         }
 
-        $header = ['Mount path', 'Definition'];
+        $header = ['path' => 'Mount path', 'definition' => 'Definition'];
         $rows = [];
         foreach ($mounts as $path => $definition) {
-            $rows[] = [$path, $this->formatter->format($definition)];
+            $rows[] = [
+                'path' => $path,
+                'definition' => $this->formatter->format($definition),
+            ];
         }
 
         $this->stdErr->writeln(sprintf(

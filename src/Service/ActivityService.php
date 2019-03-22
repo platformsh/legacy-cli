@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Client\Model\Activity;
-use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -372,53 +371,5 @@ class ActivityService implements InputConfiguringInterface
             '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
             'To redeploy an environment, run: <info>' . $this->config->get('application.executable') . ' redeploy</info>',
         ]);
-    }
-
-    /**
-     * @return \Symfony\Component\Console\Output\OutputInterface
-     */
-    private function getProgressOutput()
-    {
-        if (!$this->stdErr->isDecorated()) {
-            return new NullOutput();
-        }
-
-        return $this->stdErr;
-    }
-
-    /**
-     * Load activities.
-     *
-     * @param ApiResourceBase $apiResource
-     * @param int             $limit
-     * @param string|null     $type
-     * @param int|null        $startsAt
-     *
-     * @return \Platformsh\Client\Model\Activity[]
-     */
-    public function load(ApiResourceBase $apiResource, $limit, $type, $startsAt)
-    {
-        /** @var \Platformsh\Client\Model\Environment|\Platformsh\Client\Model\Project $apiResource */
-        $activities = $apiResource->getActivities($limit, $type, $startsAt);
-        $progress = $this->newProgressBar($this->stdErr);
-        $progress->setMessage($type === 'environment.backup' ? 'Loading snapshots...' : 'Loading activities...');
-        $progress->setFormat('%message% %current% (max: %max%)');
-        $progress->start($limit);
-        while (count($activities) < $limit) {
-            if ($activity = end($activities)) {
-                $startsAt = strtotime($activity->created_at);
-            }
-            $nextActivities = $apiResource->getActivities($limit - count($activities), $type, $startsAt);
-            if (!count($nextActivities)) {
-                break;
-            }
-            foreach ($nextActivities as $activity) {
-                $activities[$activity->id] = $activity;
-            }
-            $progress->setProgress(count($activities));
-        }
-        $progress->clear();
-
-        return $activities;
     }
 }

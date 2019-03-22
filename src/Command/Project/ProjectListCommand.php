@@ -34,7 +34,7 @@ class ProjectListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['projects'])
+        $this->setAliases(['projects', 'pro'])
             ->setDescription('Get a list of all active projects')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs')
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname (exact match)')
@@ -58,7 +58,7 @@ class ProjectListCommand extends CommandBase
         if ($host = $input->getOption('host')) {
             $filters['host'] = $host;
         }
-        if ($title = $input->getOption('title')) {
+        if (($title = $input->getOption('title')) !== null) {
             $filters['title'] = $title;
         }
         if ($input->getOption('my')) {

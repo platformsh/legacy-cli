@@ -12,6 +12,7 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -26,6 +27,7 @@ class LocalDrushAliasesCommand extends CommandBase
     private $drush;
     private $filesystem;
     private $localProject;
+    private $remoteEnvVars;
     private $selector;
     private $questionHelper;
 
@@ -34,6 +36,7 @@ class LocalDrushAliasesCommand extends CommandBase
         Drush $drush,
         Filesystem $filesystem,
         LocalProject $localProject,
+        RemoteEnvVars $remoteEnvVars,
         Selector $selector,
         QuestionHelper $questionHelper
     ) {
@@ -41,6 +44,7 @@ class LocalDrushAliasesCommand extends CommandBase
         $this->drush = $drush;
         $this->filesystem = $filesystem;
         $this->localProject = $localProject;
+        $this->remoteEnvVars = $remoteEnvVars;
         $this->selector = $selector;
         $this->questionHelper = $questionHelper;
         parent::__construct();
@@ -77,7 +81,8 @@ class LocalDrushAliasesCommand extends CommandBase
 
         $drush = $this->drush;
 
-        if (!$drush->getDrupalApps($projectRoot)) {
+        $apps = $drush->getDrupalApps($projectRoot);
+        if (empty($apps)) {
             $this->stdErr->writeln('No Drupal applications found.');
 
             return 1;
@@ -123,6 +128,37 @@ class LocalDrushAliasesCommand extends CommandBase
             }
 
             $environments = $this->api->getEnvironments($project, true, false);
+
+            // Attempt to find the absolute application root directory for
+            // each Enterprise environment. This will be cached by the Drush
+            // service ($drush), for use while generating aliases.
+            foreach ($environments as $environment) {
+                if ($environment->deployment_target !== 'enterprise') {
+                    continue;
+                }
+                foreach ($apps as $app) {
+                    $sshUrl = $environment->getSshUrl($app->getName());
+                    if (empty($sshUrl)) {
+                        continue;
+                    }
+                    try {
+                        $appRoot = $this->remoteEnvVars->getEnvVar('APP_DIR', $sshUrl);
+                    } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
+                        $this->stdErr->writeln(sprintf(
+                            'Unable to find app root for environment %s, app %s',
+                            $this->api->getEnvironmentLabel($environment, 'comment'),
+                            '<comment>' . $app->getName() . '</comment>'
+                        ));
+                        $this->stdErr->writeln($e->getMessage());
+                        continue;
+                    }
+                    if (!empty($appRoot)) {
+                        $this->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
+                        $drush->setCachedAppRoot($sshUrl, $appRoot);
+                    }
+                }
+            }
+
             $drush->createAliases($project, $projectRoot, $environments, $current_group);
 
             $this->ensureDrushConfig($drush);

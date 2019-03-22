@@ -30,7 +30,7 @@ class TableServiceTest extends TestCase
             ['foo', 1, 2, 3],
             ['bar', 4, 5, 6],
         ];
-        $expected = (new Csv())->format([
+        $expected = (new Csv(',', "\n"))->format([
             ['Value 2', 'Name'],
             ['2', 'foo'],
             ['5', 'bar'],

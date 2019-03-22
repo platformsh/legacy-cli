@@ -79,9 +79,6 @@ class UserGetCommand extends CommandBase
                 $choices[$account['email']] = sprintf('%s (%s)', $account['display_name'], $account['email']);
             }
             $email = $this->questionHelper->choose($choices, 'Enter a number to choose a user:');
-            if (count($choices) > 1) {
-                $this->stdErr->writeln('');
-            }
         }
         $projectAccess = $this->api->loadProjectAccessByEmail($project, (string) $email);
         if (!$projectAccess) {

@@ -81,7 +81,7 @@ Available commands:
   web                                       Open the Web UI
 activity
   activity:get                              View detailed information on a single activity
-  activity:list (activities)                Get a list of activities for an environment or project
+  activity:list (activities, act)           Get a list of activities for an environment or project
   activity:log                              Display the log for an activity
 app
   app:config-get                            View the configuration of an app
@@ -95,7 +95,7 @@ certificate
   certificate:add                           Add an SSL certificate to the project
   certificate:delete                        Delete a certificate from the project
   certificate:get                           View a certificate
-  certificate:list (certificates)           List project certificates
+  certificate:list (certificates, certs)    List project certificates
 commit
   commit:get                                Show commit details
   commit:list (commits)                     List commits
@@ -117,7 +117,7 @@ environment
   environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
   environment:info                          Read or set properties for an environment
-  environment:list (environments)           Get a list of environments
+  environment:list (environments, env)      Get a list of environments
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
   environment:push (push)                   Push code to an environment
@@ -132,6 +132,7 @@ integration
   integration:get                           View details of an integration
   integration:list (integrations)           View a list of project integration(s)
   integration:update                        Update an integration
+  integration:validate                      Validate an existing integration
 local
   local:build (build)                       Build the current project locally
   local:dir (dir)                           Find the local project root
@@ -147,7 +148,7 @@ project
   project:delete                            Delete a project
   project:get (get)                         Clone a project locally
   project:info                              Read or set properties for a project
-  project:list (projects)                   Get a list of all active projects
+  project:list (projects, pro)              Get a list of all active projects
   project:set-remote                        Set the remote project for the current Git repository
 repo
   repo:cat                                  Read a file in the project repository
@@ -158,11 +159,6 @@ route
 self
   self:install                              Install or update CLI configuration files
   self:update (self-update)                 Update the CLI to the latest version
-server
-  server:list (servers)                     List running local project web server(s)
-  server:run                                Run a local PHP web server
-  server:start                              Run PHP web server(s) for the local project
-  server:stop                               Stop local project web server(s)
 service
   service:list (services)                   List services in the project
   service:mongo:dump (mongodump)            Create a binary archive dump of data from MongoDB
@@ -183,16 +179,18 @@ tunnel
   tunnel:info                               View relationship info for SSH tunnels
   tunnel:list (tunnels)                     List SSH tunnels
   tunnel:open                               Open SSH tunnels to an app's relationships
+  tunnel:single                             Open a single SSH tunnel to an app relationship
 user
-  user:add (user:update)                    Add a user to the project, or set their role(s)
+  user:add                                  Add a user to the project
   user:delete                               Delete a user from the project
   user:get                                  View a user's role(s)
   user:list (users)                         List project users
+  user:update                               Update user role(s) on a project
 variable
   variable:create                           Create a variable
   variable:delete                           Delete a variable
   variable:get (vget)                       View a variable
-  variable:list (variables)                 List variables
+  variable:list (variables, var)            List variables
   variable:update                           Update a variable
 worker
   worker:list (workers)                     Get a list of all deployed workers

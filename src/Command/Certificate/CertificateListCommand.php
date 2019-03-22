@@ -42,37 +42,48 @@ class CertificateListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['certificates'])
+        $this->setAliases(['certificates', 'certs'])
             ->setDescription('List project certificates');
         $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
+        $this->addOption('exclude-domain', null, InputOption::VALUE_REQUIRED, 'Exclude certificates, matching by domain name (case-insensitive search)');
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');
         $this->addOption('only-auto', null, InputOption::VALUE_NONE, 'Show only auto-provisioned certificates');
         $this->addOption('no-auto', null, InputOption::VALUE_NONE, 'Show only manually added certificates');
+        $this->addOption('ignore-expiry', null, InputOption::VALUE_NONE, 'Show both expired and non-expired certificates');
         $this->addOption('only-expired', null, InputOption::VALUE_NONE, 'Show only expired certificates');
-        $this->addOption('no-expired', null, InputOption::VALUE_NONE, 'Show only non-expired certificates');
+        $this->addOption('no-expired', null, InputOption::VALUE_NONE, 'Show only non-expired certificates (default)');
+        $this->addOption('pipe-domains', null, InputOption::VALUE_NONE, 'Only return a list of domain names covered by the certificates');
 
         $definition = $this->getDefinition();
         $this->formatter->configureInput($definition);
         $this->table->configureInput($definition);
         $this->selector->addProjectOption($definition);
+        $this->addExample('Output a list of domains covered by valid certificates', '--pipe-domains --no-expired');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $project = $this->selector->getSelection($input)->getProject();
 
-        $filterOptions = ['domain', 'issuer', 'only-auto', 'no-auto', 'only-expired', 'no-expired'];
+        // Set --no-expired by default, if --ignore-expiry and --only-expired
+        // are not supplied.
+        if (!$input->getOption('ignore-expiry') && !$input->getOption('only-expired')) {
+            $input->setOption('no-expired', true);
+        }
+
+        $filterOptions = ['domain', 'exclude-domain', 'issuer', 'only-auto', 'no-auto', 'only-expired', 'no-expired'];
         $filters = array_filter(array_intersect_key($input->getOptions(), array_flip($filterOptions)));
 
         $certs = $project->getCertificates();
 
         $this->filterCerts($certs, $filters);
 
-        if (!empty($filters)) {
+        if (!empty($filters) && !$input->getOption('pipe-domains')) {
             $filtersUsed = '<comment>--'
                 . implode('</comment>, <comment>--', array_keys($filters))
                 . '</comment>';
             $this->stdErr->writeln(sprintf('Filters in use: %s', $filtersUsed));
+            $this->stdErr->writeln('');
         }
 
         if (empty($certs)) {
@@ -81,12 +92,22 @@ class CertificateListCommand extends CommandBase
             return 0;
         }
 
-        $header = ['ID', 'Domain(s)', 'Created', 'Expires', 'Issuer'];
+        if ($input->getOption('pipe-domains')) {
+            foreach ($certs as $cert) {
+                foreach ($cert->domains as $domain) {
+                    $output->writeln($domain);
+                }
+            }
+
+            return 0;
+        }
+
+        $header = ['ID', 'domains' => 'Domain(s)', 'Created', 'Expires', 'Issuer'];
         $rows = [];
         foreach ($certs as $cert) {
             $rows[] = [
                 $cert->id,
-                implode("\n", $cert->domains),
+                'domains' => implode("\n", $cert->domains),
                 $this->formatter->format($cert->created_at, 'created_at'),
                 $this->formatter->format($cert->expires_at, 'expires_at'),
                 $this->getCertificateIssuerByAlias($cert, 'commonName') ?: '',
@@ -115,14 +136,16 @@ class CertificateListCommand extends CommandBase
         foreach ($filters as $filter => $value) {
             switch ($filter) {
                 case 'domain':
-                    $certs = array_filter($certs, function (Certificate $cert) use ($value) {
+                case 'exclude-domain':
+                    $include = $filter === 'domain';
+                    $certs = array_filter($certs, function (Certificate $cert) use ($value, $include) {
                         foreach ($cert->domains as $domain) {
                             if (stripos($domain, $value) !== false) {
-                                return true;
+                                return $include;
                             }
                         }
 
-                        return false;
+                        return !$include;
                     });
                     break;
 

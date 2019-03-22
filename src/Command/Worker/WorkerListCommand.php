@@ -71,6 +71,14 @@ class WorkerListCommand extends CommandBase
             $rows[] = [$worker->name, $worker->type, $this->formatter->format($commands)];
         }
 
+        if (!$this->table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(sprintf(
+                'Workers on the project %s, environment %s:',
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment())
+            ));
+        }
+
         $this->table->render($rows, ['Name', 'Type', 'Commands']);
 
         return 0;

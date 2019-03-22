@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -19,6 +20,7 @@ class ActivityListCommand extends CommandBase
 {
     protected static $defaultName = 'activity:list';
 
+    private $activityLoader;
     private $activityService;
     private $api;
     private $config;
@@ -27,6 +29,7 @@ class ActivityListCommand extends CommandBase
     private $table;
 
     public function __construct(
+        ActivityLoader $activityLoader,
         ActivityService $activityService,
         Api $api,
         Config $config,
@@ -34,6 +37,7 @@ class ActivityListCommand extends CommandBase
         Table $table,
         PropertyFormatter $formatter
     ) {
+        $this->activityLoader = $activityLoader;
         $this->activityService = $activityService;
         $this->api = $api;
         $this->config = $config;
@@ -48,7 +52,7 @@ class ActivityListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['activities'])
+        $this->setAliases(['activities', 'act'])
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
@@ -91,7 +95,7 @@ class ActivityListCommand extends CommandBase
 
         $type = $input->getOption('type');
 
-        $activities = $this->activityService->load($apiResource, $limit, $type, $startsAt);
+        $activities = $this->activityLoader->load($apiResource, $limit, $type, $startsAt);
         if (!$activities) {
             $this->stdErr->writeln('No activities found');
 
@@ -121,16 +125,15 @@ class ActivityListCommand extends CommandBase
 
         if (!$this->table->formatIsMachineReadable()) {
             if ($environmentSpecific) {
-                $this->stdErr->writeln(
-                    sprintf(
-                        'Activities for the environment <info>%s</info>:',
-                        $apiResource->id
-                    )
-                );
+                $this->stdErr->writeln(sprintf(
+                    'Activities on the project %s, environment %s:',
+                    $this->api->getProjectLabel($project),
+                    $this->api->getEnvironmentLabel($apiResource)
+                ));
             } else {
                 $this->stdErr->writeln(
                     sprintf(
-                        'Activities for the project <info>%s</info>:',
+                        'Activities on the project %s:',
                         $this->api->getProjectLabel($project)
                     )
                 );

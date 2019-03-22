@@ -114,7 +114,10 @@ class Selector
         // Select the environment.
         $envOptionName = 'environment';
         $environment = null;
-        if ($project && $input->hasArgument($this->envArgName) && $input->getArgument($this->envArgName)) {
+
+        if ($input->hasArgument($this->envArgName)
+            && $input->getArgument($this->envArgName) !== null
+            && $input->getArgument($this->envArgName) !== []) {
             if ($input->hasOption($envOptionName) && $input->getOption($envOptionName)) {
                 throw new InvalidArgumentException(
                     sprintf(
@@ -132,8 +135,10 @@ class Selector
                 $this->debug('Selecting environment based on input argument');
                 $environment = $this->selectEnvironment($input, $project, $argument);
             }
-        } elseif ($project && $input->hasOption($envOptionName)) {
-            $environmentId = $input->getOption($envOptionName) ?: $environmentId;
+        } elseif ($input->hasOption($envOptionName)) {
+            if ($input->getOption($envOptionName) !== null) {
+                $environmentId = $input->getOption($envOptionName);
+            }
             $environment = $this->selectEnvironment($input, $project, $environmentId, !$envNotRequired);
         }
 
@@ -263,7 +268,7 @@ class Selector
             ), OutputInterface::VERBOSITY_VERBOSE);
         }
 
-        if (!empty($environmentId)) {
+        if ($environmentId !== null) {
             $environment = $this->api->getEnvironment($environmentId, $project, null, true);
             if (!$environment) {
                 throw new InvalidArgumentException('Specified environment not found: ' . $environmentId);
@@ -353,14 +358,14 @@ class Selector
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
 
+        // Build and sort a list of project options.
         $projectList = [];
         foreach ($projects as $project) {
             $projectList[$project->id] = $this->api->getProjectLabel($project, false);
         }
+        asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
         $id = $this->questionHelper->choose($projectList, $text, null, false);
-
-        $this->stdErr->writeln('');
 
         return $id;
     }
@@ -381,7 +386,11 @@ class Selector
 
         $default = $this->api->getDefaultEnvironmentId($environments);
 
-        $id = $this->questionHelper->askInput('Environment ID', $default, array_keys($environments), function ($value) use ($environments) {
+        // Build and sort a list of options (environment IDs).
+        $ids = array_keys($environments);
+        sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $id = $this->questionHelper->askInput('Environment ID', $default, $ids, function ($value) use ($environments) {
             if (!isset($environments[$value])) {
                 throw new \RuntimeException('Environment not found: ' . $value);
             }

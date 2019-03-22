@@ -91,13 +91,8 @@ class Identifier
 
         $site_domains_pattern = '(' . implode('|', array_map('preg_quote', $this->config->get('detection.site_domains'))) . ')';
         $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
-        if (strpos($path, '/projects/') !== false || strpos($fragment, '/projects/') !== false) {
-            $result['host'] = $host;
-            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
-            if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
-                $result['environmentId'] = rawurldecode(basename($matches[1]));
-            }
-        } elseif (preg_match($site_pattern, $host)) {
+
+        if (preg_match($site_pattern, $host)) {
             list($env_project_app,) = explode('.', $host, 2);
             if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
                 $env_project_app = substr($env_project_app, $tripleDashPos + 3);
@@ -112,6 +107,29 @@ class Identifier
                 $result['projectId'] = substr($env_project, $dashPos + 1);
                 $result['environmentId'] = substr($env_project, 0, $dashPos);
             }
+
+            return $result;
+        }
+
+        if (strpos($path, '/projects/') !== false || strpos($fragment, '/projects/') !== false) {
+            $result['host'] = $host;
+            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
+            if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
+                $result['environmentId'] = rawurldecode(basename($matches[1]));
+            }
+
+            return $result;
+        }
+
+        if ($this->config->has('detection.ui_domain')
+            && $host === $this->config->get('detection.ui_domain')
+            && preg_match('#^/[a-z0-9-]+/([a-z0-9-]+)(/([^/]+))?#', $path, $matches)) {
+            $result['projectId'] = $matches[1];
+            if (isset($matches[3])) {
+                $result['environmentId'] = rawurldecode($matches[3]);
+            }
+
+            return $result;
         }
 
         return $result;

@@ -14,6 +14,7 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Identifier;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
@@ -34,6 +35,7 @@ class ProjectGetCommand extends CommandBase
     private $config;
     private $filesystem;
     private $git;
+    private $identifier;
     private $localBuild;
     private $localProject;
     private $questionHelper;
@@ -46,6 +48,7 @@ class ProjectGetCommand extends CommandBase
         Config $config,
         Filesystem $filesystem,
         Git $git,
+        Identifier $identifier,
         LocalBuild $localBuild,
         LocalProject $localProject,
         QuestionHelper $questionHelper,
@@ -57,6 +60,7 @@ class ProjectGetCommand extends CommandBase
         $this->config = $config;
         $this->filesystem = $filesystem;
         $this->git = $git;
+        $this->identifier = $identifier;
         $this->localBuild = $localBuild;
         $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
@@ -256,6 +260,10 @@ class ProjectGetCommand extends CommandBase
             } else {
                 throw new InvalidArgumentException('No project specified');
             }
+        } else {
+            $result = $this->identifier->identify($projectId);
+            $projectId = $result['projectId'];
+            $environmentId = $result['environmentId'];
         }
 
         $selection = $this->selector->getSelection($input);

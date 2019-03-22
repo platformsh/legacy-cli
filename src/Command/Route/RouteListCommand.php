@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
@@ -16,15 +17,18 @@ class RouteListCommand extends CommandBase
 {
     protected static $defaultName = 'route:list';
 
+    private $api;
     private $config;
     private $selector;
     private $table;
 
     public function __construct(
+        Api $api,
         Config $config,
         Selector $selector,
         Table $table
     ) {
+        $this->api = $api;
         $this->config = $config;
         $this->selector = $selector;
         $this->table = $table;
@@ -49,7 +53,8 @@ class RouteListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $environment = $this->selector->getSelection($input)->getEnvironment();
+        $selection = $this->selector->getSelection($input);
+        $environment = $selection->getEnvironment();
 
         $routes = $environment->getRoutes();
         if (empty($routes)) {
@@ -69,7 +74,11 @@ class RouteListCommand extends CommandBase
         }
 
         if (!$this->table->formatIsMachineReadable()) {
-            $this->stdErr->writeln("Routes for the environment <info>{$environment->id}</info>:");
+            $this->stdErr->writeln(sprintf(
+                'Routes on the project %s, environment %s:',
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($environment)
+            ));
         }
 
         $this->table->render($rows, $header);

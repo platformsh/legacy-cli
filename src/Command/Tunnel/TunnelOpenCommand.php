@@ -52,6 +52,20 @@ class TunnelOpenCommand extends CommandBase
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition);
         $this->ssh->configureInput($this->getDefinition());
+
+        $this->setHelp(<<<EOF
+This command opens SSH tunnels to all of the relationships of an application.
+
+Connections can then be made to the application's services as if they were
+local, for example a local MySQL client can be used, or the Solr web
+administration endpoint can be accessed through a local browser.
+
+This command requires the posix and pcntl PHP extensions (as multiple
+background CLI processes are created to keep the SSH tunnels open). The
+<info>tunnel:single</info> command can be used on systems without these
+extensions.
+EOF
+        );
     }
 
     /**
@@ -78,6 +92,7 @@ class TunnelOpenCommand extends CommandBase
             if (!$this->questionHelper->confirm($confirmText, false)) {
                 return 1;
             }
+            $this->stdErr->writeln('');
         }
 
         $appName = $selection->getAppName();
@@ -168,8 +183,8 @@ class TunnelOpenCommand extends CommandBase
                 $this->tunnelService->addTunnelInfo($tunnel);
 
                 $this->stdErr->writeln(sprintf(
-                    'SSH tunnel opened on port %s to relationship: <info>%s</info>',
-                    $localPort,
+                    'SSH tunnel opened on port <info>%s</info> to relationship: <info>%s</info>',
+                    $tunnel['localPort'],
                     $relationshipString
                 ));
                 $processIds[] = $pid;
@@ -199,5 +214,18 @@ class TunnelOpenCommand extends CommandBase
         $processManager->monitor($log);
 
         return 0;
+    }
+
+    private function checkSupport()
+    {
+        $messages = [];
+        foreach (['pcntl', 'posix'] as $extension) {
+            if (!extension_loaded($extension)) {
+                $messages[] = sprintf('The "%s" extension is required.', $extension);
+            }
+        }
+        if (count($messages)) {
+            throw new \RuntimeException(implode("\n", $messages));
+        }
     }
 }

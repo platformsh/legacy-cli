@@ -25,11 +25,12 @@ class UserAddCommand extends CommandBase
 {
     protected static $defaultName = 'user:add';
 
-    private $activityService;
+    protected $activityService;
+    protected $selector;
+
     private $api;
     private $config;
     private $questionHelper;
-    private $selector;
 
     public function __construct(
         ActivityService $activityService,
@@ -48,18 +49,29 @@ class UserAddCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['user:update'])
-            ->setDescription('Add a user to the project, or set their role(s)')
-            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
-            ->addOption('role', 'r', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "The user's project role ('admin' or 'viewer') or environment-specific role (e.g. 'master:contributor' or 'stage:viewer').\nThe character % can be used as a wildcard in the environment ID e.g. '%:viewer'.\nThe role can be abbreviated, e.g. 'master:c'.");
+        $this->setDescription('Add a user to the project')
+            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
+        $this->addRoleOption();
 
         $this->selector->addProjectOption($this->getDefinition());
         $this->activityService->configureInput($this->getDefinition());
 
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
-        $this->addExample('Make Bob an admin on the "develop" and "stage" environments', 'bob@example.com -r develop:a,stage:a');
-        $this->addExample('Make Charlie a contributor on all existing environments', 'charlie@example.com -r %:c');
-        $this->addExample('Make Damien an admin on "master" and all (existing) environments starting with "pr-"', 'damien@example.com -r master:a -r pr-%:a');
+    }
+
+    /**
+     * Adds the --role (-r) option to the command.
+     */
+    protected function addRoleOption()
+    {
+        $this->addOption(
+            'role',
+            'r',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            "The user's project role ('admin' or 'viewer') or environment-specific role (e.g. 'master:contributor' or 'stage:viewer')."
+            . "\nThe character % can be used as a wildcard in the environment ID e.g. '%:viewer'."
+            . "\nThe role can be abbreviated, e.g. 'master:c'."
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -90,9 +102,6 @@ class UserAddCommand extends CommandBase
                     $choices[$account['email']] = $this->getUserLabel($access);
                 }
                 $email = $this->questionHelper->choose($choices, 'Enter a number to choose a user to update:');
-                if (count($choices) > 1) {
-                    $hasOutput = true;
-                }
             } else {
                 $question = new Question("Enter the user's email address: ");
                 $question->setValidator(function ($answer) {

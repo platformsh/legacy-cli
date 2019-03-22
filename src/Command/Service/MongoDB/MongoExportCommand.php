@@ -87,8 +87,8 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             if (empty($collections)) {
                 throw new InvalidArgumentException('No collections found. You can specify one with the --collection (-c) option.');
             }
-            $collection = $this->questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
-            $this->stdErr->writeln('');
+            $collection = $this->questionHelper
+                ->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
         }
 
         $command = 'mongoexport ' . $this->relationships->getDbCommandArgs('mongoexport', $service);

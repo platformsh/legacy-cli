@@ -61,7 +61,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         $autoRemoveKey = $this->getAutoRemoveKey();
         $userDefinedAliases = [];
         foreach ($existingAliases as $name => $alias) {
-            if (!empty($alias[$autoRemoveKey])) {
+            if (!empty($alias[$autoRemoveKey]) || !empty($alias['options'][$autoRemoveKey])) {
                 // This is probably for a deleted environment.
                 continue;
             }
@@ -221,7 +221,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     {
         return [
             'root' => $app->getLocalWebRoot(),
-            $this->getAutoRemoveKey() => true,
+            'options' => [
+                $this->getAutoRemoveKey() => true,
+            ],
         ];
     }
 
@@ -239,12 +241,25 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             return false;
         }
 
+        $sshUrl = $environment->getSshUrl($app->getName());
+
         $alias = [
-            'root' => '/app/' . $app->getDocumentRoot(),
-            $this->getAutoRemoveKey() => true,
+            'options' => [
+                $this->getAutoRemoveKey() => true,
+            ],
         ];
 
-        $sshUrl = $environment->getSshUrl($app->getName());
+        // For most environments, we know the application root directory is
+        // '/app'. It's different in Enterprise environments.
+        if ($environment->deployment_target === 'enterprise') {
+            $appRoot = $this->drush->getCachedAppRoot($sshUrl);
+            if ($appRoot) {
+                $alias['root'] = rtrim($appRoot, '/') . '/' . $app->getDocumentRoot();
+            }
+        } else {
+            $alias['root'] = '/app/' . $app->getDocumentRoot();
+        }
+
         list($alias['user'], $alias['host']) = explode('@', $sshUrl, 2);
 
         if ($url = $this->getUrl($environment)) {

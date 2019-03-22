@@ -46,12 +46,15 @@ class EnvironmentListCommand extends CommandBase
         parent::__construct();
     }
 
+    /** @var \Platformsh\Cli\Service\PropertyFormatter */
+    protected $formatter;
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this->setAliases(['environments'])
+        $this->setAliases(['environments', 'env'])
             ->setDescription('Get a list of environments')
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
@@ -134,6 +137,9 @@ class EnvironmentListCommand extends CommandBase
 
             $row[] = $this->formatEnvironmentStatus($environment->status);
 
+            $row[] = $this->formatter->format($environment->created_at, 'created_at');
+            $row[] = $this->formatter->format($environment->updated_at, 'updated_at');
+
             $rows[] = $row;
             if (isset($this->children[$environment->id])) {
                 $childRows = $this->buildEnvironmentRows(
@@ -198,17 +204,18 @@ class EnvironmentListCommand extends CommandBase
             $this->children['master'] = [];
         }
 
-        $headers = ['ID', 'Name', 'Status'];
+        $headers = ['ID', 'Title', 'Status', 'Created', 'Updated'];
+        $defaultColumns = ['id', 'title', 'status'];
 
         if ($this->table->formatIsMachineReadable()) {
-            $this->table->render($this->buildEnvironmentRows($tree, false, false), $headers);
+            $this->table->render($this->buildEnvironmentRows($tree, false, false), $headers, $defaultColumns);
 
             return;
         }
 
         $this->stdErr->writeln("Your environments are: ");
 
-        $this->table->render($this->buildEnvironmentRows($tree), $headers);
+        $this->table->render($this->buildEnvironmentRows($tree), $headers, $defaultColumns);
 
         if (!$this->currentEnvironment) {
             return;

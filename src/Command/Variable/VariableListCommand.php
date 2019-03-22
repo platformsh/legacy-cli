@@ -43,7 +43,7 @@ class VariableListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['variables'])
+        $this->setAliases(['variables', 'var'])
             ->setDescription('List variables');
 
         $definition = $this->getDefinition();

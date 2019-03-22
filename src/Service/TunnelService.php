@@ -43,19 +43,6 @@ class TunnelService
         $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
     }
 
-    public function checkSupport()
-    {
-        $messages = [];
-        foreach (['pcntl', 'posix'] as $extension) {
-            if (!extension_loaded($extension)) {
-                $messages[] = sprintf('The "%s" extension is required.', $extension);
-            }
-        }
-        if (count($messages)) {
-            throw new \RuntimeException(implode("\n", $messages));
-        }
-    }
-
     /**
      * Check whether a tunnel is already open.
      *
