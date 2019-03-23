@@ -91,7 +91,7 @@ class SelfReleaseCommand extends CommandBase
             $gitStatus = $this->git->execute(['status', '--porcelain'], CLI_ROOT, true);
             if (is_string($gitStatus) && !empty($gitStatus)) {
                 foreach (explode("\n", $gitStatus) as $statusLine) {
-                    if (strpos($statusLine, ' config.yaml') === false) {
+                    if (strpos($statusLine, ' config/config.yaml') === false) {
                         $this->stdErr->writeln('There are uncommitted changes in Git. Cannot proceed.');
 
                         return 1;
