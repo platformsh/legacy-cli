@@ -81,7 +81,7 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->tunnelService->checkSupport();
+        $this->checkSupport();
         $selection = $this->selector->getSelection($input);
         $project = $selection->getProject();
         $environment = $selection->getEnvironment();

@@ -289,7 +289,7 @@ class Drush
     {
         $config = $this->localProject->getProjectConfig($projectRoot);
 
-        return !empty($config['alias-group']) ? $config['alias-group'] : $project['id'];
+        return !empty($config['alias-group']) ? $config['alias-group'] : $project->id;
     }
 
     /**

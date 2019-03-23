@@ -227,10 +227,10 @@ class Git
     /**
      * Check whether a branch exists on a remote.
      *
-     * @param string $remote
-     * @param string $branchName
-     * @param null   $dir
-     * @param bool   $mustRun
+     * @param string      $remote
+     * @param string      $branchName
+     * @param string|null $dir
+     * @param bool        $mustRun
      *
      * @return bool
      */

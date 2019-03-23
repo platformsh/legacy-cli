@@ -260,10 +260,6 @@ class ProjectGetCommand extends CommandBase
             } else {
                 throw new InvalidArgumentException('No project specified');
             }
-        } else {
-            $result = $this->identifier->identify($projectId);
-            $projectId = $result['projectId'];
-            $environmentId = $result['environmentId'];
         }
 
         $selection = $this->selector->getSelection($input);

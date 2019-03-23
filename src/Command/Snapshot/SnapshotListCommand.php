@@ -5,8 +5,6 @@ namespace Platformsh\Cli\Command\Snapshot;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Service\ActivityLoader;
-use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
@@ -20,23 +18,17 @@ class SnapshotListCommand extends CommandBase
 
     protected static $defaultName = 'snapshot:list';
 
-    private $activityLoader;
-    private $activityService;
     private $api;
     private $formatter;
     private $selector;
     private $table;
 
     public function __construct(
-        ActivityLoader $activityLoader,
-        ActivityService $activityService,
         Api $api,
         PropertyFormatter $formatter,
         Selector $selector,
         Table $table
     ) {
-        $this->activityLoader = $activityLoader;
-        $this->activityService = $activityService;
         $this->api = $api;
         $this->formatter = $formatter;
         $this->selector = $selector;
@@ -68,12 +60,11 @@ class SnapshotListCommand extends CommandBase
             $this->stdErr->writeln("Finding snapshots for the environment <info>{$selectedEnvironment->id}</info>");
         }
 
-        $activities = $this->activityLoader->load($selectedEnvironment, $input->getOption('limit'), 'environment.backup', $startsAt);
-        if (!$activities) {
+        $backups = $selectedEnvironment->getBackups();
+        if (!$backups) {
             $this->stdErr->writeln('No snapshots found');
             return 1;
         }
-        $backups = $activities;
 
         $headers = ['Created', 'Snapshot name', 'Status', 'Commit'];
         $rows = [];

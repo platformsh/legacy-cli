@@ -66,7 +66,7 @@ class TunnelListCommand extends CommandBase
             return 1;
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
         // Filter tunnels according to the current project and environment, if
         // available.
