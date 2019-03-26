@@ -20,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class CommitListCommand extends CommandBase
 {
-    public static $defaultName = 'commit:get';
+    public static $defaultName = 'commit:list';
 
     private $api;
     private $gitDataApi;
@@ -48,9 +48,7 @@ class CommitListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this
-            ->setName('commit:list')
-            ->setAliases(['commits'])
+        $this->setAliases(['commits'])
             ->setDescription('List commits')
             ->addArgument('commit', InputOption::VALUE_REQUIRED, 'The starting Git commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP)
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'The number of commits to display.', 10);
