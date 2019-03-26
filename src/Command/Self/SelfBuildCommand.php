@@ -58,22 +58,9 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        if (ini_get('phar.readonly')) {
-            $this->stdErr->writeln('The <error>phar.readonly</error> PHP setting is enabled.');
-            $this->stdErr->writeln('Disable it in your php.ini configuration.');
-            return 1;
-        }
-
         $outputFilename = $input->getOption('output');
         if ($outputFilename && !is_writable(dirname($outputFilename))) {
             $this->stdErr->writeln("Not writable: <error>$outputFilename</error>");
-            return 1;
-        }
-
-        if (!$this->shell->commandExists('box')) {
-            $this->stdErr->writeln('Command not found: <error>box</error>');
-            $this->stdErr->writeln('The Box utility is required to build new CLI packages. Try:');
-            $this->stdErr->writeln('  composer global require kherge/box:~2.5');
             return 1;
         }
 
@@ -110,38 +97,37 @@ class SelfBuildCommand extends CommandBase
             // their own version of dependencies locally.
             $this->shell->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
 
+            // We cannot use --no-dev, as that would exclude the Box tool itself.
             $this->shell->execute([
                 $this->shell->resolveCommand('composer'),
                 'install',
-                '--no-dev',
                 '--classmap-authoritative',
                 '--no-interaction',
                 '--no-progress',
             ], CLI_ROOT, true, false);
         }
 
-        $boxArgs = [$this->shell->resolveCommand('box'), 'build', '--no-interaction'];
+        $boxArgs = [CLI_ROOT . '/vendor/bin/box', 'compile', '--no-interaction', '-vvv'];
 
         // Create a temporary box.json file for this build.
         if (!empty($boxConfig)) {
             $originalConfig = json_decode(file_get_contents(CLI_ROOT . '/box.json'), true);
             $boxConfig = array_merge($originalConfig, $boxConfig);
             $boxConfig['base-path'] = CLI_ROOT;
-            $tmpJson = tempnam('/tmp', 'box_json');
-            file_put_contents($tmpJson, json_encode($boxConfig));
-            $boxArgs[] = '--configuration=' . $tmpJson;
+            $filename = tempnam(sys_get_temp_dir(), 'cli-box-');
+            file_put_contents($filename, json_encode($boxConfig));
+            $boxArgs[] = '--config=' . $filename;
         }
 
         $this->stdErr->writeln('Building Phar package using Box');
         $result = $this->shell->execute($boxArgs, CLI_ROOT, false, true);
-
-        // Clean up the temporary file, regardless of errors.
-        if (!empty($tmpJson)) {
-            unlink($tmpJson);
-        }
-
         if ($result === false) {
             return 1;
+        }
+
+        // Clean up the temporary file.
+        if (!empty($tmpJson)) {
+            unlink($tmpJson);
         }
 
         if (!file_exists($phar)) {
