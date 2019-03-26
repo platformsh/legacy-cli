@@ -8,6 +8,7 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
@@ -21,6 +22,7 @@ class EnvironmentListCommand extends CommandBase
 
     private $api;
     private $config;
+    private $formatter;
     private $localProject;
     private $selector;
     private $table;
@@ -34,20 +36,19 @@ class EnvironmentListCommand extends CommandBase
     public function __construct(
         Api $api,
         Config $config,
+        PropertyFormatter $formatter,
         LocalProject $localProject,
         Selector $selector,
         Table $table
     ) {
         $this->api = $api;
         $this->config = $config;
+        $this->formatter = $formatter;
         $this->localProject = $localProject;
         $this->selector = $selector;
         $this->table = $table;
         parent::__construct();
     }
-
-    /** @var \Platformsh\Cli\Service\PropertyFormatter */
-    protected $formatter;
 
     /**
      * {@inheritdoc}
