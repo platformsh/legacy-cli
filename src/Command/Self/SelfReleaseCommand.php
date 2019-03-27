@@ -311,15 +311,20 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Tag the current commit.
-        $this->stdErr->writeln('Creating tag <info>' . $tagName . '</info>');
-        $git->execute(['tag', '--force', $tagName], CLI_ROOT, true);
+        $createTag = !$this->isPreRelease($newVersion);
+        if ($createTag) {
+            $this->stdErr->writeln('Creating tag <info>' . $tagName . '</info>');
+            $git->execute(['tag', '--force', $tagName], CLI_ROOT, true);
+        }
 
         // Push to GitHub.
-        if (!$questionHelper->confirm('Push changes and tag to <comment>' . $releaseBranch . '</comment> branch on ' . $repoGitUrl . '?')) {
+        if (!$questionHelper->confirm('Push changes to <comment>' . $releaseBranch . '</comment> branch on ' . $repoGitUrl . '?')) {
             return 1;
         }
         $shell->execute(['git', 'push', $repoGitUrl, 'HEAD:' . $releaseBranch], CLI_ROOT, true);
-        $shell->execute(['git', 'push', '--force', $repoGitUrl, $tagName], CLI_ROOT, true);
+        if ($createTag) {
+            $shell->execute(['git', 'push', '--force', $repoGitUrl, $tagName], CLI_ROOT, true);
+        }
 
         // Upload a release to GitHub.
         $lastReleasePublicUrl = 'https://github.com/' . $repoUrl . '/releases/' . $lastTag;
