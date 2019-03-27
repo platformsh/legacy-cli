@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Self;
 
 use GuzzleHttp\Client;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,15 +19,15 @@ class SelfReleaseCommand extends CommandBase
         $defaultRepo = $this->config()->getWithDefault('application.github_repo', null);
         $defaultReleaseBranch = $this->config()->getWithDefault('application.release_branch', 'master');
 
-        $this
-            ->setName('self:release')
+        $this->setName('self:release')
             ->setDescription('Build and release a new version')
+            ->addArgument('version', InputArgument::OPTIONAL, 'The new version number')
             ->addOption('phar', null, InputOption::VALUE_REQUIRED, 'The path to a newly built Phar file')
             ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $defaultRepo)
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
             ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
             ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', $defaultReleaseBranch)
-            ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'Specify the last version number')
+            ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'The last version number')
             ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes')
             ->addOption('allow-lower', null, InputOption::VALUE_NONE, 'Allow releasing with a lower version number than the last');
     }
@@ -85,30 +86,67 @@ class SelfReleaseCommand extends CommandBase
             return 1;
         }
 
-        $newVersion = $this->config()->get('application.version');
-        $this->stdErr->writeln('The version number defined in the config.yaml file is: <comment>' . $newVersion . '</comment>');
+        // Find the previous version number.
+        if ($input->getOption('last-version')) {
+            $lastVersion = ltrim($input->getOption('last-version'), 'v');
+            $lastTag = 'v' . $lastVersion;
 
-        if (substr($newVersion, 0, 1) === 'v') {
-            $this->stdErr->writeln('The version number should not be prefixed by `v`.');
-
-            return 1;
-        }
-        if (!$questionHelper->confirm('Is <comment>' . $newVersion . '</comment> the correct new version number?')) {
-            $this->stdErr->writeln('Update the version number in config.yaml and re-run this command.');
-
-            return 1;
+            $this->stdErr->writeln('Last version number: <info>' . $lastVersion . '</info>');
+        } else {
+            $lastTag = $shell->execute('git describe --tags "$(git rev-list --tags --max-count=1)"', CLI_ROOT, true);
+            $lastVersion = ltrim($lastTag, 'v');
+            $this->stdErr->writeln('Last version number (from latest Git tag): <info>' . $lastVersion . '</info>');
         }
 
-        // Validate the --phar option.
-        $pharFilename = $input->getOption('phar');
-        if ($pharFilename && !file_exists($pharFilename)) {
-            $this->stdErr->writeln('File not found: <error>' . $pharFilename . '</error>');
+        $validateNewVersion = function ($next) use ($lastVersion) {
+            if ($next === null) {
+                throw new \InvalidArgumentException('The new version is required.');
+            }
+            if (version_compare($next, $lastVersion, '<=')) {
+                throw new \InvalidArgumentException('The new version number must be greater than ' . $lastVersion);
+            }
 
-            return 1;
+            return $next;
+        };
+
+        $newVersion = $input->getArgument('version');
+        if ($newVersion !== null) {
+            $validateNewVersion($newVersion);
+        } else {
+            if (!$input->isInteractive()) {
+                $this->stdErr->writeln('The version number is required in non-interactive mode.');
+
+                return 1;
+            }
+
+            // Find a good default new version number.
+            $default = null;
+            $autoComplete = [];
+            if ($this->isPreRelease($lastVersion)) {
+                $default = $shell->execute([
+                    'git',
+                    'describe',
+                    '--tags'
+                ], CLI_ROOT);
+                $default = $default ? ltrim($default, 'v') : null;
+            } elseif (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+(\-.+)?$/', $lastVersion)) {
+                $nextPatch = preg_replace_callback('/^([0-9]+\.[0-9]+\.)([0-9]+)/', function (array $matches) {
+                    return $matches[1] . ($matches[2] + 1);
+                }, $lastVersion);
+                $nextMinor = preg_replace_callback('/^([0-9]+\.)([0-9]+)\..+$/', function (array $matches) {
+                    return $matches[1] . ($matches[2] + 1) . '.0';
+                }, $lastVersion);
+                $nextMajor = preg_replace_callback('/^([0-9]+)\..+$/', function (array $matches) {
+                    return ($matches[1] + 1) . '.0.0';
+                }, $lastVersion);
+                $default = $nextPatch;
+                $autoComplete = [$nextPatch, $nextMinor, $nextMajor];
+            }
+
+            $newVersion = $questionHelper->askInput('New version number', $default, $autoComplete, $validateNewVersion);
         }
 
         // Set up GitHub API connection details.
-        $tagName = 'v' . $newVersion;
         $http = new Client();
         $repo = $input->getOption('repo') ?: $this->config()->get('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
@@ -116,6 +154,7 @@ class SelfReleaseCommand extends CommandBase
         $repoGitUrl = 'git@github.com:' . $repo . '.git';
 
         // Check if the chosen version number already exists as a release.
+        $tagName = 'v' . ltrim($newVersion, 'v');
         $existsResponse = $http->get($repoApiUrl . '/releases/tags/' . $tagName, [
             'headers' => [
                 'Authorization' => 'token ' . $gitHubToken,
@@ -132,6 +171,14 @@ class SelfReleaseCommand extends CommandBase
                 return 1;
             }
             $this->stdErr->writeln('A release tagged ' . $tagName . ' already exists on GitHub.');
+
+            return 1;
+        }
+
+        // Validate the --phar option.
+        $pharFilename = $input->getOption('phar');
+        if ($pharFilename && !file_exists($pharFilename)) {
+            $this->stdErr->writeln('File not found: <error>' . $pharFilename . '</error>');
 
             return 1;
         }
@@ -170,24 +217,6 @@ class SelfReleaseCommand extends CommandBase
                 throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
         }
 
-        // Fetch the previous version details from the GitHub API.
-        if ($input->getOption('last-version')) {
-            $lastVersion = ltrim($input->getOption('last-version'), 'v');
-            $lastTag = 'v' . $lastVersion;
-        } else {
-            $latestRelease = $http->get($repoApiUrl . '/releases/latest', [
-                'headers' => [
-                    'Authorization' => 'token ' . $gitHubToken,
-                    'Accept' => 'application/vnd.github.v3+json',
-                    'Content-Type' => 'application/json',
-                ],
-                'debug' => $output->isDebug(),
-            ])->json();
-            $lastTag = $latestRelease['tag_name'];
-            $lastVersion = ltrim($lastTag, 'v');
-            $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
-        }
-
         // Validate the new version number against the previous version.
         if (version_compare($newVersion, $lastVersion, '<') && !$input->getOption('allow-lower')) {
             $this->stdErr->writeln(sprintf('The new version number <error>%s</error> is lower than the last version number <error>%s</error>.', $newVersion, $lastVersion));
@@ -197,7 +226,7 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Confirm the release changelog.
-        $changelog = $this->getReleaseChangelog($lastVersion, $repoApiUrl);
+        $changelog = $this->getReleaseChangelog($lastTag, $repoApiUrl);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -213,6 +242,7 @@ class SelfReleaseCommand extends CommandBase
             $result = $this->runOtherCommand('self:build', [
                 '--output' => $pharFilename,
                 '--yes' => true,
+                '--replace-version' => $tagName,
             ]);
             if ($result !== 0) {
                 $this->stdErr->writeln('The build failed');
@@ -318,6 +348,7 @@ class SelfReleaseCommand extends CommandBase
                 'name' => $tagName,
                 'body' => $releaseDescription,
                 'draft' => true,
+                'prerelease' => $this->isPreRelease($newVersion),
             ],
             'debug' => $output->isDebug(),
         ]);
@@ -360,14 +391,13 @@ class SelfReleaseCommand extends CommandBase
     }
 
     /**
-     * @param string $lastVersion The last version number.
+     * @param string $lastVersionTag The tag corresponding to the last version.
      * @param string $repoApiUrl
      *
      * @return string
      */
-    private function getReleaseChangelog($lastVersion, $repoApiUrl)
+    private function getReleaseChangelog($lastVersionTag, $repoApiUrl)
     {
-        $lastVersionTag = 'v' . ltrim($lastVersion, 'v');
         $filename = CLI_ROOT . '/release-changelog.md';
         if (file_exists($filename)) {
             $mTime = filemtime($filename);
@@ -442,5 +472,17 @@ class SelfReleaseCommand extends CommandBase
         $changelog = trim($changelog);
 
         return $changelog;
+    }
+
+    /**
+     * Check if a version number is for a pre-release version.
+     *
+     * @param string $version
+     *
+     * @return bool
+     */
+    private function isPreRelease($version)
+    {
+        return preg_match('/^[0-9]+\.[0-9]+(\.[0-9]+)?\-.+/', $version) === 1;
     }
 }

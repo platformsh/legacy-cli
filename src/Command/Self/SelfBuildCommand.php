@@ -19,7 +19,9 @@ class SelfBuildCommand extends CommandBase
             ->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
             ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
+            ->addOption('replace-version', null, InputOption::VALUE_OPTIONAL, 'Replace the version number in config.yaml')
             ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
+        $this->setHidden(true);
     }
 
     public function isEnabled()
@@ -48,9 +50,14 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        $version = $this->config()->get('application.version');
-
         $boxConfig = [];
+
+        $version = $this->config()->get('application.version');
+        if ($input->getOption('replace-version')) {
+            $version = $input->getOption('replace-version');
+            $boxConfig['replacements']['version-placeholder'] = $version;
+        }
+
         if ($outputFilename) {
             /** @var \Platformsh\Cli\Service\Filesystem $fs */
             $fs = $this->getService('fs');
@@ -78,10 +85,6 @@ class SelfBuildCommand extends CommandBase
 
         if (!$input->getOption('no-composer-rebuild')) {
             $this->stdErr->writeln('Ensuring correct composer dependencies');
-
-            // Remove the 'vendor' directory, in case the developer has incorporated
-            // their own version of dependencies locally.
-            $shell->execute(['rm', '-r', 'vendor'], CLI_ROOT, true, false);
 
             // We cannot use --no-dev, as that would exclude the Box tool itself.
             $shell->execute([
