@@ -21,7 +21,6 @@ class SelfBuildCommand extends CommandBase
             ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
             ->addOption('replace-version', null, InputOption::VALUE_OPTIONAL, 'Replace the version number in config.yaml')
             ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
-        $this->setHidden(true);
     }
 
     public function isEnabled()
