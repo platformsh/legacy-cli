@@ -71,12 +71,12 @@ class Shell
     /**
      * Execute a command.
      *
-     * @param array       $args
-     * @param string|null $dir
-     * @param bool        $mustRun
-     * @param bool        $quiet
-     * @param array       $env
-     * @param int|null    $timeout
+     * @param array|string $args
+     * @param string|null  $dir
+     * @param bool         $mustRun
+     * @param bool         $quiet
+     * @param array        $env
+     * @param int|null     $timeout
      *
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If $mustRun is enabled and the command fails.
@@ -85,7 +85,7 @@ class Shell
      *   False if the command fails, true if it succeeds with no output, or a
      *   string if it succeeds with output.
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
+    public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
     {
         $process = new Process($args, null, null, null, $timeout);
 
