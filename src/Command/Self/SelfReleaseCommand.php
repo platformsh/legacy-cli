@@ -117,7 +117,7 @@ class SelfReleaseCommand extends CommandBase
 
             $this->stdErr->writeln('Last version number: <info>' . $lastVersion . '</info>');
         } else {
-            $lastTag = $this->shell->execute('git describe --tags "$(git rev-list --tags --max-count=1)"', CLI_ROOT, true);
+            $lastTag = $this->shell->execute(['git', 'describe', '--tags', '--abbrev=0'], CLI_ROOT, true);
             $lastVersion = ltrim($lastTag, 'v');
             $this->stdErr->writeln('Last version number (from latest Git tag): <info>' . $lastVersion . '</info>');
         }
