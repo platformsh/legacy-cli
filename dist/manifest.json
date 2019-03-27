@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.0.0-dev",
-        "sha1": "9d33c549ca914f1dd0bb9e2e2cd498f7aabb6299",
-        "sha256": "025b25bcc6b5683998bddb3069a6bc7928b57ab6d1d5a08f8af1cd8828cde252",
+        "version": "4.0.0-dev-4-g8873f091",
+        "sha1": "4e7784dbc878e8d019c2f47448584e491105b14c",
+        "sha256": "e5dc2540a9ccfe77084733e9e1238cfbbd1fb077dd97bdd79b449fd5f9c4166e",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v4.0.0-dev/platform.phar",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v4.0.0-dev-4-g8873f091/platform.phar",
         "php": {
             "min": "7.1.14"
         },
@@ -12,6 +12,11 @@
             {
                 "notes": "* Use Symfony 4; require at least PHP 7.1.14. As this is a breaking change,\n  this increases the CLI major version from 3.x to 4.x.\n* Integrate platformsh/oauth2 library and platformsh/client version 2.x.\n* Cache the DI container.\n* Use service autowiring. This allows new services or commands to be created\n  without extra service configuration (beyond their constructor arguments).\n* Configure command lazy-loading. If using the full command name, this saves\n  around 50ms. Using a command alias or shortcut bypasses the performance\n  benefit as it requires all command classes to be instantiated.\n* Lots of other refactoring, including adding static/strict types.\n* Remove deprecated command options.",
                 "hide from": "4.0.0-dev"
+            },
+            {
+                "notes": "* Versioning/release improvements\n* Fix commit:list command name\n* The vendor-bin files should be included\n* Fix environment:list command formatter injection",
+                "show from": "4.0.0-dev",
+                "hide from": "4.0.0-dev-4-g8873f091"
             }
         ]
     },
