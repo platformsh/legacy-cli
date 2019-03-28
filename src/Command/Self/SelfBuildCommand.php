@@ -51,11 +51,22 @@ class SelfBuildCommand extends CommandBase
 
         $boxConfig = [];
 
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
         $version = $this->config()->get('application.version');
         if ($input->getOption('replace-version')) {
             $version = $input->getOption('replace-version');
-            $boxConfig['replacements']['version-placeholder'] = $version;
+        } else {
+            $tag = $shell->execute(['git', 'describe', '--tags'], CLI_ROOT, false);
+            if ($tag !== false) {
+                $version = $tag;
+            }
+            $version = $questionHelper->askInput('Version', $version);
         }
+        $boxConfig['replacements']['version-placeholder'] = $version;
 
         if ($outputFilename) {
             /** @var \Platformsh\Cli\Service\Filesystem $fs */
@@ -72,15 +83,10 @@ class SelfBuildCommand extends CommandBase
         }
 
         if (file_exists($phar)) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
             if (!$questionHelper->confirm("File exists: <comment>$phar</comment>. Overwrite?")) {
                 return 1;
             }
         }
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
 
         if (!$input->getOption('no-composer-rebuild')) {
             $this->stdErr->writeln('Ensuring correct composer dependencies');
