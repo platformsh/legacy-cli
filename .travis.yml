@@ -41,6 +41,8 @@ cache:
     - $HOME/.drush/cache
 
 install:
-  - composer install --no-interaction
+  # No scripts on Travis, because Box isn't needed, and anyway it can't be
+  # installed under PHP <7.1.
+  - composer install --no-interaction --no-scripts
 
 script: "$TEST_SCRIPT"
