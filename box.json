@@ -24,5 +24,9 @@
   ],
   "main": "bin/platform",
   "output": "platform.phar",
-  "stub": "resources/phar-stub.php"
+  "stub": "resources/phar-stub.php",
+  "compactors": [
+      "KevinGH\\Box\\Compactor\\Json",
+      "KevinGH\\Box\\Compactor\\Php"
+  ]
 }

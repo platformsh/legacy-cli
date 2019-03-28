@@ -76,8 +76,14 @@ class SelfBuildCommand extends CommandBase
         $version = $this->config->get('application.version');
         if ($input->getOption('replace-version')) {
             $version = $input->getOption('replace-version');
-            $boxConfig['replacements']['version-placeholder'] = $version;
+        } else {
+            $tag = $this->shell->execute(['git', 'describe', '--tags'], CLI_ROOT, false);
+            if ($tag !== false) {
+                $version = $tag;
+            }
+            $version = $this->questionHelper->askInput('Version', $version);
         }
+        $boxConfig['replacements']['version-placeholder'] = $version;
 
         if ($outputFilename) {
             $boxConfig['output'] = $this->filesystem->makePathAbsolute($outputFilename);
@@ -109,7 +115,14 @@ class SelfBuildCommand extends CommandBase
             ], CLI_ROOT, true, false);
         }
 
-        $boxArgs = [CLI_ROOT . '/vendor/bin/box', 'compile', '--no-interaction', '-vvv'];
+        $boxArgs = [CLI_ROOT . '/vendor/bin/box', 'compile', '--no-interaction'];
+        if ($output->isVeryVerbose()) {
+            $boxArgs[] = '-vvv';
+        } elseif ($output->isVerbose()) {
+            $boxArgs[] = '-vv';
+        } else {
+            $boxArgs[] = '-v';
+        }
 
         // Create a temporary box.json file for this build.
         if (!empty($boxConfig)) {
