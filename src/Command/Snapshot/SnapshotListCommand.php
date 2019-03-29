@@ -76,6 +76,20 @@ class SnapshotListCommand extends CommandBase
         }
 
         $table->render($rows, $headers);
+
+        $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
+        $maybeMoreAvailable = count($activities) === $max;
+        if (!$table->formatIsMachineReadable() && $maybeMoreAvailable) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'More snapshots may be available.'
+                . ' To display older snapshots, increase <info>--limit</info> above %d, or set <info>--start</info> to a date in the past.'
+                . ' For more information, run: <info>%s snapshot:list -h</info>',
+                $max,
+                $this->config()->get('application.executable')
+            ));
+        }
+
         return 0;
     }
 }
