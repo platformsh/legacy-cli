@@ -17,8 +17,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\PhpExecutableFinder;
-use Symfony\Component\Yaml\Dumper;
-use Symfony\Component\Yaml\Parser;
 
 class SelfReleaseCommand extends CommandBase
 {
@@ -95,7 +93,7 @@ class SelfReleaseCommand extends CommandBase
             $gitStatus = $this->git->execute(['status', '--porcelain'], CLI_ROOT, true);
             if (is_string($gitStatus) && !empty($gitStatus)) {
                 foreach (explode("\n", $gitStatus) as $statusLine) {
-                    if (strpos($statusLine, ' config/config.yaml') === false && strpos($statusLine, ' config/releases.yaml') === false) {
+                    if (strpos($statusLine, ' config/config.yaml') === false) {
                         $this->stdErr->writeln('There are uncommitted changes in Git. Cannot proceed.');
 
                         return 1;
@@ -242,7 +240,7 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Confirm the release changelog.
-        $changelog = $this->getReleaseChangelog($lastTag, $repoApiUrl);
+        $changelog = $this->getReleaseChangelog($lastTag);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         if (!$this->questionHelper->confirm($questionText)) {
             $this->stdErr->writeln('Update or delete the file <comment>' . CLI_ROOT . '/release-changelog.md</comment> and re-run this command.');
@@ -318,7 +316,7 @@ class SelfReleaseCommand extends CommandBase
         if (is_string($gitStatus) && !empty($gitStatus)) {
             $this->stdErr->writeln('Committing changes to Git');
 
-            $result = $this->shell->executeSimple('git commit --patch config.yaml dist/manifest.json --message ' . escapeshellarg('Release v' . $newVersion) . ' --edit', CLI_ROOT);
+            $result = $this->shell->executeSimple('git commit --patch config/config.yaml dist/manifest.json --message ' . escapeshellarg('Release v' . $newVersion) . ' --edit', CLI_ROOT);
             if ($result !== 0) {
                 return $result;
             }
@@ -406,11 +404,10 @@ class SelfReleaseCommand extends CommandBase
 
     /**
      * @param string $lastVersionTag The tag corresponding to the last version.
-     * @param string $repoApiUrl
      *
      * @return string
      */
-    private function getReleaseChangelog(string $lastVersionTag, string $repoApiUrl): string
+    private function getReleaseChangelog(string $lastVersionTag): string
     {
         $filename = CLI_ROOT . '/release-changelog.md';
         if (file_exists($filename)) {
@@ -425,7 +422,7 @@ class SelfReleaseCommand extends CommandBase
             }
         }
         if (empty($changelog)) {
-            $changelog = $this->getGitChangelog($lastVersionTag, $repoApiUrl);
+            $changelog = $this->getGitChangelog($lastVersionTag);
             (new Filesystem())->dumpFile($filename, $changelog);
         }
 
@@ -448,11 +445,10 @@ class SelfReleaseCommand extends CommandBase
 
     /**
      * @param string $since
-     * @param string $repoApiUrl
      *
      * @return string
      */
-    private function getGitChangelog(string $since, string $repoApiUrl): string
+    private function getGitChangelog(string $since): string
     {
         $changelog = $this->git->execute([
             'log',
