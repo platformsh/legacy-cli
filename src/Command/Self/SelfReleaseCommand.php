@@ -122,22 +122,15 @@ class SelfReleaseCommand extends CommandBase
             // Find a good default new version number.
             $default = null;
             $autoComplete = [];
-            if ($this->isPreRelease($lastVersion)) {
-                $default = $shell->execute([
-                    'git',
-                    'describe',
-                    '--tags'
-                ], CLI_ROOT);
-                $default = $default ? ltrim($default, 'v') : null;
-            } elseif (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+(\-.+)?$/', $lastVersion)) {
-                $nextPatch = preg_replace_callback('/^([0-9]+\.[0-9]+\.)([0-9]+)/', function (array $matches) {
-                    return $matches[1] . ($matches[2] + 1);
+            if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+(\-.+)?$/', $lastVersion)) {
+                $nextPatch = preg_replace_callback('/^([0-9]+\.[0-9]+\.)([0-9]+)(\-[a-z]+)?.*$/', function (array $matches) {
+                    return $matches[1] . ($matches[2] + 1) . $matches[3];
                 }, $lastVersion);
-                $nextMinor = preg_replace_callback('/^([0-9]+\.)([0-9]+)\..+$/', function (array $matches) {
-                    return $matches[1] . ($matches[2] + 1) . '.0';
+                $nextMinor = preg_replace_callback('/^([0-9]+\.)([0-9]+)\.[^\-]+(\-[a-z]+)?.*$/', function (array $matches) {
+                    return $matches[1] . ($matches[2] + 1) . '.0' . $matches[3];
                 }, $lastVersion);
-                $nextMajor = preg_replace_callback('/^([0-9]+)\..+$/', function (array $matches) {
-                    return ($matches[1] + 1) . '.0.0';
+                $nextMajor = preg_replace_callback('/^([0-9]+)\.[^\-]+(\-[a-z]+)?.*$/', function (array $matches) {
+                    return ($matches[1] + 1) . '.0.0' . $matches[2];
                 }, $lastVersion);
                 $default = $nextPatch;
                 $autoComplete = [$nextPatch, $nextMinor, $nextMajor];
@@ -226,7 +219,7 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Confirm the release changelog.
-        $changelog = $this->getReleaseChangelog($lastTag, $repoApiUrl);
+        $changelog = $this->getReleaseChangelog($lastTag);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -311,20 +304,15 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Tag the current commit.
-        $createTag = !$this->isPreRelease($newVersion);
-        if ($createTag) {
-            $this->stdErr->writeln('Creating tag <info>' . $tagName . '</info>');
-            $git->execute(['tag', '--force', $tagName], CLI_ROOT, true);
-        }
+        $this->stdErr->writeln('Creating tag <info>' . $tagName . '</info>');
+        $git->execute(['tag', '--force', $tagName], CLI_ROOT, true);
 
         // Push to GitHub.
         if (!$questionHelper->confirm('Push changes to <comment>' . $releaseBranch . '</comment> branch on ' . $repoGitUrl . '?')) {
             return 1;
         }
         $shell->execute(['git', 'push', $repoGitUrl, 'HEAD:' . $releaseBranch], CLI_ROOT, true);
-        if ($createTag) {
-            $shell->execute(['git', 'push', '--force', $repoGitUrl, $tagName], CLI_ROOT, true);
-        }
+        $shell->execute(['git', 'push', '--force', $repoGitUrl, $tagName], CLI_ROOT, true);
 
         // Upload a release to GitHub.
         $lastReleasePublicUrl = 'https://github.com/' . $repoUrl . '/releases/' . $lastTag;
@@ -397,11 +385,10 @@ class SelfReleaseCommand extends CommandBase
 
     /**
      * @param string $lastVersionTag The tag corresponding to the last version.
-     * @param string $repoApiUrl
      *
      * @return string
      */
-    private function getReleaseChangelog($lastVersionTag, $repoApiUrl)
+    private function getReleaseChangelog($lastVersionTag)
     {
         $filename = CLI_ROOT . '/release-changelog.md';
         if (file_exists($filename)) {
@@ -416,7 +403,7 @@ class SelfReleaseCommand extends CommandBase
             }
         }
         if (empty($changelog)) {
-            $changelog = $this->getGitChangelog($lastVersionTag, $repoApiUrl);
+            $changelog = $this->getGitChangelog($lastVersionTag);
             (new Filesystem())->dumpFile($filename, $changelog);
         }
 
@@ -441,21 +428,11 @@ class SelfReleaseCommand extends CommandBase
 
     /**
      * @param string $since
-     * @param string $repoApiUrl
      *
      * @return string
      */
-    private function getGitChangelog($since, $repoApiUrl)
+    private function getGitChangelog($since)
     {
-        $http = new Client();
-        $sha = $http->get($repoApiUrl . '/commits/' . rawurlencode($since), [
-            'headers' => [
-                'Authorization' => 'token ' . getenv('GITHUB_TOKEN'),
-                'Accept' => 'application/vnd.github.v3.sha',
-            ],
-            'debug' => $this->stdErr->isDebug(),
-        ])->getBody();
-
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
         $changelog = $git->execute([
@@ -466,7 +443,7 @@ class SelfReleaseCommand extends CommandBase
             '--grep=(Release v|\[skip changelog\])',
             '--perl-regexp',
             '--regexp-ignore-case',
-            $sha . '...HEAD'
+            $since . '...HEAD'
         ], CLI_ROOT);
         if (!is_string($changelog)) {
             return '';
