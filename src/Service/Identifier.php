@@ -119,8 +119,8 @@ class Identifier
             return $result;
         }
 
-        if ($this->config->has('detection.ui_domain')
-            && $host === $this->config->get('detection.ui_domain')
+        if ($this->config->has('detection.console_domain')
+            && $host === $this->config->get('detection.console_domain')
             && preg_match('#^/[a-z0-9-]+/([a-z0-9-]+)(/([^/]+))?#', $path, $matches)) {
             $result['projectId'] = $matches[1];
             if (isset($matches[3])) {
