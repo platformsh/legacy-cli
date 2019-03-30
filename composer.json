@@ -61,9 +61,5 @@
         "platform": {
             "php": "5.5.9"
         }
-    },
-    "scripts": {
-        "post-install-cmd": "@composer bin all install --ansi",
-        "post-update-cmd": "@composer bin all update --ansi"
     }
 }
