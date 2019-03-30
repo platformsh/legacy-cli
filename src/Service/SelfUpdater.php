@@ -117,7 +117,7 @@ class SelfUpdater
         }
 
         $updater = new Updater($localPhar, false);
-        $strategy = new ManifestStrategy($currentVersion, $manifestUrl, $this->allowMajor, $this->allowUnstable);
+        $strategy = new ManifestStrategy(ltrim($currentVersion, 'v'), $manifestUrl, $this->allowMajor, $this->allowUnstable);
         $strategy->setManifestTimeout($this->timeout);
         $updater->setStrategyObject($strategy);
 
