@@ -61,7 +61,7 @@ class WebCommand extends CommandBase
         $url = $project->getLink('#ui');
         if ($environmentId !== null) {
             // New (alpha) UI links lack the /environments path component.
-            if ($this->config->has('detection.ui_domain') && parse_url($url, PHP_URL_HOST) === $this->config->get('detection.ui_domain')) {
+            if ($this->config->has('detection.console_domain') && parse_url($url, PHP_URL_HOST) === $this->config->get('detection.console_domain')) {
                 $url .= '/' . rawurlencode($environmentId);
             } else {
                 $url .= '/environments/' . rawurlencode($environmentId);

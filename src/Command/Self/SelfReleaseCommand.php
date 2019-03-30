@@ -254,7 +254,7 @@ class SelfReleaseCommand extends CommandBase
             $result = $this->subCommandRunner->run('self:build', [
                 '--output' => $pharFilename,
                 '--yes' => true,
-                '--replace-version' => $tagName,
+                '--replace-version' => $newVersion,
             ]);
             if ($result !== 0) {
                 $this->stdErr->writeln('The build failed');

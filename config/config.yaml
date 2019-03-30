@@ -110,8 +110,8 @@ detection:
   git_domain: 'platform.sh'
   site_domains: ['platform.sh', 'platformsh.site']
 
-  # Domain of a unified-UI instance (beta).
-  ui_domain: 'ui.platform.sh'
+  # Domain of a Console instance.
+  console_domain: 'console.platform.sh'
 
 # Automatic updates.
 # This can be overridden in the user config file.
