@@ -314,9 +314,9 @@ class Config
         }
         $version = $this->get('application.version');
         if (substr($version, 0, 1) === '@' && substr($version, -1) === '@') {
-            // Try getting the version from Git.
-            $tag = shell_exec('git describe --tags 2>/dev/null');
-            if (!empty($tag) && substr($tag, 0, 1) === 'v') {
+            // Silently try getting the version from Git.
+            $tag = (new Shell())->execute(['git', 'describe', '--tags'], CLI_ROOT);
+            if ($tag !== false && substr($tag, 0, 1) === 'v') {
                 $version = trim($tag);
             }
         }
