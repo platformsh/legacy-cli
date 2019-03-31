@@ -319,9 +319,8 @@ class SelfReleaseCommand extends CommandBase
         $releaseDescription = sprintf('Changes since [%s](%s):', $lastTag, $lastReleasePublicUrl);
         if (!empty($changelog)) {
             $releaseDescription .= "\n\n" . $changelog;
-        } else {
-            $releaseDescription .= "\n\n" . 'https://github.com/' . $repoUrl . '/compare/' . $lastTag . '...' . $tagName;
         }
+        $releaseDescription .= "\n\n" . 'https://github.com/' . $repoUrl . '/compare/' . $lastTag . '...' . $tagName;
         $releaseDescription .= "\n\n" . sprintf('SHA-256 checksum for `%s`:', $pharPublicFilename)
             . "\n" . sprintf('`%s`', hash_file('sha256', $pharFilename));
         $this->stdErr->writeln('');
