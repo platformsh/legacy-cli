@@ -57,7 +57,7 @@ class IdentifierTest extends TestCase
         ];
         $this->assertEquals($expected, $identifier->identify($url));
 
-        $url = 'https://ui.platform.sh/foo/4jkbdba6zde2i';
+        $url = 'https://console.platform.sh/foo/4jkbdba6zde2i';
         $expected = [
             'projectId' => '4jkbdba6zde2i',
             'environmentId' => null,
@@ -66,7 +66,7 @@ class IdentifierTest extends TestCase
         ];
         $this->assertEquals($expected, $identifier->identify($url));
 
-        $url = 'https://ui.platform.sh/foo/4jkbdba6zde2i/bar';
+        $url = 'https://console.platform.sh/foo/4jkbdba6zde2i/bar';
         $expected = [
             'projectId' => '4jkbdba6zde2i',
             'environmentId' => 'bar',
@@ -89,7 +89,7 @@ class IdentifierTest extends TestCase
         ];
         $this->assertEquals($expected, $identifier->identify($url));
 
-        $url = 'https://ui.platform.sh/foo/4jkbdba6zde2i/0';
+        $url = 'https://console.platform.sh/foo/4jkbdba6zde2i/0';
         $expected = [
             'projectId' => '4jkbdba6zde2i',
             'environmentId' => '0',
