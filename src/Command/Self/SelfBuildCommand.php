@@ -73,7 +73,7 @@ class SelfBuildCommand extends CommandBase
 
         $boxConfig = [];
 
-        $version = $this->config->get('application.version');
+        $version = $this->config->getVersion();
         if ($input->getOption('replace-version')) {
             $version = $input->getOption('replace-version');
         } else {

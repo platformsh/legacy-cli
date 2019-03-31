@@ -177,7 +177,7 @@ class Api
         return sprintf(
             '%s/%s (%s; %s; PHP %s)',
             str_replace(' ', '-', $this->config->get('application.name')),
-            $this->config->get('application.version'),
+            $this->config->getVersion(),
             php_uname('s'),
             php_uname('r'),
             PHP_VERSION

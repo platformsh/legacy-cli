@@ -84,7 +84,7 @@ class SelfUpdateChecker
 
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
-        $currentVersion = $this->config->get('application.version');
+        $currentVersion = $this->config->getVersion();
 
         $this->selfUpdater->setAllowMajor(true);
         $this->selfUpdater->setTimeout(5);

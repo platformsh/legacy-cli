@@ -47,7 +47,7 @@ class Application extends ParentApplication
     {
         // Initialize configuration (from config.yaml).
         $this->config = $config ?: new Config();
-        parent::__construct($this->config->get('application.name'), $this->config->get('application.version'));
+        parent::__construct($this->config->get('application.name'), $this->config->getVersion());
 
         // Use the configured timezone, or fall back to the system timezone.
         date_default_timezone_set(
