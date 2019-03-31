@@ -56,7 +56,7 @@ class SelfBuildCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $version = $this->config()->get('application.version');
+        $version = $this->config()->getVersion();
         if ($input->getOption('replace-version')) {
             $version = $input->getOption('replace-version');
         } else {
