@@ -117,6 +117,7 @@ environment
   environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
   environment:info                          Read or set properties for an environment
+  environment:init                          Initialize an environment from a public Git repository
   environment:list (environments, env)      Get a list of environments
   environment:logs (log)                    Read an environment's logs
   environment:merge (merge)                 Merge an environment
