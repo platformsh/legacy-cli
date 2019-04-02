@@ -11,14 +11,14 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 
-class FleetInitFleetCommand extends CommandBase
+class FleetAddFleetCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('fleet:init')
-            ->setDescription('Initialise this project as a fleet base')
+            ->setName('fleet:add')
+            ->setDescription('Add a fleet to this project')
             ->addArgument('name', InputArgument::REQUIRED, 'Name of the fleet');
         Table::configureInput($this->getDefinition());
     }

@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 
-class FleetListFleets extends CommandBase
+class FleetListFleetsCommand extends CommandBase
 {
     protected function configure()
     {
@@ -34,24 +34,26 @@ class FleetListFleets extends CommandBase
         // Display a message if no projects are found.
         if (empty($fleets)) {
             $this->stdErr->writeln(
-                'You do not have any ' . $this->config()->get('service.name') . ' projects yet.'
+                'You do not have any fleets yet.'
             );
 
             return 0;
         }
 
         $rows = [];
-        foreach ($fleets['fleets'] as $fleetName => $fleetSettings) {
+        foreach ($fleets as $fleetName => $fleetSettings) {
 
             $count = count($fleetSettings['projects']);
+            $project_list = implode(", ", $fleetSettings['projects']);
 
             $rows[] = [
                 new AdaptiveTableCell($fleetName, ['wrap' => false]),
-                new AdaptiveTableCell($count)
+                new AdaptiveTableCell($count),
+                new AdaptiveTableCell($project_list)
             ];
         }
 
-        $header = ['ID', 'No. of Projects'];
+        $header = ['ID', 'No. of Projects', 'Project IDs'];
 
         // Display a simple table (and no messages) if the --format is
         // machine-readable (e.g. csv or tsv).

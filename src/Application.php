@@ -135,10 +135,11 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
         $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();
-        $commands[] = new Command\Fleet\FleetInitFleetCommand();
+        $commands[] = new Command\Fleet\FleetAddFleetCommand();
         $commands[] = new Command\Fleet\FleetRemoveFleetCommand();
-        $commands[] = new Command\Fleet\FleetListFleets();
-        $commands[] = new Command\Fleet\FleetAddProject();
+        $commands[] = new Command\Fleet\FleetListFleetsCommand();
+        $commands[] = new Command\Fleet\FleetAddProjectCommand();
+        $commands[] = new Command\Fleet\FleetRemoveProjectCommand();
         $commands[] = new Command\Integration\IntegrationAddCommand();
         $commands[] = new Command\Integration\IntegrationDeleteCommand();
         $commands[] = new Command\Integration\IntegrationGetCommand();

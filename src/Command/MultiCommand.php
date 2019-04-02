@@ -21,7 +21,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $this->setName('multi')
             ->setDescription('Execute a command on multiple projects')
             ->addArgument('cmd', InputArgument::REQUIRED, 'The command to execute')
-            ->addOption('fleet', 'f', InputOption::VALUE_OPTIONAL, 'A fleet config file, or the local fleet config if no file is specified. Overrides the --projects (-p) option.', false)
+            ->addOption('fleet', 'f', InputOption::VALUE_OPTIONAL, 'Name of the fleet to use for this command. Overrides the --projects (-p) option.', false)
             ->addOption('projects', 'p', InputOption::VALUE_OPTIONAL, 'A list of project IDs, separated by commas and/or whitespace')
             ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property by which to sort the list of project options', 'title')
@@ -167,38 +167,25 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         return $projects;
     }
 
-    protected function getFleetList($fleet) {
-        $config = $this->getFleetConfig($fleet);
-        if (!$config) {
-            return false;
-        }
-
-        foreach ($config['projects'] as $key => $project) {
-            $projects[] = $project['id'];
-        }
-
-        return $projects;
-    }
-
     /**
-     * Get the specified fleet config.
+     * Get the list of fleet projects.
      *
-     * @param $fleet
-     *   A fleet config file, or TRUE if the local fleet config should be
-     *   loaded.
+     * @param string $fleetName
+     *  Name of the fleet
+     * @return array|bool
+     *  An array of projects or FALSE
      */
-    protected function getFleetConfig($fleet) {
-        if ($fleet && file_exists($fleet)) {
-            $parser = new Parser();
-            $config = $parser->parse($fleet);
+    protected function getFleetList($fleetName) {
 
-            return $config;
+        /* @var $fleetConfig \Platformsh\Cli\Service\Fleets */
+        $fleetConfig = $this->getService('fleets');
+        $fleet = $fleetConfig->getFleetProjects($fleetName);
+
+        if(is_array($fleet) && !empty($fleet)) {
+            return $fleet;
         }
-        else {
-            $local = $this->getService('local.project');
-            $config = $local->getFleetConfig();
-            return $config;
-        }
+
+        return FALSE;
     }
 
     /**
