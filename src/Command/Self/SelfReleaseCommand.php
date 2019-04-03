@@ -28,7 +28,7 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
             ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', $defaultReleaseBranch)
             ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'The last version number')
-            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes')
+            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes, or no change since the last version')
             ->addOption('allow-lower', null, InputOption::VALUE_NONE, 'Allow releasing with a lower version number than the last');
     }
 
@@ -59,11 +59,6 @@ class SelfReleaseCommand extends CommandBase
             $this->stdErr->writeln('Check out master, or use the --release-branch option to override this.');
 
             return 1;
-        }
-
-        $developmentDiffStat = $git->execute(['diff', '--numstat', $releaseBranch . '...development'], CLI_ROOT);
-        if (is_string($developmentDiffStat) && strlen(trim($developmentDiffStat)) && $questionHelper->confirm('Merge changes from development?')) {
-            $git->execute(['merge', 'development'], CLI_ROOT, true);
         }
 
         if (!$input->getOption('no-check-changes')) {
@@ -98,6 +93,12 @@ class SelfReleaseCommand extends CommandBase
             $lastTag = $shell->execute(['git', 'describe', '--tags', '--abbrev=0'], CLI_ROOT, true);
             $lastVersion = ltrim($lastTag, 'v');
             $this->stdErr->writeln('Last version number (from latest Git tag): <info>' . $lastVersion . '</info>');
+        }
+
+        if (!$input->getOption('no-check-changes') && !$this->hasGitDifferences($lastTag)) {
+            $this->stdErr->writeln('There are no changes since the last version.');
+
+            return 1;
         }
 
         $allowLower = (bool) $input->getOption('allow-lower');
@@ -421,6 +422,32 @@ class SelfReleaseCommand extends CommandBase
         $date = $git->execute(['log', '-1', '--format=%aI', 'refs/tags/' . $tagName]);
 
         return is_string($date) ? strtotime(trim($date)) : false;
+    }
+
+    /**
+     * Checks if there are relevant Git differences since the last version.
+     *
+     * @param string      $since
+     *
+     * @return bool
+     */
+    private function hasGitDifferences($since)
+    {
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $stat = $git->execute(['diff', '--numstat', $since . '...HEAD'], CLI_ROOT, true);
+        if (!is_string($stat)) {
+            return false;
+        }
+
+        foreach (explode("\n", trim($stat)) as $line) {
+            // Exclude config.yaml and dist/manifest.json from the check.
+            if (strpos($line, ' config.yaml') === false && strpos($line, ' dist/manifest.json') === false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
