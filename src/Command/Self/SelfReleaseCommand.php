@@ -28,7 +28,7 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
             ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', $defaultReleaseBranch)
             ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'The last version number')
-            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes')
+            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes, or no change since the last version')
             ->addOption('allow-lower', null, InputOption::VALUE_NONE, 'Allow releasing with a lower version number than the last');
     }
 
@@ -56,13 +56,9 @@ class SelfReleaseCommand extends CommandBase
         $releaseBranch = $input->getOption('release-branch');
         if ($git->getCurrentBranch(CLI_ROOT, true) !== $releaseBranch) {
             $this->stdErr->writeln('You must be on the ' . $releaseBranch . ' branch to make a release.');
+            $this->stdErr->writeln('Check out master, or use the --release-branch option to override this.');
 
             return 1;
-        }
-
-        $developmentDiffStat = $git->execute(['diff', '--numstat', $releaseBranch . '...development'], CLI_ROOT);
-        if (is_string($developmentDiffStat) && strlen(trim($developmentDiffStat)) && $questionHelper->confirm('Merge changes from development?')) {
-            $git->execute(['merge', 'development'], CLI_ROOT, true);
         }
 
         if (!$input->getOption('no-check-changes')) {
@@ -71,6 +67,7 @@ class SelfReleaseCommand extends CommandBase
                 foreach (explode("\n", $gitStatus) as $statusLine) {
                     if (strpos($statusLine, ' config.yaml') === false) {
                         $this->stdErr->writeln('There are uncommitted changes in Git. Cannot proceed.');
+                        $this->stdErr->writeln('Use the --no-check-changes option to override this.');
 
                         return 1;
                     }
@@ -98,12 +95,22 @@ class SelfReleaseCommand extends CommandBase
             $this->stdErr->writeln('Last version number (from latest Git tag): <info>' . $lastVersion . '</info>');
         }
 
-        $validateNewVersion = function ($next) use ($lastVersion) {
+        if (!$input->getOption('no-check-changes') && !$this->hasGitDifferences($lastTag)) {
+            $this->stdErr->writeln('There are no changes since the last version.');
+
+            return 1;
+        }
+
+        $allowLower = (bool) $input->getOption('allow-lower');
+        $validateNewVersion = function ($next) use ($lastVersion, $allowLower) {
             if ($next === null) {
                 throw new \InvalidArgumentException('The new version is required.');
             }
-            if (version_compare($next, $lastVersion, '<=')) {
-                throw new \InvalidArgumentException('The new version number must be greater than ' . $lastVersion);
+            if (!$allowLower && version_compare($next, $lastVersion, '<=')) {
+                throw new \InvalidArgumentException(
+                    'The new version number must be greater than ' . $lastVersion
+                    . "\n" . 'Use --allow-lower to skip this check.'
+                );
             }
 
             return $next;
@@ -210,14 +217,6 @@ class SelfReleaseCommand extends CommandBase
                 throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
         }
 
-        // Validate the new version number against the previous version.
-        if (version_compare($newVersion, $lastVersion, '<') && !$input->getOption('allow-lower')) {
-            $this->stdErr->writeln(sprintf('The new version number <error>%s</error> is lower than the last version number <error>%s</error>.', $newVersion, $lastVersion));
-            $this->stdErr->writeln('Use --allow-lower to skip this check.');
-
-            return 1;
-        }
-
         // Confirm the release changelog.
         $changelog = $this->getReleaseChangelog($lastTag);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
@@ -319,9 +318,8 @@ class SelfReleaseCommand extends CommandBase
         $releaseDescription = sprintf('Changes since [%s](%s):', $lastTag, $lastReleasePublicUrl);
         if (!empty($changelog)) {
             $releaseDescription .= "\n\n" . $changelog;
-        } else {
-            $releaseDescription .= "\n\n" . 'https://github.com/' . $repoUrl . '/compare/' . $lastTag . '...' . $tagName;
         }
+        $releaseDescription .= "\n\n" . 'https://github.com/' . $repoUrl . '/compare/' . $lastTag . '...' . $tagName;
         $releaseDescription .= "\n\n" . sprintf('SHA-256 checksum for `%s`:', $pharPublicFilename)
             . "\n" . sprintf('`%s`', hash_file('sha256', $pharFilename));
         $this->stdErr->writeln('');
@@ -424,6 +422,32 @@ class SelfReleaseCommand extends CommandBase
         $date = $git->execute(['log', '-1', '--format=%aI', 'refs/tags/' . $tagName]);
 
         return is_string($date) ? strtotime(trim($date)) : false;
+    }
+
+    /**
+     * Checks if there are relevant Git differences since the last version.
+     *
+     * @param string      $since
+     *
+     * @return bool
+     */
+    private function hasGitDifferences($since)
+    {
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $stat = $git->execute(['diff', '--numstat', $since . '...HEAD'], CLI_ROOT, true);
+        if (!is_string($stat)) {
+            return false;
+        }
+
+        foreach (explode("\n", trim($stat)) as $line) {
+            // Exclude config.yaml and dist/manifest.json from the check.
+            if (strpos($line, ' config.yaml') === false && strpos($line, ' dist/manifest.json') === false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

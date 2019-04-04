@@ -33,7 +33,7 @@ class Application extends ParentApplication
     public function __construct()
     {
         $this->cliConfig = new Config();
-        parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
+        parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->getVersion());
 
         // Use the configured timezone, or fall back to the system timezone.
         date_default_timezone_set(

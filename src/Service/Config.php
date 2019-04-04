@@ -18,6 +18,8 @@ class Config
 
     private $fs;
 
+    private $version;
+
     /**
      * @param array|null  $env
      * @param string|null $defaultsFile
@@ -296,5 +298,27 @@ class Config
         }
 
         return true;
+    }
+
+    /**
+     * Returns this application version.
+     *
+     * @return string
+     */
+    public function getVersion() {
+        if (isset($this->version)) {
+            return $this->version;
+        }
+        $version = $this->get('application.version');
+        if (substr($version, 0, 1) === '@' && substr($version, -1) === '@') {
+            // Silently try getting the version from Git.
+            $tag = (new Shell())->execute(['git', 'describe', '--tags'], CLI_ROOT);
+            if ($tag !== false && substr($tag, 0, 1) === 'v') {
+                $version = trim($tag);
+            }
+        }
+        $this->version = $version;
+
+        return $version;
     }
 }

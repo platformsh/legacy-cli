@@ -106,7 +106,7 @@ class LocalDrushAliasesCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
             $envVarsService = $this->getService('remote_env_vars');
             foreach ($environments as $environment) {
-                if ($environment->deployment_target !== 'enterprise') {
+                if ($environment->deployment_target === 'local') {
                     continue;
                 }
                 foreach ($apps as $app) {
