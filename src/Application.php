@@ -206,6 +206,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Variable\VariableUpdateCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
+        $commands[] = new Command\WinkyCommand();
         $commands[] = new Command\Worker\WorkerListCommand();
 
         return $commands;
