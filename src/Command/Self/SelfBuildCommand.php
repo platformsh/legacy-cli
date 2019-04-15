@@ -89,13 +89,28 @@ class SelfBuildCommand extends CommandBase
         }
 
         if (!$input->getOption('no-composer-rebuild')) {
-            $this->stdErr->writeln('Ensuring correct composer dependencies');
+            $this->stdErr->writeln('Ensuring correct composer dependencies.');
+            $this->stdErr->writeln('If this fails, you may need to run "composer install" manually.');
 
-            // We cannot use --no-dev, as that would exclude the Box tool itself.
+            // Wipe the vendor directory to be extra sure.
+            $shell->execute(['rm', '-rf', 'vendor'], CLI_ROOT, false);
+
+            // We cannot use --no-dev, as that would exclude the
+            // composer-bin-plugin tool.
             $shell->execute([
-                $shell->resolveCommand('composer'),
+                'composer',
                 'install',
                 '--classmap-authoritative',
+                '--no-interaction',
+                '--no-progress',
+            ], CLI_ROOT, true, false);
+
+            // Install composer-bin-plugin dependencies.
+            $shell->execute([
+                'composer',
+                'bin',
+                'all',
+                'install',
                 '--no-interaction',
                 '--no-progress',
             ], CLI_ROOT, true, false);

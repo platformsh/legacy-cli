@@ -490,9 +490,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (!$this->getApplication()->has('local:drush-aliases')) {
             return;
         }
-        // Double-check that the passed project is the current one.
-        $currentProject = $this->getCurrentProject();
-        if (!$currentProject || $currentProject->id != $event->getProject()->id) {
+        // Double-check that the passed project is the current one, and that it
+        // still exists.
+        try {
+            $currentProject = $this->getCurrentProject();
+            if (!$currentProject || $currentProject->id != $event->getProject()->id) {
+                return;
+            }
+        } catch (ProjectNotFoundException $e) {
             return;
         }
         // Ignore the project if it doesn't contain a Drupal application.

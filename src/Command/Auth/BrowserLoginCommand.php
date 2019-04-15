@@ -68,10 +68,18 @@ class BrowserLoginCommand extends CommandBase
                     $account['mail']
                 ));
 
-                // USE THE FORCE
-                $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
+                if ($input->isInteractive()) {
+                    /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                    $questionHelper = $this->getService('question_helper');
+                    if (!$questionHelper->confirm('Log in anyway?', false)) {
+                        return 1;
+                    }
+                } else {
+                    // USE THE FORCE
+                    $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
 
-                return 0;
+                    return 0;
+                }
             } catch (BadResponseException $e) {
                 if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
                     $this->debug('Already logged in, but a test request failed. Continuing with login.');
