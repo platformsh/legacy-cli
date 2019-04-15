@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "14bd460ba358875b77fdea6352289e97",
+    "content-hash": "b2ed739eb872f95822228e12e6e681d9",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -94,7 +94,8 @@
             "type": "library",
             "extra": {
                 "patches_applied": {
-                    "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch"
+                    "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch",
+                    "Support a token save callback": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/c2006642c2cbbf4a5d468f4bda79adb5792b79e0.patch"
                 }
             },
             "autoload": {
@@ -712,16 +713,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.23.2",
+            "version": "v0.23.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "028f723d4581b09c28f2ab5029b51a2e9363bd15"
+                "reference": "64209600a7c59e6abe75d1490789c04992e8d30f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/028f723d4581b09c28f2ab5029b51a2e9363bd15",
-                "reference": "028f723d4581b09c28f2ab5029b51a2e9363bd15",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/64209600a7c59e6abe75d1490789c04992e8d30f",
+                "reference": "64209600a7c59e6abe75d1490789c04992e8d30f",
                 "shasum": ""
             },
             "require": {
@@ -738,7 +739,8 @@
             "extra": {
                 "patches": {
                     "commerceguys/guzzle-oauth2-plugin": {
-                        "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch"
+                        "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch",
+                        "Support a token save callback": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/c2006642c2cbbf4a5d468f4bda79adb5792b79e0.patch"
                     }
                 }
             },
@@ -757,7 +759,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2019-01-16T17:37:27+00:00"
+            "time": "2019-04-15T20:28:10+00:00"
         },
         {
             "name": "platformsh/console-form",
