@@ -74,7 +74,7 @@ class GitDataApi
         $sha = preg_replace('/[\^~].*$/', '', $sha);
 
         // Get the first commit.
-        $commit = $this->doGetCommit($environment, $sha);
+        $commit = $this->getCommitByShaHash($environment, $sha);
         if (!$commit) {
             return false;
         }
@@ -83,7 +83,7 @@ class GitDataApi
         while ($commit !== false && count($parents)) {
             $parent = array_shift($parents);
             if (isset($commit->parents[$parent - 1])) {
-                $commit = $this->doGetCommit($environment, $commit->parents[$parent - 1]);
+                $commit = $this->getCommitByShaHash($environment, $commit->parents[$parent - 1]);
             } else {
                 return false;
             }
@@ -93,14 +93,14 @@ class GitDataApi
     }
 
     /**
-     * Get a commit from the API.
+     * Get a specific commit from the API.
      *
      * @param Environment $environment
      * @param string $sha The "pure" commit SHA hash.
      *
      * @return \Platformsh\Client\Model\Git\Commit|false
      */
-    private function doGetCommit(Environment $environment, $sha)
+    private function getCommitByShaHash(Environment $environment, $sha)
     {
         $cacheKey = $environment->project . ':' . $sha;
         $client = $this->api->getHttpClient();
