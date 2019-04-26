@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5c15a7f67e58e2b0737f93b00554c69f",
+    "content-hash": "ff150a4f33c6f02f96851418ab04c85f",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -95,7 +95,7 @@
             "extra": {
                 "patches_applied": {
                     "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch",
-                    "Support a token save callback": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/c2006642c2cbbf4a5d468f4bda79adb5792b79e0.patch"
+                    "Support a token save callback": "https://github.com/commerceguys/guzzle-oauth2-plugin/compare/master...pjcdawkins:token-save-callback.patch"
                 }
             },
             "autoload": {
@@ -713,16 +713,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.23.6",
+            "version": "v0.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "d9d23c19e084e03ba9424bf0e1d77c84c1fa8843"
+                "reference": "7905b8e84be3994714d765842c99f25397a225c9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/d9d23c19e084e03ba9424bf0e1d77c84c1fa8843",
-                "reference": "d9d23c19e084e03ba9424bf0e1d77c84c1fa8843",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/7905b8e84be3994714d765842c99f25397a225c9",
+                "reference": "7905b8e84be3994714d765842c99f25397a225c9",
                 "shasum": ""
             },
             "require": {
@@ -759,7 +759,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2019-04-18T00:48:10+00:00"
+            "time": "2019-04-26T11:57:59+00:00"
         },
         {
             "name": "platformsh/console-form",

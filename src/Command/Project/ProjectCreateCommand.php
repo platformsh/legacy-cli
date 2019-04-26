@@ -160,19 +160,30 @@ EOF
     /**
      * Return a list of plans.
      *
-     * The default list is in the config `service.available_plans`. This can be
-     * overridden by the user config `experimental.available_plans`.
+     * The default list is in the config `service.available_plans`. This is
+     * replaced at runtime by an API call.
      *
-     * @return string[]
+     * @param bool $runtime
+     *
+     * @return array
      */
-    protected function getAvailablePlans()
+    protected function getAvailablePlans($runtime = false)
     {
-        $config = $this->config();
-        if ($config->has('experimental.available_plans')) {
-            return $config->get('experimental.available_plans');
+        static $plans;
+        if (is_array($plans)) {
+            return $plans;
         }
 
-        return $config->get('service.available_plans');
+        if (!$runtime) {
+            return (array) $this->config()->get('service.available_plans');
+        }
+
+        $plans = [];
+        foreach ($this->api()->getClient()->getPlans() as $plan) {
+            $plans[$plan->name] = sprintf('%s (%s)', $plan->label, $plan->price->__toString());
+        }
+
+        return $plans;
     }
 
     /**
@@ -227,6 +238,9 @@ EOF
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
+            'optionsCallback' => function () {
+                return $this->getAvailablePlans(true);
+            },
             'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
             'allowOther' => true,
           ]),
