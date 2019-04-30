@@ -203,7 +203,7 @@ class GitDataApi
     public function getTree(Environment $environment, $path = '.', $commitSha = null)
     {
         $normalizedSha = $this->normalizeSha($environment, $commitSha);
-        $cacheKey = implode(':', ['tree', $environment->project, $path, $commitSha]);
+        $cacheKey = implode(':', ['tree', $environment->project, $path, $normalizedSha]);
         $data = $this->cache->fetch($cacheKey);
         if (!is_array($data)) {
             if (!$commit = $this->getCommit($environment, $normalizedSha)) {
