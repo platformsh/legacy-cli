@@ -120,6 +120,9 @@ class GitDataApi
             }
             throw $e;
         }
+        if ($commit === false) {
+            return false;
+        }
         $data = $commit->getData();
         // No need to cache API metadata.
         if (isset($data['_links']['self']['meta'])) {
