@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Service;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Commit;
 use Platformsh\Client\Model\Git\Tree;
