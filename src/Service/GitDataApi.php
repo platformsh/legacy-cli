@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Service;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Commit;
 use Platformsh\Client\Model\Git\Tree;
@@ -108,17 +107,9 @@ class GitDataApi
             return new Commit($cached['data'], $cached['uri'], $client, true);
         }
         $baseUrl = Project::getProjectBaseFromUrl($environment->getUri()) . '/git/commits';
-        try {
-            $commit = \Platformsh\Client\Model\Git\Commit::get($sha, $baseUrl, $client);
-        } catch (BadResponseException $e) {
-            // @todo Remove this workaround when the API returns 404 instead of 500 for not found commits
-            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 500) {
-                $content = $e->getResponse()->json();
-                if (isset($content['detail']) && strpos($content['detail'], 'Invalid object name') === 0) {
-                    return false;
-                }
-            }
-            throw $e;
+        $commit = \Platformsh\Client\Model\Git\Commit::get($sha, $baseUrl, $client);
+        if ($commit === false) {
+            return false;
         }
         $data = $commit->getData();
         // No need to cache API metadata.

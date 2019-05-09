@@ -67,21 +67,29 @@ class EnvironmentDrushCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
-        // Get the document root for the application, to find the Drupal root.
         $deployment = $this->api()->getCurrentDeployment($selectedEnvironment);
-        $remoteApp = $deployment->getWebApp($appName);
-        $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();
 
         // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
-        // determine the path to Drupal. Fall back to a combination of the known
-        // document root and the PLATFORM_APP_DIR variable.
-        $envPrefix = (string) $this->config()->get('service.env_prefix');
-        $appRoot = sprintf('${%sAPP_DIR:-/app}', $envPrefix);
-        $drupalRoot = sprintf('${%sDOCUMENT_ROOT:-%s}', $envPrefix, $appRoot . '/' . $relativeDocRoot);
+        // determine the path to Drupal.
+        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
+        $envVarsService = $this->getService('remote_env_vars');
+        $documentRoot = $envVarsService->getEnvVar('DOCUMENT_ROOT', $sshUrl);
+        if ($documentRoot !== '') {
+            $drupalRoot = $documentRoot;
+        } else {
+            // Fall back to a combination of the document root (from the
+            // deployment configuration) and the PLATFORM_APP_DIR variable.
+            $appDir = $envVarsService->getEnvVar('APP_DIR', $sshUrl) ?: '/app';
+
+            $remoteApp = $deployment->getWebApp($appName);
+            $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();
+
+            $drupalRoot = $appDir . '/' . $relativeDocRoot;
+        }
 
         $columns = (new Terminal())->getWidth();
 
-        $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";
+        $sshDrushCommand = "COLUMNS=$columns drush --root=" . OsUtil::escapePosixShellArg($drupalRoot);
         if ($siteUrl = $this->api()->getSiteUrl($selectedEnvironment, $appName, $deployment)) {
             $sshDrushCommand .= " --uri=" . OsUtil::escapePosixShellArg($siteUrl);
         }
