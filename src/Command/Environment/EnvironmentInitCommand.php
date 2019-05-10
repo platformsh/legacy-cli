@@ -6,6 +6,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -20,17 +21,20 @@ class EnvironmentInitCommand extends CommandBase
 
     private $api;
     private $activityService;
+    private $config;
     private $questionHelper;
     private $selector;
 
     public function __construct(
         Api $api,
         ActivityService $activityService,
+        Config $config,
         QuestionHelper $questionHelper,
         Selector $selector
     ) {
         $this->api = $api;
         $this->activityService = $activityService;
+        $this->config = $config;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct();
@@ -41,23 +45,30 @@ class EnvironmentInitCommand extends CommandBase
      */
     protected function configure()
     {
+        $this->setDescription('Initialize an environment from a public Git repository');
         $this->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
-        $this->setHidden(true);
 
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
         $this->activityService->configureInput($definition);
+
+        if ($this->config->get('service.name') === 'Platform.sh') {
+            $this->addExample('Initialize using the Platform.sh Go template', 'https://github.com/platformsh/template-golang');
+        }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
         if ($selection->hasEnvironment()) {
             $environment = $selection->getEnvironment();
         } else {
-            $project = $selection->getProject();
             $environment = $this->api->getEnvironment(
                 $this->api->getDefaultEnvironmentId($this->api->getEnvironments($project)),
                 $project
@@ -89,7 +100,20 @@ class EnvironmentInitCommand extends CommandBase
             return 1;
         }
 
-        $this->api->clearEnvironmentsCache($environment->project);
+        $this->api->clearEnvironmentsCache($project->id);
+
+        // Summarize this action with a message.
+        $message = 'Initializing project ';
+        $message .= $this->api->getProjectLabel($project);
+        if ($environment->id !== 'master') {
+            $message .= ', environment ' . $this->api->getEnvironmentLabel($environment);
+        }
+        if ($input->getOption('profile')) {
+            $message .= ' with profile <info>' . $profile . '</info> (' . $url . ')';
+        } else {
+            $message .= ' with repository <info>' . $url . '</info>.';
+        }
+        $this->stdErr->writeln($message);
 
         $activity = $environment->initialize($profile, $url);
 

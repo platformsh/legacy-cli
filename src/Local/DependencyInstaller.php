@@ -101,24 +101,28 @@ class DependencyInstaller
     }
 
     /**
+     * Finds the right dependency manager for a given stack.
+     *
      * @param string $name
      *
      * @return \Platformsh\Cli\Local\DependencyManager\DependencyManagerInterface
      */
     protected function getManager($name)
     {
+        // Python has 'python', 'python2', and 'python3'.
+        if (strpos('python', $name) === 0) {
+            return new DependencyManager\Pip($this->shell);
+        }
+
         $stacks = [
             'nodejs' => new DependencyManager\Npm($this->shell),
-            'python' => new DependencyManager\Pip($this->shell),
-            'python3' => new DependencyManager\Pip($this->shell),
             'ruby' => new DependencyManager\Bundler($this->shell),
             'php' => new DependencyManager\Composer($this->shell),
         ];
-
-        if (!isset($stacks[$name])) {
-            throw new \InvalidArgumentException(sprintf('Unknown dependencies stack: %s', $name));
+        if (isset($stacks[$name])) {
+            return $stacks[$name];
         }
 
-        return $stacks[$name];
+        throw new \InvalidArgumentException(sprintf('Unknown dependencies stack: %s', $name));
     }
 }

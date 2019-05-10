@@ -133,7 +133,7 @@ class LocalDrushAliasesCommand extends CommandBase
             // each Enterprise environment. This will be cached by the Drush
             // service ($drush), for use while generating aliases.
             foreach ($environments as $environment) {
-                if ($environment->deployment_target !== 'enterprise') {
+                if ($environment->deployment_target === 'local') {
                     continue;
                 }
                 foreach ($apps as $app) {

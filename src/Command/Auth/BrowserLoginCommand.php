@@ -11,6 +11,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Client\Session\SessionInterface;
@@ -24,20 +25,23 @@ class BrowserLoginCommand extends CommandBase
 {
     protected static $defaultName = 'auth:browser-login';
 
-    private $config;
     private $api;
     private $cache;
+    private $config;
+    private $questionHelper;
     private $url;
 
     public function __construct(
-        Config $config,
         Api $api,
         CacheProvider $cache,
+        Config $config,
+        QuestionHelper $questionHelper,
         Url $url
     ) {
-        $this->config = $config;
         $this->api = $api;
         $this->cache = $cache;
+        $this->config = $config;
+        $this->questionHelper = $questionHelper;
         $this->url = $url;
         parent::__construct();
     }
@@ -92,10 +96,16 @@ class BrowserLoginCommand extends CommandBase
                     $account['mail']
                 ));
 
-                // USE THE FORCE
-                $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
+                if ($input->isInteractive()) {
+                    if (!$this->questionHelper->confirm('Log in anyway?', false)) {
+                        return 1;
+                    }
+                } else {
+                    // USE THE FORCE
+                    $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
 
-                return 0;
+                    return 0;
+                }
             } catch (IdentityProviderException $e) {
                 $this->debug('Already logged in, but a test request failed. Continuing with login.');
             }

@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Service;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Commit;
 use Platformsh\Client\Model\Git\Tree;
@@ -74,7 +73,7 @@ class GitDataApi
         $sha = preg_replace('/[\^~].*$/', '', $sha);
 
         // Get the first commit.
-        $commit = $this->doGetCommit($environment, $sha);
+        $commit = $this->getCommitByShaHash($environment, $sha);
         if (!$commit) {
             return false;
         }
@@ -83,7 +82,7 @@ class GitDataApi
         while ($commit !== false && count($parents)) {
             $parent = array_shift($parents);
             if (isset($commit->parents[$parent - 1])) {
-                $commit = $this->doGetCommit($environment, $commit->parents[$parent - 1]);
+                $commit = $this->getCommitByShaHash($environment, $commit->parents[$parent - 1]);
             } else {
                 return false;
             }
@@ -93,14 +92,14 @@ class GitDataApi
     }
 
     /**
-     * Get a commit from the API.
+     * Get a specific commit from the API.
      *
      * @param Environment $environment
      * @param string $sha The "pure" commit SHA hash.
      *
      * @return \Platformsh\Client\Model\Git\Commit|false
      */
-    private function doGetCommit(Environment $environment, $sha)
+    private function getCommitByShaHash(Environment $environment, $sha)
     {
         $cacheKey = $environment->project . ':' . $sha;
         $client = $this->api->getHttpClient();
@@ -108,23 +107,19 @@ class GitDataApi
             return new Commit($cached['data'], $cached['uri'], $client, true);
         }
         $baseUrl = Project::getProjectBaseFromUrl($environment->getUri()) . '/git/commits';
-        try {
-            $commit = Commit::get($sha, $baseUrl, $client);
-        } catch (BadResponseException $e) {
-            // @todo Remove this workaround when the API returns 404 instead of 500 for not found commits
-            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 500) {
-                $content = \GuzzleHttp\json_decode($e->getResponse()->getBody()->__toString());
-                if (isset($content['detail']) && strpos($content['detail'], 'Invalid object name') === 0) {
-                    return false;
-                }
-            }
-            throw $e;
+
+        $commit = Commit::get($sha, $baseUrl, $client);
+        if ($commit === false) {
+            return false;
         }
+
         $data = $commit->getData();
+
         // No need to cache API metadata.
         if (isset($data['_links']['self']['meta'])) {
             unset($data['_links']['self']['meta']);
         }
+
         $this->cache->save($cacheKey, [
             'data' => $data,
             'uri' => $baseUrl,
@@ -203,7 +198,7 @@ class GitDataApi
     public function getTree(Environment $environment, $path = '.', $commitSha = null)
     {
         $normalizedSha = $this->normalizeSha($environment, $commitSha);
-        $cacheKey = implode(':', ['tree', $environment->project, $path, $commitSha]);
+        $cacheKey = implode(':', ['tree', $environment->project, $path, $normalizedSha]);
         $data = $this->cache->fetch($cacheKey);
         if (!is_array($data)) {
             if (!$commit = $this->getCommit($environment, $normalizedSha)) {
