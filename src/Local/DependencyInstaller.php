@@ -108,7 +108,7 @@ class DependencyInstaller
     protected function getManager($name)
     {
         // Python has 'python', 'python2', and 'python3'.
-        if (strpos('python', $name) === 0) {
+        if (strpos($name, 'python') === 0) {
             return new DependencyManager\Pip($this->shell);
         }
 
