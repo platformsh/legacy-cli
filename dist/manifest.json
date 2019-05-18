@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "f4c7595cc5c1ba92deb33118f1e59d1af8f39d04",
-        "sha256": "25eb97de2d06550b5b86b1f0f0d67cb9751fa0e10f12e97f2ed3970595389c60",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.40.15/platform.phar",
-        "version": "3.40.15",
+        "sha1": "39a614305bff7b91516df58c463f2fc9c7936bb7",
+        "sha256": "08af6ff280b6d7a8a1e0397752ca9816a980b07c16f072ddad074c928b04ea66",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.40.16/platform.phar",
+        "version": "3.40.16",
         "php": {
             "min": "5.5.9"
         },
