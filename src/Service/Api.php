@@ -296,7 +296,9 @@ class Api
         // separate cache.
         $projects = $this->getProjects($refresh);
         if (isset($projects[$id])) {
-            return $projects[$id];
+            if ($host === null || stripos(parse_url($projects[$id]->getUri(), PHP_URL_HOST), $host) !== false) {
+                return $projects[$id];
+            }
         }
 
         // Find the project directly.
