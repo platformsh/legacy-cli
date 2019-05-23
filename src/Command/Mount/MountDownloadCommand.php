@@ -27,7 +27,7 @@ class MountDownloadCommand extends MountCommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->addSshDestinationOptions();
     }
 
     /**
@@ -37,17 +37,17 @@ class MountDownloadCommand extends MountCommandBase
     {
         $this->validateInput($input);
 
-        $appName = $this->selectApp($input);
-        $appConfig = $this->getAppConfig($appName, (bool) $input->getOption('refresh'));
+        $sshDestination = $this->selectSshDestination($input);
+        $mounts = $sshDestination->getMounts();
 
-        if (empty($appConfig['mounts'])) {
-            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
+        if (empty($mounts)) {
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $sshDestination->getType(), $sshDestination->getName()));
 
             return 1;
         }
         /** @var \Platformsh\Cli\Service\Mount $mountService */
         $mountService = $this->getService('mount');
-        $mounts = $mountService->normalizeMounts($appConfig['mounts']);
+        $mounts = $mountService->normalizeMounts($mounts);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -55,7 +55,7 @@ class MountDownloadCommand extends MountCommandBase
         $fs = $this->getService('fs');
 
         if ($input->getOption('mount')) {
-            $mountPath = $mountService->validateMountPath($input->getOption('mount'), $mounts);
+            $mountPath = $mountService->matchMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
             $mountPath = $questionHelper->choose(
                 $this->getMountsAsOptions($mounts),
@@ -72,7 +72,7 @@ class MountDownloadCommand extends MountCommandBase
         if ($input->getOption('target')) {
             $target = $input->getOption('target');
         } elseif ($projectRoot = $this->getProjectRoot()) {
-            $sharedMounts = $mountService->getSharedFileMounts($appConfig);
+            $sharedMounts = $mountService->getSharedFileMounts($mounts);
             if (isset($sharedMounts[$mountPath])) {
                 if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
                     $defaultTarget = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
@@ -82,7 +82,7 @@ class MountDownloadCommand extends MountCommandBase
             $applications = LocalApplication::getApplications($projectRoot, $this->config());
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
-                if ($candidateApp->getName() === $appName) {
+                if ($candidateApp->getName() === $sshDestination->getName()) {
                     $appPath = $path;
                     break;
                 }
@@ -128,7 +128,7 @@ class MountDownloadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($appName, $mountPath, $target, false, [
+        $this->runSync($sshDestination->getSshUrl(), $mountPath, $target, false, [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),

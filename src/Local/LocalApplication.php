@@ -170,7 +170,11 @@ class LocalApplication
      */
     public function getSharedFileMounts()
     {
-        return $this->mount->getSharedFileMounts($this->getConfig());
+        $config = $this->getConfig();
+
+        return !empty($config['mounts'])
+            ? $this->mount->getSharedFileMounts($config['mounts'])
+            : [];
     }
 
     /**
