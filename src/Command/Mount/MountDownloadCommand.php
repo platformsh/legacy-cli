@@ -108,7 +108,15 @@ class MountDownloadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->validateDirectory($target, true);
+        if (!file_exists($target)) {
+            // Allow rsync to create the target directory if it doesn't
+            // already exist.
+            if (!$questionHelper->confirm(sprintf('Directory not found: <comment>%s</comment>. Do you want to create it?', $target))) {
+                return 1;
+            }
+        } else {
+            $this->validateDirectory($target, true);
+        }
 
         $confirmText = sprintf(
             "\nDownloading files from the remote mount <comment>%s</comment> to <comment>%s</comment>"
