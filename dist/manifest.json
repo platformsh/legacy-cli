@@ -1,10 +1,10 @@
 [
     {
         "name": "platform.phar",
-        "sha1": "39a614305bff7b91516df58c463f2fc9c7936bb7",
-        "sha256": "08af6ff280b6d7a8a1e0397752ca9816a980b07c16f072ddad074c928b04ea66",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.40.16/platform.phar",
-        "version": "3.40.16",
+        "sha1": "c207bf3dd6f63849b469c6a3ca7ff3163145d32c",
+        "sha256": "c3682d1ce062726f527f8747c05f0c3ed2e3e8cfae118df4bc2b596a744ad267",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.41.0/platform.phar",
+        "version": "3.41.0",
         "php": {
             "min": "5.5.9"
         },
@@ -172,6 +172,11 @@
                 "notes": "New features:\n\n* Support multiple schemas per database relationship:\n  - Add --schema option to `db:dump` and `db:sql` commands.\n  - Include the service name and schema in the `db:dump` default filename.\n  - Present a choice between schemas if no schema is specified.\n  - Make `db:size` schema agnostic but warn about inaccessible schemas.\n\nBug fixes:\n\n* Use a different Drush alias root for site-local versions 8 or 9. Drush 9\n  fails to find a Drupal root via a relative path in some circumstances.\n* Fix behavior of choice questions with no default in non-interactive mode.\n* Fix checkout command when there is only one branch.\n* Fix Drush lock files not being used in local:build command.\n\nOther changes:\n\n* Add some 3-letter command aliases:\n  - activity:list => activities => act\n  - environment:list => environments => env\n  - project:list => projects => pro\n  - variable:list => variables => var",
                 "show from": "3.39.0",
                 "hide from": "3.40.0"
+            },
+            {
+                "notes": "New features:\n\n* Better worker support:\n  - Improve worker selection in the environment:ssh (ssh) command.\n  - Add the --worker option to all mount commands.\n  - Add the --worker option to the environment:logs (log) command.\n  - If --app or --worker is not provided, the above commands will now prompt you\n  to choose between the app(s) or their worker(s).\n* Allow a nonexistent --target directory in the mount:download command (prompt\n  to create it).\n\nBug fixes:\n\n* Add environment commit SHA to the deployment cache key\n  This ensures old deployment information is not used when we know the environment\n  has changed.\n* Ensure migrated projects on a new host do not use cached information from the\n  old host.\n* Installer: the default config file should be .bash_profile on OS X.\n\nOther changes:\n\n* Update autocompletion library (stecman/symfony-console-completion)\n  Highlights:\n  - \"Adds support for quoted and escaped multi-word completions\"\n  - \"Fixes options appearing before the command name (eg. `program -v cmdname`)\n    breaking the detection of the command that should be completed for\"",
+                "show from": "3.40.0",
+                "hide from": "3.41.0"
             }
         ]
     }
