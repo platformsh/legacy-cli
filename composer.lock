@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e8a09855a1029b6ae898d52ac87e71d1",
+    "content-hash": "c9690d2fdb88a309e4219d07b8ae43a9",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -71,57 +71,6 @@
             "time": "2017-03-23T21:52:55+00:00"
         },
         {
-            "name": "commerceguys/guzzle-oauth2-plugin",
-            "version": "v2.1.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/commerceguys/guzzle-oauth2-plugin.git",
-                "reference": "f7ed19171c3c5accfb6f0b3d1209eb5815ef8148"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/commerceguys/guzzle-oauth2-plugin/zipball/f7ed19171c3c5accfb6f0b3d1209eb5815ef8148",
-                "reference": "f7ed19171c3c5accfb6f0b3d1209eb5815ef8148",
-                "shasum": ""
-            },
-            "require": {
-                "firebase/php-jwt": "~2.0",
-                "guzzlehttp/guzzle": "~5.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "~4.5"
-            },
-            "type": "library",
-            "extra": {
-                "patches_applied": {
-                    "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch",
-                    "Support a token save callback": "https://github.com/commerceguys/guzzle-oauth2-plugin/compare/master...pjcdawkins:token-save-callback.patch"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "CommerceGuys\\Guzzle\\Oauth2\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Bojan Zivanovic"
-                },
-                {
-                    "name": "Damien Tournoud"
-                },
-                {
-                    "name": "Patrick Dawkins"
-                }
-            ],
-            "description": "An OAuth2 plugin (subscriber) for Guzzle",
-            "time": "2015-12-12T23:27:25+00:00"
-        },
-        {
             "name": "composer/ca-bundle",
             "version": "1.1.4",
             "source": {
@@ -176,50 +125,6 @@
                 "tls"
             ],
             "time": "2019-01-28T09:30:10+00:00"
-        },
-        {
-            "name": "cweagans/composer-patches",
-            "version": "1.6.6",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/cweagans/composer-patches.git",
-                "reference": "1d89dcc730e7f42426c434b88261fcfb3bce651e"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/cweagans/composer-patches/zipball/1d89dcc730e7f42426c434b88261fcfb3bce651e",
-                "reference": "1d89dcc730e7f42426c434b88261fcfb3bce651e",
-                "shasum": ""
-            },
-            "require": {
-                "composer-plugin-api": "^1.0",
-                "php": ">=5.3.0"
-            },
-            "require-dev": {
-                "composer/composer": "~1.0",
-                "phpunit/phpunit": "~4.6"
-            },
-            "type": "composer-plugin",
-            "extra": {
-                "class": "cweagans\\Composer\\Patches"
-            },
-            "autoload": {
-                "psr-4": {
-                    "cweagans\\Composer\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Cameron Eagans",
-                    "email": "me@cweagans.net"
-                }
-            ],
-            "description": "Provides a way to patch Composer packages.",
-            "time": "2018-10-24T15:51:16+00:00"
         },
         {
             "name": "doctrine/cache",
@@ -712,38 +617,75 @@
             "time": "2019-01-03T20:59:08+00:00"
         },
         {
-            "name": "platformsh/client",
-            "version": "v0.25.0",
+            "name": "pjcdawkins/guzzle-oauth2-plugin",
+            "version": "v2.2.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "adbc34b87a028f6e0f46ddc5cb02bd1db0a1a52f"
+                "url": "https://github.com/pjcdawkins/guzzle-oauth2-plugin.git",
+                "reference": "4bbb1261a18f419f5fe1f15cdf47d384cc94cfe0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/adbc34b87a028f6e0f46ddc5cb02bd1db0a1a52f",
-                "reference": "adbc34b87a028f6e0f46ddc5cb02bd1db0a1a52f",
+                "url": "https://api.github.com/repos/pjcdawkins/guzzle-oauth2-plugin/zipball/4bbb1261a18f419f5fe1f15cdf47d384cc94cfe0",
+                "reference": "4bbb1261a18f419f5fe1f15cdf47d384cc94cfe0",
                 "shasum": ""
             },
             "require": {
-                "cocur/slugify": "^2.0 || ~1.0",
-                "commerceguys/guzzle-oauth2-plugin": "~2.0",
-                "cweagans/composer-patches": "~1.0",
-                "guzzlehttp/cache-subscriber": "~0.1",
-                "guzzlehttp/guzzle": "~5.3"
+                "firebase/php-jwt": "~2.0",
+                "guzzlehttp/guzzle": "~5.0"
             },
             "require-dev": {
                 "phpunit/phpunit": "~4.5"
             },
             "type": "library",
-            "extra": {
-                "patches": {
-                    "commerceguys/guzzle-oauth2-plugin": {
-                        "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch",
-                        "Support a token save callback": "https://github.com/commerceguys/guzzle-oauth2-plugin/compare/master...pjcdawkins:token-save-callback.patch"
-                    }
+            "autoload": {
+                "psr-4": {
+                    "CommerceGuys\\Guzzle\\Oauth2\\": "src"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Bojan Zivanovic"
+                },
+                {
+                    "name": "Damien Tournoud"
+                },
+                {
+                    "name": "Patrick Dawkins"
+                }
+            ],
+            "description": "An OAuth2 plugin (subscriber) for Guzzle (forked from commerceguys/guzzle-oauth2-plugin)",
+            "time": "2019-05-29T20:51:02+00:00"
+        },
+        {
+            "name": "platformsh/client",
+            "version": "v0.25.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/platformsh/platformsh-client-php.git",
+                "reference": "8f4d305d80a6a68d6cc8c0e10cadbb063c30963a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/8f4d305d80a6a68d6cc8c0e10cadbb063c30963a",
+                "reference": "8f4d305d80a6a68d6cc8c0e10cadbb063c30963a",
+                "shasum": ""
+            },
+            "require": {
+                "cocur/slugify": "^2.0 || ~1.0",
+                "guzzlehttp/cache-subscriber": "~0.1",
+                "guzzlehttp/guzzle": "~5.3",
+                "php": ">=5.5.9",
+                "pjcdawkins/guzzle-oauth2-plugin": "^2.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.5"
+            },
+            "type": "library",
             "autoload": {
                 "psr-4": {
                     "Platformsh\\Client\\": "src"
@@ -759,7 +701,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2019-05-23T11:13:39+00:00"
+            "time": "2019-05-29T21:09:28+00:00"
         },
         {
             "name": "platformsh/console-form",
