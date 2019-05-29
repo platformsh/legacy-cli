@@ -3,28 +3,10 @@
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Model\AppConfig;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class MountCommandBase extends CommandBase
 {
-    /**
-     * Get the remote application config.
-     *
-     * @param string $appName
-     * @param bool   $refresh
-     *
-     * @return array
-     */
-    protected function getAppConfig($appName, $refresh = true)
-    {
-        $webApp = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $refresh)
-            ->getWebApp($appName);
-
-        return AppConfig::fromWebApp($webApp)->getNormalized();
-    }
-
     /**
      * Format the mounts as an array of options for a ChoiceQuestion.
      *
@@ -66,19 +48,16 @@ abstract class MountCommandBase extends CommandBase
     /**
      * Push the local contents to the chosen mount.
      *
-     * @param string $appName
+     * @param string $sshUrl
      * @param string $mountPath
      * @param string $localPath
      * @param bool   $up
      * @param array  $options
      */
-    protected function runSync($appName, $mountPath, $localPath, $up, array $options = [])
+    protected function runSync($sshUrl, $mountPath, $localPath, $up, array $options = [])
     {
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
-
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($appName);
 
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
 

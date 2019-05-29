@@ -24,7 +24,7 @@ class MountListCommand extends MountCommandBase
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->addSshDestinationOptions();
     }
 
     /**
@@ -34,16 +34,18 @@ class MountListCommand extends MountCommandBase
     {
         $this->validateInput($input);
 
-        $appConfig = $this->getAppConfig($this->selectApp($input), (bool) $input->getOption('refresh'));
+        $sshDestination = $this->selectSshDestination($input);
+        $mounts = $sshDestination->getMounts();
 
-        if (empty($appConfig['mounts'])) {
-            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
+        if (empty($mounts)) {
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $sshDestination->getType(), $sshDestination->getName()));
 
             return 1;
         }
+
         /** @var \Platformsh\Cli\Service\Mount $mountService */
         $mountService = $this->getService('mount');
-        $mounts = $mountService->normalizeMounts($appConfig['mounts']);
+        $mounts = $mountService->normalizeMounts($mounts);
 
         if ($input->getOption('paths')) {
             $output->writeln(array_keys($mounts));
@@ -61,7 +63,12 @@ class MountListCommand extends MountCommandBase
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $this->stdErr->writeln(sprintf('Mounts in the app <info>%s</info> (environment <info>%s</info>):', $appConfig['name'], $this->getSelectedEnvironment()->id));
+        $this->stdErr->writeln(sprintf(
+            'Mounts in the %s <info>%s</info> (environment <info>%s</info>):',
+            $sshDestination->getType(),
+            $sshDestination->getName(),
+            $this->getSelectedEnvironment()->id
+        ));
         $table->render($rows, $header);
 
         return 0;

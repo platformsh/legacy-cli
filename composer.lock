@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ff150a4f33c6f02f96851418ab04c85f",
+    "content-hash": "e8a09855a1029b6ae898d52ac87e71d1",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -179,16 +179,16 @@
         },
         {
             "name": "cweagans/composer-patches",
-            "version": "1.6.5",
+            "version": "1.6.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cweagans/composer-patches.git",
-                "reference": "2ec4f00ff5fb64de584c8c4aea53bf9053ecb0b3"
+                "reference": "1d89dcc730e7f42426c434b88261fcfb3bce651e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cweagans/composer-patches/zipball/2ec4f00ff5fb64de584c8c4aea53bf9053ecb0b3",
-                "reference": "2ec4f00ff5fb64de584c8c4aea53bf9053ecb0b3",
+                "url": "https://api.github.com/repos/cweagans/composer-patches/zipball/1d89dcc730e7f42426c434b88261fcfb3bce651e",
+                "reference": "1d89dcc730e7f42426c434b88261fcfb3bce651e",
                 "shasum": ""
             },
             "require": {
@@ -219,7 +219,7 @@
                 }
             ],
             "description": "Provides a way to patch Composer packages.",
-            "time": "2018-05-11T18:00:16+00:00"
+            "time": "2018-10-24T15:51:16+00:00"
         },
         {
             "name": "doctrine/cache",
@@ -713,16 +713,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.24.1",
+            "version": "v0.25.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "f17027d031bf8a05dddf6dd133d835e055837f93"
+                "reference": "adbc34b87a028f6e0f46ddc5cb02bd1db0a1a52f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/f17027d031bf8a05dddf6dd133d835e055837f93",
-                "reference": "f17027d031bf8a05dddf6dd133d835e055837f93",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/adbc34b87a028f6e0f46ddc5cb02bd1db0a1a52f",
+                "reference": "adbc34b87a028f6e0f46ddc5cb02bd1db0a1a52f",
                 "shasum": ""
             },
             "require": {
@@ -759,7 +759,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2019-05-12T13:50:12+00:00"
+            "time": "2019-05-23T11:13:39+00:00"
         },
         {
             "name": "platformsh/console-form",
@@ -944,16 +944,16 @@
         },
         {
             "name": "stecman/symfony-console-completion",
-            "version": "0.8.0",
+            "version": "0.10.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stecman/symfony-console-completion.git",
-                "reference": "cd738867503477e91dbe84173dfabd431c883431"
+                "reference": "7bfa9b93e216896419f2f8de659935d7e04fecd8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stecman/symfony-console-completion/zipball/cd738867503477e91dbe84173dfabd431c883431",
-                "reference": "cd738867503477e91dbe84173dfabd431c883431",
+                "url": "https://api.github.com/repos/stecman/symfony-console-completion/zipball/7bfa9b93e216896419f2f8de659935d7e04fecd8",
+                "reference": "7bfa9b93e216896419f2f8de659935d7e04fecd8",
                 "shasum": ""
             },
             "require": {
@@ -966,7 +966,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "0.6.x-dev"
+                    "dev-master": "0.10.x-dev"
                 }
             },
             "autoload": {
@@ -985,7 +985,7 @@
                 }
             ],
             "description": "Automatic BASH completion for Symfony Console Component based applications.",
-            "time": "2018-02-10T04:28:01+00:00"
+            "time": "2019-04-29T03:20:18+00:00"
         },
         {
             "name": "symfony/config",

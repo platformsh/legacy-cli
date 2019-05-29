@@ -11,21 +11,20 @@ class Mount
     /**
      * Get a list of shared file mounts configured for an app.
      *
-     * @param array $appConfig The app configuration.
+     * @param array $mounts An associative array of mounts, taken from the app
+     *                      configuration.
      *
      * @return array
      *   An array of shared file paths, keyed by the mount path. Leading and
      *   trailing slashes are stripped. An empty shared path defaults to
      *   'files'.
      */
-    public function getSharedFileMounts(array $appConfig)
+    public function getSharedFileMounts(array $mounts)
     {
         $sharedFileMounts = [];
-        if (!empty($appConfig['mounts'])) {
-            foreach ($this->normalizeMounts($appConfig['mounts']) as $path => $definition) {
-                if (isset($definition['source_path'])) {
-                    $sharedFileMounts[$path] = $definition['source_path'] ?: 'files';
-                }
+        foreach ($this->normalizeMounts($mounts) as $path => $definition) {
+            if (isset($definition['source_path'])) {
+                $sharedFileMounts[$path] = $definition['source_path'] ?: 'files';
             }
         }
 
@@ -34,6 +33,10 @@ class Mount
 
     /**
      * Normalize a list of mounts.
+     *
+     * This ensures the mount path does not begin or end with a '/', and that
+     * the mount definition is in the newer structured format, with a 'source'
+     * and probably a 'source_path'.
      *
      * @param array $mounts
      *
@@ -50,22 +53,24 @@ class Mount
     }
 
     /**
-     * Validate and normalize a path to a mount.
+     * Checks that a given path matches a mount in the list.
      *
-     * @param string $inputPath
+     * @param string $path
      * @param array  $mounts
      *
+     * @throws \InvalidArgumentException if the path does not match
+     *
      * @return string
-     *   The normalized mount path.
+     *   If the $path matches, the normalized path is returned.
      */
-    public function validateMountPath($inputPath, array $mounts)
+    public function matchMountPath($path, array $mounts)
     {
-        $normalized = $this->normalizeRelativePath($inputPath);
+        $normalized = $this->normalizeRelativePath($path);
         if (isset($mounts[$normalized])) {
             return $normalized;
         }
 
-        throw new \InvalidArgumentException(sprintf('Mount not found: <error>%s</error>', $inputPath));
+        throw new \InvalidArgumentException(sprintf('Mount not found: <error>%s</error>', $path));
     }
 
     /**

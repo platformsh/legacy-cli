@@ -26,7 +26,7 @@ class MountSizeCommand extends MountCommandBase
         Ssh::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->addSshDestinationOptions();
         $appConfigFile = $this->config()->get('service.app_config_file');
         $this->setHelp(<<<EOF
 Use this command to check the disk size and usage for an application's mounts.
@@ -46,21 +46,21 @@ EOF
     {
         $this->validateInput($input);
 
-        $appName = $this->selectApp($input);
+        $sshDestination = $this->selectSshDestination($input);
+        $mounts = $sshDestination->getMounts();
 
-        $appConfig = $this->getAppConfig($appName, $input->getOption('refresh'));
-        if (empty($appConfig['mounts'])) {
-            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
+        if (empty($mounts)) {
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $sshDestination->getType(), $sshDestination->getName()));
 
             return 1;
         }
 
-        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the application <info>%s</info>...', $appName));
+        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the %s <info>%s</info>...', $sshDestination->getType(), $sshDestination->getName()));
 
         // Get a list of the mount paths (and normalize them as relative paths,
         // relative to the application directory).
         $mountPaths = [];
-        foreach (array_keys($appConfig['mounts']) as $mountPath) {
+        foreach (array_keys($mounts) as $mountPath) {
             $mountPaths[] = trim(trim($mountPath), '/');
         }
 
@@ -88,7 +88,7 @@ EOF
         // Connect to the application via SSH and run the commands.
         $sshArgs = [
             'ssh',
-            $this->getSelectedEnvironment()->getSshUrl($appName),
+            $sshDestination->getSshUrl(),
         ];
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
