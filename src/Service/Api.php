@@ -759,13 +759,13 @@ class Api
      */
     public function getCurrentDeployment(Environment $environment, $refresh = false)
     {
-        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id]);
+        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
         $data = $this->cache->fetch($cacheKey);
         if ($data === false || $refresh) {
             $deployment = $environment->getCurrentDeployment();
             $data = $deployment->getData();
             $data['_uri'] = $deployment->getUri();
-            $this->cache->save($cacheKey, $data, $this->config->get('api.environments_ttl'));
+            $this->cache->save($cacheKey, $data);
         } else {
             $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
         }
