@@ -1621,57 +1621,6 @@
             "time": "2019-03-17T12:38:04+00:00"
         },
         {
-            "name": "commerceguys/guzzle-oauth2-plugin",
-            "version": "v2.1.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/commerceguys/guzzle-oauth2-plugin.git",
-                "reference": "f7ed19171c3c5accfb6f0b3d1209eb5815ef8148"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/commerceguys/guzzle-oauth2-plugin/zipball/f7ed19171c3c5accfb6f0b3d1209eb5815ef8148",
-                "reference": "f7ed19171c3c5accfb6f0b3d1209eb5815ef8148",
-                "shasum": ""
-            },
-            "require": {
-                "firebase/php-jwt": "~2.0",
-                "guzzlehttp/guzzle": "~5.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "~4.5"
-            },
-            "type": "library",
-            "extra": {
-                "patches_applied": {
-                    "Make it possible to get the access token without triggering a refresh": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/commit/d2d720015813185d1ad4fa12884cab9bac6a8b25.patch",
-                    "Support a token save callback": "https://github.com/commerceguys/guzzle-oauth2-plugin/compare/master...pjcdawkins:token-save-callback.patch"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "CommerceGuys\\Guzzle\\Oauth2\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Bojan Zivanovic"
-                },
-                {
-                    "name": "Damien Tournoud"
-                },
-                {
-                    "name": "Patrick Dawkins"
-                }
-            ],
-            "description": "An OAuth2 plugin (subscriber) for Guzzle",
-            "time": "2015-12-12T23:27:25+00:00"
-        },
-        {
             "name": "consolidation/annotated-command",
             "version": "2.12.0",
             "source": {
