@@ -25,8 +25,7 @@ class EnvironmentSshCommand extends CommandBase
             ->setDescription('SSH to the current environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addAppOption();
-        $this->addOption('worker', null, InputOption::VALUE_REQUIRED, 'SSH to a worker');
+             ->addSshDestinationOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Read recent messages in the deploy log', "'tail /var/log/deploy.log'");
         $this->addExample('Open a shell over SSH');
@@ -43,22 +42,8 @@ class EnvironmentSshCommand extends CommandBase
             return 0;
         }
 
-        $appName = $this->selectApp($input);
-        $sshUrl = $environment->getSshUrl($appName);
-
-        if ($worker = $input->getOption('worker')) {
-            // Validate the worker.
-            $deployment = $this->api()->getCurrentDeployment($environment);
-            try {
-                $deployment->getWorker($appName . '--' . $worker);
-            } catch (\InvalidArgumentException $e) {
-                $this->stdErr->writeln('Worker not found: <error>' . $worker . '</error>');
-
-                return 1;
-            }
-            list($username, $rest) = explode('@', $sshUrl, 2);
-            $sshUrl = $username . '--' . $worker . '@' . $rest;
-        }
+        $sshDestination = $this->selectSshDestination($input);
+        $sshUrl = $sshDestination->getSshUrl();
 
         if ($input->getOption('pipe')) {
             $output->write($sshUrl);
