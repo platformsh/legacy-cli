@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c9690d2fdb88a309e4219d07b8ae43a9",
+    "content-hash": "f9c16964bacb0c8efa07ccc991a7437d",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -663,20 +663,21 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.25.2",
+            "version": "v0.26.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "8f4d305d80a6a68d6cc8c0e10cadbb063c30963a"
+                "reference": "b6cb469386ab5e986ba729c0355aaa388597364d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/8f4d305d80a6a68d6cc8c0e10cadbb063c30963a",
-                "reference": "8f4d305d80a6a68d6cc8c0e10cadbb063c30963a",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/b6cb469386ab5e986ba729c0355aaa388597364d",
+                "reference": "b6cb469386ab5e986ba729c0355aaa388597364d",
                 "shasum": ""
             },
             "require": {
                 "cocur/slugify": "^2.0 || ~1.0",
+                "ext-json": "*",
                 "guzzlehttp/cache-subscriber": "~0.1",
                 "guzzlehttp/guzzle": "~5.3",
                 "php": ">=5.5.9",
@@ -701,7 +702,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2019-05-29T21:09:28+00:00"
+            "time": "2019-06-04T13:40:55+00:00"
         },
         {
             "name": "platformsh/console-form",
