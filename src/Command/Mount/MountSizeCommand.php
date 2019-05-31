@@ -26,7 +26,7 @@ class MountSizeCommand extends MountCommandBase
         Ssh::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->addSshDestinationOptions();
+        $this->addRemoteContainerOptions();
         $appConfigFile = $this->config()->get('service.app_config_file');
         $this->setHelp(<<<EOF
 Use this command to check the disk size and usage for an application's mounts.
@@ -46,16 +46,16 @@ EOF
     {
         $this->validateInput($input);
 
-        $sshDestination = $this->selectSshDestination($input);
-        $mounts = $sshDestination->getMounts();
+        $container = $this->selectRemoteContainer($input);
+        $mounts = $container->getMounts();
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $sshDestination->getType(), $sshDestination->getName()));
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
 
             return 1;
         }
 
-        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the %s <info>%s</info>...', $sshDestination->getType(), $sshDestination->getName()));
+        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the %s <info>%s</info>...', $container->getType(), $container->getName()));
 
         // Get a list of the mount paths (and normalize them as relative paths,
         // relative to the application directory).
@@ -88,7 +88,7 @@ EOF
         // Connect to the application via SSH and run the commands.
         $sshArgs = [
             'ssh',
-            $sshDestination->getSshUrl(),
+            $container->getSshUrl(),
         ];
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');

@@ -27,7 +27,7 @@ class MountUploadCommand extends MountCommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->addSshDestinationOptions();
+        $this->addRemoteContainerOptions();
     }
 
     /**
@@ -37,11 +37,11 @@ class MountUploadCommand extends MountCommandBase
     {
         $this->validateInput($input);
 
-        $sshDestination = $this->selectSshDestination($input);
-        $mounts = $sshDestination->getMounts();
+        $container = $this->selectRemoteContainer($input);
+        $mounts = $container->getMounts();
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $sshDestination->getType(), $sshDestination->getName()));
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
 
             return 1;
         }
@@ -82,7 +82,7 @@ class MountUploadCommand extends MountCommandBase
             $applications = LocalApplication::getApplications($projectRoot, $this->config());
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
-                if ($candidateApp->getName() === $sshDestination->getName()) {
+                if ($candidateApp->getName() === $container->getName()) {
                     $appPath = $path;
                     break;
                 }
@@ -120,7 +120,7 @@ class MountUploadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($sshDestination->getSshUrl(), $mountPath, $source, true, [
+        $this->runSync($container->getSshUrl(), $mountPath, $source, true, [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),

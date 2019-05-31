@@ -1,12 +1,12 @@
 <?php
 
-namespace Platformsh\Cli\Model\SshDestination;
+namespace Platformsh\Cli\Model\RemoteContainer;
 
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Deployment\Worker as DeployedWorker;
 
-class Worker implements SshDestinationInterface
+class Worker implements RemoteContainerInterface
 {
     private $worker;
     private $environment;
@@ -47,8 +47,15 @@ class Worker implements SshDestinationInterface
     /**
      * {@inheritdoc}
      */
+    public function getConfig() {
+        return new AppConfig($this->worker->getProperties());
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getMounts() {
-        $config = (new AppConfig($this->worker->getProperties()))->getNormalized();
+        $config = $this->getConfig()->getNormalized();
 
         return !empty($config['mounts']) ? $config['mounts'] : [];
     }

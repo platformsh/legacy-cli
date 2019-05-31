@@ -1,12 +1,12 @@
 <?php
 
-namespace Platformsh\Cli\Model\SshDestination;
+namespace Platformsh\Cli\Model\RemoteContainer;
 
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 
-class App implements SshDestinationInterface
+class App implements RemoteContainerInterface
 {
     private $webApp;
     private $environment;
@@ -47,8 +47,15 @@ class App implements SshDestinationInterface
     /**
      * {@inheritdoc}
      */
+    public function getConfig() {
+        return AppConfig::fromWebApp($this->webApp);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getMounts() {
-        $config = AppConfig::fromWebApp($this->webApp)->getNormalized();
+        $config = $this->getConfig()->getNormalized();
 
         return !empty($config['mounts']) ? $config['mounts'] : [];
     }

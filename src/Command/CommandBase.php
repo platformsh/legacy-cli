@@ -7,8 +7,7 @@ use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
-use Platformsh\Cli\Model\SshDestination;
-use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Cli\Model\RemoteContainer;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -811,7 +810,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Add the --app and --worker options.
      */
-    protected function addSshDestinationOptions()
+    protected function addRemoteContainerOptions()
     {
         if (!$this->getDefinition()->hasOption('app')) {
             $this->addAppOption();
@@ -822,17 +821,19 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Find what app or worker the user wants to SSH to.
+     * Find what app or worker container the user wants to select.
      *
-     * Requires the --app and --worker options to be present.
+     * Needs the --app and --worker options, as applicable.
      *
      * @param InputInterface $input
      *   The user input object.
+     * @param bool $includeWorkers
+     *   Whether to include workers in the selection.
      *
-     * @return \Platformsh\Cli\Model\SshDestination\SshDestinationInterface
+     * @return \Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface
      *   An SSH destination.
      */
-    protected function selectSshDestination(InputInterface $input)
+    protected function selectRemoteContainer(InputInterface $input, $includeWorkers = true)
     {
         $environment = $this->getSelectedEnvironment();
         $deployment = $this->api()->getCurrentDeployment($environment, $input->hasOption('refresh') ? $input->getOption('refresh') : null);
@@ -849,7 +850,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Handle the --worker option first, as it's more specific.
         $workerOption = $input->hasOption('worker') ? $input->getOption('worker') : null;
-        if ($workerOption !== null) {
+        if ($includeWorkers && $workerOption !== null) {
             // Check for a conflict with the --app option.
             if ($appOption !== null
                 && strpos($workerOption, '--') !== false
@@ -872,7 +873,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     throw new ConsoleInvalidArgumentException('Worker not found: ' . $workerOption);
                 }
 
-                return new SshDestination\Worker($worker, $environment);
+                return new RemoteContainer\Worker($worker, $environment);
             }
 
             // If we don't have the app name, find all the possible matching
@@ -891,7 +892,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if (count($workerNames) === 1) {
                 $workerName = reset($workerNames);
 
-                return new SshDestination\Worker($deployment->getWorker($workerName), $environment);
+                return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
             }
             if (!$input->isInteractive()) {
                 throw new ConsoleInvalidArgumentException(sprintf(
@@ -907,7 +908,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 'Enter a number to choose a worker:'
             );
 
-            return new SshDestination\Worker($deployment->getWorker($workerName), $environment);
+            return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
         }
 
         // Prompt the user to choose between the app(s) or worker(s) that have
@@ -923,10 +924,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } else {
             $choices = array_combine($appNames, $appNames);
         }
-        foreach ($deployment->workers as $worker) {
-            list($appPart, ) = explode('--', $worker->name, 2);
-            if (in_array($appPart, $appNames, true)) {
-                $choices[$worker->name] = $worker->name;
+        if ($includeWorkers) {
+            foreach ($deployment->workers as $worker) {
+                list($appPart, ) = explode('--', $worker->name, 2);
+                if (in_array($appPart, $appNames, true)) {
+                    $choices[$worker->name] = $worker->name;
+                }
             }
         }
         if (count($choices) === 0) {
@@ -938,28 +941,37 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } elseif ($input->isInteractive()) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            $choice = $questionHelper->choose(
-                $choices,
-                sprintf('Enter a number to choose %s app or %s worker:',
+            if ($includeWorkers) {
+                $text = sprintf('Enter a number to choose %s app or %s worker:',
                     count($appNames) === 1 ? 'the' : 'an',
                     count($choices) === 2 ? 'its' : 'a'
-                ),
+                );
+            } else {
+                $text = sprintf('Enter a number to choose %s app:',
+                    count($appNames) === 1 ? 'the' : 'an'
+                );
+            }
+            $choice = $questionHelper->choose(
+                $choices,
+                $text,
                 $default
             );
         } elseif (count($appNames) === 1) {
             $choice = reset($appNames);
         } else {
             throw new ConsoleInvalidArgumentException(
-                'Specifying the --app or --worker is required in non-interactive mode'
+                $includeWorkers
+                    ? 'Specifying the --app or --worker is required in non-interactive mode'
+                    : 'Specifying the --app is required in non-interactive mode'
             );
         }
 
         // Match the choice to a worker or app destination.
         if (strpos($choice, '--') !== false) {
-            return new SshDestination\Worker($deployment->getWorker($choice), $environment);
+            return new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
         }
 
-        return new SshDestination\App($deployment->getWebApp($choice), $environment);
+        return new RemoteContainer\App($deployment->getWebApp($choice), $environment);
     }
 
     /**
@@ -978,36 +990,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return $appName;
         }
 
-        try {
-            $apps = array_map(function (WebApp $app) {
-                return $app->name;
-            }, $this->api()->getCurrentDeployment($this->getSelectedEnvironment())->webapps);
-            if (!count($apps)) {
-                return null;
-            }
-        } catch (EnvironmentStateException $e) {
-            if (!$e->getEnvironment()->isActive()) {
-                throw new EnvironmentStateException(
-                    sprintf('Could not find applications: the environment "%s" is not currently active.', $e->getEnvironment()->id),
-                    $e->getEnvironment()
-                );
-            }
-            throw $e;
-        }
-
-        $this->debug('Found app(s): ' . implode(',', $apps));
-        if (count($apps) === 1) {
-            $appName = reset($apps);
-        } elseif ($input->isInteractive()) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $choices = array_combine($apps, $apps);
-            $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:');
-        }
-
-        $input->setOption('app', $appName);
-
-        return $appName;
+        return $this->selectRemoteContainer($input, false)->getName();
     }
 
     /**

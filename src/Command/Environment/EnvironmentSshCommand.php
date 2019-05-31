@@ -25,7 +25,7 @@ class EnvironmentSshCommand extends CommandBase
             ->setDescription('SSH to the current environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addSshDestinationOptions();
+             ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Read recent messages in the deploy log', "'tail /var/log/deploy.log'");
         $this->addExample('Open a shell over SSH');
@@ -42,8 +42,8 @@ class EnvironmentSshCommand extends CommandBase
             return 0;
         }
 
-        $sshDestination = $this->selectSshDestination($input);
-        $sshUrl = $sshDestination->getSshUrl();
+        $container = $this->selectRemoteContainer($input);
+        $sshUrl = $container->getSshUrl();
 
         if ($input->getOption('pipe')) {
             $output->write($sshUrl);

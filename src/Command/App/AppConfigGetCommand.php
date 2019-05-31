@@ -32,10 +32,9 @@ class AppConfigGetCommand extends CommandBase
         $this->validateInput($input);
         $this->warnAboutDeprecatedOptions(['identity-file']);
 
-        $appConfig = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'))
-            ->getWebApp($this->selectApp($input))
-            ->getProperties();
+        $appConfig = $this->selectRemoteContainer($input, false)
+            ->getConfig()
+            ->getNormalized();
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
