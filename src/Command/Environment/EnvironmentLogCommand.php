@@ -58,11 +58,11 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"')
             ->addOption('lines', null, InputOption::VALUE_REQUIRED, 'The number of lines to show', 100)
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');
+
         $this->setHiddenAliases(['logs']);
 
         $definition = $this->getDefinition();
-        $this->selector->addEnvironmentOption($definition);
-        $this->selector->addProjectOption($definition);
+        $this->selector->addAllOptions($definition, true);
         $this->ssh->configureInput($definition);
 
         $this->addExample('Display a choice of logs that can be read');
@@ -73,14 +73,12 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
-
         if ($input->getOption('tail') && $this->runningViaMulti) {
             throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
-        $sshUrl = $selection->getEnvironment()
-            ->getSshUrl($selection->getAppName());
+        $container = $this->selector->selectRemoteContainer($input);
+        $sshUrl = $container->getSshUrl();
 
         $logDir = '/var/log';
 

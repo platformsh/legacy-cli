@@ -52,7 +52,8 @@ class MountUploadCommand extends CommandBase
             ->addOption('exclude', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to exclude from the upload (pattern)')
             ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to include in the upload (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        $this->selector->addAllOptions($this->getDefinition());
+
+        $this->selector->addAllOptions($this->getDefinition(), true);
     }
 
     /**
@@ -60,18 +61,15 @@ class MountUploadCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
+        $container = $this->selector->selectRemoteContainer($input);
+        $mounts = $container->getMounts();
 
-        $appName = $selection->getAppName();
-        $appConfig = $this->mountService
-            ->getAppConfig($selection->getEnvironment(), $appName, (bool) $input->getOption('refresh'));
-
-        if (empty($appConfig['mounts'])) {
-            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
+        if (empty($mounts)) {
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
 
             return 1;
         }
-        $mounts = $this->mountService->normalizeMounts($appConfig['mounts']);
+        $mounts = $this->mountService->normalizeMounts($mounts);
 
         if ($input->getOption('mount')) {
             $mountPath = $this->mountService->validateMountPath($input->getOption('mount'), $mounts);
@@ -91,7 +89,7 @@ class MountUploadCommand extends CommandBase
         if ($input->getOption('source')) {
             $source = (string) $input->getOption('source');
         } elseif ($projectRoot = $this->selector->getProjectRoot()) {
-            $sharedMounts = $this->mountService->getSharedFileMounts($appConfig);
+            $sharedMounts = $this->mountService->getSharedFileMounts($mounts);
             if (isset($sharedMounts[$mountPath])) {
                 if (file_exists($projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
                     $defaultSource = $projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
@@ -101,7 +99,7 @@ class MountUploadCommand extends CommandBase
             $applications = LocalApplication::getApplications($projectRoot, $this->config);
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
-                if ($candidateApp->getName() === $appName) {
+                if ($candidateApp->getName() === $container->getName()) {
                     $appPath = $path;
                     break;
                 }
@@ -139,8 +137,7 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        $sshUrl = $selection->getEnvironment()->getSshUrl($appName);
-        $this->mountService->runSync($sshUrl, $mountPath, $source, true, [
+        $this->mountService->runSync($container->getSshUrl(), $mountPath, $source, true, [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),

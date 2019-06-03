@@ -53,7 +53,8 @@ class MountDownloadCommand extends CommandBase
             ->addOption('exclude', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to exclude from the download (pattern)')
             ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to include in the download (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        $this->selector->addAllOptions($this->getDefinition());
+
+        $this->selector->addAllOptions($this->getDefinition(), true);
     }
 
     /**
@@ -61,18 +62,16 @@ class MountDownloadCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
+        $container = $this->selector->selectRemoteContainer($input);
+        $mounts = $container->getMounts();
 
-        $appName = $selection->getAppName();
-        $appConfig = $this->mountService
-            ->getAppConfig($selection->getEnvironment(), $appName, (bool) $input->getOption('refresh'));
-
-        if (empty($appConfig['mounts'])) {
-            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
+        if (empty($mounts)) {
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
 
             return 1;
         }
-        $mounts = $this->mountService->normalizeMounts($appConfig['mounts']);
+
+        $mounts = $this->mountService->normalizeMounts($mounts);
 
         if ($input->getOption('mount')) {
             $mountPath = $this->mountService->validateMountPath($input->getOption('mount'), $mounts);
@@ -92,7 +91,7 @@ class MountDownloadCommand extends CommandBase
         if ($input->getOption('target')) {
             $target = (string) $input->getOption('target');
         } elseif ($projectRoot = $this->selector->getProjectRoot()) {
-            $sharedMounts = $this->mountService->getSharedFileMounts($appConfig);
+            $sharedMounts = $this->mountService->getSharedFileMounts($mounts);
             if (isset($sharedMounts[$mountPath])) {
                 if (file_exists($projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
                     $defaultTarget = $projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
@@ -102,7 +101,7 @@ class MountDownloadCommand extends CommandBase
             $applications = LocalApplication::getApplications($projectRoot, $this->config);
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
-                if ($candidateApp->getName() === $appName) {
+                if ($candidateApp->getName() === $container->getName()) {
                     $appPath = $path;
                     break;
                 }
@@ -128,7 +127,15 @@ class MountDownloadCommand extends CommandBase
             return 1;
         }
 
-        $this->mountService->validateDirectory($target, true);
+        if (!file_exists($target)) {
+            // Allow rsync to create the target directory if it doesn't
+            // already exist.
+            if (!$this->questionHelper->confirm(sprintf('Directory not found: <comment>%s</comment>. Do you want to create it?', $target))) {
+                return 1;
+            }
+        } else {
+            $this->mountService->validateDirectory($target, true);
+        }
 
         $confirmText = sprintf(
             "\nDownloading files from the remote mount <comment>%s</comment> to <comment>%s</comment>"
@@ -140,7 +147,7 @@ class MountDownloadCommand extends CommandBase
             return 1;
         }
 
-        $sshUrl = $selection->getEnvironment()->getSshUrl($appName);
+        $sshUrl = $container->getSshUrl();
         $this->mountService->runSync($sshUrl, $mountPath, $target, false, [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),

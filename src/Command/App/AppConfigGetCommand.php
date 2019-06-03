@@ -43,12 +43,9 @@ class AppConfigGetCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
-
-        $appConfig = $this->api
-            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'))
-            ->getWebApp($selection->getAppName())
-            ->getProperties();
+        $appConfig = $this->selector->selectRemoteContainer($input)
+            ->getConfig()
+            ->getNormalized();
 
         $this->formatter->displayData($output, $appConfig, $input->getOption('property'));
     }

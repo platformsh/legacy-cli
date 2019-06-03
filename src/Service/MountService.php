@@ -137,21 +137,19 @@ class MountService
     /**
      * Get a list of shared file mounts configured for an app.
      *
-     * @param array $appConfig The app configuration.
+     * @param array $mounts The mounts.
      *
      * @return array
      *   An array of shared file paths, keyed by the mount path. Leading and
      *   trailing slashes are stripped. An empty shared path defaults to
      *   'files'.
      */
-    public function getSharedFileMounts(array $appConfig)
+    public function getSharedFileMounts(array $mounts)
     {
         $sharedFileMounts = [];
-        if (!empty($appConfig['mounts'])) {
-            foreach ($this->normalizeMounts($appConfig['mounts']) as $path => $definition) {
-                if (isset($definition['source_path'])) {
-                    $sharedFileMounts[$path] = $definition['source_path'] ?: 'files';
-                }
+        foreach ($this->normalizeMounts($mounts) as $path => $definition) {
+            if (isset($definition['source_path'])) {
+                $sharedFileMounts[$path] = $definition['source_path'] ?: 'files';
             }
         }
 

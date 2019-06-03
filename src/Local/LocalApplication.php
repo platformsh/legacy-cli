@@ -133,6 +133,9 @@ class LocalApplication
     /**
      * Get the application's configuration, parsed from its YAML definition.
      *
+     * @throws \Exception if the configuration file cannot be read
+     * @throws InvalidConfigException if config is invalid
+     *
      * @return array
      */
     public function getConfig()

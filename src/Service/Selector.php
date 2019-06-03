@@ -7,6 +7,7 @@ use Platformsh\Cli\Console\Selection;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Model\RemoteContainer;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
@@ -555,11 +556,167 @@ class Selector
      * Add all selection options (project, environment and app).
      *
      * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
+     * @param bool                                             $includeWorkers
      */
-    public function addAllOptions(InputDefinition $inputDefinition)
+    public function addAllOptions(InputDefinition $inputDefinition, $includeWorkers = false)
     {
         $this->addProjectOption($inputDefinition);
         $this->addEnvironmentOption($inputDefinition);
         $this->addAppOption($inputDefinition);
+        if ($includeWorkers) {
+            $inputDefinition->addOption(new InputOption('worker', null, InputOption::VALUE_REQUIRED, 'A worker name'));
+        }
+    }
+
+    /**
+     * Find what app or worker container the user wants to select.
+     *
+     * Needs the --app and --worker options, as applicable.
+     *
+     * @param InputInterface $input
+     *   The user input object.
+     *
+     * @return \Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface
+     *   An SSH destination.
+     */
+    public function selectRemoteContainer(InputInterface $input)
+    {
+        // @todo getSelection() probably shouldn't be used here
+        $environment = $this->getSelection($input)->getEnvironment();
+        $includeWorkers = $input->hasOption('worker');
+        $deployment = $this->api->getCurrentDeployment($environment, $input->hasOption('refresh') ? $input->getOption('refresh') : null);
+
+        // Validate the --app option, without doing anything with it.
+        $appOption = $input->hasOption('app') ? $input->getOption('app') : null;
+        if ($appOption !== null) {
+            try {
+                $deployment->getWebApp($appOption);
+            } catch (\InvalidArgumentException $e) {
+                throw new InvalidArgumentException('Application not found: ' . $appOption);
+            }
+        }
+
+        // Handle the --worker option first, as it's more specific.
+        $workerOption = $input->hasOption('worker') ? $input->getOption('worker') : null;
+        if ($workerOption !== null) {
+            // Check for a conflict with the --app option.
+            if ($appOption !== null
+                && strpos($workerOption, '--') !== false
+                && stripos($workerOption, $appOption . '--') !== 0) {
+                throw new \InvalidArgumentException(sprintf(
+                    'App name "%s" conflicts with worker name "%s"',
+                    $appOption,
+                    $workerOption
+                ));
+            }
+
+            // If we have the app name, load the worker directly.
+            if (strpos($workerOption, '--') !== false || $appOption !== null) {
+                $qualifiedWorkerName = strpos($workerOption, '--') !== false
+                    ? $workerOption
+                    : $appOption . '--' . $workerOption;
+                try {
+                    $worker = $deployment->getWorker($qualifiedWorkerName);
+                } catch (\InvalidArgumentException $e) {
+                    throw new InvalidArgumentException('Worker not found: ' . $workerOption);
+                }
+
+                return new RemoteContainer\Worker($worker, $environment);
+            }
+
+            // If we don't have the app name, find all the possible matching
+            // workers, and ask the user to choose.
+            $suffix = '--' . $workerOption;
+            $suffixLength = strlen($suffix);
+            $workerNames = [];
+            foreach ($deployment->workers as $worker) {
+                if (substr($worker->name, -$suffixLength) === $suffix) {
+                    $workerNames[] = $worker->name;
+                }
+            }
+            if (count($workerNames) === 0) {
+                throw new InvalidArgumentException('Worker not found: ' . $workerOption);
+            }
+            if (count($workerNames) === 1) {
+                $workerName = reset($workerNames);
+
+                return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+            }
+            if (!$input->isInteractive()) {
+                throw new InvalidArgumentException(sprintf(
+                    'Ambiguous worker name: %s (matches: %s)',
+                    $workerOption,
+                    implode(', ', $workerNames)
+                ));
+            }
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $workerName = $questionHelper->choose(
+                $workerNames,
+                'Enter a number to choose a worker:'
+            );
+
+            return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+        }
+
+        // Prompt the user to choose between the app(s) or worker(s) that have
+        // been found.
+        $default = null;
+        $appNames = $appOption !== null
+            ? [$appOption]
+            : array_map(function (WebApp $app) { return $app->name; }, $deployment->webapps);
+        if (count($appNames) === 1) {
+            $default = reset($appNames);
+            $choices = [];
+            $choices[$default] = $default . ' (default)';
+        } else {
+            $choices = array_combine($appNames, $appNames);
+        }
+        if ($includeWorkers) {
+            foreach ($deployment->workers as $worker) {
+                list($appPart, ) = explode('--', $worker->name, 2);
+                if (in_array($appPart, $appNames, true)) {
+                    $choices[$worker->name] = $worker->name;
+                }
+            }
+        }
+        if (count($choices) === 0) {
+            throw new \RuntimeException('Failed to find apps or workers for environment: ' . $environment->id);
+        }
+        ksort($choices, SORT_NATURAL);
+        if (count($choices) === 1) {
+            $choice = key($choices);
+        } elseif ($input->isInteractive()) {
+            if ($includeWorkers) {
+                $text = sprintf('Enter a number to choose %s app or %s worker:',
+                    count($appNames) === 1 ? 'the' : 'an',
+                    count($choices) === 2 ? 'its' : 'a'
+                );
+            } else {
+                $text = sprintf('Enter a number to choose %s app:',
+                    count($appNames) === 1 ? 'the' : 'an'
+                );
+            }
+            $choice = $this->questionHelper->choose(
+                $choices,
+                $text,
+                $default
+            );
+        } elseif (count($appNames) === 1) {
+            $choice = reset($appNames);
+        } else {
+            throw new InvalidArgumentException(
+                $includeWorkers
+                    ? 'Specifying the --app or --worker is required in non-interactive mode'
+                    : 'Specifying the --app is required in non-interactive mode'
+            );
+        }
+
+        // Match the choice to a worker or app destination.
+        if (strpos($choice, '--') !== false) {
+            return new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
+        }
+
+        return new RemoteContainer\App($deployment->getWebApp($choice), $environment);
     }
 }

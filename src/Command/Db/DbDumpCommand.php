@@ -223,6 +223,9 @@ class DbDumpCommand extends CommandBase
                 foreach ($excludedTables as $table) {
                     $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--exclude-table=' . $table);
                 }
+                if ($output->isVeryVerbose()) {
+                    $dumpCommand .= ' --verbose';
+                }
                 break;
 
             default:
@@ -239,6 +242,9 @@ class DbDumpCommand extends CommandBase
                         . implode(' ', array_map(function ($table) {
                             return OsUtil::escapePosixShellArg($table);
                         }, $includedTables));
+                }
+                if ($output->isVeryVerbose()) {
+                    $dumpCommand .= ' --verbose';
                 }
                 break;
         }

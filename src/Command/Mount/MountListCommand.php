@@ -44,7 +44,8 @@ class MountListCommand extends CommandBase
             ->setDescription('Get a list of mounts')
             ->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        $this->selector->addAllOptions($this->getDefinition());
+
+        $this->selector->addAllOptions($this->getDefinition(), true);
         $this->table->configureInput($this->getDefinition());
     }
 
@@ -55,16 +56,15 @@ class MountListCommand extends CommandBase
     {
         $selection = $this->selector->getSelection($input);
 
-        $appName = $selection->getAppName();
-        $appConfig = $this->mountService
-            ->getAppConfig($selection->getEnvironment(), $appName, (bool) $input->getOption('refresh'));
+        $container = $this->selector->selectRemoteContainer($input);
+        $mounts = $container->getMounts();
 
-        if (empty($appConfig['mounts'])) {
-            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
+        if (empty($mounts)) {
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
 
             return 1;
         }
-        $mounts = $this->mountService->normalizeMounts($appConfig['mounts']);
+        $mounts = $this->mountService->normalizeMounts($mounts);
 
         if ($input->getOption('paths')) {
             $output->writeln(array_keys($mounts));
@@ -82,8 +82,9 @@ class MountListCommand extends CommandBase
         }
 
         $this->stdErr->writeln(sprintf(
-            'Mounts in the app <info>%s</info> (environment <info>%s</info>):',
-            $appConfig['name'],
+            'Mounts in the %s <info>%s</info> (environment <info>%s</info>):',
+            $container->getType(),
+            $container->getName(),
             $selection->getEnvironment()->id
         ));
         $this->table->render($rows, $header);

@@ -350,8 +350,14 @@ EOT
         }
 
         // If none of the files exist (yet), and we are on Bash, and the home
-        // directory is writable, then use ~/.bashrc.
+        // directory is writable, then use ~/.bashrc or ~/.bash_profile on
+        // OS X.
         if (is_writable($homeDir) && $shell === 'bash') {
+            if (OsUtil::isOsX()) {
+                $this->debug('OS X: defaulting to ~/.bash_profile');
+
+                return $homeDir . DIRECTORY_SEPARATOR . '.bash_profile';
+            }
             $this->debug('Defaulting to ~/.bashrc');
 
             return $homeDir . DIRECTORY_SEPARATOR . '.bashrc';
