@@ -104,9 +104,9 @@ class VariableListCommand extends CommandBase
 
             // Handle sensitive variables' value (it isn't exposed in the API).
             if (!$variable->hasProperty('value', false) && $variable->is_sensitive) {
-                $row[] = '<fg=yellow>[Hidden: sensitive value]</>';
+                $row[] = $table->formatIsMachineReadable() ? '' : '<fg=yellow>[Hidden: sensitive value]</>';
             } else {
-                $row[] = wordwrap($variable->value, 40, "\n", true);
+                $row[] = $variable->value;
             }
 
             $rows[] = $row;
