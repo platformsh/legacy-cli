@@ -584,7 +584,7 @@ class Selector
         // @todo getSelection() probably shouldn't be used here
         $environment = $this->getSelection($input)->getEnvironment();
         $includeWorkers = $input->hasOption('worker');
-        $deployment = $this->api->getCurrentDeployment($environment, $input->hasOption('refresh') ? $input->getOption('refresh') : null);
+        $deployment = $this->api->getCurrentDeployment($environment, $input->hasOption('refresh') ? $input->getOption('refresh') : false);
 
         // Validate the --app option, without doing anything with it.
         $appOption = $input->hasOption('app') ? $input->getOption('app') : null;
