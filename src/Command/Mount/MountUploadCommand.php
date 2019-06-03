@@ -61,7 +61,7 @@ class MountUploadCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $container = $this->selector->selectRemoteContainer($input);
+        $container = $this->selector->getSelection($input)->getRemoteContainer();
         $mounts = $container->getMounts();
 
         if (empty($mounts)) {

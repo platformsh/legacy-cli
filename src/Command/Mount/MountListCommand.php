@@ -56,7 +56,7 @@ class MountListCommand extends CommandBase
     {
         $selection = $this->selector->getSelection($input);
 
-        $container = $this->selector->selectRemoteContainer($input);
+        $container = $this->selector->getSelection($input)->getRemoteContainer();
         $mounts = $container->getMounts();
 
         if (empty($mounts)) {

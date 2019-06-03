@@ -43,7 +43,7 @@ class AppConfigGetCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $appConfig = $this->selector->selectRemoteContainer($input)
+        $appConfig = $this->selector->getSelection($input)->getRemoteContainer()
             ->getConfig()
             ->getNormalized();
 

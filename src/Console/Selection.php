@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Console;
 
+use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 
@@ -11,12 +12,14 @@ class Selection
     private $environment;
     private $project;
     private $appName;
+    private $remoteContainer;
 
-    public function __construct(Project $project = null, Environment $environment = null, $appName = null)
+    public function __construct(Project $project = null, Environment $environment = null, $appName = null, RemoteContainerInterface $remoteContainer = null)
     {
         $this->project = $project;
         $this->environment = $environment;
         $this->appName = $appName;
+        $this->remoteContainer = $remoteContainer;
     }
 
     /**
@@ -24,7 +27,7 @@ class Selection
      *
      * @return bool
      */
-    public function hasProject()
+    public function hasProject(): bool
     {
         return !empty($this->project);
     }
@@ -39,7 +42,7 @@ class Selection
      *
      * @return Project
      */
-    public function getProject()
+    public function getProject(): Project
     {
         if (!$this->project) {
             throw new \BadMethodCallException('No project selected');
@@ -53,7 +56,7 @@ class Selection
      *
      * @return bool
      */
-    public function hasEnvironment()
+    public function hasEnvironment(): bool
     {
         return !empty($this->environment);
     }
@@ -80,8 +83,21 @@ class Selection
      *
      * @return string|null
      */
-    public function getAppName()
+    public function getAppName(): ?string
     {
         return $this->appName;
+    }
+
+    /**
+     * Get the remote container selected by the user.
+     *
+     * @return RemoteContainerInterface
+     */
+    public function getRemoteContainer(): RemoteContainerInterface {
+        if (!$this->remoteContainer) {
+            throw new \BadMethodCallException('No container selected');
+        }
+
+        return $this->remoteContainer;
     }
 }

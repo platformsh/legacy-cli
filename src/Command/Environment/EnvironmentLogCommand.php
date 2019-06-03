@@ -77,7 +77,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
-        $container = $this->selector->selectRemoteContainer($input);
+        $container = $this->selector->getSelection($input)->getRemoteContainer();
         $sshUrl = $container->getSshUrl();
 
         $logDir = '/var/log';

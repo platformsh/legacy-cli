@@ -8,7 +8,6 @@ use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Model\RemoteContainer;
-use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -164,12 +163,15 @@ class Selector
                 ), OutputInterface::VERBOSITY_VERBOSE);
             } elseif ($input->getOption('app')) {
                 $appName = $input->getOption('app');
-            } elseif ($environment !== null) {
-                $appName = $this->selectApp($environment, $input);
             }
         }
 
-        return new Selection($project, $environment, $appName);
+        $remoteContainer = null;
+        if ($environment !== null && $input->hasOption('app')) {
+            $remoteContainer = $this->selectRemoteContainer($environment, $input, $appName);
+        }
+
+        return new Selection($project, $environment, $appName, $remoteContainer);
     }
 
 
@@ -300,47 +302,6 @@ class Selector
         }
 
         return null;
-    }
-
-    /**
-     * Find the name of the app the user wants to use for an SSH command.
-     *
-     * @param Environment $environment
-     *   The environment.
-     * @param InputInterface $input
-     *   The user input object.
-     *
-     * @return string|null
-     *   The application name, or null if it could not be found.
-     */
-    private function selectApp(Environment $environment, InputInterface $input)
-    {
-        try {
-            $apps = array_map(function (WebApp $app) {
-                return $app->name;
-            }, $this->api->getCurrentDeployment($environment)->webapps);
-            if (!count($apps)) {
-                return null;
-            }
-        } catch (EnvironmentStateException $e) {
-            if (!$e->getEnvironment()->isActive()) {
-                throw new EnvironmentStateException(
-                    sprintf('Could not find applications: the environment "%s" is not currently active.', $e->getEnvironment()->id),
-                    $e->getEnvironment()
-                );
-            }
-            throw $e;
-        }
-
-        $this->debug('Found app(s): ' . implode(',', $apps));
-        if (count($apps) === 1) {
-            $appName = reset($apps);
-        } elseif ($input->isInteractive()) {
-            $choices = array_combine($apps, $apps);
-            $appName = $this->questionHelper->choose($choices, 'Enter a number to choose an app:');
-        }
-
-        return !empty($appName) ? $appName : null;
     }
 
     /**
@@ -573,26 +534,28 @@ class Selector
      *
      * Needs the --app and --worker options, as applicable.
      *
-     * @param InputInterface $input
+     * @param \Platformsh\Client\Model\Environment $environment
+     * @param InputInterface                       $input
      *   The user input object.
+     * @param string|null                          $appName
      *
      * @return \Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface
      *   An SSH destination.
      */
-    public function selectRemoteContainer(InputInterface $input)
+    private function selectRemoteContainer(Environment $environment, InputInterface $input, ?string $appName)
     {
-        // @todo getSelection() probably shouldn't be used here
-        $environment = $this->getSelection($input)->getEnvironment();
         $includeWorkers = $input->hasOption('worker');
         $deployment = $this->api->getCurrentDeployment($environment, $input->hasOption('refresh') ? $input->getOption('refresh') : false);
 
         // Validate the --app option, without doing anything with it.
-        $appOption = $input->hasOption('app') ? $input->getOption('app') : null;
-        if ($appOption !== null) {
+        if ($appName === null) {
+            $appName = $input->hasOption('app') ? $input->getOption('app') : null;
+        }
+        if ($appName !== null) {
             try {
-                $deployment->getWebApp($appOption);
+                $deployment->getWebApp($appName);
             } catch (\InvalidArgumentException $e) {
-                throw new InvalidArgumentException('Application not found: ' . $appOption);
+                throw new InvalidArgumentException('Application not found: ' . $appName);
             }
         }
 
@@ -600,21 +563,21 @@ class Selector
         $workerOption = $input->hasOption('worker') ? $input->getOption('worker') : null;
         if ($workerOption !== null) {
             // Check for a conflict with the --app option.
-            if ($appOption !== null
+            if ($appName !== null
                 && strpos($workerOption, '--') !== false
-                && stripos($workerOption, $appOption . '--') !== 0) {
+                && stripos($workerOption, $appName . '--') !== 0) {
                 throw new \InvalidArgumentException(sprintf(
                     'App name "%s" conflicts with worker name "%s"',
-                    $appOption,
+                    $appName,
                     $workerOption
                 ));
             }
 
             // If we have the app name, load the worker directly.
-            if (strpos($workerOption, '--') !== false || $appOption !== null) {
+            if (strpos($workerOption, '--') !== false || $appName !== null) {
                 $qualifiedWorkerName = strpos($workerOption, '--') !== false
                     ? $workerOption
-                    : $appOption . '--' . $workerOption;
+                    : $appName . '--' . $workerOption;
                 try {
                     $worker = $deployment->getWorker($qualifiedWorkerName);
                 } catch (\InvalidArgumentException $e) {
@@ -649,9 +612,7 @@ class Selector
                     implode(', ', $workerNames)
                 ));
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $workerName = $questionHelper->choose(
+            $workerName = $this->questionHelper->choose(
                 $workerNames,
                 'Enter a number to choose a worker:'
             );
@@ -662,8 +623,8 @@ class Selector
         // Prompt the user to choose between the app(s) or worker(s) that have
         // been found.
         $default = null;
-        $appNames = $appOption !== null
-            ? [$appOption]
+        $appNames = $appName !== null
+            ? [$appName]
             : array_map(function (WebApp $app) { return $app->name; }, $deployment->webapps);
         if (count($appNames) === 1) {
             $default = reset($appNames);
