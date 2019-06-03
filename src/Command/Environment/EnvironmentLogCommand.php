@@ -95,7 +95,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             if (substr($logType, -4) === '.log') {
                 $logType = substr($logType, 0, strlen($logType) - 4);
             }
-            $logFilename = $logDir . '/' . OsUtil::escapePosixShellArg($logType . '.log');
+            $logFilename = $logDir . '/' . $logType . '.log';
         } elseif (!$input->isInteractive()) {
             $this->stdErr->writeln('No log type specified.');
             return 1;
@@ -123,7 +123,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $logFilename = $this->questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 
-        $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), OsUtil::escapePosixShellArg($logFilename));
+        $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), $logFilename);
         if ($input->getOption('tail')) {
             $command .= ' -f';
         }
