@@ -106,6 +106,19 @@ check(
     false
 );
 
+// Check pcntl and posix - needed for tunnel:open and server:start.
+// Skip the check on Windows, as they are not available there anyway.
+if (DIRECTORY_SEPARATOR !== '\\') {
+    check(
+        'The "pcntl" and "posix" extensions are installed.',
+        'The "pcntl" and "posix" extensions are needed for some commands.',
+        function () {
+            return extension_loaded('pcntl') && extension_loaded('posix');
+        },
+        false
+    );
+}
+
 // Check Suhosin restrictions.
 if (extension_loaded('suhosin')) {
     check(
