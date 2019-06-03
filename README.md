@@ -274,6 +274,10 @@ Other customization is available via environment variables:
 * `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 
+## Migrating
+
+See [MIGRATING.md](MIGRATING.md) for help on migrating between major versions.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute to the CLI.
