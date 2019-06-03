@@ -97,7 +97,7 @@ class SubscriptionInfoCommand extends CommandBase
                 $value = $this->api->getNestedProperty($subscription, $property);
         }
 
-        $output->writeln($this->formatter->format($value, $property));
+        $output->write($this->formatter->format($value, $property));
 
         return 0;
     }

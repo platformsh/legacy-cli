@@ -68,7 +68,9 @@ class PropertyFormatter implements InputConfiguringInterface
                 }
         }
 
-        if (!is_string($value)) {
+        if ($value === null) {
+            $value = '';
+        } elseif (!is_string($value)) {
             $value = rtrim(Yaml::dump($value, 2));
         }
 
@@ -163,7 +165,7 @@ class PropertyFormatter implements InputConfiguringInterface
         if (!is_string($data)) {
             $output->write(Yaml::dump($data, 5, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
         } else {
-            $output->writeln($this->format($data, $key));
+            $output->write($this->format($data, $key));
         }
     }
 }

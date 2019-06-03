@@ -106,7 +106,7 @@ class ProjectInfoCommand extends CommandBase
                 $value = $this->api->getNestedProperty($project, $property);
         }
 
-        $output->writeln($this->formatter->format($value, $property));
+        $output->write($this->formatter->format($value, $property));
 
         return 0;
     }

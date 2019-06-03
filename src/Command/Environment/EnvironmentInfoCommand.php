@@ -96,7 +96,7 @@ class EnvironmentInfoCommand extends CommandBase
                 $value = $this->api->getNestedProperty($environment, $property);
         }
 
-        $output->writeln($this->formatter->format($value, $property));
+        $output->write($this->formatter->format($value, $property));
 
         return 0;
     }
