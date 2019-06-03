@@ -4,6 +4,10 @@ Most users will not be affected by changes in version 4.x of the CLI.
 
 A few may be, particularly those writing or maintaining scripts or snippets.
 
+### PHP version
+
+The minimum PHP version has increased from 5.5.9 to 7.1.0.
+
 ### Property display
 
 There are several commands that display raw properties from the API:
