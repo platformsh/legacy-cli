@@ -27,6 +27,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 {
     use HasExamplesTrait;
 
+    const STABILITY_STABLE = 'STABLE';
+
     /** @var bool */
     private static $checkedUpdates;
 
@@ -43,6 +45,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     protected $envArgName = 'environment';
     protected $hiddenInList = false;
+    protected $stability = self::STABILITY_STABLE;
     protected $local = false;
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
@@ -98,7 +101,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     public function isHidden()
     {
-        return $this->hiddenInList;
+        return $this->hiddenInList || $this->stability !== self::STABILITY_STABLE;
     }
 
     /**
@@ -1471,5 +1474,19 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getDescription() {
+        $description = parent::getDescription();
+
+        if ($this->stability !== self::STABILITY_STABLE) {
+            $prefix = '<fg=white;bg=red>[ ' . strtoupper($this->stability) . ' ]</> ';
+            $description = $prefix . $description;
+        }
+
+        return $description;
     }
 }

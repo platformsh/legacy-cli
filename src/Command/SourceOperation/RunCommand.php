@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RunCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected $stability = 'BETA';
 
     protected function configure()
     {
