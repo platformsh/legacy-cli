@@ -213,6 +213,9 @@ class DbDumpCommand extends CommandBase
                             return OsUtil::escapePosixShellArg($table);
                         }, $includedTables));
                 }
+                if (!empty($service->configuration['properties']['max_allowed_packet'])) {
+                    $dumpCommand .= ' --max_allowed_packet=' . $service->configuration['properties']['max_allowed_packet'] . 'MB';
+                }
                 if ($output->isVeryVerbose()) {
                     $dumpCommand .= ' --verbose';
                 }
