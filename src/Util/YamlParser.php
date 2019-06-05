@@ -40,6 +40,7 @@ class YamlParser
      */
     public function parseContent($content, $filename)
     {
+        $content = $this->cleanUp($content);
         try {
             $parsed = (new Yaml())->parse($content, Yaml::PARSE_CUSTOM_TAGS);
         } catch (ParseException $e) {
@@ -47,6 +48,37 @@ class YamlParser
         }
 
         return $this->processTags($parsed, $filename);
+    }
+
+    /**
+     * Cleans up YAML to conform to the Symfony parser's expectations.
+     *
+     * @param string $content
+     *
+     * @return string
+     */
+    private function cleanUp($content)
+    {
+        // If an entire file or snippet is indented, remove the indent.
+        if (substr(ltrim($content, "\r\n"), 0, 1) === ' ') {
+            $lines = preg_split('/\n|\r|\r\n/', $content);
+            $indents = [];
+            foreach ($lines as $line) {
+                // Ignore blank lines.
+                if (trim($line) === '') {
+                    continue;
+                }
+                $indents[] = strlen($line) - strlen(ltrim($line, ' '));
+            }
+            if (!empty($indents[0]) && $indents[0] === min($indents)) {
+                foreach ($lines as &$line) {
+                    $line = substr($line, $indents[0]);
+                }
+                $content = implode("\n", $lines);
+            }
+        }
+
+        return $content;
     }
 
     /**

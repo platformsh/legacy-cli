@@ -38,4 +38,24 @@ class YamlParserTest extends \PHPUnit_Framework_TestCase
         $this->setExpectedException(InvalidConfigException::class, 'File not found');
         (new YamlParser())->parseContent($content, $file);
     }
+
+    public function testParseIndentedYaml()
+    {
+        $file = 'example.yaml';
+        $content = <<<EOF
+
+  name: example-indented-yaml
+  key: value
+
+  foo:
+    nested: bar
+EOF;
+;
+        $result = (new YamlParser())->parseContent($content, $file);
+        $this->assertEquals([
+            'name' => 'example-indented-yaml',
+            'key' => 'value',
+            'foo' => ['nested' => 'bar'],
+        ], $result);
+    }
 }
