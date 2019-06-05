@@ -306,14 +306,19 @@ class Config
     /**
      * Returns this application version.
      *
+     * @param bool $dynamic
+     *
      * @return string
      */
-    public function getVersion(): string {
+    public function getVersion(bool $dynamic = false): string {
         if (isset($this->version)) {
             return $this->version;
         }
         $version = $this->get('application.version');
         if (substr($version, 0, 1) === '@' && substr($version, -1) === '@') {
+            if (!$dynamic) {
+                return 'UNKNOWN';
+            }
             // Silently try getting the version from Git.
             $tag = (new Shell())->execute(['git', 'describe', '--tags'], CLI_ROOT);
             if ($tag !== false && substr($tag, 0, 1) === 'v') {
