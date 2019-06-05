@@ -173,10 +173,11 @@ class Installer {
                 $allowedSuffixes[] = $suffix;
             }
         }
+        $phpVersion = PHP_VERSION;
         $resolver = new VersionResolver();
-        $versions = $resolver->findInstallableVersions($manifest, PHP_VERSION, $allowedSuffixes);
+        $versions = $resolver->findInstallableVersions($manifest, $phpVersion, $allowedSuffixes);
         if (empty($versions)) {
-            $this->output('  No download was found.', 'error');
+            $this->output('  ' . $resolver->explainNoInstallableVersions($manifest, $phpVersion, $allowedSuffixes), 'error');
             exit(1);
         }
         $latest = $resolver->findLatestVersion($versions);
@@ -390,6 +391,42 @@ class VersionResolver {
         }
 
         return $installable;
+    }
+
+    /**
+     * Explains why no installable versions could be found.
+     *
+     * @param array  $versions
+     * @param string $phpVersion
+     * @param array  $allowedSuffixes
+     *
+     * @return string
+     */
+    public function explainNoInstallableVersions(array $versions, $phpVersion = PHP_VERSION, array $allowedSuffixes = ['stable']) {
+        $reasons = [];
+        foreach ($versions as $version) {
+            $name = 'v' . $version['version'];
+            if (isset($version['php']['min']) && version_compare($version['php']['min'], $phpVersion, '>')) {
+                $reasons[] = sprintf('Version %s requires PHP %s (current PHP version is %s)', $name, $version['php']['min'], $phpVersion);
+                continue;
+            }
+            if ($dashPos = strpos($version['version'], '-')) {
+                $suffix = substr($version['version'], $dashPos + 1);
+                if (!in_array($suffix, $allowedSuffixes)) {
+                    $reasons[] = sprintf('Version %s has the suffix -%s, not allowed', $name, $suffix);
+                    continue;
+                }
+            }
+        }
+
+        $explanation = 'No installable versions were found.';
+        if (count($reasons)) {
+            foreach ($reasons as $reason) {
+                $explanation .= "\n    - $reason";
+            }
+        }
+
+        return $explanation;
     }
 
     /**
