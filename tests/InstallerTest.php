@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Tests;
 
+use Platformsh\Cli\Installer\VersionResolver;
+
 class InstallerTest extends \PHPUnit_Framework_TestCase
 {
 
@@ -11,13 +13,14 @@ class InstallerTest extends \PHPUnit_Framework_TestCase
 
     public function testFindInstallableVersionsChecksForSuffix()
     {
+        $resolver = new VersionResolver();
         $this->assertEquals(
             [
                 ['version' => '1.0.0'],
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
             ],
-            \Platformsh\Cli\Installer\findInstallableVersions([
+            $resolver->findInstallableVersions([
                 ['version' => '1.0.0'],
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
@@ -30,7 +33,7 @@ class InstallerTest extends \PHPUnit_Framework_TestCase
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
             ],
-            \Platformsh\Cli\Installer\findInstallableVersions([
+            $resolver->findInstallableVersions([
                 ['version' => '1.0.0-stable'],
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
@@ -41,7 +44,7 @@ class InstallerTest extends \PHPUnit_Framework_TestCase
 
     public function testFindInstallableVersionsChecksFoMinPhp()
     {
-        $this->assertEmpty(\Platformsh\Cli\Installer\findInstallableVersions([
+        $this->assertEmpty((new VersionResolver())->findInstallableVersions([
             [
                 'version' => '1.0.0',
                 'php' => ['min' => '5.5.9'],
