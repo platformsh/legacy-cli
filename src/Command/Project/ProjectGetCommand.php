@@ -247,38 +247,23 @@ class ProjectGetCommand extends CommandBase
         if ($input->getOption('depth') !== null && !preg_match('/^[0-9]+$/', $input->getOption('depth'))) {
             throw new InvalidArgumentException('The --depth value must be an integer.');
         }
+
+        // Combine the project argument and option.
         if ($input->getOption('project') && $input->getArgument('project')) {
             throw new InvalidArgumentException('You cannot use both the --project option and the <project> argument.');
         }
         if (!$input->getOption('project') && $input->getArgument('project')) {
             $input->setOption('project', $input->getArgument('project'));
         }
-        if (empty($projectId)) {
-            if ($input->isInteractive() && ($projects = $this->api->getProjects(true))) {
-                $projectId = $this->selector->offerProjectChoice($input, $projects, 'Enter a number to choose which project to clone:');
-                $input->setOption('project', $projectId);
-            } else {
-                throw new InvalidArgumentException('No project specified');
-            }
-        }
 
         $selection = $this->selector->getSelection($input);
         $project = $selection->getProject();
-
-        if (!$selection->hasEnvironment()) {
-            $environments = $this->api->getEnvironments($project);
-            $environmentId = isset($environments['master']) ? 'master' : key($environments);
-            if (count($environments) > 1) {
-                $environmentId = $this->questionHelper->askInput('Environment', $environmentId, array_keys($environments));
-            }
-            $selection = new Selection($project, $environments[$environmentId], $selection->getAppName());
-        }
 
         $directory = $input->getArgument('directory');
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            $directory = $this->questionHelper->askInput('Directory', $directory, [$directory, $projectId]);
+            $directory = $this->questionHelper->askInput('Directory', $directory, [$directory, $project->id]);
         }
 
         if ($projectRoot = $this->selector->getProjectRoot()) {

@@ -309,12 +309,11 @@ class Selector
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param Project[]                                       $projects
-     * @param string                                          $text
      *
      * @return string
      *   The chosen project ID.
      */
-    public function offerProjectChoice(InputInterface $input, array $projects, $text = 'Enter a number to choose a project:')
+    private function offerProjectChoice(InputInterface $input, array $projects)
     {
         if (!$input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
@@ -327,7 +326,7 @@ class Selector
         }
         asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
-        $id = $this->questionHelper->choose($projectList, $text, null, false);
+        $id = $this->questionHelper->choose($projectList, 'Enter a number to choose a project:', null, false);
 
         return $id;
     }
