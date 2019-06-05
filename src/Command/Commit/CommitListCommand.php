@@ -91,7 +91,7 @@ class CommitListCommand extends CommandBase
             ));
         }
 
-        $commits = $this->loadCommitList($environment, $startCommit, $input->getOption('limit'));
+        $commits = $this->loadCommitList($environment, $startCommit, (int) $input->getOption('limit'));
 
         $header = ['Date', 'SHA', 'Author', 'Summary'];
         $rows = [];
@@ -121,7 +121,7 @@ class CommitListCommand extends CommandBase
      *
      * @return \Platformsh\Client\Model\Git\Commit[]
      */
-    private function loadCommitList(Environment $environment, Commit $startCommit, $limit = 10)
+    private function loadCommitList(Environment $environment, Commit $startCommit, int $limit = 10): array
     {
         /** @var Commit[] $commits */
         $commits = [$startCommit];
