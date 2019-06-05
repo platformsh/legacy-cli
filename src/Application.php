@@ -86,6 +86,14 @@ class Application extends ParentApplication
     }
 
     /**
+     * Re-compile the container and alias caches.
+     */
+    public function warmCaches(): void {
+        $this->container(true);
+        $this->loadAliasCache(true);
+    }
+
+    /**
      * {@inheritdoc}
      *
      * Prevent commands being enabled, according to config.yaml configuration.
@@ -103,15 +111,17 @@ class Application extends ParentApplication
     /**
      * Returns the Dependency Injection Container for the whole application.
      *
+     * @param bool $recompile
+     *
      * @return ContainerInterface
      */
-    private function container()
+    private function container(bool $recompile = false)
     {
         $cacheFile = __DIR__ . '/../config/cache/container.php';
         $servicesFile = __DIR__ . '/../config/services.yaml';
 
         if (!isset($this->container)) {
-            if (file_exists($cacheFile) && !getenv('PLATFORMSH_CLI_DEBUG')) {
+            if (file_exists($cacheFile) && !getenv('PLATFORMSH_CLI_DEBUG') && !$recompile) {
                 // Load the cached container.
                 /** @noinspection PhpIncludeInspection */
                 require_once $cacheFile;
@@ -143,6 +153,13 @@ class Application extends ParentApplication
         return $this->container;
     }
 
+    /**
+     * Loads a cache of aliases mapped to command names.
+     *
+     * @param bool $rebuild
+     *
+     * @return array
+     */
     private function loadAliasCache(bool $rebuild = false): array {
         if ($rebuild || !isset($this->aliasCache)) {
             $this->aliasCache = [];

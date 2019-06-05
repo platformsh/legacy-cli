@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Application;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
@@ -17,17 +18,20 @@ class SelfBuildCommand extends CommandBase
 {
     protected static $defaultName = 'self:build';
 
+    private $application;
     private $config;
     private $filesystem;
     private $questionHelper;
     private $shell;
 
     public function __construct(
+        Application $application,
         Config $config,
         Filesystem $filesystem,
         QuestionHelper $questionHelper,
         Shell $shell
     ) {
+        $this->application = $application;
         $this->config = $config;
         $this->filesystem = $filesystem;
         $this->questionHelper = $questionHelper;
@@ -130,6 +134,9 @@ class SelfBuildCommand extends CommandBase
                 '--no-progress',
             ], CLI_ROOT, true, false);
         }
+
+        $this->stdErr->writeln('Warming application caches');
+        $this->application->warmCaches();
 
         $boxArgs = [CLI_ROOT . '/vendor/bin/box', 'compile', '--no-interaction'];
         if ($output->isVeryVerbose()) {
