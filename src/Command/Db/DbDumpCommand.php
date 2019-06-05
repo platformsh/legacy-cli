@@ -94,13 +94,13 @@ class DbDumpCommand extends CommandBase
             return 1;
         }
 
+        // Get information about the deployed service associated with the
+        // selected relationship.
+        $deployment = $this->api->getCurrentDeployment($environment);
+        $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
+
         $schema = $input->getOption('schema');
         if (empty($schema)) {
-            // Get information about the deployed service associated with the
-            // selected relationship.
-            $deployment = $this->api->getCurrentDeployment($environment);
-            $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
-
             // Get a list of schemas from the service configuration.
             $schemas = $service && !empty($service->configuration['schemas'])
                 ? $service->configuration['schemas']
@@ -242,6 +242,9 @@ class DbDumpCommand extends CommandBase
                         . implode(' ', array_map(function ($table) {
                             return OsUtil::escapePosixShellArg($table);
                         }, $includedTables));
+                }
+                if (!empty($service->configuration['properties']['max_allowed_packet'])) {
+                    $dumpCommand .= ' --max_allowed_packet=' . $service->configuration['properties']['max_allowed_packet'] . 'MB';
                 }
                 if ($output->isVeryVerbose()) {
                     $dumpCommand .= ' --verbose';
