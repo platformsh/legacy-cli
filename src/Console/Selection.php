@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Console;
 
+use Platformsh\Cli\Model\RemoteContainer\App;
 use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -85,6 +86,10 @@ class Selection
      */
     public function getAppName(): ?string
     {
+        if ($this->appName === null && $this->remoteContainer instanceof App) {
+            $this->appName = $this->remoteContainer->getName();
+        }
+
         return $this->appName;
     }
 
