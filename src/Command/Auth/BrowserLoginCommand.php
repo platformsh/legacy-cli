@@ -106,7 +106,8 @@ class BrowserLoginCommand extends CommandBase
 
                     return 0;
                 }
-            } catch (IdentityProviderException $e) {
+            } /** @noinspection PhpRedundantCatchClauseInspection */
+            catch (IdentityProviderException $e) {
                 $this->debug('Already logged in, but a test request failed. Continuing with login.');
             }
         }
@@ -321,9 +322,8 @@ class BrowserLoginCommand extends CommandBase
      *
      * @return string
      */
-    private function getRandomState()
+    private function getRandomState(): string
     {
-        // This uses paragonie/random_compat as a polyfill for PHP < 7.0.
         return bin2hex(random_bytes(128));
     }
 }
