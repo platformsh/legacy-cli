@@ -1,245 +1,234 @@
-<?php
+<?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
+
 /**
  * @file
  * Platform.sh CLI installer.
+ *
+ * This file's syntax supports PHP 5.5.9 or higher.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://platform.sh/cli/manifest.json');
-define('CLI_CONFIG_DIR', '.platformsh');
-define('CLI_EXECUTABLE', 'platform');
-define('CLI_NAME', 'Platform.sh CLI');
-define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
+namespace Platformsh\Cli\Installer;
 
-// Set up the CLI I/O.
-setUpIo();
+// Check the minimum PHP version for this installer to run.
+if (version_compare(PHP_VERSION, '5.5.9', '<')) {
+    /** @noinspection PhpUnhandledExceptionInspection */
+    throw new \Exception(sprintf('The PHP version is %s, but 5.5.9 or greater is required.', PHP_VERSION));
+}
 
-set_error_handler(
-    function ($code, $message) {
-        if ($code & error_reporting()) {
-            echo PHP_EOL . "Error ($code): $message" . PHP_EOL;
-            exit(1);
+// Skip running the installer if we are including this from the CLI itself.
+// This allows us to run tests on functions defined in this file.
+$isCliInclude = defined('CLI_ROOT') && CLI_ROOT === dirname(__DIR__);
+if (!$isCliInclude) {
+    main();
+}
+
+/**
+ * Run the install itself.
+ */
+function main()
+{
+    define('CLI_UPDATE_MANIFEST_URL', getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://platform.sh/cli/manifest.json');
+    define('CLI_CONFIG_DIR', '.platformsh');
+    define('CLI_EXECUTABLE', 'platform');
+    define('CLI_NAME', 'Platform.sh CLI');
+    define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
+
+    // Set up the CLI I/O.
+    setUpIo();
+
+    set_error_handler(
+        function ($code, $message) {
+            if ($code & error_reporting()) {
+                echo PHP_EOL . "Error ($code): $message" . PHP_EOL;
+                exit(1);
+            }
         }
-    }
-);
+    );
 
-output(CLI_NAME . " installer", 'heading');
+    output(CLI_NAME . " installer", 'heading');
 
-// Run environment checks.
-output(PHP_EOL . "Environment check", 'heading');
+    // Run environment checks.
+    output(PHP_EOL . "Environment check", 'heading');
 
-// Check the PHP version.
-$min_php = '5.5.9';
-check(
-    sprintf('The PHP version is supported: %s.', PHP_VERSION),
-    sprintf('The PHP version is %s, but %s or greater is required.', PHP_VERSION, $min_php),
-    function () use ($min_php) {
-        return version_compare(PHP_VERSION, $min_php, '>=');
-    }
-);
-
-// Check that the JSON extension is installed (needed in this script).
-check(
-    'The "json" PHP extension is installed.',
-    'The "json" PHP extension is required.',
-    function () {
-        return extension_loaded('json');
-    }
-);
-
-// Check that the Phar extension is installed (needed in this script).
-check(
-    'The "phar" PHP extension is installed.',
-    'The "phar" PHP extension is required.',
-    function () {
-        return extension_loaded('phar');
-    }
-);
-
-// Check that Git is installed.
-check(
-    'Git is installed.',
-    'Warning: Git will be needed.',
-    function () {
-        exec('command -v git', $output, $return_var);
-        return $return_var === 0;
-    },
-    false
-);
-
-// Check that the openssl extension exists.
-check(
-    'The "openssl" PHP extension is installed.',
-    'Warning: the "openssl" PHP extension will be needed.',
-    function () {
-        return extension_loaded('openssl');
-    },
-    false
-);
-
-// Check that the curl extension exists.
-check(
-    'The "curl" PHP extension is installed.',
-    'Warning: the "curl" PHP extension will be needed.',
-    function () {
-        return extension_loaded('curl');
-    },
-    false
-);
-
-// Check that the ctype extension exists.
-check(
-    'The "ctype" PHP extension is installed.',
-    'Warning: the "ctype" PHP extension will be needed.',
-    function () {
-        return extension_loaded('ctype');
-    },
-    false
-);
-
-// Check that the mbstring and/or iconv extensions exist.
-check(
-    'The "mbstring" and/or "iconv" PHP extensions are installed.',
-    'Warning: the "mbstring" and/or "iconv" PHP extensions will be needed.',
-    function () {
-        return extension_loaded('mbstring') || extension_loaded('iconv');
-    },
-    false
-);
-
-// Check pcntl and posix - needed for tunnel:open and server:start.
-// Skip the check on Windows, as they are not available there anyway.
-if (DIRECTORY_SEPARATOR !== '\\') {
+    // Check that the JSON extension is installed (needed in this script).
     check(
-        'The "pcntl" and "posix" extensions are installed.',
-        'The "pcntl" and "posix" extensions are needed for some commands.',
+        'The "json" PHP extension is installed.',
+        'The "json" PHP extension is required.',
         function () {
-            return extension_loaded('pcntl') && extension_loaded('posix');
+            return extension_loaded('json');
+        }
+    );
+
+    // Check that the Phar extension is installed (needed in this script).
+    check(
+        'The "phar" PHP extension is installed.',
+        'The "phar" PHP extension is required.',
+        function () {
+            return extension_loaded('phar');
+        }
+    );
+
+    // Check that Git is installed.
+    check(
+        'Git is installed.',
+        'Warning: Git will be needed.',
+        function () {
+            exec('command -v git', $output, $return_var);
+            return $return_var === 0;
         },
         false
     );
-}
 
-// Check Suhosin restrictions.
-if (extension_loaded('suhosin')) {
-    check(
-        'The "phar" stream wrapper is allowed by Suhosin.',
-        'The "phar" stream wrapper is blocked by Suhosin.',
-        function () {
-            $white = ini_get('suhosin.executor.include.whitelist');
-            $black = ini_get('suhosin.executor.include.blacklist');
+    $required_extensions = [
+        'mbstring',
+        'openssl',
+        'pcre',
+    ];
+    foreach ($required_extensions as $extension) {
+        check(
+            'The "' . $extension . '" PHP extension is installed.',
+            'Warning: the "' . $extension . '" PHP extension will be needed.',
+            function () use ($extension) {
+                return extension_loaded($extension);
+            },
+            false
+        );
+    }
 
-            if ((false === stripos($white, 'phar'))
-                || (false !== stripos($black, 'phar'))
-            ) {
-                return false;
+    // Check pcntl and posix - needed for tunnel:open and server:start.
+    // Skip the check on Windows, as they are not available there anyway.
+    if (DIRECTORY_SEPARATOR !== '\\') {
+        check(
+            'The "pcntl" and "posix" extensions are installed.',
+            'The "pcntl" and "posix" extensions are needed for some commands.',
+            function () {
+                return extension_loaded('pcntl') && extension_loaded('posix');
+            },
+            false
+        );
+    }
+
+    // Check Suhosin restrictions.
+    if (extension_loaded('suhosin')) {
+        check(
+            'The "phar" stream wrapper is allowed by Suhosin.',
+            'The "phar" stream wrapper is blocked by Suhosin.',
+            function () {
+                $white = ini_get('suhosin.executor.include.whitelist');
+                $black = ini_get('suhosin.executor.include.blacklist');
+
+                if ((false === stripos($white, 'phar'))
+                    || (false !== stripos($black, 'phar'))
+                ) {
+                    return false;
+                }
+
+                return true;
             }
+        );
+    }
 
-            return true;
+    // Check whether PHP can open files via URLs.
+    check(
+        'The "allow_url_fopen" setting is on.',
+        'The "allow_url_fopen" setting is off; it must be on.',
+        function () {
+            return (true == ini_get('allow_url_fopen'));
         }
     );
-}
 
-// Check whether PHP can open files via URLs.
-check(
-    'The "allow_url_fopen" setting is on.',
-    'The "allow_url_fopen" setting is off; it must be on.',
-    function () {
-        return (true == ini_get('allow_url_fopen'));
+    // Check a troublesome APC setting.
+    check(
+        'The "apc.enable_cli" setting is off.',
+        'Warning: the "apc.enable_cli" is on; this may cause problems with Phar files.',
+        function () {
+            return (false == ini_get('apc.enable_cli'));
+        },
+        false
+    );
+
+    // The necessary checks have passed. Start downloading the right version.
+    output(PHP_EOL . 'Download', 'heading');
+
+    output('  Finding the latest version...');
+    $manifest = file_get_contents(CLI_UPDATE_MANIFEST_URL);
+    if ($manifest === false) {
+        output('  Failed to download manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
+        exit(1);
     }
-);
 
-// Check a troublesome APC setting.
-check(
-    'The "apc.enable_cli" setting is off.',
-    'Warning: the "apc.enable_cli" is on; this may cause problems with Phar files.',
-    function () {
-        return (false == ini_get('apc.enable_cli'));
-    },
-    false
-);
+    $manifest = json_decode($manifest, true);
+    if ($manifest === null) {
+        output('  Failed to decode manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
+        exit(1);
+    }
 
-// The necessary checks have passed. Start downloading the right version.
-output(PHP_EOL . 'Download', 'heading');
-
-output('  Finding the latest version...');
-$manifest = file_get_contents(CLI_UPDATE_MANIFEST_URL);
-if ($manifest === false) {
-    output('  Failed to download manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
-    exit(1);
-}
-
-$manifest = json_decode($manifest);
-if ($manifest === null) {
-    output('  Failed to decode manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
-    exit(1);
-}
-
-// Find the item with the greatest version number in the manifest.
-/** @var stdClass|null $latest */
-$latest = null;
-foreach ($manifest as $item) {
-    if (empty($latest) || version_compare($item->version, $latest->version, '>')) {
-        if (!strpos($item->version, '-') || strpos($item->version, '-stable')) {
-            $latest = $item;
+    global $argv;
+    $allowedSuffixes = ['stable'];
+    foreach (['beta', 'alpha', 'dev'] as $suffix) {
+        if (in_array('--' . $suffix, $argv, true)) {
+            $allowedSuffixes[] = $suffix;
         }
     }
-}
-if (empty($latest)) {
-    output('  No download was found.', 'error');
-    exit(1);
-}
-
-output("  Downloading version {$latest->version}...");
-if (!file_put_contents(CLI_PHAR, file_get_contents($latest->url))) {
-    output('  The download failed.', 'error');
-}
-
-$pharPath = realpath(CLI_PHAR) ?: CLI_PHAR;
-
-output('  Checking file integrity...');
-if ($latest->sha256 !== hash_file('sha256', $pharPath)) {
-    unlink(CLI_PHAR);
-    output('  The download was corrupted.', 'error');
-    exit(1);
-}
-
-output('  Checking that the file is a valid Phar (PHP Archive)...');
-
-try {
-    new Phar($pharPath);
-} catch (Exception $e) {
-    output('  The file is not a valid Phar archive.', 'error');
-
-    throw $e;
-}
-
-output(PHP_EOL . 'Install', 'heading');
-
-output('  Making the Phar executable...');
-if (!chmod($pharPath, 0755)) {
-    output('  Failed to make the Phar executable: ' . $pharPath, 'warning');
-}
-
-if ($homeDir = getHomeDirectory()) {
-    output('  Moving the Phar to your home directory...');
-    $binDir = $homeDir . '/' . CLI_CONFIG_DIR . '/bin';
-    if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
-        output('  Failed to create directory: ' . $binDir, 'error');
-    } elseif (!rename($pharPath, $binDir . '/' . CLI_EXECUTABLE)) {
-        output('  Failed to move the Phar to: ' . $binDir . '/' . CLI_EXECUTABLE, 'error');
-    } else {
-        $pharPath = $binDir . '/' . CLI_EXECUTABLE;
-        output('  Successfully moved the Phar to: ' . $pharPath);
+    $versions = findInstallableVersions($manifest, PHP_VERSION, $allowedSuffixes);
+    if (empty($versions)) {
+        output('  No download was found.', 'error');
+        exit(1);
     }
+    $latest = findLatestVersion($versions);
+
+    output("  Downloading version {$latest['version']}...");
+    if (!file_put_contents(CLI_PHAR, file_get_contents($latest['url']))) {
+        output('  The download failed.', 'error');
+    }
+
+    $pharPath = realpath(CLI_PHAR) ?: CLI_PHAR;
+
+    output('  Checking file integrity...');
+    if ($latest['sha256'] !== hash_file('sha256', $pharPath)) {
+        unlink(CLI_PHAR);
+        output('  The download was corrupted.', 'error');
+        exit(1);
+    }
+
+    output('  Checking that the file is a valid Phar (PHP Archive)...');
+
+    try {
+        new \Phar($pharPath);
+    } catch (\Exception $e) {
+        output('  The file is not a valid Phar archive.', 'error');
+        output('  '. $e->getMessage(), 'error');
+        exit(1);
+    }
+
+    output(PHP_EOL . 'Install', 'heading');
+
+    output('  Making the Phar executable...');
+    if (!chmod($pharPath, 0755)) {
+        output('  Failed to make the Phar executable: ' . $pharPath, 'warning');
+    }
+
+    if ($homeDir = getHomeDirectory()) {
+        output('  Moving the Phar to your home directory...');
+        $binDir = $homeDir . '/' . CLI_CONFIG_DIR . '/bin';
+        if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
+            output('  Failed to create directory: ' . $binDir, 'error');
+        } elseif (!rename($pharPath, $binDir . '/' . CLI_EXECUTABLE)) {
+            output('  Failed to move the Phar to: ' . $binDir . '/' . CLI_EXECUTABLE, 'error');
+        } else {
+            $pharPath = $binDir . '/' . CLI_EXECUTABLE;
+            output('  Successfully moved the Phar to: ' . $pharPath);
+        }
+    }
+
+    output(PHP_EOL . '  Running self:install command...' . PHP_EOL);
+    putenv('CLICOLOR_FORCE=' . (is_ansi() ? '1' : '0'));
+    $commandline = 'php ' . $pharPath . ' self:install --yes';
+    $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
+    $result = proc_close($process);
+
+    exit($result);
 }
-
-output(PHP_EOL . '  Running self:install command...' . PHP_EOL);
-putenv('CLICOLOR_FORCE=' . (is_ansi() ? '1' : '0'));
-$commandline = 'php ' . $pharPath . ' self:install --yes';
-$process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
-$result = proc_close($process);
-
-exit($result);
 
 /**
  * Checks a condition, outputs a message, and exits if failed.
@@ -315,6 +304,7 @@ function is_ansi()
 
     // On Windows, default to no ANSI, except in ANSICON and ConEmu.
     // Everywhere else, default to ANSI if stdout is a terminal.
+    /** @noinspection PhpComposerExtensionStubsInspection */
     return (DIRECTORY_SEPARATOR == '\\')
         ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
         : (function_exists('posix_isatty') && posix_isatty(1));
@@ -331,7 +321,7 @@ function is_ansi()
 function setUpIo()
 {
     if (PHP_SAPI !== 'cli') {
-        throw new RuntimeException('This can only be run via command-line PHP.');
+        throw new \RuntimeException('This can only be run via command-line PHP.');
     }
     if (!defined('STDIN')) {
         define('STDIN', fopen('php://stdin',  'r'));
@@ -361,4 +351,55 @@ function getHomeDirectory()
     }
 
     return false;
+}
+
+/**
+ * Finds the latest installable version in the manifest.
+ *
+ * @param array  $versions
+ * @param string $phpVersion
+ * @param array  $allowedSuffixes
+ *
+ * @return array
+ *   A list of versions, filtered by those that are installable.
+ */
+function findInstallableVersions(array $versions, $phpVersion = PHP_VERSION, array $allowedSuffixes = ['stable'])
+{
+    $installable = [];
+    foreach ($versions as $version) {
+        if (isset($version['php']['min']) && version_compare($version['php']['min'], $phpVersion, '>')) {
+            continue;
+        }
+        if ($dashPos = strpos($version['version'], '-')) {
+            $suffix = substr($version['version'], $dashPos + 1);
+            if (!in_array($suffix, $allowedSuffixes)) {
+                continue;
+            }
+        }
+        $installable[] = $version;
+    }
+
+    return $installable;
+}
+
+/**
+ * Finds the latest version in a list of versions.
+ *
+ * @param array $versions
+ *
+ * @return array
+ */
+function findLatestVersion(array $versions)
+{
+    $latest = [];
+    foreach ($versions as $version) {
+        if (empty($latest) || version_compare($version['version'], $latest['version'], '>')) {
+            $latest = $version;
+        }
+    }
+    if (empty($latest)) {
+        throw new \RuntimeException('Failed to find latest version in list');
+    }
+
+    return $latest;
 }
