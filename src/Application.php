@@ -40,6 +40,9 @@ class Application extends ParentApplication
     /** @var \Symfony\Component\DependencyInjection\Container */
     private $container;
 
+    /** @var array|null */
+    private $aliasCache;
+
     /**
      * {@inheritdoc}
      */
@@ -138,6 +141,28 @@ class Application extends ParentApplication
         }
 
         return $this->container;
+    }
+
+    private function loadAliasCache(bool $rebuild = false): array {
+        if ($rebuild || !isset($this->aliasCache)) {
+            $this->aliasCache = [];
+            $cacheFile = __DIR__ . '/../config/cache/aliases.json';
+            if ($rebuild || !file_exists($cacheFile)) {
+                /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
+                $loader = $this->container()->get('console.command_loader');
+                foreach ($loader->getNames() as $commandName) {
+                    $command = $loader->get($commandName);
+                    foreach ($command->getAliases() as $alias) {
+                        $this->aliasCache[$alias] = $command->getName();
+                    }
+                }
+                file_put_contents($cacheFile, json_encode($this->aliasCache));
+            } elseif (file_exists($cacheFile)) {
+                $this->aliasCache = (array) json_decode(file_get_contents($cacheFile), true);
+            }
+        }
+
+        return $this->aliasCache;
     }
 
     /**
@@ -336,8 +361,14 @@ class Application extends ParentApplication
         try {
             return parent::find($name);
         } catch (CommandNotFoundException $e) {
-            // If a command is not found, load all commands so that aliases can
-            // be checked.
+            // Try the lazy-loading again, but based on cached aliases.
+            $aliasCache = $this->loadAliasCache();
+            if (isset($aliasCache[$name]) && $aliasCache[$name] !== $name){
+                return parent::find($aliasCache[$name]);
+            }
+
+            // If a command is not found, fully load all commands so that short
+            // command names and aliases can be checked.
             /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
             $loader = $this->container()->get('console.command_loader');
             foreach ($loader->getNames() as $commandName) {
