@@ -33,7 +33,7 @@ class SelfUpdateCommand extends CommandBase
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
             ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version')
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'A timeout for the version check', 30);
-        $this->setHiddenAliases(['update']);
+        $this->setHiddenAliases(['up', 'update']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -173,7 +173,7 @@ class Application extends ParentApplication
                         $this->aliasCache[$alias] = $command->getName();
                     }
                 }
-                file_put_contents($cacheFile, json_encode($this->aliasCache));
+                file_put_contents($cacheFile, json_encode($this->aliasCache, JSON_PRETTY_PRINT));
             } elseif (file_exists($cacheFile)) {
                 $this->aliasCache = (array) json_decode(file_get_contents($cacheFile), true);
             }
