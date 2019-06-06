@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.0.1-dev",
-        "sha1": "6efa7d6e7002adcd32fbc25b0b29f1fe64f76ef4",
-        "sha256": "e4c6edfe32881dfec3491f308ad55661fb82fce9f615275f11e6f6063701f0e2",
+        "version": "4.1.0-dev",
+        "sha1": "253f333c0c65d015cec283e2ef033c1d19251535",
+        "sha256": "80d0a832652d8713e2d94bd5aa0a7ae41428fd69a2905b786c1c3f78d95e7d54",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v4.0.1-dev/platform.phar",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v4.1.0-dev/platform.phar",
         "php": {
             "min": "7.1.14"
         },
@@ -17,6 +17,11 @@
                 "notes": "* Versioning/release improvements\n* Fix commit:list command name\n* The vendor-bin files should be included\n* Fix environment:list command formatter injection",
                 "show from": "4.0.0-dev",
                 "hide from": "4.0.0-dev-4-g8873f091"
+            },
+            {
+                "notes": "* Implement an alias cache (performance improvement)\n* Do not load version dynamically for every instance (performance bugfix)\n* Fix undefined var in variable:list command\n* Fix type error in commit:list command",
+                "show from": "4.0.1-dev",
+                "hide from": "4.1.0-dev"
             }
         ]
     },
