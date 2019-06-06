@@ -82,7 +82,7 @@ class Application extends ParentApplication
      * {@inheritDoc}
      */
     public function getVersion(): string {
-        return $this->config->getVersion(true);
+        return $this->config->getVersion();
     }
 
     /**
