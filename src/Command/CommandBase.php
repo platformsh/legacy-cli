@@ -8,6 +8,7 @@ use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\RemoteContainer;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -836,7 +837,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function selectRemoteContainer(InputInterface $input, $includeWorkers = true)
     {
         $environment = $this->getSelectedEnvironment();
-        $deployment = $this->api()->getCurrentDeployment($environment, $input->hasOption('refresh') ? $input->getOption('refresh') : null);
+        try {
+            $deployment = $this->api()->getCurrentDeployment(
+                $environment,
+                $input->hasOption('refresh') && $input->getOption('refresh')
+            );
+        } catch (EnvironmentStateException $e) {
+            if ($environment->isActive() && $e->getMessage() === 'Current deployment not found') {
+                return new RemoteContainer\LegacyEnv($environment);
+            }
+            throw $e;
+        }
 
         // Validate the --app option, without doing anything with it.
         $appOption = $input->hasOption('app') ? $input->getOption('app') : null;
