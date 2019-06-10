@@ -381,7 +381,7 @@ class Application extends ParentApplication
             // Try the lazy-loading again, but based on cached aliases.
             $aliasCache = $this->loadAliasCache();
             if (isset($aliasCache[$name]) && $aliasCache[$name] !== $name){
-                return parent::find($aliasCache[$name]);
+                return $this->get($aliasCache[$name]);
             }
 
             // If a command is not found, fully load all commands so that short
