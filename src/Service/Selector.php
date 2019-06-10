@@ -8,6 +8,7 @@ use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Model\RemoteContainer;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -539,12 +540,24 @@ class Selector
      * @param string|null                          $appName
      *
      * @return \Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface
-     *   An SSH destination.
+     *   A class representing a container that allows SSH access.
      */
     private function selectRemoteContainer(Environment $environment, InputInterface $input, ?string $appName)
     {
         $includeWorkers = $input->hasOption('worker');
-        $deployment = $this->api->getCurrentDeployment($environment, $input->hasOption('refresh') ? $input->getOption('refresh') : false);
+        try {
+            $deployment = $this->api->getCurrentDeployment(
+                $environment,
+                $input->hasOption('refresh') && $input->getOption('refresh')
+            );
+        } catch (EnvironmentStateException $e) {
+            if ($environment->isActive() && $e->getMessage() === 'Current deployment not found') {
+                $appName = $input->hasOption('app') ? $input->getOption('app') : '';
+
+                return new RemoteContainer\BrokenEnv($environment, $appName);
+            }
+            throw $e;
+        }
 
         // Validate the --app option, without doing anything with it.
         if ($appName === null) {

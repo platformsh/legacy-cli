@@ -10,18 +10,8 @@
         },
         "updating": [
             {
-                "notes": "* Use Symfony 4; require at least PHP 7.1.14. As this is a breaking change,\n  this increases the CLI major version from 3.x to 4.x.\n* Integrate platformsh/oauth2 library and platformsh/client version 2.x.\n* Cache the DI container.\n* Use service autowiring. This allows new services or commands to be created\n  without extra service configuration (beyond their constructor arguments).\n* Configure command lazy-loading (improves offline performance by around 20%).\n* Lots of other refactoring, including adding static/strict types.\n* Remove deprecated command options.",
+                "notes": "* Use Symfony 4; require at least PHP 7.1.14. As this is a breaking change,\n  this increases the CLI major version from 3.x to 4.x.\n* Integrate platformsh/oauth2 library and platformsh/client version 2.x.\n* Cache the DI container.\n* Use service autowiring. This allows new services or commands to be created\n  without extra service configuration (beyond their constructor arguments).\n* Configure command lazy-loading. If using the full command name or alias, this\n  saves around 50ms. Using an abbreviation or shortcut bypasses the performance\n  benefit as it requires all command classes to be instantiated.\n* Lots of other refactoring, including adding static/strict types.\n* Remove deprecated command options.",
                 "hide from": "4.0.0-dev"
-            },
-            {
-                "notes": "* Versioning/release improvements\n* Fix commit:list command name\n* The vendor-bin files should be included\n* Fix environment:list command formatter injection",
-                "show from": "4.0.0-dev",
-                "hide from": "4.0.0-dev-4-g8873f091"
-            },
-            {
-                "notes": "* Implement an alias cache (performance improvement)\n* Do not load version dynamically for every instance (performance bugfix)\n* Fix undefined var in variable:list command\n* Fix type error in commit:list command",
-                "show from": "4.0.1-dev",
-                "hide from": "4.1.0-dev"
             }
         ]
     },

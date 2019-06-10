@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Tests;
 
 use PHPUnit\Framework\TestCase;
-use function Platformsh\Cli\Installer\findInstallableVersions;
+use Platformsh\Cli\Installer\VersionResolver;
 
 class InstallerTest extends TestCase
 {
@@ -15,13 +15,14 @@ class InstallerTest extends TestCase
 
     public function testFindInstallableVersionsChecksForSuffix()
     {
+        $resolver = new VersionResolver();
         $this->assertEquals(
             [
                 ['version' => '1.0.0'],
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
             ],
-            findInstallableVersions([
+            $resolver->findInstallableVersions([
                 ['version' => '1.0.0'],
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
@@ -34,7 +35,7 @@ class InstallerTest extends TestCase
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
             ],
-            findInstallableVersions([
+            $resolver->findInstallableVersions([
                 ['version' => '1.0.0-stable'],
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
@@ -45,7 +46,7 @@ class InstallerTest extends TestCase
 
     public function testFindInstallableVersionsChecksFoMinPhp()
     {
-        $this->assertEmpty(findInstallableVersions([
+        $this->assertEmpty((new VersionResolver())->findInstallableVersions([
             [
                 'version' => '1.0.0',
                 'php' => ['min' => '5.5.9'],
