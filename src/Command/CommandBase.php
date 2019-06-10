@@ -832,7 +832,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *   Whether to include workers in the selection.
      *
      * @return \Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface
-     *   An SSH destination.
+     *   A class representing a container that allows SSH access.
      */
     protected function selectRemoteContainer(InputInterface $input, $includeWorkers = true)
     {
@@ -844,7 +844,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             );
         } catch (EnvironmentStateException $e) {
             if ($environment->isActive() && $e->getMessage() === 'Current deployment not found') {
-                return new RemoteContainer\LegacyEnv($environment);
+                $appName = $input->hasOption('app') ? $input->getOption('app') : '';
+
+                return new RemoteContainer\BrokenEnv($environment, $appName);
             }
             throw $e;
         }
