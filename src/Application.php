@@ -204,9 +204,8 @@ class Application extends ParentApplication
      */
     protected function getDefaultCommands()
     {
-        // Override the default commands to add a custom HelpCommand and
-        // ListCommand.
-        return [new Command\HelpCommand(), new Command\ListCommand()];
+        // All commands are lazy-loaded.
+        return [];
     }
 
     /**
@@ -378,24 +377,22 @@ class Application extends ParentApplication
         try {
             return parent::find($name);
         } catch (CommandNotFoundException $e) {
-            // Try the lazy-loading again, but based on cached aliases.
+            // Because commands are lazy-loaded, only their full names are
+            // known to the parent find() method. The alias cache allows
+            // finding commands by their alias, without instantiating them.
             $aliasCache = $this->loadAliasCache();
             if (isset($aliasCache[$name]) && $aliasCache[$name] !== $name){
                 return $this->get($aliasCache[$name]);
             }
 
-            // If a command is not found, fully load all commands so that short
-            // command names and aliases can be checked.
+            // If a command is not found, fully load all commands so that
+            // dynamic names or aliases (if any) can be checked.
             /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
             $loader = $this->container()->get('console.command_loader');
             foreach ($loader->getNames() as $commandName) {
-                $command = $this->add($loader->get($commandName));
-
-                // Return early if the alias is an exact match.
-                if ($command && in_array($name, $command->getAliases(), true)) {
-                    return $command;
-                }
+                $this->add($loader->get($commandName));
             }
+
             return parent::find($name);
         }
     }

@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ListCommand extends ParentListCommand
 {
+    protected static $defaultName = 'list';
 
     protected function configure()
     {

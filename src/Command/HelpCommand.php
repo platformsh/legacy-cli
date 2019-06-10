@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class HelpCommand extends ParentHelpCommand
 {
+    protected static $defaultName = 'help';
 
     protected $command;
 
@@ -52,5 +53,7 @@ class HelpCommand extends ParentHelpCommand
                 'raw_text' => $input->getOption('raw'),
             ]
         );
+
+        $this->command = null;
     }
 }
