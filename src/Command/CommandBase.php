@@ -1257,12 +1257,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $container = self::$container;
         self::$container = null;
 
-        $application->setCurrentCommand($command);
-        $result = $command->run($cmdInput, $output ?: $this->output);
-        $application->setCurrentCommand($this);
-
-        // Restore the old service container.
-        self::$container = $container;
+        try {
+            $application->setCurrentCommand($command);
+            $result = $command->run($cmdInput, $output ?: $this->output);
+        } finally {
+            $application->setCurrentCommand($this);
+            // Restore the old service container.
+            self::$container = $container;
+        }
 
         return $result;
     }
