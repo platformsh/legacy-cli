@@ -7,7 +7,7 @@ use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
-use Platformsh\Cli\Model\SshDestination;
+use Platformsh\Cli\Model\RemoteContainer;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
@@ -28,6 +28,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 {
     use HasExamplesTrait;
 
+    const STABILITY_STABLE = 'STABLE';
+
     /** @var bool */
     private static $checkedUpdates;
 
@@ -44,6 +46,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     protected $envArgName = 'environment';
     protected $hiddenInList = false;
+    protected $stability = self::STABILITY_STABLE;
     protected $local = false;
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
@@ -99,7 +102,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     public function isHidden()
     {
-        return $this->hiddenInList;
+        return $this->hiddenInList || $this->stability !== self::STABILITY_STABLE;
     }
 
     /**
@@ -811,7 +814,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Add the --app and --worker options.
      */
-    protected function addSshDestinationOptions()
+    protected function addRemoteContainerOptions()
     {
         if (!$this->getDefinition()->hasOption('app')) {
             $this->addAppOption();
@@ -822,20 +825,34 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Find what app or worker the user wants to SSH to.
+     * Find what app or worker container the user wants to select.
      *
-     * Requires the --app and --worker options to be present.
+     * Needs the --app and --worker options, as applicable.
      *
      * @param InputInterface $input
      *   The user input object.
+     * @param bool $includeWorkers
+     *   Whether to include workers in the selection.
      *
-     * @return \Platformsh\Cli\Model\SshDestination\SshDestinationInterface
-     *   An SSH destination.
+     * @return \Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface
+     *   A class representing a container that allows SSH access.
      */
-    protected function selectSshDestination(InputInterface $input)
+    protected function selectRemoteContainer(InputInterface $input, $includeWorkers = true)
     {
         $environment = $this->getSelectedEnvironment();
-        $deployment = $this->api()->getCurrentDeployment($environment, $input->hasOption('refresh') ? $input->getOption('refresh') : null);
+        try {
+            $deployment = $this->api()->getCurrentDeployment(
+                $environment,
+                $input->hasOption('refresh') && $input->getOption('refresh')
+            );
+        } catch (EnvironmentStateException $e) {
+            if ($environment->isActive() && $e->getMessage() === 'Current deployment not found') {
+                $appName = $input->hasOption('app') ? $input->getOption('app') : '';
+
+                return new RemoteContainer\BrokenEnv($environment, $appName);
+            }
+            throw $e;
+        }
 
         // Validate the --app option, without doing anything with it.
         $appOption = $input->hasOption('app') ? $input->getOption('app') : null;
@@ -849,7 +866,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Handle the --worker option first, as it's more specific.
         $workerOption = $input->hasOption('worker') ? $input->getOption('worker') : null;
-        if ($workerOption !== null) {
+        if ($includeWorkers && $workerOption !== null) {
             // Check for a conflict with the --app option.
             if ($appOption !== null
                 && strpos($workerOption, '--') !== false
@@ -872,7 +889,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     throw new ConsoleInvalidArgumentException('Worker not found: ' . $workerOption);
                 }
 
-                return new SshDestination\Worker($worker, $environment);
+                return new RemoteContainer\Worker($worker, $environment);
             }
 
             // If we don't have the app name, find all the possible matching
@@ -891,7 +908,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if (count($workerNames) === 1) {
                 $workerName = reset($workerNames);
 
-                return new SshDestination\Worker($deployment->getWorker($workerName), $environment);
+                return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
             }
             if (!$input->isInteractive()) {
                 throw new ConsoleInvalidArgumentException(sprintf(
@@ -907,7 +924,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 'Enter a number to choose a worker:'
             );
 
-            return new SshDestination\Worker($deployment->getWorker($workerName), $environment);
+            return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
         }
 
         // Prompt the user to choose between the app(s) or worker(s) that have
@@ -923,10 +940,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } else {
             $choices = array_combine($appNames, $appNames);
         }
-        foreach ($deployment->workers as $worker) {
-            list($appPart, ) = explode('--', $worker->name, 2);
-            if (in_array($appPart, $appNames, true)) {
-                $choices[$worker->name] = $worker->name;
+        if ($includeWorkers) {
+            foreach ($deployment->workers as $worker) {
+                list($appPart, ) = explode('--', $worker->name, 2);
+                if (in_array($appPart, $appNames, true)) {
+                    $choices[$worker->name] = $worker->name;
+                }
             }
         }
         if (count($choices) === 0) {
@@ -938,28 +957,37 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } elseif ($input->isInteractive()) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            $choice = $questionHelper->choose(
-                $choices,
-                sprintf('Enter a number to choose %s app or %s worker:',
+            if ($includeWorkers) {
+                $text = sprintf('Enter a number to choose %s app or %s worker:',
                     count($appNames) === 1 ? 'the' : 'an',
                     count($choices) === 2 ? 'its' : 'a'
-                ),
+                );
+            } else {
+                $text = sprintf('Enter a number to choose %s app:',
+                    count($appNames) === 1 ? 'the' : 'an'
+                );
+            }
+            $choice = $questionHelper->choose(
+                $choices,
+                $text,
                 $default
             );
         } elseif (count($appNames) === 1) {
             $choice = reset($appNames);
         } else {
             throw new ConsoleInvalidArgumentException(
-                'Specifying the --app or --worker is required in non-interactive mode'
+                $includeWorkers
+                    ? 'Specifying the --app or --worker is required in non-interactive mode'
+                    : 'Specifying the --app is required in non-interactive mode'
             );
         }
 
         // Match the choice to a worker or app destination.
         if (strpos($choice, '--') !== false) {
-            return new SshDestination\Worker($deployment->getWorker($choice), $environment);
+            return new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
         }
 
-        return new SshDestination\App($deployment->getWebApp($choice), $environment);
+        return new RemoteContainer\App($deployment->getWebApp($choice), $environment);
     }
 
     /**
@@ -978,36 +1006,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return $appName;
         }
 
-        try {
-            $apps = array_map(function (WebApp $app) {
-                return $app->name;
-            }, $this->api()->getCurrentDeployment($this->getSelectedEnvironment())->webapps);
-            if (!count($apps)) {
-                return null;
-            }
-        } catch (EnvironmentStateException $e) {
-            if (!$e->getEnvironment()->isActive()) {
-                throw new EnvironmentStateException(
-                    sprintf('Could not find applications: the environment "%s" is not currently active.', $e->getEnvironment()->id),
-                    $e->getEnvironment()
-                );
-            }
-            throw $e;
-        }
-
-        $this->debug('Found app(s): ' . implode(',', $apps));
-        if (count($apps) === 1) {
-            $appName = reset($apps);
-        } elseif ($input->isInteractive()) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $choices = array_combine($apps, $apps);
-            $appName = $questionHelper->choose($choices, 'Enter a number to choose an app:');
-        }
-
-        $input->setOption('app', $appName);
-
-        return $appName;
+        return $this->selectRemoteContainer($input, false)->getName();
     }
 
     /**
@@ -1232,10 +1231,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         /** @var \Platformsh\Cli\Application $application */
         $application = $this->getApplication();
+        /** @var Command $command */
         $command = $application->find($name);
 
         // Pass on interactivity arguments to the other command.
-        if (isset($this->input)) {
+        if (isset($this->input) && $command->getDefinition()->hasOption('yes')) {
             $arguments += [
                 '--yes' => $this->input->getOption('yes'),
                 '--no' => $this->input->getOption('no'),
@@ -1488,5 +1488,19 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getDescription() {
+        $description = parent::getDescription();
+
+        if ($this->stability !== self::STABILITY_STABLE) {
+            $prefix = '<fg=white;bg=red>[ ' . strtoupper($this->stability) . ' ]</> ';
+            $description = $prefix . $description;
+        }
+
+        return $description;
     }
 }

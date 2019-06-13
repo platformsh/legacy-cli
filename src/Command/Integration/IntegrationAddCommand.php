@@ -54,6 +54,16 @@ class IntegrationAddCommand extends IntegrationCommandBase
             }
         }
 
+        // Confirm this action for Git source integrations.
+        if (isset($values['type']) && in_array($values['type'], ['github', 'gitlab', 'bitbucket'])) {
+            $this->stdErr->writeln(
+                "<comment>Warning:</comment> adding a '" . $values['type'] . "' integration will automatically synchronize code from the external Git repository."
+                . "\nThis means it can overwrite all the code in your project.\n"
+            );
+            if (!$questionHelper->confirm('Are you sure you want to continue?', false)) {
+                return 1;
+            }
+        }
 
         try {
             $result = $this->getSelectedProject()

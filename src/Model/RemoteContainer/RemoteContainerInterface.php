@@ -1,35 +1,44 @@
 <?php
 
-namespace Platformsh\Cli\Model\SshDestination;
+namespace Platformsh\Cli\Model\RemoteContainer;
 
 /**
  * Represents a resource that provides an SSH server.
  */
-interface SshDestinationInterface
+interface RemoteContainerInterface
 {
     /**
-     * Returns the destination's SSH URL.
+     * Returns the container's SSH URL.
      *
      * @return string
      */
     public function getSshUrl();
 
     /**
-     * Returns the destination's name (machine or human-readable).
+     * Returns the container's name (machine or human-readable).
      *
      * @return string
      */
     public function getName();
 
     /**
-     * Returns the destination type (a human-readable string).
+     * Returns the type of remote container (a human-readable string).
+     *
+     * Example: 'app' or 'worker'.
      *
      * @return string
      */
     public function getType();
 
     /**
-     * Lists file mounts on the destination.
+     * Gets the container config.
+     *
+     * @return \Platformsh\Cli\Model\AppConfig
+     */
+    public function getConfig();
+
+    /**
+     * Lists file mounts on the container.
      *
      * @return array
      *   An associative array of mounts, taken from the configuration in the

@@ -1,14 +1,14 @@
 # Platform.sh CLI shell configuration for Bash and ZSH.
 
 # Enable auto-completion.
-if HOOK=$(platform _completion -g -p platform 2>/dev/null); then
-    . <(echo "$HOOK") 2>/dev/null
+if [ -f "$HOME/.platformsh/autocompletion.sh" ]; then
+    . "$HOME/.platformsh/autocompletion.sh" 2>/dev/null
 fi
 
 # Alias: make the CLI available via "p", if a command with that name doesn't
 # already exist.
 if ! command -v p >/dev/null; then
- alias p=platform
+    alias p=platform
 fi
 
 # Alias: run Drush commands on the local environment, from any directory.

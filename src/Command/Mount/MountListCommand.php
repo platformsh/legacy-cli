@@ -24,7 +24,7 @@ class MountListCommand extends MountCommandBase
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->addSshDestinationOptions();
+        $this->addRemoteContainerOptions();
     }
 
     /**
@@ -34,11 +34,11 @@ class MountListCommand extends MountCommandBase
     {
         $this->validateInput($input);
 
-        $sshDestination = $this->selectSshDestination($input);
-        $mounts = $sshDestination->getMounts();
+        $container = $this->selectRemoteContainer($input);
+        $mounts = $container->getMounts();
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $sshDestination->getType(), $sshDestination->getName()));
+            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
 
             return 1;
         }
@@ -65,8 +65,8 @@ class MountListCommand extends MountCommandBase
         $table = $this->getService('table');
         $this->stdErr->writeln(sprintf(
             'Mounts in the %s <info>%s</info> (environment <info>%s</info>):',
-            $sshDestination->getType(),
-            $sshDestination->getName(),
+            $container->getType(),
+            $container->getName(),
             $this->getSelectedEnvironment()->id
         ));
         $table->render($rows, $header);

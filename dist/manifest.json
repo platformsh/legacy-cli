@@ -1,5 +1,21 @@
 [
     {
+        "version": "4.1.0-dev",
+        "sha1": "253f333c0c65d015cec283e2ef033c1d19251535",
+        "sha256": "80d0a832652d8713e2d94bd5aa0a7ae41428fd69a2905b786c1c3f78d95e7d54",
+        "name": "platform.phar",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v4.1.0-dev/platform.phar",
+        "php": {
+            "min": "7.1.14"
+        },
+        "updating": [
+            {
+                "notes": "* Use Symfony 4; require at least PHP 7.1.14. As this is a breaking change,\n  this increases the CLI major version from 3.x to 4.x.\n* Integrate platformsh/oauth2 library and platformsh/client version 2.x.\n* Cache the DI container.\n* Use service autowiring. This allows new services or commands to be created\n  without extra service configuration (beyond their constructor arguments).\n* Configure command lazy-loading. If using the full command name or alias, this\n  saves around 50ms. Using an abbreviation or shortcut bypasses the performance\n  benefit as it requires all command classes to be instantiated.\n* Lots of other refactoring, including adding static/strict types.\n* Remove deprecated command options.",
+                "hide from": "4.0.0-dev"
+            }
+        ]
+    },
+    {
         "name": "platform.phar",
         "sha1": "7debcbd5d598319bb7c1bcbb9ecf4a3ecc97c28c",
         "sha256": "700ee2b7450ee9008d1d824dae7d9d745a7c0122af445e8eb086fc5048536175",
