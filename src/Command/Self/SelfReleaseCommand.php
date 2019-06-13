@@ -25,7 +25,7 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('phar', null, InputOption::VALUE_REQUIRED, 'The path to a newly built Phar file')
             ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $defaultRepo)
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
-            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
+            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest-matching')
             ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', $defaultReleaseBranch)
             ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'The last version number')
             ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes, or no change since the last version')
@@ -198,14 +198,23 @@ class SelfReleaseCommand extends CommandBase
             throw new \RuntimeException('Failed to decode manifest file: ' . $manifestFile);
         }
         $latestItem = null;
+        $latestSameMajorItem = null;
         foreach ($manifest as $key => $item) {
             if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
                 $latestItem = &$manifest[$key];
+            }
+            if ($latestSameMajorItem = null
+                || (version_compare($item['version'], $latestItem['version'], '>') && $this->majorVersion($item['version']) === $this->majorVersion($latestItem['version']))) {
+                $latestSameMajorItem = &$manifest[$key];
             }
         }
         switch ($input->getOption('manifest-mode')) {
             case 'update-latest':
                 $manifestItem = &$latestItem;
+                break;
+
+            case 'update-latest-matching':
+                $manifestItem = &$latestSameMajorItem;
                 break;
 
             case 'add':
@@ -490,5 +499,24 @@ class SelfReleaseCommand extends CommandBase
     private function isPreRelease($version)
     {
         return preg_match('/^[0-9]+\.[0-9]+(\.[0-9]+)?\-.+/', $version) === 1;
+    }
+
+    /**
+     * @param string $version
+     *
+     * @return int
+     */
+    private function majorVersion($version)
+    {
+        if ($dotPos = strpos($version, '.', 1)) {
+            $major = substr($version, 0, $dotPos);
+            if (is_numeric($major)) {
+                return (int) $major;
+            }
+        } elseif (is_numeric($version)) {
+            return (int) $version;
+        }
+
+        throw new \RuntimeException('Failed to find major version for: ' . $version);
     }
 }
