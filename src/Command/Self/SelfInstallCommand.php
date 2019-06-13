@@ -70,9 +70,19 @@ EOT
                 $this->stdErr->writeln(' done');
             }
         } catch (\Exception $e) {
-            // Autocompletion isn't essential, so print the error and continue.
-            $this->stdErr->writeln(' failed:');
-            $this->stdErr->writeln($this->indentAndWrap($e->getMessage()));
+            // If stdout is not a terminal, then we tried but
+            // autocompletion probably isn't needed at all, as we are in the
+            // context of some kind of automated build. So ignore the error.
+            if (!$this->isTerminal(STDOUT)) {
+                $this->stdErr->writeln(' skipped');
+            }
+            // Otherwise, print the error and continue. The user probably
+            // wants to know what went wrong, but autocompletion is still not
+            // essential.
+            else {
+                $this->stdErr->writeln(' failed');
+                $this->stdErr->writeln($this->indentAndWrap($e->getMessage()));
+            }
         }
         $this->stdErr->writeln('');
 
