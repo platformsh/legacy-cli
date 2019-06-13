@@ -1228,10 +1228,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         /** @var \Platformsh\Cli\Application $application */
         $application = $this->getApplication();
+        /** @var Command $command */
         $command = $application->find($name);
 
         // Pass on interactivity arguments to the other command.
-        if (isset($this->input)) {
+        if (isset($this->input) && $command->getDefinition()->hasOption('yes')) {
             $arguments += [
                 '--yes' => $this->input->getOption('yes'),
                 '--no' => $this->input->getOption('no'),
