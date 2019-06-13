@@ -203,11 +203,13 @@ class SelfReleaseCommand extends CommandBase
             if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
                 $latestItem = &$manifest[$key];
             }
-            if ($latestSameMajorItem = null
-                || (version_compare($item['version'], $latestItem['version'], '>') && $this->majorVersion($item['version']) === $this->majorVersion($latestItem['version']))) {
-                $latestSameMajorItem = &$manifest[$key];
+            if ($this->majorVersion($item['version']) === $this->majorVersion($newVersion)) {
+                if ($latestSameMajorItem || version_compare($item['version'], $latestSameMajorItem['version'], '>')) {
+                    $latestSameMajorItem = &$manifest[$key];
+                }
             }
         }
+        $manifestItem = null;
         switch ($input->getOption('manifest-mode')) {
             case 'update-latest':
                 $manifestItem = &$latestItem;
@@ -218,12 +220,14 @@ class SelfReleaseCommand extends CommandBase
                 break;
 
             case 'add':
-                array_unshift($manifest, []);
-                $manifestItem = &$manifest[0];
                 break;
 
             default:
                 throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
+        }
+        if ($manifestItem === null) {
+            array_unshift($manifest, []);
+            $manifestItem = &$manifest[0];
         }
 
         // Confirm the release changelog.
