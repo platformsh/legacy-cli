@@ -1256,9 +1256,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // change.
         $container = self::$container;
         self::$container = null;
+        $application->setCurrentCommand($command);
 
+        // Use a try/finally pattern to ensure that state is restored, even if
+        // an exception is thrown in $command->run() and caught by the caller.
         try {
-            $application->setCurrentCommand($command);
             $result = $command->run($cmdInput, $output ?: $this->output);
         } finally {
             $application->setCurrentCommand($this);
