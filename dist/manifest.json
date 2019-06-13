@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "7debcbd5d598319bb7c1bcbb9ecf4a3ecc97c28c",
-        "sha256": "700ee2b7450ee9008d1d824dae7d9d745a7c0122af445e8eb086fc5048536175",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.41.1/platform.phar",
-        "version": "3.41.1",
+        "sha1": "253d437c1fb32839edd3d246560e3dfd90f51bc9",
+        "sha256": "f73859a23a2361e687735fa9c75f234cba3a98caab0f20f6b03c45e6d5759ccf",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.42.0/platform.phar",
+        "version": "3.42.0",
         "php": {
             "min": "5.5.9"
         },
@@ -193,6 +193,11 @@
                 "notes": "New features:\n\n* Better worker support:\n  - Improve worker selection in the environment:ssh (ssh) command.\n  - Add the --worker option to all mount commands.\n  - Add the --worker option to the environment:logs (log) command.\n  - If --app or --worker is not provided, the above commands will now prompt you\n  to choose between the app(s) or their worker(s).\n* Allow a nonexistent --target directory in the mount:download command (prompt\n  to create it).\n\nBug fixes:\n\n* Add environment commit SHA to the deployment cache key\n  This ensures old deployment information is not used when we know the environment\n  has changed.\n* Ensure migrated projects on a new host do not use cached information from the\n  old host.\n* Installer: the default config file should be .bash_profile on OS X.\n\nOther changes:\n\n* Update autocompletion library (stecman/symfony-console-completion)\n  Highlights:\n  - \"Adds support for quoted and escaped multi-word completions\"\n  - \"Fixes options appearing before the command name (eg. `program -v cmdname`)\n    breaking the detection of the command that should be completed for\"",
                 "show from": "3.40.0",
                 "hide from": "3.41.0"
+            },
+            {
+                "notes": "* Support older shells in autocompletion setup (like Bash 3.x, installed by default on OS X).\n* Accept wholly indented YAML files under the !include syntax.\n* Pass max_allowed_packet setting to mysqldump.\n* Require confirmation when adding a git source integration (GitHub, Bitbucket or GitLab).\n* Improve GIT_SSH argument quoting (may improve old Git version compatibility).\n* Fix ssh for environments with broken config.\n* Support installing versions with unstable suffixes in installer.\n* Warn in installer about missing pcntl and posix extensions.\n* Display nothing rather than a placeholder for sensitive values in variable:list tsv/csv format.\n* Add beta (hidden for now) source-operation:run command.",
+                "show from": "3.41.0",
+                "hide from": "3.42.0"
             }
         ]
     }
