@@ -96,7 +96,7 @@ class DbSizeCommand extends CommandBase
             $values = [
                 $this->formatMegaBytes($allocatedDisk,$machineReadable),
                 $this->formatMegaBytes($estimatedUsage,$machineReadable),
-                ' ~ '. $this->formatPercentage($percentageUsed),                
+                $this->formatPercentage($percentageUsed),                
             ];
         } else {
             $percentageUsed = null;
@@ -243,16 +243,15 @@ class DbSizeCommand extends CommandBase
     }
     
     private function formatPercentage($percentage) {
-        switch(true) {
-            case $percentage > self::RED_WARNING_THRESHOLD:
-                return sprintf("<options=bold;fg=red>%d %%</>",(int) $percentage);
-            break;
-            case $percentage > self::YELLOW_WARNING_THRESHOLD:
-                return sprintf("<options=bold;fg=yellow>%d %%</>",(int) $percentage);
-            break;
-            default:
-                return sprintf("<options=bold;fg=green>%d %%</>",(int) $percentage);
-        }        
+        if ($percentage > self::RED_WARNING_THRESHOLD) {
+            $format = '<options=bold;fg=red> ~ %d %%</>';
+        } elseif ($percentage > self::YELLOW_WARNING_THRESHOLD) {
+            $format = '<options=bold;fg=yellow> ~ %d %%</>';
+        } else {
+            $format = '<options=bold;fg=green> ~ %d %%</>';
+        }
+        
+        return sprintf($format, $percentage);
     }
 
     private function formatMegaBytes($intMBytes, $hasToBeMachineReadable=false, $blnForceShowBytes=false) {
