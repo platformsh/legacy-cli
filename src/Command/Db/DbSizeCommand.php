@@ -244,11 +244,11 @@ class DbSizeCommand extends CommandBase
     
     private function formatPercentage($percentage) {
         if ($percentage > self::RED_WARNING_THRESHOLD) {
-            $format = '<options=bold;fg=red> ~ %d %%</>';
+            $format = '<options=bold;fg=red> ~ %.0f %%</>';
         } elseif ($percentage > self::YELLOW_WARNING_THRESHOLD) {
-            $format = '<options=bold;fg=yellow> ~ %d %%</>';
+            $format = '<options=bold;fg=yellow> ~ %.0f %%</>';
         } else {
-            $format = '<options=bold;fg=green> ~ %d %%</>';
+            $format = '<options=bold;fg=green> ~ %.0f %%</>';
         }
         
         return sprintf($format, $percentage);
@@ -258,13 +258,9 @@ class DbSizeCommand extends CommandBase
         if($this->blnShowInBytes) {
             return round($intMBytes * self::BYTE_TO_MBYTE);
         }
-        return $hasToBeMachineReadable ? floor($intMBytes)     : $this->toHumanReadableBytes($intMBytes);
+        return $hasToBeMachineReadable ? floor($intMBytes)     : Helper::formatMemory(round($intMBytes*self::BYTE_TO_MBYTE));
     }
-    
-    private function toHumanReadableBytes($intMBytes, $intDecimals=2) {
-        return Helper::formatMemory(round($intMBytes*self::BYTE_TO_MBYTE));        
-    }
-    
+        
     private function runSshCommand($appName, $strCommandToExec) {
         return $this->getService('shell')
                     ->execute(
