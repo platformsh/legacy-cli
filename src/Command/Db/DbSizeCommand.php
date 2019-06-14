@@ -87,14 +87,14 @@ class DbSizeCommand extends CommandBase
             $propertyNames  = ['Allocated', 'Estimated Usage', 'Percentage Used'];
             $percentageUsed = $estimatedUsage * 100 / $allocatedDisk;
             $values = [
-                $this->formatMegaBytes($allocatedDisk),
-                $this->formatMegaBytes($estimatedUsage),
+                $this->formatMegaBytes($allocatedDisk,$machineReadable),
+                $this->formatMegaBytes($estimatedUsage,$machineReadable),
                 ' ~ '. $this->formatPercentage($percentageUsed),                
             ];
         } else {
             $propertyNames = ['Estimated Usage'];
             $values = [
-                $this->formatMegaBytes($estimatedUsage),
+                $this->formatMegaBytes($estimatedUsage,$machineReadable),
             ];
         }
         
