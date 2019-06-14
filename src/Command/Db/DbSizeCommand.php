@@ -18,9 +18,11 @@ use Symfony\Component\Console\Helper\Helper;
 class DbSizeCommand extends CommandBase
 {
     
-    const RED_WARNING_THRESHOLD=90;
-    const YELLOW_WARNING_THRESHOLD=80;
+    const RED_WARNING_THRESHOLD=90;//percentage
+    const YELLOW_WARNING_THRESHOLD=80;//percentage
     const BYTE_TO_MBYTE=1048576;
+
+    const WASTED_SPACE_WARNING_THRESHOLD=200;//percentage
 
     private $blnShowInBytes=false;
 
@@ -28,7 +30,8 @@ class DbSizeCommand extends CommandBase
     {
         $this->setName('db:size')
             ->setDescription('Estimate the disk usage of a database')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
+            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
+            ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).')
             ->setHelp(
                 "This is an estimate of the database disk usage. The real size on disk is usually a bit higher because of overhead."
             );
@@ -78,14 +81,40 @@ class DbSizeCommand extends CommandBase
         $this->showEstimatedUsageTable($service, $database, $appName);
         $this->showInaccessibleSchemas($service, $database);
         
+        if($database['schema']!='pgsql' && $input->getOption('cleanup')) {
+            $this->showInnoDbTablesInNeedOfOptimizing($appName, $database);            
+        }
         return 0;
     }
 
+    private function showInnoDbTablesInNeedOfOptimizing($appName, $database) {
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('---------------------------------------');
+        $this->stdErr->writeln('');
+
+        $this->stdErr->write('Checking InnoDB data_free...');
+        $tablesNeedingCleanup = explode(PHP_EOL,$this->runSshCommand($appName, $this->mysqlTablesInNeedOfOptimizing($database)));
+        
+        if(count($tablesNeedingCleanup)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('You can save space by cleaning up by running the following commands during a maintenance window.');
+            $this->stdErr->writeln('<options=bold;fg=red>WARNING:</> Running these will lock up your database for several minutes. Only run these when you know what you\'re doing.');
+            $this->stdErr->writeln('');
+            foreach($tablesNeedingCleanup as $row) {
+                list($schema, $tablename) = explode("\t", $row);
+                $this->stdErr->writeln(sprintf('ALTER TABLE `%s`.`%s` ENGINE="InnoDB";', $schema, $tablename));
+            }
+            $this->stdErr->writeln('');
+        } else {
+            $this->stdErr->writeln('<options=bold;fg=green> [ALL OK]</>');
+        }
+    }
+
     private function showEstimatedUsageTable($service, $database, $appName) {
+        $this->stdErr->writeln('Calculating estimated usage...');
         $allocatedDisk  = $service->disk * self::BYTE_TO_MBYTE;
         $estimatedUsage = $this->getEstimatedUsage($appName, $database); //always in bytes
-        $this->stdErr->writeln('est usage ' . $estimatedUsage);
-
+        
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
@@ -196,6 +225,7 @@ class DbSizeCommand extends CommandBase
             . ')'
             . ' AS estimated_actual_disk_usage'
             . ' FROM information_schema.tables WHERE ENGINE <> "InnoDB"';
+        
         return $this->getMysqlCommand($database, $query);
     }
 
@@ -210,6 +240,21 @@ class DbSizeCommand extends CommandBase
     {
         $query = 'SELECT SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces;';
 
+        return $this->getMysqlCommand($database, $query);
+    }
+
+    /**
+     * Returns a command to query disk usage for all InnoDB using tables for a MySQL database in MB
+     *
+     * @param array $database The database connection details.
+     *
+     * @return string
+     */
+    private function mysqlTablesInNeedOfOptimizing(array $database)
+    {
+        /*, data_free, data_length, ((data_free+1)/(data_length+1))*100 as wasted_space_percentage*/ 
+        $query = 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND ((data_free+1)/(data_length+1))*100 >= '.self::WASTED_SPACE_WARNING_THRESHOLD.' ORDER BY data_free DESC LIMIT 10';
+        
         return $this->getMysqlCommand($database, $query);
     }
 
