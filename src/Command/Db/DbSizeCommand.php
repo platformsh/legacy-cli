@@ -10,6 +10,7 @@ use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\YamlParser;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Platformsh\Cli\Local\BuildFlavor\Symfony;
 use Symfony\Component\Console\Helper\Helper;
@@ -21,10 +22,13 @@ class DbSizeCommand extends CommandBase
     const YELLOW_WARNING_THRESHOLD=80;
     const BYTE_TO_MBYTE=1048576;
 
+    private $blnShowInBytes=false;
+
     protected function configure()
     {
         $this->setName('db:size')
             ->setDescription('Estimate the disk usage of a database')
+            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->setHelp(
                 "This is an estimate of the database disk usage. The real size on disk is usually a bit higher because of overhead."
             );
@@ -38,7 +42,8 @@ class DbSizeCommand extends CommandBase
     {
         $this->validateInput($input);
         $appName = $this->selectApp($input);
-
+        $this->blnShowInBytes = $input->getOption('bytes');
+        
         // Get the app config.
         $webApp = $this->api()
             ->getCurrentDeployment($this->getSelectedEnvironment(), true)
@@ -84,7 +89,7 @@ class DbSizeCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
-
+        
         if ($allocatedDisk !== false) {
             $propertyNames  = ['Allocated', 'Estimated Usage', 'Percentage Used'];
             $percentageUsed = $estimatedUsage * 100 / $allocatedDisk;
@@ -250,7 +255,10 @@ class DbSizeCommand extends CommandBase
         }        
     }
 
-    private function formatMegaBytes($intMBytes, $hasToBeMachineReadable=false) {
+    private function formatMegaBytes($intMBytes, $hasToBeMachineReadable=false, $blnForceShowBytes=false) {
+        if($this->blnShowInBytes) {
+            return round($intMBytes * self::BYTE_TO_MBYTE);
+        }
         return $hasToBeMachineReadable ? floor($intMBytes)     : $this->toHumanReadableBytes($intMBytes);
     }
     
