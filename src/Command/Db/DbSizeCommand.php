@@ -244,14 +244,14 @@ class DbSizeCommand extends CommandBase
     
     private function formatPercentage($percentage) {
         if ($percentage > self::RED_WARNING_THRESHOLD) {
-            $format = '<options=bold;fg=red> ~ %.0f %%</>';
+            $format = '<options=bold;fg=red> ~ %d %%</>';
         } elseif ($percentage > self::YELLOW_WARNING_THRESHOLD) {
-            $format = '<options=bold;fg=yellow> ~ %.0f %%</>';
+            $format = '<options=bold;fg=yellow> ~ %d %%</>';
         } else {
-            $format = '<options=bold;fg=green> ~ %.0f %%</>';
+            $format = '<options=bold;fg=green> ~ %d %%</>';
         }
         
-        return sprintf($format, $percentage);
+        return sprintf($format, round($percentage));
     }
 
     private function formatMegaBytes($intMBytes, $hasToBeMachineReadable=false, $blnForceShowBytes=false) {
