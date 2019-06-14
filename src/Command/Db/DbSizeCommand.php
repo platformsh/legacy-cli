@@ -82,9 +82,9 @@ class DbSizeCommand extends CommandBase
     }
 
     private function showEstimatedUsageTable($service, $database, $appName) {
-        $allocatedDisk  = $service->disk;//in MB
-        $estimatedUsage = $this->getEstimatedUsage($appName, $database);//in MB
-        
+        $allocatedDisk  = $service->disk * self::BYTE_TO_MBYTE;
+        $estimatedUsage = $this->getEstimatedUsage($appName, $database); //always in bytes
+        $this->stdErr->writeln('est usage ' . $estimatedUsage);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
@@ -94,15 +94,15 @@ class DbSizeCommand extends CommandBase
             $propertyNames  = ['Allocated', 'Estimated Usage', 'Percentage Used'];
             $percentageUsed = $estimatedUsage * 100 / $allocatedDisk;
             $values = [
-                $this->formatMegaBytes($allocatedDisk,$machineReadable),
-                $this->formatMegaBytes($estimatedUsage,$machineReadable),
+                $this->formatBytes($allocatedDisk,$machineReadable),
+                $this->formatBytes($estimatedUsage,$machineReadable),
                 $this->formatPercentage($percentageUsed),                
             ];
         } else {
             $percentageUsed = null;
             $propertyNames = ['Estimated Usage'];
             $values = [
-                $this->formatMegaBytes($estimatedUsage,$machineReadable),
+                $this->formatBytes($estimatedUsage,$machineReadable),
             ];
         }
         
@@ -151,14 +151,13 @@ class DbSizeCommand extends CommandBase
      */
     private function psqlQuery(array $database)
     {
-        // I couldn't find a way to run the SUM directly in the database query...
-        $query = 'SELECT'
-          . ' sum(pg_relation_size(pg_class.oid))::bigint AS size'
-          . ' FROM pg_class'
-          . ' LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)'
-          . ' GROUP BY pg_class.relkind, nspname'
-          . ' ORDER BY sum(pg_relation_size(pg_class.oid)) DESC;';
-
+        //both these queries are wrong... 
+        //$query = 'SELECT SUM(pg_database_size(t1.datname)) as size FROM pg_database t1'; //does miss lots of data
+        //$query = 'SELECT SUM(pg_total_relation_size(pg_class.oid)) AS size FROM pg_class LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)';
+        
+        //but running both, and taking the average, gets us closer to the correct value
+        $query = 'SELECT AVG(size) FROM (SELECT SUM(pg_database_size(t1.datname)) as size FROM pg_database t1 UNION SELECT SUM(pg_total_relation_size(pg_class.oid)) AS size FROM pg_class LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)) x;';//too much
+        
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
         $dbUrl = $relationships->getDbCommandArgs('psql', $database, '');
@@ -195,7 +194,7 @@ class DbSizeCommand extends CommandBase
             . 'SUM(data_length+index_length+data_free)'
             . ' + (COUNT(*) * 300 * 1024)'
             . ')'
-            . '/' . (self::BYTE_TO_MBYTE + 150) . ' AS estimated_actual_disk_usage'
+            . ' AS estimated_actual_disk_usage'
             . ' FROM information_schema.tables WHERE ENGINE <> "InnoDB"';
         return $this->getMysqlCommand($database, $query);
     }
@@ -209,7 +208,7 @@ class DbSizeCommand extends CommandBase
      */
     private function mysqlInnodbQuery(array $database)
     {
-        $query = 'SELECT SUM(ALLOCATED_SIZE) / '.self::BYTE_TO_MBYTE.' FROM information_schema.innodb_sys_tablespaces;';
+        $query = 'SELECT SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces;';
 
         return $this->getMysqlCommand($database, $query);
     }
@@ -226,11 +225,7 @@ class DbSizeCommand extends CommandBase
     }
 
     private function getPgSqlUsage($appName, $database) {
-        return  array_sum(
-                    explode(PHP_EOL, 
-                        $this->runSshCommand($appName, $this->psqlQuery($database))
-                    )
-                );
+        return $this->runSshCommand($appName, $this->psqlQuery($database));        
     }
 
     private function getMySqlUsage($appName, $database) {
@@ -254,14 +249,15 @@ class DbSizeCommand extends CommandBase
         return sprintf($format, round($percentage));
     }
 
-    private function formatMegaBytes($intMBytes, $hasToBeMachineReadable=false, $blnForceShowBytes=false) {
+    private function formatBytes($intBytes, $hasToBeMachineReadable=false, $blnForceShowBytes=false) {
         if($this->blnShowInBytes) {
-            return round($intMBytes * self::BYTE_TO_MBYTE);
+            return $intBytes;
         }
-        return $hasToBeMachineReadable ? floor($intMBytes)     : Helper::formatMemory(round($intMBytes*self::BYTE_TO_MBYTE));
+        return $hasToBeMachineReadable ? $intBytes     : Helper::formatMemory($intBytes);
     }
         
     private function runSshCommand($appName, $strCommandToExec) {
+        
         return $this->getService('shell')
                     ->execute(
                         array_merge(
