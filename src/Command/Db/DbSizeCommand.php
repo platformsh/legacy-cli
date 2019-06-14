@@ -14,6 +14,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Platformsh\Cli\Local\BuildFlavor\Symfony;
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class DbSizeCommand extends CommandBase
 {
@@ -216,7 +217,7 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function mysqlNonInnodbQuery(array $database)
+    private function mysqlNonInnodbQuery(array $database, $blnExcludeInnoDb=true)
     {
         $query = 'SELECT'
             . ' ('
@@ -224,7 +225,8 @@ class DbSizeCommand extends CommandBase
             . ' + (COUNT(*) * 300 * 1024)'
             . ')'
             . ' AS estimated_actual_disk_usage'
-            . ' FROM information_schema.tables WHERE ENGINE <> "InnoDB"';
+            . ' FROM information_schema.tables'
+            . ($blnExcludeInnoDb ? ' WHERE ENGINE <> "InnoDB"' : '');
         
         return $this->getMysqlCommand($database, $query);
     }
@@ -239,6 +241,12 @@ class DbSizeCommand extends CommandBase
     private function mysqlInnodbQuery(array $database)
     {
         $query = 'SELECT SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces;';
+
+        return $this->getMysqlCommand($database, $query);
+    }
+
+    private function mysqlInnodbAllocatedSizeExists(array $database) {
+        $query = 'SELECT count(COLUMN_NAME) FROM information_schema.COLUMNS WHERE table_schema ="information_schema" AND table_name="innodb_sys_tablespaces" AND column_name LIKE "ALLOCATED_SIZE";';
 
         return $this->getMysqlCommand($database, $query);
     }
@@ -274,12 +282,16 @@ class DbSizeCommand extends CommandBase
     }
 
     private function getMySqlUsage($appName, $database) {
-        return array_sum(
-            [
-                $this->runSshCommand($appName, $this->mysqlNonInnodbQuery($database)),
-                $this->runSshCommand($appName, $this->mysqlInnodbQuery($database))
-            ]
-        );
+        $this->stdErr->writeln('Getting MySql Usage...');
+        $blnAllocatedSizeSupported = $this->runSshCommand($appName, $this->mysqlInnodbAllocatedSizeExists($database));
+        if($blnAllocatedSizeSupported) {
+            $this->stdErr->writeln('Checking InnoDB seperately for more accurate results...');
+            $innodbsize = $this->runSshCommand($appName, $this->mysqlInnodbQuery($database));
+        }
+        
+        $othertablesizes = $this->runSshCommand($appName, $this->mysqlNonInnodbQuery($database, !$blnAllocatedSizeSupported));
+            
+        return $othertablesizes + $innodbsize;
     }
     
     private function formatPercentage($percentage) {
