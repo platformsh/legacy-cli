@@ -11,6 +11,8 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\YamlParser;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Platformsh\Cli\Local\BuildFlavor\Symfony;
+use Symfony\Component\Console\Helper\Helper;
 
 class DbSizeCommand extends CommandBase
 {
@@ -92,6 +94,7 @@ class DbSizeCommand extends CommandBase
                 ' ~ '. $this->formatPercentage($percentageUsed),                
             ];
         } else {
+            $percentageUsed = null;
             $propertyNames = ['Estimated Usage'];
             $values = [
                 $this->formatMegaBytes($estimatedUsage,$machineReadable),
@@ -124,7 +127,7 @@ class DbSizeCommand extends CommandBase
     }
 
     private function showWarnings($percentageUsed) {
-        if($percentageUsed > RED_WARNING_THRESHOLD) {
+        if($percentageUsed > self::RED_WARNING_THRESHOLD) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold;fg=red>Warning</>');
             $this->stdErr->writeln("Databases tend to need a little bit of extra space for starting up and temporary storage when running large queries. Please increase the allocated space in services.yaml");    
@@ -252,11 +255,7 @@ class DbSizeCommand extends CommandBase
     }
     
     private function toHumanReadableBytes($intMBytes, $intDecimals=2) {
-        $intBytes   = round($intMBytes*self::BYTE_TO_MBYTE);
-        $size       = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
-        $factor     = floor((strlen($intBytes) - 1) / 3);
-
-        return sprintf("%.{$intDecimals}f %s", $intBytes / pow(1024, $factor), @$size[$factor]);
+        return Helper::formatMemory(round($intMBytes*self::BYTE_TO_MBYTE));        
     }
     
     private function runSshCommand($appName, $strCommandToExec) {
