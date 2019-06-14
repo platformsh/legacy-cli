@@ -14,13 +14,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DbSizeCommand extends CommandBase
 {
+    
+    const RED_WARNING_THRESHOLD=90;
+    const YELLOW_WARNING_THRESHOLD=80;
+    const BYTE_TO_MBYTE=1048576;
 
     protected function configure()
     {
         $this->setName('db:size')
             ->setDescription('Estimate the disk usage of a database')
             ->setHelp(
-                "This is an estimate of the database disk usage. It does not represent its real size on disk."
+                "This is an estimate of the database disk usage. The real size on disk is usually a bit higher because of overhead."
             );
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
@@ -42,7 +46,6 @@ class DbSizeCommand extends CommandBase
             $this->stdErr->writeln('No application relationships found.');
             return 1;
         }
-
         $sshUrl = $this->getSelectedEnvironment()->getSshUrl($appName);
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
@@ -57,61 +60,51 @@ class DbSizeCommand extends CommandBase
             return 1;
         }
         $dbServiceName = $database['service'];
-
+        
         // Get information about the deployed service associated with the
         // selected relationship.
         $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
         $service = $deployment->getService($dbServiceName);
-        $allocatedDisk = $service->disk;
-
-        /** @var Shell $shell */
-        $shell = $this->getService('shell');
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-
+        
         $this->stdErr->writeln(sprintf('Checking database service <comment>%s</comment>...', $dbServiceName));
 
-        $command = ['ssh'];
-        $command = array_merge($command, $ssh->getSshArgs());
-        $command[] = $sshUrl;
-        switch ($database['scheme']) {
-            case 'pgsql':
-                $command[] = $this->psqlQuery($database);
-                $result = $shell->execute($command, null, true);
-                $resultArr = explode(PHP_EOL, $result);
-                $estimatedUsage = array_sum($resultArr) / 1048576;
-                break;
-            default:
-                $command[] = $this->mysqlQuery($database);
-                $estimatedUsage = $shell->execute($command, null, true);
-                break;
-        }
+        $this->showEstimatedUsageTable($service, $database, $appName);
+        $this->showInaccessibleSchemas($service, $database);
+        
+        return 0;
+    }
+
+    private function showEstimatedUsageTable($service, $database, $appName) {
+        $allocatedDisk  = $service->disk;//in MB
+        $estimatedUsage = $this->getEstimatedUsage($appName, $database);//in MB
+        
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
 
         if ($allocatedDisk !== false) {
-            $propertyNames = ['max', 'used', 'percent_used'];
-            $percentsUsed = $estimatedUsage * 100 / $allocatedDisk;
+            $propertyNames  = ['Allocated', 'Estimated Usage', 'Percentage Used'];
+            $percentageUsed = $estimatedUsage * 100 / $allocatedDisk;
             $values = [
-                (int) $allocatedDisk . ($machineReadable ? '' : 'MB'),
-                (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
-                (int) $percentsUsed . '%',
+                $this->formatMegaBytes($allocatedDisk),
+                $this->formatMegaBytes($estimatedUsage),
+                ' ~ '. $this->formatPercentage($percentageUsed),                
             ];
         } else {
-            $propertyNames = ['used'];
+            $propertyNames = ['Estimated Usage'];
             $values = [
-                (int) $estimatedUsage . ($machineReadable ? '' : 'MB'),
+                $this->formatMegaBytes($estimatedUsage),
             ];
         }
-
+        
+        $this->stdErr->writeln('');
         $table->renderSimple($values, $propertyNames);
 
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
-        $this->stdErr->writeln("This is an estimate of the database's disk usage. It does not represent its real size on disk.");
+        $this->showWarnings($percentageUsed);
+    }
 
+    private function showInaccessibleSchemas($service, $database) {
         // Find if not all the available schemas were accessible via this relationship.
         if (isset($database['rel'])
             && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
@@ -128,8 +121,17 @@ class DbSizeCommand extends CommandBase
                 $this->stdErr->writeln('  Inaccessible schemas: <comment>' . implode(', ', $missing) . '</comment>');
             }
         }
+    }
 
-        return 0;
+    private function showWarnings($percentageUsed) {
+        if($percentageUsed > RED_WARNING_THRESHOLD) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('<options=bold;fg=red>Warning</>');
+            $this->stdErr->writeln("Databases tend to need a little bit of extra space for starting up and temporary storage when running large queries. Please increase the allocated space in services.yaml");    
+        }
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
+        $this->stdErr->writeln("This is an estimate of the database's disk usage. It does not represent its real size on disk.");
     }
 
     /**
@@ -160,31 +162,116 @@ class DbSizeCommand extends CommandBase
         );
     }
 
-    /**
-     * Returns a command to query disk usage for a MySQL database.
-     *
-     * @param array $database The database connection details.
-     *
-     * @return string
-     */
-    private function mysqlQuery(array $database)
-    {
-        $query = 'SELECT'
-            . ' ('
-            . 'SUM(data_length+index_length+data_free)'
-            . ' + (COUNT(*) * 300 * 1024)'
-            . ')'
-            . '/' . (1048576 + 150) . ' AS estimated_actual_disk_usage'
-            . ' FROM information_schema.tables';
-
+    private function getMysqlCommand(array $database, $query) {
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
         $connectionParams = $relationships->getDbCommandArgs('mysql', $database, '');
-
+        
         return sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
             $connectionParams,
             $query
         );
     }
+    /**
+     * Returns a command to query table size of non-InnoDB using tables for a MySQL database in MB
+     *
+     * @param array $database The database connection details.
+     *
+     * @return string
+     */
+    private function mysqlNonInnodbQuery(array $database)
+    {
+        $query = 'SELECT'
+            . ' ('
+            . 'SUM(data_length+index_length+data_free)'
+            . ' + (COUNT(*) * 300 * 1024)'
+            . ')'
+            . '/' . (self::BYTE_TO_MBYTE + 150) . ' AS estimated_actual_disk_usage'
+            . ' FROM information_schema.tables WHERE ENGINE <> "InnoDB"';
+        return $this->getMysqlCommand($database, $query);
+    }
+
+    /**
+     * Returns a command to query disk usage for all InnoDB using tables for a MySQL database in MB
+     *
+     * @param array $database The database connection details.
+     *
+     * @return string
+     */
+    private function mysqlInnodbQuery(array $database)
+    {
+        $query = 'SELECT SUM(ALLOCATED_SIZE) / '.self::BYTE_TO_MBYTE.' FROM information_schema.innodb_sys_tablespaces;';
+
+        return $this->getMysqlCommand($database, $query);
+    }
+
+    private function getEstimatedUsage($appName, $database) {
+        switch ($database['scheme']) {
+            case 'pgsql':
+                return $this->getPgSqlUsage($appName, $database);
+            
+            case 'mysql':
+            default:
+                return $this->getMySqlUsage($appName, $database);
+        }
+    }
+
+    private function getPgSqlUsage($appName, $database) {
+        return  array_sum(
+                    explode(PHP_EOL, 
+                        $this->runSshCommand($appName, $this->psqlQuery($database))
+                    )
+                );
+    }
+
+    private function getMySqlUsage($appName, $database) {
+        return array_sum(
+            [
+                $this->runSshCommand($appName, $this->mysqlNonInnodbQuery($database)),
+                $this->runSshCommand($appName, $this->mysqlInnodbQuery($database))
+            ]
+        );
+    }
+    
+    private function formatPercentage($percentage) {
+        switch(true) {
+            case $percentage > self::RED_WARNING_THRESHOLD:
+                return sprintf("<options=bold;fg=red>%d %%</>",(int) $percentage);
+            break;
+            case $percentage > self::YELLOW_WARNING_THRESHOLD:
+                return sprintf("<options=bold;fg=yellow>%d %%</>",(int) $percentage);
+            break;
+            default:
+                return sprintf("<options=bold;fg=green>%d %%</>",(int) $percentage);
+        }        
+    }
+
+    private function formatMegaBytes($intMBytes, $hasToBeMachineReadable=false) {
+        return $hasToBeMachineReadable ? floor($intMBytes)     : $this->toHumanReadableBytes($intMBytes);
+    }
+    
+    private function toHumanReadableBytes($intMBytes, $intDecimals=2) {
+        $intBytes   = round($intMBytes*self::BYTE_TO_MBYTE);
+        $size       = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
+        $factor     = floor((strlen($intBytes) - 1) / 3);
+
+        return sprintf("%.{$intDecimals}f %s", $intBytes / pow(1024, $factor), @$size[$factor]);
+    }
+    
+    private function runSshCommand($appName, $strCommandToExec) {
+        return $this->getService('shell')
+                    ->execute(
+                        array_merge(
+                            ['ssh'], 
+                            $this->getService('ssh')->getSshArgs(),
+                            [
+                                $this->getSelectedEnvironment()->getSshUrl($appName),
+                                $strCommandToExec
+                            ]
+                        ), 
+                        null, true
+                    );
+    }
+    
 }
