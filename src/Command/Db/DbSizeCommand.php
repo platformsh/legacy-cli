@@ -82,33 +82,69 @@ class DbSizeCommand extends CommandBase
         $this->showEstimatedUsageTable($service, $database, $appName);
         $this->showInaccessibleSchemas($service, $database);
         
-        if($database['schema']!='pgsql' && $input->getOption('cleanup')) {
-            $this->showInnoDbTablesInNeedOfOptimizing($appName, $database);            
+        if($database['schema']!='pgsql' && $input->getOption('cleanup')){
+            $this->stdErr->writeln('');            
+            $this->CheckInnoDbTablesInNeedOfOptimizing($appName, $database);
+             
         }
         return 0;
     }
 
-    private function showInnoDbTablesInNeedOfOptimizing($appName, $database) {
+    private function getCleanupQueries($rows) {
+        return  array_filter(
+                    array_map(function($row) {
+                        if(!strpos($row, "\t")) {
+                            return null;
+                        }
+                        list($schema, $tablename) = explode("\t", $row);
+                        return sprintf('ALTER TABLE `%s`.`%s` ENGINE="InnoDB";', $schema, $tablename);
+                    }, $rows)
+                );
+    }
+
+    private function CheckInnoDbTablesInNeedOfOptimizing($appName, $database) {
         $this->stdErr->writeln('');
         $this->stdErr->writeln('---------------------------------------');
         $this->stdErr->writeln('');
 
-        $this->stdErr->write('Checking InnoDB data_free...');
+        $this->stdErr->write('Cleanup flag mentioned, checking InnoDB data_free...');
         $tablesNeedingCleanup = explode(PHP_EOL,$this->runSshCommand($appName, $this->mysqlTablesInNeedOfOptimizing($database)));
         
-        if(count($tablesNeedingCleanup)) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('You can save space by cleaning up by running the following commands during a maintenance window.');
-            $this->stdErr->writeln('<options=bold;fg=red>WARNING:</> Running these will lock up your database for several minutes. Only run these when you know what you\'re doing.');
-            $this->stdErr->writeln('');
-            foreach($tablesNeedingCleanup as $row) {
-                list($schema, $tablename) = explode("\t", $row);
-                $this->stdErr->writeln(sprintf('ALTER TABLE `%s`.`%s` ENGINE="InnoDB";', $schema, $tablename));
-            }
-            $this->stdErr->writeln('');
-        } else {
+        if(!count($tablesNeedingCleanup)) {
             $this->stdErr->writeln('<options=bold;fg=green> [ALL OK]</>');
+            return;
         }
+
+        $arrCleanupQueries = $this->getCleanupQueries($tablesNeedingCleanup);
+        if(!count($arrCleanupQueries)) {
+            $this->stdErr->writeln('<options=bold;fg=green> [ALL OK]</>');
+            return;
+        }
+
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('You can save space by cleaning up by running the following commands during a maintenance window.');
+        
+        foreach($arrCleanupQueries as $strSql) {
+            $this->stdErr->writeln($strSql);
+        }
+        
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('<options=bold;fg=red>WARNING:</> Running these will lock up your database for several minutes. Only run these when you know what you\'re doing.');
+        $this->stdErr->writeln('');
+        
+        //lets check if the user wants us to clean it up for him
+        if ($this->getService('question_helper')->confirm('Do you want to run these queries now?', false)) {
+            $this->stdErr->writeln('Running queries, this will take a while... ');
+            $this->stdErr->writeln('');
+            foreach(arrCleanupQueries as $strSql){
+                $this->stdErr->writeln('');
+                $this->stdErr->write($strSql);
+                $this->runSshCommand($appName, $this->getMysqlCommand($database, $strSql));
+                $this->stdErr->writeln('<options=bold;fg=green> [OK]</>');
+            }                
+        }
+
+        return $arrCleanupQueries;
     }
 
     private function showEstimatedUsageTable($service, $database, $appName) {
