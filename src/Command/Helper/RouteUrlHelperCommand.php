@@ -14,7 +14,7 @@ class RouteUrlHelperCommand extends HelperCommandBase
             ->addOption('id', null, InputOption::VALUE_REQUIRED, 'Find by route ID')
             ->addOption('primary', null, InputOption::VALUE_NONE, 'Find the primary route')
             ->addOption('upstream', null, InputOption::VALUE_REQUIRED, 'Find by upstream ID')
-            ->addOption('one', null, InputOption::VALUE_NONE, 'Return an error code if more than 1 relationship is found');
+            ->addOption('one', null, InputOption::VALUE_NONE, 'Return 1 URL (error if more than 1 is found)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
@@ -46,14 +46,23 @@ class RouteUrlHelperCommand extends HelperCommandBase
 
             return 1;
         }
-        $output->writeln(array_keys($matching));
 
-        if ($input->getOption('one') && count($matching) !== 1) {
-            $this->stdErr->writeln(sprintf('<error>Error</error>: %d matching routes found (1 requested)', count($matching)));
+        // Extract and sort the route URLs.
+        $urls = array_keys($matching);
+        usort($urls, [$this->api(), 'urlSort']);
 
-            return 1;
+        $success = true;
+        if ($input->getOption('one')) {
+            if (count($urls) !== 1) {
+                $this->stdErr->writeln(sprintf('%d route URLs found (1 requested)', count($urls)));
+                $success = false;
+            }
+
+            $output->writeln(reset($urls) ?: '');
+        } else {
+            $output->writeln($urls);
         }
 
-        return 0;
+        return $success ? 0 : 1;
     }
 }

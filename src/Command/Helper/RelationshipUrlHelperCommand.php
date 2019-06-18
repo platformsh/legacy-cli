@@ -16,7 +16,7 @@ class RelationshipUrlHelperCommand extends HelperCommandBase
             ->setDescription(sprintf('Extract URLs from %sRELATIONSHIPS', $this->config()->get('service.env_prefix')))
             ->addArgument('relationship', InputArgument::OPTIONAL, 'Find by relationship name')
             ->addOption('service', null, InputOption::VALUE_REQUIRED, 'Find by service name')
-            ->addOption('one', null, InputOption::VALUE_NONE, 'Return an error code if more than 1 relationship is found');
+            ->addOption('one', null, InputOption::VALUE_NONE, 'Return 1 relationship (error if more than 1 is found)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
@@ -64,14 +64,18 @@ class RelationshipUrlHelperCommand extends HelperCommandBase
             }
         }
 
-        $output->writeln($urls);
+        $success = true;
+        if ($input->getOption('one')) {
+            if (count($urls) !== 1) {
+                $this->stdErr->writeln(sprintf('%d relationship URLs found (1 requested)', count($urls)));
+                $success = false;
+            }
 
-        if ($input->getOption('one') && count($urls) !== 1) {
-            $this->stdErr->writeln(sprintf('<error>Error</error>: %d DSNs found (1 requested)', count($urls)));
-
-            return 1;
+            $output->writeln(reset($urls) ?: '');
+        } else {
+            $output->writeln($urls);
         }
 
-        return 0;
+        return $success ? 0 : 1;
     }
 }
