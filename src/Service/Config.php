@@ -116,16 +116,6 @@ class Config
     }
 
     /**
-     * Inject the filesystem service.
-     *
-     * @param Filesystem $fs
-     */
-    public function setFs(Filesystem $fs)
-    {
-        $this->fs = $fs;
-    }
-
-    /**
      * @return \Platformsh\Cli\Service\Filesystem
      */
     private function fs()
@@ -155,6 +145,19 @@ class Config
     public function getSessionDir()
     {
         return $this->getWritableUserDir() . '/.session';
+    }
+
+    /**
+     * Override a config value.
+     *
+     * @param string $name
+     * @param mixed  $value
+     *
+     * @internal Used for tests etc.
+     */
+    public function override($name, $value)
+    {
+        NestedArrayUtil::setNestedArrayValue(self::$config, explode('.', $name), $value);
     }
 
     /**
