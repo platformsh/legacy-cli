@@ -52,7 +52,7 @@ class RelationshipUrlHelperCommand extends HelperCommandBase
             foreach ($relationship as $endpoint) {
                 $parts = $endpoint;
                 $parts['user'] = $endpoint['username'];
-                unset($parts['user']);
+                unset($parts['username']);
                 if (is_array($parts['query'])) {
                     if ($parts['query'] === ['is_master' => true]) {
                         unset($parts['query']);
