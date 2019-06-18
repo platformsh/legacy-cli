@@ -25,6 +25,7 @@ class RouteUrlHelperCommand extends HelperCommandBase
             return 1;
         }
 
+        // Filter routes by the options given.
         $matching = $routes;
         if ($input->getOption('primary')) {
             $matching = array_filter($routes, function (array $route) {

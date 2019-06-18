@@ -49,20 +49,8 @@ class RelationshipUrlHelperCommand extends HelperCommandBase
 
         $urls = [];
         foreach ($matching as $relationship) {
-            foreach ($relationship as $endpoint) {
-                // Convert to parse_url parts.
-                $parts = $endpoint;
-                $parts['user'] = $endpoint['username'];
-                $parts['pass'] = $endpoint['password'];
-                unset($parts['username'], $parts['password']);
-                if (is_array($parts['query'])) {
-                    if ($parts['query'] === ['is_master' => true]) {
-                        unset($parts['query']);
-                    } else {
-                        $parts['query'] = (new Query($parts['query']))->__toString();
-                    }
-                }
-                $urls[] = Url::buildUrl($parts);
+            foreach ($relationship as $instance) {
+                $urls[] = $this->buildUrl($instance);
             }
         }
 
@@ -79,5 +67,28 @@ class RelationshipUrlHelperCommand extends HelperCommandBase
         }
 
         return $success ? 0 : 1;
+    }
+
+    /**
+     * Builds a URL from the parts included in a relationship array.
+     *
+     * @param array $relationship
+     *
+     * @return string
+     */
+    private function buildUrl(array $relationship) {
+        $parts = $relationship;
+
+        // Convert to parse_url parts.
+        $parts['user'] = $parts['username'];
+        $parts['pass'] = $parts['password'];
+        unset($parts['username'], $parts['password']);
+
+        // The 'query' is expected to be a string.
+        if (is_array($parts['query'])) {
+            $parts['query'] = (new Query($parts['query']))->__toString();
+        }
+
+        return Url::buildUrl($parts);
     }
 }
