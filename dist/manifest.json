@@ -1,5 +1,22 @@
 [
     {
+        "version": "3.43.0-alpha-helpers2",
+        "sha1": "c9409eab320136babd6987ba35d38871dc37de06",
+        "sha256": "541c63f4e2786d13338df9a590716cd561e4df5898160e53f9844a2502956eb6",
+        "name": "platform.phar",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.43.0-alpha-helpers2/platform.phar",
+        "php": {
+            "min": "5.5.9"
+        },
+        "updating": [
+            {
+                "notes": "* Add helper:variable command\n* Add helper:route-url command\n* Add helper:relationship-url command",
+                "show from": "3.42.2",
+                "hide from": "3.43.0-alpha-helpers2"
+            }
+        ]
+    },
+    {
         "version": "4.1.0-dev",
         "sha1": "253f333c0c65d015cec283e2ef033c1d19251535",
         "sha256": "80d0a832652d8713e2d94bd5aa0a7ae41428fd69a2905b786c1c3f78d95e7d54",
