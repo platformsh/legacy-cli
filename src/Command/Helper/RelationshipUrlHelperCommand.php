@@ -50,9 +50,11 @@ class RelationshipUrlHelperCommand extends HelperCommandBase
         $urls = [];
         foreach ($matching as $relationship) {
             foreach ($relationship as $endpoint) {
+                // Convert to parse_url parts.
                 $parts = $endpoint;
                 $parts['user'] = $endpoint['username'];
-                unset($parts['username']);
+                $parts['pass'] = $endpoint['password'];
+                unset($parts['username'], $parts['password']);
                 if (is_array($parts['query'])) {
                     if ($parts['query'] === ['is_master' => true]) {
                         unset($parts['query']);
