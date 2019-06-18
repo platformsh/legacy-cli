@@ -1,0 +1,27 @@
+name: app
+type: php:7.3
+disk: 128
+
+hooks:
+  build: |
+    set -e
+    mkdir -p web
+
+    export version=dev-"$PLATFORM_TREE_ID"
+
+    composer bin all install
+    ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$version" --output web/platform.phar
+
+    cat << EOF > .environment
+    export CLI_URL_PATH=platform.phar
+    export CLI_BUILD_DATE="$(date)"
+    export CLI_VERSION="$version"
+    EOF
+
+    mv dist/dev-build-index.php web/index.php
+
+web:
+  locations:
+    '/':
+      root: web
+      passthru: /index.php
