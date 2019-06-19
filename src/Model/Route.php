@@ -5,14 +5,21 @@ namespace Platformsh\Cli\Model;
 use Platformsh\Client\DataStructure\ReadOnlyStructureTrait;
 
 /**
- * @property-read string $original_url
- * @property-read string $type
- * @property-read string $upstream
- * @property-read string $to
+ * @property-read string      $original_url
+ * @property-read string      $type
+ * @property-read string      $upstream
+ * @property-read string      $to
+ * @property-read bool        $primary
+ * @property-read string|null $id
+ * @property-read string      $url
  */
 class Route
 {
     use ReadOnlyStructureTrait;
+
+    public static function fromData(array $data) {
+        return new static($data + ['id' => null, 'primary' => false]);
+    }
 
     /**
      * Translates routes found in $environment->getRoutes() to Route objects.

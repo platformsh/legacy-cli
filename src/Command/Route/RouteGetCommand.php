@@ -60,7 +60,7 @@ class RouteGetCommand extends CommandBase
         $id = $input->getOption('id');
         if (!$selectedRoute && $id !== null) {
             foreach ($routes as $route) {
-                if (isset($route->id) && $route->id === $id) {
+                if ($route->id === $id) {
                     $selectedRoute = $route;
                     break;
                 }
@@ -74,7 +74,7 @@ class RouteGetCommand extends CommandBase
 
         if (!$selectedRoute && $input->getOption('primary')) {
             foreach ($routes as $route) {
-                if (!empty($route->primary)) {
+                if ($route->primary) {
                     $selectedRoute = $route;
                     break;
                 }
@@ -100,7 +100,7 @@ class RouteGetCommand extends CommandBase
                 if (!empty($route->id)) {
                     $items[$originalUrl] .= ' (<info>' . $route->id . '</info>)';
                 }
-                if (!empty($route->primary)) {
+                if ($route->primary) {
                     $items[$originalUrl] .= ' - <info>primary</info>';
                 }
             }
@@ -131,7 +131,6 @@ class RouteGetCommand extends CommandBase
 
         // Add defaults.
         $selectedRoute = $selectedRoute->getProperties();
-        $selectedRoute += ['primary' => false, 'id' => null];
 
         /** @var PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->getService('property_formatter');
