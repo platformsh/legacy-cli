@@ -198,6 +198,7 @@ class Application extends ParentApplication
         $commands[] = new Command\User\UserGetCommand();
         $commands[] = new Command\User\UserUpdateCommand();
         $commands[] = new Command\Variable\VariableCreateCommand();
+        $commands[] = new Command\Variable\VariableDecodeCommand();
         $commands[] = new Command\Variable\VariableDeleteCommand();
         $commands[] = new Command\Variable\VariableDisableCommand();
         $commands[] = new Command\Variable\VariableEnableCommand();

@@ -1507,4 +1507,30 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         return $description;
     }
+
+    /**
+     * @return bool
+     */
+    protected function doesEnvironmentConflictWithCommandLine(InputInterface $input) {
+        $envPrefix = $this->config()->get('service.env_prefix');
+        if ($input->hasOption('project')
+            && $input->getOption('project')
+            && getenv($envPrefix . 'PROJECT')
+            && getenv($envPrefix . 'PROJECT') !== $input->getOption('project')) {
+            return true;
+        }
+        if ($input->hasOption('environment')
+            && $input->getOption('environment')
+            && getenv($envPrefix . 'BRANCH')
+            && getenv($envPrefix . 'BRANCH') !== $input->getOption('environment')) {
+            return true;
+        }
+        if ($input->hasOption('app') && $input->getOption('app')
+            && getenv($envPrefix . 'APPLICATION_NAME')
+            && getenv($envPrefix . 'APPLICATION_NAME') !== $input->getOption('app')) {
+            return true;
+        }
+
+        return false;
+    }
 }
