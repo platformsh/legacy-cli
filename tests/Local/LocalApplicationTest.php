@@ -6,15 +6,23 @@ use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\BuildFlavor\NoBuildFlavor;
 use Platformsh\Cli\Local\BuildFlavor\Symfony;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Service\Config;
 
 class LocalApplicationTest extends \PHPUnit_Framework_TestCase
 {
+
+    private $config;
+
+    public function setUp() {
+        $this->config = new Config();
+        $this->config->override('service.app_config_file', '_platform.app.yaml');
+    }
 
     public function testBuildFlavorDetectionDrupal()
     {
         $appRoot = 'tests/data/apps/drupal/project';
 
-        $app = new LocalApplication($appRoot);
+        $app = new LocalApplication($appRoot, $this->config);
 
         $this->assertInstanceOf(Drupal::class, $app->getBuildFlavor());
     }
@@ -23,7 +31,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     {
         $appRoot = 'tests/data/apps/symfony';
 
-        $app = new LocalApplication($appRoot);
+        $app = new LocalApplication($appRoot, $this->config);
 
         $this->assertInstanceOf(Symfony::class, $app->getBuildFlavor());
     }
@@ -35,7 +43,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     {
         $appRoot = 'tests/data/apps/vanilla';
 
-        $app = new LocalApplication($appRoot);
+        $app = new LocalApplication($appRoot, $this->config);
         $app->setConfig(['type' => 'hhvm:3.7', 'build' => ['flavor' => 'symfony']]);;
         $buildFlavor = $app->getBuildFlavor();
 
@@ -46,7 +54,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     {
         $fakeRepositoryRoot = 'tests/data/repositories/multiple';
 
-        $applications = LocalApplication::getApplications($fakeRepositoryRoot);
+        $applications = LocalApplication::getApplications($fakeRepositoryRoot, $this->config);
         $this->assertCount(6, $applications, 'Detect multiple apps');
     }
 
@@ -54,7 +62,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     {
         $fakeAppRoot = 'tests/data/apps/none';
 
-        $app = new LocalApplication($fakeAppRoot);
+        $app = new LocalApplication($fakeAppRoot, $this->config);
         $this->assertInstanceOf(NoBuildFlavor::class, $app->getBuildFlavor(), 'Config does not indicate a specific build flavor');
     }
 
@@ -62,7 +70,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/simple';
 
-        $app = new LocalApplication($fakeAppRoot);
+        $app = new LocalApplication($fakeAppRoot, $this->config);
         $config = $app->getConfig();
         $this->assertEquals(['name' => 'simple'], $config);
         $this->assertEquals('simple', $app->getId());
@@ -72,7 +80,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/nest';
 
-        $apps = LocalApplication::getApplications($fakeAppRoot);
+        $apps = LocalApplication::getApplications($fakeAppRoot, $this->config);
         $this->assertEquals(count($apps), 3);
     }
 
@@ -80,7 +88,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/nest/nested';
 
-        $app = new LocalApplication($fakeAppRoot);
+        $app = new LocalApplication($fakeAppRoot, $this->config);
         $config = $app->getConfig();
         $this->assertEquals(['name' => 'nested1'], $config);
         $this->assertEquals('nested1', $app->getName());
@@ -90,7 +98,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     public function testGetSharedFileMounts()
     {
         $appRoot = 'tests/data/apps/drupal/project';
-        $app = new LocalApplication($appRoot);
+        $app = new LocalApplication($appRoot, $this->config);
         $this->assertEquals([
             'public/sites/default/files' => 'files',
             'tmp' => 'tmp',

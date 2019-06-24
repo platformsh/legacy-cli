@@ -90,6 +90,7 @@ class Application extends ParentApplication
         $commands[] = new Command\BotCommand();
         $commands[] = new Command\ClearCacheCommand();
         $commands[] = new Command\CompletionCommand();
+        $commands[] = new Command\DecodeCommand();
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\LegacyMigrateCommand();
         $commands[] = new Command\MultiCommand();

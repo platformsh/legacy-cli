@@ -74,6 +74,7 @@ Global options:
 
 Available commands:
   clear-cache (clearcache, cc)              Clear the CLI cache
+  decode                                    Decode an encoded string such as PLATFORM_VARIABLES
   docs                                      Open the online documentation
   help                                      Displays help for a command
   list                                      Lists commands

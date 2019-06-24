@@ -9,7 +9,7 @@ class YamlParserTest extends \PHPUnit_Framework_TestCase
 {
     public function testParseValidYaml()
     {
-        $file = 'tests/data/apps/complex-yaml/.platform.app.yaml';
+        $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
         $parsed = (new YamlParser())->parseFile($file);
         $expected = [
             'name' => 'complex-yaml',
@@ -32,7 +32,7 @@ class YamlParserTest extends \PHPUnit_Framework_TestCase
 
     public function testParseInvalidYaml()
     {
-        $file = 'tests/data/apps/complex-yaml/.platform.app.yaml';
+        $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
         $content = file_get_contents($file);
         $content .= "\ntest: !include nonexistent.yml";
         $this->setExpectedException(InvalidConfigException::class, 'File not found');
