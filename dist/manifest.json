@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "54b3fc82ff88d48324844296d328c3eafc8d9718",
-        "sha256": "59ea34599bb60ab1b8641aaa17b5ad3180ae204c1caaf438299aa9584591afeb",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.42.2/platform.phar",
-        "version": "3.42.2",
+        "sha1": "3de8d69958c84b08f1930d6b4438b6daa261404b",
+        "sha256": "e82fb2c27130f53b0001cfabbbc58b8adba15fc23869929e73b83616d6d12ca0",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.43.0/platform.phar",
+        "version": "3.43.0",
         "php": {
             "min": "5.5.9"
         },
@@ -198,6 +198,11 @@
                 "notes": "* Support older shells in autocompletion setup (like Bash 3.x, installed by default on OS X).\n* Accept wholly indented YAML files under the !include syntax.\n* Pass max_allowed_packet setting to mysqldump.\n* Require confirmation when adding a git source integration (GitHub, Bitbucket or GitLab).\n* Improve GIT_SSH argument quoting (may improve old Git version compatibility).\n* Fix ssh for environments with broken config.\n* Support installing versions with unstable suffixes in installer.\n* Warn in installer about missing pcntl and posix extensions.\n* Display nothing rather than a placeholder for sensitive values in variable:list tsv/csv format.\n* Add beta (hidden for now) source-operation:run command.",
                 "show from": "3.41.0",
                 "hide from": "3.42.0"
+            },
+            {
+                "notes": "* Allow some commands to read from local environment variables when available:\n    * `route:list` (routes) and `route:get` can read from PLATFORM_ROUTES\n    * `relationship:list` (relationships) can read from PLATFORM_RELATIONSHIPS\n    * New `decode` command, to decode a base64- and JSON-encoded string such as\n      PLATFORM_VARIABLES, PLATFORM_APPLICATION, etc.\n* Add --id and --primary options to route:get command, to select a route.\n* Add `url` property to all relationships in `relationships` command (e.g. to\n  extract a DSN for a database).\n* Multiple changes to the `db:size` command (by @matthiaz):\n    * Improve accuracy of size estimates by altering psql commands and querying\n      for InnoDB-specific information.\n    * Add --bytes (-B) option to display sizes in bytes.\n    * Check if InnoDB tables can be optimized, and run optimizations\n      automatically with the `--cleanup` option.",
+                "show from": "3.42.0",
+                "hide from": "3.43.0"
             }
         ]
     }
