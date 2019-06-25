@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
@@ -18,17 +19,20 @@ class EnvironmentRelationshipsCommand extends CommandBase
 {
     protected static $defaultName = 'environment:relationships';
 
+    private $config;
     private $formatter;
     private $relationships;
     private $selector;
     private $ssh;
 
     public function __construct(
+        Config $config,
         PropertyFormatter $formatter,
         Relationships $relationships,
         Selector $selector,
         Ssh $ssh
     ) {
+        $this->config = $config;
         $this->formatter = $formatter;
         $this->relationships = $relationships;
         $this->selector = $selector;
@@ -58,7 +62,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'RELATIONSHIPS') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
             $this->debug('Reading relationships from local environment variable ' . $prefix . 'RELATIONSHIPS');
             $decoded = json_decode(base64_decode(getenv($prefix . 'RELATIONSHIPS'), true), true);

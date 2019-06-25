@@ -55,7 +55,7 @@ class RouteListCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Allow override via PLATFORM_ROUTES.
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
             $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);

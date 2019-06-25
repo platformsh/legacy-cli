@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -131,7 +132,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @return bool
      */
     protected function doesEnvironmentConflictWithCommandLine(InputInterface $input): bool {
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = (new Config())->get('service.env_prefix'); // FIXME dependency injection
         if ($input->hasOption('project')
             && $input->getOption('project')
             && getenv($envPrefix . 'PROJECT')

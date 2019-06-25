@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Tests\Command\Helper;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\DecodeCommand;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
@@ -11,7 +12,7 @@ class DecodeTest extends TestCase
 {
     private function runCommand(array $args) {
         $output = new BufferedOutput();
-        (new DecodeCommand())
+        (new DecodeCommand(new Config()))
             ->run(new ArrayInput($args), $output);
 
         return $output->fetch();
