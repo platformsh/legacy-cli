@@ -6,24 +6,24 @@ env: TEST_SCRIPT=scripts/test/unit.sh
 
 matrix:
   include:
-    - php: 7.1
+    - php: '7.1'
       env: TEST_SCRIPT=scripts/test/security.sh
-    - php: 7.3
+    - php: '7.3'
       env: TEST_SCRIPT=scripts/test/security.sh
 
-    - php: 7.1
+    - php: '7.1'
       env: TEST_SCRIPT=scripts/test/installer.sh
 
-    - php: 7.1
+    - php: '7.1'
       env: TEST_SCRIPT=scripts/test/unit.sh
-    - php: 7.2
+    - php: '7.2'
       env: TEST_SCRIPT=scripts/test/unit.sh
-    - php: 7.3
+    - php: '7.3'
       env: TEST_SCRIPT=scripts/test/unit.sh
     - php: nightly
       env: TEST_SCRIPT=scripts/test/unit.sh
 
-    - php: 7.3
+    - php: '7.3'
       env: TEST_SCRIPT=scripts/test/slow.sh
 
   allow_failures:
