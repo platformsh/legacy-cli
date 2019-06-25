@@ -36,15 +36,15 @@ class DecodeCommand extends CommandBase
             return 1;
         }
 
-        $decoded = base64_decode($variable, true);
-        if ($decoded === false) {
+        $b64decoded = base64_decode($variable, true);
+        if ($b64decoded === false) {
             $this->stdErr->writeln('Invalid value: base64 decoding failed.');
 
             return 1;
         }
 
-        $decoded = json_decode($decoded, true);
-        if (empty($decoded)) {
+        $decoded = json_decode($b64decoded, true);
+        if ($decoded === null) {
             $message = 'JSON decoding failed';
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $message .= ":\n" . json_last_error_msg();
@@ -52,6 +52,10 @@ class DecodeCommand extends CommandBase
             $this->stdErr->writeln($message);
 
             return 1;
+        }
+
+        if ($decoded === [] && $b64decoded === '{}') {
+            $decoded = new \stdClass();
         }
 
         if ($property = $input->getOption('property')) {
