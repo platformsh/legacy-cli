@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "5f2d76a8d5a0168870a32fce55738cf5af4d0718",
-        "sha256": "561ed33bd3fc5869fc9f65419aeb600f2cee439624183865b2370a6e31c7bf00",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.34.3/platform.phar",
-        "version": "3.34.3",
+        "sha1": "6c9e65d81e6b987db69e37f2d6fc11efffa9a98f",
+        "sha256": "4ad04e3f30ae8953e2630ea832b7b26476503110ffa1cc0e90f1269f26e78e47",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.43.1/platform.phar",
+        "version": "3.43.1",
         "php": {
             "min": "5.5.9"
         },
@@ -153,6 +153,56 @@
                 "notes": "New features:\n\n* Add `service:list` (`services`) command.\n* Add --depth option to `project:get` (`get`) command (allow shallow clones).\n* Add --rebase option to the `environment:synchronize` (`sync`) command.\n* Add --prune-branches option for GitHub and GitLab integrations.\n* Add --worker option to the `environment:ssh` (`ssh`) command.\n\nOther changes:\n\n* When running pg_dump via the `db:dump` command, use the --no-owner flag.\n* Fix the `--all` option in the `list` command.\n* Prefer .bashrc over .bash_profile in the installer (self:install command).\n* Remove legacy API workaround in `integration:update`.\n* Update user commands for upstream API fix (improves performance).",
                 "show from": "3.33.0",
                 "hide from": "3.34.0"
+            },
+            {
+                "notes": "New features:\n\n* Add commit:list (commits) and commit:get commands for viewing commits via the\n  API.\n* Add --commit (-c) option to repo:cat and repo:ls commands.\n* Add Bitbucket integration support.\n\nBug fixes:\n\n* Fix drush alias group name prepending bug. Custom aliases were having the\n  alias group name prepended every time they were recreated, e.g. \"@foo.bar\"\n  would become \"@foo.foo.bar\".\n* Allow changing the value of a project-level sensitive variable.\n\nOther changes:\n\n* Add explanations for \"Operation not available\" on environment actions.\n* Add additional help for the mount:size command.\n* Clean up --pipe output in the user:get command.\n* Show hidden service commands.",
+                "show from": "3.34.0",
+                "hide from": "3.35.0"
+            },
+            {
+                "notes": "* Fix a further source of 'Not logged in' errors immediately after login.\n* Add `integration:validate` command, and improve error reporting in other\n  integration commands.\n* Deprecate the --type option in the `integration:update` command.\n* Fix alpha UI URLs for environments in the `web` command.",
+                "show from": "3.35.0",
+                "hide from": "3.36.0"
+            },
+            {
+                "notes": "New features:\n\n* Add --columns option for all tables (to filter and order table columns).\n* Add non-default \"disk\" and \"size\" columns to app:list command.\n* Add non-default \"updated_at\" column to domains:list command.\n* Add non-default \"host\" column to project:list command.\n* Allow loading more than 10 snapshots via --limit in snapshot:list command.\n\nOther changes:\n\n* Change CSV/TSV table output to make it cleaner. CSV/TSV cells will now only\n  be enclosed in quote marks if necessary, conforming to RFC 4180.\n* Fail if password input cannot be hidden in auth:password-login command.\n* Set the remote only for new branches in environment:branch command.\n* Avoid wrapping dates in commit:list command.\n* Update list of allowed SSH key algorithms for ssh-key:add command.\n* Remove confirmation step in logout command.",
+                "show from": "3.36.0",
+                "hide from": "3.37.0"
+            },
+            {
+                "notes": "* Revert csv/tsv table output to use LF instead of CRLF line breaks.\n* Display project and environment title/ID in the following commands:\n  `activity:list` (`activities`), `domain:list` (`domains`),\n  `route:list` (`routes`), `snapshot:list` (`snapshots`),\n  `user:list` (`users`), `worker:list` (`workers`) \n* Local build: handle `python3` dependencies type (same as `python`).\n* Define the `path` column in the `mount:list` (`mounts`) command.\n* Parse project URLs from the beta unified-UI.",
+                "show from": "3.37.0",
+                "hide from": "3.37.2"
+            },
+            {
+                "notes": "* Allow restoring snapshots to another environment in snapshot:restore command\n  (with new --target and --branch-from options).\n* Sort interactive project/environment choices alphabetically.\n* Fix \"Name\"/\"name\" column should always have been \"Title\"/\"title\" in\n  environment:list command.\n* Define \"created\" and \"updated\" columns in environment:list command.\n* Remove interactivity check from installer.\n* Fix: environments with an empty name (e.g. '0') not being recognized.\n* Fix documentation in user:list, user:add and user:update commands.\n* Various changes and new features in certificate:list command:\n  - only show non-expired certificates by default\n  - add --ignore-expiry option for the previous behavior\n  - add --exclude-domain option to filter out certificates from the list\n  - add --pipe-domains option to list domains covered by certificates\n  - add \"certs\" alias\n  - define \"domains\" column (for the --columns option)",
+                "show from": "3.37.0",
+                "hide from": "3.38.0"
+            },
+            {
+                "notes": "New features:\n\n* Add tunnel:single command (allow opening a tunnel without posix/pcntl).\n\nBug fixes:\n\n* Fix bug where login to a new account does not log out from the old account.\n* Account for differing app roots in Drush aliases - allows generated Drush\n  aliases to work with Platform.sh Enterprise environments.\n* Fix Drush 9 alias compatibility (and remove Drush 9-beta compatibility).",
+                "show from": "3.38.0",
+                "hide from": "3.39.0"
+            },
+            {
+                "notes": "New features:\n\n* Support multiple schemas per database relationship:\n  - Add --schema option to `db:dump` and `db:sql` commands.\n  - Include the service name and schema in the `db:dump` default filename.\n  - Present a choice between schemas if no schema is specified.\n  - Make `db:size` schema agnostic but warn about inaccessible schemas.\n\nBug fixes:\n\n* Use a different Drush alias root for site-local versions 8 or 9. Drush 9\n  fails to find a Drupal root via a relative path in some circumstances.\n* Fix behavior of choice questions with no default in non-interactive mode.\n* Fix checkout command when there is only one branch.\n* Fix Drush lock files not being used in local:build command.\n\nOther changes:\n\n* Add some 3-letter command aliases:\n  - activity:list => activities => act\n  - environment:list => environments => env\n  - project:list => projects => pro\n  - variable:list => variables => var",
+                "show from": "3.39.0",
+                "hide from": "3.40.0"
+            },
+            {
+                "notes": "New features:\n\n* Better worker support:\n  - Improve worker selection in the environment:ssh (ssh) command.\n  - Add the --worker option to all mount commands.\n  - Add the --worker option to the environment:logs (log) command.\n  - If --app or --worker is not provided, the above commands will now prompt you\n  to choose between the app(s) or their worker(s).\n* Allow a nonexistent --target directory in the mount:download command (prompt\n  to create it).\n\nBug fixes:\n\n* Add environment commit SHA to the deployment cache key\n  This ensures old deployment information is not used when we know the environment\n  has changed.\n* Ensure migrated projects on a new host do not use cached information from the\n  old host.\n* Installer: the default config file should be .bash_profile on OS X.\n\nOther changes:\n\n* Update autocompletion library (stecman/symfony-console-completion)\n  Highlights:\n  - \"Adds support for quoted and escaped multi-word completions\"\n  - \"Fixes options appearing before the command name (eg. `program -v cmdname`)\n    breaking the detection of the command that should be completed for\"",
+                "show from": "3.40.0",
+                "hide from": "3.41.0"
+            },
+            {
+                "notes": "* Support older shells in autocompletion setup (like Bash 3.x, installed by default on OS X).\n* Accept wholly indented YAML files under the !include syntax.\n* Pass max_allowed_packet setting to mysqldump.\n* Require confirmation when adding a git source integration (GitHub, Bitbucket or GitLab).\n* Improve GIT_SSH argument quoting (may improve old Git version compatibility).\n* Fix ssh for environments with broken config.\n* Support installing versions with unstable suffixes in installer.\n* Warn in installer about missing pcntl and posix extensions.\n* Display nothing rather than a placeholder for sensitive values in variable:list tsv/csv format.\n* Add beta (hidden for now) source-operation:run command.",
+                "show from": "3.41.0",
+                "hide from": "3.42.0"
+            },
+            {
+                "notes": "* Allow some commands to read from local environment variables when available:\n    * `route:list` (routes) and `route:get` can read from PLATFORM_ROUTES\n    * `relationship:list` (relationships) can read from PLATFORM_RELATIONSHIPS\n    * New `decode` command, to decode a base64- and JSON-encoded string such as\n      PLATFORM_VARIABLES, PLATFORM_APPLICATION, etc.\n* Add --id and --primary options to route:get command, to select a route.\n* Add `url` property to all relationships in `relationships` command (e.g. to\n  extract a DSN for a database).\n* Multiple changes to the `db:size` command (by @matthiaz):\n    * Improve accuracy of size estimates by altering psql commands and querying\n      for InnoDB-specific information.\n    * Add --bytes (-B) option to display sizes in bytes.\n    * Check if InnoDB tables can be optimized, and run optimizations\n      automatically with the `--cleanup` option.",
+                "show from": "3.42.0",
+                "hide from": "3.43.0"
             }
         ]
     }
