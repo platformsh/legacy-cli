@@ -302,7 +302,7 @@ class SelfReleaseCommand extends CommandBase
         $manifestItem['sha256'] = hash_file('sha256', $pharFilename);
         $manifestItem['name'] = basename($pharPublicFilename);
         $manifestItem['url'] = $download_url;
-        $manifestItem['php']['min'] = '7.1.14';
+        $manifestItem['php']['min'] = '7.1.3';
         if (!empty($changelog)) {
             $manifestItem['updating'][] = [
                 'notes' => $changelog,
