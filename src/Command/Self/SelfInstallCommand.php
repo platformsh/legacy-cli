@@ -7,8 +7,11 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfInstallCommand extends CommandBase
@@ -18,21 +21,25 @@ class SelfInstallCommand extends CommandBase
     private $config;
     private $fs;
     private $questionHelper;
+    private $subCommandRunner;
 
     public function __construct(
         Config $config,
         Filesystem $fs,
-        QuestionHelper $questionHelper
+        QuestionHelper $questionHelper,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->config = $config;
         $this->fs = $fs;
         $this->questionHelper = $questionHelper;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this->setDescription('Install or update CLI configuration files');
+        $this->setDescription('Install or update CLI configuration files')
+             ->addOption('shell-type', null, InputOption::VALUE_REQUIRED, 'The shell type for autocompletion (bash or zsh)');
         $this->setHiddenAliases(['local:install']);
         $cliName = $this->config->get('application.name');
         $this->setHelp(<<<EOT
@@ -46,19 +53,60 @@ EOT
     {
         $configDir = $this->config->getUserConfigDir();
 
+        $this->stdErr->write('Copying resource files...');
         $rcFiles = [
-            'shell-config.rc',
-            'shell-config-bash.rc',
+            'resources/shell-config.rc',
+            'resources/shell-config-bash.rc',
         ];
         $fs = new \Symfony\Component\Filesystem\Filesystem();
-        foreach ($rcFiles as $rcFile) {
-            if (($rcContents = file_get_contents(CLI_ROOT . '/resources/' . $rcFile)) === false) {
-                $this->stdErr->writeln(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
-
-                return 1;
+        try {
+            foreach ($rcFiles as $rcFile) {
+                if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
+                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
+                }
+                $fs->dumpFile($configDir . '/' . $rcFile, $rcContents);
             }
-            $fs->dumpFile($configDir . '/' . $rcFile, $rcContents);
+        } catch (\Exception $e) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln($this->indentAndWrap($e->getMessage()));
+
+            // We can't do anything without these files, so exit.
+            return 1;
         }
+        $this->stdErr->writeln(' done');
+        $this->stdErr->writeln('');
+
+        $this->stdErr->write('Setting up autocompletion...');
+        try {
+            $args = [
+                '--generate-hook' => true,
+                '--program' => $this->config->get('application.executable'),
+            ];
+            if ($input->getOption('shell-type')) {
+                $args['--shell-type'] = $input->getOption('shell-type');
+            }
+            $buffer = new BufferedOutput();
+            $exitCode = $this->subCommandRunner->run('_completion', $args, $buffer);
+            if ($exitCode === 0 && ($autoCompleteHook = $buffer->fetch())) {
+                $fs->dumpFile($configDir . '/autocompletion.sh', $autoCompleteHook);
+                $this->stdErr->writeln(' done');
+            }
+        } catch (\Exception $e) {
+            // If stdout is not a terminal, then we tried but
+            // autocompletion probably isn't needed at all, as we are in the
+            // context of some kind of automated build. So ignore the error.
+            if (!$this->isTerminal(STDOUT)) {
+                $this->stdErr->writeln(' skipped');
+            }
+            // Otherwise, print the error and continue. The user probably
+            // wants to know what went wrong, but autocompletion is still not
+            // essential.
+            else {
+                $this->stdErr->writeln(' failed');
+                $this->stdErr->writeln($this->indentAndWrap($e->getMessage()));
+            }
+        }
+        $this->stdErr->writeln('');
 
         $shellConfigOverrideVar = $this->config->get('application.env_prefix') . 'SHELL_CONFIG_FILE';
         $shellConfigOverride = getenv($shellConfigOverrideVar);
@@ -364,5 +412,22 @@ EOT
         }
 
         return false;
+    }
+
+    /**
+     * Indents and word-wraps a string.
+     *
+     * @param string $str
+     * @param int    $indent
+     * @param int    $width
+     *
+     * @return string
+     */
+    private function indentAndWrap($str, $indent = 4, $width = 75)
+    {
+        $spaces = str_repeat(' ', $indent);
+        $wrapped = wordwrap($str, $width - $indent, PHP_EOL);
+
+        return $spaces . preg_replace('/\r\n|\r|\n/', '$0' . $spaces, $wrapped);
     }
 }

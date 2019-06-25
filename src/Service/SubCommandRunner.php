@@ -35,6 +35,7 @@ class SubCommandRunner
      * @param OutputInterface|null $output
      *
      * @return int
+     * @throws \Exception
      */
     public function run($commandName, array $arguments = [], OutputInterface $output = null)
     {
@@ -64,8 +65,12 @@ class SubCommandRunner
 
         $currentCommand = $this->application->getCurrentCommand();
         $this->application->setCurrentCommand($command);
-        $result = $command->run($cmdInput, $output ?: $this->output);
-        $this->application->setCurrentCommand($currentCommand);
+
+        try {
+            $result = $command->run($cmdInput, $output ?: $this->output);
+        } finally {
+            $this->application->setCurrentCommand($currentCommand);
+        }
 
         return $result;
     }

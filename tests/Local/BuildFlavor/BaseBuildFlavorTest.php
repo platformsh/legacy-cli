@@ -35,6 +35,10 @@ abstract class BaseBuildFlavorTest extends TestCase
     {
         self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
         self::$config = new CliConfig();
+
+        // We rename the app config file to avoid confusion when building the
+        // CLI itself on platform.sh
+        self::$config->override('service.app_config_file', '_platform.app.yaml');
     }
 
     /**

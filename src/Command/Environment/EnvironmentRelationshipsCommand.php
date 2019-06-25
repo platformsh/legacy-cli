@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Environment;
 
+use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Relationships;
@@ -57,12 +58,68 @@ class EnvironmentRelationshipsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
+        $prefix = $this->config()->get('service.env_prefix');
+        if (getenv($prefix . 'RELATIONSHIPS') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
+            $this->debug('Reading relationships from local environment variable ' . $prefix . 'RELATIONSHIPS');
+            $decoded = json_decode(base64_decode(getenv($prefix . 'RELATIONSHIPS'), true), true);
+            if (empty($decoded)) {
+                throw new \RuntimeException('Failed to decode: ' . $prefix . 'RELATIONSHIPS');
+            }
+            $relationships = $decoded;
+        } else {
+            $this->debug('Reading relationships via SSH');
 
-        $sshUrl = $selection->getEnvironment()
-            ->getSshUrl($selection->getAppName());
-        $value = $this->relationships->getRelationships($sshUrl, $input->getOption('refresh'));
+            $sshUrl = $this->selector->getSelection($input)
+                ->getRemoteContainer()
+                ->getSshUrl();
 
-        $this->formatter->displayData($output, $value, $input->getOption('property'));
+            $relationships = $this->relationships->getRelationships($sshUrl, $input->getOption('refresh'));
+        }
+
+        foreach ($relationships as $name => $relationship) {
+            foreach ($relationship as $index => $instance) {
+                if (!isset($instance['url'])) {
+                    $relationships[$name][$index]['url'] = $this->buildUrl($instance);
+                }
+            }
+        }
+
+        $this->formatter->displayData($output, $relationships, $input->getOption('property'));
+
+        return 0;
+    }
+
+    /**
+     * Builds a URL from the parts included in a relationship array.
+     *
+     * @param array $instance
+     *
+     * @return string
+     */
+    private function buildUrl(array $instance)
+    {
+        // Convert to \GuzzleHttp\Psr7\Uri parts.
+        $map = [
+            'scheme' => 'scheme',
+            'user' => 'username',
+            'pass' => 'password',
+            'host' => 'host',
+            'port' => 'port',
+            'path' => 'path',
+            'fragment' => 'fragment',
+        ];
+        $parts = [];
+        foreach ($map as $uriPart => $property) {
+            if (array_key_exists($property, $instance)) {
+                $parts[$uriPart] = $instance[$property];
+            }
+        }
+        $uri = Uri::fromParts($parts);
+
+        if (isset($instance['query'])) {
+            $uri = Uri::withQueryValues($uri, $instance['query']);
+        }
+
+        return $uri->__toString();
     }
 }

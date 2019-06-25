@@ -11,7 +11,7 @@ class YamlParserTest extends TestCase
 {
     public function testParseValidYaml()
     {
-        $file = 'tests/data/apps/complex-yaml/.platform.app.yaml';
+        $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
         $parsed = (new YamlParser())->parseFile($file);
         $expected = [
             'definition' => [
@@ -36,11 +36,31 @@ class YamlParserTest extends TestCase
 
     public function testParseInvalidYaml()
     {
-        $file = 'tests/data/apps/complex-yaml/.platform.app.yaml';
+        $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
         $content = file_get_contents($file);
         $content .= "\ntest: !include nonexistent.yml";
         $this->expectException(InvalidConfigException::class);
         $this->expectExceptionMessage('File not found');
         (new YamlParser())->parseContent($content, $file);
+    }
+
+    public function testParseIndentedYaml()
+    {
+        $file = 'example.yaml';
+        $content = <<<EOF
+
+  name: example-indented-yaml
+  key: value
+
+  foo:
+    nested: bar
+EOF;
+;
+        $result = (new YamlParser())->parseContent($content, $file);
+        $this->assertEquals([
+            'name' => 'example-indented-yaml',
+            'key' => 'value',
+            'foo' => ['nested' => 'bar'],
+        ], $result);
     }
 }
