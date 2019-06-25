@@ -31,6 +31,10 @@ class PropertyFormatter implements InputConfiguringInterface
      */
     public function format($value, $property = null)
     {
+        if ($value === null) {
+            return '';
+        }
+
         switch ($property) {
             case 'http_access':
                 return $this->formatHttpAccess($value);
@@ -159,7 +163,9 @@ class PropertyFormatter implements InputConfiguringInterface
             }
         }
 
-        if (!is_string($data)) {
+        if ($data === null) {
+            return;
+        } elseif (!is_string($data)) {
             $output->write(Yaml::dump($data, 5, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
         } else {
             $output->writeln($this->format($data, $key));
