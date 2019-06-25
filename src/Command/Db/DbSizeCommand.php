@@ -359,7 +359,7 @@ class DbSizeCommand extends CommandBase
             $innoDbSize = $this->runSshCommand($sshUrl, $this->mysqlInnodbQuery($database));
         }
 
-        $otherSizes = $this->runSshCommand($sshUrl, $this->mysqlNonInnodbQuery($database, !$allocatedSizeSupported));
+        $otherSizes = $this->runSshCommand($sshUrl, $this->mysqlNonInnodbQuery($database, (bool) $allocatedSizeSupported));
 
         return (int) $otherSizes + (int) $innoDbSize;
     }
