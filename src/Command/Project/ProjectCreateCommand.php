@@ -180,7 +180,11 @@ EOF
 
         $plans = [];
         foreach ($this->api()->getClient()->getPlans() as $plan) {
-            $plans[$plan->name] = sprintf('%s (%s)', $plan->label, $plan->price->__toString());
+            if ($plan->hasProperty('price', false)) {
+                $plans[$plan->name] = sprintf('%s (%s)', $plan->label, $plan->price->__toString());
+            } else {
+                $plans[$plan->name] = $plan->label;
+            }
         }
 
         return $plans;
