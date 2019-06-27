@@ -53,7 +53,9 @@ class DbSizeCommand extends CommandBase
             $this->stdErr->writeln('No database selected.');
             return 1;
         }
+
         if (!isset($database['service'])) {
+            $this->stdErr->writeln(print_r($database, true));
             $this->stdErr->writeln('Unable to find database service information.');
             return 1;
         }
@@ -67,9 +69,9 @@ class DbSizeCommand extends CommandBase
         $this->stdErr->writeln(sprintf('Checking database service <comment>%s</comment>...', $dbServiceName));
 
         $this->debug('Calculating estimated usage...');
-        $allocatedDisk = $service->disk * self::BYTE_TO_MEGABYTE;
+        $allocatedDisk  = $service->disk * self::BYTE_TO_MEGABYTE;
         $estimatedUsage = $this->getEstimatedUsage($sshUrl, $database);
-        $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
+        $percentageUsed = round($estimatedUsage['__TOTAL__'] * 100 / $allocatedDisk);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
@@ -77,18 +79,38 @@ class DbSizeCommand extends CommandBase
         $showInBytes = $input->getOption('bytes') || $machineReadable;
 
         $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => 'Percentage used'];
-        $values = [
-            'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
-            'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
-            'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
-        ];
-
         $this->stdErr->writeln('');
-        $table->render([$values], $columns);
+        $table->render([[
+            'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
+            'used' => $showInBytes ? $estimatedUsage['__TOTAL__'] : Helper::formatMemory($estimatedUsage['__TOTAL__']),
+            'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
+        ]], $columns);
 
         $this->showWarnings($percentageUsed);
 
-        $this->showInaccessibleSchemas($service, $database);
+
+
+        $db_table   = $this->getService('table');
+        $db_columns = ['db' => 'Database', 'used' => 'Estimated usage', 'percent_used' => 'Percentage used'];
+        $db_values  = [];
+        
+        foreach($estimatedUsage as $db=>$size) {
+            if($db=='__TOTAL__') { 
+                $db_values[] = new \Symfony\Component\Console\Helper\TableSeparator();
+            }
+            $db_values[] = [
+                'db' => $db==$database['path'] ? sprintf('<options=bold>%s</>',$db) : $db,
+                'used' => $showInBytes ? size : Helper::formatMemory($size),
+                'percent_used' => $this->formatPercentage(round($size * 100 / $estimatedUsage['__TOTAL__']), $machineReadable),
+            ];
+            
+        }
+        if(count($db_values)) {
+            $db_table->render($db_values, $db_columns);
+        } else {
+            $this->showInaccessibleSchemas($service, $database);//we don't need to do this for InnoDB mysql. We can access the data we need.
+        }        
+        
 
         if ($database['scheme'] !== 'pgsql' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
             $this->checkInnoDbTablesInNeedOfOptimizing($sshUrl, $database);
@@ -97,6 +119,9 @@ class DbSizeCommand extends CommandBase
         return 0;
     }
 
+    private function showEstimatedUsage() {
+        
+    }
     /**
      * Returns a list of cleanup queries for a list of tables.
      *
@@ -244,11 +269,13 @@ class DbSizeCommand extends CommandBase
         $relationships = $this->getService('relationships');
         $connectionParams = $relationships->getDbCommandArgs('mysql', $database, '');
 
-        return sprintf(
+        $return =sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
             $connectionParams,
             $query
         );
+
+        return $return;
     }
 
     /**
@@ -282,8 +309,18 @@ class DbSizeCommand extends CommandBase
      */
     private function mysqlInnodbQuery(array $database)
     {
-        $query = 'SELECT SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces;';
-
+        $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+        $service    = $deployment->getService($database['service']);
+        $databases  = array_keys($service->configuration['endpoints'][$database['rel']]['privileges']);
+        
+        //convert database names to OR statements that the sys_tablespaces can use.
+        $strDbs     = implode(' OR ', array_map(
+                                        function($database) {
+                                            return "`NAME` LIKE \"$database/%\"";
+                                        },$databases)
+        );   
+        
+        $query      = 'SELECT LEFT(`NAME`, LOCATE("/",`NAME`)-1), SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces GROUP BY LEFT(`NAME`, LOCATE("/",`NAME`)-1);';
         return $this->getMysqlCommand($database, $query);
     }
 
@@ -320,11 +357,11 @@ class DbSizeCommand extends CommandBase
      * @param string $sshUrl
      * @param array  $database
      *
-     * @return int Estimated usage in bytes.
+     * @return array ['__TOTAL__'=>0,...]
      */
     private function getEstimatedUsage($sshUrl, array $database) {
         if ($database['scheme'] === 'pgsql') {
-            return $this->getPgSqlUsage($sshUrl, $database);
+            return ['__TOTAL__'=>$this->getPgSqlUsage($sshUrl, $database)];
         }
 
         return $this->getMySqlUsage($sshUrl, $database);
@@ -352,16 +389,19 @@ class DbSizeCommand extends CommandBase
      */
     private function getMySqlUsage($sshUrl, array $database) {
         $this->debug('Getting MySQL usage...');
-        $allocatedSizeSupported = $this->runSshCommand($sshUrl, $this->mysqlInnodbAllocatedSizeExists($database));
-        $innoDbSize = 0;
-        if ($allocatedSizeSupported) {
+        $isAllocatedSizeSupported= $this->runSshCommand($sshUrl, $this->mysqlInnodbAllocatedSizeExists($database));        
+        $otherSizes              = $this->runSshCommand($sshUrl, $this->mysqlNonInnodbQuery($database, (bool) $isAllocatedSizeSupported));
+        $innoDbSizes            =[];
+            
+        if ($isAllocatedSizeSupported) {
             $this->debug('Checking InnoDB separately for more accurate results...');
-            $innoDbSize = $this->runSshCommand($sshUrl, $this->mysqlInnodbQuery($database));
+            foreach(explode(PHP_EOL,$this->runSshCommand($sshUrl, $this->mysqlInnodbQuery($database))) as $row) {
+                list($dbName, $dbSize) = explode("\t", $row);
+                $innoDbSizes[$dbName] = $dbSize;
+            }            
         }
 
-        $otherSizes = $this->runSshCommand($sshUrl, $this->mysqlNonInnodbQuery($database, (bool) $allocatedSizeSupported));
-
-        return (int) $otherSizes + (int) $innoDbSize;
+        return $innoDbSizes + ['__OTHER__'=>$otherSizes, '__TOTAL__'=>array_sum($innoDbSizes)+$otherSizes];
     }
 
     /**
