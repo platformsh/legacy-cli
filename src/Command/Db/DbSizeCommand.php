@@ -100,7 +100,7 @@ class DbSizeCommand extends CommandBase
             $db_values[] = [
                 'db' => $db==$database['path'] ? sprintf('<options=bold>%s</>',$db) : $db,
                 'used' => $showInBytes ? size : Helper::formatMemory($size),
-                'percent_used' => $db=='__TOTAL__' ? '' : $this->formatPercentage(round($size * 100 / $estimatedUsage['__TOTAL__']), $machineReadable),
+                'percent_used' => $db=='__TOTAL__' ? '' : $this->formatPercentage(round($size * 100 / $estimatedUsage['__TOTAL__']), $machineReadable, false),
             ];
             
         }
@@ -409,12 +409,13 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function formatPercentage($percentage, $machineReadable) {
+    private function formatPercentage($percentage, $machineReadable, $blnUseColour=true) {
         if ($machineReadable) {
             return round($percentage);
         }
-
-        if ($percentage > self::RED_WARNING_THRESHOLD) {
+        if(!$blnUseColour) {
+            $format = '~ %d%%';
+        } elseif ($percentage > self::RED_WARNING_THRESHOLD) {
             $format = '<options=bold;fg=red>~ %d%%</>';
         } elseif ($percentage > self::YELLOW_WARNING_THRESHOLD) {
             $format = '<options=bold;fg=yellow>~ %d%%</>';
