@@ -55,7 +55,6 @@ class DbSizeCommand extends CommandBase
         }
 
         if (!isset($database['service'])) {
-            $this->stdErr->writeln(print_r($database, true));
             $this->stdErr->writeln('Unable to find database service information.');
             return 1;
         }
@@ -269,13 +268,11 @@ class DbSizeCommand extends CommandBase
         $relationships = $this->getService('relationships');
         $connectionParams = $relationships->getDbCommandArgs('mysql', $database, '');
 
-        $return =sprintf(
+        return sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
             $connectionParams,
             $query
         );
-
-        return $return;
     }
 
     /**
