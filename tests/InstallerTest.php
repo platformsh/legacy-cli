@@ -67,17 +67,17 @@ class InstallerTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertEquals('3.0.1', (new VersionResolver())->findLatestVersion([
             ['version' => '1.0.0'],
+            ['version' => '3.0.1'],
             ['version' => '2.0.0'],
             ['version' => '3.0.0'],
-            ['version' => '3.0.1'],
         ], '2.0')['version']);
 
         $this->setExpectedException(\RuntimeException::class);
         (new VersionResolver())->findLatestVersion([
             ['version' => '1.0.0'],
+            ['version' => '3.0.1'],
             ['version' => '2.0.0'],
             ['version' => '3.0.0'],
-            ['version' => '3.0.1'],
         ], 'v3.1');
     }
 

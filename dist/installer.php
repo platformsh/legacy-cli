@@ -18,7 +18,7 @@
  *      --no-ansi              Disable ANSI (no colors).
  *      --ansi                 Enable ANSI (e.g. for colors).
  *      --min                  Min version to install.
- *      --max                  Max version to install.
+ *      --max                  Max version to install (not recommended).
  *
  * This file's syntax must support PHP 5.5.9 or higher.
  * It must not include any other files.
