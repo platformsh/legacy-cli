@@ -100,7 +100,7 @@ class DbSizeCommand extends CommandBase
             $db_values[] = [
                 'db' => $db==$database['path'] ? sprintf('<options=bold>%s</>',$db) : $db,
                 'used' => $showInBytes ? size : Helper::formatMemory($size),
-                'percent_used' => $this->formatPercentage(round($size * 100 / $estimatedUsage['__TOTAL__']), $machineReadable),
+                'percent_used' => $db=='__TOTAL__' ? '' : $this->formatPercentage(round($size * 100 / $estimatedUsage['__TOTAL__']), $machineReadable),
             ];
             
         }
