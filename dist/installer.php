@@ -4,9 +4,24 @@
  * @file
  * Platform.sh CLI installer.
  *
- * This file's syntax must support PHP 5.5.9 or higher.
+ * This script will check requirements, download the CLI, move it into place,
+ * and run the self:install command (to set up the PATH and autocompletion).
  *
- * It must not depend on any other application files.
+ * Example (via curl):
+ *      curl -sS https://platform.sh/cli/installer | php -- --min 3.43.0
+ *
+ * Example (via downloaded file):
+ *      php installer.php -- --min 3.43.0
+ *
+ * Supported options:
+ *      --alpha, --beta, --dev Install an unstable version.
+ *      --no-ansi              Disable ANSI (no colors).
+ *      --ansi                 Enable ANSI (e.g. for colors).
+ *      --min                  Min version to install.
+ *      --max                  Max version to install (not recommended).
+ *
+ * This file's syntax must support PHP 5.5.9 or higher.
+ * It must not include any other files.
  */
 
 namespace Platformsh\Cli\Installer;
@@ -35,13 +50,15 @@ class Installer {
     private $executable;
     private $cliName;
     private $pharName;
+    private $argv;
 
-    public function __construct() {
+    public function __construct(array $args = []) {
         $this->manifestUrl = getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://platform.sh/cli/manifest.json';
         $this->configDir = '.platformsh';
         $this->executable = 'platform';
         $this->cliName = 'Platform.sh CLI';
         $this->pharName = $this->executable . '.phar';
+        $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
     }
 
     /**
@@ -166,10 +183,9 @@ class Installer {
             exit(1);
         }
 
-        global $argv;
         $allowedSuffixes = ['stable'];
         foreach (['beta', 'alpha', 'dev'] as $suffix) {
-            if (in_array('--' . $suffix, $argv, true)) {
+            if ($this->flagEnabled($suffix)) {
                 $allowedSuffixes[] = $suffix;
             }
         }
@@ -180,7 +196,12 @@ class Installer {
             $this->output('  ' . $resolver->explainNoInstallableVersions($manifest, $phpVersion, $allowedSuffixes), 'error');
             exit(1);
         }
-        $latest = $resolver->findLatestVersion($versions);
+        try {
+            $latest = $resolver->findLatestVersion($versions, $this->getOption('min'), $this->getOption('max'));
+        } catch (\Exception $e) {
+            $this->output('  ' . $e->getMessage(), 'error');
+            exit(1);
+        }
 
         $this->output("  Downloading version {$latest['version']}...");
         if (!file_put_contents($this->pharName, file_get_contents($latest['url']))) {
@@ -315,6 +336,46 @@ class Installer {
     }
 
     /**
+     * Test if a flag is on the command line.
+     *
+     * @param string $flag A flag name (only letters, shortcuts not supported).
+     *
+     * @return bool
+     */
+    private function flagEnabled($flag) {
+        return in_array('--' . $flag, $this->argv, true);
+    }
+
+    /**
+     * Get a command-line option that requires a value.
+     *
+     * @param string $name An option name (only letters, shortcuts not supported).
+     *
+     * @return string
+     */
+    private function getOption($name) {
+        $value = '';
+        foreach ($this->argv as $key => $arg) {
+            if (strpos($arg, '--' . $name . '=') === 0) {
+                $value = substr($arg, strlen('--' . $name . '='));
+                break;
+            }
+            $next = isset($this->argv[$key + 1]) && substr($this->argv[$key + 1], 0, 1) !== '-'
+                ? $this->argv[$key + 1]
+                : '';
+            if ($arg === '--' . $name) {
+                if ($next === '') {
+                    throw new \InvalidArgumentException('Option --' . $name . ' requires a value');
+                }
+                $value = $next;
+                break;
+            }
+        }
+
+        return $value;
+    }
+
+    /**
      * Returns whether to use ANSI escape sequences.
      *
      * @return bool
@@ -327,10 +388,10 @@ class Installer {
 
         global $argv;
         if (!empty($argv)) {
-            if (in_array('--no-ansi', $argv)) {
+            if ($this->flagEnabled('no-ansi')) {
                 return $ansi = false;
             }
-            elseif (in_array('--ansi', $argv)) {
+            elseif ($this->flagEnabled('ansi')) {
                 return $ansi = true;
             }
         }
@@ -432,21 +493,40 @@ class VersionResolver {
     /**
      * Finds the latest version in a list of versions.
      *
-     * @param array $versions
+     * @param array  $versions
+     * @param string $min
+     * @param string $max
+     *
+     * @throws \RuntimeException
      *
      * @return array
      */
-    public function findLatestVersion(array $versions) {
-        $latest = [];
+    public function findLatestVersion(array $versions, $min = '', $max = '') {
+        usort($versions, function (array $a, array $b) {
+            return version_compare($a['version'], $b['version']);
+        });
+        $selected = [];
         foreach ($versions as $version) {
-            if (empty($latest) || version_compare($version['version'], $latest['version'], '>')) {
-                $latest = $version;
+            $satisfiesMin = $min === '' || version_compare($version['version'], ltrim($min, 'v'), '>=');
+            $satisfiesMax = $max === '' || version_compare($version['version'], ltrim($max, 'v'), '<=');
+            if ($satisfiesMin && $satisfiesMax) {
+                $selected = $version;
             }
         }
-        if (empty($latest)) {
-            throw new \RuntimeException('Failed to find latest version in list');
+        if (empty($selected)) {
+            $message = 'Failed to find a version';
+            if ($min !== '') {
+                $message .= ' >= ' . $min;
+            }
+            if ($max !== '') {
+                if ($min !== '') {
+                    $message .= ' and';
+                }
+                $message .= ' <= ' . $max;
+            }
+            throw new \RuntimeException($message);
         }
 
-        return $latest;
+        return $selected;
     }
 }
