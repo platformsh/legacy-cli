@@ -1,8 +1,12 @@
+<?php
+require '../vendor/autoload.php';
+$config = new \Platformsh\Cli\Service\Config();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Platform.sh CLI | dev build</title>
+    <title><?= htmlspecialchars($config->get('application.name')) ?> | dev build</title>
     <style>
         html {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -43,7 +47,7 @@
         width="100"
         height="100">
 
-    <h1>Platform.sh CLI</h1>
+    <h1><?= htmlspecialchars($config->get('application.name')) ?></h1>
     <h2>Development build</h2>
 
     <p>

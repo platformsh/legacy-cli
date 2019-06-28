@@ -18,6 +18,8 @@ class YamlParser
      *
      * @param string $filename
      *
+     * @throws \Platformsh\Cli\Exception\InvalidConfigException if the config is invalid
+     * @throws ParseException if the config could not be parsed
      * @throws \Exception if the file cannot be read
      *
      * @return mixed
