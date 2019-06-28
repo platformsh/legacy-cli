@@ -19,6 +19,9 @@ class DbSizeCommand extends CommandBase
     const YELLOW_WARNING_THRESHOLD = 80;//percentage
     const BYTE_TO_MEGABYTE = 1048576;
     const WASTED_SPACE_WARNING_THRESHOLD = 200;//percentage
+    const IB_LOG_FILE_SIZE = 104857600; //2*50MB
+    const IB_TMP_FILE_SIZE = 12582912; //12MB
+    const MIN_NR_OF_SYS_TABLES = 82;
 
     /**
      * {@inheritDoc}
@@ -90,7 +93,7 @@ class DbSizeCommand extends CommandBase
 
 
         $db_table   = $this->getService('table');
-        $db_columns = ['db' => 'Database', 'used' => 'Estimated usage', 'percent_used' => 'Percentage used'];
+        $db_columns = ['db' => 'Database', 'used' => 'Estimated usage', 'percent' => 'Percentage'];
         $db_values  = [];
         
         foreach($estimatedUsage as $db=>$size) {
@@ -100,7 +103,7 @@ class DbSizeCommand extends CommandBase
             $db_values[] = [
                 'db' => $db==$database['path'] ? sprintf('<options=bold>%s</>',$db) : $db,
                 'used' => $showInBytes ? size : Helper::formatMemory($size),
-                'percent_used' => $db=='__TOTAL__' ? '' : $this->formatPercentage(round($size * 100 / $estimatedUsage['__TOTAL__']), $machineReadable, false),
+                'percent' => $db=='__TOTAL__' ? '' : $this->formatPercentage(round($size * 100 / $estimatedUsage['__TOTAL__']), $machineReadable, false),
             ];
             
         }
@@ -268,11 +271,12 @@ class DbSizeCommand extends CommandBase
         $relationships = $this->getService('relationships');
         $connectionParams = $relationships->getDbCommandArgs('mysql', $database, '');
 
-        return sprintf(
+        $return =sprintf(
             "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
             $connectionParams,
             $query
         );
+        return $return;
     }
 
     /**
@@ -287,12 +291,14 @@ class DbSizeCommand extends CommandBase
     {
         $query = 'SELECT'
             . ' ('
-            . 'SUM(data_length+index_length+data_free)'
-            . ' + (COUNT(*) * 300 * 1024)'
+            . 'SUM('
+            . ($excludeInnoDb ? 'IF(ENGINE <> "InnoDB",data_length+index_length+data_free,0)' : 'data_length+index_length+data_free')
+            . ')'
+            . ' + ((COUNT(*)+'.self::MIN_NR_OF_SYS_TABLES.') * 450 * 1024) + ' . (self::IB_LOG_FILE_SIZE + self::IB_TMP_FILE_SIZE)
             . ')'
             . ' AS estimated_actual_disk_usage'
             . ' FROM information_schema.tables'
-            . ($excludeInnoDb ? ' WHERE ENGINE <> "InnoDB"' : '');
+            ;
         
         return $this->getMysqlCommand($database, $query);
     }
@@ -388,6 +394,7 @@ class DbSizeCommand extends CommandBase
         $this->debug('Getting MySQL usage...');
         $isAllocatedSizeSupported= $this->runSshCommand($sshUrl, $this->mysqlInnodbAllocatedSizeExists($database));        
         $otherSizes              = $this->runSshCommand($sshUrl, $this->mysqlNonInnodbQuery($database, (bool) $isAllocatedSizeSupported));
+        
         $innoDbSizes            =[];
             
         if ($isAllocatedSizeSupported) {
