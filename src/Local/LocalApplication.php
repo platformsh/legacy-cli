@@ -135,6 +135,7 @@ class LocalApplication
      * Get the application's configuration, parsed from its YAML definition.
      *
      * @return array
+     * @throws \Exception
      */
     public function getConfig()
     {
@@ -144,19 +145,18 @@ class LocalApplication
     /**
      * Get the application's configuration as an object.
      *
-     * @throws \Exception if the configuration file cannot be read
-     * @throws InvalidConfigException if config is invalid
+     * @throws InvalidConfigException if config is not found or invalid
      *
      * @return AppConfig
      */
     private function getConfigObject()
     {
         if (!isset($this->config)) {
-            $config = [];
             $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
-            if (file_exists($file)) {
-                $config = (array) (new YamlParser())->parseFile($file);
+            if (!file_exists($file)) {
+                throw new InvalidConfigException('Configuration file not found: ' . $file);
             }
+            $config = (array) (new YamlParser())->parseFile($file);
             $this->config = new AppConfig($config);
         }
 
