@@ -957,7 +957,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } elseif ($input->isInteractive()) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            if ($includeWorkers) {
+            if ($includeWorkers && count($deployment->workers)) {
                 $text = sprintf('Enter a number to choose %s app or %s worker:',
                     count($appNames) === 1 ? 'the' : 'an',
                     count($choices) === 2 ? 'its' : 'a'
