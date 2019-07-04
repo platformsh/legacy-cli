@@ -34,7 +34,7 @@ class RouteListCommand extends CommandBase
         if (getenv($prefix . 'ROUTES') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
             $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
-            if (empty($decoded)) {
+            if (!is_array($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
             }
             $routes = Route::fromVariables($decoded);
