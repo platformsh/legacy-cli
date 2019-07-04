@@ -831,6 +831,11 @@ class Api
         foreach ($routes as $url => $route) {
             if ($route->type === 'upstream' && $route->__get('upstream') === $appName) {
                 $appUrls[] = $url;
+
+                // Use the primary route, if it matches this app.
+                if (!empty($route->primary)) {
+                    return $url;
+                }
             }
         }
         usort($appUrls, [$this, 'urlSort']);
