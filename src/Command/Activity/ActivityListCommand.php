@@ -103,7 +103,7 @@ class ActivityListCommand extends CommandBase
         }
 
         $headers = ['ID', 'Created', 'Completed', 'Description', 'Progress', 'State', 'Result', 'Environment(s)'];
-        $defaultColumns = ['ID', 'Created', 'Description', 'Progress', 'State', 'Result'];
+        $defaultColumns = ['ID', 'Created', 'Description', 'State', 'Result'];
 
         if (!$environmentSpecific) {
             $defaultColumns[] = 'Environment(s)';

@@ -84,7 +84,7 @@ class ProjectListCommand extends CommandBase
         $machineReadable = $this->table->formatIsMachineReadable();
 
         $header = ['ID', 'Title', 'URL', 'Host'];
-        $defaultColumns = ['ID', 'Title', 'URL'];
+        $defaultColumns = ['ID', 'Title', 'Host'];
 
         $rows = [];
         foreach ($projects as $project) {
