@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -22,12 +23,22 @@ class EnvironmentUrlCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-
-        $selectedEnvironment = $this->getSelectedEnvironment();
-
-        $urls = $selectedEnvironment->getRouteUrls();
-        if (empty($urls)) {
+        // Allow override via PLATFORM_ROUTES.
+        $prefix = $this->config()->get('service.env_prefix');
+        if (getenv($prefix . 'ROUTES') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
+            $this->debug('Reading URLs from environment variable ' . $prefix . 'ROUTES');
+            $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
+            if (empty($decoded)) {
+                throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
+            }
+            $routes = Route::fromVariables($decoded);
+        } else {
+            $this->debug('Reading URLs from the API');
+            $this->validateInput($input);
+            $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+            $routes = Route::fromDeploymentApi($deployment->routes);
+        }
+        if (empty($routes)) {
             $output->writeln("No URLs found");
             return 1;
         }
