@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Command\Helper;
+namespace Platformsh\Cli\Tests\Command\Environment;
 
 use Platformsh\Cli\Command\Environment\EnvironmentUrlCommand;
 use Symfony\Component\Console\Input\ArrayInput;
