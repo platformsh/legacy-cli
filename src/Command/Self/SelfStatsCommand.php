@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Self;
 
+use GuzzleHttp\Client;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -57,13 +58,11 @@ class SelfStatsCommand extends CommandBase
     {
         $repo = $this->config->get('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
-        $response = $this->api
-            ->getHttpClient()
+        $response = (new Client())
             ->request('get', 'https://api.github.com/repos/' . $repoUrl . '/releases', [
                 'headers' => [
                     'Accept' => 'application/vnd.github.v3+json',
                 ],
-                'auth' => false,
                 'query' => [
                     'page' => (int) $input->getOption('page'),
                     'per_page' => 20,
