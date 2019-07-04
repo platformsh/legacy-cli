@@ -454,23 +454,30 @@ class Api
     /**
      * Get a user's account info.
      *
-     * @param ProjectAccess $user
-     * @param bool $reset
+     * @param ProjectAccess $access
+     * @param bool          $reset
      *
      * @return array
      *   An array containing 'email' and 'display_name'.
      */
-    public function getAccount(ProjectAccess $user, $reset = false)
+    public function getAccount(ProjectAccess $access, $reset = false)
     {
-        if (isset(self::$accountsCache[$user->id]) && !$reset) {
-            return self::$accountsCache[$user->id];
+        if (isset(self::$accountsCache[$access->id]) && !$reset) {
+            return self::$accountsCache[$access->id];
         }
 
-        $cacheKey = 'account:' . $user->id;
+        $cacheKey = 'account:' . $access->id;
         if ($reset || !($details = $this->cache->fetch($cacheKey))) {
-            $details = $user->getAccount()->getProperties();
-            $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
-            self::$accountsCache[$user->id] = $details;
+            $data = $access->getData();
+            // Use embedded user information if possible.
+            if (isset($data['_embedded']['users'][0]) && count($data['_embedded']['users']) === 1) {
+                $details = $data['_embedded']['users'][0];
+                self::$accountsCache[$access->id] = $details;
+            } else {
+                $details = $access->getAccount()->getProperties();
+                $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
+                self::$accountsCache[$access->id] = $details;
+            }
         }
 
         return $details;
