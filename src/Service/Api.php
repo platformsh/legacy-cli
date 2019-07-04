@@ -730,7 +730,7 @@ class Api
     }
 
     /**
-     * Get the HTTP client.
+     * Get the authenticated HTTP client.
      *
      * @return ClientInterface
      */
