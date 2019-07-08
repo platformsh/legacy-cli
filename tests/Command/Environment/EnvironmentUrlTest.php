@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Tests\Command\Environment;
 use Platformsh\Cli\Command\Environment\EnvironmentUrlCommand;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * @group commands
@@ -32,8 +33,9 @@ class EnvironmentUrlTest extends \PHPUnit_Framework_TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    private function runCommand(array $args) {
+    private function runCommand(array $args, $verbosity = OutputInterface::VERBOSITY_NORMAL) {
         $output = new BufferedOutput();
+        $output->setVerbosity($verbosity);
         (new EnvironmentUrlCommand())
             ->run(new ArrayInput($args), $output);
 
@@ -61,10 +63,18 @@ class EnvironmentUrlTest extends \PHPUnit_Framework_TestCase
     }
 
     public function testNonExistentBrowserIsNotFound() {
+        putenv('DISPLAY=fake');
         $result = $this->runCommand([
             '--browser' => 'nonexistent',
         ]);
         $this->assertContains('Command not found: nonexistent', $result);
+        $this->assertContains("https://example.com\n", $result);
+
+        putenv('DISPLAY=none');
+        $result = $this->runCommand([
+            '--browser' => 'nonexistent',
+        ], OutputInterface::VERBOSITY_DEBUG);
+        $this->assertContains('no display found', $result);
         $this->assertContains("https://example.com\n", $result);
     }
 }

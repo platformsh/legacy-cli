@@ -106,7 +106,11 @@ class Url implements InputConfiguringInterface
      */
     public function hasDisplay()
     {
-        return getenv('DISPLAY') || OsUtil::isWindows() || OsUtil::isOsX();
+        if (getenv('DISPLAY')) {
+            return getenv('DISPLAY') !== 'none';
+        }
+
+        return OsUtil::isWindows() || OsUtil::isOsX();
     }
 
     /**
