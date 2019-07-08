@@ -341,6 +341,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($method === 'browser') {
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
                 $questionHelper = $this->getService('question_helper');
+                /** @var \Platformsh\Cli\Service\Url $url */
                 $urlService = $this->getService('url');
                 if ($urlService->canOpenUrls()
                     && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
