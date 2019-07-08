@@ -6,6 +6,7 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
+use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
@@ -826,11 +827,16 @@ class Api
     public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
     {
         $deployment = $deployment ?: $this->getCurrentDeployment($environment);
-        $routes = $deployment->routes;
+        $routes = Route::fromDeploymentApi($deployment->routes);
         $appUrls = [];
-        foreach ($routes as $url => $route) {
-            if ($route->type === 'upstream' && $route->__get('upstream') === $appName) {
-                $appUrls[] = $url;
+        foreach ($routes as $route) {
+            if ($route->type === 'upstream' && $route->getUpstreamName() === $appName) {
+                // Use the primary route, if it matches this app.
+                if ($route->primary) {
+                    return $route->url;
+                }
+
+                $appUrls[] = $route->url;
             }
         }
         usort($appUrls, [$this, 'urlSort']);
