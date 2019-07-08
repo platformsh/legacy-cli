@@ -49,4 +49,22 @@ class EnvironmentUrlTest extends \PHPUnit_Framework_TestCase
             ])
         );
     }
+
+    public function testPrimaryUrl() {
+        $this->assertEquals(
+            'https://example.com',
+            rtrim($this->runCommand([
+                '--primary' => true,
+                '--browser' => '0',
+            ]), "\n")
+        );
+    }
+
+    public function testNonExistentBrowserIsNotFound() {
+        $result = $this->runCommand([
+            '--browser' => 'nonexistent',
+        ]);
+        $this->assertContains('Command not found: nonexistent', $result);
+        $this->assertContains("https://example.com\n", $result);
+    }
 }
