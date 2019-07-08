@@ -94,6 +94,25 @@ class EnvironmentUrlCommand extends CommandBase
             $output->writeln($urls);
             return;
         }
+        // Just display the URLs if there is no DISPLAY available or if there
+        // is no browser.
+        $toDisplay = $urls;
+        if (!$input->isInteractive()) {
+            // For backwards compatibility, ensure only one URL is output for
+            // non-interactive input.
+            $toDisplay = $urls[0];
+        }
+        /** @var \Platformsh\Cli\Service\Url $urlService */
+        $urlService = $this->getService('url');
+        if (!$urlService->hasDisplay()) {
+            $this->debug('Not opening URLs (no display found)');
+            $output->writeln($toDisplay);
+            return;
+        } elseif (!$urlService->canOpenUrls()) {
+            $this->debug('Not opening URLs (no browser found)');
+            $output->writeln($toDisplay);
+            return;
+        }
 
         // Allow the user to choose a URL to open.
         if (count($urls) === 1) {
@@ -104,8 +123,6 @@ class EnvironmentUrlCommand extends CommandBase
             $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to open a URL', $urls[0]);
         }
 
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
         $urlService->openUrl($url);
     }
 

@@ -52,7 +52,8 @@ class Url implements InputConfiguringInterface
      */
     public function canOpenUrls()
     {
-        return $this->hasDisplay() && $this->getDefaultBrowser();
+        return $this->hasDisplay()
+            && $this->getBrowser($this->input->hasOption('browser') ? $this->input->getOption('browser') : null) !== false;
     }
 
     /**
@@ -118,7 +119,9 @@ class Url implements InputConfiguringInterface
      */
     private function getBrowser($browserOption = null)
     {
-        if (!empty($browserOption)) {
+        if ($browserOption === '0') {
+            return false;
+        } elseif (!empty($browserOption)) {
             list($command, ) = explode(' ', $browserOption, 2);
             if (!$this->shell->commandExists($command)) {
                 $this->stdErr->writeln(sprintf('Command not found: <error>%s</error>', $command));
