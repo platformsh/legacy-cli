@@ -1,10 +1,13 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Command\Helper;
+namespace Platformsh\Cli\Tests\Command\Route;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Tests\CommandRunner;
 
+/**
+ * @group commands
+ */
 class RouteListTest extends TestCase
 {
     private $mockRoutes;

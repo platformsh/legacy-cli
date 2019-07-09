@@ -5,8 +5,10 @@ namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Model\AppConfig;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,12 +18,14 @@ class AppConfigGetCommand extends CommandBase
     protected static $defaultName = 'app:config-get';
 
     private $api;
+    private $config;
     private $selector;
     private $formatter;
 
-    public function __construct(Api $api, Selector $selector, PropertyFormatter $formatter)
+    public function __construct(Api $api, Config $config, Selector $selector, PropertyFormatter $formatter)
     {
         $this->api = $api;
+        $this->config = $config;
         $this->selector = $selector;
         $this->formatter = $formatter;
         parent::__construct();
@@ -43,10 +47,21 @@ class AppConfigGetCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $appConfig = $this->selector->getSelection($input)->getRemoteContainer()
-            ->getConfig()
-            ->getNormalized();
+        // Allow override via PLATFORM_APPLICATION.
+        $prefix = $this->config->get('service.env_prefix');
+        if (getenv($prefix . 'APPLICATION') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
+            $this->debug('Reading application config from environment variable ' . $prefix . 'APPLICATION');
+            $decoded = json_decode(base64_decode(getenv($prefix . 'APPLICATION'), true), true);
+            if (!is_array($decoded)) {
+                throw new \RuntimeException('Failed to decode: ' . $prefix . 'APPLICATION');
+            }
+            $appConfig = new AppConfig($decoded);
+        } else {
+            $appConfig = $this->selector->getSelection($input)
+                ->getRemoteContainer()
+                ->getConfig();
+        }
 
-        $this->formatter->displayData($output, $appConfig, $input->getOption('property'));
+        $this->formatter->displayData($output, $appConfig->getNormalized(), $input->getOption('property'));
     }
 }

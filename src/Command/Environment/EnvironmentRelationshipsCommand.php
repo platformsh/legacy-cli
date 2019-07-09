@@ -66,7 +66,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         if (getenv($prefix . 'RELATIONSHIPS') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
             $this->debug('Reading relationships from local environment variable ' . $prefix . 'RELATIONSHIPS');
             $decoded = json_decode(base64_decode(getenv($prefix . 'RELATIONSHIPS'), true), true);
-            if (empty($decoded)) {
+            if (!is_array($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'RELATIONSHIPS');
             }
             $relationships = $decoded;
