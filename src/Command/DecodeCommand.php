@@ -24,9 +24,7 @@ class DecodeCommand extends CommandBase
     {
         $envPrefix = $this->config->get('service.env_prefix');
 
-        $this
-            ->setName('decode')
-            ->addArgument('value', InputArgument::REQUIRED, 'The variable value to decode')
+        $this->addArgument('value', InputArgument::REQUIRED, 'The variable value to decode')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view within the variable')
             ->setDescription(sprintf('Decode an encoded string such as %sVARIABLES', $envPrefix));
 

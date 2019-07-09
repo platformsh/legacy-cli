@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Commit;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\PropertyFormatter;

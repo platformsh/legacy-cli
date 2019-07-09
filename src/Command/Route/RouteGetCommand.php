@@ -74,7 +74,7 @@ class RouteGetCommand extends CommandBase
         } else {
             $this->debug('Reading routes from the API');
             $environment = $this->selector->getSelection($input)->getEnvironment();
-            $deployment = $this->api()
+            $deployment = $this->api
                 ->getCurrentDeployment($environment, $input->getOption('refresh'));
             $routes = Route::fromDeploymentApi($deployment->routes);
         }
