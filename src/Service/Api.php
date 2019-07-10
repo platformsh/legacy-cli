@@ -6,6 +6,7 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
+use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
@@ -454,23 +455,30 @@ class Api
     /**
      * Get a user's account info.
      *
-     * @param ProjectAccess $user
-     * @param bool $reset
+     * @param ProjectAccess $access
+     * @param bool          $reset
      *
      * @return array
      *   An array containing 'email' and 'display_name'.
      */
-    public function getAccount(ProjectAccess $user, $reset = false)
+    public function getAccount(ProjectAccess $access, $reset = false)
     {
-        if (isset(self::$accountsCache[$user->id]) && !$reset) {
-            return self::$accountsCache[$user->id];
+        if (isset(self::$accountsCache[$access->id]) && !$reset) {
+            return self::$accountsCache[$access->id];
         }
 
-        $cacheKey = 'account:' . $user->id;
+        $cacheKey = 'account:' . $access->id;
         if ($reset || !($details = $this->cache->fetch($cacheKey))) {
-            $details = $user->getAccount()->getProperties();
-            $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
-            self::$accountsCache[$user->id] = $details;
+            $data = $access->getData();
+            // Use embedded user information if possible.
+            if (isset($data['_embedded']['users'][0]) && count($data['_embedded']['users']) === 1) {
+                $details = $data['_embedded']['users'][0];
+                self::$accountsCache[$access->id] = $details;
+            } else {
+                $details = $access->getAccount()->getProperties();
+                $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
+                self::$accountsCache[$access->id] = $details;
+            }
         }
 
         return $details;
@@ -606,7 +614,7 @@ class Api
     {
         foreach ($this->getProjectAccesses($project, $reset) as $user) {
             $account = $this->getAccount($user);
-            if ($account['email'] === $email) {
+            if ($account['email'] === $email || strtolower($account['email']) === strtolower($email)) {
                 return $user;
             }
         }
@@ -730,7 +738,7 @@ class Api
     }
 
     /**
-     * Get the HTTP client.
+     * Get the authenticated HTTP client.
      *
      * @return ClientInterface
      */
@@ -819,11 +827,16 @@ class Api
     public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
     {
         $deployment = $deployment ?: $this->getCurrentDeployment($environment);
-        $routes = $deployment->routes;
+        $routes = Route::fromDeploymentApi($deployment->routes);
         $appUrls = [];
-        foreach ($routes as $url => $route) {
-            if ($route->type === 'upstream' && $route->__get('upstream') === $appName) {
-                $appUrls[] = $url;
+        foreach ($routes as $route) {
+            if ($route->type === 'upstream' && $route->getUpstreamName() === $appName) {
+                // Use the primary route, if it matches this app.
+                if ($route->primary) {
+                    return $route->url;
+                }
+
+                $appUrls[] = $route->url;
             }
         }
         usort($appUrls, [$this, 'urlSort']);
