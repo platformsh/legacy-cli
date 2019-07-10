@@ -614,7 +614,7 @@ class Api
     {
         foreach ($this->getProjectAccesses($project, $reset) as $user) {
             $account = $this->getAccount($user);
-            if ($account['email'] === $email) {
+            if ($account['email'] === $email || strtolower($account['email']) === strtolower($email)) {
                 return $user;
             }
         }
