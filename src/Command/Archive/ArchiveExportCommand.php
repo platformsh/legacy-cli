@@ -17,8 +17,8 @@ class ArchiveExportCommand extends CommandBase
         $this
             ->setName('archive:export')
             ->setDescription('Export an archive from an app')
+            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'The filename for the archive')
             ->addOption('exclude-service', 'P', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude a service');
-        $this->addRemoteContainerOptions();
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -29,7 +29,11 @@ class ArchiveExportCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $environment = $this->getSelectedEnvironment();
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
 
         $this->stdErr->writeln(sprintf(
             'Archiving data from the project <info>%s</info>, environment <info>%s</info>',
@@ -38,7 +42,25 @@ class ArchiveExportCommand extends CommandBase
         ));
         $this->stdErr->writeln('');
 
+        $environment = $this->getSelectedEnvironment();
         $deployment = $this->api()->getCurrentDeployment($environment, true);
+
+        $filename = $input->getOption('file');
+        if ($filename === null) {
+            $filename = sprintf('archive-%s-%s.tar.gz', $environment->machine_name, $environment->project);
+            $filename = strtolower($filename);
+        }
+        if (file_exists($filename)) {
+            $this->stdErr->writeln(sprintf('The file already exists: <comment>%s</comment>', $filename));
+            if (!$questionHelper->confirm('Overwrite?')) {
+                return 1;
+            }
+        }
+        if (!$fs->canWrite($filename)) {
+            $this->stdErr->writeln('File not writable: <error>' . $filename . '</error>');
+
+            return 1;
+        }
 
         $serviceSupport = [
             'mysql' => 'using "db:dump"',
@@ -46,23 +68,23 @@ class ArchiveExportCommand extends CommandBase
             'mongodb' => 'using "mongodump"',
             'network-storage' => 'via mounts',
         ];
-        $supported = [];
-        $unsupported = [];
-        $ignored = [];
+        $supportedServices = [];
+        $unsupportedServices = [];
+        $ignoredServices = [];
         foreach ($deployment->services as $name => $service) {
             list($type, ) = explode(':', $service->type, 2);
             if (isset($serviceSupport[$type]) && !empty($service->disk)) {
-                $supported[$name] = $type;
+                $supportedServices[$name] = $type;
             } elseif (empty($service->disk)) {
-                $ignored[$name] = $type;
+                $ignoredServices[$name] = $type;
             } else {
-                $unsupported[$name] = $type;
+                $unsupportedServices[$name] = $type;
             }
         }
 
-        if (!empty($supported)) {
+        if (!empty($supportedServices)) {
             $this->stdErr->writeln('Supported services:');
-            foreach ($supported as $name => $type) {
+            foreach ($supportedServices as $name => $type) {
                 $this->stdErr->writeln(sprintf(
                     '  - <info>%s</info> (%s), %s',
                     $name,
@@ -73,9 +95,9 @@ class ArchiveExportCommand extends CommandBase
             $this->stdErr->writeln('');
         }
 
-        if (!empty($ignored)) {
+        if (!empty($ignoredServices)) {
             $this->stdErr->writeln('Ignored services, without disk storage:');
-            foreach ($ignored as $name => $type) {
+            foreach ($ignoredServices as $name => $type) {
                 $this->stdErr->writeln(
                     sprintf('  - %s (%s)', $name, $type)
                 );
@@ -83,9 +105,9 @@ class ArchiveExportCommand extends CommandBase
             $this->stdErr->writeln('');
         }
 
-        if (!empty($unsupported)) {
+        if (!empty($unsupportedServices)) {
             $this->stdErr->writeln('Unsupported services:');
-            foreach ($unsupported as $name => $type) {
+            foreach ($unsupportedServices as $name => $type) {
                 $this->stdErr->writeln(
                     sprintf('  - <error>%s</error> (%s)', $name, $type)
                 );
@@ -101,9 +123,9 @@ class ArchiveExportCommand extends CommandBase
             $hasMounts = $hasMounts || count($app->getMounts());
         }
 
-        if ($hasMounts && count($supported)) {
+        if ($hasMounts && count($supportedServices)) {
             $this->stdErr->writeln('Exports from the supported service(s) and files from mounts will be downloaded locally.');
-        } elseif (count($supported)) {
+        } elseif (count($supportedServices)) {
             $this->stdErr->writeln('Exports from the above service(s) will be downloaded locally.');
         } elseif ($hasMounts) {
             $this->stdErr->writeln('Files from mounts will be downloaded locally.');
@@ -113,17 +135,100 @@ class ArchiveExportCommand extends CommandBase
         }
         $this->stdErr->writeln('');
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 
+        $tmpFile = tempnam(sys_get_temp_dir(), 'archive-');
+        unlink($tmpFile);
+        $tmpDir = $tmpFile;
+        unset($tmpFile);
+        if (!mkdir($tmpDir)) {
+            $this->stdErr->writeln(sprintf('Failed to create temporary directory: <error>%s</error>', $tmpDir));
+
+            return 1;
+        }
+        $archiveDir = $tmpDir . '/' . 'archive-' . $environment->machine_name . '-' . $environment->project;
+        if (!mkdir($archiveDir)) {
+            $this->stdErr->writeln(sprintf('Failed to create archive directory: <error>%s</error>', $archiveDir));
+
+            return 1;
+        }
+        $this->debug('Using archive directory: ' . $archiveDir);
+
+        file_put_contents($archiveDir . '/archive.json', json_encode([
+            'time' => date('c'),
+            'project' => $this->getSelectedProject()->getData(),
+            'environment' => $environment->getData(),
+            'deployment' => $deployment->getData(),
+        ], JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+
         if ($hasMounts) {
             foreach ($apps as $app) {
+                $sourcePaths = [];
                 $mounts = $app->getMounts();
+                foreach ($mounts as $path => $mount) {
+                    if ($mount['source'] === 'local' && isset($mount['source_path'])) {
+                        if (isset($sourcePaths[$mount['source_path']])) {
+                            continue;
+                        }
+                        $sourcePaths[$mount['source_path']] = true;
+                    }
+                    $this->stdErr->writeln('Copying from mount <info>' . $path . '</info>');
+                    $source = ltrim($path, '/');
+                    $destination = $archiveDir . '/mounts/' . ltrim($path, '/');
+                    mkdir($destination, 0755, true);
+                    $this->rsync($app->getSshUrl(), $source, $destination);
+                }
             }
         }
+
+        $fs->archiveDir($tmpDir, $filename);
+        $fs->remove($tmpDir);
+
+        $this->stdErr->writeln('Archive: <info>' . $filename . '</info>');
+
+        return 0;
+    }
+
+    /**
+     * Rsync from a remote path to a local one.
+     *
+     * @param string $sshUrl
+     * @param string $sshPath
+     * @param string $localPath
+     * @param array  $options
+     */
+    private function rsync($sshUrl, $sshPath, $localPath, array $options = [])
+    {
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        $params = ['rsync', '--archive', '--compress', '--human-readable'];
+
+        if ($this->stdErr->isVeryVerbose()) {
+            $params[] = '-vv';
+        } elseif ($this->stdErr->isVerbose()) {
+            $params[] = '-v';
+        }
+
+        $params[] = sprintf('%s:%s/', $sshUrl, $sshPath);
+        $params[] = $localPath;
+
+        if (!empty($options['delete'])) {
+            $params[] = '--delete';
+        }
+        foreach (['exclude', 'include'] as $option) {
+            if (!empty($options[$option])) {
+                foreach ($options[$option] as $value) {
+                    $params[] = '--' . $option . '=' . $value;
+                }
+            }
+        }
+
+        $start = microtime(true);
+        $shell->execute($params, null, true, false, [], null);
+
+        $this->stdErr->writeln(sprintf('  time: %ss', number_format(microtime(true) - $start, 2)), OutputInterface::VERBOSITY_NORMAL);
     }
 }
