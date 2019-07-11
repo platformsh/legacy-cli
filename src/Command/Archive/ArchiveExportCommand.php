@@ -6,6 +6,7 @@ use Platformsh\Cli\Model\RemoteContainer\App;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
 class ArchiveExportCommand extends CommandBase
 {
@@ -45,19 +46,19 @@ class ArchiveExportCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
         $deployment = $this->api()->getCurrentDeployment($environment, true);
 
-        $filename = $input->getOption('file');
-        if ($filename === null) {
-            $filename = sprintf('archive-%s-%s.tar.gz', $environment->machine_name, $environment->project);
-            $filename = strtolower($filename);
+        $archiveFilename = $input->getOption('file');
+        if ($archiveFilename === null) {
+            $archiveFilename = sprintf('archive-%s--%s.tar.gz', $environment->machine_name, $environment->project);
+            $archiveFilename = strtolower($archiveFilename);
         }
-        if (file_exists($filename)) {
-            $this->stdErr->writeln(sprintf('The file already exists: <comment>%s</comment>', $filename));
+        if (file_exists($archiveFilename)) {
+            $this->stdErr->writeln(sprintf('The file already exists: <comment>%s</comment>', $archiveFilename));
             if (!$questionHelper->confirm('Overwrite?')) {
                 return 1;
             }
         }
-        if (!$fs->canWrite($filename)) {
-            $this->stdErr->writeln('File not writable: <error>' . $filename . '</error>');
+        if (!$fs->canWrite($archiveFilename)) {
+            $this->stdErr->writeln('File not writable: <error>' . $archiveFilename . '</error>');
 
             return 1;
         }
@@ -148,25 +149,104 @@ class ArchiveExportCommand extends CommandBase
 
             return 1;
         }
-        $archiveDir = $tmpDir . '/' . 'archive-' . $environment->machine_name . '-' . $environment->project;
+        $archiveDir = $tmpDir . '/' . 'archive-' . $environment->machine_name . '--' . $environment->project;
         if (!mkdir($archiveDir)) {
             $this->stdErr->writeln(sprintf('Failed to create archive directory: <error>%s</error>', $archiveDir));
+            // @todo refactor this cleanup
+            $fs->remove($tmpDir);
 
             return 1;
         }
         $this->debug('Using archive directory: ' . $archiveDir);
 
-        file_put_contents($archiveDir . '/archive.json', json_encode([
+        $metadata = [
             'time' => date('c'),
             'project' => $this->getSelectedProject()->getData(),
             'environment' => $environment->getData(),
             'deployment' => $deployment->getData(),
-        ], JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+        ];
+
+        foreach ($supportedServices as $serviceName => $type) {
+            $this->stdErr->writeln('Archiving service <info>' . $serviceName . '</info>');
+
+            // Find a relationship to the service.
+            $relationshipName = false;
+            $appName = false;
+            foreach ($apps as $app) {
+                $relationshipName = $this->getRelationshipNameForService($app, $serviceName);
+                if ($relationshipName !== false) {
+                    $appName = $app->getName();
+                    break;
+                }
+            }
+            if ($relationshipName === false || $appName === false) {
+                $this->stdErr->writeln('No app defines a relationship to the service <error>%s</error> (<error>%s</error>)');
+                // @todo refactor this cleanup
+                $fs->remove($tmpDir);
+
+                return 1;
+            }
+            if ($type === 'mysql' || $type === 'pgsql') {
+                // Get a list of schemas from the service configuration.
+                $service = $deployment->getService($serviceName);
+                $schemas = !empty($service->configuration['schemas'])
+                    ? $service->configuration['schemas']
+                    : [];
+
+                // Filter the list by the schemas accessible from the endpoint.
+                if (isset($database['rel'])
+                    && isset($service->configuration['endpoints'][$relationshipName]['privileges'])) {
+                    $schemas = array_intersect(
+                        $schemas,
+                        array_keys($service->configuration['endpoints'][$relationshipName]['privileges'])
+                    );
+                }
+
+                mkdir($archiveDir . '/services/' . $serviceName, 0755, true);
+
+                if (count($schemas) <= 1) {
+                    $schemas = [null];
+                }
+
+                foreach ($schemas as $schema) {
+                    $filename = $appName . '--' . $relationshipName;
+                    $args = [
+                        '--directory' => $archiveDir . '/services/' . $serviceName,
+                        '--project' => $this->getSelectedProject()->id,
+                        '--environment' => $this->getSelectedEnvironment()->id,
+                        '--app' => $appName,
+                        '--relationship' => $relationshipName,
+                        '--yes' => true,
+                        // gzip is not enabled because the archive will be gzipped anyway
+                    ];
+                    if ($schema !== null) {
+                        $args['--schema'] = $schema;
+                        $filename .= '--' . $schema;
+                    }
+                    $filename .= '.sql';
+                    $args['--file'] = $filename;
+                    $exitCode = $this->runOtherCommand('db:dump', $args);
+                    if ($exitCode !== 0) {
+                        // @todo refactor this cleanup
+                        $fs->remove($tmpDir);
+
+                        return $exitCode;
+                    }
+                    if ($schema !== null) {
+                        $metadata['services'][$serviceName][$schema] = 'services/' . $serviceName . '/' . $filename;
+                    } else {
+                        $metadata['services'][$serviceName] = 'services/' . $serviceName . '/' . $filename;
+                    }
+                }
+            }
+        }
 
         if ($hasMounts) {
+            /** @var \Platformsh\Cli\Service\Mount $mountService */
+            $mountService = $this->getService('mount');
             foreach ($apps as $app) {
                 $sourcePaths = [];
-                $mounts = $app->getMounts();
+                $mounts = $mountService->normalizeMounts($app->getMounts());
                 foreach ($mounts as $path => $mount) {
                     if ($mount['source'] === 'local' && isset($mount['source_path'])) {
                         if (isset($sourcePaths[$mount['source_path']])) {
@@ -179,14 +259,23 @@ class ArchiveExportCommand extends CommandBase
                     $destination = $archiveDir . '/mounts/' . ltrim($path, '/');
                     mkdir($destination, 0755, true);
                     $this->rsync($app->getSshUrl(), $source, $destination);
+                    $metadata['mounts'][$path] = 'mounts/' . ltrim($path, '/');
                 }
             }
         }
 
-        $fs->archiveDir($tmpDir, $filename);
+        $this->stdErr->writeln('Writing metadata');
+        (new Filesystem())->dumpFile($archiveDir . '/archive.json', json_encode($metadata, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+
+        $this->stdErr->writeln('Compressing archive');
+        $fs->archiveDir($tmpDir, $archiveFilename);
+
+        // @todo also clean up on error
+        $this->stdErr->writeln('Cleaning up');
         $fs->remove($tmpDir);
 
-        $this->stdErr->writeln('Archive: <info>' . $filename . '</info>');
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Archive: <info>' . $archiveFilename . '</info>');
 
         return 0;
     }
@@ -230,5 +319,25 @@ class ArchiveExportCommand extends CommandBase
         $shell->execute($params, null, true, false, [], null);
 
         $this->stdErr->writeln(sprintf('  time: %ss', number_format(microtime(true) - $start, 2)), OutputInterface::VERBOSITY_NORMAL);
+    }
+
+    /**
+     * @param \Platformsh\Cli\Model\RemoteContainer\App $app
+     * @param string                                    $serviceName
+     *
+     * @return string|false
+     */
+    private function getRelationshipNameForService(App $app, $serviceName)
+    {
+        $config = $app->getConfig()->getNormalized();
+        $relationships = isset($config['relationships']) ? $config['relationships'] : [];
+        foreach ($relationships as $relationshipName => $relationshipTarget) {
+            list($targetService,) = explode(':', $relationshipTarget);
+            if ($targetService === $serviceName) {
+                return $relationshipName;
+            }
+        }
+
+        return false;
     }
 }
