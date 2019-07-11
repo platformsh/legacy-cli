@@ -141,13 +141,13 @@ class ArchiveExportCommand extends CommandBase
             $hasMounts = !$excludeMounts && ($hasMounts || count($app->getMounts()));
         }
 
+        $this->stdErr->writeln('Environment metadata (including variables) will be saved.');
         if ($hasMounts && !$excludeMounts) {
             $this->stdErr->writeln('Files from mounts will be downloaded.');
         }
         if (count($supportedServices)) {
             $this->stdErr->writeln('Exports from the above supported service(s) will be saved.');
         }
-        $this->stdErr->writeln('Environment metadata (including variables) will be saved.');
 
         $this->stdErr->writeln('');
 
@@ -164,11 +164,17 @@ class ArchiveExportCommand extends CommandBase
 
             return 1;
         }
+
+        register_shutdown_function(function () use($tmpDir, $fs) {
+            if (file_exists($tmpDir)) {
+                $this->stdErr->writeln("\nCleaning up", OutputInterface::VERBOSITY_VERBOSE);
+                $fs->remove($tmpDir);
+            }
+        });
+
         $archiveDir = $tmpDir . '/archive';
         if (!mkdir($archiveDir)) {
             $this->stdErr->writeln(sprintf('Failed to create archive directory: <error>%s</error>', $archiveDir));
-            // @todo refactor this cleanup
-            $fs->remove($tmpDir);
 
             return 1;
         }
@@ -180,6 +186,24 @@ class ArchiveExportCommand extends CommandBase
             'environment' => $environment->getData(),
             'deployment' => $deployment->getData(),
         ];
+
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Copying project-level variables');
+        foreach ($this->getSelectedProject()->getVariables() as $var) {
+            $metadata['variables']['project'][$var->name] = $var->getData();
+            if ($var->is_sensitive) {
+                $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
+            }
+        }
+
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Copying environment-level variables');
+        foreach ($environment->getVariables() as $var) {
+            $metadata['variables']['environment'][$var->name] = $var->getData();
+            if ($var->is_sensitive) {
+                $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive environment-level variable <comment>%s</comment>', $var->name));
+            }
+        }
 
         foreach ($supportedServices as $serviceName => $type) {
             $this->stdErr->writeln('');
@@ -197,8 +221,6 @@ class ArchiveExportCommand extends CommandBase
             }
             if ($relationshipName === false || $appName === false) {
                 $this->stdErr->writeln('No app defines a relationship to the service <error>%s</error> (<error>%s</error>)');
-                // @todo refactor this cleanup
-                $fs->remove($tmpDir);
 
                 return 1;
             }
@@ -243,16 +265,16 @@ class ArchiveExportCommand extends CommandBase
                     $args['--file'] = $filename;
                     $exitCode = $this->runOtherCommand('db:dump', $args);
                     if ($exitCode !== 0) {
-                        // @todo refactor this cleanup
-                        $fs->remove($tmpDir);
 
                         return $exitCode;
                     }
-                    if ($schema !== null) {
-                        $metadata['services'][$serviceName][$schema] = 'services/' . $serviceName . '/' . $filename;
-                    } else {
-                        $metadata['services'][$serviceName] = 'services/' . $serviceName . '/' . $filename;
-                    }
+                    $metadata['services'][$serviceName]['_type'] = $type;
+                    $metadata['services'][$serviceName] += [
+                        'filename' => 'services/' . $serviceName . '/' . $filename,
+                        'app' => $appName,
+                        'schema' => $schema,
+                        'relationship' => $relationshipName,
+                    ];
                 }
             }
             if ($type === 'mongodb') {
@@ -271,13 +293,16 @@ class ArchiveExportCommand extends CommandBase
                 $buffer = new BufferedOutput();
                 $exitCode = $this->runOtherCommand('db:dump', $args, $buffer);
                 if ($exitCode !== 0) {
-                    // @todo refactor this cleanup
-                    $fs->remove($tmpDir);
 
                     return $exitCode;
                 }
                 (new Filesystem())->dumpFile($filename, $buffer->fetch());
-                $metadata['services'][$serviceName] = 'services/' . $serviceName . '/' . $filename;
+                $metadata['services'][$serviceName]['_type'] = $type;
+                $metadata['services'][$serviceName] += [
+                    'filename' => 'services/' . $serviceName . '/' . $filename,
+                    'app' => $appName,
+                    'relationship' => $relationshipName,
+                ];
             }
         }
 
@@ -288,6 +313,9 @@ class ArchiveExportCommand extends CommandBase
                 $sourcePaths = [];
                 $mounts = $mountService->normalizeMounts($app->getMounts());
                 foreach ($mounts as $path => $mount) {
+                    if (isset($metadata['mounts'][$path])) {
+                        continue;
+                    }
                     if ($mount['source'] === 'local' && isset($mount['source_path'])) {
                         if (isset($sourcePaths[$mount['source_path']])) {
                             continue;
@@ -297,29 +325,14 @@ class ArchiveExportCommand extends CommandBase
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln('Copying from mount <info>' . $path . '</info>');
                     $source = ltrim($path, '/');
-                    $destination = $archiveDir . '/mounts/' . ltrim($path, '/');
+                    $destination = $archiveDir . '/mounts/' . trim($path, '/');
                     mkdir($destination, 0755, true);
                     $this->rsync($app->getSshUrl(), $source, $destination);
-                    $metadata['mounts'][$path] = 'mounts/' . ltrim($path, '/');
+                    $metadata['mounts'][$path] = [
+                        'app' => $app->getName(),
+                        'path' => 'mounts/' . trim($path, '/'),
+                    ];
                 }
-            }
-        }
-
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('Copying project-level variables');
-        foreach ($this->getSelectedProject()->getVariables() as $var) {
-            $metadata['variables']['project'][$var->name] = $var->getData();
-            if ($var->is_sensitive) {
-                $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
-            }
-        }
-
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('Copying environment-level variables');
-        foreach ($environment->getVariables() as $var) {
-            $metadata['variables']['environment'][$var->name] = $var->getData();
-            if ($var->is_sensitive) {
-                $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive environment-level variable <comment>%s</comment>', $var->name));
             }
         }
 
@@ -331,13 +344,22 @@ class ArchiveExportCommand extends CommandBase
         $this->stdErr->writeln('Packing and compressing archive');
         $fs->archiveDir($tmpDir, $archiveFilename);
 
-        // @todo also clean up on error
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('Cleaning up');
-        $fs->remove($tmpDir);
-
         $this->stdErr->writeln('');
         $this->stdErr->writeln('Archive: <info>' . $archiveFilename . '</info>');
+
+        if (($absolute = realpath($archiveFilename)) && ($projectRoot = $this->getProjectRoot()) && strpos($absolute, $projectRoot) === 0) {
+            /** @var \Platformsh\Cli\Service\Git $git */
+            $git = $this->getService('git');
+            if (!$git->checkIgnore($absolute, $projectRoot)) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('<comment>Warning: the archive file is not excluded by Git</comment>');
+                if ($pos = strrpos($archiveFilename, '.tar.gz')) {
+                    $extension = substr($archiveFilename, $pos);
+                    $this->stdErr->writeln('  You should probably exclude these files using .gitignore:');
+                    $this->stdErr->writeln('    *' . $extension);
+                }
+            }
+        }
 
         return 0;
     }
