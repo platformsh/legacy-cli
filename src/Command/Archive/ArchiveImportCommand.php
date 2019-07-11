@@ -143,7 +143,7 @@ class ArchiveImportCommand extends CommandBase
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln('Importing data for service <info>' . $serviceName . '</info>');
 
-                    foreach ($serviceInfo['schemas'] as $dumpInfo) {
+                    foreach ($serviceInfo['dumps'] as $dumpInfo) {
                         if (!empty($dumpInfo['schema'])) {
                             $this->stdErr->writeln('Processing schema: <info>' . $dumpInfo['schema'] . '</info>');
                         }
