@@ -18,9 +18,10 @@ class ArchiveExportCommand extends CommandBase
     {
         $this
             ->setName('archive:export')
-            ->setDescription('Export an archive from an app')
+            ->setDescription('Export an archive from an environment')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'The filename for the archive')
-            ->addOption('exclude-service', 'P', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude a service');
+            ->addOption('exclude-service', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude a service')
+            ->addOption('exclude-mounts', null, InputOption::VALUE_NONE, 'Exclude mounts');
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -73,9 +74,13 @@ class ArchiveExportCommand extends CommandBase
         $supportedServices = [];
         $unsupportedServices = [];
         $ignoredServices = [];
+        $excludedServices = [];
+        $excludedServicesOption = $input->getOption('exclude-service');
         foreach ($deployment->services as $name => $service) {
             list($type, ) = explode(':', $service->type, 2);
-            if (isset($serviceSupport[$type]) && !empty($service->disk)) {
+            if (in_array($name, $excludedServicesOption, true)) {
+                $excludedServices[$name] = $type;
+            } elseif (isset($serviceSupport[$type]) && !empty($service->disk)) {
                 $supportedServices[$name] = $type;
             } elseif (empty($service->disk)) {
                 $ignoredServices[$name] = $type;
@@ -107,6 +112,16 @@ class ArchiveExportCommand extends CommandBase
             $this->stdErr->writeln('');
         }
 
+        if (!empty($excludedServices)) {
+            $this->stdErr->writeln('Excluded services:');
+            foreach ($excludedServices as $name => $type) {
+                $this->stdErr->writeln(
+                    sprintf('  - %s (%s)', $name, $type)
+                );
+            }
+            $this->stdErr->writeln('');
+        }
+
         if (!empty($unsupportedServices)) {
             $this->stdErr->writeln('Unsupported services:');
             foreach ($unsupportedServices as $name => $type) {
@@ -119,22 +134,21 @@ class ArchiveExportCommand extends CommandBase
 
         $apps = [];
         $hasMounts = false;
+        $excludeMounts = $input->getOption('exclude-mounts');
         foreach ($deployment->webapps as $name => $webApp) {
             $app = new App($webApp, $environment);
             $apps[$name] = $app;
-            $hasMounts = $hasMounts || count($app->getMounts());
+            $hasMounts = !$excludeMounts && ($hasMounts || count($app->getMounts()));
         }
 
-        if ($hasMounts && count($supportedServices)) {
-            $this->stdErr->writeln('Exports from the supported service(s) and files from mounts will be downloaded locally.');
-        } elseif (count($supportedServices)) {
-            $this->stdErr->writeln('Exports from the above service(s) will be downloaded locally.');
-        } elseif ($hasMounts) {
-            $this->stdErr->writeln('Files from mounts will be downloaded locally.');
-        } else {
-            $this->stdErr->writeln('No supported services or mounts were found.');
-            return 1;
+        if ($hasMounts && !$excludeMounts) {
+            $this->stdErr->writeln('Files from mounts will be downloaded.');
         }
+        if (count($supportedServices)) {
+            $this->stdErr->writeln('Exports from the above supported service(s) will be saved.');
+        }
+        $this->stdErr->writeln('Environment metadata (including variables) will be saved.');
+
         $this->stdErr->writeln('');
 
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
@@ -150,7 +164,7 @@ class ArchiveExportCommand extends CommandBase
 
             return 1;
         }
-        $archiveDir = $tmpDir . '/' . 'archive-' . $environment->machine_name . '--' . $environment->project;
+        $archiveDir = $tmpDir . '/archive';
         if (!mkdir($archiveDir)) {
             $this->stdErr->writeln(sprintf('Failed to create archive directory: <error>%s</error>', $archiveDir));
             // @todo refactor this cleanup
@@ -168,6 +182,7 @@ class ArchiveExportCommand extends CommandBase
         ];
 
         foreach ($supportedServices as $serviceName => $type) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('Archiving service <info>' . $serviceName . '</info>');
 
             // Find a relationship to the service.
@@ -266,7 +281,7 @@ class ArchiveExportCommand extends CommandBase
             }
         }
 
-        if ($hasMounts) {
+        if ($hasMounts && !$excludeMounts) {
             /** @var \Platformsh\Cli\Service\Mount $mountService */
             $mountService = $this->getService('mount');
             foreach ($apps as $app) {
@@ -279,6 +294,7 @@ class ArchiveExportCommand extends CommandBase
                         }
                         $sourcePaths[$mount['source_path']] = true;
                     }
+                    $this->stdErr->writeln('');
                     $this->stdErr->writeln('Copying from mount <info>' . $path . '</info>');
                     $source = ltrim($path, '/');
                     $destination = $archiveDir . '/mounts/' . ltrim($path, '/');
@@ -289,13 +305,34 @@ class ArchiveExportCommand extends CommandBase
             }
         }
 
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Copying project-level variables');
+        foreach ($this->getSelectedProject()->getVariables() as $var) {
+            $metadata['variables']['project'][$var->name] = $var->getData();
+            if ($var->is_sensitive) {
+                $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
+            }
+        }
+
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Copying environment-level variables');
+        foreach ($environment->getVariables() as $var) {
+            $metadata['variables']['environment'][$var->name] = $var->getData();
+            if ($var->is_sensitive) {
+                $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive environment-level variable <comment>%s</comment>', $var->name));
+            }
+        }
+
+        $this->stdErr->writeln('');
         $this->stdErr->writeln('Writing metadata');
         (new Filesystem())->dumpFile($archiveDir . '/archive.json', json_encode($metadata, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
 
-        $this->stdErr->writeln('Compressing archive');
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('Packing and compressing archive');
         $fs->archiveDir($tmpDir, $archiveFilename);
 
         // @todo also clean up on error
+        $this->stdErr->writeln('');
         $this->stdErr->writeln('Cleaning up');
         $fs->remove($tmpDir);
 
