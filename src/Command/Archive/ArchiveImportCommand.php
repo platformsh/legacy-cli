@@ -3,8 +3,6 @@ namespace Platformsh\Cli\Command\Archive;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\RemoteContainer\App;
-use Platformsh\Cli\Service\Filesystem;
-use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -101,7 +99,16 @@ class ArchiveImportCommand extends CommandBase
 
         $metadata = file_get_contents($archiveDir . '/archive.json');
         if ($metadata === false || !($metadata = json_decode($metadata, true))) {
-            $this->stdErr->writeln('Failed to read archive metadata');
+            $this->stdErr->writeln('<error>Error:</error> Failed to read archive metadata');
+
+            return 1;
+        }
+
+        if ($metadata['version'] < ArchiveExportCommand::ARCHIVE_VERSION) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('<error>Error:</error> The archive is outdated so it cannot be imported.');
+            $this->stdErr->writeln(sprintf('  Archive version: <error>%s</error> (from CLI version: %s)', $metadata['version'], $metadata['cli_version']));
+            $this->stdErr->writeln(sprintf('  Current version: %s (CLI version: %s)', ArchiveExportCommand::ARCHIVE_VERSION, $this->config()->getVersion()));
 
             return 1;
         }

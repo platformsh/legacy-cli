@@ -11,6 +11,9 @@ use Symfony\Component\Filesystem\Filesystem;
 
 class ArchiveExportCommand extends CommandBase
 {
+    // @todo refactor this
+    const ARCHIVE_VERSION = 1; // increment this when BC-breaking changes are introduced
+
     /**
      * {@inheritdoc}
      */
@@ -182,6 +185,8 @@ class ArchiveExportCommand extends CommandBase
 
         $metadata = [
             'time' => date('c'),
+            'version' => self::ARCHIVE_VERSION,
+            'cli_version' => $this->config()->getVersion(),
             'project' => $this->getSelectedProject()->getData(),
             'environment' => $environment->getData(),
             'deployment' => $deployment->getData(),
