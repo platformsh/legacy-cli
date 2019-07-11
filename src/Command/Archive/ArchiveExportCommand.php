@@ -242,7 +242,7 @@ class ArchiveExportCommand extends CommandBase
 
                 mkdir($archiveDir . '/services/' . $serviceName, 0755, true);
 
-                if (count($schemas) <= 1) {
+                if (count($schemas) === 0) {
                     $schemas = [null];
                 }
 
@@ -269,7 +269,7 @@ class ArchiveExportCommand extends CommandBase
                         return $exitCode;
                     }
                     $metadata['services'][$serviceName]['_type'] = $type;
-                    $metadata['services'][$serviceName] += [
+                    $metadata['services'][$serviceName]['schemas'][$schema] = [
                         'filename' => 'services/' . $serviceName . '/' . $filename,
                         'app' => $appName,
                         'schema' => $schema,

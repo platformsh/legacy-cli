@@ -136,30 +136,35 @@ class ArchiveImportCommand extends CommandBase
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln('Importing data for service <info>' . $serviceName . '</info>');
 
-                    if (empty($serviceInfo['filename']) || !file_exists($archiveDir . '/' . $serviceInfo['filename'])) {
-                        $this->stdErr->writeln('Dump file not found: ' . $archiveDir . '/' . $serviceInfo['filename']);
-                        continue;
-                    }
-                    $args = [
-                        $GLOBALS['argv'][0],
-                        'db:sql',
-                        '--project=' . $this->getSelectedProject()->id,
-                        '--environment=' . $this->getSelectedEnvironment()->id,
-                        '--app=' . $serviceInfo['app'],
-                        '--relationship=' . $serviceInfo['relationship'],
-                        '--yes',
-                    ];
-                    if (!empty($serviceInfo['schema'])) {
-                        $args[] = '--schema=' . $serviceInfo['schema'];
-                    }
-                    if ($output->isVerbose()) {
-                        $args[] = '--verbose';
-                    }
-                    $command = (new PhpExecutableFinder())->find(false) . ' ' . implode(' ', array_map('escapeshellarg', $args));
-                    $command .= ' < ' . escapeshellarg($archiveDir . '/' . $serviceInfo['filename']);
-                    $exitCode = $shell->executeSimple($command);
-                    if ($exitCode !== 0) {
-                        $success = false;
+                    foreach ($serviceInfo['schemas'] as $dumpInfo) {
+                        if (!empty($dumpInfo['schema'])) {
+                            $this->stdErr->writeln('Processing schema: <info>' . $dumpInfo['schema'] . '</info>');
+                        }
+                        if (empty($dumpInfo['filename']) || !file_exists($archiveDir . '/' . $dumpInfo['filename'])) {
+                            $this->stdErr->writeln('Dump file not found: ' . $archiveDir . '/' . $dumpInfo['filename']);
+                            continue;
+                        }
+                        $args = [
+                            $GLOBALS['argv'][0],
+                            'db:sql',
+                            '--project=' . $this->getSelectedProject()->id,
+                            '--environment=' . $this->getSelectedEnvironment()->id,
+                            '--app=' . $dumpInfo['app'],
+                            '--relationship=' . $dumpInfo['relationship'],
+                            '--yes',
+                        ];
+                        if (!empty($dumpInfo['schema'])) {
+                            $args[] = '--schema=' . $dumpInfo['schema'];
+                        }
+                        if ($output->isVerbose()) {
+                            $args[] = '--verbose';
+                        }
+                        $command = (new PhpExecutableFinder())->find(false) . ' ' . implode(' ', array_map('escapeshellarg', $args));
+                        $command .= ' < ' . escapeshellarg($archiveDir . '/' . $dumpInfo['filename']);
+                        $exitCode = $shell->executeSimple($command);
+                        if ($exitCode !== 0) {
+                            $success = false;
+                        }
                     }
                 } elseif ($serviceInfo['_type'] === 'mongodb') {
                     $this->stdErr->writeln('');
