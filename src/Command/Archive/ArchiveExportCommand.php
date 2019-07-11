@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\RemoteContainer\App;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -238,6 +239,30 @@ class ArchiveExportCommand extends CommandBase
                         $metadata['services'][$serviceName] = 'services/' . $serviceName . '/' . $filename;
                     }
                 }
+            }
+            if ($type === 'mongodb') {
+                $args = [
+                    '--directory' => $archiveDir . '/services/' . $serviceName,
+                    '--project' => $this->getSelectedProject()->id,
+                    '--environment' => $this->getSelectedEnvironment()->id,
+                    '--app' => $appName,
+                    '--relationship' => $relationshipName,
+                    '--yes' => true,
+                    '--stdout' => true,
+                    // gzip is not enabled because the archive will be gzipped anyway
+                ];
+                $filename = $appName . '--' . $relationshipName . '.bson';
+                // @todo dump directly to a file without the buffer
+                $buffer = new BufferedOutput();
+                $exitCode = $this->runOtherCommand('db:dump', $args, $buffer);
+                if ($exitCode !== 0) {
+                    // @todo refactor this cleanup
+                    $fs->remove($tmpDir);
+
+                    return $exitCode;
+                }
+                (new Filesystem())->dumpFile($filename, $buffer->fetch());
+                $metadata['services'][$serviceName] = 'services/' . $serviceName . '/' . $filename;
             }
         }
 
