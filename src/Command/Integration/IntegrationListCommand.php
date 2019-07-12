@@ -116,6 +116,10 @@ class IntegrationListCommand extends IntegrationCommandBase
                 $summary = sprintf('Routing key: %s', $details['routing_key']);
                 break;
 
+            case 'script':
+                $summary = sprintf("Script:\n%s", trim(substr($details['script'], 0, 300)));
+                break;
+
             default:
                 $summary = json_encode($details);
         }

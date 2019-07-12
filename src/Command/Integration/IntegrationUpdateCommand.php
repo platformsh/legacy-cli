@@ -48,6 +48,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             $value = $field->getValueFromInput($input);
             $parents = $field->getValueKeys() ?: [$key];
             if ($value !== null) {
+                $value = $field->getFinalValue($value);
                 NestedArrayUtil::setNestedArrayValue($newValues, $parents, $value, true);
             }
         }
@@ -73,7 +74,6 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         if (!$newValues) {
             $this->stdErr->writeln('No changed values were provided to update.');
-            $this->stdErr->writeln('');
             $this->ensureHooks($integration);
 
             return 1;
@@ -100,6 +100,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
         $this->ensureHooks($integration);
+        $this->stdErr->writeln('');
 
         $this->displayIntegration($integration);
 
