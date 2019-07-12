@@ -12,7 +12,7 @@ use Symfony\Component\Filesystem\Filesystem;
 class ArchiveExportCommand extends CommandBase
 {
     // @todo refactor this
-    const ARCHIVE_VERSION = 2; // increment this when BC-breaking changes are introduced
+    const ARCHIVE_VERSION = 3; // increment this when BC-breaking changes are introduced
 
     /**
      * {@inheritdoc}
@@ -23,8 +23,9 @@ class ArchiveExportCommand extends CommandBase
             ->setName('archive:export')
             ->setDescription('Export an archive from an environment')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'The filename for the archive')
-            ->addOption('exclude-service', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude a service')
-            ->addOption('exclude-mounts', null, InputOption::VALUE_NONE, 'Exclude mounts');
+            ->addOption('exclude-services', null, InputOption::VALUE_NONE, 'Exclude services')
+            ->addOption('exclude-mounts', null, InputOption::VALUE_NONE, 'Exclude mounts')
+            ->addOption('exclude-variables', null, InputOption::VALUE_NONE, 'Exclude variables');
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -51,10 +52,10 @@ class ArchiveExportCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
         $deployment = $this->api()->getCurrentDeployment($environment, true);
 
+        $archiveId = sprintf('archive-%s--%s', $environment->machine_name, $environment->project);
         $archiveFilename = (string) $input->getOption('file');
         if ($archiveFilename === '') {
-            $archiveFilename = sprintf('archive-%s--%s.tar.gz', $environment->machine_name, $environment->project);
-            $archiveFilename = strtolower($archiveFilename);
+            $archiveFilename = $archiveId . '.tar.gz';
         }
         if (file_exists($archiveFilename)) {
             $this->stdErr->writeln(sprintf('The file already exists: <comment>%s</comment>', $archiveFilename));
@@ -68,6 +69,7 @@ class ArchiveExportCommand extends CommandBase
             return 1;
         }
 
+        $excludeServices = (bool) $input->getOption('exclude-services');
         $serviceSupport = [
             'mysql' => 'using "db:dump"',
             'postgresql' => 'using "db:dump"',
@@ -77,18 +79,16 @@ class ArchiveExportCommand extends CommandBase
         $supportedServices = [];
         $unsupportedServices = [];
         $ignoredServices = [];
-        $excludedServices = [];
-        $excludedServicesOption = (bool) $input->getOption('exclude-service');
-        foreach ($deployment->services as $name => $service) {
-            list($type, ) = explode(':', $service->type, 2);
-            if (in_array($name, $excludedServicesOption, true)) {
-                $excludedServices[$name] = $type;
-            } elseif (isset($serviceSupport[$type]) && !empty($service->disk)) {
-                $supportedServices[$name] = $type;
-            } elseif (empty($service->disk)) {
-                $ignoredServices[$name] = $type;
-            } else {
-                $unsupportedServices[$name] = $type;
+        if (!$excludeServices) {
+            foreach ($deployment->services as $name => $service) {
+                list($type, ) = explode(':', $service->type, 2);
+                if (isset($serviceSupport[$type]) && !empty($service->disk)) {
+                    $supportedServices[$name] = $type;
+                } elseif (empty($service->disk)) {
+                    $ignoredServices[$name] = $type;
+                } else {
+                    $unsupportedServices[$name] = $type;
+                }
             }
         }
 
@@ -115,16 +115,6 @@ class ArchiveExportCommand extends CommandBase
             $this->stdErr->writeln('');
         }
 
-        if (!empty($excludedServices)) {
-            $this->stdErr->writeln('Excluded services:');
-            foreach ($excludedServices as $name => $type) {
-                $this->stdErr->writeln(
-                    sprintf('  - %s (%s)', $name, $type)
-                );
-            }
-            $this->stdErr->writeln('');
-        }
-
         if (!empty($unsupportedServices)) {
             $this->stdErr->writeln('Unsupported services:');
             foreach ($unsupportedServices as $name => $type) {
@@ -137,19 +127,34 @@ class ArchiveExportCommand extends CommandBase
 
         $apps = [];
         $hasMounts = false;
-        $excludeMounts = $input->getOption('exclude-mounts');
+        $excludeMounts = (bool) $input->getOption('exclude-mounts');
+        $excludeVariables = (bool) $input->getOption('exclude-variables');
         foreach ($deployment->webapps as $name => $webApp) {
             $app = new App($webApp, $environment);
             $apps[$name] = $app;
             $hasMounts = !$excludeMounts && ($hasMounts || count($app->getMounts()));
         }
 
-        $this->stdErr->writeln('Environment metadata (including variables) will be saved.');
+        $nothingToDo = true;
+
+        if (!$excludeVariables) {
+            $this->stdErr->writeln('Environment metadata (including variables) will be saved.');
+            $nothingToDo = false;
+        }
+
         if ($hasMounts && !$excludeMounts) {
             $this->stdErr->writeln('Files from mounts will be downloaded.');
+            $nothingToDo = false;
         }
-        if (count($supportedServices)) {
+
+        if (!$excludeServices && !empty($supportedServices)) {
             $this->stdErr->writeln('Exports from the above supported service(s) will be saved.');
+            $nothingToDo = false;
+        }
+
+        if ($nothingToDo) {
+            $this->stdErr->writeln('There is nothing to export.');
+            return 1;
         }
 
         $this->stdErr->writeln('');
@@ -175,7 +180,7 @@ class ArchiveExportCommand extends CommandBase
             }
         });
 
-        $archiveDir = $tmpDir . '/archive';
+        $archiveDir = $tmpDir . '/' . $archiveId;
         if (!mkdir($archiveDir)) {
             $this->stdErr->writeln(sprintf('Failed to create archive directory: <error>%s</error>', $archiveDir));
 
