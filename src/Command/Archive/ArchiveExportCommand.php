@@ -25,7 +25,7 @@ class ArchiveExportCommand extends CommandBase
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'The filename for the archive')
             ->addOption('exclude-services', null, InputOption::VALUE_NONE, 'Exclude services')
             ->addOption('exclude-mounts', null, InputOption::VALUE_NONE, 'Exclude mounts')
-            ->addOption('exclude-variables', null, InputOption::VALUE_NONE, 'Exclude variables');
+            ->addOption('include-variables', null, InputOption::VALUE_NONE, 'Include variables');
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -128,7 +128,7 @@ class ArchiveExportCommand extends CommandBase
         $apps = [];
         $hasMounts = false;
         $excludeMounts = (bool) $input->getOption('exclude-mounts');
-        $excludeVariables = (bool) $input->getOption('exclude-variables');
+        $includeVariables = (bool) $input->getOption('include-variables');
         foreach ($deployment->webapps as $name => $webApp) {
             $app = new App($webApp, $environment);
             $apps[$name] = $app;
@@ -137,7 +137,7 @@ class ArchiveExportCommand extends CommandBase
 
         $nothingToDo = true;
 
-        if (!$excludeVariables) {
+        if ($includeVariables) {
             $this->stdErr->writeln('Environment metadata (including variables) will be saved.');
             $nothingToDo = false;
         }
@@ -209,21 +209,23 @@ class ArchiveExportCommand extends CommandBase
             'deployment' => $deployment->getProperties(),
         ];
 
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('Copying project-level variables');
-        foreach ($this->getSelectedProject()->getVariables() as $var) {
-            $metadata['variables']['project'][$var->name] = $var->getProperties();
-            if ($var->is_sensitive) {
-                $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
+        if ($includeVariables) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Copying project-level variables');
+            foreach ($this->getSelectedProject()->getVariables() as $var) {
+                $metadata['variables']['project'][$var->name] = $var->getProperties();
+                if ($var->is_sensitive) {
+                    $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
+                }
             }
-        }
 
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('Copying environment-level variables');
-        foreach ($environment->getVariables() as $var) {
-            $metadata['variables']['environment'][$var->name] = $var->getProperties();
-            if ($var->is_sensitive) {
-                $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive environment-level variable <comment>%s</comment>', $var->name));
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Copying environment-level variables');
+            foreach ($environment->getVariables() as $envVar) {
+                $metadata['variables']['environment'][$envVar->name] = $envVar->getProperties();
+                if ($envVar->is_sensitive) {
+                    $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive environment-level variable <comment>%s</comment>', $envVar->name));
+                }
             }
         }
 
@@ -420,10 +422,7 @@ class ArchiveExportCommand extends CommandBase
             }
         }
 
-        $start = microtime(true);
         $shell->execute($params, null, true, false, [], null);
-
-        $this->stdErr->writeln(sprintf('  time: %ss', number_format(microtime(true) - $start, 2)), OutputInterface::VERBOSITY_NORMAL);
     }
 
     /**
