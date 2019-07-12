@@ -173,12 +173,24 @@ class ArchiveExportCommand extends CommandBase
             return 1;
         }
 
+        // Clean up the temporary directory when done.
         register_shutdown_function(function () use($tmpDir, $fs) {
             if (file_exists($tmpDir)) {
-                $this->stdErr->writeln("\nCleaning up", OutputInterface::VERBOSITY_VERBOSE);
+                $this->stdErr->writeln("\nCleaning up");
                 $fs->remove($tmpDir);
             }
         });
+        if (function_exists('pcntl_signal')) {
+            declare(ticks = 1);
+            /** @noinspection PhpComposerExtensionStubsInspection */
+            pcntl_signal(SIGINT, function () use ($tmpDir, $fs) {
+                if (file_exists($tmpDir)) {
+                    $this->stdErr->writeln("\nCleaning up");
+                    $fs->remove($tmpDir);
+                }
+                exit(130);
+            });
+        }
 
         $archiveDir = $tmpDir . '/' . $archiveId;
         if (!mkdir($archiveDir)) {
