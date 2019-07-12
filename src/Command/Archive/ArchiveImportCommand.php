@@ -210,60 +210,12 @@ class ArchiveImportCommand extends CommandBase
                         if (!empty($dumpInfo['schema'])) {
                             $this->stdErr->writeln('Processing schema: <info>' . $dumpInfo['schema'] . '</info>');
                         }
-                        if (empty($dumpInfo['filename']) || !file_exists($archiveDir . '/' . $dumpInfo['filename'])) {
-                            $this->stdErr->writeln('Dump file not found: ' . $archiveDir . '/' . $dumpInfo['filename']);
-                            continue;
-                        }
-                        $args = [
-                            (new PhpExecutableFinder())->find(false) ?: 'php',
-                            $GLOBALS['argv'][0],
-                            'db:sql',
-                            '--project=' . $this->getSelectedProject()->id,
-                            '--environment=' . $this->getSelectedEnvironment()->id,
-                            '--app=' . $dumpInfo['app'],
-                            '--relationship=' . $dumpInfo['relationship'],
-                            '--yes',
-                        ];
-                        if (!empty($dumpInfo['schema'])) {
-                            $args[] = '--schema=' . $dumpInfo['schema'];
-                        }
-                        if ($output->isVerbose()) {
-                            $args[] = '--verbose';
-                        }
-                        $command = implode(' ', array_map('escapeshellarg', $args))
-                            . ' < ' . escapeshellarg($archiveDir . '/' . $dumpInfo['filename']);
-                        $exitCode = $shell->executeSimple($command);
-                        if ($exitCode !== 0) {
-                            $success = false;
-                        }
+                        $this->importDatabaseDump($archiveDir, $dumpInfo);
                     }
                 } elseif ($serviceInfo['_type'] === 'mongodb') {
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln('Importing data for service <info>' . $serviceName . '</info>');
-
-                    if (empty($serviceInfo['filename']) || !file_exists($archiveDir . '/' . $serviceInfo['filename'])) {
-                        $this->stdErr->writeln('Dump file not found: ' . $archiveDir . '/' . $serviceInfo['filename']);
-                        continue;
-                    }
-
-                    $args = [
-                        $GLOBALS['argv'][0],
-                        'service:mongo:restore',
-                        '--project=' . $this->getSelectedProject()->id,
-                        '--environment=' . $this->getSelectedEnvironment()->id,
-                        '--app=' . $serviceInfo['app'],
-                        '--relationship=' . $serviceInfo['relationship'],
-                        '--yes',
-                    ];
-                    if ($output->isVerbose()) {
-                        $args[] = '--verbose';
-                    }
-                    $command = (new PhpExecutableFinder())->find(false) . ' ' . implode(' ', array_map('escapeshellarg', $args));
-                    $command .= ' < ' . escapeshellarg($archiveDir . '/' . $serviceInfo['filename']);
-                    $exitCode = $shell->executeSimple($command);
-                    if ($exitCode !== 0) {
-                        $success = false;
-                    }
+                    $this->importMongoDump($archiveDir, $serviceInfo);
                 }
             }
         }
@@ -322,9 +274,75 @@ class ArchiveImportCommand extends CommandBase
             }
         }
 
-        $start = microtime(true);
         $shell->execute($params, null, true, false, [], null);
+    }
 
-        $this->stdErr->writeln(sprintf('  time: %ss', number_format(microtime(true) - $start, 2)), OutputInterface::VERBOSITY_NORMAL);
+    /**
+     * @param string $commandName
+     * @param array  $args
+     * @param string $suffix
+     */
+    private function runCliCommandViaShell($commandName, array $args = [], $suffix = '')
+    {
+        $args = array_merge([
+            (new PhpExecutableFinder())->find(false) ?: 'php',
+            $GLOBALS['argv'][0],
+            $commandName,
+        ], $args);
+        $command = implode(' ', array_map('escapeshellarg', $args)) . $suffix;
+
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+        $exitCode = $shell->executeSimple($command);
+        if ($exitCode !== 0) {
+            throw new \RuntimeException("Command failed with exit code $exitCode:" . $command);
+        }
+    }
+
+    /**
+     * @param string $archiveDir
+     * @param array  $dumpInfo
+     */
+    private function importDatabaseDump($archiveDir, array $dumpInfo)
+    {
+        if (!file_exists($archiveDir . '/' . $dumpInfo['filename'])) {
+            throw new \RuntimeException('Dump file not found: ' . $archiveDir . '/' . $dumpInfo['filename']);
+        }
+        $args = [
+            '--project=' . $this->getSelectedProject()->id,
+            '--environment=' . $this->getSelectedEnvironment()->id,
+            '--app=' . $dumpInfo['app'],
+            '--relationship=' . $dumpInfo['relationship'],
+            '--yes',
+        ];
+        if (!empty($dumpInfo['schema'])) {
+            $args[] = '--schema=' . $dumpInfo['schema'];
+        }
+        if ($this->stdErr->isVerbose()) {
+            $args[] = '--verbose';
+        }
+        $this->runCliCommandViaShell('db:sql', $args, ' < ' . escapeshellarg($archiveDir . '/' . $dumpInfo['filename']));
+    }
+
+    /**
+     * @param string $archiveDir
+     * @param array  $dumpInfo
+     */
+    private function importMongoDump($archiveDir, array $dumpInfo)
+    {
+        if (!file_exists($archiveDir . '/' . $dumpInfo['filename'])) {
+            throw new \RuntimeException('Dump file not found: ' . $archiveDir . '/' . $dumpInfo['filename']);
+        }
+        $args = [
+            '--project=' . $this->getSelectedProject()->id,
+            '--environment=' . $this->getSelectedEnvironment()->id,
+            '--app=' . $dumpInfo['app'],
+            '--relationship=' . $dumpInfo['relationship'],
+            '--yes',
+        ];
+        if ($this->stdErr->isVerbose()) {
+            $args[] = '--verbose';
+        }
+        $this->runCliCommandViaShell('service:mongo:restore', $args, ' < ' . escapeshellarg($archiveDir . '/' . $dumpInfo['filename']));
     }
 }
