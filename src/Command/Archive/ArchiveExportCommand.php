@@ -51,8 +51,8 @@ class ArchiveExportCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
         $deployment = $this->api()->getCurrentDeployment($environment, true);
 
-        $archiveFilename = $input->getOption('file');
-        if ($archiveFilename === null) {
+        $archiveFilename = (string) $input->getOption('file');
+        if ($archiveFilename === '') {
             $archiveFilename = sprintf('archive-%s--%s.tar.gz', $environment->machine_name, $environment->project);
             $archiveFilename = strtolower($archiveFilename);
         }
@@ -78,7 +78,7 @@ class ArchiveExportCommand extends CommandBase
         $unsupportedServices = [];
         $ignoredServices = [];
         $excludedServices = [];
-        $excludedServicesOption = $input->getOption('exclude-service');
+        $excludedServicesOption = (bool) $input->getOption('exclude-service');
         foreach ($deployment->services as $name => $service) {
             list($type, ) = explode(':', $service->type, 2);
             if (in_array($name, $excludedServicesOption, true)) {
@@ -237,8 +237,7 @@ class ArchiveExportCommand extends CommandBase
                     : [];
 
                 // Filter the list by the schemas accessible from the endpoint.
-                if (isset($database['rel'])
-                    && isset($service->configuration['endpoints'][$relationshipName]['privileges'])) {
+                if (isset($service->configuration['endpoints'][$relationshipName]['privileges'])) {
                     $schemas = array_intersect(
                         $schemas,
                         array_keys($service->configuration['endpoints'][$relationshipName]['privileges'])

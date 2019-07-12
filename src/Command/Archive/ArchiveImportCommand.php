@@ -29,7 +29,7 @@ class ArchiveImportCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $filename = $input->getArgument('file');
+        $filename = (string) $input->getArgument('file');
         if (!file_exists($filename)) {
             $this->stdErr->writeln(sprintf('File not found: <error>%s</error>', $filename));
 
@@ -152,6 +152,7 @@ class ArchiveImportCommand extends CommandBase
                             continue;
                         }
                         $args = [
+                            (new PhpExecutableFinder())->find(false) ?: 'php',
                             $GLOBALS['argv'][0],
                             'db:sql',
                             '--project=' . $this->getSelectedProject()->id,
@@ -166,8 +167,8 @@ class ArchiveImportCommand extends CommandBase
                         if ($output->isVerbose()) {
                             $args[] = '--verbose';
                         }
-                        $command = (new PhpExecutableFinder())->find(false) . ' ' . implode(' ', array_map('escapeshellarg', $args));
-                        $command .= ' < ' . escapeshellarg($archiveDir . '/' . $dumpInfo['filename']);
+                        $command = implode(' ', array_map('escapeshellarg', $args))
+                            . ' < ' . escapeshellarg($archiveDir . '/' . $dumpInfo['filename']);
                         $exitCode = $shell->executeSimple($command);
                         if ($exitCode !== 0) {
                             $success = false;
