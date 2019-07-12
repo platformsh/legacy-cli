@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3b15e017599176f45d3e1b9094dc9a81",
+    "content-hash": "80b9ec0165486c94b3c62c809172cbb3",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -706,16 +706,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.23",
+            "version": "v0.0.24",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "38f069fdb59885fdd1463831c1d557b1491b539f"
+                "reference": "4dc5f0990399633b6a39ca13752080ea4f62f716"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/38f069fdb59885fdd1463831c1d557b1491b539f",
-                "reference": "38f069fdb59885fdd1463831c1d557b1491b539f",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/4dc5f0990399633b6a39ca13752080ea4f62f716",
+                "reference": "4dc5f0990399633b6a39ca13752080ea4f62f716",
                 "shasum": ""
             },
             "require": {
@@ -741,7 +741,7 @@
                 }
             ],
             "description": "A lightweight Symfony Console form system.",
-            "time": "2018-09-09T20:47:21+00:00"
+            "time": "2019-07-12T11:29:37+00:00"
         },
         {
             "name": "psr/container",

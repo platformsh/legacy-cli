@@ -165,7 +165,17 @@ class CompletionCommand extends ParentCompletionCommand
                 'service:mongo:restore',
                 'archive',
                 Completion::TYPE_ARGUMENT
-            )
+            ),
+            new Completion\ShellPathCompletion(
+                'integration:add',
+                'file',
+                Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+                'integration:update',
+                'file',
+                Completion::TYPE_OPTION
+            ),
         ]);
 
         try {

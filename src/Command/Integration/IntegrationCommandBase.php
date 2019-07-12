@@ -9,6 +9,7 @@ use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\EmailAddressField;
 use Platformsh\ConsoleForm\Field\Field;
+use Platformsh\ConsoleForm\Field\FileField;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
@@ -53,6 +54,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.email',
                     'health.pagerduty',
                     'health.slack',
+                    'script',
                 ],
             ]),
             'token' => new Field('Token', [
@@ -274,6 +276,15 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.pagerduty',
                 ]],
                 'description' => 'The PagerDuty routing key',
+            ]),
+            'script' => new FileField('Script file', [
+                'conditions' => ['type' => [
+                    'script',
+                ]],
+                'optionName' => 'file',
+                'allowedExtensions' => ['.js', ''],
+                'contentsAsValue' => true,
+                'description' => 'The name of a local file that contains the script to upload',
             ]),
         ];
     }
