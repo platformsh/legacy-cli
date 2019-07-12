@@ -148,7 +148,7 @@ class ArchiveExportCommand extends CommandBase
         }
 
         if (!$excludeServices && !empty($supportedServices)) {
-            $this->stdErr->writeln('Exports from the above supported service(s) will be saved.');
+            $this->stdErr->writeln('Data from the above supported service(s) will be saved.');
             $nothingToDo = false;
         }
 
@@ -163,35 +163,7 @@ class ArchiveExportCommand extends CommandBase
             return 1;
         }
 
-        $tmpFile = tempnam(sys_get_temp_dir(), 'archive-');
-        unlink($tmpFile);
-        $tmpDir = $tmpFile;
-        unset($tmpFile);
-        if (!mkdir($tmpDir)) {
-            $this->stdErr->writeln(sprintf('Failed to create temporary directory: <error>%s</error>', $tmpDir));
-
-            return 1;
-        }
-
-        // Clean up the temporary directory when done.
-        register_shutdown_function(function () use($tmpDir, $fs) {
-            if (file_exists($tmpDir)) {
-                $this->stdErr->writeln("\nCleaning up");
-                $fs->remove($tmpDir);
-            }
-        });
-        if (function_exists('pcntl_signal')) {
-            declare(ticks = 1);
-            /** @noinspection PhpComposerExtensionStubsInspection */
-            pcntl_signal(SIGINT, function () use ($tmpDir, $fs) {
-                if (file_exists($tmpDir)) {
-                    $this->stdErr->writeln("\nCleaning up");
-                    $fs->remove($tmpDir);
-                }
-                exit(130);
-            });
-        }
-
+        $tmpDir = $fs->makeTempDir('archive-');
         $archiveDir = $tmpDir . '/' . $archiveId;
         if (!mkdir($archiveDir)) {
             $this->stdErr->writeln(sprintf('Failed to create archive directory: <error>%s</error>', $archiveDir));
