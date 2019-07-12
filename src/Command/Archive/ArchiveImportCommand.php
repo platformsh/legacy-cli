@@ -3,8 +3,11 @@ namespace Platformsh\Cli\Command\Archive;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\RemoteContainer\App;
+use Platformsh\Client\Model\ProjectLevelVariable;
+use Platformsh\Client\Model\Variable;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\PhpExecutableFinder;
 
@@ -18,7 +21,9 @@ class ArchiveImportCommand extends CommandBase
         $this
             ->setName('archive:import')
             ->setDescription('Import an archive')
-            ->addArgument('file', InputArgument::REQUIRED, 'The archive filename');
+            ->addArgument('file', InputArgument::REQUIRED, 'The archive filename')
+            ->addOption('include-variables', null, InputOption::VALUE_NONE, 'Import environment-level variables')
+            ->addOption('include-project-variables', null, InputOption::VALUE_NONE, 'Import project-level variables');
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -95,7 +100,18 @@ class ArchiveImportCommand extends CommandBase
 
         $this->debug('Extracted archive to: ' . $tmpDir);
 
-        $archiveDir = $tmpDir . '/archive';
+        foreach ((array) scandir($tmpDir) as $filename) {
+            if (!empty($filename) && $filename[0] !== '.' && is_dir($tmpDir . '/' . $filename)) {
+                $archiveId = $filename;
+                break;
+            }
+        }
+        if (empty($archiveId)) {
+            $this->stdErr->writeln('<error>Error:</error> Failed to identify archive subdirectory');
+
+            return 1;
+        }
+        $archiveDir = $tmpDir . '/' . $archiveId;
 
         $metadata = file_get_contents($archiveDir . '/archive.json');
         if ($metadata === false || !($metadata = json_decode($metadata, true))) {
@@ -115,8 +131,8 @@ class ArchiveImportCommand extends CommandBase
 
         $activities = [];
 
-        if (!empty($metadata['variables']['environment'])) {
-            // @todo project-level variables could be problematic...
+        if (!empty($metadata['variables']['environment'])
+            && ($input->getOption('include-variables') || ($input->isInteractive() && $questionHelper->confirm("\nImport environment-level variables?", false)))) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Importing environment-level variables');
 
@@ -125,12 +141,75 @@ class ArchiveImportCommand extends CommandBase
                     $this->stdErr->writeln('  Skipping sensitive variable <comment>' . $name . '</comment>');
                     continue;
                 }
-                $this->stdErr->writeln('  ' . $name);
+                $this->stdErr->writeln('  Processing variable <info>' . $name . '</info>');
                 if (!array_key_exists('value', $var)) {
                     $this->stdErr->writeln('    Error: no variable value found.');
                     continue;
                 }
-                $result = $environment->setVariable($name, $var['value'], $var['is_json'], $var['is_enabled'], $var['is_sensitive']);
+                unset($var['project'], $var['environment'], $var['created_at'], $var['updated_at'], $var['id'], $var['attributes']);
+                if ($current = $environment->getVariable($name)) {
+                    $this->stdErr->writeln('    The variable already exists.');
+                    if ($current->is_sensitive === $var['is_sensitive']
+                        && $current->value === $var['value']
+                        && $current->is_json === $var['is_json']
+                        && $current->is_enabled === $var['is_enabled']
+                        && $current->is_inheritable === $var['is_inheritable']) {
+                        $this->stdErr->writeln('    No change required.');
+                        continue;
+                    }
+
+                    if (!$questionHelper->confirm('    Do you want to update it?')) {
+                        return 1;
+                    }
+
+                    $result = $current->update($var);
+                } else {
+                    $result = Variable::create($var, $environment->getLink('#manage-variables'), $this->api()->getHttpClient());
+
+                }
+                $this->stdErr->writeln('    Done');
+                $activities = array_merge($activities, $result->getActivities());
+            }
+        }
+
+        if (!empty($metadata['variables']['project'])
+            && ($input->getOption('include-project-variables') || ($input->isInteractive() && $questionHelper->confirm("\nImport project-level variables?", false)))) {
+            $project = $this->getSelectedProject();
+
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Importing project-level variables');
+
+            foreach ($metadata['variables']['project'] as $name => $var) {
+                if ($var['is_sensitive']) {
+                    $this->stdErr->writeln('  Skipping sensitive variable <comment>' . $name . '</comment>');
+                    continue;
+                }
+                $this->stdErr->writeln('  Processing variable <info>' . $name . '</info>');
+                if (!array_key_exists('value', $var)) {
+                    $this->stdErr->writeln('    Error: no variable value found.');
+                    continue;
+                }
+                unset($var['project'], $var['created_at'], $var['updated_at'], $var['id'], $var['attributes']);
+                if ($current = $project->getVariable($name)) {
+                    $this->stdErr->writeln('    The variable already exists.');
+                    if ($current->is_sensitive === $var['is_sensitive']
+                        && $current->value === $var['value']
+                        && $current->visible_build === $var['visible_build']
+                        && $current->visible_runtime === $var['visible_runtime']
+                        && $current->is_json === $var['is_json']) {
+                        $this->stdErr->writeln('    No change required.');
+                        continue;
+                    }
+
+                    if (!$questionHelper->confirm('    Do you want to update it?')) {
+                        return 1;
+                    }
+
+                    $result = $current->update($var);
+                } else {
+                    $result = ProjectLevelVariable::create($var, $project->getLink('#manage-variables'), $this->api()->getHttpClient());
+                }
+                $this->stdErr->writeln('    Done');
                 $activities = array_merge($activities, $result->getActivities());
             }
         }

@@ -192,15 +192,15 @@ class ArchiveExportCommand extends CommandBase
             'time' => date('c'),
             'version' => self::ARCHIVE_VERSION,
             'cli_version' => $this->config()->getVersion(),
-            'project' => $this->getSelectedProject()->getData(),
-            'environment' => $environment->getData(),
-            'deployment' => $deployment->getData(),
+            'project' => $this->getSelectedProject()->getProperties(),
+            'environment' => $environment->getProperties(),
+            'deployment' => $deployment->getProperties(),
         ];
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln('Copying project-level variables');
         foreach ($this->getSelectedProject()->getVariables() as $var) {
-            $metadata['variables']['project'][$var->name] = $var->getData();
+            $metadata['variables']['project'][$var->name] = $var->getProperties();
             if ($var->is_sensitive) {
                 $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
             }
@@ -209,7 +209,7 @@ class ArchiveExportCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln('Copying environment-level variables');
         foreach ($environment->getVariables() as $var) {
-            $metadata['variables']['environment'][$var->name] = $var->getData();
+            $metadata['variables']['environment'][$var->name] = $var->getProperties();
             if ($var->is_sensitive) {
                 $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive environment-level variable <comment>%s</comment>', $var->name));
             }
