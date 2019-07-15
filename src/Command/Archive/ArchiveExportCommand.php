@@ -12,7 +12,7 @@ use Symfony\Component\Filesystem\Filesystem;
 class ArchiveExportCommand extends CommandBase
 {
     // @todo refactor this
-    const ARCHIVE_VERSION = 3; // increment this when BC-breaking changes are introduced
+    const ARCHIVE_VERSION = 4; // increment this when BC-breaking changes are introduced
 
     /**
      * {@inheritdoc}
@@ -293,7 +293,7 @@ class ArchiveExportCommand extends CommandBase
                 }
                 (new Filesystem())->dumpFile($filename, $buffer->fetch());
                 $metadata['services'][$serviceName]['_type'] = $type;
-                $metadata['services'][$serviceName] += [
+                $metadata['services'][$serviceName]['dumps'][] = [
                     'filename' => 'services/' . $serviceName . '/' . $filename,
                     'app' => $appName,
                     'relationship' => $relationshipName,

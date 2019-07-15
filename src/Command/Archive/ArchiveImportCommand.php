@@ -215,7 +215,10 @@ class ArchiveImportCommand extends CommandBase
                 } elseif ($serviceInfo['_type'] === 'mongodb') {
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln('Importing data for service <info>' . $serviceName . '</info>');
-                    $this->importMongoDump($archiveDir, $serviceInfo);
+
+                    foreach ($serviceInfo['dumps'] as $dumpInfo) {
+                        $this->importMongoDump($archiveDir, $dumpInfo);
+                    }
                 }
             }
         }
