@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Archive;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\RemoteContainer\App;
+use Platformsh\Client\Model\Deployment\Service;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -159,6 +160,12 @@ class ArchiveExportCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
+        $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
+        $this->stdErr->writeln('Your site may be changing data during archiving, resulting in inconsistencies.');
+        $this->stdErr->writeln('This tool is not suitable for making consistent backups (instead, see <info>' . $this->config()->get('application.executable') . ' snapshot:create</info>).');
+
+        $this->stdErr->writeln('');
+
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
@@ -221,19 +228,8 @@ class ArchiveExportCommand extends CommandBase
                 return 1;
             }
             if ($type === 'mysql' || $type === 'pgsql') {
-                // Get a list of schemas from the service configuration.
-                $service = $deployment->getService($serviceName);
-                $schemas = !empty($service->configuration['schemas'])
-                    ? $service->configuration['schemas']
-                    : [];
-
-                // Filter the list by the schemas accessible from the endpoint.
-                if (isset($service->configuration['endpoints'][$relationshipName]['privileges'])) {
-                    $schemas = array_intersect(
-                        $schemas,
-                        array_keys($service->configuration['endpoints'][$relationshipName]['privileges'])
-                    );
-                }
+                // Get a list of schemas for this relationship.
+                $schemas = $this->getSchemas($deployment->getService($serviceName), $relationshipName);
 
                 mkdir($archiveDir . '/services/' . $serviceName, 0755, true);
 
@@ -286,7 +282,7 @@ class ArchiveExportCommand extends CommandBase
                 $filename = $appName . '--' . $relationshipName . '.bson';
                 // @todo dump directly to a file without the buffer
                 $buffer = new BufferedOutput();
-                $exitCode = $this->runOtherCommand('db:dump', $args, $buffer);
+                $exitCode = $this->runOtherCommand('service:mongo:dump', $args, $buffer);
                 if ($exitCode !== 0) {
 
                     return $exitCode;
@@ -304,6 +300,8 @@ class ArchiveExportCommand extends CommandBase
         if ($hasMounts && !$excludeMounts) {
             /** @var \Platformsh\Cli\Service\Mount $mountService */
             $mountService = $this->getService('mount');
+            /** @var \Platformsh\Cli\Service\Rsync $rsync */
+            $rsync = $this->getService('rsync');
             foreach ($apps as $app) {
                 $sourcePaths = [];
                 $mounts = $mountService->normalizeMounts($app->getMounts());
@@ -319,10 +317,9 @@ class ArchiveExportCommand extends CommandBase
                     }
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln('Copying from mount <info>' . $path . '</info>');
-                    $source = ltrim($path, '/');
                     $destination = $archiveDir . '/mounts/' . trim($path, '/');
                     mkdir($destination, 0755, true);
-                    $this->rsync($app->getSshUrl(), $source, $destination);
+                    $rsync->syncDown($app->getSshUrl(), ltrim($path, '/'), $destination);
                     $metadata['mounts'][$path] = [
                         'app' => $app->getName(),
                         'path' => 'mounts/' . trim($path, '/'),
@@ -360,44 +357,6 @@ class ArchiveExportCommand extends CommandBase
     }
 
     /**
-     * Rsync from a remote path to a local one.
-     *
-     * @param string $sshUrl
-     * @param string $sshPath
-     * @param string $localPath
-     * @param array  $options
-     */
-    private function rsync($sshUrl, $sshPath, $localPath, array $options = [])
-    {
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        $params = ['rsync', '--archive', '--compress', '--human-readable'];
-
-        if ($this->stdErr->isVeryVerbose()) {
-            $params[] = '-vv';
-        } elseif ($this->stdErr->isVerbose()) {
-            $params[] = '-v';
-        }
-
-        $params[] = sprintf('%s:%s/', $sshUrl, $sshPath);
-        $params[] = $localPath;
-
-        if (!empty($options['delete'])) {
-            $params[] = '--delete';
-        }
-        foreach (['exclude', 'include'] as $option) {
-            if (!empty($options[$option])) {
-                foreach ($options[$option] as $value) {
-                    $params[] = '--' . $option . '=' . $value;
-                }
-            }
-        }
-
-        $shell->execute($params, null, true, false, [], null);
-    }
-
-    /**
      * @param \Platformsh\Cli\Model\RemoteContainer\App $app
      * @param string                                    $serviceName
      *
@@ -415,5 +374,32 @@ class ArchiveExportCommand extends CommandBase
         }
 
         return false;
+    }
+
+    /**
+     * Get a list of schemas configured for the service.
+     *
+     * @param \Platformsh\Client\Model\Deployment\Service               $service
+     * @param string                                                    $relationshipName
+     *
+     * @return array
+     */
+    private function getSchemas(Service $service, $relationshipName)
+    {
+        if (empty($service->configuration['schemas'])) {
+            return [];
+        }
+
+        $schemas = $service->configuration['schemas'];
+
+        // Filter the list by the schemas accessible from the endpoint.
+        if (isset($service->configuration['endpoints'][$relationshipName]['privileges'])) {
+            $schemas = array_intersect(
+                $schemas,
+                array_keys($service->configuration['endpoints'][$relationshipName]['privileges'])
+            );
+        }
+
+        return $schemas;
     }
 }

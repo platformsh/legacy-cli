@@ -3,6 +3,8 @@ namespace Platformsh\Cli\Command\Archive;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\RemoteContainer\App;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
 use Symfony\Component\Console\Input\InputArgument;
@@ -55,9 +57,6 @@ class ArchiveImportCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
         /** @var \Platformsh\Cli\Service\Filesystem $fs */
         $fs = $this->getService('fs');
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
 
         $environment = $this->getSelectedEnvironment();
 
@@ -130,25 +129,20 @@ class ArchiveImportCommand extends CommandBase
                     $this->stdErr->writeln('    Error: no variable value found.');
                     continue;
                 }
-                unset($var['project'], $var['environment'], $var['created_at'], $var['updated_at'], $var['id'], $var['attributes']);
                 if ($current = $environment->getVariable($name)) {
                     $this->stdErr->writeln('    The variable already exists.');
-                    if ($current->is_sensitive === $var['is_sensitive']
-                        && $current->value === $var['value']
-                        && $current->is_json === $var['is_json']
-                        && $current->is_enabled === $var['is_enabled']
-                        && $current->is_inheritable === $var['is_inheritable']) {
+                    if ($this->variablesAreEqual($current->getProperties(), $var)) {
                         $this->stdErr->writeln('    No change required.');
                         continue;
                     }
 
-                    if (!$questionHelper->confirm('    Do you want to update it?')) {
-                        return 1;
+                    if ($questionHelper->confirm('    Do you want to update it?')) {
+                        $result = $current->update($var);
+                    } else {
+                        continue;
                     }
-
-                    $result = $current->update($var);
                 } else {
-                    $result = Variable::create($var, $environment->getLink('#manage-variables'), $this->api()->getHttpClient());
+                    $result = $this->createEnvironmentVariableFromProperties($var, $environment);
 
                 }
                 $this->stdErr->writeln('    Done');
@@ -173,14 +167,9 @@ class ArchiveImportCommand extends CommandBase
                     $this->stdErr->writeln('    Error: no variable value found.');
                     continue;
                 }
-                unset($var['project'], $var['created_at'], $var['updated_at'], $var['id'], $var['attributes']);
                 if ($current = $project->getVariable($name)) {
                     $this->stdErr->writeln('    The variable already exists.');
-                    if ($current->is_sensitive === $var['is_sensitive']
-                        && $current->value === $var['value']
-                        && $current->visible_build === $var['visible_build']
-                        && $current->visible_runtime === $var['visible_runtime']
-                        && $current->is_json === $var['is_json']) {
+                    if ($this->variablesAreEqual($current->getProperties(), $var)) {
                         $this->stdErr->writeln('    No change required.');
                         continue;
                     }
@@ -191,7 +180,7 @@ class ArchiveImportCommand extends CommandBase
 
                     $result = $current->update($var);
                 } else {
-                    $result = ProjectLevelVariable::create($var, $project->getLink('#manage-variables'), $this->api()->getHttpClient());
+                    $result = $this->createProjectVariableFromProperties($var, $project);
                 }
                 $this->stdErr->writeln('    Done');
                 $activities = array_merge($activities, $result->getActivities());
@@ -224,12 +213,18 @@ class ArchiveImportCommand extends CommandBase
         }
 
         if (!empty($metadata['mounts'])) {
+            /** @var \Platformsh\Cli\Service\Rsync $rsync */
+            $rsync = $this->getService('rsync');
+            $rsyncOptions = [
+                'verbose' => $output->isVeryVerbose(),
+                'quiet' => !$output->isVerbose(),
+            ];
             $deployment = $environment->getCurrentDeployment();
             foreach ($metadata['mounts'] as $path => $info) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Importing files to mount <info>' . $path . '</info>');
                 $app = new App($deployment->getWebApp($info['app']), $environment);
-                $this->rsyncUp($app->getSshUrl(), $path, $archiveDir . '/' . $info['path']);
+                $rsync->syncUp($app->getSshUrl(), $archiveDir . '/' . $info['path'], $path, $rsyncOptions);
             }
         }
 
@@ -243,41 +238,61 @@ class ArchiveImportCommand extends CommandBase
     }
 
     /**
-     * Rsync from a local path to a remote one.
+     * @param array                                $properties
+     * @param \Platformsh\Client\Model\Environment $environment
      *
-     * @param string $sshUrl
-     * @param string $sshPath
-     * @param string $localPath
-     * @param array  $options
+     * @return \Platformsh\Client\Model\Result
      */
-    private function rsyncUp($sshUrl, $sshPath, $localPath, array $options = [])
+    private function createEnvironmentVariableFromProperties(array $properties, Environment $environment)
     {
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        $var = $properties;
+        unset($var['project'], $var['environment'], $var['created_at'], $var['updated_at'], $var['id'], $var['attributes']);
 
-        $params = ['rsync', '--archive', '--compress', '--human-readable'];
+        return Variable::create($var, $environment->getLink('#manage-variables'), $this->api()->getHttpClient());
+    }
 
-        if ($this->stdErr->isVeryVerbose()) {
-            $params[] = '-vv';
-        } elseif ($this->stdErr->isVerbose()) {
-            $params[] = '-v';
-        }
+    /**
+     * @param array                            $properties
+     * @param \Platformsh\Client\Model\Project $project
+     *
+     * @return \Platformsh\Client\Model\Result
+     */
+    private function createProjectVariableFromProperties(array $properties, Project $project)
+    {
+        $var = $properties;
+        unset($var['project'], $var['environment'], $var['created_at'], $var['updated_at'], $var['id'], $var['attributes']);
 
-        $params[] = rtrim($localPath, '/') . '/';
-        $params[] = sprintf('%s:%s', $sshUrl, $sshPath);
+        return ProjectLevelVariable::create($var, $project->getLink('#manage-variables'), $this->api()->getHttpClient());
+    }
 
-        if (!empty($options['delete'])) {
-            $params[] = '--delete';
-        }
-        foreach (['exclude', 'include'] as $option) {
-            if (!empty($options[$option])) {
-                foreach ($options[$option] as $value) {
-                    $params[] = '--' . $option . '=' . $value;
-                }
+
+    /**
+     * Checks if two variables are equal.
+     * 
+     * @param array $var1Properties
+     * @param array $var2Properties
+     *
+     * @return bool
+     */
+    private function variablesAreEqual(array $var1Properties, $var2Properties)
+    {
+        $keys = [
+            'value',
+            'is_json',
+            'is_enabled',
+            'is_sensitive',
+            'is_inheritable',
+            'visible_build',
+            'visible_runtime',
+        ];
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $var1Properties)
+                && (!array_key_exists($key, $var2Properties) || $var1Properties[$key] !== $var2Properties[$key])) {
+                return false;
             }
         }
 
-        $shell->execute($params, null, true, false, [], null);
+        return true;
     }
 
     /**
