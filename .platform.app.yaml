@@ -13,7 +13,7 @@ hooks:
     ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$version" --output web/platform.phar
 
     cat << EOF > .environment
-    alias platform="php $(realpath web/platform.phar)"
+    alias platform="php \${PLATFORM_APP_DIR}/web/platform.phar"
     export CLI_URL_PATH=platform.phar
     export CLI_BUILD_DATE="$(date)"
     export CLI_VERSION="$version"
