@@ -83,8 +83,8 @@ class ProjectListCommand extends CommandBase
 
         $machineReadable = $this->table->formatIsMachineReadable();
 
-        $header = ['ID', 'Title', 'URL', 'Host'];
-        $defaultColumns = ['ID', 'Title', 'Host'];
+        $header = ['id' => 'ID', 'title' => 'Title', 'url' => 'URL', 'host' => 'Region hostname'];
+        $defaultColumns = ['id', 'title', 'host'];
 
         $rows = [];
         foreach ($projects as $project) {
@@ -99,10 +99,10 @@ class ProjectListCommand extends CommandBase
             }
 
             $rows[] = [
-                new AdaptiveTableCell($project->id, ['wrap' => false]),
-                $title,
-                $project->getLink('#ui'),
-                parse_url($project->getUri(), PHP_URL_HOST)
+                'id' => new AdaptiveTableCell($project->id, ['wrap' => false]),
+                'title' => $title,
+                'url' => $project->getLink('#ui'),
+                'host' => parse_url($project->getUri(), PHP_URL_HOST)
             ];
         }
 
