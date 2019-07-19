@@ -2,13 +2,14 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class MountUploadCommand extends MountCommandBase
+class MountUploadCommand extends CommandBase
 {
 
     /**
@@ -57,8 +58,17 @@ class MountUploadCommand extends MountCommandBase
         if ($input->getOption('mount')) {
             $mountPath = $mountService->matchMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
+            $options = [];
+            foreach ($mounts as $path => $definition) {
+                if ($definition['source'] === 'local') {
+                    $options[$path] = sprintf('<question>%s</question>', $path);
+                } else {
+                    $options[$path] = sprintf('<question>%s</question>: %s', $path, $definition['source']);
+                }
+            }
+
             $mountPath = $questionHelper->choose(
-                $this->getMountsAsOptions($mounts),
+                $options,
                 'Enter a number to choose a mount to upload to:'
             );
         } else {
