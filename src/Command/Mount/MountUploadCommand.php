@@ -108,7 +108,7 @@ class MountUploadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->validateDirectory($source);
+        $fs->validateDirectory($source);
 
         $confirmText = sprintf(
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
@@ -120,10 +120,14 @@ class MountUploadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($container->getSshUrl(), $mountPath, $source, true, [
+        /** @var \Platformsh\Cli\Service\Rsync $rsync */
+        $rsync = $this->getService('rsync');
+        $rsync->syncUp($container->getSshUrl(), $source, $mountPath, [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),
+            'verbose' => $output->isVeryVerbose(),
+            'quiet' => $output->isQuiet(),
         ]);
 
         return 0;

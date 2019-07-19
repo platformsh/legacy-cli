@@ -115,7 +115,7 @@ class MountDownloadCommand extends MountCommandBase
                 return 1;
             }
         } else {
-            $this->validateDirectory($target, true);
+            $fs->validateDirectory($target, true);
         }
 
         $confirmText = sprintf(
@@ -128,10 +128,14 @@ class MountDownloadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($container->getSshUrl(), $mountPath, $target, false, [
+        /** @var \Platformsh\Cli\Service\Rsync $rsync */
+        $rsync = $this->getService('rsync');
+        $rsync->syncDown($container->getSshUrl(), $mountPath, $target, [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),
+            'verbose' => $output->isVeryVerbose(),
+            'quiet' => $output->isQuiet(),
         ]);
 
         return 0;
