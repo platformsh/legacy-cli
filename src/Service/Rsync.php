@@ -21,6 +21,24 @@ class Rsync
     }
 
     /**
+     * Finds whether the installed version of rsync supports the --iconv flag.
+     *
+     * @return bool|null
+     */
+    public function supportsConvertingFilenames()
+    {
+        static $supportsIconv;
+        if (!isset($supportsIconv)) {
+            $result = $this->shell->execute(['rsync', '-h']);
+            if (is_string($result)) {
+                $supportsIconv = strpos($result, '--iconv') !== false;
+            }
+        }
+
+        return $supportsIconv;
+    }
+
+    /**
      * Syncs files from a local to a remote location.
      *
      * @param string $sshUrl
@@ -73,6 +91,9 @@ class Rsync
             $params[] = $localPath;
         }
 
+        if (!empty($options['convert-mac-filenames'])) {
+            $params[] = '--iconv=utf-8-mac,utf-8';
+        }
         if (!empty($options['delete'])) {
             $params[] = '--delete';
         }

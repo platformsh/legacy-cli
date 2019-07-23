@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -120,6 +121,9 @@ class MountUploadCommand extends CommandBase
 
         $fs->validateDirectory($source);
 
+        /** @var \Platformsh\Cli\Service\Rsync $rsync */
+        $rsync = $this->getService('rsync');
+
         $confirmText = sprintf(
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
             . "\n\nAre you sure you want to continue?",
@@ -130,15 +134,26 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Rsync $rsync */
-        $rsync = $this->getService('rsync');
-        $rsync->syncUp($container->getSshUrl(), $source, $mountPath, [
+        $rsyncOptions = [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),
             'verbose' => $output->isVeryVerbose(),
             'quiet' => $output->isQuiet(),
-        ]);
+        ];
+
+        if (OsUtil::isOsX()) {
+            if ($rsync->supportsConvertingFilenames() !== false) {
+                $this->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
+                $rsyncOptions['convert-mac-filenames'] = true;
+            } else {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Warning: the installed version of <comment>rsync</comment> does not support converting filenames with special characters (the --iconv flag). You may need to upgrade rsync.');
+            }
+        }
+
+        $this->stdErr->writeln('');
+        $rsync->syncUp($container->getSshUrl(), $source, $mountPath, $rsyncOptions);
 
         return 0;
     }
