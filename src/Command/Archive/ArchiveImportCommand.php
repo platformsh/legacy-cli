@@ -120,12 +120,12 @@ class ArchiveImportCommand extends CommandBase
             $this->stdErr->writeln('Importing environment-level variables');
 
             foreach ($metadata['variables']['environment'] as $name => $var) {
-                if ($var['is_sensitive']) {
-                    $this->stdErr->writeln('  Skipping sensitive variable <comment>' . $name . '</comment>');
-                    continue;
-                }
                 $this->stdErr->writeln('  Processing variable <info>' . $name . '</info>');
                 if (!array_key_exists('value', $var)) {
+                    if ($var['is_sensitive']) {
+                        $this->stdErr->writeln('  Skipping sensitive variable <comment>' . $name . '</comment>');
+                        continue;
+                    }
                     $this->stdErr->writeln('    Error: no variable value found.');
                     continue;
                 }
@@ -158,12 +158,12 @@ class ArchiveImportCommand extends CommandBase
             $this->stdErr->writeln('Importing project-level variables');
 
             foreach ($metadata['variables']['project'] as $name => $var) {
-                if ($var['is_sensitive']) {
-                    $this->stdErr->writeln('  Skipping sensitive variable <comment>' . $name . '</comment>');
-                    continue;
-                }
                 $this->stdErr->writeln('  Processing variable <info>' . $name . '</info>');
                 if (!array_key_exists('value', $var)) {
+                    if ($var['is_sensitive']) {
+                        $this->stdErr->writeln('  Skipping sensitive variable <comment>' . $name . '</comment>');
+                        continue;
+                    }
                     $this->stdErr->writeln('    Error: no variable value found.');
                     continue;
                 }

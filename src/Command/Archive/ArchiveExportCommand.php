@@ -26,7 +26,8 @@ class ArchiveExportCommand extends CommandBase
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'The filename for the archive')
             ->addOption('exclude-services', null, InputOption::VALUE_NONE, 'Exclude services')
             ->addOption('exclude-mounts', null, InputOption::VALUE_NONE, 'Exclude mounts')
-            ->addOption('include-variables', null, InputOption::VALUE_NONE, 'Include variables');
+            ->addOption('include-variables', null, InputOption::VALUE_NONE, 'Include variables')
+            ->addOption('include-sensitive-values', null, InputOption::VALUE_NONE, 'Include sensitive variable values');
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -189,12 +190,31 @@ class ArchiveExportCommand extends CommandBase
         ];
 
         if ($includeVariables) {
+            $includeSensitive = $input->getOption('include-sensitive-values');
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Copying project-level variables');
             foreach ($this->getSelectedProject()->getVariables() as $var) {
                 $metadata['variables']['project'][$var->name] = $var->getProperties();
-                if ($var->is_sensitive) {
-                    $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
+                if ($var->is_sensitive && !$var->hasProperty('value')) {
+                    if ($var->visible_runtime) {
+                        if ($includeSensitive) {
+                            $value = false;
+                            foreach ($apps as $app) {
+                                try {
+                                    $value = $this->fetchSensitiveValue($app->getSshUrl(), $var->name, $var->is_json);
+                                } catch (\RuntimeException $e) {
+                                    continue;
+                                }
+                                break;
+                            }
+                            if ($value !== false) {
+                                $metadata['variables']['project'][$var->name]['value'] = $value;
+                            }
+                        } else {
+                            $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
+                            $this->stdErr->writeln('  Use --include-sensitive-values to try to fetch this via SSH');
+                        }
+                    }
                 }
             }
 
@@ -202,8 +222,24 @@ class ArchiveExportCommand extends CommandBase
             $this->stdErr->writeln('Copying environment-level variables');
             foreach ($environment->getVariables() as $envVar) {
                 $metadata['variables']['environment'][$envVar->name] = $envVar->getProperties();
-                if ($envVar->is_sensitive) {
-                    $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive environment-level variable <comment>%s</comment>', $envVar->name));
+                if ($envVar->is_sensitive && !$envVar->hasProperty('value')) {
+                    if ($includeSensitive) {
+                        $value = false;
+                        foreach ($apps as $app) {
+                            try {
+                                $value = $this->fetchSensitiveValue($app->getSshUrl(), $envVar->name, $envVar->is_json);
+                            } catch (\RuntimeException $e) {
+                                continue;
+                            }
+                            break;
+                        }
+                        if ($value !== false) {
+                            $metadata['variables']['environment'][$envVar->name]['value'] = $value;
+                        }
+                    } else {
+                        $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive environment-level variable <comment>%s</comment>', $envVar->name));
+                        $this->stdErr->writeln('  Use --include-sensitive-values to try to fetch this via SSH');
+                    }
                 }
             }
         }
@@ -302,6 +338,10 @@ class ArchiveExportCommand extends CommandBase
             $mountService = $this->getService('mount');
             /** @var \Platformsh\Cli\Service\Rsync $rsync */
             $rsync = $this->getService('rsync');
+            $rsyncOptions = [
+                'verbose' => $output->isVeryVerbose(),
+                'quiet' => !$output->isVerbose(),
+            ];
             foreach ($apps as $app) {
                 $sourcePaths = [];
                 $mounts = $mountService->normalizeMounts($app->getMounts());
@@ -319,7 +359,7 @@ class ArchiveExportCommand extends CommandBase
                     $this->stdErr->writeln('Copying from mount <info>' . $path . '</info>');
                     $destination = $archiveDir . '/mounts/' . trim($path, '/');
                     mkdir($destination, 0755, true);
-                    $rsync->syncDown($app->getSshUrl(), ltrim($path, '/'), $destination);
+                    $rsync->syncDown($app->getSshUrl(), ltrim($path, '/'), $destination, $rsyncOptions);
                     $metadata['mounts'][$path] = [
                         'app' => $app->getName(),
                         'path' => 'mounts/' . trim($path, '/'),
@@ -401,5 +441,28 @@ class ArchiveExportCommand extends CommandBase
         }
 
         return $schemas;
+    }
+
+    /**
+     * @param string $sshUrl
+     * @param string $varName
+     * @param bool   $is_json
+     *
+     * @return mixed
+     */
+    private function fetchSensitiveValue($sshUrl, $varName, $is_json)
+    {
+        /** @var \Platformsh\Cli\Service\RemoteEnvVars $remoteEnvVars */
+        $remoteEnvVars = $this->getService('remote_env_vars');
+        if (substr($varName, 0, 4) === 'env:') {
+            return $remoteEnvVars->getEnvVar(substr($varName, 4), $sshUrl, true, 3600, false);
+        }
+
+        $variables = $remoteEnvVars->getArrayEnvVar('VARIABLES', $sshUrl);
+        if (array_key_exists($varName, $variables)) {
+            return $is_json ? json_encode($variables[$varName]) : $variables[$varName];
+        }
+
+        throw new \RuntimeException('Variable not found: ' . $varName);
     }
 }
