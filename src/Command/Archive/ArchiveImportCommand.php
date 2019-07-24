@@ -246,7 +246,7 @@ class ArchiveImportCommand extends CommandBase
     private function createEnvironmentVariableFromProperties(array $properties, Environment $environment)
     {
         $var = $properties;
-        unset($var['project'], $var['environment'], $var['created_at'], $var['updated_at'], $var['id'], $var['attributes']);
+        unset($var['project'], $var['environment'], $var['created_at'], $var['updated_at'], $var['id'], $var['attributes'], $var['inherited']);
 
         return Variable::create($var, $environment->getLink('#manage-variables'), $this->api()->getHttpClient());
     }
