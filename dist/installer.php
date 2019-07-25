@@ -93,7 +93,12 @@ class Installer {
             'Git is installed.',
             'Warning: Git will be needed.',
             function () {
-                exec('command -v git', $output, $return_var);
+                if (defined('PHP_WINDOWS_VERSION_BUILD')) {
+                    $command = 'where git';
+                } else {
+                    $command = 'command -v git';
+                }
+                exec($command, $output, $return_var);
                 return $return_var === 0;
             },
             false
