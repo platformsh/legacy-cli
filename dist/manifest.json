@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "46d60cc2b9a106e6cc95d88a9051997979af6acb",
-        "sha256": "f1620dfd149fd17071c7bb538eb0b8ccb847d29dd13169ace67ceab8c2a63585",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.44.0/platform.phar",
-        "version": "3.44.0",
+        "sha1": "d325f44a66e8187bf27fcb5d60f6565d0d9aee5c",
+        "sha256": "5056bf2b35968c157d9f93b667fe621b3339e0531c0fb54be63b3ef53d6e0756",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.45.0/platform.phar",
+        "version": "3.45.0",
         "php": {
             "min": "5.5.9"
         },
@@ -208,6 +208,11 @@
                 "notes": "New features:\n\n* Allow the `app:config` command to read from PLATFORM_APPLICATION in the\n  local environment.\n* Improvements to the `environment:url` (`url`) command:\n    * Read URLs from PLATFORM_ROUTES in the local environment.\n    * Always prefer the primary route URL when sorting URLs.\n    * Add a --primary option, to print or open only the primary route URL.\n    * Just print URLs (without interaction) when there is no display/browser\n      available.\n\nOther changes:\n\n* Prefer the primary route as the site URL (for Drush aliases, etc.).\n* Use embedded user account information if available in the access API (small\n  performance improvement).\n* Fix \"Failed to decode\" in the `relationships` command when there are no\n  relationships.\n* Adapt `welcome` command for offline-on-container uses. If you install the CLI\n  into your own Platform.sh project, running `platform` on its own now gives\n  you a list of useful commands that work \"offline\" without needing to\n  configure an API token.\n* Do not require login for the `self:stats` command.\n* Improve app/worker choice message.\n* Clearer error for no config (`.platform.app.yaml`) file.\n* Match user email addresses case-insensitively. This fixes all user commands\n  that need an email address (user:add, user:get, user:update and user:delete).",
                 "show from": "3.43.0",
                 "hide from": "3.44.0"
+            },
+            {
+                "notes": "New features:\n\n* Add --all (-a) option to mount:download command. This lets you download files\n  from all of an application's mounts.\n* Enable gzip encoding in all API requests, if the zlib PHP extension is\n  available. This should result in a performance improvement, particularly for\n  slow connections or API responses containing a lot of data (e.g. the\n  activity:list or environment:list commands).\n\nOther changes:\n\n* In mount:upload, convert OS X filename characters using rsync's `--iconv`.\n* Small bug fix for commit and repo commands: do not fetch an empty commit\n  hash (after stripping commit parents notation).\n* Installer: fix check for git on Windows.",
+                "show from": "3.44.0",
+                "hide from": "3.45.0"
             }
         ]
     }
