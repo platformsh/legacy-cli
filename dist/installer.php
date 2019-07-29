@@ -105,7 +105,6 @@ class Installer {
         );
 
         $required_extensions = [
-            'mbstring',
             'openssl',
             'pcre',
         ];
