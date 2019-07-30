@@ -105,17 +105,18 @@ class Installer {
         );
 
         $required_extensions = [
+            'curl',
             'openssl',
             'pcre',
         ];
         foreach ($required_extensions as $extension) {
             $this->check(
                 'The "' . $extension . '" PHP extension is installed.',
-                'Warning: the "' . $extension . '" PHP extension will be needed.',
+                'The "' . $extension . '" PHP extension is required.',
                 function () use ($extension) {
                     return extension_loaded($extension);
                 },
-                false
+                true
             );
         }
 
@@ -299,14 +300,14 @@ class Installer {
      */
     private function check($success, $failure, $condition, $exit = true) {
         if ($condition()) {
-            $this->output('  [*] ' . $success, 'success');
+            $this->output('  ✓ ' . $success, 'success');
+        }
+        elseif (!$exit) {
+            $this->output('  ! ' . $failure, 'warning');
         }
         else {
-            $this->output('  [ ] ' . $failure, $exit ? 'error' : 'warning');
-
-            if ($exit) {
-                exit(1);
-            }
+            $this->output('  ✗ ' . $failure, 'error');
+            exit(1);
         }
     }
 
