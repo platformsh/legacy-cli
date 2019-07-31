@@ -76,7 +76,7 @@ class DbSizeCommand extends CommandBase
         $machineReadable = $table->formatIsMachineReadable();
         $showInBytes = $input->getOption('bytes') || $machineReadable;
 
-        $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => 'Percentage used'];
+        $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
         $values = [
             'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
             'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
