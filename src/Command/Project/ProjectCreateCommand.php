@@ -7,6 +7,8 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
+use Platformsh\ConsoleForm\Field\BooleanField;
+use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -27,14 +29,11 @@ class ProjectCreateCommand extends CommandBase
           ->setAliases(['create'])
           ->setDescription('Create a new project');
 
+        $this->form = Form::fromArray($this->getFields());
+        $this->form->configureInputDefinition($this->getDefinition());
 
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
-            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900)
-            ->addOption('template', null, InputOption::VALUE_OPTIONAL, 'Provide a template url or choose a template from the provided list on which to build your project.', false)
-            ->addOption('initialize', null, InputOption::VALUE_NONE, 'Initialize the project after it has been created.')
-            ->addOption('current-repo', null, InputOption::VALUE_NONE, 'Automatically set remote after creation.')
-            ->addOption('region', null, InputOption::VALUE_REQUIRED, 'The region to assign the project to.');
-
+            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
 
         $this->setHelp(<<<EOF
 Use this command to create a new project.
@@ -58,16 +57,6 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Process the template field to determine if it's a url or just the flag.
-        //@todo How do we want to handle bad urls?
-        $catalog = false;
-        if ($input->getOption('template') !== false && empty(parse_url($input->getOption('template'), PHP_URL_PATH))) {
-            $catalog = true;
-        }
-
-        $this->form = Form::fromArray($this->getFields($catalog));
-        $this->form->configureInputDefinition($this->getDefinition());
-
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
@@ -91,15 +80,15 @@ EOF
         if (!$questionHelper->confirm($costConfirm)) {
             return 1;
         }
-        
-        // Handle if no template is chosen look for a default one for the user.
-        if ($catalog === false && !empty(parse_url($input->getOption('template'), PHP_URL_PATH))) {
-            $options['catalog'] = $input->getOption('template');
-        }
-        else {
-            $options['catalog'] == NULL;
-        }
 
+        // Grab the url of the yaml file.
+        if (!empty($options['catalog_url'])) {
+            $options['catalog'] = $options['catalog_url'];
+        }
+        else if (!empty($options['catalog_url'])) {
+            $options['catalog'] = $options['template_url'];
+        }
+        
         $subscription = $this->api()->getClient()
             ->createSubscription(
                 $options['catalog'],
@@ -168,7 +157,7 @@ EOF
             return 1;
         }
 
-        if ($input->getOption('initialize')) {
+        if ($options['initialize']) {
             // Use the existing initialize command.
             $project = $this->selectProject($subscription->project_id);
             $environment = $this->api()->getEnvironment('master', $project, null, true);
@@ -286,7 +275,7 @@ EOF
      *
      * @return Field[]
      */
-    protected function getFields($template)
+    protected function getFields()
     {
         $fields = [];
 
@@ -296,17 +285,41 @@ EOF
             'questionLine' => '',
             'default' => 'Untitled Project',
           ]);
-          if ($template) {
-            $fields['catalog'] = new OptionsField('Base Template', [
-            'optionName' => 'catalog',
+
+          $fields['template_option'] = new OptionsField('Template Options', [
+            'optionName' => 'template_option',
+            'options' => [
+                'Provide your own template url.',
+                'Choose a template from the catalog.',
+                'No template at this time.',
+            ],
+            'description' => 'Choose a template, provide a url or choose not to use one.',
+            'includeAsOption' => false,
+            ]);
+          $fields['catalog_url'] = new OptionsField('Catalog', [
+            'optionName' => 'catalog_url',
+            'conditions' => [
+                'template_option' => [
+                    'Choose a template from the catalog.'
+                ],
+            ],
             'description' => 'The template from which to create your project or your own blank project.',
             'options' => $this->getAvailableCatalog(),
             'asChoice' => FALSE,
             'optionsCallback' => function () {
                 return $this->getAvailableCatalog(true);
-             },
-           ]);
-          }
+                },
+            ]);
+          $fields['template_url'] = new UrlField('Template URL', [
+            'optionName' => 'template_url',
+            'conditions' => [
+                'template_option' => [
+                    'Provide your own template url.'
+                ],
+            ],
+            'description' => 'The template url',
+            'questionLine' => 'What is the URL of the template?',
+          ]);  
           $fields['region'] = new OptionsField('Region', [
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
@@ -339,6 +352,17 @@ EOF
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 1024;
             },
+          ]);
+          $fields['initialize'] = new BooleanField('Initialize', [
+            'optionName' => 'initialized',
+            'conditions' => [
+                'template_option' => [
+                    'Provide your own template url.',
+                    'Choose a template from the catalog.',
+                ],
+            ],
+            'description' => 'Initialize this environment?',
+            'questionLine' => 'Initialize this environment?',
           ]);
 
         return $fields;
