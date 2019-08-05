@@ -27,11 +27,14 @@ class ProjectCreateCommand extends CommandBase
           ->setAliases(['create'])
           ->setDescription('Create a new project');
 
-        $this->form = Form::fromArray($this->getFields());
-        $this->form->configureInputDefinition($this->getDefinition());
 
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
-            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
+            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900)
+            ->addOption('template', null, InputOption::VALUE_NONE, 'Choose a template on which to build your project.')
+            ->addOption('initialize', null, InputOption::VALUE_NONE, 'Initialize the project after it has been created.')
+            ->addOption('current-repo', null, InputOption::VALUE_NONE, 'Automatically set remote after creation.')
+            ->addOption('region', null, InputOption::VALUE_REQUIRED, 'The region to assign the project to.');
+
 
         $this->setHelp(<<<EOF
 Use this command to create a new project.
@@ -55,6 +58,9 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->form = Form::fromArray($this->getFields($input->getOption('template')));
+        $this->form->configureInputDefinition($this->getDefinition());
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
@@ -63,6 +69,7 @@ EOF
         $estimate = $this->api()
             ->getClient()
             ->getSubscriptionEstimate($options['plan'], $options['storage'], $options['environments'], 1);
+
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
@@ -77,9 +84,15 @@ EOF
         if (!$questionHelper->confirm($costConfirm)) {
             return 1;
         }
+        
+        // Handle if no template is chosen look for a default one for the user.
+        if (empty($options['catalog'])) {
+            $options['catalog'] == NULL;
+        }
 
         $subscription = $this->api()->getClient()
             ->createSubscription(
+                $options['catalog'],
                 $options['region'],
                 $options['plan'],
                 $options['title'],
@@ -129,7 +142,6 @@ EOF
             $timedOut = $totalTimeout ? time() - $start > $totalTimeout : false;
         }
         $this->stdErr->writeln('');
-
         if (!$subscription->isActive()) {
             if ($timedOut) {
                 $this->stdErr->writeln('<error>The project failed to activate on time</error>');
@@ -146,14 +158,30 @@ EOF
             return 1;
         }
 
-        $this->stdErr->writeln("The project is now ready!");
+        if ($input->getOption('initialize')) {
+            // Use the existing initialize command.
+            $project = $this->selectProject($subscription->project_id);
+            $environment = $this->api()->getEnvironment('master', $project, null, true);
+            $environment->initialize($subscription->project_options['initialize']['profile'], $subscription->project_options['initialize']['repository']);
+            $this->api()->clearEnvironmentsCache($environment->project);
+            $this->stdErr->writeln("The project has been initialized and is ready!");
+        }
+        else {
+            $this->stdErr->writeln("The project is now ready!");
+        }
+
         $output->writeln($subscription->project_id);
         $this->stdErr->writeln('');
 
+        if (!empty($subscription->project_options['initialize'])) {
+            $this->stdErr->writeln("  Template: <info>{$subscription->project_options[initialize][repository] }</info>");
+        }
         $this->stdErr->writeln("  Region: <info>{$subscription->project_region}</info>");
         $this->stdErr->writeln("  Project ID: <info>{$subscription->project_id}</info>");
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
+
+
         return 0;
     }
 
@@ -217,28 +245,67 @@ EOF
     }
 
     /**
+     * Return the catalog.
+     *
+     * The default list is in the config `service.catalog`. This is
+     * replaced at runtime by an API call.
+     *
+     * @param bool $runtime
+     *
+     * @return array
+     */
+    protected function getAvailableCatalog($runtime = false)
+    {
+        if ($runtime) {
+            $catalog = [];
+            foreach ($this->api()->getClient()->getCatalog()->getData() as $item) {
+                if ($item['info'] && $item['template']) {
+                    $catalog[$item['template']] = $item['info']['name'];
+                }
+            }
+            $catalog['empty'] = 'Empty Project';
+        } else {
+            $catalog = (array) $this->config()->get('service.catalog');
+        }
+
+        return $catalog;
+    }
+
+    /**
      * Returns a list of ConsoleForm form fields for this command.
      *
      * @return Field[]
      */
-    protected function getFields()
+    protected function getFields($template)
     {
-        return [
-          'title' => new Field('Project title', [
+        $fields = [];
+
+        $fields['title'] = new Field('Project title', [
             'optionName' => 'title',
             'description' => 'The initial project title',
             'questionLine' => '',
             'default' => 'Untitled Project',
-          ]),
-          'region' => new OptionsField('Region', [
+          ]);
+          if ($template) {
+            $fields['catalog'] = new OptionsField('Base Template', [
+            'optionName' => 'catalog',
+            'description' => 'The template from which to create your project or your own blank project.',
+            'options' => $this->getAvailableCatalog(),
+            'asChoice' => FALSE,
+            'optionsCallback' => function () {
+                return $this->getAvailableCatalog(true);
+             },
+           ]);
+          }
+          $fields['region'] = new OptionsField('Region', [
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
             'options' => $this->getAvailableRegions(),
             'optionsCallback' => function () {
                 return $this->getAvailableRegions(true);
             },
-          ]),
-          'plan' => new OptionsField('Plan', [
+          ]);
+          $fields['plan'] = new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
@@ -247,23 +314,24 @@ EOF
             },
             'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
             'allowOther' => true,
-          ]),
-          'environments' => new Field('Environments', [
+          ]);
+          $fields['environments'] = new Field('Environments', [
             'optionName' => 'environments',
             'description' => 'The number of environments',
             'default' => 3,
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 50;
             },
-          ]),
-          'storage' => new Field('Storage', [
+          ]);
+          $fields['storage'] = new Field('Storage', [
             'description' => 'The amount of storage per environment, in GiB',
             'default' => 5,
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 1024;
             },
-          ]),
-        ];
+          ]);
+
+        return $fields;
     }
 
     /**
