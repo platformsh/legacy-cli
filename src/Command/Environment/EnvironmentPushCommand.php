@@ -126,7 +126,7 @@ class EnvironmentPushCommand extends CommandBase
 
             // If activating, determine what the environment's parent should be.
             if ($activate || $createAsBranch) {
-                $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment);
+                $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment ?: null);
             }
 
             if ($createAsBranch) {
