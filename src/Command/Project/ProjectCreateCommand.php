@@ -30,7 +30,7 @@ class ProjectCreateCommand extends CommandBase
 
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900)
-            ->addOption('template', null, InputOption::VALUE_NONE, 'Choose a template on which to build your project.')
+            ->addOption('template', null, InputOption::VALUE_OPTIONAL, 'Provide a template url or choose a template from the provided list on which to build your project.', false)
             ->addOption('initialize', null, InputOption::VALUE_NONE, 'Initialize the project after it has been created.')
             ->addOption('current-repo', null, InputOption::VALUE_NONE, 'Automatically set remote after creation.')
             ->addOption('region', null, InputOption::VALUE_REQUIRED, 'The region to assign the project to.');
@@ -58,7 +58,14 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->form = Form::fromArray($this->getFields($input->getOption('template')));
+        // Process the template field to determine if it's a url or just the flag.
+        //@todo How do we want to handle bad urls?
+        $catalog = false;
+        if ($input->getOption('template') !== false && empty(parse_url($input->getOption('template'), PHP_URL_PATH))) {
+            $catalog = true;
+        }
+
+        $this->form = Form::fromArray($this->getFields($catalog));
         $this->form->configureInputDefinition($this->getDefinition());
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
@@ -86,7 +93,10 @@ EOF
         }
         
         // Handle if no template is chosen look for a default one for the user.
-        if (empty($options['catalog'])) {
+        if ($catalog === false && !empty(parse_url($input->getOption('template'), PHP_URL_PATH))) {
+            $options['catalog'] = $input->getOption('template');
+        }
+        else {
             $options['catalog'] == NULL;
         }
 
