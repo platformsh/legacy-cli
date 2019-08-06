@@ -300,41 +300,6 @@ EOF
             'questionLine' => '',
             'default' => 'Untitled Project',
           ]);
-
-        //   $fields['template_option'] = new OptionsField('Template Options', [
-        //     'optionName' => 'template_option',
-        //     'options' => [
-        //         'Provide your own template url.',
-        //         'Choose a template from the catalog.',
-        //         'No template at this time.',
-        //     ],
-        //     'description' => 'Choose a template, provide a url or choose not to use one.',
-        //     'includeAsOption' => false,
-        //     ]);
-        //   $fields['catalog_url'] = new OptionsField('Catalog', [
-        //     'optionName' => 'catalog_url',
-        //     'conditions' => [
-        //         'template_option' => [
-        //             'Choose a template from the catalog.'
-        //         ],
-        //     ],
-        //     'description' => 'The template from which to create your project or your own blank project.',
-        //     'options' => $this->getAvailableCatalog(),
-        //     'asChoice' => FALSE,
-        //     'optionsCallback' => function () {
-        //         return $this->getAvailableCatalog(true);
-        //         },
-        //     ]);
-        //   $fields['template_url'] = new UrlField('Template URL', [
-        //     'optionName' => 'template_url',
-        //     'conditions' => [
-        //         'template_option' => [
-        //             'Provide your own template url.'
-        //         ],
-        //     ],
-        //     'description' => 'The template url',
-        //     'questionLine' => 'What is the URL of the template?',
-        //   ]);  
           $fields['region'] = new OptionsField('Region', [
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
@@ -368,18 +333,6 @@ EOF
                 return is_numeric($value) && $value > 0 && $value < 1024;
             },
           ]);
-        //   $fields['initialize'] = new BooleanField('Initialize', [
-        //     'optionName' => 'initialized',
-        //     'conditions' => [
-        //         'template_option' => [
-        //             'Provide your own template url.',
-        //             'Choose a template from the catalog.',
-        //         ],
-        //     ],
-        //     'description' => 'Initialize this environment?',
-        //     'questionLine' => 'Initialize this environment?',
-        //   ]);
-
         return $fields;
     }
 
@@ -430,7 +383,6 @@ EOF
             'questionLine' => 'What is the URL of the template?',
             ]);  
         }
-        
         $fields['initialize'] = new BooleanField('Initialize', [
         'optionName' => 'initialized',
         'conditions' => [
