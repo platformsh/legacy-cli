@@ -26,7 +26,8 @@ class DbDumpCommand extends CommandBase
             ->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file')
             ->addOption('table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to include')
             ->addOption('exclude-table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to exclude')
-            ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data');
+            ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data')
+            ->addOption('charset', null, InputOption::VALUE_REQUIRED, 'The character set encoding for the dump');
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
@@ -193,6 +194,9 @@ class DbDumpCommand extends CommandBase
                 foreach ($excludedTables as $table) {
                     $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--exclude-table=' . $table);
                 }
+                if ($input->getOption('charset') !== null) {
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--encoding=' . $input->getOption('charset'));
+                }
                 if ($output->isVeryVerbose()) {
                     $dumpCommand .= ' --verbose';
                 }
@@ -215,6 +219,9 @@ class DbDumpCommand extends CommandBase
                 }
                 if (!empty($service->configuration['properties']['max_allowed_packet'])) {
                     $dumpCommand .= ' --max_allowed_packet=' . $service->configuration['properties']['max_allowed_packet'] . 'MB';
+                }
+                if ($input->getOption('charset') !== null) {
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--default-character-set=' . $input->getOption('charset'));
                 }
                 if ($output->isVeryVerbose()) {
                     $dumpCommand .= ' --verbose';
