@@ -46,6 +46,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'questionLine' => '',
                 'options' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                     'gitlab',
                     'hipchat',
@@ -61,8 +62,9 @@ abstract class IntegrationCommandBase extends CommandBase
                     'gitlab',
                     'hipchat',
                     'health.slack',
+                    'bitbucket_server',
                 ]],
-                'description' => 'An OAuth token for the integration',
+                'description' => 'An access token for the integration',
             ]),
             'key' => new Field('OAuth consumer key', [
                 'optionName' => 'key',
@@ -80,18 +82,25 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'A Bitbucket OAuth consumer secret',
                 'valueKeys' => ['app_credentials', 'secret'],
             ]),
-            'base_url' => new UrlField('Base URL', [
+            'base_url' => new UrlField('GitLab base URL', [
                 'conditions' => ['type' => [
                     'gitlab',
                 ]],
                 'description' => 'The base URL of the GitLab installation',
             ]),
+            'url' => new UrlField('Bitbucket Server base URL', [
+                'conditions' => ['type' => [
+                    'bitbucket_server',
+                ]],
+                'description' => 'The base URL of the Bitbucket Server installation',
+            ]),
             'project' => new Field('Project', [
-                'optionName' => 'gitlab-project',
+                'optionName' => 'server-project',
                 'conditions' => ['type' => [
                     'gitlab',
+                    'bitbucket_server',
                 ]],
-                'description' => 'The GitLab project (e.g. \'namespace/repo\')',
+                'description' => 'The project (e.g. \'namespace/repo\')',
                 'validator' => function ($string) {
                     return strpos($string, '/', 1) !== false;
                 },
@@ -99,6 +108,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                 ]],
                 'description' => 'The repository to track (e.g. \'user/repo\')',
@@ -124,6 +134,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'build_pull_requests' => new BooleanField('Build pull requests', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                 ]],
                 'description' => 'Build every pull request as an environment',
@@ -154,6 +165,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => [
                     'type' => [
                         'github',
+                        'bitbucket_server',
                     ],
                     'build_pull_requests' => true,
                 ],
@@ -173,6 +185,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                     'gitlab',
                 ]],
@@ -182,6 +195,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => [
                     'type' => [
                         'bitbucket',
+                        'bitbucket_server',
                         'github',
                         'gitlab',
                     ],
