@@ -18,19 +18,26 @@ class CreateConsoleForm extends Form
     {
         $values = [];
         $stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
+        print_r('catalog: ' . $input->getOption('catalog'));
+        print_r('template: ' . $input->getOption('template'));
         foreach ($this->fields as $key => $field) {
             $field->onChange($values);
 
-            //Check for the catalog flag.
+            // Check for the catalog flag.
             if ($field->getOptionName() == 'catalog_url' && $input->getOption('catalog')!==true) {
                 continue;
             }
-            //Check if the field should be initialized.
-            if ($field->getOptionName() == 'initialize' && 
-                ($input->getOption('catalog')!==true || $input->getOption('template')!==true)) {
-                continue;
+            // Check if the initialize field should be shown.
+            if ($field->getOptionName() == 'initialized') {
+                // Do not show if the neither catalog or template flags are present.
+                if ($input->getOption('catalog')==false && $input->getOption('template')==false) {
+                    continue;
+                }
+                // Do not show is the initialize flag is present.
+                if ($input->getOption('initialize')==true) {
+                    continue;
+                }
             }
-
             if (!$this->includeField($field, $values)) {
                 continue;
             }

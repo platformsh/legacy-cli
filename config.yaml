@@ -80,6 +80,10 @@ service:
     - standard
     - medium
     - large
+  catalog:
+    - https://github.com/platformsh/template-builder/blob/master/templates/akeneo/.platform.template.yaml
+    - https://github.com/platformsh/template-builder/blob/master/templates/beego/.platform.template.yaml
+    - https://github.com/platformsh/template-builder/blob/master/templates/django1/.platform.template.yaml
 
 # Configuration relating to API calls.
 # This can be overridden in the user config file.

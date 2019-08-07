@@ -60,6 +60,15 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        if ($input->getOption('initialize')==true && 
+            ($input->getOption('catalog')==false && 
+            $input->getOption('template')==false)) {
+
+            $this->stdErr->writeln("Projects cannot be initialized without a template file. 
+If you would like to use the --initialize option please provide a template file by utilizing 
+the --template or --catalog options. For more information on this command please type project:create --help.");
+            return 0;
+        }
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
@@ -160,6 +169,10 @@ EOF
         }
 
         if ($options['initialize']) {
+            // Check that the profile and repository are present and initializable.
+            if (empty($subscription->project_options['initialize']['repository'])) {
+                $this->stdErr->writeln("The project has been created but cannot be initialized because the project repository is empty.");
+            }
             // Use the existing initialize command.
             $project = $this->selectProject($subscription->project_id);
             $environment = $this->api()->getEnvironment('master', $project, null, true);
