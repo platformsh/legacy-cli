@@ -98,7 +98,6 @@ abstract class IntegrationCommandBase extends CommandBase
                 'optionName' => 'server-project',
                 'conditions' => ['type' => [
                     'gitlab',
-                    'bitbucket_server',
                 ]],
                 'description' => 'The project (e.g. \'namespace/repo\')',
                 'validator' => function ($string) {
@@ -111,8 +110,8 @@ abstract class IntegrationCommandBase extends CommandBase
                     'bitbucket_server',
                     'github',
                 ]],
-                'description' => 'The repository to track (e.g. \'user/repo\')',
-                'questionLine' => 'The repository (e.g. \'user/repo\')',
+                'description' => 'The repository to track (e.g. \'foo/bar\')',
+                'questionLine' => 'The repository (e.g. \'foo/bar\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
