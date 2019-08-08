@@ -56,6 +56,12 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.slack',
                 ],
             ]),
+            'username' => new Field('Username', [
+                'conditions' =>  ['type' => [
+                    'bitbucket_server',
+                ]],
+                'description' => 'The Bitbucket Server username',
+            ]),
             'token' => new Field('Token', [
                 'conditions' => ['type' => [
                     'github',
