@@ -42,38 +42,42 @@ class Rsync
      * Syncs files from a local to a remote location.
      *
      * @param string $sshUrl
-     * @param string $localPath
-     * @param string $remotePath
+     * @param string $localDir
+     * @param string $remoteDir
      * @param array  $options
      */
-    public function syncUp($sshUrl, $localPath, $remotePath, array $options = [])
+    public function syncUp($sshUrl, $localDir, $remoteDir, array $options = [])
     {
-        $this->doSync($sshUrl, $remotePath, $localPath, true, $options);
+        // Ensure a trailing slash on the "from" path, to copy the directory's
+        // contents rather than the directory itself.
+        $from = rtrim($localDir, '/') . '/';
+        $to = sprintf('%s:%s', $sshUrl, $remoteDir);
+        $this->doSync($from, $to, $options);
     }
 
     /**
      * Syncs files from a remote to a local location.
      *
      * @param string $sshUrl
-     * @param string $remotePath
-     * @param string $localPath
+     * @param string $remoteDir
+     * @param string $localDir
      * @param array  $options
      */
-    public function syncDown($sshUrl, $remotePath, $localPath, array $options = [])
+    public function syncDown($sshUrl, $remoteDir, $localDir, array $options = [])
     {
-        $this->doSync($sshUrl, $remotePath, $localPath, false, $options);
+        $from = sprintf('%s:%s/', $sshUrl, $remoteDir);
+        $to = $localDir;
+        $this->doSync($from, $to, $options);
     }
 
     /**
      * Runs rsync.
      *
-     * @param string $sshUrl
-     * @param string $remotePath
-     * @param string $localPath
-     * @param bool   $up
+     * @param string $from
+     * @param string $to
      * @param array  $options
      */
-    private function doSync($sshUrl, $remotePath, $localPath, $up, array $options = [])
+    private function doSync($from, $to, array $options = [])
     {
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
 
@@ -83,13 +87,8 @@ class Rsync
             $params[] = '-v';
         }
 
-        if ($up) {
-            $params[] = rtrim($localPath, '/') . '/';
-            $params[] = sprintf('%s:%s', $sshUrl, $remotePath);
-        } else {
-            $params[] = sprintf('%s:%s/', $sshUrl, $remotePath);
-            $params[] = $localPath;
-        }
+        $params[] = $from;
+        $params[] = $to;
 
         if (!empty($options['convert-mac-filenames'])) {
             $params[] = '--iconv=utf-8-mac,utf-8';
