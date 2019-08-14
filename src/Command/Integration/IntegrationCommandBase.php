@@ -56,6 +56,13 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.slack',
                 ],
             ]),
+            'base_url' => new UrlField('Base URL', [
+                'conditions' => ['type' => [
+                    'gitlab',
+                    'bitbucket_server',
+                ]],
+                'description' => 'The base URL of the server installation',
+            ]),
             'username' => new Field('Username', [
                 'conditions' =>  ['type' => [
                     'bitbucket_server',
@@ -87,18 +94,6 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'A Bitbucket OAuth consumer secret',
                 'valueKeys' => ['app_credentials', 'secret'],
-            ]),
-            'base_url' => new UrlField('GitLab base URL', [
-                'conditions' => ['type' => [
-                    'gitlab',
-                ]],
-                'description' => 'The base URL of the GitLab installation',
-            ]),
-            'url' => new UrlField('Bitbucket Server base URL', [
-                'conditions' => ['type' => [
-                    'bitbucket_server',
-                ]],
-                'description' => 'The base URL of the Bitbucket Server installation',
             ]),
             'project' => new Field('Project', [
                 'optionName' => 'server-project',

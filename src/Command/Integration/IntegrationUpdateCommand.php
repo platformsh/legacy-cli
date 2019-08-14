@@ -57,9 +57,17 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
 
-        // Split bitbucket_server "repository" into project/repository.
-        if ($integration->type === 'bitbucket_server' && isset($newValues['repository']) && strpos($newValues['repository'], '/', 1) !== false) {
-            list($newValues['project'], $newValues['repository']) = explode('/', $newValues['repository'], 2);
+        // Extra logic for bitbucket_server.
+        if ($integration->type === 'bitbucket_server') {
+            // Translate base_url into url.
+            if (isset($newValues['base_url'])) {
+                $newValues['url'] = $newValues['base_url'];
+                unset($newValues['base_url']);
+            }
+            // Split bitbucket_server "repository" into project/repository.
+            if (isset($newValues['repository']) && strpos($newValues['repository'], '/', 1) !== false) {
+                list($newValues['project'], $newValues['repository']) = explode('/', $newValues['repository'], 2);
+            }
         }
 
         // Merge current values with new values, accounting for nested arrays.
