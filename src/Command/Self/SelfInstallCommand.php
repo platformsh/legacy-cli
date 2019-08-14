@@ -51,7 +51,7 @@ EOT
             // We can't do anything without these files, so exit.
             return 1;
         }
-        $this->stdErr->writeln(' done');
+        $this->stdErr->writeln(' <info>done</info>');
         $this->stdErr->writeln('');
 
         $this->stdErr->write('Setting up autocompletion...');
@@ -67,20 +67,20 @@ EOT
             $exitCode = $this->runOtherCommand('_completion', $args, $buffer);
             if ($exitCode === 0 && ($autoCompleteHook = $buffer->fetch())) {
                 $fs->dumpFile($configDir . '/autocompletion.sh', $autoCompleteHook);
-                $this->stdErr->writeln(' done');
+                $this->stdErr->writeln(' <info>done</info>');
             }
         } catch (\Exception $e) {
             // If stdout is not a terminal, then we tried but
             // autocompletion probably isn't needed at all, as we are in the
             // context of some kind of automated build. So ignore the error.
             if (!$this->isTerminal(STDOUT)) {
-                $this->stdErr->writeln(' skipped');
+                $this->stdErr->writeln(' <info>skipped</info>');
             }
             // Otherwise, print the error and continue. The user probably
             // wants to know what went wrong, but autocompletion is still not
             // essential.
             else {
-                $this->stdErr->writeln(' failed');
+                $this->stdErr->writeln(' <comment>failed</comment>');
                 $this->stdErr->writeln($this->indentAndWrap($e->getMessage()));
             }
         }
@@ -222,7 +222,7 @@ EOT
         }
 
         if (!file_put_contents($shellConfigFile, $newShellConfig)) {
-            $this->stdErr->writeln(sprintf('Failed to write to configuration file: %s', $shellConfigFile));
+            $this->stdErr->writeln(sprintf('Failed to write to configuration file: <error>%s</error>', $shellConfigFile));
             return 1;
         }
 
