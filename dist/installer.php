@@ -184,7 +184,12 @@ class Installer {
         });
 
         $this->performTask('Downloading version ' . $latest['version'], function () use ($latest) {
-            if (!file_put_contents($this->pharName, file_get_contents($latest['url']))) {
+            $url = $latest['url'];
+            if (strpos($url, '//') === false) {
+                $removePath = parse_url($this->manifestUrl, PHP_URL_PATH);
+                $url = str_replace($this->manifestUrl, $removePath, '/' . ltrim($url, '/'));
+            }
+            if (!file_put_contents($this->pharName, file_get_contents($url))) {
                 return TaskResult::failure('The download failed');
             }
 

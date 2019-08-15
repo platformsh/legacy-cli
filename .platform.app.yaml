@@ -20,6 +20,18 @@ hooks:
     EOF
 
     mv dist/dev-build-index.php web/index.php
+    mv dist/installer.php web/installer
+    export sha256=$(sha256sum web/platform.phar)
+    cat <<EOF > web/manifest.json
+    [
+      {
+        "version": "$version",
+        "sha256": "$sha256",
+        "name": "platform.phar",
+        "url": "platform.phar"
+      }
+    ]
+    EOF
 
 web:
   locations:

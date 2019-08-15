@@ -37,6 +37,12 @@ if ($config->has('application.github_repo')) {
     $sourceLinkSpecific = false;
 }
 
+$appEnvPrefix = $config->get('application.env_prefix');
+$baseUrl = 'https://' . $_SERVER['HTTP_HOST'];
+$installScript = 'export ' . $appEnvPrefix . 'MANIFEST_URL=' . $baseUrl . '/manifest.json';
+$installScript .= 'curl -sS ' . $baseUrl . '/installer | php';
+$installScript .= 'unset ' . $appEnvPrefix . 'MANIFEST_URL';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -123,6 +129,14 @@ if ($config->has('application.github_repo')) {
         <p>
             Source: <a href="<?= htmlspecialchars($sourceLinkSpecific) ?>"><?= htmlspecialchars($sourceLinkSpecific) ?></a>
         </p>
+    <?php endif; ?>
+    <?php if ($installScript): ?>
+        <p>
+            Install with:
+        </p>
+        <pre>
+            <?= htmlspecialchars($installScript) ?>
+        </pre>
     <?php endif; ?>
 
 </body>
