@@ -53,12 +53,19 @@ class Installer {
     private $argv;
 
     public function __construct(array $args = []) {
-        $this->manifestUrl = getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://platform.sh/cli/manifest.json';
+        $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
+
+        if (getenv('PLATFORMSH_CLI_MANIFEST_URL') !== false) {
+            $this->manifestUrl = getenv('PLATFORMSH_CLI_MANIFEST_URL');
+        } elseif ($manifestOption = $this->getOption('manifest')) {
+            $this->manifestUrl = $manifestOption;
+        } else {
+            $this->manifestUrl = 'https://platform.sh/cli/manifest.json';
+        }
         $this->configDir = '.platformsh';
         $this->executable = 'platform';
         $this->cliName = 'Platform.sh CLI';
         $this->pharName = $this->executable . '.phar';
-        $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
     }
 
     /**

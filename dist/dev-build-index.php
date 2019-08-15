@@ -37,11 +37,12 @@ if ($config->has('application.github_repo')) {
     $sourceLinkSpecific = false;
 }
 
-$appEnvPrefix = $config->get('application.env_prefix');
 $baseUrl = 'https://' . $_SERVER['HTTP_HOST'];
-$installScript = 'export ' . $appEnvPrefix . 'MANIFEST_URL=' . $baseUrl . '/manifest.json;';
-$installScript .= "\n" . 'curl -sS ' . $baseUrl . '/installer | php -- --dev;';
-$installScript .= "\n" . 'unset ' . $appEnvPrefix . 'MANIFEST_URL;';
+$installScript = sprintf(
+    'curl -sfS %s | php -- --dev --manifest %s',
+    escapeshellarg($baseUrl . '/installer'),
+    escapeshellarg($baseUrl . '/manifest.json'),
+);
 
 ?>
 <!DOCTYPE html>
@@ -78,11 +79,6 @@ $installScript .= "\n" . 'unset ' . $appEnvPrefix . 'MANIFEST_URL;';
             max-width: 40em;
             margin: 1em auto;
             word-break: break-all;
-        }
-
-        pre {
-            max-width: 60em;
-            margin: 1em auto;
         }
 
         img {
@@ -137,11 +133,9 @@ $installScript .= "\n" . 'unset ' . $appEnvPrefix . 'MANIFEST_URL;';
     <?php endif; ?>
     <?php if ($installScript): ?>
         <p>
-            Install with:
+            Install with:<br/>
+            <code><?= htmlspecialchars($installScript) ?></code>
         </p>
-<pre>
-<?= htmlspecialchars($installScript) ?>
-</pre>
     <?php endif; ?>
 
 </body>
