@@ -184,7 +184,12 @@ class Installer {
         });
 
         $this->performTask('Downloading version ' . $latest['version'], function () use ($latest) {
-            if (!file_put_contents($this->pharName, file_get_contents($latest['url']))) {
+            $url = $latest['url'];
+            if (strpos($url, '//') === false) {
+                $removePath = parse_url($this->manifestUrl, PHP_URL_PATH);
+                $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
+            }
+            if (!file_put_contents($this->pharName, file_get_contents($url))) {
                 return TaskResult::failure('The download failed');
             }
 
@@ -530,7 +535,7 @@ class VersionResolver {
             }
             if ($dashPos = strpos($version['version'], '-')) {
                 $suffix = substr($version['version'], $dashPos + 1);
-                if (!in_array($suffix, $allowedSuffixes)) {
+                if (!in_array($suffix, $allowedSuffixes) && !in_array('dev', $allowedSuffixes)) {
                     continue;
                 }
             }
@@ -559,7 +564,7 @@ class VersionResolver {
             }
             if ($dashPos = strpos($version['version'], '-')) {
                 $suffix = substr($version['version'], $dashPos + 1);
-                if (!in_array($suffix, $allowedSuffixes)) {
+                if (!in_array($suffix, $allowedSuffixes) && !in_array('dev', $allowedSuffixes)) {
                     $reasons[] = sprintf('Version %s has the suffix -%s, not allowed', $name, $suffix);
                     continue;
                 }
