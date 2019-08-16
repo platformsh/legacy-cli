@@ -107,31 +107,37 @@ EOF
 
         // Build a table of results: one line per mount, one (multi-line) row
         // per filesystem.
-        $header = ['Mount(s)', 'Size(s)', 'Disk', 'Used', 'Available', 'Capacity'];
+        $header = [
+            'mounts' => 'Mount(s)',
+            'sizes' => 'Size(s)',
+            'max' => 'Disk',
+            'used' => 'Used',
+            'available' => 'Available',
+            'percent_used' => '% Used',
+        ];
         $rows = [];
         $showInBytes = $input->getOption('bytes');
         foreach ($volumeInfo as $info) {
             $row = [];
-            $row[] = implode("\n", $info['mounts']);
+            $row['mounts'] = implode("\n", $info['mounts']);
             $mountUsage = [];
             foreach ($info['mounts'] as $mountPath) {
                 $mountUsage[] = $mountSizes[$mountPath];
             }
             if ($showInBytes) {
-                $row[] = implode("\n", $mountUsage);
-                $row[] = $info['total'];
-                $row[] = $info['used'];
-                $row[] = $info['available'];
+                $row['sizes'] = implode("\n", $mountUsage);
+                $row['max'] = $info['total'];
+                $row['used'] = $info['used'];
+                $row['available'] = $info['available'];
             } else {
-                $row[] = implode("\n", array_map([Helper::class, 'formatMemory'], $mountUsage));
-                $row[] = Helper::formatMemory($info['total']);
-                $row[] = Helper::formatMemory($info['used']);
-                $row[] = Helper::formatMemory($info['available']);
+                $row['sizes'] = implode("\n", array_map([Helper::class, 'formatMemory'], $mountUsage));
+                $row['max'] = Helper::formatMemory($info['total']);
+                $row['used'] = Helper::formatMemory($info['used']);
+                $row['available'] = Helper::formatMemory($info['available']);
             }
-            $row[] = round($info['percent_used'], 1) . '%';
+            $row['percent_used'] = round($info['percent_used'], 1) . '%';
             $rows[] = $row;
         }
-
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
