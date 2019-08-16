@@ -28,6 +28,9 @@ matrix:
       env: TEST_SCRIPT=scripts/test/unit.sh
 
     - php: 7.3
+      env: TEST_SCRIPT=scripts/test/build-and-install.sh
+
+    - php: 7.3
       env: TEST_SCRIPT=scripts/test/slow.sh
 
   allow_failures:
