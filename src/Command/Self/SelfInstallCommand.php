@@ -54,14 +54,20 @@ EOT
         $this->stdErr->writeln(' <info>done</info>');
         $this->stdErr->writeln('');
 
+        $shellType = $input->getOption('shell-type');
+        if ($shellType === null && getenv('SHELL') !== false) {
+            $shellType = str_replace('.exe', '', basename(getenv('SHELL')));
+            $this->debug('Detected shell type: ' . $shellType);
+        }
+
         $this->stdErr->write('Setting up autocompletion...');
         try {
             $args = [
                 '--generate-hook' => true,
                 '--program' => $this->config()->get('application.executable'),
             ];
-            if ($input->getOption('shell-type')) {
-                $args['--shell-type'] = $input->getOption('shell-type');
+            if ($shellType) {
+                $args['--shell-type'] = $shellType;
             }
             $buffer = new BufferedOutput();
             $exitCode = $this->runOtherCommand('_completion', $args, $buffer);
@@ -104,7 +110,7 @@ EOT
             $this->debug(sprintf('Shell config file specified via %s', $shellConfigOverrideVar));
             $shellConfigFile = $shellConfigOverride;
         } else {
-            $shellConfigFile = $this->findShellConfigFile();
+            $shellConfigFile = $this->findShellConfigFile($shellType);
         }
 
         $currentShellConfig = '';
@@ -331,10 +337,12 @@ EOT
     /**
      * Finds a shell configuration file for the user.
      *
+     * @param string|null $shellType The shell type.
+     *
      * @return string|false
      *   The absolute path to a shell config file, or false on failure.
      */
-    protected function findShellConfigFile()
+    protected function findShellConfigFile($shellType)
     {
         // Special handling for the .environment file on Platform.sh environments.
         $envPrefix = $this->config()->get('service.env_prefix');
@@ -342,12 +350,6 @@ EOT
             && getenv($envPrefix . 'APP_DIR') !== false
             && getenv($envPrefix . 'APP_DIR') === Filesystem::getHomeDirectory()) {
             return getenv($envPrefix . 'APP_DIR') . '/.environment';
-        }
-
-        $shell = null;
-        if (getenv('SHELL') !== false) {
-            $shell = basename(getenv('SHELL'));
-            $this->debug('Detected shell: ' . $shell);
         }
 
         $candidates = [
@@ -363,7 +365,7 @@ EOT
             ];
         }
 
-        if ($shell === 'zsh' || getenv('ZSH')) {
+        if ($shellType === 'zsh' || ($shellType !== 'bash' && getenv('ZSH'))) {
             array_unshift($candidates, '.zshrc');
             array_unshift($candidates, '.zprofile');
         }
@@ -380,7 +382,7 @@ EOT
         // If none of the files exist (yet), and we are on Bash, and the home
         // directory is writable, then use ~/.bashrc or ~/.bash_profile on
         // OS X.
-        if (is_writable($homeDir) && $shell === 'bash') {
+        if (is_writable($homeDir) && $shellType === 'bash') {
             if (OsUtil::isOsX()) {
                 $this->debug('OS X: defaulting to ~/.bash_profile');
 
