@@ -35,6 +35,37 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
+     * Performs extra logic on values after the form is complete.
+     *
+     * @param array            $values
+     * @param Integration|null $integration
+     *
+     * @return array
+     */
+    protected function postProcessValues(array $values, Integration $integration = null)
+    {
+        // Find the integration type.
+        $type = isset($values['type'])
+            ? $values['type']
+            : ($integration !== null ? $integration->type : null);
+
+        // Process Bitbucket Server values.
+        if ($type === 'bitbucket_server') {
+            // Translate base_url into url.
+            if (isset($values['base_url'])) {
+                $values['url'] = $values['base_url'];
+                unset($values['base_url']);
+            }
+            // Split bitbucket_server "repository" into project/repository.
+            if (isset($values['repository']) && strpos($values['repository'], '/', 1) !== false) {
+                list($values['project'], $values['repository']) = explode('/', $values['repository'], 2);
+            }
+        }
+
+        return $values;
+    }
+
+    /**
      * @return Field[]
      */
     private function getFields()

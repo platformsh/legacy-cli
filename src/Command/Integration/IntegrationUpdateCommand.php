@@ -57,18 +57,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
 
-        // Extra logic for bitbucket_server.
-        if ($integration->type === 'bitbucket_server') {
-            // Translate base_url into url.
-            if (isset($newValues['base_url'])) {
-                $newValues['url'] = $newValues['base_url'];
-                unset($newValues['base_url']);
-            }
-            // Split bitbucket_server "repository" into project/repository.
-            if (isset($newValues['repository']) && strpos($newValues['repository'], '/', 1) !== false) {
-                list($newValues['project'], $newValues['repository']) = explode('/', $newValues['repository'], 2);
-            }
-        }
+        $this->postProcessValues($newValues, $integration);
 
         // Merge current values with new values, accounting for nested arrays.
         foreach ($integration->getProperties() as $key => $currentValue) {

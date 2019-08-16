@@ -54,18 +54,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
             }
         }
 
-        // Extra logic for bitbucket_server.
-        if (isset($values['type']) && $values['type'] === 'bitbucket_server') {
-            // Translate base_url into url.
-            if (isset($values['base_url'])) {
-                $values['url'] = $values['base_url'];
-                unset($values['base_url']);
-            }
-            // Split bitbucket_server "repository" into project/repository.
-            if (isset($values['repository']) && strpos($values['repository'], '/', 1) !== false) {
-                list($values['project'], $values['repository']) = explode('/', $values['repository'], 2);
-            }
-        }
+        $values = $this->postProcessValues($values);
 
         // Confirm this action for Git source integrations.
         if (isset($values['type']) && in_array($values['type'], ['github', 'gitlab', 'bitbucket', 'bitbucket_server'])) {
