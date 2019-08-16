@@ -17,8 +17,10 @@
  *      --alpha, --beta, --dev Install an unstable version.
  *      --no-ansi              Disable ANSI (no colors).
  *      --ansi                 Enable ANSI (e.g. for colors).
- *      --min                  Min version to install.
- *      --max                  Max version to install (not recommended).
+ *      --min VERSION          Min version to install.
+ *      --max VERSION          Max version to install (not recommended).
+ *      --manifest URL         A manifest JSON file URL (use for testing).
+ *      --shell-type TYPE      The shell type for autocompletion (bash or zsh).
  *
  * This file's syntax must support PHP 5.5.9 or higher.
  * It must not include any other files.
