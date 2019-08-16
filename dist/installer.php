@@ -255,10 +255,26 @@ class Installer {
         }
 
         $this->output(PHP_EOL . 'Running self:install command...' . PHP_EOL);
-        putenv('CLICOLOR_FORCE=' . ($this->terminalSupportsAnsi() ? '1' : '0'));
-        $result = $this->runCommand('php ' . $pharPath . ' self:install --yes');
+        $result = $this->selfInstall($pharPath);
 
         exit($result);
+    }
+
+    /**
+     * Runs the 'self:install' command.
+     *
+     * @param string $pharPath The path of the Phar executable.
+     *
+     * @return int The command's exit code.
+     */
+    private function selfInstall($pharPath) {
+        $command = 'php ' . escapeshellarg($pharPath) . ' self:install --yes';
+        if ($shellType = $this->getOption('shell-type')) {
+            $command .= ' --shell-type ' . escapeshellarg($shellType);
+        }
+        putenv('CLICOLOR_FORCE=' . ($this->terminalSupportsAnsi() ? '1' : '0'));
+
+        return $this->runCommand($command);
     }
 
     /**
