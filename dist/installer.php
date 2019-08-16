@@ -194,10 +194,13 @@ class Installer {
 
         $this->performTask('Downloading version ' . $latest['version'], function () use ($latest) {
             $url = $latest['url'];
-            if (strpos($url, '//') === false) {
+
+            // A relative download URL is treated as relative to the manifest URL.
+            if (strpos($url, '//') === false && strpos($this->manifestUrl, '//') !== false) {
                 $removePath = parse_url($this->manifestUrl, PHP_URL_PATH);
                 $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
             }
+
             if (!file_put_contents($this->pharName, file_get_contents($url))) {
                 return TaskResult::failure('The download failed');
             }
