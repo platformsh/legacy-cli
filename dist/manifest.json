@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "d325f44a66e8187bf27fcb5d60f6565d0d9aee5c",
-        "sha256": "5056bf2b35968c157d9f93b667fe621b3339e0531c0fb54be63b3ef53d6e0756",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.45.0/platform.phar",
-        "version": "3.45.0",
+        "sha1": "ce43c8117ddd3f7cd54a763e7cf2d642d68386a7",
+        "sha256": "bd5b2f68f68e469d57c19ed036e082fd131fe69d17e8e716979ac1a2bafb26ca",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.46.0/platform.phar",
+        "version": "3.46.0",
         "php": {
             "min": "5.5.9"
         },
@@ -213,6 +213,11 @@
                 "notes": "New features:\n\n* Add --all (-a) option to mount:download command. This lets you download files\n  from all of an application's mounts.\n* Enable gzip encoding in all API requests, if the zlib PHP extension is\n  available. This should result in a performance improvement, particularly for\n  slow connections or API responses containing a lot of data (e.g. the\n  activity:list or environment:list commands).\n\nOther changes:\n\n* In mount:upload, convert OS X filename characters using rsync's `--iconv`.\n* Small bug fix for commit and repo commands: do not fetch an empty commit\n  hash (after stripping commit parents notation).\n* Installer: fix check for git on Windows.",
                 "show from": "3.44.0",
                 "hide from": "3.45.0"
+            },
+            {
+                "notes": "New features:\n\n* Add --charset option to the db:dump command.\n  Specifying the character set is recommended for any database dump.\n  If your application database is in MySQL's utf8mb4, for example, use:\n      platform db:dump --charset utf8mb4\n* Add --branch option to the 'push' command.\n  This allows a new environment to be created as an active branch from a\n  specified parent - thus inheriting settings from that parent - rather than\n  setting the parent later.\n* Add bitbucket_server integration support.\n\nOther changes:\n\n* Installer:\n  - Add --shell-type option to specify 'bash' or 'zsh' to the installer, for\n    example:\n        curl -sfS https://platform.sh/cli/installer | php -- --shell-type bash\n  - Add --manifest option to use a test or development manifest file.\n  - Require the curl, openssl and pcre PHP extensions (and stop requiring\n    mbstring).\n  - The --dev option will now allow any version string.\n* Rename \"Capacity\" to \"% Used\" in mount:size command.\n  Also makes column machine names consistent with the db:size command.",
+                "show from": "3.45.0",
+                "hide from": "3.46.0"
             }
         ]
     }
