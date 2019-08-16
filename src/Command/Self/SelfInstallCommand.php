@@ -365,7 +365,7 @@ EOT
             ];
         }
 
-        if ($shellType === 'zsh' || ($shellType !== 'bash' && getenv('ZSH'))) {
+        if ($shellType === 'zsh' || (empty($shellType) && getenv('ZSH'))) {
             array_unshift($candidates, '.zshrc');
             array_unshift($candidates, '.zprofile');
         }
