@@ -19,7 +19,7 @@ class EnvironmentSshCommand extends CommandBase
         $this
             ->setName('environment:ssh')
             ->setAliases(['ssh'])
-            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command to run on the environment.')
+            ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to run on the environment.')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
             ->setDescription('SSH to the current environment');
@@ -27,8 +27,11 @@ class EnvironmentSshCommand extends CommandBase
              ->addEnvironmentOption()
              ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
-        $this->addExample('Read recent messages in the deploy log', "'tail /var/log/deploy.log'");
         $this->addExample('Open a shell over SSH');
+        $this->addExample('List files', 'ls');
+        $this->addExample("Monitor the app log (use '--' before options)", 'tail /var/log/app.log -- -n50 -f');
+        $envPrefix = $this->config()->get('service.env_prefix');
+        $this->addExample('Display relationships (use quotes for complex syntax)', "'echo \${$envPrefix}RELATIONSHIPS | base64 --decode'");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -51,6 +54,9 @@ class EnvironmentSshCommand extends CommandBase
         }
 
         $remoteCommand = $input->getArgument('cmd');
+        if (is_array($remoteCommand)) {
+            $remoteCommand = implode(' ', $remoteCommand);
+        }
         if (!$remoteCommand && $this->runningViaMulti) {
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }

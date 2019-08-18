@@ -20,13 +20,14 @@ class EnvironmentDrushCommand extends CommandBase
             ->setName('environment:drush')
             ->setAliases(['drush'])
             ->setDescription('Run a drush command on the remote environment')
-            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
+            ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to pass to Drush', ['status']);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
         Ssh::configureInput($this->getDefinition());
-        $this->addExample('Run "drush status" on the remote environment');
-        $this->addExample('Enable the Overlay module on the remote environment', "'en overlay'");
+        $this->addExample('Run "drush status" on the remote environment', 'status');
+        $this->addExample('Enable the Overlay module on the remote environment', 'en overlay');
+        $this->addExample('Get a one-time login link for name@example.com (use quotes for complex commands)', "'user-login --mail=name@example.com'");
     }
 
     public function isHidden()
@@ -45,21 +46,26 @@ class EnvironmentDrushCommand extends CommandBase
         $this->validateInput($input);
 
         $drushCommand = $input->getArgument('cmd');
+        if (is_array($drushCommand)) {
+            $drushCommand = implode(' ', $drushCommand);
+        }
 
         // Pass through options that the CLI shares with Drush.
         foreach (['yes', 'no', 'quiet'] as $option) {
-            if ($input->getOption($option)) {
+            if ($input->getOption($option) && !preg_match('/\b' . preg_quote($option) . '\b/', $drushCommand)) {
                 $drushCommand .= " --$option";
             }
         }
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $drushCommand .= " --debug";
-        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-            $drushCommand .= " --verbose";
-        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $drushCommand .= " --verbose";
-        } elseif ($output->getVerbosity() == OutputInterface::VERBOSITY_QUIET) {
-            $drushCommand .= " --quiet";
+        if (!preg_match('/\b((verbose|debug|quiet)\b|-v)/', $drushCommand)) {
+            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG ) {
+                $drushCommand .= " --debug";
+            } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+                $drushCommand .= " --verbose";
+            } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+                $drushCommand .= " --verbose";
+            } elseif ($output->getVerbosity() == OutputInterface::VERBOSITY_QUIET) {
+                $drushCommand .= " --quiet";
+            }
         }
 
         $appName = $this->selectApp($input);
