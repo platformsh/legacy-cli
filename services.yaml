@@ -42,7 +42,7 @@ services:
 
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
-        arguments: ['@config', '@shell', '@local.project']
+        arguments: ['@config', '@shell', '@local.project', '@api']
 
     fs:
         class:     '\Platformsh\Cli\Service\Filesystem'
