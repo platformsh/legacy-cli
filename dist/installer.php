@@ -118,7 +118,6 @@ class Installer {
         );
 
         $required_extensions = [
-            'curl',
             'openssl',
             'pcre',
         ];
@@ -128,10 +127,18 @@ class Installer {
                 'The "' . $extension . '" PHP extension is required.',
                 function () use ($extension) {
                     return extension_loaded($extension);
-                },
-                true
+                }
             );
         }
+
+        $this->check(
+            'The "curl" PHP extension is installed.',
+            'The "curl" PHP extension is strongly recommended.',
+            function () {
+                return extension_loaded('curl');
+            },
+            false
+        );
 
         // Check pcntl and posix - needed for tunnel:open and server:start.
         // Skip the check on Windows, as they are not available there anyway.
