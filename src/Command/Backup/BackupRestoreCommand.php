@@ -1,5 +1,5 @@
 <?php
-namespace Platformsh\Cli\Command\Snapshot;
+namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Activity;
@@ -8,23 +8,23 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SnapshotRestoreCommand extends CommandBase
+class BackupRestoreCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('snapshot:restore')
-            ->setDescription('Restore an environment snapshot')
-            ->addArgument('snapshot', InputArgument::OPTIONAL, 'The name of the snapshot. Defaults to the most recent one')
-            ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the snapshot's current environment")
+            ->setName('backup:restore')
+            ->setDescription('Restore an environment backup')
+            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one')
+            ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the backup's current environment")
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
-        $this->setHiddenAliases(['environment:restore']);
-        $this->addExample('Restore the most recent snapshot');
-        $this->addExample('Restore a specific snapshot', '92c9a4b2aa75422efb3d');
+        $this->setHiddenAliases(['environment:restore', 'snapshot:restore']);
+        $this->addExample('Restore the most recent backup');
+        $this->addExample('Restore a specific backup', '92c9a4b2aa75422efb3d');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -33,43 +33,43 @@ class SnapshotRestoreCommand extends CommandBase
 
         $environment = $this->getSelectedEnvironment();
 
-        $snapshotName = $input->getArgument('snapshot');
-        if (!empty($snapshotName)) {
-            // Find the specified snapshot.
-            $snapshotActivities = $environment->getActivities(0, 'environment.backup');
-            foreach ($snapshotActivities as $activity) {
-                if ($activity['payload']['backup_name'] == $snapshotName) {
+        $backupName = $input->getArgument('backup');
+        if (!empty($backupName)) {
+            // Find the specified backup.
+            $backupActivities = $environment->getActivities(0, 'environment.backup');
+            foreach ($backupActivities as $activity) {
+                if ($activity['payload']['backup_name'] == $backupName) {
                     $selectedActivity = $activity;
                     break;
                 }
             }
             if (empty($selectedActivity)) {
-                $this->stdErr->writeln("Snapshot not found: <error>$snapshotName</error>");
+                $this->stdErr->writeln("Backup not found: <error>$backupName</error>");
 
                 return 1;
             }
         } else {
-            // Find the most recent snapshot.
+            // Find the most recent backup.
             $environmentId = $environment->id;
-            $this->stdErr->writeln("Finding the most recent snapshot for the environment <info>$environmentId</info>");
-            $snapshotActivities = $environment->getActivities(1, 'environment.backup');
-            $snapshotActivities = array_filter($snapshotActivities, function (Activity $activity) {
+            $this->stdErr->writeln("Finding the most recent backup for the environment <info>$environmentId</info>");
+            $backupActivities = $environment->getActivities(1, 'environment.backup');
+            $backupActivities = array_filter($backupActivities, function (Activity $activity) {
                 return $activity->result === Activity::RESULT_SUCCESS;
             });
-            if (!$snapshotActivities) {
-                $this->stdErr->writeln("No snapshots found");
+            if (!$backupActivities) {
+                $this->stdErr->writeln("No backups found");
 
                 return 1;
             }
             /** @var \Platformsh\Client\Model\Activity $selectedActivity */
-            $selectedActivity = reset($snapshotActivities);
+            $selectedActivity = reset($backupActivities);
         }
 
         if (!$selectedActivity->operationAvailable('restore', true)) {
             if (!$selectedActivity->isComplete()) {
-                $this->stdErr->writeln("The snapshot is not complete, so it cannot be restored");
+                $this->stdErr->writeln("The backup is not complete, so it cannot be restored");
             } else {
-                $this->stdErr->writeln("The snapshot cannot be restored");
+                $this->stdErr->writeln("The backup cannot be restored");
             }
 
             return 1;
@@ -96,7 +96,7 @@ class SnapshotRestoreCommand extends CommandBase
         // overwrite the wrong branch. This is a (hopefully) temporary measure.
         if ((!$targetEnvironment || $targetEnvironment->id !== $environment->id)
             && preg_match('#https://(eu|us)\.[pm]#', $this->getSelectedProject()->getUri())) {
-            $this->stdErr->writeln('Snapshots cannot be automatically restored to another environment on this region.');
+            $this->stdErr->writeln('Backups cannot be automatically restored to another environment on this region.');
             $this->stdErr->writeln('Please contact support.');
 
             return 1;
@@ -107,12 +107,12 @@ class SnapshotRestoreCommand extends CommandBase
         $name = $selectedActivity['payload']['backup_name'];
         $date = date('c', strtotime($selectedActivity['created_at']));
         if (!$questionHelper->confirm(
-            "Are you sure you want to restore the snapshot <comment>$name</comment> from <comment>$date</comment> to environment $targetLabel?"
+            "Are you sure you want to restore the backup <comment>$name</comment> from <comment>$date</comment> to environment $targetLabel?"
         )) {
             return 1;
         }
 
-        $this->stdErr->writeln("Restoring snapshot <info>$name</info> to $targetLabel");
+        $this->stdErr->writeln("Restoring backup <info>$name</info> to $targetLabel");
 
         $activity = $selectedActivity->restore($target, $branchFrom);
         if ($this->shouldWait($input)) {
@@ -121,7 +121,7 @@ class SnapshotRestoreCommand extends CommandBase
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitAndLog(
                 $activity,
-                'The snapshot was successfully restored',
+                'The backup was successfully restored',
                 'Restoring failed'
             );
             if (!$success) {

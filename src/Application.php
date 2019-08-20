@@ -180,9 +180,9 @@ class Application extends ParentApplication
         $commands[] = new Command\Service\MongoDB\MongoShellCommand();
         $commands[] = new Command\Service\RedisCliCommand();
         $commands[] = new Command\Service\ServiceListCommand();
-        $commands[] = new Command\Snapshot\SnapshotCreateCommand();
-        $commands[] = new Command\Snapshot\SnapshotListCommand();
-        $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
+        $commands[] = new Command\Backup\BackupCreateCommand();
+        $commands[] = new Command\Backup\BackupListCommand();
+        $commands[] = new Command\Backup\BackupRestoreCommand();
         $commands[] = new Command\SourceOperation\RunCommand();
         $commands[] = new Command\SshKey\SshKeyAddCommand();
         $commands[] = new Command\SshKey\SshKeyDeleteCommand();
