@@ -133,6 +133,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentRedeployCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
+        $commands[] = new Command\Environment\EnvironmentScpCommand();
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
         $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();
