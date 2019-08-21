@@ -85,10 +85,12 @@ class DbSizeCommand extends CommandBase
             'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
             'used' => $showInBytes ? $estimatedUsage['__TOTAL__'] : Helper::formatMemory($estimatedUsage['__TOTAL__']),
             'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
-        ]], $columns);
-
+        ];
+        $this->stdErr->writeln('');
+        $table->render([$values], $columns);
+        
         $this->showWarnings($percentageUsed);
-
+                
 
 
         $db_table   = $this->getService('table');
