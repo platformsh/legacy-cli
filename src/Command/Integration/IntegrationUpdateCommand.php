@@ -57,6 +57,8 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
 
+        $this->postProcessValues($newValues, $integration);
+
         // Merge current values with new values, accounting for nested arrays.
         foreach ($integration->getProperties() as $key => $currentValue) {
             if (isset($newValues[$key])) {

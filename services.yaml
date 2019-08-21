@@ -42,7 +42,7 @@ services:
 
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
-        arguments: ['@config', '@shell', '@local.project']
+        arguments: ['@config', '@shell', '@local.project', '@api']
 
     fs:
         class:     '\Platformsh\Cli\Service\Filesystem'
@@ -96,6 +96,10 @@ services:
     relationships:
         class:     '\Platformsh\Cli\Service\Relationships'
         arguments: ['@remote_env_vars']
+
+    rsync:
+      class:     '\Platformsh\Cli\Service\Rsync'
+      arguments: ['@shell']
 
     self_updater:
         class:     '\Platformsh\Cli\Service\SelfUpdater'

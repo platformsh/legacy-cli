@@ -71,6 +71,9 @@ class GitDataApi
 
         $parents = $this->parseParents($sha);
         $sha = preg_replace('/[\^~].*$/', '', $sha);
+        if ($sha === '') {
+            return false;
+        }
 
         // Get the first commit.
         $commit = $this->getCommitByShaHash($environment, $sha);
