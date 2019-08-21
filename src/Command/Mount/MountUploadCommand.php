@@ -2,13 +2,15 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class MountUploadCommand extends MountCommandBase
+class MountUploadCommand extends CommandBase
 {
 
     /**
@@ -57,8 +59,17 @@ class MountUploadCommand extends MountCommandBase
         if ($input->getOption('mount')) {
             $mountPath = $mountService->matchMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
+            $options = [];
+            foreach ($mounts as $path => $definition) {
+                if ($definition['source'] === 'local') {
+                    $options[$path] = sprintf('<question>%s</question>', $path);
+                } else {
+                    $options[$path] = sprintf('<question>%s</question>: %s', $path, $definition['source']);
+                }
+            }
+
             $mountPath = $questionHelper->choose(
-                $this->getMountsAsOptions($mounts),
+                $options,
                 'Enter a number to choose a mount to upload to:'
             );
         } else {
@@ -108,7 +119,10 @@ class MountUploadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->validateDirectory($source);
+        $fs->validateDirectory($source);
+
+        /** @var \Platformsh\Cli\Service\Rsync $rsync */
+        $rsync = $this->getService('rsync');
 
         $confirmText = sprintf(
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
@@ -120,11 +134,26 @@ class MountUploadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($container->getSshUrl(), $mountPath, $source, true, [
+        $rsyncOptions = [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),
-        ]);
+            'verbose' => $output->isVeryVerbose(),
+            'quiet' => $output->isQuiet(),
+        ];
+
+        if (OsUtil::isOsX()) {
+            if ($rsync->supportsConvertingFilenames() !== false) {
+                $this->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
+                $rsyncOptions['convert-mac-filenames'] = true;
+            } else {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Warning: the installed version of <comment>rsync</comment> does not support converting filenames with special characters (the --iconv flag). You may need to upgrade rsync.');
+            }
+        }
+
+        $this->stdErr->writeln('');
+        $rsync->syncUp($container->getSshUrl(), $source, $mountPath, $rsyncOptions);
 
         return 0;
     }

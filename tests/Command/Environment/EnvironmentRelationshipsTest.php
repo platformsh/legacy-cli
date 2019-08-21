@@ -1,11 +1,14 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Command\Helper;
+namespace Platformsh\Cli\Tests\Command\Environment;
 
 use Platformsh\Cli\Command\Environment\EnvironmentRelationshipsCommand;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
+/**
+ * @group commands
+ */
 class EnvironmentRelationshipsTest extends \PHPUnit_Framework_TestCase
 {
     public function setUp() {

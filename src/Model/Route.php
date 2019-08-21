@@ -22,6 +22,19 @@ class Route
     }
 
     /**
+     * Gets the app or service name that is the upstream for a route.
+     *
+     * @return string|false
+     */
+    public function getUpstreamName() {
+        if (!isset($this->data['upstream'])) {
+            return false;
+        }
+
+        return explode(':', $this->data['upstream'], 2)[0];
+    }
+
+    /**
      * Translates routes found in $environment->getRoutes() to Route objects.
      *
      * @see \Platformsh\Client\Model\Environment::getRoutes()

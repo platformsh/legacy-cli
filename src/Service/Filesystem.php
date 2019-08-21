@@ -492,4 +492,21 @@ class Filesystem
         }
         throw new \RuntimeException("Tar command not found");
     }
+
+    /**
+     * Validates a directory.
+     *
+     * @param string $directory
+     * @param bool   $writable
+     */
+    public function validateDirectory($directory, $writable = false)
+    {
+        if (!is_dir($directory)) {
+            throw new \InvalidArgumentException(sprintf('Directory not found: %s', $directory));
+        } elseif (!is_readable($directory)) {
+            throw new \InvalidArgumentException(sprintf('Directory not readable: %s', $directory));
+        } elseif ($writable && !is_writable($directory)) {
+            throw new \InvalidArgumentException(sprintf('Directory not writable: %s', $directory));
+        }
+    }
 }

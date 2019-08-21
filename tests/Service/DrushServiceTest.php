@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Tests;
 
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Tests\Service\DrushServiceMock;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
@@ -29,7 +30,7 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->drush = new Drush();
+        $this->drush = new DrushServiceMock();
 
         // Set up a dummy project with a remote environment.
         $this->project = new Project([
