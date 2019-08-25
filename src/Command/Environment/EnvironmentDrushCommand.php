@@ -68,10 +68,11 @@ class EnvironmentDrushCommand extends CommandBase
             }
         }
 
-        $appName = $this->selectApp($input);
+        $appContainer = $this->selectRemoteContainer($input, false);
+        $host = $this->selectHost($input, false, $appContainer);
+        $appName = $appContainer->getName();
 
         $selectedEnvironment = $this->getSelectedEnvironment();
-        $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
         $deployment = $this->api()->getCurrentDeployment($selectedEnvironment);
 
@@ -79,13 +80,13 @@ class EnvironmentDrushCommand extends CommandBase
         // determine the path to Drupal.
         /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
         $envVarsService = $this->getService('remote_env_vars');
-        $documentRoot = $envVarsService->getEnvVar('DOCUMENT_ROOT', $sshUrl);
+        $documentRoot = $envVarsService->getEnvVar('DOCUMENT_ROOT', $host);
         if ($documentRoot !== '') {
             $drupalRoot = $documentRoot;
         } else {
             // Fall back to a combination of the document root (from the
             // deployment configuration) and the PLATFORM_APP_DIR variable.
-            $appDir = $envVarsService->getEnvVar('APP_DIR', $sshUrl) ?: '/app';
+            $appDir = $envVarsService->getEnvVar('APP_DIR', $host) ?: '/app';
 
             $remoteApp = $deployment->getWebApp($appName);
             $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();
@@ -101,15 +102,6 @@ class EnvironmentDrushCommand extends CommandBase
         }
         $sshDrushCommand .= ' ' . $drushCommand;
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $command = $ssh->getSshCommand()
-            . ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($sshDrushCommand);
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        return $shell->executeSimple($command);
+        return $host->runCommandDirect($sshDrushCommand);
     }
 }

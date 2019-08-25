@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Symfony\Component\Console\Input\InputArgument;
@@ -36,7 +37,7 @@ class RouteGetCommand extends CommandBase
     {
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config()->get('service.env_prefix');
-        if (getenv($prefix . 'ROUTES') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
+        if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (empty($decoded)) {

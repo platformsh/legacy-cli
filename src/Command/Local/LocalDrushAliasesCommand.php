@@ -5,6 +5,7 @@ use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Drush;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -105,6 +106,10 @@ class LocalDrushAliasesCommand extends CommandBase
             // service ($drush), for use while generating aliases.
             /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
             $envVarsService = $this->getService('remote_env_vars');
+            /** @var \Platformsh\Cli\Service\Ssh $ssh */
+            $ssh = $this->getService('ssh');
+            /** @var \Platformsh\Cli\Service\Shell $shell */
+            $shell = $this->getService('shell');
             foreach ($environments as $environment) {
                 if ($environment->deployment_target === 'local') {
                     continue;
@@ -115,7 +120,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         continue;
                     }
                     try {
-                        $appRoot = $envVarsService->getEnvVar('APP_DIR', $sshUrl);
+                        $appRoot = $envVarsService->getEnvVar('APP_DIR', new RemoteHost($sshUrl, $ssh, $shell));
                     } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
                         $this->stdErr->writeln(sprintf(
                             'Unable to find app root for environment %s, app %s',
@@ -161,7 +166,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
     /**
      * Ensure that the .drush/drush.yml file has the right config.
-     * 
+     *
      * @param \Platformsh\Cli\Service\Drush $drush
      */
     protected function ensureDrushConfig(Drush $drush)

@@ -7,7 +7,12 @@ use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Model\Host\HostInterface;
+use Platformsh\Cli\Model\Host\LocalHost;
+use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Model\RemoteContainer;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
@@ -89,6 +94,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @var Environment|false
      */
     private $environment;
+
+    /**
+     * The remote container, selected via the --app and --worker options.
+     *
+     * @var RemoteContainer\RemoteContainerInterface
+     */
+    private $remoteContainer;
 
     /**
      * The command synopsis.
@@ -840,6 +852,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function selectRemoteContainer(InputInterface $input, $includeWorkers = true)
     {
+        if (isset($this->remoteContainer)) {
+            return $this->remoteContainer;
+        }
+
         $environment = $this->getSelectedEnvironment();
         try {
             $deployment = $this->api()->getCurrentDeployment(
@@ -850,7 +866,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($environment->isActive() && $e->getMessage() === 'Current deployment not found') {
                 $appName = $input->hasOption('app') ? $input->getOption('app') : '';
 
-                return new RemoteContainer\BrokenEnv($environment, $appName);
+                return $this->remoteContainer = new RemoteContainer\BrokenEnv($environment, $appName);
             }
             throw $e;
         }
@@ -890,7 +906,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     throw new ConsoleInvalidArgumentException('Worker not found: ' . $workerOption);
                 }
 
-                return new RemoteContainer\Worker($worker, $environment);
+                return $this->remoteContainer = new RemoteContainer\Worker($worker, $environment);
             }
 
             // If we don't have the app name, find all the possible matching
@@ -909,7 +925,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if (count($workerNames) === 1) {
                 $workerName = reset($workerNames);
 
-                return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+                return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
             }
             if (!$input->isInteractive()) {
                 throw new ConsoleInvalidArgumentException(sprintf(
@@ -925,7 +941,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 'Enter a number to choose a worker:'
             );
 
-            return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+            return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
         }
 
         // Prompt the user to choose between the app(s) or worker(s) that have
@@ -985,10 +1001,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Match the choice to a worker or app destination.
         if (strpos($choice, '--') !== false) {
-            return new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
+            return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
         }
 
-        return new RemoteContainer\App($deployment->getWebApp($choice), $environment);
+        return $this->remoteContainer = new RemoteContainer\App($deployment->getWebApp($choice), $environment);
     }
 
     /**
@@ -1510,28 +1526,36 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * @return bool
+     * @param InputInterface $input
+     * @param bool $allowLocal
+     * @param RemoteContainer\RemoteContainerInterface|null $remoteContainer
+     * @param bool $includeWorkers
+     *
+     * @return HostInterface
      */
-    protected function doesEnvironmentConflictWithCommandLine(InputInterface $input) {
-        $envPrefix = $this->config()->get('service.env_prefix');
-        if ($input->hasOption('project')
-            && $input->getOption('project')
-            && getenv($envPrefix . 'PROJECT')
-            && getenv($envPrefix . 'PROJECT') !== $input->getOption('project')) {
-            return true;
-        }
-        if ($input->hasOption('environment')
-            && $input->getOption('environment')
-            && getenv($envPrefix . 'BRANCH')
-            && getenv($envPrefix . 'BRANCH') !== $input->getOption('environment')) {
-            return true;
-        }
-        if ($input->hasOption('app') && $input->getOption('app')
-            && getenv($envPrefix . 'APPLICATION_NAME')
-            && getenv($envPrefix . 'APPLICATION_NAME') !== $input->getOption('app')) {
-            return true;
+    public function selectHost(InputInterface $input, $allowLocal = true, RemoteContainer\RemoteContainerInterface $remoteContainer = null, $includeWorkers = false)
+    {
+        /** @var Shell $shell */
+        $shell = $this->getService('shell');
+
+        if ($allowLocal && !LocalHost::conflictsWithCommandLineOptions($input, $this->config()->get('service.env_prefix'))) {
+            $this->debug('Selected host: localhost');
+
+            return new LocalHost($shell);
         }
 
-        return false;
+        if ($remoteContainer === null) {
+            if (!$this->hasSelectedEnvironment()) {
+                $this->validateInput($input);
+            }
+            $remoteContainer = $this->selectRemoteContainer($input, $includeWorkers);
+        }
+
+        /** @var Ssh $ssh */
+        $ssh = $this->getService('ssh');
+
+        $this->debug('Selected host: ' . $remoteContainer->getSshUrl());
+
+        return new RemoteHost($remoteContainer->getSshUrl(), $ssh, $shell);
     }
 }

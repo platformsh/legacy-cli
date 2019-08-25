@@ -3,14 +3,15 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
+use Platformsh\Cli\Model\Host\HostInterface;
+use Platformsh\Cli\Model\Host\LocalHost;
 
 /**
- * A service for reading environment variables from the remote environment.
+ * A service for reading environment variables on a host.
  */
 class RemoteEnvVars
 {
 
-    protected $shellHelper;
     protected $config;
     protected $ssh;
     protected $cache;
@@ -20,14 +21,12 @@ class RemoteEnvVars
      *
      * @param Ssh             $ssh
      * @param CacheProvider   $cache
-     * @param Shell           $shellHelper
      * @param Config          $config
      */
-    public function __construct(Ssh $ssh, CacheProvider $cache, Shell $shellHelper, Config $config)
+    public function __construct(Ssh $ssh, CacheProvider $cache, Config $config)
     {
         $this->ssh = $ssh;
         $this->cache = $cache;
-        $this->shellHelper = $shellHelper;
         $this->config = $config;
     }
 
@@ -35,26 +34,22 @@ class RemoteEnvVars
      * Read an environment variable from a remote application.
      *
      * @param string $variable The unprefixed name of the variable.
-     * @param string $sshUrl   The SSH URL to the application.
-     * @param bool   $refresh  Whether to refresh the cache.
-     * @param int    $ttl      The cache lifetime of the result.
-     *
-     * @throws \Symfony\Component\Process\Exception\RuntimeException
-     *   If the SSH command fails.
+     * @param HostInterface $host The host of the application.
+     * @param bool $refresh Whether to refresh the cache.
+     * @param int $ttl The cache lifetime of the result.
      *
      * @return string The environment variable or an empty string.
      */
-    public function getEnvVar($variable, $sshUrl, $refresh = false, $ttl = 3600)
+    public function getEnvVar($variable, HostInterface $host, $refresh = false, $ttl = 3600)
     {
         $varName = $this->config->get('service.env_prefix') . $variable;
-        $cacheKey = 'env-' . $sshUrl . '-' . $varName;
+        if ($host instanceof LocalHost) {
+            return getenv($varName) !== false ? getenv($varName) : '';
+        }
+        $cacheKey = 'env-' . $host->getCacheKey() . '-' . $varName;
         $cached = $this->cache->fetch($cacheKey);
         if ($refresh || $cached === false) {
-            $args = ['ssh'];
-            $args = array_merge($args, $this->ssh->getSshArgs());
-            $args[] = $sshUrl;
-            $args[] = 'echo $' . $varName;
-            $cached = $this->shellHelper->execute($args, null, true);
+            $cached = $host->runCommand('echo "$' . $varName . '"');
             $this->cache->save($cacheKey, $cached, $ttl);
         }
 
@@ -64,17 +59,16 @@ class RemoteEnvVars
     /**
      * Read a complex environment variable (an associative array) from the application.
      *
-     * @see \Platformsh\Cli\Service\RemoteEnvVars::getEnvVar()
-     *
      * @param string $variable
-     * @param string $sshUrl
-     * @param bool   $refresh
+     * @param HostInterface $host
+     * @param bool $refresh
      *
      * @return array
+     * @see \Platformsh\Cli\Service\RemoteEnvVars::getEnvVar()
      */
-    public function getArrayEnvVar($variable, $sshUrl, $refresh = false)
+    public function getArrayEnvVar($variable, HostInterface $host, $refresh = false)
     {
-        $value = $this->getEnvVar($variable, $sshUrl, $refresh);
+        $value = $this->getEnvVar($variable, $host, $refresh);
 
         return json_decode(base64_decode($value), true) ?: [];
     }
