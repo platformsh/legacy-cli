@@ -39,7 +39,7 @@ class Url implements InputConfiguringInterface
         ));
         $definition->addOption(new InputOption(
             'pipe',
-            null,
+            'o',
             InputOption::VALUE_NONE,
             'Output the URL to stdout.'
         ));
