@@ -17,7 +17,7 @@ class EnvironmentUrlCommand extends CommandBase
             ->setName('environment:url')
             ->setAliases(['url'])
             ->setDescription('Get the public URLs of an environment')
-            ->addOption('primary', null, InputOption::VALUE_NONE, 'Only return the URL for the primary route');
+            ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
         Url::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();

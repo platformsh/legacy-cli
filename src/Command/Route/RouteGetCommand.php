@@ -21,7 +21,7 @@ class RouteGetCommand extends CommandBase
             ->setDescription('View a resolved route')
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('id', null, InputOption::VALUE_REQUIRED, 'A route ID to select')
-            ->addOption('primary', null, InputOption::VALUE_NONE, 'Select the primary route')
+            ->addOption('primary', '1', InputOption::VALUE_NONE, 'Select the primary route')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         PropertyFormatter::configureInput($this->getDefinition());

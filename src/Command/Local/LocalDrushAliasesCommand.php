@@ -22,7 +22,7 @@ class LocalDrushAliasesCommand extends CommandBase
             ->setAliases(['drush-aliases'])
             ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
             ->addOption('group', 'g', InputOption::VALUE_REQUIRED, 'Recreate the aliases with a new group name.')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
+            ->addOption('pipe', 'o', InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
             ->setDescription('Find the project\'s Drush aliases');
         $this->addExample('Change the alias group to @example', '-g example');
     }
