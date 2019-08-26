@@ -99,6 +99,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Activity\ActivityLogCommand();
         $commands[] = new Command\App\AppConfigGetCommand();
         $commands[] = new Command\App\AppListCommand();
+        $commands[] = new Command\Archive\ArchiveExportCommand();
+        $commands[] = new Command\Archive\ArchiveImportCommand();
         $commands[] = new Command\Auth\AuthInfoCommand();
         $commands[] = new Command\Auth\AuthTokenCommand();
         $commands[] = new Command\Auth\LogoutCommand();

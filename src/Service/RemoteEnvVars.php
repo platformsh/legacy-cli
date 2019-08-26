@@ -38,15 +38,16 @@ class RemoteEnvVars
      * @param string $sshUrl   The SSH URL to the application.
      * @param bool   $refresh  Whether to refresh the cache.
      * @param int    $ttl      The cache lifetime of the result.
+     * @param bool   $prefix   Whether to prepend the service.env_prefix.
      *
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If the SSH command fails.
      *
      * @return string The environment variable or an empty string.
      */
-    public function getEnvVar($variable, $sshUrl, $refresh = false, $ttl = 3600)
+    public function getEnvVar($variable, $sshUrl, $refresh = false, $ttl = 3600, $prefix = true)
     {
-        $varName = $this->config->get('service.env_prefix') . $variable;
+        $varName = $prefix ? $this->config->get('service.env_prefix') . $variable : $variable;
         $cacheKey = 'env-' . $sshUrl . '-' . $varName;
         $cached = $this->cache->fetch($cacheKey);
         if ($refresh || $cached === false) {
@@ -69,12 +70,14 @@ class RemoteEnvVars
      * @param string $variable
      * @param string $sshUrl
      * @param bool   $refresh
+     * @param int    $ttl
+     * @param bool   $prefix
      *
      * @return array
      */
-    public function getArrayEnvVar($variable, $sshUrl, $refresh = false)
+    public function getArrayEnvVar($variable, $sshUrl, $refresh = false, $ttl = 3600, $prefix = true)
     {
-        $value = $this->getEnvVar($variable, $sshUrl, $refresh);
+        $value = $this->getEnvVar($variable, $sshUrl, $refresh, $ttl, $prefix);
 
         return json_decode(base64_decode($value), true) ?: [];
     }

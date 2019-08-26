@@ -147,6 +147,11 @@ class CompletionCommand extends ParentCompletionCommand
                 [$this, 'getAppNames']
             ),
             new Completion\ShellPathCompletion(
+                'archive:import',
+                'file',
+                Completion::TYPE_ARGUMENT
+            ),
+            new Completion\ShellPathCompletion(
                 Completion::ALL_COMMANDS,
                 'identity-file',
                 Completion::TYPE_OPTION

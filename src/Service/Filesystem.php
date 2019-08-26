@@ -503,10 +503,52 @@ class Filesystem
     {
         if (!is_dir($directory)) {
             throw new \InvalidArgumentException(sprintf('Directory not found: %s', $directory));
-        } elseif (!is_readable($directory)) {
+        }
+        elseif (!is_readable($directory)) {
             throw new \InvalidArgumentException(sprintf('Directory not readable: %s', $directory));
-        } elseif ($writable && !is_writable($directory)) {
+        }
+        elseif ($writable && !is_writable($directory)) {
             throw new \InvalidArgumentException(sprintf('Directory not writable: %s', $directory));
         }
+    }
+
+    /**
+     * Makes a temporary directory.
+     *
+     * @param string $prefix
+     * @param bool $autoCleanup
+     *
+     * @return string
+     */
+    public function makeTempDir($prefix = 'tmp-', $autoCleanup = true)
+    {
+        $tmpName = tempnam(sys_get_temp_dir(), $prefix);
+        if ($tmpName !== false && is_file($tmpName)) {
+            $this->fs->remove($tmpName);
+        }
+        if (!$tmpName || !mkdir($tmpName)) {
+            throw new \RuntimeException(sprintf('Failed to create temporary directory: <error>%s</error>', $tmpName));
+        }
+
+        if ($autoCleanup) {
+            register_shutdown_function(function () use ($tmpName) {
+                if (file_exists($tmpName)) {
+                    $this->fs->remove($tmpName);
+                }
+            });
+            if (function_exists('pcntl_signal')) {
+                declare(ticks = 1);
+                /** @noinspection PhpComposerExtensionStubsInspection */
+                pcntl_signal(SIGINT, function () use ($tmpName) {
+                    if (file_exists($tmpName)) {
+                        $this->fs->remove($tmpName);
+                    }
+                    exit(130);
+                });
+            }
+
+        }
+
+        return $tmpName;
     }
 }
