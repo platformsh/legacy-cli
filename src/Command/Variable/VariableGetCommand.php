@@ -25,7 +25,7 @@ class VariableGetCommand extends VariableCommandBase
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
-        $this->addOption('pipe', 'o', InputOption::VALUE_NONE, '[Deprecated option] Output the variable value only');
+        $this->addOption('pipe', null, InputOption::VALUE_NONE, '[Deprecated option] Output the variable value only');
         $this->addExample('View the variable "example"', 'example');
     }
 

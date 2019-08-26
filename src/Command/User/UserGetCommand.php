@@ -19,7 +19,7 @@ class UserGetCommand extends CommandBase
             ->setDescription("View a user's role(s)")
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
-            ->addOption('pipe', 'o', InputOption::VALUE_NONE, 'Output the role to stdout (after making any changes)');
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout (after making any changes)');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();

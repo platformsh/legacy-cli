@@ -24,7 +24,7 @@ class ProjectVariableGetCommand extends CommandBase
             ->setName('project:variable:get')
             ->setAliases(['project-variables', 'pvget'])
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
-            ->addOption('pipe', 'o', InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
             ->setDescription('View variable(s) for a project');
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();

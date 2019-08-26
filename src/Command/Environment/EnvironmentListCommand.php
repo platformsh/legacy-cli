@@ -31,7 +31,7 @@ class EnvironmentListCommand extends CommandBase
             ->setAliases(['environments', 'env'])
             ->setDescription('Get a list of environments')
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
-            ->addOption('pipe', 'o', InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
