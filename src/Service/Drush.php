@@ -373,7 +373,16 @@ class Drush
      */
     public function getSiteUrl(Environment $environment, LocalApplication $app)
     {
-        return $this->api->getSiteUrl($environment, $app->getName());
+        if ($this->api->hasCachedCurrentDeployment($environment)) {
+            return $this->api->getSiteUrl($environment, $app->getName());
+        }
+
+        $urls = $environment->getRouteUrls();
+        if (count($urls) === 1) {
+            return reset($urls) ?: null;
+        }
+
+        return null;
     }
 
     /**

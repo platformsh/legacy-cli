@@ -106,6 +106,14 @@ class LocalDrushAliasesCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
             $envVarsService = $this->getService('remote_env_vars');
             foreach ($environments as $environment) {
+
+                // Cache the environment's deployment information.
+                // This will at least be used for \Platformsh\Cli\Service\Drush::getSiteUrl().
+                if (!$this->api()->hasCachedCurrentDeployment($environment) && $environment->isActive()) {
+                    $this->debug('Fetching deployment information for environment: ' . $environment->id);
+                    $this->api()->getCurrentDeployment($environment);
+                }
+
                 if ($environment->deployment_target === 'local') {
                     continue;
                 }
