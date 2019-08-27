@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "ce43c8117ddd3f7cd54a763e7cf2d642d68386a7",
-        "sha256": "bd5b2f68f68e469d57c19ed036e082fd131fe69d17e8e716979ac1a2bafb26ca",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.46.0/platform.phar",
-        "version": "3.46.0",
+        "sha1": "818003ad5376bf4629f3af2dc2add5e4d853f75c",
+        "sha256": "82781450e1ac0246e2b4880a1d9ccf54a4568a8798c8f6be10922acec94e553c",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.47.0/platform.phar",
+        "version": "3.47.0",
         "php": {
             "min": "5.5.9"
         },
@@ -218,6 +218,11 @@
                 "notes": "New features:\n\n* Add --charset option to the db:dump command.\n  Specifying the character set is recommended for any database dump.\n  If your application database is in MySQL's utf8mb4, for example, use:\n      platform db:dump --charset utf8mb4\n* Add --branch option to the 'push' command.\n  This allows a new environment to be created as an active branch from a\n  specified parent - thus inheriting settings from that parent - rather than\n  setting the parent later.\n* Add bitbucket_server integration support.\n\nOther changes:\n\n* Installer:\n  - Add --shell-type option to specify 'bash' or 'zsh' to the installer, for\n    example:\n        curl -sfS https://platform.sh/cli/installer | php -- --shell-type bash\n  - Add --manifest option to use a test or development manifest file.\n  - Require the curl, openssl and pcre PHP extensions (and stop requiring\n    mbstring).\n  - The --dev option will now allow any version string.\n* Rename \"Capacity\" to \"% Used\" in mount:size command.\n  Also makes column machine names consistent with the db:size command.",
                 "show from": "3.45.0",
                 "hide from": "3.46.0"
+            },
+            {
+                "notes": "* Allow service commands to work 'locally' on the container\n  \n    It's now possible to use the following commands on the Platform.sh container\n    without needing to have an API token or log in to the API:\n\n    * db:dump\n    * db:sql (sql)\n    * service:redis-cli (redis)\n    * service:mongo:dump (mongodump)\n    * service:mongo:export (mongoexport)\n    * service:mongo:restore (mongorestore)\n    * service:mongo:shell (mongo)\n  \n    N.B.: When running locally the db:dump and db:sql commands have less schema\n    information, so you may need to specify the --schema option.\n    \n    Commands that could already run on the container are:\n\n    * help, list\n    * app:config\n    * decode\n    * environment:url (url)\n    * relationship:list (relationships)\n    * route:get\n    * route:list (routes)\n\n* Alias --primary to -1 in route:get and environment:url (url) commands.\n  \n* Use primary route URL from deployments API in Drush aliases, when possible.\n  \n* Allow multiple command arguments in drush and ssh commands.",
+                "show from": "3.46.0",
+                "hide from": "3.47.0"
             }
         ]
     }
