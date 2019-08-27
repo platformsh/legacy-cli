@@ -50,17 +50,15 @@ class MongoRestoreCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
-
-        $sshUrl = $selection->getEnvironment()
-            ->getSshUrl($selection->getAppName());
-
         $streams = [STDIN];
         if (!stream_select($streams, $write, $except, 0)) {
             throw new InvalidArgumentException('This command requires a mongodump archive to be piped into STDIN');
         }
 
-        $service = $this->relationships->chooseService($sshUrl, $input, $output, ['mongodb']);
+        $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
+        $host = $selection->getHost();
+
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
@@ -73,18 +71,12 @@ class MongoRestoreCommand extends CommandBase
 
         $command .= ' --archive';
 
-        $sshOptions = [];
-
         if ($output->isDebug()) {
             $command .= ' --verbose';
         }
 
         set_time_limit(0);
 
-        $sshCommand = $this->ssh->getSshCommand($sshOptions);
-        $sshCommand .= ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($command);
-
-        return $this->shell->executeSimple($sshCommand);
+        return $host->runCommandDirect($command);
     }
 }

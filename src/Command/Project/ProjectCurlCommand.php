@@ -32,6 +32,7 @@ class ProjectCurlCommand extends CommandBase
             ->addOption('data', 'd', InputOption::VALUE_REQUIRED, 'Data to send')
             ->addOption('include', 'i', InputOption::VALUE_NONE, 'Include headers in the output')
             ->addOption('head', 'I', InputOption::VALUE_NONE, 'Fetch headers only')
+            ->addOption('disable-compression', null, InputOption::VALUE_NONE, 'Do not use the curl --compressed flag')
             ->addOption('header', 'H', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Extra header(s)');
         $this->setHidden(true);
         $this->selector->addProjectOption($this->getDefinition());
@@ -74,6 +75,10 @@ class ProjectCurlCommand extends CommandBase
 
         if ($data = $input->getOption('data')) {
             $commandline .= ' --data ' . escapeshellarg($data);
+        }
+
+        if (!$input->getOption('disable-compression')) {
+            $commandline .= ' --compressed';
         }
 
         foreach ($input->getOption('header') as $header) {

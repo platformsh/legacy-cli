@@ -9,6 +9,7 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -49,7 +50,7 @@ class AppConfigGetCommand extends CommandBase
     {
         // Allow override via PLATFORM_APPLICATION.
         $prefix = $this->config->get('service.env_prefix');
-        if (getenv($prefix . 'APPLICATION') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
+        if (getenv($prefix . 'APPLICATION') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading application config from environment variable ' . $prefix . 'APPLICATION');
             $decoded = json_decode(base64_decode(getenv($prefix . 'APPLICATION'), true), true);
             if (!is_array($decoded)) {

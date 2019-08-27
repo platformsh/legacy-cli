@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Console;
 
+use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\RemoteContainer\App;
 use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
 use Platformsh\Client\Model\Environment;
@@ -14,13 +15,15 @@ class Selection
     private $project;
     private $appName;
     private $remoteContainer;
+    private $host;
 
-    public function __construct(Project $project = null, Environment $environment = null, $appName = null, RemoteContainerInterface $remoteContainer = null)
+    public function __construct(Project $project = null, Environment $environment = null, $appName = null, RemoteContainerInterface $remoteContainer = null, HostInterface $host = null)
     {
         $this->project = $project;
         $this->environment = $environment;
         $this->appName = $appName;
         $this->remoteContainer = $remoteContainer;
+        $this->host = $host;
     }
 
     /**
@@ -104,5 +107,18 @@ class Selection
         }
 
         return $this->remoteContainer;
+    }
+
+    /**
+     * Get the remote host, selected based on the environment.
+     *
+     * @return HostInterface
+     */
+    public function getHost(): HostInterface {
+        if (!$this->host) {
+            throw new \BadMethodCallException('No host selected');
+        }
+
+        return $this->host;
     }
 }

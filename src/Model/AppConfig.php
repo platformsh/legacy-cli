@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Model;
 
 use Platformsh\Cli\Exception\InvalidConfigException;
-use Platformsh\Cli\Service\MountService;
+use Platformsh\Cli\Service\Mount;
 use Platformsh\Client\Model\Deployment\WebApp;
 
 /**
@@ -114,7 +114,7 @@ class AppConfig
         }
 
         if (!empty($config['mounts'])) {
-            $config['mounts'] = MountService::normalizeMounts($config['mounts']);
+            $config['mounts'] = (new Mount())->normalizeMounts($config['mounts']);
         }
 
         return $config;

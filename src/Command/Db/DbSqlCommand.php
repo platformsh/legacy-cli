@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
@@ -66,30 +67,34 @@ class DbSqlCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
         if (!$input->getArgument('query') && $this->runningViaMulti) {
             throw new InvalidArgumentException('The query argument is required when running via "multi"');
         }
 
-        $sshUrl = $selection->getEnvironment()
-            ->getSshUrl($selection->getAppName());
-
-        $database = $this->relationships->chooseDatabase($sshUrl, $input, $output);
+        $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
+        $database = $this->relationships->chooseDatabase($selection->getHost(), $input, $output);
         if (empty($database)) {
             return 1;
         }
 
         $schema = $input->getOption('schema');
         if ($schema === null) {
-            // Get information about the deployed service associated with the
-            // selected relationship.
-            $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
-            $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
+            if ($selection->hasEnvironment()) {
+                // Get information about the deployed service associated with the
+                // selected relationship.
+                $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
+                $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
+            } else {
+                $service = false;
+            }
 
             // Get a list of schemas from the service configuration.
-            $schemas = $service && !empty($service->configuration['schemas'])
-                ? $service->configuration['schemas']
-                : ['main'];
+            $schemas = [];
+            if ($service) {
+                $schemas = !empty($service->configuration['schemas'])
+                    ? $service->configuration['schemas']
+                    : ['main'];
+            }
 
             // Filter the list by the schemas accessible from the endpoint.
             if (isset($database['rel'])
@@ -102,8 +107,7 @@ class DbSqlCommand extends CommandBase
             }
 
             // If the database path is not in the list of schemas, we have to
-            // use that - it probably indicates an integrated Enterprise
-            // environment.
+            // use that.
             if (!empty($database['path']) && !in_array($database['path'], $schemas, true)) {
                 $schema = $database['path'];
             } elseif (count($schemas) === 1) {
@@ -148,14 +152,12 @@ class DbSqlCommand extends CommandBase
                 break;
         }
 
-        $sshOptions = [];
-        $sshCommand = $this->ssh->getSshCommand($sshOptions);
-        if ($this->isTerminal(STDIN)) {
-            $sshCommand .= ' -t';
-        }
-        $sshCommand .= ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($sqlCommand);
+        $host = $selection->getHost();
 
-        return $this->shell->executeSimple($sshCommand);
+        if ($host instanceof RemoteHost && $this->isTerminal(STDIN)) {
+            $host->setExtraSshArgs(['-t']);
+        }
+
+        return $host->runCommandDirect($sqlCommand);
     }
 }

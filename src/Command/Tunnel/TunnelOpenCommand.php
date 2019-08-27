@@ -98,7 +98,7 @@ EOF
         $appName = $selection->getAppName();
         $sshUrl = $environment->getSshUrl($appName);
 
-        $relationships = $this->relationshipsService->getRelationships($sshUrl);
+        $relationships = $this->relationshipsService->getRelationships($selection->getHost());
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;

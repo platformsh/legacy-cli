@@ -4,14 +4,15 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\Service;
 use Symfony\Component\Console\Helper\Helper;
@@ -84,10 +85,12 @@ class DbSizeCommand extends CommandBase
      * {@inheritDoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output) {
-        $selection = $this->selector->getSelection($input);
-        $sshUrl = $selection->getRemoteContainer()->getSshUrl();
+        $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar(), true);
 
-        $database = $this->relationships->chooseDatabase($sshUrl, $input, $output);
+        $host = $selection->getHost();
+
+        $database = $this->relationships->chooseDatabase($host, $input, $output);
+
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;
@@ -107,13 +110,13 @@ class DbSizeCommand extends CommandBase
 
         $this->debug('Calculating estimated usage...');
         $allocatedDisk = $service->disk * self::BYTE_TO_MEGABYTE;
-        $estimatedUsage = $this->getEstimatedUsage($sshUrl, $database);
+        $estimatedUsage = $this->getEstimatedUsage($host, $database);
         $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
 
         $machineReadable = $this->table->formatIsMachineReadable();
         $showInBytes = $input->getOption('bytes') || $machineReadable;
 
-        $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => 'Percentage used'];
+        $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
         $values = [
             'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
             'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
@@ -128,7 +131,7 @@ class DbSizeCommand extends CommandBase
         $this->showInaccessibleSchemas($service, $database);
 
         if ($database['scheme'] !== 'pgsql' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
-            $this->checkInnoDbTablesInNeedOfOptimizing($sshUrl, $database);
+            $this->checkInnoDbTablesInNeedOfOptimizing($host, $database);
         }
 
         return 0;
@@ -159,14 +162,17 @@ class DbSizeCommand extends CommandBase
     /**
      * Displays a list of InnoDB tables that can be usefully cleaned up.
      *
-     * @param string $sshUrl
-     * @param array  $database
+     * @param HostInterface $host
+     * @param array         $database
      *
      * @return void
      */
-    private function checkInnoDbTablesInNeedOfOptimizing($sshUrl, array $database) {
-        $tablesNeedingCleanup = explode(PHP_EOL, $this->runSshCommand($sshUrl, $this->mysqlTablesInNeedOfOptimizing($database)));
-        $queries = $this->getCleanupQueries($tablesNeedingCleanup);
+    private function checkInnoDbTablesInNeedOfOptimizing($host, array $database) {
+        $tablesNeedingCleanup = $host->runCommand($this->mysqlTablesInNeedOfOptimizing($database));
+        $queries = [];
+        if (is_string($tablesNeedingCleanup)) {
+            $queries = $this->getCleanupQueries(explode("\n", $tablesNeedingCleanup));
+        }
 
         if (!count($queries)) {
             $this->stdErr->writeln('');
@@ -189,17 +195,17 @@ class DbSizeCommand extends CommandBase
         if ($this->questionHelper->confirm('Do you want to run these queries now?', false)) {
             foreach ($queries as $query) {
                 $this->stdErr->write($query);
-                $this->runSshCommand($sshUrl, $this->getMysqlCommand($database, $query));
+                $host->runCommand($this->getMysqlCommand($database, $query));
                 $this->stdErr->writeln('<options=bold;fg=green> [OK]</>');
-            }                
+            }
         }
     }
 
     /**
      * Shows a warning about schemas not accessible through this relationship.
      *
-     * @param \Platformsh\Client\Model\Deployment\Service $service
-     * @param array                                       $database
+     * @param Service $service
+     * @param array   $database
      *
      * @return void
      */
@@ -250,7 +256,7 @@ class DbSizeCommand extends CommandBase
      */
     private function psqlQuery(array $database)
     {
-        //both these queries are wrong... 
+        //both these queries are wrong...
         //$query = 'SELECT SUM(pg_database_size(t1.datname)) as size FROM pg_database t1'; //does miss lots of data
         //$query = 'SELECT SUM(pg_total_relation_size(pg_class.oid)) AS size FROM pg_class LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)';
 
@@ -302,7 +308,7 @@ class DbSizeCommand extends CommandBase
             . ' AS estimated_actual_disk_usage'
             . ' FROM information_schema.tables'
             . ($excludeInnoDb ? ' WHERE ENGINE <> "InnoDB"' : '');
-        
+
         return $this->getMysqlCommand($database, $query);
     }
 
@@ -341,58 +347,58 @@ class DbSizeCommand extends CommandBase
      * @return string
      */
     private function mysqlTablesInNeedOfOptimizing(array $database) {
-        /*, data_free, data_length, ((data_free+1)/(data_length+1))*100 as wasted_space_percentage*/ 
+        /*, data_free, data_length, ((data_free+1)/(data_length+1))*100 as wasted_space_percentage*/
         $query = 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND ((data_free+1)/(data_length+1))*100 >= '.self::WASTED_SPACE_WARNING_THRESHOLD.' ORDER BY data_free DESC LIMIT 10';
-        
+
         return $this->getMysqlCommand($database, $query);
     }
 
     /**
      * Estimates usage of a database.
      *
-     * @param string $sshUrl
-     * @param array  $database
+     * @param HostInterface $host
+     * @param array         $database
      *
      * @return int Estimated usage in bytes.
      */
-    private function getEstimatedUsage($sshUrl, array $database) {
+    private function getEstimatedUsage(HostInterface $host, array $database) {
         if ($database['scheme'] === 'pgsql') {
-            return $this->getPgSqlUsage($sshUrl, $database);
+            return $this->getPgSqlUsage($host, $database);
         }
 
-        return $this->getMySqlUsage($sshUrl, $database);
+        return $this->getMySqlUsage($host, $database);
     }
 
     /**
      * Estimates usage of a PostgreSQL database.
      *
-     * @param string $sshUrl
-     * @param array  $database
+     * @param HostInterface $host
+     * @param array         $database
      *
      * @return int Estimated usage in bytes
      */
-    private function getPgSqlUsage($sshUrl, array $database) {
-        return (int) $this->runSshCommand($sshUrl, $this->psqlQuery($database));
+    private function getPgSqlUsage(HostInterface $host, array $database) {
+        return (int) $host->runCommand($this->psqlQuery($database));
     }
 
     /**
      * Estimates usage of a MySQL database.
      *
-     * @param string $sshUrl
-     * @param array  $database
+     * @param HostInterface $host
+     * @param array         $database
      *
      * @return int Estimated usage in bytes
      */
-    private function getMySqlUsage($sshUrl, array $database) {
+    private function getMySqlUsage(HostInterface $host, array $database) {
         $this->debug('Getting MySQL usage...');
-        $allocatedSizeSupported = $this->runSshCommand($sshUrl, $this->mysqlInnodbAllocatedSizeExists($database));
+        $allocatedSizeSupported = $host->runCommand($this->mysqlInnodbAllocatedSizeExists($database));
         $innoDbSize = 0;
         if ($allocatedSizeSupported) {
             $this->debug('Checking InnoDB separately for more accurate results...');
-            $innoDbSize = $this->runSshCommand($sshUrl, $this->mysqlInnodbQuery($database));
+            $innoDbSize = $host->runCommand($this->mysqlInnodbQuery($database));
         }
 
-        $otherSizes = $this->runSshCommand($sshUrl, $this->mysqlNonInnodbQuery($database, (bool) $allocatedSizeSupported));
+        $otherSizes = $host->runCommand($this->mysqlNonInnodbQuery($database, (bool) $allocatedSizeSupported));
 
         return (int) $otherSizes + (int) $innoDbSize;
     }
@@ -420,26 +426,4 @@ class DbSizeCommand extends CommandBase
 
         return sprintf($format, round($percentage));
     }
-
-    /**
-     * Runs a command over SSH.
-     *
-     * @param string $sshUrl
-     * @param string $command
-     *
-     * @return string
-     */
-    private function runSshCommand($sshUrl, $command) {
-        $args = array_merge(
-            ['ssh'],
-            $this->ssh->getSshArgs(),
-            [
-                $sshUrl,
-                $command
-            ]
-        );
-
-        return $this->shell->execute($args, null, true);
-    }
-
 }

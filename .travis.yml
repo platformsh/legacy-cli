@@ -1,7 +1,7 @@
 language: php
 dist: trusty
 
-php: nightly
+php: '7.3'
 env: TEST_SCRIPT=scripts/test/unit.sh
 
 matrix:
@@ -12,22 +12,22 @@ matrix:
       env: TEST_SCRIPT=scripts/test/security.sh
 
     - php: '7.1'
-      env: TEST_SCRIPT=scripts/test/installer.sh
-
-    - php: '7.1'
       env: TEST_SCRIPT=scripts/test/unit.sh
     - php: '7.2'
       env: TEST_SCRIPT=scripts/test/unit.sh
     - php: '7.3'
       env: TEST_SCRIPT=scripts/test/unit.sh
-    - php: nightly
+    - php: '7.4snapshot'
       env: TEST_SCRIPT=scripts/test/unit.sh
+
+    - php: '7.3'
+      env: TEST_SCRIPT=scripts/test/build-and-install.sh
 
     - php: '7.3'
       env: TEST_SCRIPT=scripts/test/slow.sh
 
   allow_failures:
-    - php: nightly
+    - php: '7.4snapshot'
 
   fast_finish: true
 
@@ -37,8 +37,7 @@ cache:
     - $HOME/.drush/cache
 
 install:
-  - composer install --no-interaction
-  - composer global require 'drush/drush:^8.0'
-  - export PLATFORMSH_CLI_DRUSH=$HOME/.composer/vendor/bin/drush
+  # No scripts on Travis, because Box isn't needed by default.
+  - composer install --no-interaction --no-scripts
 
 script: "$TEST_SCRIPT"

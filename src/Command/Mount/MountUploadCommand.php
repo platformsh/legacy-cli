@@ -7,9 +7,11 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
-use Platformsh\Cli\Service\MountService;
+use Platformsh\Cli\Service\Mount;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Rsync;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -23,19 +25,22 @@ class MountUploadCommand extends CommandBase
     private $filesystem;
     private $mountService;
     private $questionHelper;
+    private $rsync;
     private $selector;
 
     public function __construct(
         Config $config,
         Filesystem $filesystem,
-        MountService $mountService,
+        Mount $mountService,
         QuestionHelper $questionHelper,
+        Rsync $rsync,
         Selector $selector
     ) {
         $this->config = $config;
         $this->filesystem = $filesystem;
         $this->mountService = $mountService;
         $this->questionHelper = $questionHelper;
+        $this->rsync = $rsync;
         $this->selector = $selector;
         parent::__construct();
     }
@@ -72,10 +77,19 @@ class MountUploadCommand extends CommandBase
         $mounts = $this->mountService->normalizeMounts($mounts);
 
         if ($input->getOption('mount')) {
-            $mountPath = $this->mountService->validateMountPath($input->getOption('mount'), $mounts);
+            $mountPath = $this->mountService->matchMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
+            $options = [];
+            foreach ($mounts as $path => $definition) {
+                if ($definition['source'] === 'local') {
+                    $options[$path] = sprintf('<question>%s</question>', $path);
+                } else {
+                    $options[$path] = sprintf('<question>%s</question>: %s', $path, $definition['source']);
+                }
+            }
+
             $mountPath = $this->questionHelper->choose(
-                $this->mountService->getMountsAsOptions($mounts),
+                $options,
                 'Enter a number to choose a mount to upload to:'
             );
         } else {
@@ -125,7 +139,7 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        $this->mountService->validateDirectory($source);
+        $this->filesystem->validateDirectory($source);
 
         $confirmText = sprintf(
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
@@ -137,11 +151,26 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        $this->mountService->runSync($container->getSshUrl(), $mountPath, $source, true, [
+        $rsyncOptions = [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),
-        ]);
+            'verbose' => $output->isVeryVerbose(),
+            'quiet' => $output->isQuiet(),
+        ];
+
+        if (OsUtil::isOsX()) {
+            if ($this->rsync->supportsConvertingFilenames() !== false) {
+                $this->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
+                $rsyncOptions['convert-mac-filenames'] = true;
+            } else {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Warning: the installed version of <comment>rsync</comment> does not support converting filenames with special characters (the --iconv flag). You may need to upgrade rsync.');
+            }
+        }
+
+        $this->stdErr->writeln('');
+        $this->rsync->syncUp($container->getSshUrl(), $source, $mountPath, $rsyncOptions);
 
         return 0;
     }

@@ -4,11 +4,12 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\LocalHost;
+use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -43,7 +44,7 @@ class EnvironmentUrlCommand extends CommandBase
     {
         $this->setAliases(['url'])
             ->setDescription('Get the public URLs of an environment')
-            ->addOption('primary', null, InputOption::VALUE_NONE, 'Only return the URL for the primary route');
+            ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
@@ -60,7 +61,7 @@ class EnvironmentUrlCommand extends CommandBase
     {
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config->get('service.env_prefix');
-        if (getenv($prefix . 'ROUTES') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
+        if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading URLs from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (empty($decoded)) {
@@ -118,9 +119,9 @@ class EnvironmentUrlCommand extends CommandBase
     /**
      * Displays or opens URLs.
      *
-     * @param string[]                                          $urls
-     * @param \Symfony\Component\Console\Input\InputInterface   $input
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param string[]        $urls
+     * @param InputInterface  $input
+     * @param OutputInterface $output
      */
     private function displayOrOpenUrls(array $urls, InputInterface $input, OutputInterface $output)
     {

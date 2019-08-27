@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\MountService;
+use Platformsh\Cli\Service\Mount;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
@@ -24,7 +24,7 @@ class MountListCommand extends CommandBase
 
     public function __construct(
         PropertyFormatter $formatter,
-        MountService $mountService,
+        Mount $mountService,
         Selector $selector,
         Table $table
     ) {

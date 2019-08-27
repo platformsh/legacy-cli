@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Client\Model\Environment;
@@ -31,7 +32,9 @@ class DrushServiceTest extends TestCase
      */
     public function setUp()
     {
-        $this->drush = new Drush();
+        $config = new Config();
+        $config->override('service.app_config_file', '_platform.app.yaml');
+        $this->drush = new Drush($config);
 
         // Set up a dummy project with a remote environment.
         $this->project = new Project([

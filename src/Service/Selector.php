@@ -7,6 +7,7 @@ use Platformsh\Cli\Console\Selection;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\RemoteContainer;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
@@ -31,6 +32,7 @@ class Selector
     private $localProject;
     private $questionHelper;
     private $git;
+    private $hostFactory;
 
     /** @var Project|null */
     private $currentProject;
@@ -48,7 +50,8 @@ class Selector
         Api $api,
         LocalProject $localProject,
         QuestionHelper $questionHelper,
-        Git $git
+        Git $git,
+        HostFactory $hostFactory
     ) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $this->identifier = $identifier;
@@ -57,6 +60,7 @@ class Selector
         $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
         $this->git = $git;
+        $this->hostFactory = $hostFactory;
     }
 
     public function setEnvArgName($envArgName = 'environment')
@@ -81,11 +85,24 @@ class Selector
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param bool                                            $envNotRequired
+     * @param bool                                            $allowLocalHost
+     * @param bool                                            $requireApiOnLocal
      *
      * @return Selection
      */
-    public function getSelection(InputInterface $input, $envNotRequired = false)
+    public function getSelection(InputInterface $input, $envNotRequired = false, $allowLocalHost = false, $requireApiOnLocal = false)
     {
+        // Determine whether the localhost can be used.
+        $envPrefix = $this->config->get('service.env_prefix');
+        if ($allowLocalHost && LocalHost::conflictsWithCommandLineOptions($input, $envPrefix)) {
+            $allowLocalHost = false;
+        }
+
+        // If the user is not logged in, then return the localhost without selecting the project/environment.
+        if ($allowLocalHost && !$requireApiOnLocal && !$this->api->isLoggedIn()) {
+            return new Selection(null, null, getenv($envPrefix . 'APPLICATION_NAME') ?: null, null, $this->hostFactory->local());
+        }
+
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
         $environmentId = null;
@@ -99,7 +116,6 @@ class Selector
         }
 
         // Load the project ID from an environment variable, if available.
-        $envPrefix = $this->config->get('service.env_prefix');
         if ($projectId === null && getenv($envPrefix . 'PROJECT')) {
             $projectId = getenv($envPrefix . 'PROJECT');
             $this->stdErr->writeln(sprintf(
@@ -172,9 +188,15 @@ class Selector
             $remoteContainer = $this->selectRemoteContainer($environment, $input, $appName);
         }
 
-        return new Selection($project, $environment, $appName, $remoteContainer);
-    }
+        $host = null;
+        if ($allowLocalHost) {
+            $host = $this->hostFactory->local();
+        } elseif ($remoteContainer !== null) {
+            $host = $this->hostFactory->remote($remoteContainer->getSshUrl());
+        }
 
+        return new Selection($project, $environment, $appName, $remoteContainer, $host);
+    }
 
     /**
      * Select the project for the user, based on input or the environment.

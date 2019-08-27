@@ -11,6 +11,7 @@ use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\HostFactory;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Service\Selector;
@@ -26,6 +27,7 @@ class LocalDrushAliasesCommand extends CommandBase
     private $api;
     private $drush;
     private $filesystem;
+    private $hostFactory;
     private $localProject;
     private $remoteEnvVars;
     private $selector;
@@ -35,6 +37,7 @@ class LocalDrushAliasesCommand extends CommandBase
         Api $api,
         Drush $drush,
         Filesystem $filesystem,
+        HostFactory $hostFactory,
         LocalProject $localProject,
         RemoteEnvVars $remoteEnvVars,
         Selector $selector,
@@ -43,6 +46,7 @@ class LocalDrushAliasesCommand extends CommandBase
         $this->api = $api;
         $this->drush = $drush;
         $this->filesystem = $filesystem;
+        $this->hostFactory = $hostFactory;
         $this->localProject = $localProject;
         $this->remoteEnvVars = $remoteEnvVars;
         $this->selector = $selector;
@@ -133,6 +137,14 @@ class LocalDrushAliasesCommand extends CommandBase
             // each Enterprise environment. This will be cached by the Drush
             // service ($drush), for use while generating aliases.
             foreach ($environments as $environment) {
+
+                // Cache the environment's deployment information.
+                // This will at least be used for \Platformsh\Cli\Service\Drush::getSiteUrl().
+                if (!$this->api->hasCachedCurrentDeployment($environment) && $environment->isActive()) {
+                    $this->debug('Fetching deployment information for environment: ' . $environment->id);
+                    $this->api->getCurrentDeployment($environment);
+                }
+
                 if ($environment->deployment_target === 'local') {
                     continue;
                 }
@@ -142,7 +154,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         continue;
                     }
                     try {
-                        $appRoot = $this->remoteEnvVars->getEnvVar('APP_DIR', $sshUrl);
+                        $appRoot = $this->remoteEnvVars->getEnvVar('APP_DIR', $this->hostFactory->remote($sshUrl));
                     } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
                         $this->stdErr->writeln(sprintf(
                             'Unable to find app root for environment %s, app %s',

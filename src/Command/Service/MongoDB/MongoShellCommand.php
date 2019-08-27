@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
@@ -56,12 +57,14 @@ class MongoShellCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
+        if ($this->runningViaMulti) {
+            throw new \RuntimeException('The mongo-shell command cannot run via multi');
+        }
 
-        $sshUrl = $selection->getEnvironment()
-            ->getSshUrl($selection->getAppName());
+        $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
+        $host = $selection->getHost();
 
-        $service = $this->relationships->chooseService($sshUrl, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
@@ -81,18 +84,15 @@ class MongoShellCommand extends CommandBase
             $command .= ' --verbose';
         }
 
-        $sshCommand = $this->ssh->getSshCommand($sshOptions);
-        if ($this->isTerminal(STDIN)) {
-            $sshCommand .= ' -t';
+        if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
+            $host->setExtraSshArgs(['-t']);
         }
-        $sshCommand .= ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($command);
 
         $this->stdErr->writeln(
-            sprintf('Connecting to MongoDB service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $sshUrl),
+            sprintf('Connecting to MongoDB service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getLabel()),
             OutputInterface::VERBOSITY_VERBOSE
         );
 
-        return $this->shell->executeSimple($sshCommand);
+        return $host->runCommandDirect($command);
     }
 }

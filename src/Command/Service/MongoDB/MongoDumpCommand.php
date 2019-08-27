@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\Selection;
+use Platformsh\Cli\Model\Host\RemoteHost;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
@@ -11,7 +14,6 @@ use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
-use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,6 +23,7 @@ class MongoDumpCommand extends CommandBase
 {
     protected static $defaultName = 'service:mongo:dump';
 
+    private $config;
     private $git;
     private $questionHelper;
     private $relationships;
@@ -29,6 +32,7 @@ class MongoDumpCommand extends CommandBase
     private $ssh;
 
     public function __construct(
+        Config $config,
         Git $git,
         QuestionHelper $questionHelper,
         Relationships $relationships,
@@ -36,6 +40,7 @@ class MongoDumpCommand extends CommandBase
         Shell $shell,
         Ssh $ssh
     ) {
+        $this->config = $config;
         $this->git = $git;
         $this->questionHelper = $questionHelper;
         $this->relationships = $relationships;
@@ -61,19 +66,15 @@ class MongoDumpCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
         $projectRoot = $this->selector->getProjectRoot();
 
         $gzip = $input->getOption('gzip');
 
-        $appName = $selection->getAppName();
-        $sshUrl = $selection->getEnvironment()
-            ->getSshUrl($appName);
-
         $dumpFile = false;
 
         if (!$input->getOption('stdout')) {
-            $defaultFilename = $this->getDefaultFilename($selection->getEnvironment(), $appName, $input->getOption('collection'), $gzip);
+            $defaultFilename = $this->getDefaultFilename($selection, $input->getOption('collection'), $gzip);
             $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
         }
 
@@ -90,7 +91,9 @@ class MongoDumpCommand extends CommandBase
             ));
         }
 
-        $service = $this->relationships->chooseService($sshUrl, $input, $output, ['mongodb']);
+        $host = $selection->getHost();
+
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
@@ -109,25 +112,21 @@ class MongoDumpCommand extends CommandBase
 
         set_time_limit(0);
 
-        $sshCommand = $this->ssh->getSshCommand();
-        $sshCommand .= ' ' . escapeshellarg($sshUrl);
-
         if ($gzip) {
             $command .= ' --gzip';
-        } else {
+        } elseif ($host instanceof RemoteHost) {
             // If dump compression is not enabled, data can still be compressed
             // transparently as it's streamed over the SSH connection.
-            $sshCommand .= ' -C';
+            $host->setExtraSshArgs(['-C']);
         }
 
-        $sshCommand .= ' ' . escapeshellarg($command);
-
+        $append = '';
         if ($dumpFile) {
-            $sshCommand .= ' > ' . escapeshellarg($dumpFile);
+            $append = ' > ' . escapeshellarg($dumpFile);
         }
 
         $start = microtime(true);
-        $exitCode = $this->shell->executeSimple($sshCommand);
+        $exitCode = $host->runCommandDirect($command, $append);
 
         if ($exitCode === 0 && $output->isVerbose()) {
             $this->stdErr->writeln("\n" . 'The dump completed successfully');
@@ -157,22 +156,26 @@ class MongoDumpCommand extends CommandBase
     /**
      * Get the default dump filename.
      *
-     * @param Environment $environment
-     * @param string|null $appName
+     * @param Selection   $selection
      * @param string      $collection
      * @param bool        $gzip
      *
      * @return string
      */
     private function getDefaultFilename(
-        Environment $environment,
-        $appName = null,
+        Selection $selection,
         $collection = '',
         $gzip = false)
     {
-        $defaultFilename = $environment->project . '--' . $environment->id;
-        if ($appName !== null) {
-            $defaultFilename .= '--' . $appName;
+        $prefix = $this->config->get('service.env_prefix');
+        $projectId = $selection->hasProject() ? $selection->getProject()->id : getenv($prefix . 'PROJECT');
+        $environmentId = $selection->hasEnvironment() ? $selection->getEnvironment()->id : getenv($prefix . 'BRANCH');
+        $defaultFilename = $projectId ?: 'db';
+        if ($environmentId) {
+            $defaultFilename .= '--' . $environmentId;
+        }
+        if ($selection->getAppName() !== null) {
+            $defaultFilename .= '--' . $selection->getAppName();
         }
         if ($collection) {
             $defaultFilename .= '--' . $collection;

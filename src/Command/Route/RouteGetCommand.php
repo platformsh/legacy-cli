@@ -4,8 +4,9 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -48,7 +49,7 @@ class RouteGetCommand extends CommandBase
         $this->setDescription('View a resolved route')
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('id', null, InputOption::VALUE_REQUIRED, 'A route ID to select')
-            ->addOption('primary', null, InputOption::VALUE_NONE, 'Select the primary route')
+            ->addOption('primary', '1', InputOption::VALUE_NONE, 'Select the primary route')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
 
@@ -64,7 +65,7 @@ class RouteGetCommand extends CommandBase
     {
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config->get('service.env_prefix');
-        if (getenv($prefix . 'ROUTES') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
+        if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (empty($decoded)) {

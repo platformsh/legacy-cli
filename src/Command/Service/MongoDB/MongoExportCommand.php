@@ -5,6 +5,8 @@ namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Model\Host\HostInterface;
+use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
@@ -61,8 +63,6 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
-
         if ($input->getOption('type') === 'csv' && !$input->getOption('fields')) {
             throw new InvalidArgumentException(
                 'CSV mode requires a field list.'
@@ -70,10 +70,10 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             );
         }
 
-        $sshUrl = $selection->getEnvironment()
-            ->getSshUrl($selection->getAppName());
+        $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
+        $host = $selection->getHost();
 
-        $service = $this->relationships->chooseService($sshUrl, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
@@ -83,7 +83,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
                 throw new InvalidArgumentException('No collection specified. Use the --collection (-c) option to specify one.');
             }
             $this->stdErr->writeln('Finding available collections... (you can skip this with the <comment>--collection</comment> option)', OutputInterface::VERBOSITY_VERBOSE);
-            $collections = $this->getCollections($service, $sshUrl);
+            $collections = $this->getCollections($service, $host);
             if (empty($collections)) {
                 throw new InvalidArgumentException('No collections found. You can specify one with the --collection (-c) option.');
             }
@@ -104,31 +104,27 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             $command .= ' --fields ' . OsUtil::escapePosixShellArg(implode(',', $input->getOption('fields')));
         }
 
-        $sshOptions = [];
-
         if (!$output->isVerbose()) {
             $command .= ' --quiet';
-            $sshOptions['LogLevel'] = 'QUIET';
+            if ($host instanceof RemoteHost) {
+                $host->setExtraSshArgs(['-q']);
+            }
         } elseif ($output->isDebug()) {
             $command .= ' --verbose';
         }
 
-        $sshCommand = $this->ssh->getSshCommand($sshOptions);
-        $sshCommand .= ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($command);
-
-        return $this->shell->executeSimple($sshCommand);
+        return $host->runCommandDirect($command);
     }
 
     /**
      * Get collections in the MongoDB database.
      *
-     * @param array  $service
-     * @param string $sshUrl
+     * @param array         $service
+     * @param HostInterface $host
      *
      * @return array
      */
-    private function getCollections(array $service, $sshUrl)
+    private function getCollections(array $service, HostInterface $host)
     {
         $js = 'printjson(db.getCollectionNames())';
 
@@ -136,12 +132,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             . $this->relationships->getDbCommandArgs('mongo', $service)
             . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js);
 
-        $sshArgs = array_merge(['ssh'], $this->ssh->getSshArgs());
-        $sshArgs[] = $sshUrl;
-        $sshArgs[] = $command;
-
-        /** @noinspection PhpUnhandledExceptionInspection */
-        $result = $this->shell->execute($sshArgs, null, true);
+        $result = $host->runCommand($command);
         if (!is_string($result)) {
             return [];
         }

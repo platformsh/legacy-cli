@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Service;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
@@ -55,15 +56,14 @@ class RedisCliCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
         if ($this->runningViaMulti && !$input->getArgument('args')) {
             throw new \RuntimeException('The redis-cli command cannot run as a shell via multi');
         }
 
-        $sshUrl = $selection->getEnvironment()
-            ->getSshUrl($selection->getAppName());
+        $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
+        $host = $selection->getHost();
 
-        $service = $this->relationships->chooseService($sshUrl, $input, $output, ['redis']);
+        $service = $this->relationships->chooseService($host, $input, $output, ['redis']);
         if (!$service) {
             return 1;
         }
@@ -77,18 +77,14 @@ class RedisCliCommand extends CommandBase
             $redisCommand .= ' ' . $args;
         }
 
-        $sshOptions = [];
-        $sshCommand = $this->ssh->getSshCommand($sshOptions);
-        if ($this->isTerminal(STDIN)) {
-            $sshCommand .= ' -t';
-        }
-        $sshCommand .= ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($redisCommand);
-
         $this->stdErr->writeln(
-            sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $sshUrl)
+            sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getCacheKey())
         );
 
-        return $this->shell->executeSimple($sshCommand);
+        if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
+            $host->setExtraSshArgs(['-t']);
+        }
+
+        return $host->runCommandDirect($redisCommand);
     }
 }

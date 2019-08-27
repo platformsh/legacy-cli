@@ -782,6 +782,20 @@ class Api
     }
 
     /**
+     * Returns whether the current deployment for an environment is already cached.
+     *
+     * @param Environment $environment
+     *
+     * @return bool
+     */
+    public function hasCachedCurrentDeployment(Environment $environment)
+    {
+        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
+
+        return $this->cache->contains($cacheKey);
+    }
+
+    /**
      * Get the default environment in a list.
      *
      * @param array $environments An array of environments, keyed by ID.

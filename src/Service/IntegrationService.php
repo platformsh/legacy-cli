@@ -59,6 +59,37 @@ class IntegrationService
     }
 
     /**
+     * Performs extra logic on values after the form is complete.
+     *
+     * @param array            $values
+     * @param Integration|null $integration
+     *
+     * @return array
+     */
+    public function postProcessValues(array $values, Integration $integration = null)
+    {
+        // Find the integration type.
+        $type = isset($values['type'])
+            ? $values['type']
+            : ($integration !== null ? $integration->type : null);
+
+        // Process Bitbucket Server values.
+        if ($type === 'bitbucket_server') {
+            // Translate base_url into url.
+            if (isset($values['base_url'])) {
+                $values['url'] = $values['base_url'];
+                unset($values['base_url']);
+            }
+            // Split bitbucket_server "repository" into project/repository.
+            if (isset($values['repository']) && strpos($values['repository'], '/', 1) !== false) {
+                list($values['project'], $values['repository']) = explode('/', $values['repository'], 2);
+            }
+        }
+
+        return $values;
+    }
+
+    /**
      * @return Field[]
      */
     private function getFields()
@@ -70,6 +101,7 @@ class IntegrationService
                 'questionLine' => '',
                 'options' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                     'gitlab',
                     'hipchat',
@@ -79,14 +111,28 @@ class IntegrationService
                     'health.slack',
                 ],
             ]),
+            'base_url' => new UrlField('Base URL', [
+                'conditions' => ['type' => [
+                    'gitlab',
+                    'bitbucket_server',
+                ]],
+                'description' => 'The base URL of the server installation',
+            ]),
+            'username' => new Field('Username', [
+                'conditions' =>  ['type' => [
+                    'bitbucket_server',
+                ]],
+                'description' => 'The Bitbucket Server username',
+            ]),
             'token' => new Field('Token', [
                 'conditions' => ['type' => [
                     'github',
                     'gitlab',
                     'hipchat',
                     'health.slack',
+                    'bitbucket_server',
                 ]],
-                'description' => 'An OAuth token for the integration',
+                'description' => 'An access token for the integration',
             ]),
             'key' => new Field('OAuth consumer key', [
                 'optionName' => 'key',
@@ -104,18 +150,12 @@ class IntegrationService
                 'description' => 'A Bitbucket OAuth consumer secret',
                 'valueKeys' => ['app_credentials', 'secret'],
             ]),
-            'base_url' => new UrlField('Base URL', [
-                'conditions' => ['type' => [
-                    'gitlab',
-                ]],
-                'description' => 'The base URL of the GitLab installation',
-            ]),
             'project' => new Field('Project', [
-                'optionName' => 'gitlab-project',
+                'optionName' => 'server-project',
                 'conditions' => ['type' => [
                     'gitlab',
                 ]],
-                'description' => 'The GitLab project (e.g. \'namespace/repo\')',
+                'description' => 'The project (e.g. \'namespace/repo\')',
                 'validator' => function ($string) {
                     return strpos($string, '/', 1) !== false;
                 },
@@ -123,10 +163,11 @@ class IntegrationService
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                 ]],
-                'description' => 'The repository to track (e.g. \'user/repo\')',
-                'questionLine' => 'The repository (e.g. \'user/repo\')',
+                'description' => 'The repository to track (e.g. \'foo/bar\')',
+                'questionLine' => 'The repository (e.g. \'foo/bar\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
@@ -148,6 +189,7 @@ class IntegrationService
             'build_pull_requests' => new BooleanField('Build pull requests', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                 ]],
                 'description' => 'Build every pull request as an environment',
@@ -178,6 +220,7 @@ class IntegrationService
                 'conditions' => [
                     'type' => [
                         'github',
+                        'bitbucket_server',
                     ],
                     'build_pull_requests' => true,
                 ],
@@ -197,6 +240,7 @@ class IntegrationService
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                     'gitlab',
                 ]],
@@ -206,6 +250,7 @@ class IntegrationService
                 'conditions' => [
                     'type' => [
                         'bitbucket',
+                        'bitbucket_server',
                         'github',
                         'gitlab',
                     ],

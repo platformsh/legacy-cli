@@ -62,23 +62,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $prefix = $this->config->get('service.env_prefix');
-        if (getenv($prefix . 'RELATIONSHIPS') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
-            $this->debug('Reading relationships from local environment variable ' . $prefix . 'RELATIONSHIPS');
-            $decoded = json_decode(base64_decode(getenv($prefix . 'RELATIONSHIPS'), true), true);
-            if (!is_array($decoded)) {
-                throw new \RuntimeException('Failed to decode: ' . $prefix . 'RELATIONSHIPS');
-            }
-            $relationships = $decoded;
-        } else {
-            $this->debug('Reading relationships via SSH');
-
-            $sshUrl = $this->selector->getSelection($input)
-                ->getRemoteContainer()
-                ->getSshUrl();
-
-            $relationships = $this->relationships->getRelationships($sshUrl, $input->getOption('refresh'));
-        }
+        $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
+        $relationships = $this->relationships->getRelationships($selection->getHost(), $input->getOption('refresh'));
 
         foreach ($relationships as $name => $relationship) {
             foreach ($relationship as $index => $instance) {

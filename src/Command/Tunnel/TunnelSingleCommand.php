@@ -69,13 +69,13 @@ class TunnelSingleCommand extends CommandBase
 
         $sshUrl = $environment->getSshUrl($appName);
 
-        $relationships = $this->relationshipsService->getRelationships($sshUrl);
+        $relationships = $this->relationshipsService->getRelationships($selection->getHost());
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
         }
 
-        $service = $this->relationshipsService->chooseService($sshUrl, $input, $output);
+        $service = $this->relationshipsService->chooseService($selection->getHost(), $input, $output);
         if (!$service) {
             return 1;
         }

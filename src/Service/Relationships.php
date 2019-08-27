@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Model\Host\HostInterface;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -36,31 +38,31 @@ class Relationships implements InputConfiguringInterface
     /**
      * Choose a database for the user.
      *
-     * @param string          $sshUrl
-     * @param InputInterface  $input
+     * @param HostInterface $host
+     * @param InputInterface $input
      * @param OutputInterface $output
      *
      * @return array|false
      */
-    public function chooseDatabase($sshUrl, InputInterface $input, OutputInterface $output)
+    public function chooseDatabase(HostInterface $host, InputInterface $input, OutputInterface $output)
     {
-        return $this->chooseService($sshUrl, $input, $output, ['mysql', 'pgsql']);
+        return $this->chooseService($host, $input, $output, ['mysql', 'pgsql']);
     }
 
     /**
      * Choose a service for the user.
      *
-     * @param string          $sshUrl
+     * @param HostInterface   $host
      * @param InputInterface  $input
      * @param OutputInterface $output
      * @param string[]        $schemes Filter by scheme.
      *
      * @return array|false
      */
-    public function chooseService($sshUrl, InputInterface $input, OutputInterface $output, $schemes = [])
+    public function chooseService(HostInterface $host, InputInterface $input, OutputInterface $output, $schemes = [])
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $relationships = $this->getRelationships($sshUrl);
+        $relationships = $this->getRelationships($host);
 
         // Filter to find services matching the schemes.
         if (!empty($schemes)) {
@@ -148,7 +150,7 @@ class Relationships implements InputConfiguringInterface
         // This is for backwards compatibility with projects that do not have
         // this information.
         if (!isset($relationship['service'])) {
-            $appConfig = $this->envVarService->getArrayEnvVar('APPLICATION', $sshUrl);
+            $appConfig = $this->envVarService->getArrayEnvVar('APPLICATION', $host);
             if (!empty($appConfig['relationships'][$name]) && is_string($appConfig['relationships'][$name])) {
                 list($serviceName, ) = explode(':', $appConfig['relationships'][$name], 2);
                 $relationship['service'] = $serviceName;
@@ -163,16 +165,16 @@ class Relationships implements InputConfiguringInterface
     }
 
     /**
-     * Get the relationships deployed on the remote application.
+     * Get the relationships deployed on the application.
      *
-     * @param string $sshUrl
-     * @param bool   $refresh
+     * @param HostInterface $host
+     * @param bool          $refresh
      *
      * @return array
      */
-    public function getRelationships($sshUrl, $refresh = false)
+    public function getRelationships(HostInterface $host, $refresh = false)
     {
-        return $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $sshUrl, $refresh);
+        return $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh);
     }
 
     /**
@@ -260,5 +262,13 @@ class Relationships implements InputConfiguringInterface
     public function clearCaches($sshUrl)
     {
         $this->envVarService->clearCaches($sshUrl);
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasLocalEnvVar()
+    {
+        return $this->envVarService->getEnvVar('RELATIONSHIPS', new LocalHost()) !== '';
     }
 }
