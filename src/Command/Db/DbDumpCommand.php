@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\LocalHost;
+use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
@@ -38,42 +40,49 @@ class DbDumpCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $projectRoot = $this->getProjectRoot();
-        $environment = $this->getSelectedEnvironment();
-        $appName = $this->selectApp($input);
-        $sshUrl = $environment->getSshUrl($appName);
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+
+        $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
+        if ($host instanceof LocalHost && $this->api()->isLoggedIn()) {
+            $this->validateInput($input, true);
+        }
+
         $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;
         $gzip = $input->getOption('gzip');
         $includedTables = $input->getOption('table');
         $excludedTables = $input->getOption('exclude-table');
         $schemaOnly = $input->getOption('schema-only');
+        $projectRoot = $this->getProjectRoot();
 
         /** @var \Platformsh\Cli\Service\Filesystem $fs */
         $fs = $this->getService('fs');
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $database = $relationships->chooseDatabase($sshUrl, $input, $output);
+        $database = $relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
             return 1;
         }
 
-        $schema = $input->getOption('schema');
-        if (empty($schema)) {
+        $service = false;
+        if ($this->hasSelectedEnvironment()) {
             // Get information about the deployed service associated with the
             // selected relationship.
-            $deployment = $this->api()->getCurrentDeployment($environment);
+            $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
             $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
+        }
 
+        $schema = $input->getOption('schema');
+        if (empty($schema)) {
             // Get a list of schemas from the service configuration.
-            $schemas = $service && !empty($service->configuration['schemas'])
-                ? $service->configuration['schemas']
-                : ['main'];
+            $schemas = [];
+            if ($service) {
+                $schemas = !empty($service->configuration['schemas'])
+                    ? $service->configuration['schemas']
+                    : ['main'];
+            }
 
             // Filter the list by the schemas accessible from the endpoint.
             if (isset($database['rel'])
@@ -86,8 +95,7 @@ class DbDumpCommand extends CommandBase
             }
 
             // If the database path is not in the list of schemas, we have to
-            // use that - it probably indicates an integrated Enterprise
-            // environment.
+            // use that.
             if (!empty($database['path']) && !in_array($database['path'], $schemas, true)) {
                 $schemas = [$database['path']];
             }
@@ -131,7 +139,7 @@ class DbDumpCommand extends CommandBase
                 }
             } else {
                 $defaultFilename = $this->getDefaultFilename(
-                    $environment,
+                    $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null,
                     $database['service'],
                     $schema,
                     $includedTables,
@@ -229,38 +237,32 @@ class DbDumpCommand extends CommandBase
                 break;
         }
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $sshCommand = $ssh->getSshCommand();
-
         if ($gzip) {
-            // If dump compression is enabled, pipe the dump command into gzip,
-            // but not before switching on "pipefail" to ensure a non-zero exit
-            // code is returned if any part of the pipe fails.
-            $dumpCommand = 'set -o pipefail;'
-                . $dumpCommand
-                . ' | gzip --stdout';
-        } else {
+            // If dump compression is enabled, pipe the dump command into gzip.
+            $dumpCommand .= ' | gzip --stdout';
+
+            // If it's supported, then switch on "pipefail" to ensure a
+            // non-zero exit code is returned if any part of the pipe fails.
+            $setOptions = $host->runCommand('set -o', false);
+            if (is_string($setOptions) && stripos($setOptions, 'pipefail') !== false) {
+                $dumpCommand = 'set -o pipefail; ' . $dumpCommand;
+            }
+        } elseif ($host instanceof RemoteHost) {
             // If dump compression is not enabled, data can still be compressed
             // transparently as it's streamed over the SSH connection.
-            $sshCommand .= ' -C';
+            $host->setExtraSshArgs(['-C']);
+        }
+
+        $append = '';
+        if ($dumpFile) {
+            $append .= ' > ' . escapeshellarg($dumpFile);
         }
 
         set_time_limit(0);
 
-        // Build the complete SSH command.
-        $command = $sshCommand
-            . ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($dumpCommand);
-        if ($dumpFile) {
-            $command .= ' > ' . escapeshellarg($dumpFile);
-        }
-
-        // Execute the SSH command.
+        // Execute the command.
         $start = microtime(true);
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        $exitCode = $shell->executeSimple($command);
+        $exitCode = $host->runCommandDirect($dumpCommand, $append);
 
         if ($exitCode === 0) {
             $this->stdErr->writeln('The dump completed successfully', OutputInterface::VERBOSITY_VERBOSE);
@@ -302,7 +304,7 @@ class DbDumpCommand extends CommandBase
      * @return string
      */
     private function getDefaultFilename(
-        Environment $environment,
+        Environment $environment = null,
         $dbServiceName = null,
         $schema = null,
         array $includedTables = [],
@@ -310,7 +312,13 @@ class DbDumpCommand extends CommandBase
         $schemaOnly = false,
         $gzip = false)
     {
-        $defaultFilename = $environment->project . '--' . $environment->machine_name;
+        $prefix = $this->config()->get('service.env_prefix');
+        $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
+        $environmentMachineName = $environment ? $environment->machine_name : getenv($prefix . 'ENVIRONMENT');
+        $defaultFilename = $projectId ?: 'db';
+        if ($environmentMachineName) {
+            $defaultFilename .= '--' . $environmentMachineName;
+        }
         if ($dbServiceName !== null) {
             $defaultFilename .= '--' . $dbServiceName;
         }

@@ -261,39 +261,11 @@ abstract class DrushAlias implements SiteAliasTypeInterface
 
         list($alias['user'], $alias['host']) = explode('@', $sshUrl, 2);
 
-        if ($url = $this->getUrl($environment)) {
+        if ($url = $this->drush->getSiteUrl($environment, $app)) {
             $alias['uri'] = $url;
         }
 
         return $alias;
-    }
-
-    /**
-     * Find a single URL for an environment.
-     *
-     * Only one URL may be used for the Drush site alias. This picks the
-     * shortest one available, strongly preferring HTTPS.
-     *
-     * @param \Platformsh\Client\Model\Environment $environment
-     *
-     * @return string|false A URL, or false if no URLs are found.
-     */
-    private function getUrl(Environment $environment)
-    {
-        $urls = $environment->getRouteUrls();
-        usort($urls, function ($a, $b) {
-            $result = 0;
-            foreach ([$a, $b] as $key => $url) {
-                if (parse_url($url, PHP_URL_SCHEME) === 'https') {
-                    $result += $key === 0 ? -2 : 2;
-                }
-            }
-            $result += strlen($a) <= strlen($b) ? -1 : 1;
-
-            return $result;
-        });
-
-        return reset($urls);
     }
 
     /**

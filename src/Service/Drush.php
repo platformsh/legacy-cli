@@ -15,6 +15,9 @@ use Platformsh\Client\Model\Project;
 
 class Drush
 {
+    /** @var Api */
+    protected $api;
+
     /** @var Shell */
     protected $shellHelper;
 
@@ -40,18 +43,21 @@ class Drush
     protected $cachedAppRoots = [];
 
     /**
-     * @param Config|null       $config
-     * @param Shell|null        $shellHelper
+     * @param Config|null $config
+     * @param Shell|null $shellHelper
      * @param LocalProject|null $localProject
+     * @param Api|null $api
      */
     public function __construct(
         Config $config = null,
         Shell $shellHelper = null,
-        LocalProject $localProject = null
+        LocalProject $localProject = null,
+        Api $api = null
     ) {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
         $this->localProject = $localProject ?: new LocalProject();
+        $this->api = $api ?: new Api($this->config);
     }
 
     public function setHomeDir($homeDir)
@@ -353,6 +359,30 @@ class Drush
         $types[] = new DrushPhp($this->config, $this);
 
         return $types;
+    }
+
+    /**
+     * Returns the site URL.
+     *
+     * @param Environment      $environment
+     * @param LocalApplication $app
+     *
+     * @todo this is really a hidden dependency on the Api service
+     *
+     * @return string|null
+     */
+    public function getSiteUrl(Environment $environment, LocalApplication $app)
+    {
+        if ($this->api->hasCachedCurrentDeployment($environment)) {
+            return $this->api->getSiteUrl($environment, $app->getName());
+        }
+
+        $urls = $environment->getRouteUrls();
+        if (count($urls) === 1) {
+            return reset($urls) ?: null;
+        }
+
+        return null;
     }
 
     /**

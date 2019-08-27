@@ -37,18 +37,20 @@ class TunnelSingleCommand extends TunnelCommandBase
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
 
-        $appName = $this->selectApp($input);
-        $sshUrl = $environment->getSshUrl($appName);
+        $container = $this->selectRemoteContainer($input, false);
+        $appName = $container->getName();
+        $sshUrl = $container->getSshUrl();
+        $host = $this->selectHost($input, false, $container);
 
         /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
         $relationshipsService = $this->getService('relationships');
-        $relationships = $relationshipsService->getRelationships($sshUrl);
+        $relationships = $relationshipsService->getRelationships($host);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
         }
 
-        $service = $relationshipsService->chooseService($sshUrl, $input, $output);
+        $service = $relationshipsService->chooseService($host, $input, $output);
         if (!$service) {
             return 1;
         }

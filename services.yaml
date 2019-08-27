@@ -42,7 +42,7 @@ services:
 
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
-        arguments: ['@config', '@shell', '@local.project']
+        arguments: ['@config', '@shell', '@local.project', '@api']
 
     fs:
         class:     '\Platformsh\Cli\Service\Filesystem'
@@ -90,7 +90,7 @@ services:
 
     remote_env_vars:
         class:     '\Platformsh\Cli\Service\RemoteEnvVars'
-        arguments: ['@ssh', '@cache', '@shell', '@config']
+        arguments: ['@ssh', '@cache', '@config']
         public:    false
 
     relationships:

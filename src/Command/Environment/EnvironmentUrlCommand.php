@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,7 +18,7 @@ class EnvironmentUrlCommand extends CommandBase
             ->setName('environment:url')
             ->setAliases(['url'])
             ->setDescription('Get the public URLs of an environment')
-            ->addOption('primary', null, InputOption::VALUE_NONE, 'Only return the URL for the primary route');
+            ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
         Url::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
@@ -31,7 +32,7 @@ class EnvironmentUrlCommand extends CommandBase
     {
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config()->get('service.env_prefix');
-        if (getenv($prefix . 'ROUTES') && !$this->doesEnvironmentConflictWithCommandLine($input)) {
+        if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading URLs from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (empty($decoded)) {
