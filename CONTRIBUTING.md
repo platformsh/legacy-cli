@@ -56,7 +56,7 @@ docker-compose up -d
 Attach to the running container
 
 ```sh
-docker-compose exec app bash
+docker-compose exec cli bash
 ```
 
-Now you may run the steps mentioned in the ["Developing locally" chapter"](#Developing-locally) inside the container.
+Now you may run the steps mentioned in ["Developing locally"](#Developing-locally) inside the container.

@@ -1,16 +1,22 @@
-FROM ubuntu:latest
+FROM  php:7.3-cli
 
 ARG USER_ID
 ARG GROUP_ID
 
-RUN apt-get update -q -y && apt-get install -y php php-xml php-zip unzip openssh-client composer
+RUN apt-get update -q -y && apt-get install -y \
+    wget \
+    openssh-client \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN usermod -u ${USER_ID:-1000} www-data && groupmod -g ${GROUP_ID:-1000} www-data && mkdir /var/www && chown www-data:www-data /var/www
+RUN groupadd --gid ${GROUP_ID:-1000} psh; adduser --uid ${USER_ID:-1000} --gid ${GROUP_ID:-1000} --disabled-password --gecos "" psh
 
 ENV COMPOSER_HOME="/tmp/.composer"
 
-RUN mkdir /var/cli
+ADD docker/install_composer.sh /install_composer.sh
+RUN /install_composer.sh; rm /install_composer.sh
 
-USER www-data
+USER psh
 
-WORKDIR /var/cli
+RUN mkdir /home/psh/.ssh
+
+WORKDIR /home/psh/platformsh-cli
