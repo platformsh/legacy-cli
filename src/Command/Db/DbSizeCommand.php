@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\Db;
 
+use Error;
+use Exception;
+use PhpParser\Node\Stmt\Catch_;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Service\Relationships;
@@ -12,6 +15,7 @@ use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
 
 class DbSizeCommand extends CommandBase
 {
@@ -361,7 +365,11 @@ class DbSizeCommand extends CommandBase
         $innoDbSize = 0;
         if ($allocatedSizeSupported) {
             $this->debug('Checking InnoDB separately for more accurate results...');
-            $innoDbSize = $host->runCommand($this->mysqlInnodbQuery($database));
+            try {
+                $innoDbSize = $host->runCommand($this->mysqlInnodbQuery($database));
+            }catch(Throwable $e) {//some PE clusters do not have the  PROCESS privilege(s) and thus, have no access to the sys_tablespaces, revert to legacy way 
+                $allocatedSizeSupported = false;
+            }
         }
 
         $otherSizes = $host->runCommand($this->mysqlNonInnodbQuery($database, (bool) $allocatedSizeSupported));
