@@ -363,7 +363,7 @@ class DbSizeCommand extends CommandBase
             $this->debug('Checking InnoDB separately for more accurate results...');
             try {
                 $innoDbSize = $host->runCommand($this->mysqlInnodbQuery($database));
-            }catch(Throwable $e) {//some PE clusters do not have the  PROCESS privilege(s) and thus, have no access to the sys_tablespaces, revert to legacy way 
+            }catch(\Symfony\Component\Process\Exception\RuntimeException $e) {//some PE clusters do not have the  PROCESS privilege(s) and thus, have no access to the sys_tablespaces, revert to legacy way 
                 $allocatedSizeSupported = false;
             }
         }
