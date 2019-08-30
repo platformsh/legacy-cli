@@ -106,12 +106,12 @@ EOF
         
         $subscription = $this->api()->getClient()
             ->createSubscription(
-                $options['catalog'],
                 $options['region'],
                 $options['plan'],
                 $options['title'],
                 $options['storage'] * 1024,
-                $options['environments']
+                $options['environments'],
+                $options['catalog']
             );
 
         $this->api()->clearProjectsCache();
