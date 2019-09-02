@@ -206,6 +206,10 @@ The CLI caches details of your projects and their environments, and some other
 information. These caches could become out-of-date. You can clear caches with
 the command `platform clear-cache` (or `platform cc` for short).
 
+Default cache lifetimes have now been reduced thanks to performance
+improvements. The environments cache will now only last for 2 minutes, almost
+entirely eliminating this problem.
+
 ## Authentication
 
 There are currently three ways to authenticate:
