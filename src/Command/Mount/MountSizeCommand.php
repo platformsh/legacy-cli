@@ -57,6 +57,7 @@ EOF
         }
 
         $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the %s <info>%s</info>...', $container->getType(), $container->getName()));
+        $this->stdErr->writeln('');
 
         // Get a list of the mount paths (and normalize them as relative paths,
         // relative to the application directory).
@@ -142,6 +143,18 @@ EOF
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $table->render($rows, $header);
+
+        if (!$table->formatIsMachineReadable()) {
+            if (count($volumeInfo) === 1 && count($mountPaths) > 1) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('All the mounts share the same disk.');
+            }
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To increase the available space, edit the <info>disk</info> key in the <info>%s</info> file.',
+                $this->config()->get('service.app_config_file')
+            ));
+        }
 
         return 0;
     }
