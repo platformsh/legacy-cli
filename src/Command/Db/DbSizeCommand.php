@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
@@ -18,7 +19,6 @@ class DbSizeCommand extends CommandBase
 
     const RED_WARNING_THRESHOLD = 90;//percentage
     const YELLOW_WARNING_THRESHOLD = 80;//percentage
-    const BYTE_TO_MEGABYTE = 1048576;
     const WASTED_SPACE_WARNING_THRESHOLD = 200;//percentage
 
     /**
@@ -27,8 +27,9 @@ class DbSizeCommand extends CommandBase
     protected function configure() {
         $this->setName('db:size')
             ->setDescription('Estimate the disk usage of a database')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
-            ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).')
+            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show all sizes in bytes')
+            ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only)')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Only output the estimated size in bytes')
             ->setHelp(
                 "This is an estimate of the database disk usage. The real size on disk is usually a bit higher because of overhead."
             );
@@ -44,53 +45,95 @@ class DbSizeCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output) {
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
-
-        $this->validateInput($input);
-        $container = $this->selectRemoteContainer($input);
-
-        $host = $this->selectHost($input, $relationships->hasLocalEnvVar(), $container);
+        $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
 
         $database = $relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
-            $this->stdErr->writeln('No database selected.');
             return 1;
         }
+
         if (!isset($database['service'])) {
             $this->stdErr->writeln('Unable to find database service information.');
             return 1;
         }
         $dbServiceName = $database['service'];
 
-        // Get information about the deployed service associated with the
-        // selected relationship.
-        $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
-        $service = $deployment->getService($dbServiceName);
-
-        $this->stdErr->writeln(sprintf('Checking database service <comment>%s</comment>...', $dbServiceName));
-
-        $this->debug('Calculating estimated usage...');
-        $allocatedDisk = $service->disk * self::BYTE_TO_MEGABYTE;
-        $estimatedUsage = $this->getEstimatedUsage($host, $database);
-        $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
-
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
+
+        // Show which database we are checking.
+        if (!$input->getOption('pipe') && !$machineReadable) {
+            if ($this->hasSelectedProject()) {
+                $this->stdErr->writeln(sprintf(
+                    'Checking database service <info>%s</info> of project <info>%s</info>...',
+                    $dbServiceName,
+                    $this->api()->getProjectLabel($this->getSelectedProject(), false)
+                ));
+            } else {
+                $this->stdErr->writeln(sprintf(
+                    'Checking database service <info>%s</info>...',
+                    $dbServiceName
+                ));
+            }
+            $this->stdErr->writeln('');
+        }
+
+        // Run the checks.
+        $estimatedUsage = $this->getEstimatedUsage($host, $database);
+
+        if ($input->getOption('pipe')) {
+            $output->writeln($estimatedUsage);
+            return 0;
+        }
+
+        // Get information about the deployed service associated with the
+        // selected relationship.
+        if ($this->api()->isLoggedIn()) {
+            if ($host instanceof LocalHost) {
+                $this->validateInput($input);
+            }
+            $service = $this->api()
+                ->getCurrentDeployment($this->getSelectedEnvironment())
+                ->getService($dbServiceName);
+            $allocatedDiskMb = $service->disk;
+        } else {
+            $allocatedDiskMb = null;
+            $service = null;
+        }
+
         $showInBytes = $input->getOption('bytes') || $machineReadable;
 
-        $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
-        $values = [
-            'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
-            'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
-            'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
-        ];
+        if ($service) {
+            $allocatedDisk = $allocatedDiskMb * 1048576; // converting MiB to B
+            $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
 
-        $this->stdErr->writeln('');
+            $columns = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
+            $values = [
+                'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
+                'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
+                'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
+            ];
+        } else {
+            $percentageUsed = null;
+            $columns = ['used' => 'Estimated usage'];
+            $values = [
+                'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
+            ];
+        }
+
         $table->render([$values], $columns);
 
-        $this->showWarnings($percentageUsed);
+        if ($percentageUsed !== null) {
+            $this->showWarnings($percentageUsed);
+        } elseif (!$this->api()->isLoggedIn()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln("Log in to view the database's total allocated size.");
+        }
 
-        $this->showInaccessibleSchemas($service, $database);
+        if ($service !== null) {
+            $this->showInaccessibleSchemas($service, $database);
+        }
 
         if ($database['scheme'] !== 'pgsql' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
             $this->checkInnoDbTablesInNeedOfOptimizing($host, $database);
@@ -328,6 +371,8 @@ class DbSizeCommand extends CommandBase
      * @return int Estimated usage in bytes.
      */
     private function getEstimatedUsage(HostInterface $host, array $database) {
+        $this->debug('Calculating estimated usage...');
+
         if ($database['scheme'] === 'pgsql') {
             return $this->getPgSqlUsage($host, $database);
         }
