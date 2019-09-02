@@ -150,7 +150,8 @@ EOF
                 $this->stdErr->writeln('All the mounts share the same disk.');
             }
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('To increase the available space, edit the <info>disk</info> key in the <info>%s</info> file.',
+            $this->stdErr->writeln(sprintf(
+                'To increase the available space, edit the <info>disk</info> key in the <info>%s</info> file.',
                 $this->config()->get('service.app_config_file')
             ));
         }
