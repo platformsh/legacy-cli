@@ -67,9 +67,7 @@ class ProjectVariableSetCommand extends CommandBase
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
         $success = true;
-        if (!$result->countActivities()) {
-            $this->redeployWarning();
-        } elseif ($this->shouldWait($input)) {
+        if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());

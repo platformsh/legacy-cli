@@ -84,7 +84,7 @@ class VariableUpdateCommand extends VariableCommandBase
         $this->displayVariable($variable);
 
         $success = true;
-        if (!$result->countActivities()) {
+        if (!$result->countActivities() && $level !== 'environment') {
             $this->redeployWarning();
         } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */

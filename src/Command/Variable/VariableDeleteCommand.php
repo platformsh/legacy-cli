@@ -50,10 +50,12 @@ class VariableDeleteCommand extends VariableCommandBase
             return 1;
         }
 
+        $level = $this->getVariableLevel($variable);
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        switch ($this->getVariableLevel($variable)) {
+        switch ($level) {
             case 'environment':
                 $environmentId = $this->getSelectedEnvironment()->id;
                 $confirm = $questionHelper->confirm(
@@ -81,7 +83,7 @@ class VariableDeleteCommand extends VariableCommandBase
         $this->stdErr->writeln("Deleted variable <info>$variableName</info>");
 
         $success = true;
-        if (!$result->countActivities()) {
+        if (!$result->countActivities() && $level !== 'environment') {
             $this->redeployWarning();
         } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */

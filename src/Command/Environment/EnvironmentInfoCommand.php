@@ -134,14 +134,11 @@ class EnvironmentInfoCommand extends CommandBase
 
         $this->api()->clearEnvironmentsCache($environment->project);
 
-        $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
-        if ($result->countActivities() && !$noWait) {
+        if (!$noWait) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
-        } elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
-            $this->redeployWarning();
         }
 
         return $success ? 0 : 1;
