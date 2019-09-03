@@ -65,6 +65,7 @@ EOF
         $questionHelper = $this->getService('question_helper');
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
         $template = $input->getOption('template');
+        
         if ($template !== false) {
             if (empty(parse_url($template, PHP_URL_PATH))) {
                 $temp_provided = true;
@@ -172,18 +173,20 @@ EOF
         }
 
         if ($template_options['initialize']) {
-            // Use the existing initialize command.
+            // Make sure nothing happens if the all important subscription info
+            // is not available for some reason.
             $project = $this->api()->getProject($subscription->project_id);
-            $environment = $this->api()->getEnvironment('master', $project);
-            if (isset($subscription->project_options['initialize']['profile']) && isset( $subscription->project_options['initialize']['repository'])) {
-                $environment->initialize($subscription->project_options['initialize']['profile'], $subscription->project_options['initialize']['repository']);
-                $this->api()->clearEnvironmentsCache($environment->project);
-                $this->stdErr->writeln("The project has been initialized and is ready!");
+            if (!empty($project)) {
+                $environment = $this->api()->getEnvironment('master', $project);
+                if (isset($subscription->project_options['initialize']['profile']) && isset( $subscription->project_options['initialize']['repository'])) {
+                    $environment->initialize($subscription->project_options['initialize']['profile'], $subscription->project_options['initialize']['repository']);
+                    $this->api()->clearEnvironmentsCache($environment->project);
+                    $this->stdErr->writeln("The project has been initialized and is ready!");
+                }
+                else {
+                    $this->stdErr->writeln("The project could not be initialized at this time due to missing profile and repository information.");
+                }
             }
-            else {
-                $this->stdErr->writeln("The project could not be initialized at this time due to missing profile and repository information.");
-            }
-
         }
         else {
             $this->stdErr->writeln("The project is now ready!");
