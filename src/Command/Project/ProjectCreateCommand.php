@@ -60,22 +60,18 @@ EOF
     {
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
-
-        if ($input->getOption('template') !== false) {
-            if (empty(parse_url($input->getOption('template'), PHP_URL_PATH))) {
+        $template = $input->getOption('template');
+        if ($template !== false) {
+            if (empty(parse_url($template, PHP_URL_PATH))) {
                 $temp_provided = true;
             }
             else {
                 $temp_provided = false;
             }
             $this->template_form = Form::fromArray($this->getTemplateFields($temp_provided));
-            $this->template_form->configureInputDefinition($this->getDefinition());
             $template_options = $this->template_form->resolveOptions($input, $output, $questionHelper);
-    
         }
-
 
         $estimate = $this->api()
             ->getClient()
@@ -174,8 +170,8 @@ EOF
 
         if ($template_options['initialize']) {
             // Use the existing initialize command.
-            $project = $this->selectProject($subscription->project_id);
-            $environment = $this->api()->getEnvironment('master', $project, null, true);
+            $project = $this->api()->getProject($subscription->project_id);
+            $environment = $this->api()->getEnvironment('master', $project);
             $environment->initialize($subscription->project_options['initialize']['profile'], $subscription->project_options['initialize']['repository']);
             $this->api()->clearEnvironmentsCache($environment->project);
             $this->stdErr->writeln("The project has been initialized and is ready!");
@@ -194,7 +190,6 @@ EOF
         $this->stdErr->writeln("  Project ID: <info>{$subscription->project_id}</info>");
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
-
 
         return 0;
     }
@@ -272,14 +267,21 @@ EOF
     {
         if ($runtime) {
             $catalog = [];
-            foreach ($this->api()->getClient()->getCatalog()->getData() as $item) {
-                if ($item['info'] && $item['template']) {
-                    $catalog[$item['template']] = $item['info']['name'];
+            $catalog_items = $this->api()->getClient()->getCatalog()->getData();
+            if (!empty($catalog_items)) {
+                foreach ($catalog_items as $item) {
+                    if (isset($item['info']) && isset($item['template'])) {
+                        $catalog[$item['template']] = $item['info']['name'];
+                    }
                 }
             }
             $catalog['empty'] = 'Empty Project';
         } else {
             $catalog = (array) $this->config()->get('service.catalog');
+        }
+
+        if (empty($catalog)) {
+            // Should we throw an error here? Do we want to kill the process?
         }
 
         return $catalog;
@@ -292,48 +294,47 @@ EOF
      */
     protected function getFields()
     {
-        $fields = [];
-
-        $fields['title'] = new Field('Project title', [
-            'optionName' => 'title',
-            'description' => 'The initial project title',
-            'questionLine' => '',
-            'default' => 'Untitled Project',
-          ]);
-          $fields['region'] = new OptionsField('Region', [
-            'optionName' => 'region',
-            'description' => 'The region where the project will be hosted',
-            'options' => $this->getAvailableRegions(),
-            'optionsCallback' => function () {
-                return $this->getAvailableRegions(true);
-            },
-          ]);
-          $fields['plan'] = new OptionsField('Plan', [
-            'optionName' => 'plan',
-            'description' => 'The subscription plan',
-            'options' => $this->getAvailablePlans(),
-            'optionsCallback' => function () {
-                return $this->getAvailablePlans(true);
-            },
-            'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
-            'allowOther' => true,
-          ]);
-          $fields['environments'] = new Field('Environments', [
-            'optionName' => 'environments',
-            'description' => 'The number of environments',
-            'default' => 3,
-            'validator' => function ($value) {
-                return is_numeric($value) && $value > 0 && $value < 50;
-            },
-          ]);
-          $fields['storage'] = new Field('Storage', [
-            'description' => 'The amount of storage per environment, in GiB',
-            'default' => 5,
-            'validator' => function ($value) {
-                return is_numeric($value) && $value > 0 && $value < 1024;
-            },
-          ]);
-        return $fields;
+        return [
+            'title' => new Field('Project title', [
+              'optionName' => 'title',
+              'description' => 'The initial project title',
+              'questionLine' => '',
+              'default' => 'Untitled Project',
+            ]),
+            'region' => new OptionsField('Region', [
+              'optionName' => 'region',
+              'description' => 'The region where the project will be hosted',
+              'options' => $this->getAvailableRegions(),
+              'optionsCallback' => function () {
+                  return $this->getAvailableRegions(true);
+              },
+            ]),
+            'plan' => new OptionsField('Plan', [
+              'optionName' => 'plan',
+              'description' => 'The subscription plan',
+              'options' => $this->getAvailablePlans(),
+              'optionsCallback' => function () {
+                  return $this->getAvailablePlans(true);
+              },
+              'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
+              'allowOther' => true,
+            ]),
+            'environments' => new Field('Environments', [
+              'optionName' => 'environments',
+              'description' => 'The number of environments',
+              'default' => 3,
+              'validator' => function ($value) {
+                  return is_numeric($value) && $value > 0 && $value < 50;
+              },
+            ]),
+            'storage' => new Field('Storage', [
+              'description' => 'The amount of storage per environment, in GiB',
+              'default' => 5,
+              'validator' => function ($value) {
+                  return is_numeric($value) && $value > 0 && $value < 1024;
+              },
+            ]),
+          ];
     }
 
      /**
@@ -357,7 +358,7 @@ EOF
                 'includeAsOption' => false,
             ]);
     
-            $fields['catalog_url'] = new OptionsField('Catalog', [
+            $fields['template_url_from_catalog'] = new OptionsField('Template (from a catalog)', [
             'optionName' => 'catalog_url',
             'conditions' => [
                 'template_option' => [
@@ -391,8 +392,8 @@ EOF
                 'Choose a template from the catalog.',
             ],
         ],
-        'description' => 'Initialize this environment?',
-        'questionLine' => 'Initialize this environment?',
+        'description' => 'Initialize this project from a template?',
+        'questionLine' => 'Initialize this project from a template?',
         ]);
 
         return $fields;

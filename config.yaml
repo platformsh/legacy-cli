@@ -80,6 +80,8 @@ service:
     - standard
     - medium
     - large
+  catalog:
+    - https://github.com/platformsh/template-drupal7-vanilla/blob/master/.platform.template.yaml  
 
 # Configuration relating to API calls.
 # This can be overridden in the user config file.
