@@ -19,6 +19,9 @@ class ProjectCreateCommand extends CommandBase
     /** @var Form */
     protected $form;
 
+    /** @var Form */
+    protected $template_form;
+
     /**
      * {@inheritdoc}
      */
@@ -172,9 +175,15 @@ EOF
             // Use the existing initialize command.
             $project = $this->api()->getProject($subscription->project_id);
             $environment = $this->api()->getEnvironment('master', $project);
-            $environment->initialize($subscription->project_options['initialize']['profile'], $subscription->project_options['initialize']['repository']);
-            $this->api()->clearEnvironmentsCache($environment->project);
-            $this->stdErr->writeln("The project has been initialized and is ready!");
+            if (isset($subscription->project_options['initialize']['profile']) && isset( $subscription->project_options['initialize']['repository'])) {
+                $environment->initialize($subscription->project_options['initialize']['profile'], $subscription->project_options['initialize']['repository']);
+                $this->api()->clearEnvironmentsCache($environment->project);
+                $this->stdErr->writeln("The project has been initialized and is ready!");
+            }
+            else {
+                $this->stdErr->writeln("The project could not be initialized at this time due to missing profile and repository information.");
+            }
+
         }
         else {
             $this->stdErr->writeln("The project is now ready!");
