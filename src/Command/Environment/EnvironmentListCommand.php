@@ -228,7 +228,7 @@ class EnvironmentListCommand extends CommandBase
         }
         if ($currentEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-                'Make a snapshot of the current environment by running <info>' . $executable . ' snapshot:create</info>'
+                'Make a backup of the current environment by running <info>' . $executable . ' backup</info>'
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {
