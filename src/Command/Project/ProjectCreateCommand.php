@@ -272,7 +272,7 @@ EOF
      *
      * @return array
      */
-    protected function getAvailableCatalog($runtime = false)
+    protected function getDefaultCatalog($runtime = false)
     {
         if ($runtime) {
             $catalog = [];
@@ -375,10 +375,10 @@ EOF
                 ],
             ],
             'description' => 'The template from which to create your project or your own blank project.',
-            'options' => $this->getAvailableCatalog(),
+            'options' => $this->getDefaultCatalog(),
             'asChoice' => FALSE,
             'optionsCallback' => function () {
-                return $this->getAvailableCatalog(true);
+                return $this->getDefaultCatalog(true);
                 },
             ]);
 
