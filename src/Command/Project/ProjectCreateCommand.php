@@ -19,9 +19,6 @@ class ProjectCreateCommand extends CommandBase
     /** @var Form */
     protected $form;
 
-    /** @var Form */
-    protected $template_form;
-
     /**
      * {@inheritdoc}
      */
@@ -97,10 +94,10 @@ EOF
         }
 
         // Grab the url of the yaml file.
-        if (!empty($template_options['catalog_url'])) {
-            $options['catalog'] = $template_options['catalog_url'];
+        if (!empty($template_options['template_url_from_catalog'])) {
+            $options['catalog'] = $template_options['template_url_from_catalog'];
         }
-        else if (!empty($template_options['catalog_url'])) {
+        else if (!empty($template_options['template_url'])) {
             $options['catalog'] = $template_options['template_url'];
         }
         
@@ -371,7 +368,7 @@ EOF
             ]);
     
             $fields['template_url_from_catalog'] = new OptionsField('Template (from a catalog)', [
-            'optionName' => 'catalog_url',
+            'optionName' => 'template_url_from_catalog',
             'conditions' => [
                 'template_option' => [
                     'Choose a template from the catalog.'
