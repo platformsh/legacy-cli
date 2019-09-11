@@ -94,7 +94,7 @@ class ActivityLogCommand extends CommandBase
             // clear the cache.
             $this->api()->clearEnvironmentsCache($activity->project);
         } else {
-            $output->writeln($activity->log);
+            $output->writeln(rtrim($activity->log));
         }
 
         return 0;
