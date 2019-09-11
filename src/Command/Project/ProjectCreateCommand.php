@@ -212,7 +212,7 @@ EOF
     {
         // Check for setup options.
         $account = $this->api()->getMyAccount(true);
-        print_r($account);
+        // print_r($account);
         $setupOptions = $this->api()->getClient()->getSetupOptions(NULL, NULL, NULL, $account['username'], NULL);
         if (isset($setupOptions) && !empty($setupOptions['regions'])) {
             $regions = $setupOptions['regions'];
