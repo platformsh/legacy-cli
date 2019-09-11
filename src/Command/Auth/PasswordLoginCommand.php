@@ -9,6 +9,7 @@ use Symfony\Component\Console\Question\Question;
 
 class PasswordLoginCommand extends CommandBase
 {
+    protected $stability = 'deprecated';
 
     protected function configure()
     {
@@ -53,7 +54,12 @@ class PasswordLoginCommand extends CommandBase
         $this->stdErr->writeln(
             'Please log in using your <info>' . $this->config()->get('service.name') . '</info> account.'
         );
+
         $this->stdErr->writeln('');
+        $this->stdErr->writeln('<fg=yellow;options=bold,reverse>Warning: </><fg=yellow;options=reverse>This command is deprecated.</>');
+        $this->stdErr->writeln(sprintf('Password login will soon be removed in the %s API.', $this->config()->get('service.name')));
+        $this->stdErr->writeln('');
+
         $this->configureAccount($input, $this->stdErr);
 
         /** @var \Doctrine\Common\Cache\CacheProvider $cache */
