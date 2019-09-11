@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -57,26 +58,34 @@ class ActivityMonitor
     /**
      * Wait for a single activity to complete, and display the log continuously.
      *
-     * @param Activity    $activity The activity.
-     * @param string|null $success  A message to show on success.
-     * @param string|null $failure  A message to show on failure.
+     * @param Activity    $activity     The activity.
+     * @param string|null $success      A message to show on success.
+     * @param string|null $failure      A message to show on failure.
+     * @param int|float   $pollInterval The polling interval in seconds.
+     * @param bool        $decorate     Whether to show context messages and indent the log.
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $success = null, $failure = null)
+    public function waitAndLog(Activity $activity, $success = null, $failure = null, $pollInterval = 1, $decorate = true)
     {
         $stdErr = $this->getStdErr();
 
-        $stdErr->writeln(sprintf(
-            'Waiting for the activity <info>%s</info> (%s):',
-            $activity->id,
-            self::getFormattedDescription($activity)
-        ));
+        if ($decorate) {
+            $stdErr->writeln(sprintf(
+                'Waiting for the activity <info>%s</info> (%s):',
+                $activity->id,
+                self::getFormattedDescription($activity)
+            ));
+        }
 
         // The progress bar will show elapsed time and the activity's state.
         $bar = $this->newProgressBar($stdErr);
         $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
             return $this->formatState($activity->state);
+        });
+        $startTime = $this->getStart($activity) ?: time();
+        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
+            return Helper::formatTime(time() - $startTime);
         });
         $bar->setFormat('  [%bar%] %elapsed:6s% (%state%)');
         $bar->start();
@@ -88,17 +97,18 @@ class ActivityMonitor
                 $bar->advance();
             },
             // Display new log output when it is available.
-            function ($log) use ($stdErr, $bar) {
+            function ($log) use ($stdErr, $bar, $decorate) {
                 // Clear the progress bar and ensure the current line is flushed.
                 $bar->clear();
                 $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
 
                 // Display the new log output.
-                $stdErr->write($this->indent($log));
+                $stdErr->write($decorate ? $this->indent($log) : $log);
 
                 // Display the progress bar again.
                 $bar->advance();
-            }
+            },
+            $pollInterval
         );
         $bar->finish();
         $stdErr->writeln('');
@@ -300,5 +310,14 @@ class ActivityMonitor
         $value = html_entity_decode($value, ENT_QUOTES, 'utf-8');
 
         return $value;
+    }
+
+    /**
+     * @param Activity $activity
+     *
+     * @return false|int
+     */
+    private function getStart(Activity $activity) {
+        return !empty($activity->started_at) ? strtotime($activity->started_at) : strtotime($activity->created_at);
     }
 }
