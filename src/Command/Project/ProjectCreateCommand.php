@@ -64,13 +64,7 @@ EOF
         $template = $input->getOption('template');
         
         if ($template !== false) {
-            if (empty(parse_url($template, PHP_URL_PATH))) {
-                $temp_provided = true;
-            }
-            else {
-                $temp_provided = false;
-            }
-            $this->template_form = Form::fromArray($this->getTemplateFields($temp_provided));
+            $this->template_form = Form::fromArray($this->getTemplateFields($template));
             $template_options = $this->template_form->resolveOptions($input, $output, $questionHelper);
         }
 
@@ -94,13 +88,13 @@ EOF
         }
 
         // Grab the url of the yaml file.
-        if (!empty($template_options['template_url_from_catalog'])) {
-            $options['catalog'] = $template_options['template_url_from_catalog'];
+        if (isset($template_options['template_url_from_catalog'])) {
+            $options['template'] = $template_options['template_url_from_catalog'];
         }
-        else if (!empty($template_options['template_url'])) {
-            $options['catalog'] = $template_options['template_url'];
+        else if (isset($template)) {
+            $options['template'] = $template;
         }
-        
+
         $subscription = $this->api()->getClient()
             ->createSubscription(
                 $options['region'],
@@ -108,7 +102,8 @@ EOF
                 $options['title'],
                 $options['storage'] * 1024,
                 $options['environments'],
-                $options['catalog']
+                $options['activationCallback'],
+                $options['template']
             );
 
         $this->api()->clearProjectsCache();
@@ -169,20 +164,16 @@ EOF
             return 1;
         }
 
-        if ($template_options['initialize']) {
-            // Make sure nothing happens if the all important subscription info
-            // is not available for some reason.
+        if (isset($subscription->project_options['initialize']['profile']) && isset($subscription->project_options['initialize']['repository'])) {
             $project = $this->api()->getProject($subscription->project_id);
-            if (!empty($project)) {
-                $environment = $this->api()->getEnvironment('master', $project);
-                if (isset($subscription->project_options['initialize']['profile']) && isset( $subscription->project_options['initialize']['repository'])) {
-                    $environment->initialize($subscription->project_options['initialize']['profile'], $subscription->project_options['initialize']['repository']);
-                    $this->api()->clearEnvironmentsCache($environment->project);
-                    $this->stdErr->writeln("The project has been initialized and is ready!");
-                }
-                else {
-                    $this->stdErr->writeln("The project could not be initialized at this time due to missing profile and repository information.");
-                }
+            $environment = $this->api()->getEnvironment('master', $project);
+            if (isset($project) && isset($environment)) {
+                $environment->initialize($subscription->project_options['initialize']['profile'], $subscription->project_options['initialize']['repository']);
+                $this->api()->clearEnvironmentsCache($environment->project);
+                $this->stdErr->writeln("The project has been initialized and is ready!");
+            }
+            else {
+                $this->stdErr->writeln("The project could not be initialized at this time due to missing profile and repository information.");
             }
         }
         else {
@@ -258,7 +249,6 @@ EOF
     {
         // Check for setup options.
         $account = $this->api()->getMyAccount(true);
-        // print_r($account);
         $setupOptions = $this->api()->getClient()->getSetupOptions(NULL, NULL, NULL, $account['username'], NULL);
         if (isset($setupOptions) && !empty($setupOptions['regions'])) {
             $regions = $setupOptions['regions'];
@@ -296,7 +286,7 @@ EOF
             if (!empty($catalog_items)) {
                 foreach ($catalog_items as $item) {
                     if (isset($item['info']) && isset($item['template'])) {
-                        $catalog[$item['template']] = $item['info']['name'];
+                        $catalog[] = $item['template'];
                     }
                 }
             }
@@ -361,16 +351,20 @@ EOF
           ];
     }
 
-     /**
+    /**
      * Returns a list of ConsoleForm form fields for this command.
      *
      * @return Field[]
      */
-    protected function getTemplateFields($url_provided)
+    protected function getTemplateFields($url)
     {
         $fields = [];
         
-        if (!$url_provided) {
+        // If provided, check the template is valid.
+        if ($url != false) {
+            $this->api()->getClient()->getSetupOptions(NULL, NULL, $url, NULL, NULL);
+        }
+        if ($url == false) {
             $fields['template_option'] = new OptionsField('Template Options', [
                 'optionName' => 'template_option',
                 'options' => [
@@ -408,17 +402,6 @@ EOF
             'questionLine' => 'What is the URL of the template?',
             ]);  
         }
-        $fields['initialize'] = new BooleanField('Initialize', [
-        'optionName' => 'initialized',
-        'conditions' => [
-            'template_option' => [
-                'Provide your own template url.',
-                'Choose a template from the catalog.',
-            ],
-        ],
-        'description' => 'Initialize this project from a template?',
-        'questionLine' => 'Initialize this project from a template?',
-        ]);
 
         return $fields;
     }
