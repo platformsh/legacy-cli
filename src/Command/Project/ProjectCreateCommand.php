@@ -216,23 +216,31 @@ EOF
     protected function getAvailablePlans($runtime = false)
     {
         static $plans;
-        if (is_array($plans)) {
-            return $plans;
+        // Check for setup options.
+        $account = $this->api()->getMyAccount(true);
+        $setupOptions = $this->api()->getClient()->getSetupOptions(NULL, NULL, NULL, $account['username'], NULL);
+        if (isset($setupOptions) && !empty($setupOptions['plans'])) {
+            $plans = $setupOptions['plans'];
         }
-
-        if (!$runtime) {
-            return (array) $this->config()->get('service.available_plans');
-        }
-
-        $plans = [];
-        foreach ($this->api()->getClient()->getPlans() as $plan) {
-            if ($plan->hasProperty('price', false)) {
-                $plans[$plan->name] = sprintf('%s (%s)', $plan->label, $plan->price->__toString());
-            } else {
-                $plans[$plan->name] = $plan->label;
+        else {
+            if (is_array($plans)) {
+                return $plans;
             }
+    
+            if (!$runtime) {
+                return (array) $this->config()->get('service.available_plans');
+            }
+    
+            $plans = [];
+            foreach ($this->api()->getClient()->getPlans() as $plan) {
+                if ($plan->hasProperty('price', false)) {
+                    $plans[$plan->name] = sprintf('%s (%s)', $plan->label, $plan->price->__toString());
+                } else {
+                    $plans[$plan->name] = $plan->label;
+                }
+            }
+    
         }
-
         return $plans;
     }
 
@@ -248,17 +256,25 @@ EOF
      */
     protected function getAvailableRegions($runtime = false)
     {
-        if ($runtime) {
-            $regions = [];
-            foreach ($this->api()->getClient()->getRegions() as $region) {
-                if ($region->available) {
-                    $regions[$region->id] = $region->label;
-                }
-            }
-        } else {
-            $regions = (array) $this->config()->get('service.available_regions');
+        // Check for setup options.
+        $account = $this->api()->getMyAccount(true);
+        // print_r($account);
+        $setupOptions = $this->api()->getClient()->getSetupOptions(NULL, NULL, NULL, $account['username'], NULL);
+        if (isset($setupOptions) && !empty($setupOptions['regions'])) {
+            $regions = $setupOptions['regions'];
         }
-
+        else {
+            if ($runtime) {
+                $regions = [];
+                foreach ($this->api()->getClient()->getRegions() as $region) {
+                    if ($region->available) {
+                        $regions[$region->id] = $region->label;
+                    }
+                }
+            } else {
+                $regions = (array) $this->config()->get('service.available_regions');
+            }
+        }
         return $regions;
     }
 
