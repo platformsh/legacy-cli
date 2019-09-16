@@ -63,6 +63,8 @@ EOF
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
         $template = $input->getOption('template');
         
+        // This will present the user with an additional form that will allow
+        // them to choose from a catalog if they add only --template with a url.
         if ($template !== false) {
             $this->template_form = Form::fromArray($this->getTemplateFields($template));
             $template_options = $this->template_form->resolveOptions($input, $output, $questionHelper);
@@ -87,7 +89,6 @@ EOF
             return 1;
         }
 
-        // Grab the url of the yaml file.
         if (isset($template_options['template_url_from_catalog'])) {
             $options['template'] = $template_options['template_url_from_catalog'];
         }
@@ -207,9 +208,10 @@ EOF
     protected function getAvailablePlans($runtime = false)
     {
         static $plans;
-        // Check for setup options.
+        // First look to the setup/options API for a plan list.
         $account = $this->api()->getMyAccount(true);
         $setupOptions = $this->api()->getClient()->getSetupOptions(NULL, NULL, NULL, $account['username'], NULL);
+        
         if (isset($setupOptions) && !empty($setupOptions['plans'])) {
             $plans = $setupOptions['plans'];
         }
@@ -247,24 +249,27 @@ EOF
      */
     protected function getAvailableRegions($runtime = false)
     {
-        // Check for setup options.
-        $account = $this->api()->getMyAccount(true);
-        $setupOptions = $this->api()->getClient()->getSetupOptions(NULL, NULL, NULL, $account['username'], NULL);
-        if (isset($setupOptions) && !empty($setupOptions['regions'])) {
-            $regions = $setupOptions['regions'];
-        }
-        else {
-            if ($runtime) {
+        if ($runtime) {
+            // First look to the setup/options API for a region list.
+            $account = $this->api()->getMyAccount(true);
+            $setupOptions = $this->api()->getClient()->getSetupOptions(NULL, NULL, NULL, $account['username'], NULL);
+            if (isset($setupOptions) && !empty($setupOptions['regions'])) {
+                $regions = $setupOptions['regions'];
+            }
+            else {
+                // Fallback to the regions api.
                 $regions = [];
                 foreach ($this->api()->getClient()->getRegions() as $region) {
                     if ($region->available) {
                         $regions[$region->id] = $region->label;
                     }
                 }
-            } else {
-                $regions = (array) $this->config()->get('service.available_regions');
+                
             }
+        } else {
+            $regions = (array) $this->config()->get('service.available_regions');
         }
+
         return $regions;
     }
 
@@ -348,7 +353,7 @@ EOF
                   return is_numeric($value) && $value > 0 && $value < 1024;
               },
             ]),
-          ];
+        ];
     }
 
     /**
