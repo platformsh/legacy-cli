@@ -284,7 +284,6 @@ EOF
                     }
                 }
             }
-            $catalog['empty'] = 'Empty Project';
         } else {
             $catalog = (array) $this->config()->get('service.catalog');
         }
