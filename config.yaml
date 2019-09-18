@@ -85,9 +85,9 @@ service:
 # This can be overridden in the user config file.
 api:
   oauth2_client_id: 'platform-cli'
-  projects_ttl: 3600
-  environments_ttl: 600
-  users_ttl: 3600
+  projects_ttl: 600
+  environments_ttl: 120
+  users_ttl: 600
 
   # Overridden by {application.env_prefix}ACCOUNTS_API env var.
   accounts_api_url: 'https://accounts.platform.sh/api/platform/'

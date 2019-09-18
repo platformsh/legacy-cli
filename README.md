@@ -92,6 +92,10 @@ auth
   auth:info                                 Display your account information
   auth:logout (logout)                      Log out of Platform.sh
   auth:password-login                       Log in to Platform.sh using a username and password
+backup
+  backup:create (backup)                    Make a backup of an environment
+  backup:list (backups)                     List available backups of an environment
+  backup:restore                            Restore an environment backup
 certificate
   certificate:add                           Add an SSL certificate to the project
   certificate:delete                        Delete a certificate from the project
@@ -168,10 +172,6 @@ service
   service:mongo:restore (mongorestore)      Restore a binary archive dump of data into MongoDB
   service:mongo:shell (mongo)               Use the MongoDB shell
   service:redis-cli (redis)                 Access the Redis CLI
-snapshot
-  snapshot:create                           Make a snapshot of an environment
-  snapshot:list (snapshots)                 List available snapshots of an environment
-  snapshot:restore                          Restore an environment snapshot
 ssh-key
   ssh-key:add                               Add a new SSH key
   ssh-key:delete                            Delete an SSH key
