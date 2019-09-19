@@ -25,14 +25,16 @@ class ActivityMonitor
         Activity::STATE_IN_PROGRESS => 'in progress',
     ];
 
+    protected $config;
     protected $output;
 
     /**
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
-    public function __construct(OutputInterface $output)
+    public function __construct(OutputInterface $output, Config $config)
     {
         $this->output = $output;
+        $this->config = $config;
     }
 
     /**
@@ -63,7 +65,7 @@ class ActivityMonitor
      * @param string|null $success      A message to show on success.
      * @param string|null $failure      A message to show on failure.
      * @param int|float   $pollInterval The polling interval in seconds.
-     * @param bool        $timestamps   Whether to display timestamps.
+     * @param bool|string $timestamps   Whether to display timestamps (or pass in a date format).
      * @param bool        $progress     Whether to show a progress bar.
      * @param bool        $decorate     Whether to show context messages and a progress bar.
      *
@@ -94,8 +96,10 @@ class ActivityMonitor
         $bar->start();
 
         $formatItem = function (LogItem $item) use ($timestamps) {
-            if ($timestamps) {
-                return $item->getTime()->format('[Y-m-d H:i:s]') . "\t" . $item->getMessage();
+            if ($timestamps !== false) {
+                $timestampFormat = $timestamps ?: $this->config->getWithDefault('application.date_format', 'Y-m-d H:i:s');
+
+                return '[' . $item->getTime()->format($timestampFormat) . '] '. $item->getMessage();
             }
 
             return $item->getMessage();
