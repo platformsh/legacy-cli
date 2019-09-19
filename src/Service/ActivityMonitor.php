@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\ActivityLog\LogItem;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -62,11 +63,13 @@ class ActivityMonitor
      * @param string|null $success      A message to show on success.
      * @param string|null $failure      A message to show on failure.
      * @param int|float   $pollInterval The polling interval in seconds.
-     * @param bool        $decorate     Whether to show context messages and indent the log.
+     * @param bool        $timestamps   Whether to display timestamps.
+     * @param bool        $progress     Whether to show a progress bar.
+     * @param bool        $decorate     Whether to show context messages and a progress bar.
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $success = null, $failure = null, $pollInterval = 1, $decorate = true)
+    public function waitAndLog(Activity $activity, $success = null, $failure = null, $pollInterval = 1, $timestamps = false, $progress = true, $decorate = true)
     {
         $stdErr = $this->getStdErr();
 
@@ -79,49 +82,55 @@ class ActivityMonitor
         }
 
         // The progress bar will show elapsed time and the activity's state.
-        $bar = $this->newProgressBar($stdErr);
-        $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
-            return $this->formatState($activity->state);
-        });
+        if ($activity->isComplete()) {
+            $progress = false;
+        }
+        $bar = $this->newProgressBar($progress ? $stdErr : new NullOutput());
         $startTime = $this->getStart($activity) ?: time();
         $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
             return Helper::formatTime(time() - $startTime);
         });
-        $bar->setFormat('  [%bar%] %elapsed:6s% (%state%)');
+        $bar->setFormat('[%bar%] %elapsed:6s%');
         $bar->start();
 
-        // Wait for the activity to complete.
-        $activity->wait(
-            // Advance the progress bar whenever the activity is polled.
-            function () use ($bar) {
-                $bar->advance();
-            },
-            // Display new log output when it is available.
-            function ($log) use ($stdErr, $bar, $decorate) {
-                // Clear the progress bar and ensure the current line is flushed.
-                $bar->clear();
-                $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
+        $formatItem = function (LogItem $item) use ($timestamps) {
+            if ($timestamps) {
+                return $item->getTime()->format('[Y-m-d H:i:s]') . "\t" . $item->getMessage();
+            }
 
-                // Display the new log output.
-                $stdErr->write($decorate ? $this->indent($log) : $log);
+            return $item->getMessage();
+        };
 
-                // Display the progress bar again.
-                $bar->advance();
-            },
-            $pollInterval
-        );
+        $activity->readLog(function (array $items) use ($bar, $stdErr, $formatItem) {
+            // Clear the progress bar and ensure the current line is flushed.
+            $bar->clear();
+            $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
+
+            // Display the new log output.
+            $stdErr->write(implode('', array_map($formatItem, $items)));
+
+            // Display the progress bar again.
+            $bar->advance();
+        });
+
+        // Finally, wait for the activity to complete.
+        if (!$activity->isComplete()) {
+            $activity->wait(function () use ($bar) { $bar->advance(); }, null, $pollInterval);
+        }
+
+        $succeeded = $activity['result'] === Activity::RESULT_SUCCESS;
+        if (!$decorate) {
+            return $succeeded;
+        }
+
         $bar->finish();
         $stdErr->writeln('');
 
         // Display the success or failure messages.
-        switch ($activity['result']) {
-            case Activity::RESULT_SUCCESS:
-                $stdErr->writeln($success ?: "Activity <info>{$activity->id}</info> succeeded");
-                return true;
-
-            case Activity::RESULT_FAILURE:
-                $stdErr->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
-                return false;
+        if ($succeeded) {
+            $stdErr->writeln($success ?: "Activity <info>{$activity->id}</info> succeeded");
+        } else {
+            $stdErr->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
         }
 
         return false;
@@ -229,7 +238,7 @@ class ActivityMonitor
                     // If the activity failed, show the complete log.
                     $stdErr->writeln('  Description: ' . $description);
                     $stdErr->writeln('  Log:');
-                    $stdErr->writeln($this->indent($activity->log));
+                    $stdErr->writeln($this->indent(implode($activity->readLog())));
                     break;
             }
         }

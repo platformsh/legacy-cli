@@ -84,17 +84,17 @@ class ActivityLogCommand extends CommandBase
         ]);
 
         $refresh = $input->getOption('refresh');
+        /** @var ActivityMonitor $monitor */
+        $monitor = $this->getService('activity_monitor');
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete()) {
-            /** @var ActivityMonitor $monitor */
-            $monitor = $this->getService('activity_monitor');
-            $monitor->waitAndLog($activity, null, null, $refresh, false);
+            $monitor->waitAndLog($activity, null, null, $refresh, true, true, false);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
             // clear the cache.
             $this->api()->clearEnvironmentsCache($activity->project);
         } else {
-            $output->writeln(rtrim($activity->log));
+            $monitor->waitAndLog($activity, null, null, $refresh, true, false, false);
         }
 
         return 0;
