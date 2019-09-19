@@ -22,7 +22,7 @@ services:
 
     activity_monitor:
         class:     '\Platformsh\Cli\Service\ActivityMonitor'
-        arguments: ['@output']
+        arguments: ['@output', '@config', '@api']
 
     api:
         class:     '\Platformsh\Cli\Service\Api'
