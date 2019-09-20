@@ -137,7 +137,7 @@ class ActivityMonitor
             $stdErr->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
         }
 
-        return false;
+        return $succeeded;
     }
 
     /**
