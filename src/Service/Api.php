@@ -188,18 +188,9 @@ class Api
             $connectorOptions['user_agent'] = $this->getUserAgent();
             $connectorOptions['api_token'] = $this->apiToken;
             $connectorOptions['api_token_type'] = $this->apiTokenType;
-
-            // Proxy support with the http_proxy or https_proxy environment
-            // variables.
-            if (PHP_SAPI === 'cli') {
-                $proxies = [];
-                foreach (['https', 'http'] as $scheme) {
-                    $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
-                }
-                $proxies = array_filter($proxies);
-                if (count($proxies)) {
-                    $connectorOptions['proxy'] = count($proxies) == 1 ? reset($proxies) : $proxies;
-                }
+            $proxy = $this->getProxy();
+            if ($proxy !== null) {
+                $connectorOptions['proxy'] = $proxy;
             }
 
             $connector = new Connector($connectorOptions);
@@ -240,6 +231,53 @@ class Api
         }
 
         return self::$client;
+    }
+
+    /**
+     * Finds a proxy address based on the http_proxy or https_proxy environment variables.
+     *
+     * @return string|null
+     */
+    private function getProxy() {
+        // The proxy variables should be ignored in a non-CLI context.
+        if (PHP_SAPI !== 'cli') {
+            return null;
+        }
+        $proxies = [];
+        foreach (['https', 'http'] as $scheme) {
+            $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
+        }
+        $proxies = array_filter($proxies);
+        if (count($proxies)) {
+            return count($proxies) == 1 ? reset($proxies) : $proxies;
+        }
+
+        return null;
+    }
+
+    /**
+     * Constructs a stream context for using the API with stream functions.
+     *
+     * @return resource
+     */
+    public function getStreamContext() {
+        $opts = [
+            'http' => [
+                'method' => 'GET',
+                'follow_location' => 0,
+                'timeout' => 5,
+                'user_agent' => $this->getUserAgent(),
+                'header' => [
+                    'Authorization: Bearer ' . $this->getAccessToken(),
+                ],
+            ],
+        ];
+        $proxy = $this->getProxy();
+        if ($proxy !== null) {
+            $opts['http']['proxy'] = $proxy;
+        }
+
+        return stream_context_create($opts);
     }
 
     /**

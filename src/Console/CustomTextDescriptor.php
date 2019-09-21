@@ -117,7 +117,12 @@ class CustomTextDescriptor extends TextDescriptor
                 /** @var Command[] $commands */
                 $commands = [];
                 foreach ($namespace['commands'] as $name) {
-                    $commands[$name] = $description->getCommand($name);
+                    $command = $description->getCommand($name);
+
+                    // Ensure the command is only shown under its canonical name.
+                    if ($name === $command->getName()) {
+                        $commands[$name] = $command;
+                    }
                 }
 
                 // Skip the namespace if it doesn't contain any commands.
@@ -133,17 +138,9 @@ class CustomTextDescriptor extends TextDescriptor
 
                 // Display each command.
                 foreach ($commands as $name => $command) {
-                    $aliases = $command->getAliases();
-                    if ($aliases && in_array($name, $aliases)) {
-                        // If the command is an alias, do not list it in the
-                        // 'global' namespace. The aliases will be shown inline
-                        // with the full command name.
-                        continue;
-                    }
-
-                    if ($command instanceof CommandBase) {
-                        $aliases = $command->getVisibleAliases();
-                    }
+                    $aliases = $command instanceof CommandBase
+                        ? $command->getVisibleAliases()
+                        : $command->getAliases();
 
                     $this->writeText("\n");
                     $this->writeText(

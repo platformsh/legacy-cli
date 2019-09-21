@@ -51,7 +51,7 @@ class ActivityLoader
         /** @var \Platformsh\Client\Model\Environment|\Platformsh\Client\Model\Project $apiResource */
         $activities = $apiResource->getActivities($limit, $type, $startsAt);
         $progress = new ProgressBar($this->getProgressOutput());
-        $progress->setMessage($type === 'environment.backup' ? 'Loading snapshots...' : 'Loading activities...');
+        $progress->setMessage($type === 'environment.backup' ? 'Loading backups...' : 'Loading activities...');
         $progress->setFormat('%message% %current% (max: %max%)');
         $progress->start($limit);
         while (count($activities) < $limit) {

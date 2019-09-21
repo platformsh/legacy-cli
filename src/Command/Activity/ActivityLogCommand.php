@@ -5,11 +5,9 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Activity;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityLogCommand extends CommandBase
@@ -26,9 +24,10 @@ class ActivityLogCommand extends CommandBase
                 'refresh',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Log refresh interval (seconds). Set to 0 to disable refreshing.',
-                1
+                'Activity refresh interval (seconds). Set to 0 to disable refreshing.',
+                3
             )
+            ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
             ->setDescription('Display the log for an activity');
@@ -86,40 +85,25 @@ class ActivityLogCommand extends CommandBase
         ]);
 
         $refresh = $input->getOption('refresh');
+        $timestamps = $input->getOption('timestamps');
+        if ($timestamps && $input->hasOption('date-fmt') && $input->getOption('date-fmt') !== null) {
+            $timestamps = $input->getOption('date-fmt');
+        } elseif ($timestamps) {
+            $timestamps = $this->config()->getWithDefault('application.date_format', 'c');
+        }
+
+        /** @var ActivityMonitor $monitor */
+        $monitor = $this->getService('activity_monitor');
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete()) {
-            $progressOutput = $this->stdErr->isDecorated() ? $this->stdErr : new NullOutput();
-            $bar = new ProgressBar($progressOutput);
-            $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
-                return ActivityMonitor::formatState($activity->state);
-            });
-            $bar->setFormat('[%bar%] %elapsed:6s% (%state%)');
-            $bar->start();
-
-            $activity->wait(
-                function () use ($bar) {
-                    $bar->advance();
-                },
-                function ($log) use ($output, $bar, $progressOutput) {
-                    // Clear the progress bar and ensure the current line is flushed.
-                    $bar->clear();
-                    $progressOutput->write($progressOutput->isDecorated() ? "\n\033[1A" : "\n");
-
-                    // Display the new log output.
-                    $output->write($log);
-
-                    // Display the progress bar again.
-                    $bar->advance();
-                },
-                $refresh
-            );
-            $bar->clear();
+            $monitor->waitAndLog($activity, null, null, $refresh, $timestamps, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
             // clear the cache.
             $this->api()->clearEnvironmentsCache($activity->project);
         } else {
-            $output->writeln($activity->log);
+            $items = $activity->readLog();
+            $output->write($monitor->formatLog($items, $timestamps));
         }
 
         return 0;

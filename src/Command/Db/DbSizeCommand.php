@@ -361,7 +361,18 @@ class DbSizeCommand extends CommandBase
         $innoDbSize = 0;
         if ($allocatedSizeSupported) {
             $this->debug('Checking InnoDB separately for more accurate results...');
-            $innoDbSize = $host->runCommand($this->mysqlInnodbQuery($database));
+            try {
+                $innoDbSize = $host->runCommand($this->mysqlInnodbQuery($database));
+            } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
+                // Some configurations do not have PROCESS privilege(s) and thus have no access to the sys_tablespaces
+                // table. Ignore MySQL's 1227 Access Denied error, and revert to the legacy calculation.
+                if (stripos($e->getMessage(), 'access denied') !== false) {
+                    $this->debug('InnoDB checks not available: ' . $e->getMessage());
+                    $allocatedSizeSupported = false;
+                } else {
+                    throw $e;
+                }
+            }
         }
 
         $otherSizes = $host->runCommand($this->mysqlNonInnodbQuery($database, (bool) $allocatedSizeSupported));
