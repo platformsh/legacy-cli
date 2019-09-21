@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "818003ad5376bf4629f3af2dc2add5e4d853f75c",
-        "sha256": "82781450e1ac0246e2b4880a1d9ccf54a4568a8798c8f6be10922acec94e553c",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.47.0/platform.phar",
-        "version": "3.47.0",
+        "sha1": "ddabbe3dbc750b98a0d1967dd5cc672d05f2f78d",
+        "sha256": "b74bb0fa52d3681685dccc9733099d3f82640134f2c216160b86832affa6bcf2",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.48.0/platform.phar",
+        "version": "3.48.0",
         "php": {
             "min": "5.5.9"
         },
@@ -223,6 +223,11 @@
                 "notes": "* Allow service commands to work 'locally' on the container\n  \n    It's now possible to use the following commands on the Platform.sh container\n    without needing to have an API token or log in to the API:\n\n    * db:dump\n    * db:sql (sql)\n    * service:redis-cli (redis)\n    * service:mongo:dump (mongodump)\n    * service:mongo:export (mongoexport)\n    * service:mongo:restore (mongorestore)\n    * service:mongo:shell (mongo)\n  \n    N.B.: When running locally the db:dump and db:sql commands have less schema\n    information, so you may need to specify the --schema option.\n    \n    Commands that could already run on the container are:\n\n    * help, list\n    * app:config\n    * decode\n    * environment:url (url)\n    * relationship:list (relationships)\n    * route:get\n    * route:list (routes)\n\n* Alias --primary to -1 in route:get and environment:url (url) commands.\n  \n* Use primary route URL from deployments API in Drush aliases, when possible.\n  \n* Allow multiple command arguments in drush and ssh commands.",
                 "show from": "3.46.0",
                 "hide from": "3.47.0"
+            },
+            {
+                "notes": "* Rename 'snapshot' commands to 'backup', to match the API and Management Console.\n* Implement streaming activity logs.\n  - Add --timestamps (-t) option to the activity:log command.\n  - Report the real start time in the activity progress bar.\n* Significantly reduce default cache lifetimes (due to API performance improvements).",
+                "show from": "3.47.0",
+                "hide from": "3.48.0"
             }
         ]
     }
