@@ -8,7 +8,7 @@
         "guzzlehttp/guzzle": "^5.3",
         "guzzlehttp/ringphp": "^1.1",
         "platformsh/console-form": ">=0.0.22 <2.0",
-        "platformsh/client": ">=0.29.2 <2.0",
+        "platformsh/client": ">=0.30.0 <2.0",
         "symfony/console": "^3.0 >=3.2",
         "symfony/yaml": "^3.0 || ^2.6",
         "symfony/finder": "^3.0",
