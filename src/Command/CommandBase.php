@@ -289,10 +289,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Ensure classes are auto-loaded if they may be needed after the
         // update.
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $this->getService('question_helper');
+        $this->getService('shell');
         $currentVersion = $this->config()->get('application.version');
 
         /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
@@ -313,29 +311,53 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $state->set('updates.last_checked', $timestamp);
 
-        // If the update was successful, and it's not a major version change,
-        // then prompt the user to continue after updating.
         if ($newVersion !== false) {
-            $exitCode = 0;
-            list($currentMajorVersion,) = explode('.', $currentVersion, 2);
-            list($newMajorVersion,) = explode('.', $newVersion, 2);
-            if ($newMajorVersion === $currentMajorVersion
-                && isset($this->input)
-                && $this->input instanceof ArgvInput
-                && is_executable($pharFilename)) {
-                $originalCommand = $this->input->__toString();
-                $questionText = "\n"
-                    . 'Original command: <info>' . $originalCommand . '</info>'
-                    . "\n\n" . 'Continue?';
-                if ($questionHelper->confirm($questionText)) {
-                    $this->stdErr->writeln('');
-                    $exitCode = $shell->executeSimple(escapeshellarg($pharFilename) . ' ' . $originalCommand);
-                }
-            }
-            exit($exitCode);
+            $this->continueAfterUpdating($currentVersion, $newVersion, $pharFilename);
         }
 
         $this->stdErr->writeln('');
+    }
+
+    /**
+     * Prompts the user to continue with the original command after updating.
+     *
+     * This only applies if it's not a major version change.
+     *
+     * @param string $currentVersion
+     * @param string $newVersion
+     * @param string $pharFilename
+     *
+     * @return void
+     */
+    private function continueAfterUpdating($currentVersion, $newVersion, $pharFilename) {
+        if (!isset($this->input) || !$this->input instanceof ArgvInput || !is_executable($pharFilename)) {
+            return;
+        }
+        list($currentMajorVersion,) = explode('.', $currentVersion, 2);
+        list($newMajorVersion,) = explode('.', $newVersion, 2);
+        if ($newMajorVersion !== $currentMajorVersion) {
+            return;
+        }
+
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+
+        $originalCommand = $this->input->__toString();
+        if (empty($originalCommand)) {
+            $exitCode = $shell->executeSimple(escapeshellarg($pharFilename));
+            exit($exitCode);
+        }
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $questionText = "\n"
+            . 'Original command: <info>' . $originalCommand . '</info>'
+            . "\n\n" . 'Continue?';
+        if ($questionHelper->confirm($questionText)) {
+            $this->stdErr->writeln('');
+            $exitCode = $shell->executeSimple(escapeshellarg($pharFilename) . ' ' . $originalCommand);
+            exit($exitCode);
+        }
     }
 
     /**
