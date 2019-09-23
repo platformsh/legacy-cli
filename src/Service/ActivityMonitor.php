@@ -109,6 +109,7 @@ class ActivityMonitor
             // to do, then refresh the activity.
             if (feof($logStream) || microtime(true) - $lastRefresh >= $pollInterval) {
                 $activity->refresh();
+                $overrideState = '';
                 $lastRefresh = microtime(true);
             }
 
@@ -127,8 +128,10 @@ class ActivityMonitor
                 continue;
             }
 
-            // If there is log output, assume the activity is in progress.
-            $overrideState = Activity::STATE_IN_PROGRESS;
+            // If there is log output, assume the activity must be in progress.
+            if ($activity->state === Activity::STATE_PENDING) {
+                $overrideState = Activity::STATE_IN_PROGRESS;
+            }
 
             // Format log items.
             $formatted = $this->formatLog($items, $timestamps);
