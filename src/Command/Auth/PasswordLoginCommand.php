@@ -31,10 +31,8 @@ class PasswordLoginCommand extends CommandBase
             . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>"
             . $accountsUrl . '/user/password</info>'
             . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
-            . $executable . ' auth:browser-login</info>';
-        if ($aHelp = $this->getApiTokenHelp()) {
-            $help .= "\n\n" . $aHelp;
-        }
+            . $executable . ' auth:browser-login</info>'
+            . "\n\n" . $this->getApiTokenHelp();
         $this->setHelp($help);
     }
 
@@ -46,9 +44,7 @@ class PasswordLoginCommand extends CommandBase
         }
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive login is not supported.');
-            if ($aHelp = $this->getApiTokenHelp('comment')) {
-                $this->stdErr->writeln("\n" . $aHelp);
-            }
+            $this->stdErr->writeln("\n" . $this->getApiTokenHelp('comment'));
             return 1;
         }
 

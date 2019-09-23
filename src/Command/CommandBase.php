@@ -1550,16 +1550,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @param string $tag
      *
-     * @return string|null
+     * @return string
      */
     protected function getApiTokenHelp($tag = 'info')
     {
-        if ($this->config()->has('service.api_token_help_url')) {
-            return "To authenticate non-interactively using an API token, see:\n    <$tag>"
-                . $this->config()->get('service.api_token_help_url') . "</$tag>";
-        }
+        $executable = $this->config()->get('application.executable');
 
-        return null;
+        return "To log in using an API token, run: <$tag>$executable auth:api-token-login</$tag>";
     }
 
     /**

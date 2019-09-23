@@ -32,24 +32,20 @@ class BrowserLoginCommand extends CommandBase
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
         Url::configureInput($this->getDefinition());
 
-        $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.';
-        if ($aHelp = $this->getApiTokenHelp()) {
-            $help .= "\n\n" . $aHelp;
-        }
+        $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
+            . "\n\n" . $this->getApiTokenHelp();
         $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if ($this->api()->hasApiToken()) {
-            $this->stdErr->writeln('Cannot log in: an API token is set');
+            $this->stdErr->writeln('Cannot log in via the browser, because an API token is set.');
             return 1;
         }
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive login is not supported.');
-            if ($aHelp = $this->getApiTokenHelp('comment')) {
-                $this->stdErr->writeln("\n" . $aHelp);
-            }
+            $this->stdErr->writeln("\n" . $this->getApiTokenHelp('comment'));
             return 1;
         }
         $connector = $this->api()->getClient(false)->getConnector();
@@ -170,9 +166,7 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln('<options=bold>Help:</>');
         $this->stdErr->writeln('  Use Ctrl+C to quit this process.');
-        if ($aHelp = $this->getApiTokenHelp()) {
-            $this->stdErr->writeln("\n" . preg_replace('/^/m', '  ', $aHelp));
-        }
+        $this->stdErr->writeln("\n" . preg_replace('/^/m', '  ', $this->getApiTokenHelp()));
         $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.

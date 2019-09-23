@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\ApiToken\StorageInterface;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,9 +23,14 @@ class LogoutCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Ignore API tokens for this command.
-        if ($this->api()->hasApiToken()) {
-            $this->stdErr->writeln('<comment>Warning: an API token is set</comment>');
+        if ($this->api()->hasApiToken(false)) {
+            $this->stdErr->writeln('<comment>Warning: an API token is set via config</comment>');
         }
+
+        // Delete stored API token(s).
+        /** @var StorageInterface $storage */
+        $storage = $this->getService('api_token_storage');
+        $storage->deleteToken();
 
         // Log out.
         $this->api()->getClient(false)

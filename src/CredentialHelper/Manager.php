@@ -108,7 +108,7 @@ class Manager {
      *
      * @param string $serverUrl
      *
-     * @return string
+     * @return string|false
      */
     public function get($serverUrl) {
         try {
