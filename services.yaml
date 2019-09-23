@@ -26,7 +26,11 @@ services:
 
     api:
         class:     '\Platformsh\Cli\Service\Api'
-        arguments: ['@config', '@cache']
+        arguments: ['@config', '@cache', '@api_token_storage']
+
+    api_token_storage:
+      class:     '\Platformsh\Cli\Service\ApiTokenStorage'
+      arguments: ['@config']
 
     cache:
         class:     '\Doctrine\Common\Cache\CacheProvider'
