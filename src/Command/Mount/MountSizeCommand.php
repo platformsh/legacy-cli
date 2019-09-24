@@ -3,6 +3,8 @@
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Helper\Helper;
@@ -45,18 +47,26 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-
-        $container = $this->selectRemoteContainer($input);
-        $mounts = $container->getMounts();
+        $host = $this->selectHost($input, getenv($this->config()->get('service.env_prefix') . 'APPLICATION'));
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        if ($host instanceof LocalHost) {
+            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVars */
+            $envVars = $this->getService('remote_env_vars');
+            $config = (new AppConfig($envVars->getArrayEnvVar('APPLICATION', $host)));
+            $mounts = $mountService->mountsFromConfig($config);
+        } else {
+            $container = $this->selectRemoteContainer($input);
+            $mounts = $mountService->mountsFromConfig($container->getConfig());
+        }
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found (host: %s)', $host->getLabel()));
 
             return 1;
         }
 
-        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the %s <info>%s</info>...', $container->getType(), $container->getName()));
+        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts on <info>%s</info>...', $host->getLabel()));
         $this->stdErr->writeln('');
 
         // Get a list of the mount paths (and normalize them as relative paths,
@@ -88,16 +98,7 @@ EOF
         $command = 'set -e; ' . implode('; ', $commands);
 
         // Connect to the application via SSH and run the commands.
-        $sshArgs = [
-            'ssh',
-            $container->getSshUrl(),
-        ];
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $sshArgs = array_merge($sshArgs, $ssh->getSshArgs());
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        $result = $shell->execute(array_merge($sshArgs, [$command]), null, true);
+        $result = $host->runCommand($command);
 
         // Separate the commands' output.
         list($appDir, $dfOutput, $duOutput) = explode("\n\n", $result, 3);

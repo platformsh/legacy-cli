@@ -50,13 +50,4 @@ class App implements RemoteContainerInterface
     public function getConfig() {
         return AppConfig::fromWebApp($this->webApp);
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMounts() {
-        $config = $this->getConfig()->getNormalized();
-
-        return !empty($config['mounts']) ? $config['mounts'] : [];
-    }
 }

@@ -36,13 +36,4 @@ interface RemoteContainerInterface
      * @return \Platformsh\Cli\Model\AppConfig
      */
     public function getConfig();
-
-    /**
-     * Lists file mounts on the container.
-     *
-     * @return array
-     *   An associative array of mounts, taken from the configuration in the
-     *   app config file (.platform.app.yaml).
-     */
-    public function getMounts();
 }

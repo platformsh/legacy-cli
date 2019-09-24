@@ -138,6 +138,7 @@ class WelcomeCommand extends CommandBase
         $examples = [];
         if (getenv($envPrefix . 'APPLICATION')) {
             $examples[] = "To view application config, run: <info>$executable app:config</info>";
+            $examples[] = "To view mounts, run: <info>$executable mounts</info>";
         }
         if (getenv($envPrefix . 'RELATIONSHIPS')) {
             $examples[] = "To view relationships, run: <info>$executable relationships</info>";

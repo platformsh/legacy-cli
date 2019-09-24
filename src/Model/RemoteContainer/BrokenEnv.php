@@ -55,11 +55,4 @@ class BrokenEnv implements RemoteContainerInterface
     public function getConfig() {
         return new AppConfig(!empty($this->appName) ? ['name' => $this->appName] : []);
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMounts() {
-        return [];
-    }
 }
