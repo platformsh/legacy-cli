@@ -88,7 +88,12 @@ EOF
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
-        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts -x rpc_pipefs';
+
+        // The 'df' command uses '-x' to exclude a bunch of irrelevant
+        // filesystem types. Currently mounts appear to use 'ext4', but that
+        // may not always be the case.
+        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts -x rpc_pipefs -x cgroup -x fake-sysfs';
+
         $commands[] = 'echo';
         $commands[] = 'cd "$' . $appDirVar . '"';
 
@@ -174,11 +179,11 @@ EOF
     private function getDfColumn($line, $columnName)
     {
         $columnPatterns = [
-            'filesystem' => '#^(.+?)(\s+[0-9])#',
-            'total' => '#([0-9]+)\s+[0-9]+\s+[0-9]+\s+[0-9]+%\s+#',
-            'used' => '#([0-9]+)\s+[0-9]+\s+[0-9]+%\s+#',
-            'available' => '#([0-9]+)\s+[0-9]+%\s+#',
-            'path' => '#%\s+(/.+)$#',
+            'filesystem' => '/^(.+?)(\s+[0-9])/',
+            'total' => '/([0-9]+)\s+[0-9]+\s+[0-9]+\s+([0-9]+%|-)\s+/',
+            'used' => '/([0-9]+)\s+[0-9]+\s+([0-9]+%|-)\s+/',
+            'available' => '/([0-9]+)\s+([0-9]+%|-)\s+/',
+            'path' => '/\s(?:[0-9]+%|-)\s+(\/.+)$/',
         ];
         if (!isset($columnPatterns[$columnName])) {
             throw new \InvalidArgumentException("Invalid df column: $columnName");
