@@ -2,8 +2,6 @@
 
 namespace Platformsh\Cli\Exception;
 
-use GuzzleHttp\Message\RequestInterface;
-use GuzzleHttp\Message\ResponseInterface;
 use Platformsh\Cli\Service\Config;
 
 class LoginRequiredException extends HttpException
@@ -14,9 +12,8 @@ class LoginRequiredException extends HttpException
 
     public function __construct(
         $message = null,
-        RequestInterface $request = null,
-        ResponseInterface $response = null,
-        Config $config = null)
+        Config $config = null,
+        $previous = null)
     {
         $message = $message ?: $this->message;
         $this->config = $config ?: new Config();
@@ -26,7 +23,7 @@ class LoginRequiredException extends HttpException
             $message .= "\n\n" . $aHelp;
         }
 
-        parent::__construct($message, $request, $response);
+        parent::__construct($message, $previous);
     }
 
     /**

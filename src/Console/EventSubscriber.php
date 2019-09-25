@@ -52,7 +52,7 @@ class EventSubscriber implements EventSubscriberInterface
             $event->setException(new ConnectionFailedException(
                 "Failed to connect to host: " . $request->getHost()
                 . " \nPlease check your Internet connection.",
-                $request
+                $exception
             ));
             $event->stopPropagation();
         }
@@ -62,8 +62,7 @@ class EventSubscriber implements EventSubscriberInterface
             && ($response = $exception->getResponse())) {
             $request = $exception->getRequest();
             $requestConfig = $request->getConfig();
-            $response->getBody()->seek(0);
-            $json = (array) json_decode($response->getBody()->getContents(), true);
+            $json = (array) json_decode($response->getBody()->__toString(), true);
 
             // Create a friendlier message for the OAuth2 "Invalid refresh token"
             // error.
@@ -72,28 +71,25 @@ class EventSubscriber implements EventSubscriberInterface
                 && $json['error_description'] === 'Invalid refresh token') {
                 $event->setException(new LoginRequiredException(
                     'Invalid refresh token.',
-                    $request,
-                    $response,
-                    $this->config
+                    $this->config,
+                    $exception
                 ));
                 $event->stopPropagation();
             } elseif ($response->getStatusCode() === 401 && $requestConfig['auth'] === 'oauth2') {
                 $event->setException(new LoginRequiredException(
                     'Unauthorized.',
-                    $request,
-                    $response,
-                    $this->config
+                    $this->config,
+                    $exception
                 ));
                 $event->stopPropagation();
             } elseif ($response->getStatusCode() === 403 && $requestConfig['auth'] === 'oauth2') {
                 $event->setException(new PermissionDeniedException(
                     "Permission denied. Check your project or environment permissions.",
-                    $request,
-                    $response
+                    $exception
                 ));
                 $event->stopPropagation();
             } else {
-                $event->setException(new HttpException(null, $request, $response));
+                $event->setException(new HttpException(null, $exception));
                 $event->stopPropagation();
             }
         }

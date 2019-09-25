@@ -87,8 +87,9 @@ class ActivityMonitor
 
         // The progress bar will show elapsed time and the activity's state.
         $bar = $this->newProgressBar($stdErr);
-        $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
-            return $this->formatState($activity->state);
+        $overrideState = '';
+        $bar->setPlaceholderFormatterDefinition('state', function () use ($activity, &$overrideState) {
+            return $this->formatState($overrideState ?: $activity->state);
         });
         $startTime = $this->getStart($activity) ?: time();
         $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
@@ -108,6 +109,7 @@ class ActivityMonitor
             // to do, then refresh the activity.
             if (feof($logStream) || microtime(true) - $lastRefresh >= $pollInterval) {
                 $activity->refresh();
+                $overrideState = '';
                 $lastRefresh = microtime(true);
             }
 
@@ -124,6 +126,11 @@ class ActivityMonitor
             $items = $this->parseLog($logStream, $buffer);
             if (empty($items)) {
                 continue;
+            }
+
+            // If there is log output, assume the activity must be in progress.
+            if ($activity->state === Activity::STATE_PENDING) {
+                $overrideState = Activity::STATE_IN_PROGRESS;
             }
 
             // Format log items.

@@ -70,10 +70,7 @@ class ActivityGetCommand extends CommandBase
         if (!$input->getOption('property') && !$table->formatIsMachineReadable()) {
             $properties['description'] = ActivityMonitor::getFormattedDescription($activity, true);
         } else {
-            $properties['description'] = ActivityMonitor::getFormattedDescription($activity, false);
-            if ($input->getOption('property')) {
-                $properties['description_html'] = $activity->description;
-            }
+            $properties['description'] = $activity->description;
         }
 
         // Add the fake "duration" property.
