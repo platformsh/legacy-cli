@@ -104,10 +104,9 @@ class EnvironmentPushCommand extends CommandBase
             $target
         ));
 
-        $activate = false;
-        $parentId = null;
         if ($target !== 'master') {
             // Determine whether to activate the environment.
+            $activate = false;
             if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
                 $activate = $input->getOption('branch')
                     || $input->getOption('activate');
