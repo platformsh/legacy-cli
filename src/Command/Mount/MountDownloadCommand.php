@@ -49,7 +49,7 @@ class MountDownloadCommand extends CommandBase
         $mounts = $mountService->mountsFromConfig($container->getConfig());
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found (host: %s)', $container->getSshUrl()));
 
             return 1;
         }

@@ -39,14 +39,6 @@ class App implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getType()
-    {
-        return 'app';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getConfig() {
         return AppConfig::fromWebApp($this->webApp);
     }

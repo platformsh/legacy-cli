@@ -22,15 +22,6 @@ interface RemoteContainerInterface
     public function getName();
 
     /**
-     * Returns the type of remote container (a human-readable string).
-     *
-     * Example: 'app' or 'worker'.
-     *
-     * @return string
-     */
-    public function getType();
-
-    /**
      * Gets the container config.
      *
      * @return \Platformsh\Cli\Model\AppConfig
