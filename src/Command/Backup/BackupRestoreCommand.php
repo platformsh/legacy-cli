@@ -116,14 +116,9 @@ class BackupRestoreCommand extends CommandBase
 
         $activity = $selectedActivity->restore($target, $branchFrom);
         if ($this->shouldWait($input)) {
-            $this->stdErr->writeln('Waiting for the restore to complete...');
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog(
-                $activity,
-                'The backup was successfully restored',
-                'Restoring failed'
-            );
+            $success = $activityMonitor->waitAndLog($activity);
             if (!$success) {
                 return 1;
             }

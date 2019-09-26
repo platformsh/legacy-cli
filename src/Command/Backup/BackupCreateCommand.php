@@ -54,8 +54,6 @@ class BackupCreateCommand extends CommandBase
         $this->stdErr->writeln("Creating a backup of <info>$environmentId</info>");
 
         if ($this->shouldWait($input)) {
-            $this->stdErr->writeln('Waiting for the backup to complete...');
-
             // Strongly recommend using --no-wait in a cron job.
             if (!$this->isTerminal(STDIN)) {
                 $this->stdErr->writeln(
@@ -65,11 +63,7 @@ class BackupCreateCommand extends CommandBase
 
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog(
-                $activity,
-                'A backup of environment <info>' . $environmentId . '</info> has been created',
-                'The backup failed'
-            );
+            $success = $activityMonitor->waitAndLog($activity);
             if (!$success) {
                 return 1;
             }

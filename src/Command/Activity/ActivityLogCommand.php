@@ -95,7 +95,7 @@ class ActivityLogCommand extends CommandBase
         /** @var ActivityMonitor $monitor */
         $monitor = $this->getService('activity_monitor');
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete()) {
-            $monitor->waitAndLog($activity, null, null, $refresh, $timestamps, $output);
+            $monitor->waitAndLog($activity, null, null, $refresh, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to

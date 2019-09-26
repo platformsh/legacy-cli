@@ -70,20 +70,24 @@ class ActivityMonitor
      * @param string|null $failure A message to show on failure.
      * @param int $pollInterval The interval between refreshing the activity (seconds).
      * @param bool|string $timestamps Whether to display timestamps (or pass in a date format).
+     * @param bool $context Whether to add a context message.
      * @param OutputInterface|null $logOutput The output object for log messages (defaults to stderr).
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $success = null, $failure = null, $pollInterval = 3, $timestamps = false, OutputInterface $logOutput = null)
+    public function waitAndLog(Activity $activity, $success = null, $failure = null, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null)
     {
         $stdErr = $this->getStdErr();
         $logOutput = $logOutput ?: $stdErr;
 
-        $stdErr->writeln(sprintf(
-            'Waiting for the activity <info>%s</info> (%s):',
-            $activity->id,
-            self::getFormattedDescription($activity)
-        ));
+        if ($context) {
+            $stdErr->writeln(sprintf(
+                'Waiting for the activity <info>%s</info> (%s):',
+                $activity->id,
+                self::getFormattedDescription($activity)
+            ));
+            $stdErr->writeln('');
+        }
 
         // The progress bar will show elapsed time and the activity's state.
         $bar = $this->newProgressBar($stdErr);
@@ -358,7 +362,7 @@ class ActivityMonitor
      */
     public static function formatResult($result, $decorate = true)
     {
-        $name = isset(self::$stateNames[$result]) ? self::$stateNames[$result] : $result;
+        $name = isset(self::$resultNames[$result]) ? self::$resultNames[$result] : $result;
 
         return $decorate && $result === Activity::RESULT_FAILURE
             ? '<error>' . $name . '</error>'
