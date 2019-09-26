@@ -359,7 +359,7 @@ class ActivityMonitor
      */
     public static function formatResult($result, $decorate = true)
     {
-        $name = isset(self::$stateNames[$result]) ? self::$stateNames[$result] : $result;
+        $name = isset(self::$resultNames[$result]) ? self::$resultNames[$result] : $result;
 
         return $decorate && $result === Activity::RESULT_FAILURE
             ? '<error>' . $name . '</error>'
