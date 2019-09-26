@@ -97,13 +97,8 @@ class EnvironmentPushCommand extends CommandBase
         // Determine whether the target environment is new.
         $project = $this->getSelectedProject();
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
-        $this->stdErr->writeln(sprintf(
-            'Pushing <info>%s</info> to the %s environment <info>%s</info>',
-            $source,
-            $targetEnvironment ? 'existing' : 'new',
-            $target
-        ));
 
+        $activities = [];
         if ($target !== 'master') {
             // Determine whether to activate the environment.
             $activate = false;
@@ -125,8 +120,8 @@ class EnvironmentPushCommand extends CommandBase
                 // Activate the target environment. The deployment activity
                 // will queue up behind whatever other activities are created
                 // here.
-                $success = $this->activateTarget($target, $parentId, $project);
-                if (!$success) {
+                $activities = $this->activateTarget($target, $parentId, $project);
+                if ($activities === false) {
                     return 1;
                 }
             }
@@ -161,9 +156,25 @@ class EnvironmentPushCommand extends CommandBase
         $git->setSshCommand($ssh->getSshCommand($extraSshOptions));
 
         // Push.
+        $this->stdErr->writeln(sprintf(
+            'Pushing <info>%s</info> to the %s environment <info>%s</info>',
+            $source,
+            $targetEnvironment ? 'existing' : 'new',
+            $target
+        ));
         $success = $git->execute($gitArgs, null, false, false, $env);
         if (!$success) {
             return 1;
+        }
+
+        // Wait if there are still activities.
+        if ($this->shouldWait($input) && !empty($activities)) {
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $monitor */
+            $monitor = $this->getService('activity_monitor');
+            $success = $monitor->waitMultiple($activities, $project);
+            if (!$success) {
+                return 1;
+            }
         }
 
         // Clear some caches after pushing.
@@ -189,7 +200,7 @@ class EnvironmentPushCommand extends CommandBase
      * @param string $parentId
      * @param Project $project
      *
-     * @return bool True on success, false on failure.
+     * @return false|array A list of activities, or false on failure.
      */
     private function activateTarget($target, $parentId, Project $project) {
         $parentEnvironment = $this->api()->getEnvironment($parentId, $project);
@@ -199,17 +210,21 @@ class EnvironmentPushCommand extends CommandBase
 
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
         if ($targetEnvironment) {
+            $activities = [];
             if ($targetEnvironment->parent !== $parentId) {
-                $targetEnvironment->update(['parent' => $parentId]);
+                $activities = array_merge(
+                    $activities,
+                    $targetEnvironment->update(['parent' => $parentId])->getActivities()
+                );
             }
-            $targetEnvironment->activate();
+            $activities[] = $targetEnvironment->activate();
             $this->stdErr->writeln(sprintf(
                 'Activated environment <info>%s</info>',
                 $this->api()->getEnvironmentLabel($targetEnvironment)
             ));
             $this->api()->clearEnvironmentsCache($project->id);
 
-            return true;
+            return $activities;
         }
 
         // For new environments, use branch() to create them as active in the first place.
@@ -238,7 +253,7 @@ class EnvironmentPushCommand extends CommandBase
 
         $this->api()->clearEnvironmentsCache($project->id);
 
-        return true;
+        return [$activity];
     }
 
     /**
