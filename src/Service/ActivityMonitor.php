@@ -84,6 +84,7 @@ class ActivityMonitor
             $activity->id,
             self::getFormattedDescription($activity)
         ));
+        $stdErr->writeln('');
 
         // The progress bar will show elapsed time and the activity's state.
         $bar = $this->newProgressBar($stdErr);
