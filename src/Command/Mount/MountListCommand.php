@@ -3,6 +3,8 @@
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -33,20 +35,24 @@ class MountListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-
-        $container = $this->selectRemoteContainer($input);
-        $mounts = $container->getMounts();
+        $host = $this->selectHost($input, getenv($this->config()->get('service.env_prefix') . 'APPLICATION'));
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        if ($host instanceof LocalHost) {
+            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVars */
+            $envVars = $this->getService('remote_env_vars');
+            $config = (new AppConfig($envVars->getArrayEnvVar('APPLICATION', $host)));
+            $mounts = $mountService->mountsFromConfig($config);
+        } else {
+            $container = $this->selectRemoteContainer($input);
+            $mounts = $mountService->mountsFromConfig($container->getConfig());
+        }
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found (host: %s)', $host->getLabel()));
 
             return 1;
         }
-
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
-        $mounts = $mountService->normalizeMounts($mounts);
 
         if ($input->getOption('paths')) {
             $output->writeln(array_keys($mounts));
@@ -64,12 +70,7 @@ class MountListCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $this->stdErr->writeln(sprintf(
-            'Mounts in the %s <info>%s</info> (environment <info>%s</info>):',
-            $container->getType(),
-            $container->getName(),
-            $this->getSelectedEnvironment()->id
-        ));
+        $this->stdErr->writeln(sprintf('Mounts on <info>%s</info>:', $host->getLabel()));
         $table->render($rows, $header);
 
         return 0;
