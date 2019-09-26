@@ -21,6 +21,7 @@ class ActivityGetCommand extends CommandBase
         $this
             ->setName('activity:get')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
+            ->addOption('earliest-incomplete', 'E', InputOption::VALUE_NONE, 'Attempt to find the earliest incomplete activity (if an ID is not provided)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
@@ -50,13 +51,28 @@ class ActivityGetCommand extends CommandBase
                 }
             }
         } else {
-            $activities = $this->getActivities($input, 1);
-            /** @var Activity $activity */
-            $activity = reset($activities);
-            if (!$activity) {
+            $activities = $this->getActivities($input);
+
+            if (empty($activities)) {
                 $this->stdErr->writeln('No activities found');
 
                 return 1;
+            }
+            if ($input->getOption('earliest-incomplete')) {
+                $incomplete = array_filter($activities, function (Activity $activity) {
+                    return !$activity->isComplete();
+                });
+                if (empty($incomplete)) {
+                    $this->stdErr->writeln('No incomplete activities found');
+
+                    return 1;
+                }
+                usort($incomplete, function (Activity $a, Activity $b) {
+                    return strtotime($b->created_at) - strtotime($a->created_at);
+                });
+                $activity = reset($incomplete);
+            } else {
+                $activity = reset($activities);
             }
         }
 

@@ -19,7 +19,8 @@ class ActivityLogCommand extends CommandBase
     {
         $this
             ->setName('activity:log')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
+            ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity')
+            ->addOption('earliest-incomplete', 'E', InputOption::VALUE_NONE, 'Attempt to find the earliest incomplete activity (if an ID is not provided)')
             ->addOption(
                 'refresh',
                 null,
@@ -59,17 +60,31 @@ class ActivityLogCommand extends CommandBase
         } else {
             if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
                 $activities = $this->getSelectedEnvironment()
-                    ->getActivities(1, $input->getOption('type'));
+                    ->getActivities(0, $input->getOption('type'));
             } else {
                 $activities = $this->getSelectedProject()
-                    ->getActivities(1, $input->getOption('type'));
+                    ->getActivities(0, $input->getOption('type'));
             }
-            /** @var Activity $activity */
-            $activity = reset($activities);
-            if (!$activity) {
+            if (empty($activities)) {
                 $this->stdErr->writeln('No activities found');
 
                 return 1;
+            }
+            if ($input->getOption('earliest-incomplete')) {
+                $incomplete = array_filter($activities, function (Activity $activity) {
+                    return !$activity->isComplete();
+                });
+                if (empty($incomplete)) {
+                    $this->stdErr->writeln('No incomplete activities found');
+
+                    return 1;
+                }
+                usort($incomplete, function (Activity $a, Activity $b) {
+                    return strtotime($b->created_at) - strtotime($a->created_at);
+                });
+                $activity = reset($incomplete);
+            } else {
+                $activity = reset($activities);
             }
         }
 
