@@ -265,7 +265,7 @@ class Api
             'http' => [
                 'method' => 'GET',
                 'follow_location' => 0,
-                'timeout' => 5,
+                'timeout' => 15,
                 'user_agent' => $this->getUserAgent(),
                 'header' => [
                     'Authorization: Bearer ' . $this->getAccessToken(),
