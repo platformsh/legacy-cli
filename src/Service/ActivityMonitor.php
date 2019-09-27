@@ -293,7 +293,7 @@ class ActivityMonitor
             // which are not contained in this list must be refreshed
             // individually.
             $projectActivities = $project->getActivities(0, null, $mostRecentTimestamp ?: null);
-            foreach ($activities as $activity) {
+            foreach ($activities as $key => &$activity) {
                 $refreshed = false;
                 foreach ($projectActivities as $projectActivity) {
                     if ($projectActivity->id === $activity->id) {
