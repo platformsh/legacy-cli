@@ -107,8 +107,8 @@ class EnvironmentPushCommand extends CommandBase
                     || $input->getOption('activate');
                 if (!$activate && $input->isInteractive()) {
                     $questionText = $targetEnvironment
-                        ? sprintf('Create <info>%s</info> as an active branch?', $target)
-                        : sprintf('Do you want to activate the target branch <info>%s</info>?', $target);
+                        ? sprintf('Do you want to activate the target environment %s?', $this->api()->getEnvironmentLabel($targetEnvironment))
+                        : sprintf('Create <info>%s</info> as an active environment?', $target);
                     $activate = $questionHelper->confirm($questionText);
                 }
             }
