@@ -40,4 +40,21 @@ class DecodeTest extends \PHPUnit_Framework_TestCase
             ]), "\n")
         );
     }
+
+    public function testDecodeEmptyObject() {
+        $this->assertEquals(
+            '{}',
+            rtrim($this->runCommand([
+                'value' => base64_encode(json_encode(new \stdClass()))
+            ]), "\n")
+        );
+
+        $this->assertEquals(
+            'Property not found: nonexistent',
+            rtrim($this->runCommand([
+                'value' => base64_encode(json_encode(new \stdClass())),
+                '--property' => 'nonexistent'
+            ]), "\n")
+        );
+    }
 }

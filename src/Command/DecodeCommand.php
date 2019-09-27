@@ -54,10 +54,6 @@ class DecodeCommand extends CommandBase
             return 1;
         }
 
-        if ($decoded === [] && $b64decoded === '{}') {
-            $decoded = new \stdClass();
-        }
-
         if ($property = $input->getOption('property')) {
             if (is_scalar($decoded)) {
                 $this->stdErr->writeln('The --property option cannot be used with a scalar value.');
@@ -79,6 +75,10 @@ class DecodeCommand extends CommandBase
                 }
             }
         } else {
+            if ($decoded === [] && $b64decoded === '{}') {
+                $decoded = new \stdClass();
+            }
+
             $value = $decoded;
         }
 
