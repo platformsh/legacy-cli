@@ -1,8 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
-use GuzzleHttp\Query;
-use GuzzleHttp\Url;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
@@ -44,7 +42,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         foreach ($relationships as $name => $relationship) {
             foreach ($relationship as $index => $instance) {
                 if (!isset($instance['url'])) {
-                    $relationships[$name][$index]['url'] = $this->buildUrl($instance);
+                    $relationships[$name][$index]['url'] = $relationshipsService->buildUrl($instance);
                 }
             }
         }
@@ -54,27 +52,5 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $formatter->displayData($output, $relationships, $input->getOption('property'));
 
         return 0;
-    }
-
-    /**
-     * Builds a URL from the parts included in a relationship array.
-     *
-     * @param array $instance
-     *
-     * @return string
-     */
-    private function buildUrl(array $instance)
-    {
-        $parts = $instance;
-        // Convert to parse_url parts.
-        $parts['user'] = $parts['username'];
-        $parts['pass'] = $parts['password'];
-        unset($parts['username'], $parts['password']);
-        // The 'query' is expected to be a string.
-        if (is_array($parts['query'])) {
-            $parts['query'] = (new Query($parts['query']))->__toString();
-        }
-
-        return Url::buildUrl($parts);
     }
 }

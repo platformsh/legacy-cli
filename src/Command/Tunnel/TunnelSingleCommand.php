@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
-use GuzzleHttp\Url;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
@@ -170,7 +169,7 @@ class TunnelSingleCommand extends TunnelCommandBase
         $this->stdErr->writeln('');
 
         if (isset($localService['scheme']) && in_array($localService['scheme'], ['http', 'https'], true)) {
-            $this->stdErr->writeln(sprintf('URL: <info>%s</info>', $this->getServiceUrl($localService)));
+            $this->stdErr->writeln(sprintf('URL: <info>%s</info>', $relationshipsService->buildUrl($localService)));
             $this->stdErr->writeln('');
         }
 
@@ -181,24 +180,5 @@ class TunnelSingleCommand extends TunnelCommandBase
         $processManager->monitor($this->stdErr);
 
         return $process->isSuccessful() ? 0 : 1;
-    }
-
-    /**
-     * Build a URL to a service.
-     *
-     * @param array $service
-     *
-     * @return string
-     */
-    private function getServiceUrl(array $service)
-    {
-        $map = ['username' => 'user', 'password' => 'pass'];
-        $urlParts = [];
-        foreach ($service as $key => $value) {
-            $newKey = isset($map[$key]) ? $map[$key] : $key;
-            $urlParts[$newKey] = $value;
-        }
-
-        return Url::buildUrl($urlParts);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Service;
 
+use GuzzleHttp\Query;
+use GuzzleHttp\Url;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Util\OsUtil;
@@ -269,5 +271,27 @@ class Relationships implements InputConfiguringInterface
     public function hasLocalEnvVar()
     {
         return $this->envVarService->getEnvVar('RELATIONSHIPS', new LocalHost()) !== '';
+    }
+
+    /**
+     * Builds a URL from the parts included in a relationship array.
+     *
+     * @param array $instance
+     *
+     * @return string
+     */
+    public function buildUrl(array $instance)
+    {
+        $parts = $instance;
+        // Convert to parse_url parts.
+        $parts['user'] = $parts['username'];
+        $parts['pass'] = $parts['password'];
+        unset($parts['username'], $parts['password']);
+        // The 'query' is expected to be a string.
+        if (is_array($parts['query'])) {
+            $parts['query'] = (new Query($parts['query']))->__toString();
+        }
+
+        return Url::buildUrl($parts);
     }
 }
