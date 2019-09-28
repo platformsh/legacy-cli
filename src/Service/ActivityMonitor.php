@@ -330,7 +330,7 @@ class ActivityMonitor
                     // If the activity failed, show the complete log.
                     $stdErr->writeln('  Description: ' . $description);
                     $stdErr->writeln('  Log:');
-                    $stdErr->writeln($this->indent($activity->log));
+                    $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
                     break;
             }
         }
