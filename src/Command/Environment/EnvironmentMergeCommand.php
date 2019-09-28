@@ -72,11 +72,7 @@ class EnvironmentMergeCommand extends CommandBase
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog(
-                $activity,
-                'Merge complete',
-                'Merge failed'
-            );
+            $success = $activityMonitor->waitAndLog($activity);
             if (!$success) {
                 return 1;
             }
