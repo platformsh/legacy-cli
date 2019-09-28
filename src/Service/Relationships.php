@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Service;
 
 use GuzzleHttp\Query;
-use GuzzleHttp\Url;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Util\OsUtil;
@@ -292,6 +291,6 @@ class Relationships implements InputConfiguringInterface
             $parts['query'] = (new Query($parts['query']))->__toString();
         }
 
-        return Url::buildUrl($parts);
+        return \GuzzleHttp\Url::buildUrl($parts);
     }
 }
