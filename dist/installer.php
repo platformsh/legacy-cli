@@ -448,11 +448,9 @@ class Installer {
      * @return string
      */
     private function getOption($name) {
-        $value = '';
         foreach ($this->argv as $key => $arg) {
             if (strpos($arg, '--' . $name . '=') === 0) {
-                $value = substr($arg, strlen('--' . $name . '='));
-                break;
+                return substr($arg, strlen('--' . $name . '='));
             }
             $next = isset($this->argv[$key + 1]) && substr($this->argv[$key + 1], 0, 1) !== '-'
                 ? $this->argv[$key + 1]
@@ -461,12 +459,11 @@ class Installer {
                 if ($next === '') {
                     throw new \InvalidArgumentException('Option --' . $name . ' requires a value');
                 }
-                $value = $next;
-                break;
+                return $next;
             }
         }
 
-        return $value;
+        return '';
     }
 
     /**
