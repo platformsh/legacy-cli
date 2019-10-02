@@ -45,7 +45,7 @@ class MountUploadCommand extends CommandBase
         $mounts = $mountService->mountsFromConfig($container->getConfig());
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('No mounts found (host: %s)', $container->getSshUrl()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $container->getSshUrl()));
 
             return 1;
         }

@@ -49,7 +49,7 @@ class MountListCommand extends CommandBase
         }
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('No mounts found (host: %s)', $host->getLabel()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $host->getLabel()));
 
             return 1;
         }
