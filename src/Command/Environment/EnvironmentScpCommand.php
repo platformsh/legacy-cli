@@ -61,7 +61,7 @@ class EnvironmentScpCommand extends CommandBase
 
         $remoteUsed = false;
         foreach ($files as $key => $file) {
-            if (strncasecmp($file, 'remote:', '7') === 0) {
+            if (strpos($file, 'remote:') === 0) {
                 $command .= ' ' . $sshUrl . ':' . escapeshellarg(substr($file, 7));
                 $remoteUsed = true;
             } else {
