@@ -55,7 +55,9 @@ class EnvironmentScpCommand extends CommandBase
             $command .= ' -r';
         }
 
-        if ($input->getOption('quiet')) {
+        if ($output->isVerbose()) {
+            $command .= ' -v';
+        } elseif ($output->isQuiet()) {
             $command .= ' -q';
         }
 
