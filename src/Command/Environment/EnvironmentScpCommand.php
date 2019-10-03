@@ -72,7 +72,7 @@ class EnvironmentScpCommand extends CommandBase
         }
 
         if (!$remoteUsed) {
-            throw new InvalidArgumentException('At lest one argument needs to contain the "remote:" prefix');
+            throw new InvalidArgumentException('At least one argument needs to contain the "remote:" prefix');
         }
 
         /** @var \Platformsh\Cli\Service\Shell $shell */
