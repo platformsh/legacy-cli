@@ -43,7 +43,7 @@ class EnvironmentPushCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->warnAboutDeprecatedOptions(['branch']);
+        $this->warnAboutDeprecatedOptions(['branch'], 'The option %s is deprecated and will be removed in future. Use --activate, which has the same effect.');
 
         $this->validateInput($input, true);
         $projectRoot = $this->getProjectRoot();
