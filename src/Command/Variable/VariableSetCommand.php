@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VariableSetCommand extends CommandBase
 {
     protected $hiddenInList = true;
+    protected $stability = 'deprecated';
 
     /**
      * {@inheritdoc}
@@ -31,9 +32,10 @@ class VariableSetCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
-        $this->addExample('Set the variable "example" to the string "123"', 'example 123');
-        $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
-        $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
+        $this->setHelp(
+            'This command is deprecated and will be removed in a future version.'
+            . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

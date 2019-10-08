@@ -44,16 +44,15 @@ class MountDownloadCommand extends CommandBase
 
         /** @var App $container */
         $container = $this->selectRemoteContainer($input);
-        $mounts = $container->getMounts();
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        $mounts = $mountService->mountsFromConfig($container->getConfig());
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $container->getSshUrl()));
 
             return 1;
         }
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
-        $mounts = $mountService->normalizeMounts($mounts);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -208,7 +207,8 @@ class MountDownloadCommand extends CommandBase
             return $appPath . '/' . $mountPath;
         }
 
-        $sharedMounts = $mountService->getSharedFileMounts($app->getMounts());
+        $mounts = $mountService->mountsFromConfig($app->getConfig());
+        $sharedMounts = $mountService->getSharedFileMounts($mounts);
         if (isset($sharedMounts[$mountPath])) {
             $sharedDir = $this->getSharedDir($app);
             if ($sharedDir !== null && file_exists($sharedDir . '/' . $sharedMounts[$mountPath])) {

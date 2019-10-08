@@ -40,16 +40,15 @@ class MountUploadCommand extends CommandBase
         $this->validateInput($input);
 
         $container = $this->selectRemoteContainer($input);
-        $mounts = $container->getMounts();
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        $mounts = $mountService->mountsFromConfig($container->getConfig());
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $container->getSshUrl()));
 
             return 1;
         }
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
-        $mounts = $mountService->normalizeMounts($mounts);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');

@@ -66,8 +66,6 @@ class ActivityMonitor
      * Wait for a single activity to complete, and display the log continuously.
      *
      * @param Activity $activity The activity.
-     * @param string|null $success A message to show on success.
-     * @param string|null $failure A message to show on failure.
      * @param int $pollInterval The interval between refreshing the activity (seconds).
      * @param bool|string $timestamps Whether to display timestamps (or pass in a date format).
      * @param bool $context Whether to add a context message.
@@ -75,7 +73,7 @@ class ActivityMonitor
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $success = null, $failure = null, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null)
+    public function waitAndLog(Activity $activity, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null)
     {
         $stdErr = $this->getStdErr();
         $logOutput = $logOutput ?: $stdErr;
@@ -156,11 +154,11 @@ class ActivityMonitor
         // Display the success or failure messages.
         switch ($activity['result']) {
             case Activity::RESULT_SUCCESS:
-                $stdErr->writeln($success ?: "Activity <info>{$activity->id}</info> succeeded");
+                $stdErr->writeln("Activity <info>{$activity->id}</info> succeeded");
                 return true;
 
             case Activity::RESULT_FAILURE:
-                $stdErr->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
+                $stdErr->writeln("Activity <error>{$activity->id}</error> failed");
                 return false;
         }
 
@@ -293,7 +291,7 @@ class ActivityMonitor
             // which are not contained in this list must be refreshed
             // individually.
             $projectActivities = $project->getActivities(0, null, $mostRecentTimestamp ?: null);
-            foreach ($activities as $activity) {
+            foreach ($activities as &$activity) {
                 $refreshed = false;
                 foreach ($projectActivities as $projectActivity) {
                     if ($projectActivity->id === $activity->id) {
@@ -332,7 +330,7 @@ class ActivityMonitor
                     // If the activity failed, show the complete log.
                     $stdErr->writeln('  Description: ' . $description);
                     $stdErr->writeln('  Log:');
-                    $stdErr->writeln($this->indent($activity->log));
+                    $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
                     break;
             }
         }

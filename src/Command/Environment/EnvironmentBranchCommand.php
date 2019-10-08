@@ -169,11 +169,7 @@ class EnvironmentBranchCommand extends CommandBase
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $remoteSuccess = $activityMonitor->waitAndLog(
-                $activity,
-                "The environment <info>$branchName</info> has been created.",
-                '<error>Branching failed</error>'
-            );
+            $remoteSuccess = $activityMonitor->waitAndLog($activity);
 
             // If a new local branch has been created, set it to track the
             // remote branch. This requires first fetching the new branch from

@@ -86,7 +86,7 @@ class CommitListCommand extends CommandBase
                 $formatter->format($commit->author['date'], 'author.date'),
                 ['wrap' => false]
             );
-            $row[] = new AdaptiveTableCell($commit->sha, ['wrap' => false]);
+            $row[] = $commit->sha;
             $row[] = $commit->author['name'];
             $row[] = $this->summarize($commit->message);
             $rows[] = $row;

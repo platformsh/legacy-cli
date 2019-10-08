@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Command\Commit;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\PropertyFormatter;
-use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -28,8 +27,12 @@ class CommitGetCommand extends CommandBase
         $this->addEnvironmentOption();
 
         $definition = $this->getDefinition();
-        Table::configureInput($definition);
         PropertyFormatter::configureInput($definition);
+
+        // Deprecated options, left for backwards compatibility
+        $this->addOption('format', null, InputOption::VALUE_REQUIRED, 'DEPRECATED');
+        $this->addOption('columns', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'DEPRECATED');
+        $this->addOption('no-header', null, InputOption::VALUE_NONE, 'DEPRECATED');
 
         $this->addExample('Display the current commit on the environment');
         $this->addExample('Display the previous commit', 'HEAD~');
@@ -42,6 +45,7 @@ class CommitGetCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
         $this->validateInput($input, false, true);
 
         $commitSha = $input->getArgument('commit');

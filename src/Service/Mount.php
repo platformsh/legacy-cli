@@ -6,6 +6,8 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Model\AppConfig;
+
 class Mount
 {
     /**
@@ -29,6 +31,24 @@ class Mount
         }
 
         return $sharedFileMounts;
+    }
+
+    /**
+     * Find mounts in an application's config.
+     *
+     * @param AppConfig $appConfig
+     *
+     * @return array
+     *   A normalized list of mounts.
+     */
+    public function mountsFromConfig(AppConfig $appConfig)
+    {
+        $config = $appConfig->getNormalized();
+        if (empty($config['mounts'])) {
+            return [];
+        }
+
+        return $this->normalizeMounts($config['mounts']);
     }
 
     /**
