@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "b816300d7eaa39f67298f82f99baf744b734b3f8",
-        "sha256": "6783950876d0396153e50c26cea246f8abb0dc587c64d570f8beb7a5a94ed47a",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.48.2/platform.phar",
-        "version": "3.48.2",
+        "sha1": "5be35ff708b0ae1561de298060d8ed0fc7b6dfd2",
+        "sha256": "7c09f9ee8041969af13b5c1f12145a10646e15923f7b4e2da22d295393f3a77e",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.49.0/platform.phar",
+        "version": "3.49.0",
         "php": {
             "min": "5.5.9"
         },
@@ -228,6 +228,11 @@
                 "notes": "* Rename 'snapshot' commands to 'backup', to match the API and Management Console.\n* Implement streaming activity logs.\n  - Add --timestamps (-t) option to the activity:log command.\n  - Report the real start time in the activity progress bar.\n* Significantly reduce default cache lifetimes (due to API performance improvements).",
                 "show from": "3.47.0",
                 "hide from": "3.48.0"
+            },
+            {
+                "notes": "New features:\n\n* Allow the mount:list and mount:size commands to run locally on the container.\n\nOther changes:\n\n* Allow the SHA hash to wrap in the commit:list (commits) table.\n* Improve help for old, deprecated variable commands.\n* Refine description of --yes and --no options.\n* Deprecate 3 unused options in the commit:get command.\n* Fix --schema help in the db:sql command.\n* Make activity success/failure messages consistent.\n* Fix URL formatting in tunnel:single command output.\n* Fix property not found error in decode command with an empty object.\n* Display simple table (no messages) in integration:list if the --format is tsv or csv.\n* Changes to the environment:push (push) command:\n  - Improve deprecation message for the --branch option.\n  - Fix swapped question text for new/existing environments.\n  - Wait for remaining activities.\n* Changes relating to waiting for multiple activities:\n  - Fix activities being lost when reporting status after waiting.\n  - Switch to the activity log stream for failed activities after waiting.\n  - Increase timeout for initially fetching the log stream.",
+                "show from": "3.48.0",
+                "hide from": "3.49.0"
             }
         ]
     }
