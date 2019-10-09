@@ -46,9 +46,7 @@ class EnvironmentDrushCommand extends CommandBase
         $this->validateInput($input);
 
         $drushCommand = $input->getArgument('cmd');
-        if (is_array($drushCommand)) {
-            $drushCommand = implode(' ', $drushCommand);
-        }
+        $drushCommand = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], (array) $drushCommand));
 
         // Pass through options that the CLI shares with Drush.
         foreach (['yes', 'no', 'quiet'] as $option) {
