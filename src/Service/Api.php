@@ -193,6 +193,14 @@ class Api
                 $connectorOptions['proxy'] = $proxy;
             }
 
+            // Override the OAuth 2.0 token and revoke URLs if provided.
+            if ($this->config->has('api.oauth2_token_url')) {
+                $connectorOptions['token_url'] = $this->config->get('api.oauth2_token_url');
+            }
+            if ($this->config->has('api.oauth2_revoke_url')) {
+                $connectorOptions['revoke_url'] = $this->config->get('api.oauth2_revoke_url');
+            }
+
             $connector = new Connector($connectorOptions);
 
             // Set up a persistent session to store OAuth2 tokens. By default,

@@ -92,6 +92,15 @@ api:
   # Overridden by {application.env_prefix}ACCOUNTS_API env var.
   accounts_api_url: 'https://accounts.platform.sh/api/platform/'
 
+  # Overridden by {application.env_prefix}OAUTH2_AUTH_URL env var.
+  oauth2_auth_url:  'https://accounts.platform.sh/oauth2/authorize'
+
+  # Overridden by {application.env_prefix}OAUTH2_TOKEN_URL env var.
+  oauth2_token_url:  'https://accounts.platform.sh/oauth2/token'
+
+  # Overridden by {application.env_prefix}OAUTH2_REVOKE_URL env var.
+  oauth2_revoke_url:  'https://accounts.platform.sh/oauth2/revoke'
+
   # Overridden by {application.env_prefix}DEBUG env var.
   debug: false
 
