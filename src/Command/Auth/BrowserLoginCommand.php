@@ -280,7 +280,7 @@ class BrowserLoginCommand extends CommandBase
         return (new Client())->post(
             $this->config()->get('api.oauth2_token_url'),
             [
-                'json' => [
+                'body' => [
                     'grant_type' => 'authorization_code',
                     'code' => $authCode,
                     'client_id' => $this->config()->get('api.oauth2_client_id'),
