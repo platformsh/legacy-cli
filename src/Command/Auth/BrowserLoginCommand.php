@@ -123,16 +123,6 @@ class BrowserLoginCommand extends CommandBase
         }
         chmod($codeFile, 0600);
 
-        // Find the authorization and token URLs.
-        $apiUrl = $this->config()->get('api.accounts_api_url');
-        $authHost = parse_url($apiUrl, PHP_URL_HOST);
-        $authScheme = parse_url($apiUrl, PHP_URL_SCHEME) ?: 'https';
-        if (!$authHost) {
-            throw new \RuntimeException('Failed to get API host.');
-        }
-        $authUrl = $authScheme . '://' . $authHost . '/oauth2/authorize';
-        $tokenUrl = $authScheme . '://' . $authHost . '/oauth2/token';
-
         // Start the local server.
         $process = new Process([
             (new PhpExecutableFinder())->find() ?: PHP_BINARY,
@@ -145,7 +135,7 @@ class BrowserLoginCommand extends CommandBase
         $process->setEnv([
             'CLI_OAUTH_APP_NAME' => $this->config()->get('application.name'),
             'CLI_OAUTH_STATE' => $this->getRandomState(),
-            'CLI_OAUTH_AUTH_URL' => $authUrl,
+            'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
             'CLI_OAUTH_FILE' => $codeFile,
         ]);
@@ -214,7 +204,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Using the authorization code, request an access token.
         $this->stdErr->writeln('Login information received. Verifying...');
-        $token = $this->getAccessToken($code, $localUrl, $tokenUrl);
+        $token = $this->getAccessToken($code, $localUrl);
 
         // Finalize login: call logOut() on the old connector, clear the cache
         // and save the new credentials.
@@ -282,16 +272,15 @@ class BrowserLoginCommand extends CommandBase
      *
      * @param string $authCode
      * @param string $redirectUri
-     * @param string $tokenUrl
      *
      * @return array
      */
-    private function getAccessToken($authCode, $redirectUri, $tokenUrl)
+    private function getAccessToken($authCode, $redirectUri)
     {
         return (new Client())->post(
-            $tokenUrl,
+            $this->config()->get('api.oauth2_token_url'),
             [
-                'json' => [
+                'body' => [
                     'grant_type' => 'authorization_code',
                     'code' => $authCode,
                     'client_id' => $this->config()->get('api.oauth2_client_id'),
