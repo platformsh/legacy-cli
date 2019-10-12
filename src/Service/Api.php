@@ -748,11 +748,19 @@ class Api
      */
     public function getAccessToken()
     {
+        // Check for legacy API tokens.
+        if (isset($this->apiToken) && $this->apiTokenType === 'access') {
+            return $this->apiToken;
+        }
+
+        // Get the access token from the session.
         $session = $this->getClient()->getConnector()->getSession();
         $token = $session->get('accessToken');
         $expires = $session->get('expires');
+
+        // If there is no token, or it has expired, make an API request, which
+        // automatically obtains a token and saves it to the session.
         if (!$token || $expires < time()) {
-            // Force a connection to the API to ensure there is an access token.
             $this->getMyAccount(true);
             if (!$token = $session->get('accessToken')) {
                 throw new \RuntimeException('No access token found');
