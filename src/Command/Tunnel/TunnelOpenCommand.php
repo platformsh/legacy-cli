@@ -40,7 +40,21 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->checkSupport();
+        $requiredExtensions = ['pcntl', 'posix'];
+        $missingExtensions = [];
+        foreach ($requiredExtensions as $requiredExtension) {
+            if (!extension_loaded($requiredExtension)) {
+                $missingExtensions[] = $requiredExtension;
+                $this->stdErr->writeln(sprintf('The <error>%s</error> PHP extension is required.', $requiredExtension));
+            }
+        }
+        if (!empty($missingExtensions)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('The alternative <info>tunnel:single</info> command does not require these extensions.');
+
+            return 1;
+        }
+
         $this->validateInput($input);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
@@ -182,18 +196,5 @@ EOF
         $processManager->monitor($log);
 
         return 0;
-    }
-
-    private function checkSupport()
-    {
-        $messages = [];
-        foreach (['pcntl', 'posix'] as $extension) {
-            if (!extension_loaded($extension)) {
-                $messages[] = sprintf('The "%s" extension is required.', $extension);
-            }
-        }
-        if (count($messages)) {
-            throw new \RuntimeException(implode("\n", $messages));
-        }
     }
 }
