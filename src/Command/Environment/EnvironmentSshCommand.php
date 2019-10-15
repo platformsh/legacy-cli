@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -55,7 +54,9 @@ class EnvironmentSshCommand extends CommandBase
         }
 
         $remoteCommand = $input->getArgument('cmd');
-        $remoteCommand = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], (array) $remoteCommand));
+        if (is_array($remoteCommand)) {
+            $remoteCommand = implode(' ', $remoteCommand);
+        }
         if (!$remoteCommand && $this->runningViaMulti) {
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
