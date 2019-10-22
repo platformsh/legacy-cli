@@ -129,6 +129,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->container()->set('input', $input);
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
+        // Clear cache properties, in case this object is being reused with
+        // separate input.
+        $this->project = null;
+        $this->environment = null;
+        $this->remoteContainer = null;
+
         if ($this->config()->get('api.debug')) {
             $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
