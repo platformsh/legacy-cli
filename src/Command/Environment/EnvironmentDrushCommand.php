@@ -27,7 +27,8 @@ class EnvironmentDrushCommand extends CommandBase
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Run "drush status" on the remote environment', 'status');
         $this->addExample('Enable the Overlay module on the remote environment', 'en overlay');
-        $this->addExample('Get a one-time login link for name@example.com (use quotes for complex commands)', "'user-login --mail=name@example.com'");
+        $this->addExample('Get a one-time login link (using -- before options)', 'user-login -- --mail=name@example.com');
+        $this->addExample('Alternative syntax (quoting the whole command)', "'user-login --mail=name@example.com'");
     }
 
     public function isHidden()
@@ -45,8 +46,12 @@ class EnvironmentDrushCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        $drushCommand = $input->getArgument('cmd');
-        $drushCommand = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], (array) $drushCommand));
+        $drushCommand = (array) $input->getArgument('cmd');
+        if (count($drushCommand) === 1) {
+            $drushCommand = reset($drushCommand);
+        } else {
+            $drushCommand = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $drushCommand));
+        }
 
         // Pass through options that the CLI shares with Drush.
         foreach (['yes', 'no', 'quiet'] as $option) {
