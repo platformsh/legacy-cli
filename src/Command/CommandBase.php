@@ -899,19 +899,26 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw $e;
         }
 
-        // Validate the --app option, without doing anything with it.
+        // Read the --app and --worker options, if the latter is specified then it will be used.
         $appOption = $input->hasOption('app') ? $input->getOption('app') : null;
+        $workerOption = $includeWorkers && $input->hasOption('worker') ? $input->getOption('worker') : null;
+
         if ($appOption !== null) {
             try {
-                $deployment->getWebApp($appOption);
+                $webApp = $deployment->getWebApp($appOption);
             } catch (\InvalidArgumentException $e) {
                 throw new ConsoleInvalidArgumentException('Application not found: ' . $appOption);
             }
+
+            // No worker option specified so select app directly.
+            if ($workerOption === null) {
+                return $this->remoteContainer = new RemoteContainer\App($webApp, $environment);
+            }
+
+            unset($webApp); // object is no longer required.
         }
 
-        // Handle the --worker option first, as it's more specific.
-        $workerOption = $input->hasOption('worker') ? $input->getOption('worker') : null;
-        if ($includeWorkers && $workerOption !== null) {
+        if ($workerOption !== null) {
             // Check for a conflict with the --app option.
             if ($appOption !== null
                 && strpos($workerOption, '--') !== false
