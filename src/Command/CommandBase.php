@@ -885,6 +885,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         $environment = $this->getSelectedEnvironment();
+
+        // Enterprise environments do not have seperate containers for workers.
+        if ($includeWorkers && $environment->deployment_target === 'enterprise') {
+            $includeWorkers = false;
+        }
+
         try {
             $deployment = $this->api()->getCurrentDeployment(
                 $environment,
