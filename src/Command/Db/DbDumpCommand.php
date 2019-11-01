@@ -110,7 +110,7 @@ class DbDumpCommand extends CommandBase
             }
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'] ? $database['path'] . ' (default)' : null, true);
+            $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
             if (empty($schema)) {
                 $this->stdErr->writeln('The --schema is required.');
                 if (!empty($schemas)) {

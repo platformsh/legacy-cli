@@ -99,7 +99,7 @@ class DbSqlCommand extends CommandBase
                 }
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
                 $questionHelper = $this->getService('question_helper');
-                $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $default . ' (default)', true);
+                $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $default, true);
                 $schema = $schema === '(none)' ? '' : $schema;
             }
         }
