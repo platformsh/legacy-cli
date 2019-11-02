@@ -187,7 +187,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
                     continue;
                 }
 
-                $aliasName = $environment->id;
+                $aliasName = str_replace('.', '-', $environment->id);
                 if (count($apps) > 1) {
                     $aliasName .= '--' . $appId;
                 }
