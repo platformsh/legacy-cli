@@ -982,6 +982,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Enterprise environments do not have separate containers for workers.
         // Disable interactive selection of worker.
+        // @todo revise this when the API provides an explicit list of SSH endpoints
         if ($includeWorkers && $environment->deployment_target !== 'local') {
             $includeWorkers = false;
         }
