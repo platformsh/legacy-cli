@@ -885,6 +885,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         $environment = $this->getSelectedEnvironment();
+
         try {
             $deployment = $this->api()->getCurrentDeployment(
                 $environment,
@@ -977,6 +978,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             );
 
             return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+        }
+
+        // Enterprise environments do not have separate containers for workers.
+        // Disable interactive selection of worker.
+        if ($includeWorkers && $environment->deployment_target !== 'local') {
+            $includeWorkers = false;
         }
 
         // Prompt the user to choose between the app(s) or worker(s) that have
