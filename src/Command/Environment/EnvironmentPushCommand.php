@@ -85,13 +85,17 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         // Guard against accidental pushing to production.
+        // @todo if/when the API provides "is this production" for an environment, use that instead of hardcoding branch names
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if ($target === 'master'
-            && !$questionHelper->confirm(
-                'Are you sure you want to push to the <comment>master</comment> (production) branch?'
-            )) {
-            return 1;
+        if (in_array($target, ['master', 'production'])) {
+            $questionText = sprintf(
+                'Are you sure you want to push to the %s branch?',
+                '<comment>' . $target . '</comment>' . ($target === 'production' ? '' : ' (production)')
+            );
+            if (!$questionHelper->confirm($questionText)) {
+                return 1;
+            }
         }
 
         // Determine whether the target environment is new.
