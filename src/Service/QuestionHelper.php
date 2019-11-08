@@ -85,7 +85,7 @@ class QuestionHelper extends BaseQuestionHelper
             return key($items);
         }
         $itemList = array_values($items);
-        $defaultKey = $default !== null ? array_search($default, $itemList, true) : null;
+        $defaultKey = $default !== null && isset($items[$default]) ? array_search($items[$default], $itemList, true) : null;
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
         $question->setMaxAttempts(5);
 

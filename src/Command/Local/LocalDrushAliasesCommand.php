@@ -5,7 +5,6 @@ use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
-use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Drush;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -50,8 +49,7 @@ class LocalDrushAliasesCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Drush $drush */
         $drush = $this->getService('drush');
 
-        $apps = $drush->getDrupalApps($projectRoot);
-        if (empty($apps)) {
+        if (!$drush->getDrupalApps($projectRoot)) {
             $this->stdErr->writeln('No Drupal applications found.');
 
             return 1;
@@ -101,47 +99,12 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $environments = $this->api()->getEnvironments($project, true, false);
 
-            // Attempt to find the absolute application root directory for
-            // each Enterprise environment. This will be cached by the Drush
-            // service ($drush), for use while generating aliases.
-            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
-            $envVarsService = $this->getService('remote_env_vars');
-            /** @var \Platformsh\Cli\Service\Ssh $ssh */
-            $ssh = $this->getService('ssh');
-            /** @var \Platformsh\Cli\Service\Shell $shell */
-            $shell = $this->getService('shell');
+            // Cache each environment's deployment information.
+            // This will at least be used for \Platformsh\Cli\Service\Drush::getSiteUrl().
             foreach ($environments as $environment) {
-
-                // Cache the environment's deployment information.
-                // This will at least be used for \Platformsh\Cli\Service\Drush::getSiteUrl().
                 if (!$this->api()->hasCachedCurrentDeployment($environment) && $environment->isActive()) {
                     $this->debug('Fetching deployment information for environment: ' . $environment->id);
                     $this->api()->getCurrentDeployment($environment);
-                }
-
-                if ($environment->deployment_target === 'local') {
-                    continue;
-                }
-                foreach ($apps as $app) {
-                    $sshUrl = $environment->getSshUrl($app->getName());
-                    if (empty($sshUrl)) {
-                        continue;
-                    }
-                    try {
-                        $appRoot = $envVarsService->getEnvVar('APP_DIR', new RemoteHost($sshUrl, $ssh, $shell));
-                    } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
-                        $this->stdErr->writeln(sprintf(
-                            'Unable to find app root for environment %s, app %s',
-                            $this->api()->getEnvironmentLabel($environment, 'comment'),
-                            '<comment>' . $app->getName() . '</comment>'
-                        ));
-                        $this->stdErr->writeln($e->getMessage());
-                        continue;
-                    }
-                    if (!empty($appRoot)) {
-                        $this->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
-                        $drush->setCachedAppRoot($sshUrl, $appRoot);
-                    }
                 }
             }
 
