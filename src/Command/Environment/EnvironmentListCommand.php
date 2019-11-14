@@ -102,6 +102,8 @@ class EnvironmentListCommand extends CommandBase
 
             $row[] = new AdaptiveTableCell($id, $cellOptions);
 
+            $row['machine_name'] = $environment->machine_name;
+
             if ($branch = array_search($environment->id, $this->mapping)) {
                 $row[] = sprintf('%s (%s)', $environment->title, $branch);
             } else {
@@ -179,7 +181,7 @@ class EnvironmentListCommand extends CommandBase
             $this->children['master'] = [];
         }
 
-        $headers = ['ID', 'Title', 'Status', 'Created', 'Updated'];
+        $headers = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Created', 'Updated'];
         $defaultColumns = ['id', 'title', 'status'];
 
         /** @var \Platformsh\Cli\Service\Table $table */
