@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Project;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
+use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
@@ -57,11 +58,13 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Validate the --set-remote option.
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
-        $gitRoot = $git->getRoot();
+
+        // Validate the --set-remote option.
         $setRemote = (bool) $input->getOption('set-remote');
+        $projectRoot = $this->getProjectRoot();
+        $gitRoot = $projectRoot !== false ? $projectRoot : $git->getRoot();
         if ($setRemote && $gitRoot === false) {
             $this->stdErr->writeln('The <error>--set-remote</error> option can only be used inside a Git repository.');
             $this->stdErr->writeln('Use <info>git init<info> to create a repository.');
@@ -75,8 +78,18 @@ EOF
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
         if (!$setRemote && $gitRoot !== false) {
-            $questionText = 'Git repository detected: <info>' . $gitRoot . '</info>'
-                . "\nSet the new project as the remote for this repository?";
+            try {
+                $currentProject = $this->getCurrentProject();
+            } catch (ProjectNotFoundException $e) {
+                $currentProject = false;
+            }
+
+            $questionText = 'Git repository detected: <info>' . $gitRoot . '</info>';
+            if ($currentProject) {
+                $questionText .= "\n" . sprintf('The remote project is currently: %s', $this->api()->getProjectLabel($currentProject));
+            }
+            $questionText .= "\n\n" . sprintf('Set the new project <info>%s</info> as the remote for this repository?', $options['title']);
+
             $setRemote = $questionHelper->confirm($questionText);
             $this->stdErr->writeln('');
         }
