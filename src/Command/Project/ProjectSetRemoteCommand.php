@@ -49,7 +49,7 @@ class ProjectSetRemoteCommand extends CommandBase
         }
         if ($currentProject && $currentProject->id === $project->id) {
             $this->stdErr->writeln(sprintf(
-                'The remote project for this repository is already set as: <info>%s</info>',
+                'The remote project for this repository is already set as: %s',
                 $this->api()->getProjectLabel($currentProject)
             ));
 
@@ -57,7 +57,7 @@ class ProjectSetRemoteCommand extends CommandBase
         }
 
         $this->stdErr->writeln(sprintf(
-            'Setting the remote project for this repository to: <info>%s</info>',
+            'Setting the remote project for this repository to: %s',
             $this->api()->getProjectLabel($project)
         ));
 

@@ -30,6 +30,8 @@ class ProjectCreateCommand extends CommandBase
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
 
+        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository');
+
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
 
@@ -55,10 +57,29 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Validate the --set-remote option.
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $gitRoot = $git->getRoot();
+        $setRemote = (bool) $input->getOption('set-remote');
+        if ($setRemote && $gitRoot === false) {
+            $this->stdErr->writeln('The <error>--set-remote</error> option can only be used inside a Git repository.');
+            $this->stdErr->writeln('Use <info>git init<info> to create a repository.');
+
+            return 1;
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
+
+        if (!$setRemote && $gitRoot !== false) {
+            $questionText = 'Git repository detected: <info>' . $gitRoot . '</info>'
+                . "\nSet the new project as the remote for this repository?";
+            $setRemote = $questionHelper->confirm($questionText);
+            $this->stdErr->writeln('');
+        }
 
         $estimate = $this->api()
             ->getClient()
@@ -154,6 +175,20 @@ EOF
         $this->stdErr->writeln("  Project ID: <info>{$subscription->project_id}</info>");
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
+
+        $project = $this->api()->getProject($subscription->project_id);
+        if ($setRemote && $gitRoot !== false && $project !== false) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'Setting the remote project for this repository to: %s',
+                $this->api()->getProjectLabel($project)
+            ));
+
+            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+            $localProject = $this->getService('local.project');
+            $localProject->mapDirectory($gitRoot, $project);
+        }
+
         return 0;
     }
 
