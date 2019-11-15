@@ -196,24 +196,28 @@ class ArchiveExportCommand extends CommandBase
             foreach ($this->getSelectedProject()->getVariables() as $var) {
                 $metadata['variables']['project'][$var->name] = $var->getProperties();
                 if ($var->is_sensitive && !$var->hasProperty('value')) {
-                    if ($var->visible_runtime) {
-                        if ($includeSensitive) {
-                            $value = false;
-                            foreach ($apps as $app) {
-                                try {
-                                    $value = $this->fetchSensitiveValue($app->getSshUrl(), $var->name, $var->is_json);
-                                } catch (\RuntimeException $e) {
-                                    continue;
-                                }
-                                break;
-                            }
-                            if ($value !== false) {
-                                $metadata['variables']['project'][$var->name]['value'] = $value;
-                            }
-                        } else {
-                            $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
-                            $this->stdErr->writeln('  Use --include-sensitive-values to try to fetch this via SSH');
+                    if (!$includeSensitive) {
+                        $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
+                        $this->stdErr->writeln('  Use --include-sensitive-values to try to fetch this via SSH');
+                        continue;
+                    }
+                    if (!$var->visible_runtime) {
+                        $this->stdErr->writeln(sprintf('  Warning: cannot save value for sensitive project-level variable <comment>%s</comment>', $var->name));
+                        $this->stdErr->writeln('  It is not marked as visible at runtime.');
+                        continue;
+                    }
+                    $value = false;
+                    foreach ($apps as $app) {
+                        try {
+                            $value = $this->fetchSensitiveValue($app->getSshUrl(), $var->name, $var->is_json);
+                        } catch (\RuntimeException $e) {
+                            $this->stdErr->writeln(sprintf('  <error>Error:</error> Failed to find value for sensitive project-level variable <comment>%s</comment> in app <comment>%s</comment>', $var->name, $app->getName()));
+                            continue;
                         }
+                        break;
+                    }
+                    if ($value !== false) {
+                        $metadata['variables']['project'][$var->name]['value'] = $value;
                     }
                 }
             }
@@ -229,6 +233,7 @@ class ArchiveExportCommand extends CommandBase
                             try {
                                 $value = $this->fetchSensitiveValue($app->getSshUrl(), $envVar->name, $envVar->is_json);
                             } catch (\RuntimeException $e) {
+                                $this->stdErr->writeln(sprintf('  <error>Error:</error> Failed to find value for sensitive environment-level variable <comment>%s</comment> in app <comment>%s</comment>', $envVar->name, $app->getName()));
                                 continue;
                             }
                             break;
@@ -455,7 +460,7 @@ class ArchiveExportCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\RemoteEnvVars $remoteEnvVars */
         $remoteEnvVars = $this->getService('remote_env_vars');
         if (substr($varName, 0, 4) === 'env:') {
-            return $remoteEnvVars->getEnvVar(substr($varName, 4), $sshUrl, true, 3600, false);
+            return $remoteEnvVars->getEnvVar(substr($varName, 4), $sshUrl, true);
         }
 
         $variables = $remoteEnvVars->getArrayEnvVar('VARIABLES', $sshUrl);
