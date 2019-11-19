@@ -66,7 +66,6 @@ class WelcomeCommand extends CommandBase
 
         // Show the environments.
         $this->runOtherCommand('environments', [
-            '--refresh' => 0,
             '--project' => $project->id,
         ]);
         $executable = $this->config()->get('application.executable');
