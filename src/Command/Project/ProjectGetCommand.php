@@ -6,6 +6,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,8 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectGetCommand extends CommandBase
 {
-    protected $projectRoot;
-
     protected function configure()
     {
         $this
@@ -34,10 +33,13 @@ class ProjectGetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        // Validate input options and arguments.
+        $this->validateDepth($input);
+        $this->mergeProjectArgument($input);
+        $this->validateInput($input, false, true);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
-        $projectRoot = $this->projectRoot;
+        $projectRoot = $this->chooseDirectory($project, $input);
 
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
@@ -191,36 +193,47 @@ class ProjectGetCommand extends CommandBase
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * Disable getCurrentProject() as it should not affect project selection.
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
+    public function getCurrentProject()
     {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Disable getCurrentEnvironment() as it should not affect environment selection.
+     */
+    public function getCurrentEnvironment(Project $expectedProject = null, $refresh = null)
+    {
+        return false;
+    }
+
+    private function validateDepth(InputInterface $input) {
         if ($input->getOption('depth') !== null && !preg_match('/^[0-9]+$/', $input->getOption('depth'))) {
             throw new InvalidArgumentException('The --depth value must be an integer.');
         }
+    }
+
+    private function mergeProjectArgument(InputInterface $input) {
         if ($input->getOption('project') && $input->getArgument('project')) {
             throw new InvalidArgumentException('You cannot use both the --project option and the <project> argument.');
         }
-        $projectId = $input->getOption('project') ?: $input->getArgument('project');
-        $environmentId = $input->getOption('environment');
-        $host = $input->getOption('host');
-        if (empty($projectId)) {
-            if ($input->isInteractive() && ($projects = $this->api()->getProjects(true))) {
-                $projectId = $this->offerProjectChoice($projects, 'Enter a number to choose which project to clone:');
-            } else {
-                throw new InvalidArgumentException('No project specified');
-            }
-        } else {
-            /** @var \Platformsh\Cli\Service\Identifier $identifier */
-            $identifier = $this->getService('identifier');
-            $result = $identifier->identify($projectId);
-            $projectId = $result['projectId'];
-            $host = $host ?: $result['host'];
-            $environmentId = $environmentId !== null ? $environmentId : $result['environmentId'];
+        if ($projectId = $input->getArgument('project')) {
+            $input->setOption('project', $projectId);
         }
+    }
 
-        $project = $this->selectProject($projectId, $host);
-
+    /**
+     * @param Project $project
+     * @param InputInterface $input
+     *
+     * @return string
+     */
+    private function chooseDirectory(Project $project, InputInterface $input) {
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
@@ -228,13 +241,7 @@ class ProjectGetCommand extends CommandBase
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            $directory = $questionHelper->askInput('Directory', $directory, [$directory, $projectId]);
-        }
-
-        if ($projectRoot = $this->getProjectRoot()) {
-            if (strpos(realpath(dirname($directory)), $projectRoot) === 0) {
-                throw new InvalidArgumentException('A project cannot be cloned inside another project.');
-            }
+            $directory = $questionHelper->askInput('Directory', $directory, [$directory, $project->id]);
         }
 
         if (file_exists($directory)) {
@@ -243,17 +250,14 @@ class ProjectGetCommand extends CommandBase
         if (!$parent = realpath(dirname($directory))) {
             throw new InvalidArgumentException("Not a directory: " . dirname($directory));
         }
-        $this->projectRoot = $parent . '/' . basename($directory);
 
-        if ($environmentId === null) {
-            $environments = $this->api()->getEnvironments($project);
-            $environmentId = isset($environments['master']) ? 'master' : key($environments);
-            if (count($environments) > 1) {
-                $environmentId = $questionHelper->askInput('Environment', $environmentId, array_keys($environments));
-            }
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        if ($localProject->getProjectRoot($parent)) {
+            throw new InvalidArgumentException('A project cannot be cloned inside another project.');
         }
 
-        $this->selectEnvironment($environmentId);
+        return $parent . DIRECTORY_SEPARATOR . basename($directory);
     }
 
     /**

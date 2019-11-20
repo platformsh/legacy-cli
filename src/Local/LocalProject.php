@@ -121,29 +121,32 @@ class LocalProject
      *
      * @param string $file
      *   The filename to look for.
+     * @param string $startDir
+     *   An absolute path to a directory to start in.
      * @param callable $callback
      *   A callback to validate the directory when found. Accepts one argument
      *   (the directory path). Return true to use the directory, or false to
      *   continue traversing upwards.
      *
      * @return string|false
-     *   The path to the directory, or false if the file is not found.
+     *   The path to the directory, or false if the file is not found. Where
+     *   possible this will be an absolute, real path.
      */
-    protected static function findTopDirectoryContaining($file, callable $callback = null)
+    protected static function findTopDirectoryContaining($file, $startDir = null, callable $callback = null)
     {
         static $roots = [];
-        $cwd = getcwd();
-        if ($cwd === false) {
+        $startDir = $startDir ?: getcwd();
+        if ($startDir === false) {
             return false;
         }
-        if (isset($roots[$cwd][$file])) {
-            return $roots[$cwd][$file];
+        if (isset($roots[$startDir][$file])) {
+            return $roots[$startDir][$file];
         }
 
-        $roots[$cwd][$file] = false;
-        $root = &$roots[$cwd][$file];
+        $roots[$startDir][$file] = false;
+        $root = &$roots[$startDir][$file];
 
-        $currentDir = $cwd;
+        $currentDir = $startDir;
         while (!$root) {
             if (file_exists($currentDir . '/' . $file)) {
                 if ($callback === null || $callback($currentDir)) {
@@ -160,7 +163,11 @@ class LocalProject
             $currentDir = $levelUp;
         }
 
-        return $root;
+        if ($root === false) {
+            return false;
+        }
+
+        return realpath($root) ?: $root;
     }
 
     /**
@@ -189,41 +196,40 @@ class LocalProject
     /**
      * Find the legacy root of the current project, from CLI versions <3.
      *
+     * @param string|null $startDir
+     *
      * @return string|false
      */
-    public function getLegacyProjectRoot()
+    public function getLegacyProjectRoot($startDir = null)
     {
-        return $this->findTopDirectoryContaining($this->config->get('local.project_config_legacy'));
+        return $this->findTopDirectoryContaining($this->config->get('local.project_config_legacy'), $startDir);
     }
 
     /**
      * Find the root of the current project.
      *
+     * @param string|null $startDir
+     *
      * @return string|false
      */
-    public function getProjectRoot()
+    public function getProjectRoot($startDir = null)
     {
+        $startDir = $startDir ?: getcwd();
+
         // Backwards compatibility - if in an old-style project root, change
         // directory to the repository.
-        if (is_dir('repository') && file_exists($this->config->get('local.project_config_legacy'))) {
-            $cwd = getcwd();
-            chdir('repository');
+        if (is_dir($startDir . '/repository') && file_exists($startDir . '/' . $this->config->get('local.project_config_legacy'))) {
+            $startDir = $startDir . '/repository';
         }
 
         // The project root is a Git repository, which contains a project
         // configuration file, and/or contains a Git remote with the appropriate
         // domain.
-        $dir = $this->findTopDirectoryContaining('.git', function ($dir) {
+        return $this->findTopDirectoryContaining('.git', $startDir, function ($dir) {
             $config = $this->getProjectConfig($dir);
 
             return !empty($config);
         });
-
-        if (isset($cwd)) {
-            chdir($cwd);
-        }
-
-        return $dir;
     }
 
     /**

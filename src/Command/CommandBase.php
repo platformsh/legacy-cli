@@ -1138,7 +1138,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @param bool           $envNotRequired
      * @param bool           $selectDefaultEnv
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
+    final protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
