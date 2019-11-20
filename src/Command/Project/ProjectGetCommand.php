@@ -43,7 +43,7 @@ class ProjectGetCommand extends CommandBase
         // Validate input options and arguments.
         $this->validateDepth($input);
         $this->mergeProjectArgument($input);
-        $this->validateInput($input, false, true);
+        $this->validateInput($input, false, true, false);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
 
@@ -58,8 +58,6 @@ class ProjectGetCommand extends CommandBase
                 return 0;
             }
 
-            $questionText = sprintf('Do you want to set the remote project for this repository to %s?', $this->api()->getProjectLabel($project));
-
             if ($oldProjectRoot !== false) {
                 $this->stdErr->writeln(sprintf('There is already a project in this directory: <comment>%s</comment>', $oldProjectRoot));
                 $newProjectLabel = $this->api()->getProjectLabel($project);
@@ -72,28 +70,15 @@ class ProjectGetCommand extends CommandBase
                     $oldProjectLabel = '[unknown]';
                 }
                 $questionText = sprintf('Do you want to change the remote project from %s to %s?', $oldProjectLabel, $newProjectLabel);
-            } elseif ($gitRoot !== false) {
-                $this->stdErr->writeln('The current directory is already a Git repository.');
+            } else {
+                $this->stdErr->writeln(sprintf('This directory is already a Git repository: <comment>%s</comment>', $gitRoot));
+                $questionText = sprintf('Do you want to set the remote project for this repository to %s?', $this->api()->getProjectLabel($project));
             }
 
             $this->stdErr->writeln('');
 
             if ($questionHelper->confirm($questionText)) {
-                $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf(
-                    'Setting the remote project for this repository to: <info>%s</info>',
-                    $this->api()->getProjectLabel($project)
-                ));
-                $localProject->mapDirectory($gitRoot, $project);
-
-                $headSha = $git->execute(['rev-parse', '--verify', 'HEAD']);
-                if ($environment->has_code && $environment->head_commit !== $headSha && $questionHelper->confirm("\nDo you want to pull code from the project?")) {
-                    $success = $git->pull($project->getGitUrl(), $environment->id, $gitRoot, false);
-
-                    return $success ? 0 : 1;
-                }
-
-                return 0;
+                return $this->runOtherCommand('project:set-remote', ['project' => $project->id], $output);
             }
 
             return 1;
@@ -248,26 +233,6 @@ class ProjectGetCommand extends CommandBase
         }
 
         return $success ? 0 : 1;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * Disable getCurrentProject() as it should not affect project selection.
-     */
-    public function getCurrentProject()
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * Disable getCurrentEnvironment() as it should not affect environment selection.
-     */
-    public function getCurrentEnvironment(Project $expectedProject = null, $refresh = null)
-    {
-        return false;
     }
 
     private function validateDepth(InputInterface $input) {
