@@ -47,7 +47,6 @@ class ProjectGetCommand extends CommandBase
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
 
-        $git->ensureInstalled();
         $insideCwd = !$input->getArgument('directory') || basename($input->getArgument('directory')) === $input->getArgument('directory');
         if ($insideCwd && ($gitRoot = $git->getRoot()) !== false && $input->isInteractive()) {
             $oldProjectRoot = $localProject->getProjectRoot($gitRoot);
@@ -112,6 +111,7 @@ class ProjectGetCommand extends CommandBase
 
         $projectRootRelative = $fs->makePathRelative($projectRoot, getcwd());
 
+        $git->ensureInstalled();
         $git->setSshCommand($ssh->getSshCommand());
 
         // First check if the repo actually exists.

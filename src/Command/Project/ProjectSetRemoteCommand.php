@@ -30,7 +30,6 @@ class ProjectSetRemoteCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
-        $git->ensureInstalled();
         $root = $git->getRoot(getcwd());
         if ($root === false) {
             $this->stdErr->writeln(

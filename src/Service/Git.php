@@ -432,16 +432,42 @@ class Git
     }
 
     /**
-     * Find the root of a directory in a Git repository.
+     * Find the root directory of a Git repository.
+     *
+     * Uses PHP rather than the Git CLI.
      *
      * @param string|null $dir
+     *   The starting directory (defaults to the current working directory).
      * @param bool        $mustRun
+     *   Causes an exception to be thrown if the directory is not a repository.
      *
      * @return string|false
      */
     public function getRoot($dir = null, $mustRun = false)
     {
-        return $this->execute(['rev-parse', '--show-toplevel'], $dir, $mustRun);
+        $dir = $dir ?: getcwd();
+        if ($dir === false) {
+            return false;
+        }
+
+        $current = $dir;
+        while (true) {
+            if (is_dir($current . '/.git')) {
+                return realpath($current) ?: $current;
+            }
+
+            $parent = dirname($current);
+            if ($parent === $current || $parent === '.') {
+                break;
+            }
+            $current = $parent;
+        }
+
+        if ($mustRun) {
+            throw new \RuntimeException('Not a git repository');
+        }
+
+        return false;
     }
 
     /**
