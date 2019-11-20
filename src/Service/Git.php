@@ -286,6 +286,29 @@ class Git
     }
 
     /**
+     * Pull a ref from a repository.
+     *
+     * @param string $repository A remote repository name or URL.
+     * @param string $ref
+     * @param string|null $dir
+     * @param bool $mustRun
+     * @param bool $quiet
+     *
+     * @return bool
+     */
+    public function pull($repository = null, $ref = null, $dir = null, $mustRun = true, $quiet = false) {
+        $args = ['pull'];
+        if ($repository !== null) {
+            $args[] = $repository;
+        }
+        if ($ref !== null) {
+            $args[] = $ref;
+        }
+
+        return (bool) $this->execute($args, $dir, $mustRun, $quiet);
+    }
+
+    /**
      * Check out a branch.
      *
      * @param string      $name

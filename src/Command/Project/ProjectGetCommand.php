@@ -33,19 +33,78 @@ class ProjectGetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+
         // Validate input options and arguments.
         $this->validateDepth($input);
         $this->mergeProjectArgument($input);
         $this->validateInput($input, false, true);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
+
+        $git->ensureInstalled();
+        $insideCwd = !$input->getArgument('directory') || basename($input->getArgument('directory')) === $input->getArgument('directory');
+        if ($insideCwd && ($gitRoot = $git->getRoot()) !== false && $input->isInteractive()) {
+            $oldProjectRoot = $localProject->getProjectRoot($gitRoot);
+            $oldProjectConfig = $oldProjectRoot ? $localProject->getProjectConfig($oldProjectRoot) : false;
+            $oldProject = $oldProjectConfig ? $this->api()->getProject($oldProjectConfig['id']) : false;
+            if ($oldProject && $oldProject->id === $project->id) {
+                $this->stdErr->writeln(sprintf('The project %s is already mapped to the directory: <info>%s</info>', $this->api()->getProjectLabel($project), $oldProjectRoot));
+
+                return 0;
+            }
+
+            $questionText = sprintf('Do you want to set the remote project for this repository to %s?', $this->api()->getProjectLabel($project));
+
+            if ($oldProjectRoot !== false) {
+                $this->stdErr->writeln(sprintf('There is already a project in this directory: <comment>%s</comment>', $oldProjectRoot));
+                $newProjectLabel = $this->api()->getProjectLabel($project);
+                if ($oldProject) {
+                    $oldProjectLabel = $this->api()->getProjectLabel($oldProject);
+                } elseif (isset($oldProjectConfig['id'])) {
+                    $oldProjectLabel = '<info>' . $oldProjectConfig['id'] . '</info>';
+                } else {
+                    // This should never happen.
+                    $oldProjectLabel = '[unknown]';
+                }
+                $questionText = sprintf('Do you want to change the remote project from %s to %s?', $oldProjectLabel, $newProjectLabel);
+            } elseif ($gitRoot !== false) {
+                $this->stdErr->writeln('The current directory is already a Git repository.');
+            }
+
+            $this->stdErr->writeln('');
+
+            if ($questionHelper->confirm($questionText)) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf(
+                    'Setting the remote project for this repository to: <info>%s</info>',
+                    $this->api()->getProjectLabel($project)
+                ));
+                $localProject->mapDirectory($gitRoot, $project);
+
+                $headSha = $git->execute(['rev-parse', '--verify', 'HEAD']);
+                if ($environment->has_code && $environment->head_commit !== $headSha && $questionHelper->confirm("\nDo you want to pull code from the project?")) {
+                    $success = $git->pull($project->getGitUrl(), $environment->id, $gitRoot, false);
+
+                    return $success ? 0 : 1;
+                }
+
+                return 0;
+            }
+
+            return 1;
+        }
+
         $projectRoot = $this->chooseDirectory($project, $input);
 
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
         /** @var \Platformsh\Cli\Service\Filesystem $fs */
@@ -53,7 +112,6 @@ class ProjectGetCommand extends CommandBase
 
         $projectRootRelative = $fs->makePathRelative($projectRoot, getcwd());
 
-        $git->ensureInstalled();
         $git->setSshCommand($ssh->getSshCommand());
 
         // First check if the repo actually exists.
@@ -245,16 +303,11 @@ class ProjectGetCommand extends CommandBase
         }
 
         if (file_exists($directory)) {
-            throw new InvalidArgumentException('The directory already exists: ' . $directory);
-        }
-        if (!$parent = realpath(dirname($directory))) {
-            throw new InvalidArgumentException("Not a directory: " . dirname($directory));
+            throw new InvalidArgumentException('The destination path already exists: ' . $directory);
         }
 
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
-        if ($localProject->getProjectRoot($parent)) {
-            throw new InvalidArgumentException('A project cannot be cloned inside another project.');
+        if (!$parent = realpath(dirname($directory))) {
+            throw new InvalidArgumentException('Directory not found: ' . dirname($directory));
         }
 
         return $parent . DIRECTORY_SEPARATOR . basename($directory);
