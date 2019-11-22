@@ -827,7 +827,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
 
-        if ($detectCurrentEnv && ($environment = $this->getCurrentEnvironment($this->project))) {
+        if ($detectCurrentEnv && ($environment = $this->getCurrentEnvironment($this->project ?: null))) {
             $this->environment = $environment;
             return;
         }
