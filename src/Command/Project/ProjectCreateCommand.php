@@ -31,7 +31,8 @@ class ProjectCreateCommand extends CommandBase
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
 
-        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository');
+        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository (default)');
+        $this->addOption('no-set-remote', null, InputOption::VALUE_NONE, 'Do not set the new project as the remote for this repository');
 
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
@@ -77,20 +78,27 @@ EOF
 
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
-        if (!$setRemote && $gitRoot !== false) {
+        if ($gitRoot !== false && !$input->getOption('no-set-remote')) {
             try {
                 $currentProject = $this->getCurrentProject();
             } catch (ProjectNotFoundException $e) {
                 $currentProject = false;
             }
 
-            $questionText = 'Git repository detected: <info>' . $gitRoot . '</info>';
+            $this->stdErr->writeln('Git repository detected: <info>' . $gitRoot . '</info>');
             if ($currentProject) {
-                $questionText .= "\n" . sprintf('The remote project is currently: %s', $this->api()->getProjectLabel($currentProject));
+                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api()->getProjectLabel($currentProject)));
             }
-            $questionText .= "\n\n" . sprintf('Set the new project <info>%s</info> as the remote for this repository?', $options['title']);
+            $this->stdErr->writeln('');
 
-            $setRemote = $questionHelper->confirm($questionText);
+            if ($setRemote) {
+                $this->stdErr->writeln(sprintf('The new project <info>%s</info> will be set as the remote for this repository.', $options['title']));
+            } else {
+                $setRemote = $questionHelper->confirm(sprintf(
+                    'Set the new project <info>%s</info> as the remote for this repository?',
+                    $options['title'])
+                );
+            }
             $this->stdErr->writeln('');
         }
 
