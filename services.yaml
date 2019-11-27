@@ -40,6 +40,10 @@ services:
     config:
         class:     '\Platformsh\Cli\Service\Config'
 
+    curl_cli:
+      class:     '\Platformsh\Cli\Service\CurlCli'
+      arguments: ['@api']
+
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
         arguments: ['@config', '@shell', '@local.project', '@api']

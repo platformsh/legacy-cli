@@ -87,6 +87,7 @@ class Application extends ParentApplication
             return $commands;
         }
 
+        $commands[] = new Command\ApiCurlCommand();
         $commands[] = new Command\BotCommand();
         $commands[] = new Command\ClearCacheCommand();
         $commands[] = new Command\CompletionCommand();

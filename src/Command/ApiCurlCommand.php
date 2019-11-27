@@ -1,31 +1,33 @@
 <?php
-namespace Platformsh\Cli\Command\Project;
+namespace Platformsh\Cli\Command;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProjectCurlCommand extends CommandBase
+class ApiCurlCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    public function isEnabled() {
+        if (!$this->config()->has('api.base_url')) {
+            return false;
+        }
+
+        return parent::isEnabled();
+    }
+
     protected function configure()
     {
-        $this->setName('project:curl')
-            ->setDescription("Run an authenticated cURL request on a project's API");
+        $this->setName('api:curl')
+            ->setDescription(sprintf('Run an authenticated cURL request on the %s API', $this->config()->get('service.name')));
 
         CurlCli::configureInput($this->getDefinition());
-
-        $this->addProjectOption();
-        $this->addExample('Change the project title', '-X PATCH -d \'{"title": "New title"}\'');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-
-        $url = $this->getSelectedProject()->getUri();
+        $url = $this->config()->get('api.base_url');
 
         /** @var CurlCli $curl */
         $curl = $this->getService('curl_cli');
