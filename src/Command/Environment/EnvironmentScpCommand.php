@@ -41,21 +41,23 @@ class EnvironmentScpCommand extends CommandBase
         }
 
         $this->validateInput($input);
-        $environment = $this->getSelectedEnvironment();
 
         $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl();
 
-        /** @var \Platformsh\Cli\Service\Scp $scp */
-        $scp = $this->getService('scp');
-        $scpOptions = [];
-        $command = $scp->getScpCommand($scpOptions);
+        /** @var Ssh $ssh */
+        $ssh = $this->getService('ssh');
+        $command = 'scp';
+
+        if ($sshArgs = $ssh->getSshArgs()) {
+            $command .= ' ' . implode(' ', array_map('escapeshellarg', $ssh->getSshArgs()));
+        }
 
         if ($input->getOption('recursive')) {
             $command .= ' -r';
         }
 
-        if ($output->isVerbose()) {
+        if ($output->isVeryVerbose()) {
             $command .= ' -v';
         } elseif ($output->isQuiet()) {
             $command .= ' -q';
