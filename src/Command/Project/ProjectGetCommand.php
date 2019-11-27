@@ -6,6 +6,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,8 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectGetCommand extends CommandBase
 {
-    protected $projectRoot;
-
     protected function configure()
     {
         $this
@@ -34,23 +33,77 @@ class ProjectGetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+
+        // Validate input options and arguments.
+        $this->validateDepth($input);
+        $this->mergeProjectArgument($input);
+        $this->validateInput($input, false, true, false);
+
+        // Load the main variables we need.
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
-        $projectRoot = $this->projectRoot;
+        $projectLabel = $this->api()->getProjectLabel($project);
+
+        // If this is being run from inside a Git repository, suggest setting
+        // or switching the remote project.
+        $insideCwd = !$input->getArgument('directory')
+            || basename($input->getArgument('directory')) === $input->getArgument('directory');
+        if ($insideCwd && ($gitRoot = $git->getRoot()) !== false && $input->isInteractive()) {
+            $oldProjectRoot = $localProject->getProjectRoot($gitRoot);
+            $oldProjectConfig = $oldProjectRoot ? $localProject->getProjectConfig($oldProjectRoot) : false;
+            $oldProject = $oldProjectConfig ? $this->api()->getProject($oldProjectConfig['id']) : false;
+            if ($oldProjectRoot && $oldProject && $oldProject->id === $project->id) {
+                $this->stdErr->writeln(sprintf(
+                    'The project %s is already mapped to the directory: <info>%s</info>',
+                    $projectLabel,
+                    $oldProjectRoot
+                ));
+
+                return 0;
+            }
+
+            if ($oldProjectRoot !== false) {
+                $this->stdErr->writeln(sprintf('There is already a project in this directory: <comment>%s</comment>', $oldProjectRoot));
+                if ($oldProject) {
+                    $oldProjectLabel = $this->api()->getProjectLabel($oldProject);
+                } elseif (isset($oldProjectConfig['id'])) {
+                    $oldProjectLabel = '<info>' . $oldProjectConfig['id'] . '</info>';
+                } else {
+                    // This should never happen.
+                    $oldProjectLabel = '[unknown]';
+                }
+                $questionText = sprintf('Do you want to change the remote project from %s to %s?', $oldProjectLabel, $projectLabel);
+            } else {
+                $this->stdErr->writeln(sprintf('This directory is already a Git repository: <comment>%s</comment>', $gitRoot));
+                $questionText = sprintf('Do you want to set the remote project for this repository to %s?', $projectLabel);
+            }
+
+            $this->stdErr->writeln('');
+
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            if ($questionHelper->confirm($questionText)) {
+                return $this->runOtherCommand('project:set-remote', ['project' => $project->id], $output);
+            }
+
+            return 1;
+        }
+
+        $projectRoot = $this->chooseDirectory($project, $input);
+
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
+        $projectRootRelative = $fs->makePathRelative($projectRoot, getcwd());
 
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
-
-        $projectRootRelative = $fs->makePathRelative($projectRoot, getcwd());
-
         $git->ensureInstalled();
         $git->setSshCommand($ssh->getSshCommand());
 
@@ -69,9 +122,6 @@ class ProjectGetCommand extends CommandBase
 
             return 1;
         }
-
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
 
         // If the remote repository doesn't exist, then locally we need to
         // create the folder, run git init, and attach the remote.
@@ -106,7 +156,6 @@ class ProjectGetCommand extends CommandBase
         }
 
         // We have a repo! Yay. Clone it.
-        $projectLabel = $this->api()->getProjectLabel($project);
         $this->stdErr->writeln('Downloading project ' . $projectLabel);
         $cloneArgs = [
             '--branch',
@@ -191,36 +240,37 @@ class ProjectGetCommand extends CommandBase
     }
 
     /**
-     * {@inheritdoc}
+     * @param InputInterface $input
+     *
+     * @return void
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
-    {
+    private function validateDepth(InputInterface $input) {
         if ($input->getOption('depth') !== null && !preg_match('/^[0-9]+$/', $input->getOption('depth'))) {
             throw new InvalidArgumentException('The --depth value must be an integer.');
         }
+    }
+
+    /**
+     * @param InputInterface $input
+     *
+     * @return void
+     */
+    private function mergeProjectArgument(InputInterface $input) {
         if ($input->getOption('project') && $input->getArgument('project')) {
             throw new InvalidArgumentException('You cannot use both the --project option and the <project> argument.');
         }
-        $projectId = $input->getOption('project') ?: $input->getArgument('project');
-        $environmentId = $input->getOption('environment');
-        $host = $input->getOption('host');
-        if (empty($projectId)) {
-            if ($input->isInteractive() && ($projects = $this->api()->getProjects(true))) {
-                $projectId = $this->offerProjectChoice($projects, 'Enter a number to choose which project to clone:');
-            } else {
-                throw new InvalidArgumentException('No project specified');
-            }
-        } else {
-            /** @var \Platformsh\Cli\Service\Identifier $identifier */
-            $identifier = $this->getService('identifier');
-            $result = $identifier->identify($projectId);
-            $projectId = $result['projectId'];
-            $host = $host ?: $result['host'];
-            $environmentId = $environmentId !== null ? $environmentId : $result['environmentId'];
+        if ($projectId = $input->getArgument('project')) {
+            $input->setOption('project', $projectId);
         }
+    }
 
-        $project = $this->selectProject($projectId, $host);
-
+    /**
+     * @param Project $project
+     * @param InputInterface $input
+     *
+     * @return string
+     */
+    private function chooseDirectory(Project $project, InputInterface $input) {
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
@@ -228,32 +278,24 @@ class ProjectGetCommand extends CommandBase
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            $directory = $questionHelper->askInput('Directory', $directory, [$directory, $projectId]);
-        }
-
-        if ($projectRoot = $this->getProjectRoot()) {
-            if (strpos(realpath(dirname($directory)), $projectRoot) === 0) {
-                throw new InvalidArgumentException('A project cannot be cloned inside another project.');
-            }
+            $directory = $questionHelper->askInput('Directory', $directory, [$directory, $project->id]);
         }
 
         if (file_exists($directory)) {
-            throw new InvalidArgumentException('The directory already exists: ' . $directory);
+            throw new InvalidArgumentException('The destination path already exists: ' . $directory);
         }
+
         if (!$parent = realpath(dirname($directory))) {
-            throw new InvalidArgumentException("Not a directory: " . dirname($directory));
-        }
-        $this->projectRoot = $parent . '/' . basename($directory);
-
-        if ($environmentId === null) {
-            $environments = $this->api()->getEnvironments($project);
-            $environmentId = isset($environments['master']) ? 'master' : key($environments);
-            if (count($environments) > 1) {
-                $environmentId = $questionHelper->askInput('Environment', $environmentId, array_keys($environments));
-            }
+            throw new InvalidArgumentException('Directory not found: ' . dirname($directory));
         }
 
-        $this->selectEnvironment($environmentId);
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local_project');
+        if ($localProject->getProjectRoot($directory) !== false) {
+            throw new InvalidArgumentException('A project cannot be cloned inside another project.');
+        }
+
+        return $parent . DIRECTORY_SEPARATOR . basename($directory);
     }
 
     /**

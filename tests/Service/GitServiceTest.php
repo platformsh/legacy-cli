@@ -61,11 +61,14 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetRoot()
     {
-        $this->assertFalse($this->git->getRoot($this->tempDir));
+        // Test a real repository.
         $repositoryDir = $this->getRepositoryDir();
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir));
         mkdir($repositoryDir . '/1/2/3/4/5', 0755, true);
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir . '/1/2/3/4/5'));
+
+        // Test a non-repository.
+        $this->assertFalse($this->git->getRoot($this->tempDir));
         $this->setExpectedException('Exception', 'Not a git repository');
         $this->git->getRoot($this->tempDir, true);
     }

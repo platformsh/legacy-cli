@@ -22,6 +22,14 @@ class ProjectDeleteCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        if ($projectId = $input->getArgument('project')) {
+            if ($input->getOption('project')) {
+                throw new ConsoleInvalidArgumentException(
+                    'You cannot use both the <project> argument and the --project option'
+                );
+            }
+            $input->setOption('project', $projectId);
+        }
         $this->validateInput($input);
         $project = $this->getSelectedProject();
 
@@ -76,21 +84,5 @@ class ProjectDeleteCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln('The project ' . $this->api()->getProjectLabel($project) . ' was deleted.');
         return 0;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
-    {
-        if ($projectId = $input->getArgument('project')) {
-            if ($input->getOption('project')) {
-                throw new ConsoleInvalidArgumentException(
-                    'You cannot use both the <project> argument and the --project option'
-                );
-            }
-            $input->setOption('project', $projectId);
-        }
-        parent::validateInput($input, $envNotRequired);
     }
 }
