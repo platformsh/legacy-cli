@@ -80,6 +80,8 @@ service:
     - standard
     - medium
     - large
+  catalog:
+    - http://accounts.platform.sh/sites/default/files/catalog/catalog-psh.yaml
 
 # Configuration relating to API calls.
 # This can be overridden in the user config file.
