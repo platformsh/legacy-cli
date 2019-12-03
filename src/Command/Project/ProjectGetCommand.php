@@ -290,7 +290,7 @@ class ProjectGetCommand extends CommandBase
         }
 
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local_project');
+        $localProject = $this->getService('local.project');
         if ($localProject->getProjectRoot($directory) !== false) {
             throw new InvalidArgumentException('A project cannot be cloned inside another project.');
         }
