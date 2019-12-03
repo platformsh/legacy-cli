@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "23898771039ae437822067c7f0e8f4f833b4a1dd",
-        "sha256": "d6ad31f38fabea442848d712ac7d33045de6a9528b89c1dfac0cb3d8a27ea22b",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.49.3/platform.phar",
-        "version": "3.49.3",
+        "sha1": "5dfb0fd864c2741e4e8730cffd5be4d1db0bb035",
+        "sha256": "f624181167f2f782f0e456111442cf764c81ef52cb5f6e6547e654b97639f9ed",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.50.0/platform.phar",
+        "version": "3.50.0",
         "php": {
             "min": "5.5.9"
         },
@@ -233,6 +233,11 @@
                 "notes": "New features:\n\n* Allow the mount:list and mount:size commands to run locally on the container.\n\nOther changes:\n\n* Allow the SHA hash to wrap in the commit:list (commits) table.\n* Improve help for old, deprecated variable commands.\n* Refine description of --yes and --no options.\n* Deprecate 3 unused options in the commit:get command.\n* Fix --schema help in the db:sql command.\n* Make activity success/failure messages consistent.\n* Fix URL formatting in tunnel:single command output.\n* Fix property not found error in decode command with an empty object.\n* Display simple table (no messages) in integration:list if the --format is tsv or csv.\n* Changes to the environment:push (push) command:\n  - Improve deprecation message for the --branch option.\n  - Fix swapped question text for new/existing environments.\n  - Wait for remaining activities.\n* Changes relating to waiting for multiple activities:\n  - Fix activities being lost when reporting status after waiting.\n  - Switch to the activity log stream for failed activities after waiting.\n  - Increase timeout for initially fetching the log stream.",
                 "show from": "3.48.0",
                 "hide from": "3.49.0"
+            },
+            {
+                "notes": "New features:\n\n* Add an environment:scp (scp) command to transfer individual files.\n* Provide project choice in 'project:set-remote' command.\n* Add api:curl command to use the API directly.\n* Suggest to set the project as the remote, when 'get' command is used in an\n  existing repository.\n* Add --set-remote and --no-set-remote options to project:create (create)\n  command, which set the new project as the remote if called from an existing\n  repository.\n* Provide interactive choice in variable:get (vget) command.\n* Add 'Enabled' (is_enabled) column in variable:list (var) command.\n* Add 'Machine name' (machine_name) column (not default) in environment:list\n  (env) command.\n\nBug fixes:\n\n* Revert change that made Drush alias paths relative: they are now absolute\n  again, as the relative paths did not work with the Drush sql-sync or rsync\n  commands (#873).\n* Update API client to standardize project git URLs.\n* Do not require Git to find a git root.\n* Fix 'get' command detecting a project conflict in a separate directory.\n* Do not URL-encode the repository in Bitbucket API requests.\n* Add Docker setup for local development.\n* Refresh environments in the welcome command ('platform' on its own).",
+                "show from": "3.49.0",
+                "hide from": "3.50.0"
             }
         ]
     }
