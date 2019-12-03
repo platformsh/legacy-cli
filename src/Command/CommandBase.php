@@ -720,10 +720,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @param string $projectId
      * @param string $host
+     * @param bool   $detectCurrent
      *
      * @return Project
      */
-    protected function selectProject($projectId = null, $host = null)
+    protected function selectProject($projectId = null, $host = null, $detectCurrent = true)
     {
         if (!empty($projectId)) {
             $this->project = $this->api()->getProject($projectId, $host);
@@ -736,7 +737,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return $this->project;
         }
 
-        $this->project = $this->getCurrentProject();
+        $this->project = $detectCurrent ? $this->getCurrentProject() : false;
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
             $projects = $this->api()->getProjects();
             if (count($projects) > 0 && count($projects) < 25) {
@@ -747,10 +748,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         }
         if (!$this->project) {
-            throw new RootNotFoundException(
-                "Could not determine the current project."
-                . "\n\nSpecify it using --project, or go to a project directory."
-            );
+            if ($detectCurrent) {
+                throw new RootNotFoundException(
+                    "Could not determine the current project."
+                    . "\n\nSpecify it using --project, or go to a project directory."
+                );
+            } else {
+                throw new \RuntimeException('You must specify a project.');
+            }
         }
 
         return $this->project;
@@ -796,8 +801,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *   Whether it's required to have an environment.
      * @param bool $selectDefaultEnv
      *   Whether to select a default environment.
+     * @param bool $detectCurrentEnv
+     *   Whether to detect the current environment from Git.
      */
-    protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false)
+    protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false, $detectCurrentEnv = true)
     {
         $envPrefix = $this->config()->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
@@ -820,7 +827,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
 
-        if ($environment = $this->getCurrentEnvironment($this->project)) {
+        if ($detectCurrentEnv && ($environment = $this->getCurrentEnvironment($this->project ?: null))) {
             $this->environment = $environment;
             return;
         }
@@ -841,7 +848,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($required) {
-            if ($this->getProjectRoot()) {
+            if ($this->getProjectRoot() || !$detectCurrentEnv) {
                 $message = 'Could not determine the current environment.'
                     . "\n" . 'Specify it manually using --environment (-e).';
             } else {
@@ -1137,8 +1144,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @param InputInterface $input
      * @param bool           $envNotRequired
      * @param bool           $selectDefaultEnv
+     * @param bool           $detectCurrent Whether to detect the project/environment from the current working directory.
      */
-    protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false)
+    final protected function validateInput(InputInterface $input, $envNotRequired = false, $selectDefaultEnv = false, $detectCurrent = true)
     {
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
@@ -1187,7 +1195,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         // Select the project.
-        $this->selectProject($projectId, $projectHost);
+        $this->selectProject($projectId, $projectHost, $detectCurrent);
 
         // Select the environment.
         $envOptionName = 'environment';
@@ -1209,13 +1217,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
-                $this->selectEnvironment($argument, true, $selectDefaultEnv);
+                $this->selectEnvironment($argument, true, $selectDefaultEnv, $detectCurrent);
             }
         } elseif ($input->hasOption($envOptionName)) {
             if ($input->getOption($envOptionName) !== null) {
                 $environmentId = $input->getOption($envOptionName);
             }
-            $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv);
+            $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv, $detectCurrent);
         }
     }
 

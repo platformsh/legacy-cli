@@ -87,6 +87,7 @@ class Application extends ParentApplication
             return $commands;
         }
 
+        $commands[] = new Command\ApiCurlCommand();
         $commands[] = new Command\BotCommand();
         $commands[] = new Command\ClearCacheCommand();
         $commands[] = new Command\CompletionCommand();
@@ -133,6 +134,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentRedeployCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
+        $commands[] = new Command\Environment\EnvironmentScpCommand();
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
         $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();

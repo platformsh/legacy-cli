@@ -372,7 +372,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 return;
             }
             $accessToken = $this->getBitbucketAccessToken($appCredentials);
-            $hooksApiUrl = sprintf('https://api.bitbucket.org/2.0/repositories/%s/hooks', rawurlencode($integration->getProperty('repository')));
+            $hooksApiUrl = sprintf('https://api.bitbucket.org/2.0/repositories/%s/hooks', $integration->getProperty('repository'));
             $requestOptions = [
                 'auth' => false,
                 'headers' => [

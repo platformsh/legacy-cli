@@ -37,4 +37,4 @@ web:
   locations:
     '/':
       root: web
-      passthru: /index.php
+      index: ['index.php']

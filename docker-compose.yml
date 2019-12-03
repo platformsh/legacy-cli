@@ -1,0 +1,18 @@
+version: '3.3'
+# Simple setup for dev
+
+services:
+  cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    volumes:
+     - .:/home/psh/platformsh-cli:cached
+     - $HOME/.ssh/${SSH_KEY}:/home/psh/.ssh/${SSH_KEY}
+     - $HOME/.platformsh:/home/psh/.platformsh
+    stdin_open: true
+    tty: true
+    network_mode: bridge

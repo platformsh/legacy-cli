@@ -137,13 +137,14 @@ class GitDataApi
      */
     private function normalizeSha(Environment $environment, $sha = null)
     {
-        if ($environment->head_commit === null) {
-            return null;
-        }
         if ($sha === null) {
             return $environment->head_commit;
         }
         if (strpos($sha, 'HEAD') === 0) {
+            if ($environment->head_commit === null) {
+                return null;
+            }
+
             $sha = $environment->head_commit . substr($sha, 4);
         }
 

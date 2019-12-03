@@ -89,6 +89,9 @@ api:
   environments_ttl: 120
   users_ttl: 600
 
+  # Overridden by {application.env_prefix}API_URL env var.
+  base_url: 'https://api.platform.sh/'
+
   # Overridden by {application.env_prefix}ACCOUNTS_API env var.
   accounts_api_url: 'https://accounts.platform.sh/api/platform/'
 
