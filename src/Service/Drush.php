@@ -39,6 +39,9 @@ class Drush
     /** @var string|null */
     protected $executable;
 
+    /** @var string[] */
+    protected $cachedAppRoots = [];
+
     /**
      * @param Config|null $config
      * @param Shell|null $shellHelper
@@ -65,6 +68,25 @@ class Drush
     public function getHomeDir()
     {
         return $this->homeDir ?: Filesystem::getHomeDirectory();
+    }
+
+    /**
+     * @param string $sshUrl
+     * @param string $enterpriseAppRoot
+     */
+    public function setCachedAppRoot($sshUrl, $enterpriseAppRoot)
+    {
+        $this->cachedAppRoots[$sshUrl] = $enterpriseAppRoot;
+    }
+
+    /**
+     * @param string $sshUrl
+     *
+     * @return string
+     */
+    public function getCachedAppRoot($sshUrl)
+    {
+        return isset($this->cachedAppRoots[$sshUrl]) ? $this->cachedAppRoots[$sshUrl] : false;
     }
 
     /**
