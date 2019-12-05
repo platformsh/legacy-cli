@@ -647,4 +647,30 @@ abstract class IntegrationCommandBase extends CommandBase
             }
         }
     }
+
+    /**
+     * Updates the Git remote URL for the current project.
+     *
+     * @param string $oldGitUrl
+     */
+    protected function updateGitUrl($oldGitUrl)
+    {
+        if (!$this->selectedProjectIsCurrent()) {
+            return;
+        }
+        $project = $this->getCurrentProject();
+        $projectRoot = $this->getProjectRoot();
+        if (!$project || !$projectRoot) {
+            return;
+        }
+        $project->refresh();
+        $newGitUrl = $project->getGitUrl();
+        if ($newGitUrl === $oldGitUrl) {
+            return;
+        }
+        $this->stdErr->writeln(sprintf('Updating Git remote URL from %s to %s', $oldGitUrl, $newGitUrl));
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $localProject->ensureGitRemote($projectRoot, $newGitUrl);
+    }
 }
