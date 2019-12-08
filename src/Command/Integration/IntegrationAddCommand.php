@@ -31,6 +31,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $project = $this->getSelectedProject();
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -67,9 +68,11 @@ class IntegrationAddCommand extends IntegrationCommandBase
             }
         }
 
+        // Save the current Git remote (to see if we need to update it, for Git source integrations).
+        $oldGitUrl = $project->getGitUrl();
+
         try {
-            $result = $this->getSelectedProject()
-                ->addIntegration($values['type'], $values);
+            $result = $project->addIntegration($values['type'], $values);
         } catch (BadResponseException $e) {
             if ($errors = Integration::listValidationErrors($e)) {
                 $this->stdErr->writeln('<error>The integration is invalid.</error>');
@@ -93,8 +96,10 @@ class IntegrationAddCommand extends IntegrationCommandBase
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
+
+        $this->updateGitUrl($oldGitUrl);
 
         $this->displayIntegration($integration);
 
