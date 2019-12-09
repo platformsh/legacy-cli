@@ -267,7 +267,8 @@ Other customization is available via environment variables:
 
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging. _Warning_: this will print all request information in the terminal, including sensitive access tokens.
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
-* `PLATFORMSH_CLI_NO_COLOR`: enable (set to 1) to force colorized output off
+* `PLATFORMSH_CLI_NO_COLOR`: set to 1 to disable colors in output
+* `PLATFORMSH_CLI_NO_INTERACTION`: set to 1 to disable interaction (useful for scripting). _Warning_: this will bypass any confirmation questions.
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `PLATFORMSH_CLI_SHELL_CONFIG_FILE`: specify the shell configuration file that the installer should write to (as an absolute path). If not set, a file such as `~/.bashrc` will be chosen automatically. Set this to an empty string to disable writing to a shell config file.
 * `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It may be better to use `config.yaml` as above, depending on your system. The environment variable is preferable on CI systems like Jenkins and GitLab.
