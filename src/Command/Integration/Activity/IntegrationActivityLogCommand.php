@@ -1,7 +1,7 @@
 <?php
-namespace Platformsh\Cli\Command\Activity;
+namespace Platformsh\Cli\Command\Integration\Activity;
 
-use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Activity;
@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityLogCommand extends CommandBase
+class IntegrationActivityLogCommand extends IntegrationCommandBase
 {
     /**
      * {@inheritdoc}
@@ -18,56 +18,44 @@ class ActivityLogCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('activity:log')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
-            ->addOption(
-                'refresh',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Activity refresh interval (seconds). Set to 0 to disable refreshing.',
-                3
-            )
+            ->setName('integration:activity:log')
+            ->addArgument('integration', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
+            ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
-            ->setDescription('Display the log for an activity');
+            ->setDescription('Display the log for an integration activity');
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()
-             ->addEnvironmentOption();
-        $this->addExample('Display the log for the last push on the current environment', '--type environment.push')
-            ->addExample('Display the log for the last activity on the current project', '--all');
+            ->addEnvironmentOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
+        $this->validateInput($input);
 
-        $id = $input->getArgument('id');
+        $project = $this->getSelectedProject();
+
+        $integration = $this->selectIntegration($project, $input->getArgument('integration'), $input->isInteractive());
+        if (!$integration) {
+            return 1;
+        }
+
+        $id = $input->getArgument('activity');
         if ($id) {
-            $activity = $this->getSelectedProject()
-                             ->getActivity($id);
+            $activity = $project->getActivity($id);
             if (!$activity) {
-                $activities = $this->getSelectedEnvironment()
-                    ->getActivities(0, $input->getOption('type'));
-                $activity = $this->api()->matchPartialId($id, $activities, 'Activity');
+                $activity = $this->api()->matchPartialId($id, $integration->getActivities(), 'Activity');
                 if (!$activity) {
-                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
+                    $this->stdErr->writeln("Integration activity not found: <error>$id</error>");
 
                     return 1;
                 }
             }
         } else {
-            if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-                $activities = $this->getSelectedEnvironment()
-                    ->getActivities(1, $input->getOption('type'));
-            } else {
-                $activities = $this->getSelectedProject()
-                    ->getActivities(1, $input->getOption('type'));
-            }
+            $activities = $integration->getActivities();
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
-                $this->stdErr->writeln('No activities found');
+                $this->stdErr->writeln('No integration activities found');
 
                 return 1;
             }
@@ -77,6 +65,7 @@ class ActivityLogCommand extends CommandBase
         $formatter = $this->getService('property_formatter');
 
         $this->stdErr->writeln([
+            sprintf('<info>Integration ID: </info>%s', $integration->id),
             sprintf('<info>Activity ID: </info>%s', $activity->id),
             sprintf('<info>Type: </info>%s', $activity->type),
             sprintf('<info>Description: </info>%s', ActivityMonitor::getFormattedDescription($activity)),
@@ -85,7 +74,6 @@ class ActivityLogCommand extends CommandBase
             '<info>Log: </info>',
         ]);
 
-        $refresh = $input->getOption('refresh');
         $timestamps = $input->getOption('timestamps');
         if ($timestamps && $input->hasOption('date-fmt') && $input->getOption('date-fmt') !== null) {
             $timestamps = $input->getOption('date-fmt');
@@ -95,8 +83,8 @@ class ActivityLogCommand extends CommandBase
 
         /** @var ActivityMonitor $monitor */
         $monitor = $this->getService('activity_monitor');
-        if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete()) {
-            $monitor->waitAndLog($activity, $refresh, $timestamps, false, $output);
+        if (!$this->runningViaMulti && !$activity->isComplete()) {
+            $monitor->waitAndLog($activity, 3, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
