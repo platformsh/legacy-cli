@@ -83,11 +83,12 @@ class ActivityGetCommand extends CommandBase
             return 0;
         }
 
+        // The activity "log" property is going to be removed.
         unset($properties['payload'], $properties['log']);
 
         $this->stdErr->writeln(
-            'These properties have been omitted for brevity: <comment>payload</comment> and <comment>log</comment>.'
-            . ' You can still view them with the -P (--property) option.',
+            'The <comment>payload</comment> property has been omitted for brevity.'
+            . ' You can still view it with the -P (--property) option.',
             OutputInterface::VERBOSITY_VERBOSE
         );
 
