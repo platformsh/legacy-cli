@@ -27,6 +27,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->setDescription('Get a list of activities for an integration');
+        $this->setHiddenAliases(['integration:activities']);
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()
