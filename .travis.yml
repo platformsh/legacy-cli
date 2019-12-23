@@ -30,7 +30,8 @@ matrix:
     - php: '7.4'
       env: TEST_SCRIPT=scripts/test/build-and-install.sh
 
-    - php: '7.4'
+    # The "slow" test doesn't work on 7.4 yet because of Drush archive errors.
+    - php: '7.3'
       env: TEST_SCRIPT=scripts/test/slow.sh
 
   fast_finish: true
