@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "ed7a36a4b5bef71603ae8d36f28722cd272175f3",
-        "sha256": "d055e534fc71ce907a4111c55ce69e30ddb2dcc1b02aad7764d395872fc84e2e",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.50.1/platform.phar",
-        "version": "3.50.1",
+        "sha1": "82328eb0122e1610211cbab83974a2d44d0b31cb",
+        "sha256": "d0ca2f2d78773ce8d40f5448787a1254bf146a2ecc02afa4ae75bc4b9cec3941",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.51.0/platform.phar",
+        "version": "3.51.0",
         "php": {
             "min": "5.5.9"
         },
@@ -238,6 +238,11 @@
                 "notes": "New features:\n\n* Add an environment:scp (scp) command to transfer individual files.\n* Provide project choice in 'project:set-remote' command.\n* Add api:curl command to use the API directly.\n* Suggest to set the project as the remote, when 'get' command is used in an\n  existing repository.\n* Add --set-remote and --no-set-remote options to project:create (create)\n  command, which set the new project as the remote if called from an existing\n  repository.\n* Provide interactive choice in variable:get (vget) command.\n* Add 'Enabled' (is_enabled) column in variable:list (var) command.\n* Add 'Machine name' (machine_name) column (not default) in environment:list\n  (env) command.\n\nBug fixes:\n\n* Revert change that made Drush alias paths relative: they are now absolute\n  again, as the relative paths did not work with the Drush sql-sync or rsync\n  commands (#873).\n* Update API client to standardize project git URLs.\n* Do not require Git to find a git root.\n* Fix 'get' command detecting a project conflict in a separate directory.\n* Do not URL-encode the repository in Bitbucket API requests.\n* Add Docker setup for local development.\n* Refresh environments in the welcome command ('platform' on its own).",
                 "show from": "3.49.0",
                 "hide from": "3.50.0"
+            },
+            {
+                "notes": "New features:\n\n* Add PLATFORMSH_CLI_NO_INTERACTION environment variable, which can be used to\n  disable interactivity everywhere (warning: important confirmation questions\n  would be bypassed).\n* Add health.webhook integration type.\n\nOther changes:\n\n* Fix: avoid listing duplicate activities and avoid an infinite loop in\n  activity:list (activities) command.\n* Remove handling of activity \"log\" property.\n* Fix init command example GitHub URL.\n* Update the project git URL when adding/deleting an integration.",
+                "show from": "3.50.0",
+                "hide from": "3.51.0"
             }
         ]
     }
