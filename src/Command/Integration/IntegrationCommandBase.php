@@ -85,6 +85,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.email',
                     'health.pagerduty',
                     'health.slack',
+                    'health.webhook',
                 ],
             ]),
             'base_url' => new UrlField('Base URL', [
@@ -244,10 +245,18 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
+                    'health.webhook',
                     'webhook',
                 ]],
-                'description' => 'Generic webhook: a URL to receive JSON data',
+                'description' => 'Webhook: a URL to receive JSON data',
                 'questionLine' => 'What is the webhook URL (to which JSON data will be posted)?',
+            ]),
+            'shared_key' => new Field('Shared key', [
+                'conditions' => ['type' => [
+                    'health.webhook',
+                ]],
+                'description' => 'Webhook: the JWS shared secret key',
+                'questionLine' => 'Enter the JWS shared secret key, for validating webhook requests',
             ]),
             'events' => new ArrayField('Events to report', [
                 'conditions' => ['type' => [
