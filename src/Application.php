@@ -27,12 +27,16 @@ class Application extends ParentApplication
     /** @var Config */
     protected $cliConfig;
 
+    /** @var string */
+    private $envPrefix = '';
+
     /**
      * {@inheritdoc}
      */
     public function __construct()
     {
         $this->cliConfig = new Config();
+        $this->envPrefix = $this->cliConfig->get('application.env_prefix');
         parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->getVersion());
 
         // Use the configured timezone, or fall back to the system timezone.
@@ -245,8 +249,10 @@ class Application extends ParentApplication
      */
     protected function configureIO(InputInterface $input, OutputInterface $output)
     {
-        // Set the input to non-interactive if the yes or no options are used.
-        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
+        // Set the input to non-interactive if the yes or no options are used,
+        // or if the PLATFORMSH_CLI_NO_INTERACTION variable is not empty.
+        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])
+          || getenv($this->envPrefix . 'NO_INTERACTION')) {
             $input->setInteractive(false);
         }
 
@@ -260,7 +266,7 @@ class Application extends ParentApplication
         } elseif (getenv('NO_COLOR')
             || getenv('CLICOLOR_FORCE') === '0'
             || getenv('TERM') === 'dumb'
-            || getenv($this->cliConfig->get('application.env_prefix') . 'NO_COLOR')) {
+            || getenv($this->envPrefix . 'NO_COLOR')) {
             $output->setDecorated(false);
         }
 

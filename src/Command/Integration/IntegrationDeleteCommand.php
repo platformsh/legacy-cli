@@ -1,12 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationDeleteCommand extends CommandBase
+class IntegrationDeleteCommand extends IntegrationCommandBase
 {
     /**
      * {@inheritdoc}
@@ -44,6 +43,8 @@ class IntegrationDeleteCommand extends CommandBase
             return 1;
         }
 
+        $oldGitUrl = $project->getGitUrl();
+
         $result = $integration->delete();
 
         $this->stdErr->writeln(sprintf('Deleted integration <info>%s</info>', $integration->id));
@@ -53,6 +54,8 @@ class IntegrationDeleteCommand extends CommandBase
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
+
+        $this->updateGitUrl($oldGitUrl);
 
         return 0;
     }

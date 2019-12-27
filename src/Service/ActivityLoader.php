@@ -54,21 +54,34 @@ class ActivityLoader
         $progress->setMessage($type === 'environment.backup' ? 'Loading backups...' : 'Loading activities...');
         $progress->setFormat('%message% %current% (max: %max%)');
         $progress->start($limit);
+
+        // Index the array by the activity ID for deduplication.
+        $indexed = [];
+        foreach ($activities as $activity) {
+            $indexed[$activity->id] = $activity;
+        }
+        $activities = $indexed;
+        unset($indexed);
+
         while (count($activities) < $limit) {
             if ($activity = end($activities)) {
                 $startsAt = strtotime($activity->created_at);
             }
             $nextActivities = $apiResource->getActivities($limit - count($activities), $type, $startsAt);
-            if (!count($nextActivities)) {
-                break;
-            }
+            $new = false;
             foreach ($nextActivities as $activity) {
-                $activities[$activity->id] = $activity;
+                if (!isset($activities[$activity->id])) {
+                    $activities[$activity->id] = $activity;
+                    $new = true;
+                }
+            }
+            if (!$new) {
+                break;
             }
             $progress->setProgress(count($activities));
         }
         $progress->clear();
 
-        return $activities;
+        return array_values($activities);
     }
 }
