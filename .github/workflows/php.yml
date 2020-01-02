@@ -6,6 +6,19 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
+    - name: Determine composer cache directory
+      id: composer-cache
+      run: |
+        echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+    - name: Restore composer cache
+      uses: actions/cache@v1
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-composer-
+
     - name: Install dependencies
       run: composer install --no-progress --no-interaction --no-dev
 
