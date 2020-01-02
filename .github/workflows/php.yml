@@ -1,0 +1,27 @@
+name: Build the CLI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install dependencies
+      run: composer install --no-progress --no-interaction --no-dev
+
+    - name: Install Box
+      run: |
+          cd vendor-bin/box
+          composer install --no-interaction --no-progress
+          cd -
+          mkdir -p vendor/bin
+          ln -s "$(realpath vendor-bin/box/vendor/bin/box)" vendor/bin/box
+
+    - name: Run self:build
+      run: ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$GITHUB_REF"-"$GITHUB_SHA" --output cli.phar
+
+    - name: Download Phar artifact
+      uses: actions/download-artifact@v1.0.0
+      with:
+        name: cli.phar
+        path: cli.phar
