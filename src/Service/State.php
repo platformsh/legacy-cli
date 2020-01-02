@@ -85,6 +85,6 @@ class State
      */
     protected function getFilename()
     {
-        return Filesystem::getHomeDirectory() . '/' . $this->config->get('application.user_state_file');
+        return $this->config->getHomeDirectory() . '/' . $this->config->get('application.user_state_file');
     }
 }

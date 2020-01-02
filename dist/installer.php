@@ -47,6 +47,7 @@ if (!$isCliInclude) {
 }
 
 class Installer {
+    private $envPrefix;
     private $manifestUrl;
     private $configDir;
     private $executable;
@@ -57,8 +58,9 @@ class Installer {
     public function __construct(array $args = []) {
         $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
 
-        if (getenv('PLATFORMSH_CLI_MANIFEST_URL') !== false) {
-            $this->manifestUrl = getenv('PLATFORMSH_CLI_MANIFEST_URL');
+        $this->envPrefix = 'PLATFORMSH_CLI_';
+        if (getenv($this->envPrefix . 'MANIFEST_URL') !== false) {
+            $this->manifestUrl = getenv($this->envPrefix . 'MANIFEST_URL');
         } elseif ($manifestOption = $this->getOption('manifest')) {
             $this->manifestUrl = $manifestOption;
         } else {
@@ -502,13 +504,13 @@ class Installer {
      *   The user's home directory as an absolute path, or false on failure.
      */
     private function getHomeDirectory() {
-        if ($home = getenv('HOME')) {
-            return $home;
+        $vars = [$this->envPrefix . 'HOME', 'HOME', 'USERPROFILE'];
+        foreach ($vars as $var) {
+            if ($home = getenv($var)) {
+                return realpath($home) ?: $home;
+            }
         }
-        elseif ($userProfile = getenv('USERPROFILE')) {
-            return $userProfile;
-        }
-        elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+        if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
             return $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
         }
 
