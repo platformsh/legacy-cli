@@ -33,8 +33,8 @@ jobs:
     - name: Run self:build
       run: ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$GITHUB_REF"-"$GITHUB_SHA" --output cli.phar
 
-    - name: Download Phar artifact
-      uses: actions/download-artifact@v1.0.0
+    - name: Upload Phar artifact
+      uses: actions/upload-artifact@v1
       with:
         name: cli.phar
         path: cli.phar
