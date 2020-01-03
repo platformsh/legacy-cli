@@ -55,7 +55,7 @@ class EnvironmentXdebugCommand extends CommandBase
                 "        key: <options=underscore>secret_key</>"
             );
 
-            return null;
+            return 1;
         }
 
 
@@ -89,7 +89,7 @@ class EnvironmentXdebugCommand extends CommandBase
         if (!$process->isRunning() && !$process->isSuccessful()) {
             $this->stdErr->writeln(trim($process->getErrorOutput()));
             $this->stdErr->writeln('Failed to create the tunnel.');
-            return $process;
+            return $process->stop();
         }
 
         $output->writeln(
@@ -101,8 +101,6 @@ class EnvironmentXdebugCommand extends CommandBase
             )
         );
 
-        $process->wait();
-
-        return $process;
+        return $process->wait();
     }
 }
