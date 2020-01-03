@@ -30,8 +30,6 @@ class SshKeyAddCommand extends CommandBase
 
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
             $defaultKeyPath = $this->config()->getHomeDirectory() . '/.ssh/' . self::DEFAULT_BASENAME;
             $defaultPublicKeyPath = $defaultKeyPath . '.pub';
 
