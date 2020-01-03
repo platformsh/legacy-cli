@@ -34,9 +34,7 @@ class EnvironmentXdebugCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $environment = $this->getSelectedEnvironment();
-
-        $port = $input->getOption('port');
+        $this->getSelectedEnvironment();
 
         $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl();
@@ -60,23 +58,30 @@ class EnvironmentXdebugCommand extends CommandBase
             return null;
         }
 
+
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $sshOptions = [];
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        $commandCleanup = $ssh->getSshCommand($sshOptions);
+        // The socket is removed to prevent 'file already exists' errors
+        $commandCleanup = $ssh->getSshCommand();
         $commandCleanup .= ' ' . escapeshellarg($sshUrl) . ' rm -f ' . escapeshellarg(self::SOCKET_PATH);
-        $process = new Process($commandCleanup, null, null, null, null);
+        $this->debug("Cleanup command: " . $commandCleanup);
+        $process = new Process($commandCleanup);
         $process->run();
 
         $output->writeln("Starting the tunnel for Xdebug.");
+
+        // Set up the tunnel
+        $port = $input->getOption('port');
+
+        $sshOptions = [];
         $sshOptions['ExitOnForwardFailure'] = 'yes';
+
         $commandTunnel = $ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg(self::SOCKET_PATH . ':127.0.0.1:' . $port);
         $commandTunnel .= ' ' . escapeshellarg($sshUrl);
-        $process = new Process($commandTunnel, null, null, null, null);
+        $this->debug("Tunnel command: " . $commandTunnel);
+        $process = new Process($commandTunnel);
+        $process->setTimeout(null);
         $process->start();
 
         usleep(100000);
