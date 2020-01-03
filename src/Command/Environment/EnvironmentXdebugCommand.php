@@ -12,6 +12,8 @@ use Symfony\Component\Process\Process;
 
 class EnvironmentXdebugCommand extends CommandBase
 {
+    const SOCKET_PATH = '/run/xdebug-tunnel.sock';
+
     /**
      * {@inheritdoc}
      */
@@ -35,7 +37,6 @@ class EnvironmentXdebugCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $port = $input->getOption('port');
-        $socketPath = "/run/xdebug-tunnel.sock";
 
         $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl();
@@ -48,13 +49,13 @@ class EnvironmentXdebugCommand extends CommandBase
         $shell = $this->getService('shell');
 
         $commandCleanup = $ssh->getSshCommand($sshOptions);
-        $commandCleanup .= ' ' . escapeshellarg($sshUrl) . ' rm ' . escapeshellarg($socketPath);
+        $commandCleanup .= ' ' . escapeshellarg($sshUrl) . ' rm -f ' . escapeshellarg(self::SOCKET_PATH);
         $process = new Process($commandCleanup, null, null, null, null);
         $process->run();
 
         $output->writeln("Starting the tunnel for Xdebug.");
         $sshOptions['ExitOnForwardFailure'] = 'yes';
-        $commandTunnel = $ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg($socketPath . ':127.0.0.1:' . $port);
+        $commandTunnel = $ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg(self::SOCKET_PATH . ':127.0.0.1:' . $port);
         $commandTunnel .= ' ' . escapeshellarg($sshUrl);
         $process = new Process($commandTunnel, null, null, null, null);
         $process->start();
