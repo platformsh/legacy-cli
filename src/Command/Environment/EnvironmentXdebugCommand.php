@@ -41,6 +41,25 @@ class EnvironmentXdebugCommand extends CommandBase
         $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl();
 
+        $config = $container->getConfig()->getNormalized();
+        $key = isset($config['runtime']['xdebug']['key']) ? $config['runtime']['xdebug']['key'] : '';
+
+        if (!$key) {
+            $output->getErrorOutput()->writeln(
+                "<error>A debugging key has not been found</error>\n" .
+                "\n" .
+                "To use Xdebug your project must have a <info>debugging key</info> informed.\n" .
+                "Such key is informed in the <info>.platform.app.yaml</info> file as in this example:\n" .
+                "\n" .
+                "<info>...\n" .
+                "runtime:\n" .
+                "    xdebug:\n" .
+                "        key: <options=underscore>secret_key</>"
+            );
+
+            return null;
+        }
+
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
         $sshOptions = [];
@@ -70,9 +89,10 @@ class EnvironmentXdebugCommand extends CommandBase
 
         $output->writeln(
             sprintf(
-                "The Xdebug tunnel is set up. To break it, close this command by pressing CTRL+C.\n " .
+                "\nThe Xdebug tunnel is set up. To break it, close this command by pressing <info>CTRL+C</info>.\n " .
                 "\n" .
-                "\To debug, you must either set a cookie like '<info>XDEBUG_SESSION=</info>' or append '<info>XDEBUG_SESSION_START=key</info>' as a query string when visiting your project."
+                "To debug, you must either set a cookie like '<info>XDEBUG_SESSION=%s</info>' or append '<info>XDEBUG_SESSION_START=%s</info>' as a query string when visiting your project.",
+                $key, $key
             )
         );
 
