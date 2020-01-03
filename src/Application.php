@@ -142,6 +142,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
         $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();
+        $commands[] = new Command\Environment\EnvironmentXdebugCommand();
         $commands[] = new Command\Integration\IntegrationAddCommand();
         $commands[] = new Command\Integration\IntegrationDeleteCommand();
         $commands[] = new Command\Integration\IntegrationGetCommand();
