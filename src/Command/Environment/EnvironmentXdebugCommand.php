@@ -46,8 +46,8 @@ class EnvironmentXdebugCommand extends CommandBase
             $output->getErrorOutput()->writeln(
                 "<error>A debugging key has not been found</error>\n" .
                 "\n" .
-                "To use Xdebug your project must have a <info>debugging key</info> informed.\n" .
-                "Such key is informed in the <info>.platform.app.yaml</info> file as in this example:\n" .
+                "To use Xdebug your project must have a <info>debugging key</info> set.\n" .
+                "Such key is set in the <info>.platform.app.yaml</info> file as in this example:\n" .
                 "\n" .
                 "<info>...\n" .
                 "runtime:\n" .
