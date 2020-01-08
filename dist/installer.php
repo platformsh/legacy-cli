@@ -286,7 +286,7 @@ class Installer {
         }
         putenv('CLICOLOR_FORCE=' . ($this->terminalSupportsAnsi() ? '1' : '0'));
 
-        return $this->runCommand($command);
+        return $this->runCommand($command, true);
     }
 
     /**
@@ -351,11 +351,14 @@ class Installer {
     }
 
     /**
-     * @param string $cmd
+     * Runs a shell command.
      *
-     * @return int
+     * @param string $cmd
+     * @param bool $forceStdout Whether to redirect all stderr output to stdout.
+     *
+     * @return int The command's exit code.
      */
-    private function runCommand($cmd) {
+    private function runCommand($cmd, $forceStdout = false) {
         /*
          * Set up the STDIN, STDOUT and STDERR constants.
          *
@@ -374,7 +377,7 @@ class Installer {
             define('STDERR', fopen('php://stderr', 'w'));
         }
 
-        $process = proc_open($cmd, [STDIN, STDOUT, STDERR], $pipes);
+        $process = proc_open($cmd, [STDIN, STDOUT, $forceStdout ? STDOUT : STDERR], $pipes);
 
         return proc_close($process);
     }
