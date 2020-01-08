@@ -7,6 +7,7 @@ use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Deployment\Service;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -230,9 +231,9 @@ class DbSizeCommand extends CommandBase
         $dbUrl = $relationships->getDbCommandArgs('psql', $database, '');
 
         return sprintf(
-            "psql --echo-hidden -t --no-align %s -c '%s'",
+            'psql --echo-hidden -t --no-align %s -c %s',
             $dbUrl,
-            $query
+            OsUtil::escapePosixShellArg($query)
         );
     }
 
@@ -250,9 +251,9 @@ class DbSizeCommand extends CommandBase
         $connectionParams = $relationships->getDbCommandArgs('mysql', $database, '');
 
         return sprintf(
-            "mysql %s --no-auto-rehash --raw --skip-column-names --execute '%s'",
+            'mysql %s --no-auto-rehash --raw --skip-column-names --execute %s',
             $connectionParams,
-            $query
+            OsUtil::escapePosixShellArg($query)
         );
     }
 
