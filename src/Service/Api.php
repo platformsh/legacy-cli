@@ -8,6 +8,7 @@ use GuzzleHttp\Event\ErrorEvent;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Session\KeychainStorage;
+use Platformsh\Cli\Session\SecretToolStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
@@ -17,6 +18,7 @@ use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
+use Platformsh\Client\Session\Storage\SessionStorageInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -209,11 +211,7 @@ class Api
             $session = $connector->getSession();
             $session->setId('cli-' . $this->sessionId);
 
-            $this->sessionStorage = KeychainStorage::isSupported()
-                && $this->config->isExperimentEnabled('use_keychain')
-                ? new KeychainStorage($this->config->get('application.name'))
-                : new File($this->config->getSessionDir());
-            $session->setStorage($this->sessionStorage);
+            $session->setStorage($this->getSessionStorage());
 
             // Ensure session data is (re-)loaded every time.
             // @todo move this to the Session
@@ -239,6 +237,21 @@ class Api
         }
 
         return self::$client;
+    }
+
+    /**
+     * @return SessionStorageInterface
+     */
+    private function getSessionStorage() {
+        if ($this->config->isExperimentEnabled('use_keychain') && KeychainStorage::isSupported()) {
+            $storage = new KeychainStorage($this->config->get('application.name'));
+        } elseif ($this->config->isExperimentEnabled('use_secret_tool') && SecretToolStorage::isSupported()) {
+            $storage = new SecretToolStorage($this->config->get('application.name'));
+        } else {
+            $storage = new File($this->config->getSessionDir());
+        }
+
+        return $this->sessionStorage = $storage;
     }
 
     /**
