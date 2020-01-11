@@ -136,7 +136,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
         if (!count($environmentList)) {
             $this->stdErr->writeln(sprintf(
-                'Use <info>%s branch</info> to create an environment.',
+                'To create a new environment, run: <info>%s branch [new-branch]</info>',
                 $this->config()->get('application.executable')
             ));
 
