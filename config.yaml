@@ -90,6 +90,9 @@ api:
   environments_ttl: 120
   users_ttl: 600
 
+  # Disable the docker-credential-helpers credential storage.
+  disable_credential_helpers: false
+
   # Overridden by {application.env_prefix}API_URL env var.
   base_url: 'https://api.platform.sh/'
 

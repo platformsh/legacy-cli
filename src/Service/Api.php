@@ -5,9 +5,10 @@ namespace Platformsh\Cli\Service;
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
+use Platformsh\Cli\CredentialHelper\Manager;
+use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Model\Route;
-use Platformsh\Cli\Session\KeychainStorage;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
@@ -82,7 +83,7 @@ class Api
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
 
         $this->sessionId = $this->config->get('api.session_id') ?: 'default';
-        if ($this->sessionId === 'api-token') {
+        if (strpos($this->sessionId, 'api-token') === 0) {
             throw new \InvalidArgumentException('Invalid session ID: ' . $this->sessionId);
         }
 
@@ -108,6 +109,11 @@ class Api
                 }
                 $this->apiTokenType = 'access';
             }
+        }
+
+        // Ensure a unique session ID per API token.
+        if (isset($this->apiToken)) {
+            $this->sessionId = 'api-token-' . substr(hash('sha256', $this->apiToken), 0, 8);
         }
     }
 
@@ -149,6 +155,36 @@ class Api
     public function hasApiToken()
     {
         return isset($this->apiToken);
+    }
+
+    /**
+     * Checks if any sessions exist (with any session ID).
+     *
+     * @return bool
+     */
+    public function anySessionsExist()
+    {
+        if ($this->sessionStorage instanceof SessionStorage && $this->sessionStorage->hasAnySessions()) {
+            return true;
+        }
+        $dir = $this->config->getSessionDir();
+        $files = glob($dir . '/sess-cli-*/*', GLOB_NOSORT);
+
+        return !empty($files);
+    }
+
+    /**
+     * Deletes all sessions.
+     */
+    public function deleteAllSessions()
+    {
+        if ($this->sessionStorage instanceof SessionStorage) {
+            $this->sessionStorage->deleteAll();
+        }
+        $dir = $this->config->getSessionDir();
+        if (is_dir($dir)) {
+            (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
+        }
     }
 
     /**
@@ -209,10 +245,7 @@ class Api
             $session = $connector->getSession();
             $session->setId('cli-' . $this->sessionId);
 
-            $this->sessionStorage = KeychainStorage::isSupported()
-                && $this->config->isExperimentEnabled('use_keychain')
-                ? new KeychainStorage($this->config->get('application.name'))
-                : new File($this->config->getSessionDir());
+            $this->initSessionStorage();
             $session->setStorage($this->sessionStorage);
 
             // Ensure session data is (re-)loaded every time.
@@ -239,6 +272,22 @@ class Api
         }
 
         return self::$client;
+    }
+
+    /**
+     * Initializes session credential storage.
+     */
+    private function initSessionStorage() {
+        // Attempt to use the docker-credential-helpers.
+        $manager = new Manager($this->config);
+        if ($manager->isSupported()) {
+            $manager->install();
+            $this->sessionStorage = new SessionStorage($manager, $this->config->get('application.name'));
+            return;
+        }
+
+        // Fall back to file storage.
+        $this->sessionStorage = new File($this->config->getSessionDir());
     }
 
     /**
@@ -805,16 +854,6 @@ class Api
     public function getHttpClient()
     {
         return $this->getClient()->getConnector()->getClient();
-    }
-
-    /**
-     * Delete all keychain keys.
-     */
-    public function deleteFromKeychain()
-    {
-        if ($this->sessionStorage instanceof KeychainStorage) {
-            $this->sessionStorage->deleteAll();
-        }
     }
 
     /**
