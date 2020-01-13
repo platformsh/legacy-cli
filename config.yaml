@@ -21,6 +21,7 @@ application:
 
   # The default interactive login method: either 'browser' or 'password'.
   # This can be overridden in the user config file.
+  # N.B. password login is now deprecated, and will be removed from the API in future.
   login_method: browser
 
   # The default timezone for times displayed or interpreted by the CLI.

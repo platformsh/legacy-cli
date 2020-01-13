@@ -236,7 +236,8 @@ api:
 
 application:
   # The method used for interactive login: 'browser' or 'password' (defaults to
-  # 'browser').
+  # 'browser'). Password login is deprecated and will be removed from the API
+  # in future.
   login_method: browser
 
   # The default timezone for times displayed or interpreted by the CLI.
