@@ -244,7 +244,7 @@ class Api
     /**
      * Finds a proxy address based on the http_proxy or https_proxy environment variables.
      *
-     * @return string|null
+     * @return string|array|null
      */
     private function getProxy() {
         // The proxy variables should be ignored in a non-CLI context.
@@ -253,11 +253,11 @@ class Api
         }
         $proxies = [];
         foreach (['https', 'http'] as $scheme) {
-            $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
+            $proxies[$scheme] = str_replace($scheme . '://', 'tcp://', getenv($scheme . '_proxy'));
         }
         $proxies = array_filter($proxies);
         if (count($proxies)) {
-            return count($proxies) == 1 ? reset($proxies) : $proxies;
+            return count($proxies) === 1 ? reset($proxies) : $proxies;
         }
 
         return null;
@@ -281,7 +281,13 @@ class Api
             ],
         ];
         $proxy = $this->getProxy();
-        if ($proxy !== null) {
+        if (is_array($proxy)) {
+            if (isset($proxy['https'])) {
+                $opts['http']['proxy'] = $proxy['https'];
+            } elseif (isset($proxy['http'])) {
+                $opts['http']['proxy'] = $proxy['http'];
+            }
+        } elseif (is_string($proxy) && $proxy !== '') {
             $opts['http']['proxy'] = $proxy;
         }
 
