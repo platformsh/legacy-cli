@@ -798,7 +798,7 @@ class Api
      */
     public function getHttpClient()
     {
-        return $this->getClient(false)->getConnector()->getClient();
+        return $this->getClient()->getConnector()->getClient();
     }
 
     /**

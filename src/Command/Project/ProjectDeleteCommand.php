@@ -60,13 +60,15 @@ class ProjectDeleteCommand extends CommandBase
             }
         }
 
+        $client = $this->api()->getClient();
         $subscriptionId = $project->getSubscriptionId();
-        $subscription = $this->api()->getClient()->getSubscription($subscriptionId);
-        if (!$subscription) {
-            throw new \RuntimeException('Subscription not found: ' . $subscriptionId);
-        }
 
         try {
+            $subscription = $client->getSubscription($subscriptionId);
+            if (!$subscription) {
+                throw new \RuntimeException('Subscription not found: ' . $subscriptionId);
+            }
+
             $subscription->delete();
         } catch (ClientException $e) {
             $response = $e->getResponse();

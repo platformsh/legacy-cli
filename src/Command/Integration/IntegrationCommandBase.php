@@ -257,6 +257,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'Webhook: the JWS shared secret key',
                 'questionLine' => 'Enter the JWS shared secret key, for validating webhook requests',
+                'required' => false,
             ]),
             'events' => new ArrayField('Events to report', [
                 'conditions' => ['type' => [
